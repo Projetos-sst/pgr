@@ -11,7 +11,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run start` — serve the production build (run `build` first)
 - `npm run lint` — ESLint (flat config, `eslint-config-next` core-web-vitals + typescript)
 
-No test runner is configured.
+- `npm run test` — testes unitários (Jest + Testing Library)
+- `npm run test:integration` — testes de integração com SQLite em memória
+
+**Obrigatoriedade de testes**: toda feature MUST incluir testes unitários para lógica de negócio e testes de integração para Server Actions e Route Handlers. Testes de integração usam SQLite em memória como banco substituto.
 
 ## Stack & conventions
 

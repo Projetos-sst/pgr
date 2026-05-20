@@ -135,10 +135,14 @@ de dados que, neste domínio, pode ter consequências regulatórias.
 - O trabalho MUST ocorrer em feature branches; nunca commits diretos na `main`.
 - **Quality gate antes de concluir qualquer tarefa**: `npm run lint` e a
   verificação de tipos do TypeScript MUST passar.
-- **Testes**: não há test runner configurado. Testes automatizados são SHOULD,
-  priorizados para caminhos críticos — isolamento multi-tenant e regras de
-  negócio — e não para cobertura ampla. Uma fatia que introduz lógica crítica
-  SHOULD incluir teste do caminho crítico.
+- **Testes**: testes automatizados são MUST, não opcionais.
+  - **Unitários**: toda lógica de negócio, funções utilitárias e validações
+    MUST ter testes unitários (Jest + Testing Library).
+  - **Integração**: toda Server Action e Route Handler MUST ter testes de
+    integração. O ambiente de integração usa SQLite em memória como banco
+    substituto — setup simples, sem dependência de serviços externos.
+  - Uma fatia só é considerada concluída quando os testes passam (`npm run
+    test` e `npm run test:integration`).
 - Mudanças são revisadas quanto à conformidade com esta constituição antes do
   merge.
 
@@ -154,4 +158,4 @@ de dados que, neste domínio, pode ter consequências regulatórias.
   "Constitution Check"; violações justificadas vão em "Complexity Tracking".
 - Orientação de runtime para agentes: `CLAUDE.md` e `AGENTS.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-05-19
+**Version**: 1.1.0 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-05-20
