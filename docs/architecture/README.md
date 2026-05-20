@@ -33,6 +33,7 @@ formal da constituição).
 | 03 | [`03-api-design.md`](./03-api-design.md) | Server Actions vs Route Handlers, validação, acesso a dados org-scoped |
 | 04 | [`04-integracoes-e-servicos.md`](./04-integracoes-e-servicos.md) | Clerk, Supabase Storage, serviço de PDF (Gotenberg), jobs assíncronos, Cloudflare |
 | 05 | [`05-roadmap-de-fases.md`](./05-roadmap-de-fases.md) | Plano de entrega faseado (45 dias), riscos, melhorias futuras |
+| 06 | [`06-inventario-de-entregaveis.md`](./06-inventario-de-entregaveis.md) | Inventário de entregáveis (telas/fluxos) → milestones e issues do GitHub |
 
 ## Como usar
 
