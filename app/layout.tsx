@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
-import {
-  ClerkProvider,
-  OrganizationSwitcher,
-  Show,
-  UserButton,
-} from "@clerk/nextjs";
+import { ClerkProvider, OrganizationSwitcher, Show, UserButton } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
 
 import "./globals.css";
@@ -36,7 +31,7 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="flex min-h-full flex-col">
         <ClerkProvider
           localization={ptBR}
           signInUrl="/sign-in"
@@ -48,7 +43,7 @@ export default function RootLayout({
           <header className="flex items-center justify-between gap-4 border-b border-black/8 px-6 py-4">
             <Link
               href="/"
-              className="text-base font-semibold tracking-tight text-foreground"
+              className="text-foreground text-base font-semibold tracking-tight"
             >
               SST Manager
             </Link>
@@ -56,7 +51,7 @@ export default function RootLayout({
               <Show when="signed-out">
                 <Link
                   href="/sign-in"
-                  className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838]"
+                  className="bg-foreground text-background rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-[#383838]"
                 >
                   Entrar
                 </Link>
@@ -64,7 +59,7 @@ export default function RootLayout({
               <Show when="signed-in">
                 <Link
                   href="/dashboard"
-                  className="text-sm font-medium text-foreground hover:underline"
+                  className="text-foreground text-sm font-medium hover:underline"
                 >
                   Painel
                 </Link>

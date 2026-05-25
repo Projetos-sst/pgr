@@ -21,7 +21,9 @@ export default async function SignUpPage({
   const session = await getSessionOrNull();
 
   if (session?.isAuthenticated && ticket) {
-    redirect(`/sign-out?redirect_url=/sign-up?__clerk_ticket=${encodeURIComponent(ticket)}`);
+    redirect(
+      `/sign-out?redirect_url=/sign-up?__clerk_ticket=${encodeURIComponent(ticket)}`,
+    );
   }
   if (session?.isAuthenticated && !ticket) {
     redirect("/dashboard");
@@ -30,17 +32,14 @@ export default async function SignUpPage({
   if (!ticket) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Cadastro por convite
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Cadastro por convite</h1>
         <p className="max-w-md text-base text-zinc-600">
-          O SST Manager é um sistema corporativo. Novas contas só podem ser
-          criadas a partir de um convite enviado por um administrador da sua
-          organização.
+          O SST Manager é um sistema corporativo. Novas contas só podem ser criadas a
+          partir de um convite enviado por um administrador da sua organização.
         </p>
         <p className="max-w-md text-sm text-zinc-600">
-          Procure no seu e-mail por uma mensagem com o link de convite, ou
-          solicite um a quem administra sua organização.
+          Procure no seu e-mail por uma mensagem com o link de convite, ou solicite um a
+          quem administra sua organização.
         </p>
         <Link
           href="/sign-in"

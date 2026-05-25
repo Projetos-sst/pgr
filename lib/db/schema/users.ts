@@ -1,0 +1,26 @@
+import { pgTable, text, timestamp, pgPolicy } from "drizzle-orm/pg-core";
+import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
+import { authenticatedRole } from "drizzle-orm/supabase";
+
+export const users = pgTable(
+  "users",
+  {
+    id: text("id").primaryKey(),
+    email: text("email"),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    imageUrl: text("image_url"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    pgPolicy("users_select_self", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.id} = (auth.jwt() ->> 'sub')`,
+    }),
+  ],
+).enableRLS();
+
+export type User = InferSelectModel<typeof users>;
+export type NewUser = InferInsertModel<typeof users>;

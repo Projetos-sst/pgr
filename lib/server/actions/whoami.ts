@@ -1,10 +1,7 @@
 "use server";
 
 import { requireOrgContext } from "@/lib/auth/require-org-context";
-import {
-  NoActiveOrgError,
-  UnauthorizedError,
-} from "@/lib/auth/errors";
+import { NoActiveOrgError, UnauthorizedError } from "@/lib/auth/errors";
 
 export type WhoamiResult =
   | { ok: true; userId: string; orgId: string }

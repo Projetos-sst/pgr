@@ -2,10 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { OrganizationList } from "@clerk/nextjs";
 
-import {
-  NoActiveOrgError,
-  UnauthorizedError,
-} from "@/lib/auth/errors";
+import { NoActiveOrgError, UnauthorizedError } from "@/lib/auth/errors";
 import { getSessionOrNull } from "@/lib/auth/get-session";
 import { requireAuth } from "@/lib/auth/require-auth";
 

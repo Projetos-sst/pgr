@@ -21,15 +21,13 @@ export default async function DashboardPage() {
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-      <h1 className="text-3xl font-semibold tracking-tight">
-        Bem-vindo ao SST Manager
-      </h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Bem-vindo ao SST Manager</h1>
       <p className="text-lg text-zinc-600">
         Organização ativa: <strong>{orgName}</strong>
       </p>
       <p className="max-w-md text-sm text-zinc-600">
-        Fatia fundacional — área autenticada. Módulos de negócio chegam nas
-        próximas entregas.
+        Fatia fundacional — área autenticada. Módulos de negócio chegam nas próximas
+        entregas.
       </p>
     </main>
   );

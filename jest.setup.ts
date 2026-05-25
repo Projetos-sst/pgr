@@ -21,6 +21,7 @@ jest.mock("@clerk/nextjs/server", () => ({
     const regexes = patterns.map(
       (p) => new RegExp("^" + p.replace(/\(\.\*\)/g, ".*").replace(/\//g, "\\/") + "$"),
     );
-    return (req: { url: string }) => regexes.some((r) => r.test(new URL(req.url).pathname));
+    return (req: { url: string }) =>
+      regexes.some((r) => r.test(new URL(req.url).pathname));
   }),
 }));

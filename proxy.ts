@@ -22,10 +22,7 @@ export default clerkMiddleware(async (auth, request) => {
     pathname.startsWith("/sign-up") ||
     pathname.startsWith("/dashboard")
   ) {
-    response.headers.set(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate, private",
-    );
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
     response.headers.set("Pragma", "no-cache");
     response.headers.set("Expires", "0");
   }

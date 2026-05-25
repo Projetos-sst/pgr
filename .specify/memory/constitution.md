@@ -142,7 +142,7 @@ de dados que, neste domínio, pode ter consequências regulatórias.
     integração. O ambiente de integração usa SQLite em memória como banco
     substituto — setup simples, sem dependência de serviços externos.
   - Uma fatia só é considerada concluída quando os testes passam (`npm run
-    test` e `npm run test:integration`).
+test` e `npm run test:integration`).
 - Mudanças são revisadas quanto à conformidade com esta constituição antes do
   merge.
 
