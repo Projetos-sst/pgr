@@ -6,16 +6,27 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint && ./scripts/check-no-db-in-client.sh",
+    "lint:fix": "eslint --fix && ./scripts/check-no-db-in-client.sh",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
+    "fix": "npm run lint:fix && npm run format",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
     "test": "jest --selectProjects unit",
-    "test:integration": "jest --selectProjects integration"
+    "test:integration": "jest --selectProjects integration",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "db:reset": "tsx scripts/db-reset-dev.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@clerk/localizations": "^4.6.8",
     "@clerk/nextjs": "^7.4.1",
     "@supabase/supabase-js": "^2.106.1",
+    "drizzle-orm": "^0.45.2",
     "next": "16.2.6",
+    "postgres": "^3.4.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "^4.4.3"
@@ -31,11 +42,16 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
+    "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4",
+    "tsx": "^4.22.3",
     "typescript": "^5"
   }
 }
