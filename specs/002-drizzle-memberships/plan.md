@@ -1,113 +1,126 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Drizzle ORM + `org_memberships`
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Branch**: `feature/drizzle-orm-setup` | **Date**: 2026-05-25 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/speckit-plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
+**Input**: Feature specification from `/specs/002-drizzle-memberships/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Adotar Drizzle ORM como o **único dono code-first da estrutura do banco** (padrão EF Core / TypeORM), portando as DDLs hoje em `supabase/migrations/0001_clerk_sync_init.sql` para schemas Drizzle versionados em `lib/db/schema/` e migrations geradas em `lib/db/migrations/`. Adicionar a primeira tabela relacional (`org_memberships`, user ↔ org + role), sincronizá-la via webhook do Clerk com upsert defensivo (que também upserta `users`/`orgs` minimamente, tolerando qualquer ordem de entrega), e disponibilizar script de backfill idempotente. Cliente Drizzle conecta via pooler em transaction mode (porta 6543) usando um **papel Postgres restrito** (sujeito a RLS, criado pela própria migration), reservado nesta fatia a operações administrativas/sistema; dados por-usuário continuam via `@supabase/supabase-js` (que injeta o JWT do Clerk). Pasta `supabase/migrations/` é removida ao final.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
+**Language/Version**: TypeScript 5.x (strict), Node.js (runtime Vercel/Next.js 16.2.6), React 19.2.4
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]
+**Primary Dependencies**: `drizzle-orm@latest`, `drizzle-kit@latest` (dev), `postgres@latest` (driver Porsager `postgres-js`). Mantidas: `@clerk/nextjs@^7.4.1`, `@supabase/supabase-js@^2.106.x`, `zod@^4`, `next@16.2.6`.
 
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
+**Storage**: Supabase Postgres. Duas connection strings: `DATABASE_URL` (pooler Supavisor, transaction mode, porta 6543, usuário = papel restrito `app_runtime`) para runtime serverless; `DATABASE_URL_UNPOOLED` (conexão direta, porta 5432, usuário = `postgres`) **exclusivamente** para `drizzle-kit` (migrations + studio).
 
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
+**Testing**: Jest 30 (existente) com projects `unit` e `integration`. Unitários cobrem helpers puros de `lib/db/` e a lógica dos handlers de membership (com DB mockado). Integração roda contra um Postgres efêmero — ver Phase 0 para escolha entre `pglite` e Postgres real no Supabase de dev — exercitando as DDLs Drizzle e as policies RLS de ponta a ponta.
 
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
+**Target Platform**: Vercel serverless (Node runtime para rotas que tocam Drizzle/Postgres — Edge runtime não suporta `postgres-js`).
 
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: Aplicação web fullstack Next.js (App Router) — `app/`, `lib/`, `tests/` no monorepo único.
 
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]
+**Performance Goals**: Webhook handler MUST responder < 1s p95 sob carga normal (Clerk timeout = 30s, queremos folga); `select 1` smoke test < 100ms p95 via pooler.
 
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
+**Constraints**:
 
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
+- Cliente Drizzle MUST ser `server-only`; nenhum byte de Drizzle/driver/connection string no bundle do browser.
+- Migrations MUST rodar via conexão direta (porta 5432); pooler em transaction mode quebra advisory locks e algumas DDLs.
+- Papel `app_runtime` MUST NÃO ter `BYPASSRLS`; `current_user` em qualquer query Drizzle do runtime MUST retornar `app_runtime`.
+- Nesta fatia, Drizzle NÃO é usado em código que depende de claims-por-usuário do JWT Clerk (RLS por `auth.jwt() ->> 'sub'`/`org_id` continua acessada via `supabase-js`).
 
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Scale/Scope**: Estágio inicial; volumes baixos (dezenas de orgs, centenas de memberships). Tabela projetada para crescer linearmente com membros — índice em `(user_id)` cobre o lookup "todas as orgs deste user"; PK composta `(org_id, user_id)` cobre lookup por org e upsert idempotente.
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: passou antes de Phase 0; re-checado após Phase 1._
 
-[Gates determined based on constitution file]
+| Princípio                                        | Status              | Justificativa                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I. Isolamento Multi-Tenant (NÃO-NEGOCIÁVEL)      | PASS                | `org_memberships` tem RLS ON; SELECT filtrado por `auth.jwt() ->> 'org_id'`; INSERT/UPDATE/DELETE bloqueados para `authenticated`. Tenant ID NUNCA vem de input do cliente. Papel `app_runtime` sujeito a RLS (sem `BYPASSRLS`). Drizzle nesta fatia explicitamente fora do contexto-por-usuário, então não há risco de bypass de RLS por falta de propagação de claims.                                                                                                                      |
+| II. Stack Fixa e Simplicidade (YAGNI)            | PASS                | Drizzle ORM + Drizzle Kit + driver `postgres` são bibliotecas (não infraestrutura nova) e não alteram Vercel/Supabase/Clerk/Cloudflare. Nenhum serviço externo adicional. YAGNI respeitado: apenas `org_memberships`, papel restrito, ferramental — sem outras entidades, sem roles customizadas, sem soft-delete, sem migrar consumidores existentes.                                                                                                                                        |
+| III. Entrega em Fatias Verticais                 | PASS                | Fatia única e demonstrável: ferramental Drizzle + tabela + sincronização. Testável isoladamente (`select 1` + handlers + backfill).                                                                                                                                                                                                                                                                                                                                                           |
+| IV. Operações Pesadas São Assíncronas            | PASS                | Handlers de membership executam 2–3 upserts simples por evento, bem dentro do envelope síncrono. Backfill é script offline (`scripts/backfill-memberships.ts`), não roda em request path.                                                                                                                                                                                                                                                                                                     |
+| V. Segurança e Integridade de Dados              | PASS                | TS `strict` mantido. Schema Zod valida payloads do Clerk antes do DB. Postgres como fonte de verdade: PK composta + FKs com cascade + NOT NULL em `role` + trigger `set_updated_at`. Senha do `app_runtime` via env, nunca versionada.                                                                                                                                                                                                                                                        |
+| Quality Gates — substrato de teste de integração | EXCEÇÃO JUSTIFICADA | A constituição (seção "Fluxo de Desenvolvimento & Quality Gates") manda SQLite em memória para integração. Esta fatia usa Postgres efêmero (branch do Supabase) porque depende de RLS, triggers, papéis Postgres e `auth.jwt()` — recursos inexistentes em SQLite; testar contra SQLite seria teatro e perderia o backstop de isolamento multi-tenant (Princípio I). Detalhamento e justificativa em `research.md` R5 e em "Complexity Tracking" abaixo. Outras fatias permanecem com SQLite. |
+
+**Resultado**: nenhum gate violado em sentido de bloqueio; uma exceção justificada ao substrato de integração registrada em "Complexity Tracking" abaixo.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/[###-feature]/
-├── plan.md              # This file (/speckit-plan command output)
-├── research.md          # Phase 0 output (/speckit-plan command)
-├── data-model.md        # Phase 1 output (/speckit-plan command)
-├── quickstart.md        # Phase 1 output (/speckit-plan command)
-├── contracts/           # Phase 1 output (/speckit-plan command)
-└── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
+specs/002-drizzle-memberships/
+├── plan.md                          # este arquivo
+├── spec.md                          # spec + Clarifications
+├── context.md                       # contexto herdado (já existia)
+├── research.md                      # Phase 0 — decisões técnicas resolvidas
+├── data-model.md                    # Phase 1 — entidades, relações, RLS
+├── quickstart.md                    # Phase 1 — setup + reset + smoke test + rollout
+├── contracts/
+│   ├── db-client.md                 # API pública de lib/db/
+│   ├── webhook-handlers.md          # contrato dos handlers organizationMembership.*
+│   └── backfill-script.md           # contrato do script de backfill
+├── checklists/
+│   └── requirements.md              # spec quality checklist (já existia)
+└── tasks.md                         # Phase 2 — gerado por /speckit-tasks (NÃO criado aqui)
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
+sst-manager/
+├── app/
 │   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+│       └── webhooks/
+│           └── clerk/
+│               └── route.ts                # EDIT: adicionar 3 handlers organizationMembership.*
+│                                           #        + upsert defensivo de users/orgs
+├── lib/
+│   ├── db/                                 # NEW: tudo sob server-only
+│   │   ├── index.ts                        # cliente Drizzle (pooler, transaction mode)
+│   │   ├── schema/
+│   │   │   ├── index.ts                    # barrel
+│   │   │   ├── users.ts                    # schema autoritativo de public.users
+│   │   │   ├── orgs.ts                     # schema autoritativo de public.orgs
+│   │   │   └── org-memberships.ts          # nova tabela
+│   │   ├── repositories/                   # helpers tipados para writes (upserts admin)
+│   │   │   ├── users.ts
+│   │   │   ├── orgs.ts
+│   │   │   └── org-memberships.ts
+│   │   └── migrations/                     # gerado por drizzle-kit generate
+│   │       ├── 0000_initial_schema.sql
+│   │       └── meta/_journal.json
+│   ├── supabase/                           # MANTÉM (server.ts, browser.ts, admin.ts, env.ts)
+│   └── clerk/
+│       └── membership-event-mappers.ts     # NEW: mappers puros payload → row (testáveis isolados)
+├── scripts/
+│   ├── backfill-memberships.ts             # NEW: idempotente, paginação Clerk
+│   └── db-reset-dev.ts                     # NEW: drop limpo no dev (tabelas/policies/trigger/role)
+├── tests/
+│   ├── unit/
+│   │   ├── lib/db/                         # NEW: mappers + repositories (mocks)
+│   │   └── webhooks/
+│   │       └── membership-handlers.test.ts # NEW: lógica dos 3 handlers
+│   └── integration/
+│       └── webhooks/
+│           └── clerk-membership.test.ts    # NEW: handlers + DB real efêmero + RLS
+├── drizzle.config.ts                       # NEW
+├── .env.example                            # EDIT
+├── package.json                            # EDIT: deps + scripts db:*
+└── supabase/                               # REMOVE ao final: migrations/ portadas
+    └── migrations/0001_clerk_sync_init.sql # DELETE
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: monorepo Next.js existente (projeto único). Toda lógica Drizzle vive em `lib/db/` (server-only), espelhando o padrão de `lib/supabase/`. Mappers puros payload→row ficam em `lib/clerk/` para serem unit-testáveis sem DB. Migrations centralizadas em `lib/db/migrations/` (única fonte). Testes seguem a divisão já existente (`tests/unit/`, `tests/integration/`).
 
 ## Complexity Tracking
 
-> **Fill ONLY if Constitution Check has violations that must be justified**
+| Item                                                                                                                                                                                       | Por que é necessário                                                                                                                                                                                                                                                                                                                                                                                                | Alternativa mais simples rejeitada e por quê                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Substrato de testes de integração = **Postgres efêmero** (branch do Supabase) em vez de **SQLite em memória** mandato pela constituição (seção "Fluxo de Desenvolvimento & Quality Gates") | Toda lógica de segurança crítica desta fatia (isolamento multi-tenant, menor privilégio, idempotência sob policies) só existe em Postgres: RLS, triggers SQL, papéis `nobypassrls`, `auth.jwt()` e funções do schema `auth.*`. Validar esse comportamento contra um banco que não tem nenhum desses recursos é teatro de teste e perde o backstop direto do Princípio I (Isolamento Multi-Tenant — NÃO-NEGOCIÁVEL). | (1) **SQLite em memória stub**: rejeitado — não suporta RLS, papéis nem `auth.jwt()`. Estimular esse comportamento em SQLite seria reimplementar metade do Postgres em userland, sem garantia de paridade. (2) **`pglite` (Postgres WASM em memória)**: rejeitado — não embarca o schema `auth.*` do Supabase nem honra `BYPASSRLS`/papéis customizados de forma confiável (R5). (3) **Docker Postgres local no CI**: viável, mas adiciona dependência de container ao pipeline; branch gerenciado do Supabase preserva paridade 1:1 com produção e é o caminho de menor atrito agora. Excepcionalidade desta fatia (mais detalhes em `research.md` R5). |
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+> Escopo da exceção: aplica-se **apenas** a esta fatia. Demais fatias seguem o padrão SQLite em memória prescrito pela constituição. Caso outra fatia futura precise reativar Postgres efêmero, ela deve registrar a própria entrada aqui ou justificar via emenda à constituição.

@@ -18,7 +18,7 @@
 - Q: Como o papel Postgres restrito do runtime é provisionado? → A: Code-first total via Drizzle migrations, no estilo EF Core / TypeORM. Toda a estrutura do banco — tabelas, RLS, triggers, funções e o **papel restrito** (`CREATE ROLE`, `GRANT`s, sem `BYPASSRLS`) — é declarada em código e materializada por `drizzle-kit migrate`. Nenhum passo manual no Dashboard Supabase nem `psql` ad hoc para replicar a estrutura em outro ambiente; rodar as migrations recria o estado completo.
 - Q: Como tratar eventos `organizationMembership.*` que chegam antes de `user.created`/`organization.created` (ordem de entrega não garantida pelo Clerk)? → A: Upsert defensivo. O handler de `organizationMembership.*` MUST primeiro fazer upsert das linhas de `users` e `orgs` correspondentes (com os dados mínimos disponíveis no payload — `public_user_data` e `organization` aninhados no evento), e só então fazer upsert em `org_memberships`. Eventos `user.*`/`organization.*` posteriores enriquecem os registros (upsert idempotente). Sem fila externa, sem retry forçado, sem remoção de FKs.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 > Audiência: time de engenharia da própria aplicação. Os "usuários" aqui são desenvolvedores, operadores do webhook do Clerk e o próprio runtime serverless.
 
@@ -95,10 +95,10 @@ Como responsável pela segurança da aplicação, preciso que toda conexão Driz
 - **Org removida enquanto memberships ainda existem**: cascade configurado nas FKs garante remoção automática das linhas dependentes em `org_memberships`; comportamento equivalente para remoção de user.
 - **Conexão via pooler atinge limite de transações concorrentes**: o cliente Drizzle deve degradar com erro explícito (não travar indefinidamente), permitindo a próxima requisição tentar novamente.
 - **Drizzle Kit acidentalmente apontado pra `DATABASE_URL` (pooler) em vez de `DATABASE_URL_UNPOOLED`**: a configuração deve falhar de forma explícita, já que migrations não funcionam confiavelmente sob pooler em modo transação.
-- **Schemas declarados em `lib/db/schema/` para `users`/`orgs` divergem do estado real do banco**: a fatia não pode gerar migration que altere essas tabelas — qualquer divergência deve ser tratada como bug de declaração, não como diff aplicável.
+- **Schemas Drizzle divergem do estado real do banco**: como a partir desta fatia os schemas em `lib/db/schema/` são a fonte autoritativa (Drizzle dono code-first único), qualquer divergência detectada por `drizzle-kit check`/diff entre schema e banco é tratada como drift do banco vs. código e corrigida por **nova migration versionada** (nunca por DDL manual no Dashboard). Em dev, vale o reset (FR-004b); em ambientes futuros (staging/prod), a correção deve sempre passar por migration.
 - **Backfill executado contra ambiente com webhook já ativo**: o uso de upsert idempotente pela PK composta garante que eventos concorrentes do webhook não conflitem com o script.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -119,7 +119,7 @@ Como responsável pela segurança da aplicação, preciso que toda conexão Driz
 - **FR-008**: O sistema MUST criar a tabela `public.org_memberships` via migration Drizzle, com colunas `org_id`, `user_id`, `role`, `created_at`, `updated_at`.
 - **FR-009**: `org_memberships` MUST ter chave primária composta `(org_id, user_id)` e índice secundário em `(user_id)`.
 - **FR-010**: `org_memberships.org_id` MUST referenciar `public.orgs(id)` com `ON DELETE CASCADE`; `org_memberships.user_id` MUST referenciar `public.users(id)` com `ON DELETE CASCADE`.
-- **FR-011**: `org_memberships.role` MUST ser `text NOT NULL`, aceitando os valores em uso atualmente pelo Clerk (`org:admin`, `org:member`); validação tipada/enum fica fora desta fatia.
+- **FR-011**: `org_memberships.role` MUST ser `text NOT NULL`, sem `CHECK` constraint e sem enum tipado nesta fatia — qualquer texto não-vazio é aceito pelo banco. Valores em uso atualmente pelo Clerk são `org:admin` e `org:member`; restrição a um conjunto fechado (enum/CHECK/lookup table) e suporte a roles customizadas do Clerk ficam explicitamente para fatia futura.
 - **FR-012**: `org_memberships.updated_at` MUST ser atualizado automaticamente em UPDATE, reutilizando o mecanismo de trigger `set_updated_at` já existente no schema Supabase.
 - **FR-013**: `org_memberships` MUST ter Row Level Security habilitada.
 - **FR-014**: A policy de SELECT em `org_memberships` MUST permitir leitura apenas das linhas onde `org_id` corresponde à org ativa do JWT (`auth.jwt() ->> 'org_id'`); membros enxergam apenas a lista da própria org ativa.
@@ -149,7 +149,7 @@ Como responsável pela segurança da aplicação, preciso que toda conexão Driz
 #### Qualidade
 
 - **FR-026**: `npm run lint` e `npm run typecheck` MUST passar sem erros após esta fatia.
-- **FR-027**: O sistema MUST incluir testes unitários cobrindo helpers de `lib/db/` e os três handlers de membership do webhook (created, updated, deleted), além de testes de integração para os handlers seguindo o padrão do projeto (SQLite em memória).
+- **FR-027**: O sistema MUST incluir testes unitários cobrindo helpers de `lib/db/` (incluindo cliente, mappers de evento e cada repository com upserts/deletes mockados) e os três handlers de membership do webhook (created, updated, deleted). MUST incluir testes de integração para handlers, RLS e o papel restrito executando contra **Postgres efêmero** (branch de testes do próprio Supabase via `INTEGRATION_DATABASE_URL`), por exceção justificada ao padrão SQLite em memória do projeto — exceção documentada em `research.md` (R5) e registrada em "Complexity Tracking" do `plan.md`, motivada pela dependência de RLS, triggers, papéis Postgres e `auth.jwt()`, recursos inexistentes em SQLite. Outras fatias continuam seguindo o padrão SQLite.
 
 ### Key Entities
 
@@ -157,7 +157,7 @@ Como responsável pela segurança da aplicação, preciso que toda conexão Driz
 - **`users`**: Tabela existente em `public.users`. A partir desta fatia, sua estrutura passa a ser declarada e versionada via Drizzle (schema + migration). Os dados existentes em produção são preservados; o trigger `set_updated_at` e as policies RLS atuais permanecem.
 - **`orgs`**: Tabela existente em `public.orgs`. Mesma condição de `users` — estrutura passa a ser declarada e versionada via Drizzle, sem perda de dados nem alteração de comportamento.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

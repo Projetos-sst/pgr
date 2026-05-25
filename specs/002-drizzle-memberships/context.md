@@ -29,18 +29,18 @@ Foi deferido conscientemente pra manter o slice `001` enxuto.
 
 ### Arquivos relevantes
 
-| Caminho | Função |
-|---|---|
-| `proxy.ts` | Middleware Clerk; rotas públicas incluem `/api/webhooks/(.*)` |
-| `lib/auth/get-session.ts` | `getSessionOrNull()` |
-| `lib/auth/require-auth.ts` | `requireAuth()` |
-| `lib/auth/require-org-context.ts` | `requireOrgContext()` → `{ userId, orgId, orgRole, ... }` |
-| `lib/supabase/env.ts` | Valida prefixo `sb_publishable_` |
-| `lib/supabase/server.ts` | `createSupabaseServerClient()` — token via `auth().getToken()`, per-request |
-| `lib/supabase/browser.ts` | Hook `useSupabaseBrowserClient()` — token via `useSession().getToken()` |
-| `lib/supabase/admin.ts` | `getSupabaseAdminClient()` — `sb_secret_...`, bypassa RLS, **server-only**, **uso exclusivo do webhook** |
-| `app/api/webhooks/clerk/route.ts` | Webhook Clerk → Supabase (eventos `user.*` e `organization.*`) |
-| `supabase/migrations/0001_clerk_sync_init.sql` | Tabelas `users` e `orgs` + RLS + trigger `updated_at` |
+| Caminho                                        | Função                                                                                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `proxy.ts`                                     | Middleware Clerk; rotas públicas incluem `/api/webhooks/(.*)`                                            |
+| `lib/auth/get-session.ts`                      | `getSessionOrNull()`                                                                                     |
+| `lib/auth/require-auth.ts`                     | `requireAuth()`                                                                                          |
+| `lib/auth/require-org-context.ts`              | `requireOrgContext()` → `{ userId, orgId, orgRole, ... }`                                                |
+| `lib/supabase/env.ts`                          | Valida prefixo `sb_publishable_`                                                                         |
+| `lib/supabase/server.ts`                       | `createSupabaseServerClient()` — token via `auth().getToken()`, per-request                              |
+| `lib/supabase/browser.ts`                      | Hook `useSupabaseBrowserClient()` — token via `useSession().getToken()`                                  |
+| `lib/supabase/admin.ts`                        | `getSupabaseAdminClient()` — `sb_secret_...`, bypassa RLS, **server-only**, **uso exclusivo do webhook** |
+| `app/api/webhooks/clerk/route.ts`              | Webhook Clerk → Supabase (eventos `user.*` e `organization.*`)                                           |
+| `supabase/migrations/0001_clerk_sync_init.sql` | Tabelas `users` e `orgs` + RLS + trigger `updated_at`                                                    |
 
 ### Schema atual (`0001_clerk_sync_init.sql`)
 
