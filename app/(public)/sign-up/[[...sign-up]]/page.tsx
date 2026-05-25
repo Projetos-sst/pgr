@@ -33,18 +33,18 @@ export default async function SignUpPage({
         <h1 className="text-2xl font-semibold tracking-tight">
           Cadastro por convite
         </h1>
-        <p className="max-w-md text-base text-zinc-600 dark:text-zinc-400">
+        <p className="max-w-md text-base text-zinc-600">
           O SST Manager é um sistema corporativo. Novas contas só podem ser
           criadas a partir de um convite enviado por um administrador da sua
           organização.
         </p>
-        <p className="max-w-md text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="max-w-md text-sm text-zinc-600">
           Procure no seu e-mail por uma mensagem com o link de convite, ou
           solicite um a quem administra sua organização.
         </p>
         <Link
           href="/sign-in"
-          className="rounded-full border border-black/[0.08] px-5 py-2 text-sm font-medium transition-colors hover:bg-black/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[0.15] dark:hover:bg-white/[0.06]"
+          className="rounded-full border border-black/[0.08] px-5 py-2 text-sm font-medium transition-colors hover:bg-black/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           Já tenho uma conta — Entrar
         </Link>

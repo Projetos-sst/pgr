@@ -5,6 +5,8 @@
 /.pnp
 .pnp.*
 .yarn/*
+# Use npm (package-lock.json) as single source of truth
+yarn.lock
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
