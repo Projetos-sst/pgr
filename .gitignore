@@ -46,3 +46,6 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# skills (installed via `npx skills install`; reproducible from skills-lock.json)
+/.agents/
