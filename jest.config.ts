@@ -21,9 +21,9 @@ const config: Config = {
       testEnvironment: "jsdom",
       testMatch: [
         "<rootDir>/**/__tests__/**/*.test.ts?(x)",
-        "<rootDir>/tests/unit/**/*.test.ts?(x)",
+        "<rootDir>/__tests__/unit/**/*.test.ts?(x)",
       ],
-      testPathIgnorePatterns: ["/node_modules/", "/.next/", "/tests/integration/"],
+      testPathIgnorePatterns: ["/node_modules/", "/.next/", "/__tests__/integration/"],
       moduleNameMapper: { "^@/(.*)$": "<rootDir>/$1" },
       transform: { "^.+\\.(t|j)sx?$": swcTransform },
       setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
@@ -31,7 +31,7 @@ const config: Config = {
     {
       displayName: "integration",
       testEnvironment: "node",
-      testMatch: ["<rootDir>/tests/integration/**/*.test.ts?(x)"],
+      testMatch: ["<rootDir>/__tests__/integration/**/*.test.ts?(x)"],
       moduleNameMapper: { "^@/(.*)$": "<rootDir>/$1" },
       transform: { "^.+\\.(t|j)sx?$": swcTransform },
       setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],

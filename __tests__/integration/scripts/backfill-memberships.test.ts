@@ -1,7 +1,7 @@
 import postgres from "postgres";
 
 import { adminClient, truncateAll } from "../_helpers/db";
-import { runBackfill } from "@/scripts/backfill-memberships";
+import { runBackfill } from "@/.scripts/backfill-memberships";
 
 const shouldRun =
   !!process.env.INTEGRATION_DATABASE_URL &&

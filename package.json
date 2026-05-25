@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint && ./scripts/check-no-db-in-client.sh",
-    "lint:fix": "eslint --fix && ./scripts/check-no-db-in-client.sh",
+    "lint": "eslint && ./.scripts/check-no-db-in-client.sh",
+    "lint:fix": "eslint --fix && ./.scripts/check-no-db-in-client.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
@@ -16,8 +16,9 @@
     "test": "jest --selectProjects unit",
     "test:integration": "jest --selectProjects integration",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx scripts/db-migrate.ts",
-    "db:reset": "tsx scripts/db-reset-dev.ts",
+    "db:migrate": "tsx --env-file=.env.local .scripts/db-migrate.ts",
+    "db:reset": "tsx --env-file=.env.local .scripts/db-reset-dev.ts",
+    "db:backfill": "NODE_OPTIONS=--conditions=react-server tsx --env-file=.env.local .scripts/backfill-memberships.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
