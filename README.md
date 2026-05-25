@@ -1,20 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SST Manager
 
-## Getting Started
+Plataforma multiempresa de Segurança e Medicina do Trabalho (Next.js 16 App Router + Clerk).
 
-First, run the development server:
+## Como rodar
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # preencher chaves do Clerk
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Comandos úteis: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:integration`.
+
+## Documentação da fatia atual
+
+- Plano e contratos: [`specs/001-clerk-auth/plan.md`](specs/001-clerk-auth/plan.md)
+- Quickstart (setup Clerk Dashboard + smoke test): [`specs/001-clerk-auth/quickstart.md`](specs/001-clerk-auth/quickstart.md)
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

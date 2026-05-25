@@ -24,6 +24,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Theming uses CSS custom properties (`--background`, `--foreground`) with a `prefers-color-scheme: dark` override; Tailwind `dark:` variants are used throughout components.
 
 <!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+Current active feature: **`feature/clerk-auth-foundation`** (Autenticação e Organizações — Clerk).
+
+Read the implementation plan and design artifacts before writing code:
+- Plan: `specs/001-clerk-auth/plan.md`
+- Spec: `specs/001-clerk-auth/spec.md`
+- Research (decisions + best practices): `specs/001-clerk-auth/research.md`
+- Data model & session contract: `specs/001-clerk-auth/data-model.md`
+- Contracts: `specs/001-clerk-auth/contracts/server-helpers.md`, `specs/001-clerk-auth/contracts/ui-surface.md`
+- Quickstart: `specs/001-clerk-auth/quickstart.md`
 <!-- SPECKIT END -->
