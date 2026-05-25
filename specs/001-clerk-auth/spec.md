@@ -8,7 +8,7 @@
 
 **Input**: User description: "Autenticação e organizações (Clerk) — base de acesso e isolamento. Fatia fundacional do SST Manager que habilita login, cadastro, pertencimento a uma organização ativa e proteção de todas as rotas de negócio."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 Esta fatia entrega a fundação de identidade e tenant do SST Manager. Sem ela, nenhum módulo de negócio (PGR, EPIs, funcionários, documentos etc.) pode existir, porque todas as regras dependem de saber **quem** é o usuário e a **qual organização** ele pertence na sessão atual.
 
@@ -101,7 +101,7 @@ Como time de produto, é necessário garantir que **nenhuma** funcionalidade de 
 - **Cliente tenta forçar `orgId` por header/body/query**: o valor enviado pelo cliente deve ser ignorado; o tenant SEMPRE vem da sessão.
 - **Usuário tenta acessar organização à qual não pertence**: a tentativa deve ser negada mesmo se o identificador for conhecido.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -134,7 +134,7 @@ Como time de produto, é necessário garantir que **nenhuma** funcionalidade de 
 - **Sessão ativa**: contexto de execução autenticado contendo a dupla `(userId, orgId)` resolvida no servidor, usada como única fonte do tenant nas operações de negócio.
 - **Convite de organização**: artefato controlado que permite a um usuário ingressar em uma organização existente.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

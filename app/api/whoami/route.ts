@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  NoActiveOrgError,
-  UnauthorizedError,
-} from "@/lib/auth/errors";
+import { NoActiveOrgError, UnauthorizedError } from "@/lib/auth/errors";
 import { requireOrgContext } from "@/lib/auth/require-org-context";
 
 export const dynamic = "force-dynamic";

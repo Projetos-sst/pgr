@@ -15,6 +15,7 @@ Abordagem técnica: `clerkMiddleware()` em `proxy.ts` (substituto do `middleware
 **Language/Version**: TypeScript 5.x em modo `strict` (alias `@/*` → raiz do repo)
 
 **Primary Dependencies**:
+
 - **App**: Next.js 16.2.6 (App Router), React 19.2.4, Tailwind CSS v4, `@clerk/nextjs@latest`
 - **Validação**: `zod` (validação de schema obrigatória em Server Actions/Route Handlers — constituição §V)
 - **Testes**: `jest`, `@types/jest`, `ts-jest` (ou `@swc/jest`), `@testing-library/react`, `@testing-library/jest-dom`, `jest-environment-jsdom`
@@ -22,6 +23,7 @@ Abordagem técnica: `clerkMiddleware()` em `proxy.ts` (substituto do `middleware
 **Storage**: N/A nesta fatia. Identidade, organizações e membros vivem no Clerk. PostgreSQL (Supabase) entra a partir das fatias de negócio.
 
 **Testing**:
+
 - **Unitário** (`npm run test`, ambiente jsdom + node): helpers de `lib/auth/*`, componentes auxiliares; `@clerk/nextjs/server` mockado.
 - **Integração** (`npm run test:integration`, ambiente node): execução dos guards em Server Actions/Route Handlers de exemplo (`whoamiAction`, route handler `/api/whoami`), mockando `auth()` para cobrir os cenários autenticado / não-autenticado / sem org / com troca de org. SQLite em memória **não** é necessário nesta fatia (sem DB); a infraestrutura entra quando a primeira fatia com persistência chegar.
 
@@ -30,11 +32,13 @@ Abordagem técnica: `clerkMiddleware()` em `proxy.ts` (substituto do `middleware
 **Project Type**: Web service fullstack (Next.js App Router unificado backend+frontend).
 
 **Performance Goals**:
+
 - TTFB da área autenticada < 800 ms p95 em região próxima.
 - Login completo (clique em "Entrar" → dashboard) < 30 s (SC-004).
 - Cadastro + criação de org + dashboard < 3 min no primeiro uso (SC-003).
 
 **Constraints**:
+
 - Cold start serverless: helpers de auth devem ser síncronos exceto pela chamada a `auth()`; sem I/O extra no caminho do guard.
 - Strict TS sem `any` não justificado (constituição §V).
 - Nenhum segredo no repo (`.env.local` gitignored; placeholders em `.env.example`).
@@ -42,20 +46,21 @@ Abordagem técnica: `clerkMiddleware()` em `proxy.ts` (substituto do `middleware
 - `proxy.ts` (Next.js 16) executa em **Node.js runtime** — não é Edge Middleware. Cada request casado pelo `matcher` consome uma Function Invocation na Vercel; configurar o matcher de forma estreita (apenas o necessário) é fator de custo e de latência (research R13).
 
 **Scale/Scope**:
+
 - Fatia entrega ~12 arquivos novos de produto + ~6 arquivos de teste.
 - Inicialmente 1–10 organizações em ambiente de validação; arquitetura suporta o que o Clerk suporta nativamente.
 
 ## Constitution Check
 
-*GATE: Deve passar antes da Fase 0 e ser reavaliado após a Fase 1.*
+_GATE: Deve passar antes da Fase 0 e ser reavaliado após a Fase 1._
 
-| Princípio | Status | Como esta fatia atende |
-|---|---|---|
+| Princípio                                   | Status  | Como esta fatia atende                                                                                                                                                                                                                                                                        |
+| ------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | I. Isolamento Multi-Tenant (NÃO-NEGOCIÁVEL) | ✅ PASS | É exatamente esta fatia que **cria** a fundação. `orgId` vem de `auth()` no servidor; helpers `requireOrgContext()` rejeitam toda operação sem org ativa. Nenhum input do cliente influencia o tenant. RLS no Supabase é responsabilidade de fatias seguintes (esta fatia não toca Supabase). |
-| II. Stack Fixa e Simplicidade (YAGNI) | ✅ PASS | Clerk já está na constituição. Única adição de dep nova: `@clerk/nextjs` + libs de teste (Jest/RTL) + `zod`. Sem novos serviços. Sem features especulativas (papéis intra-org, SSO social, recuperação de senha custom, MFA enforcement — tudo fora de escopo). |
-| III. Entrega em Fatias Verticais | ✅ PASS | Esta é uma fatia autocontida: login + cadastro + seleção de org + página autenticada + bloqueio universal. Testável e demonstrável isoladamente. Ciclo Spec Kit completo (specify → plan → tasks → implement). |
-| IV. Operações Pesadas Assíncronas | ✅ N/A | Nenhuma operação pesada nesta fatia. Auth/lookup de org são rápidos e ficam no caminho síncrono normal. |
-| V. Segurança e Integridade de Dados | ✅ PASS | TS strict; toda Server Action/Route Handler introduzida valida entrada com `zod` antes de qualquer trabalho; segredos só em `.env.local`; PostgreSQL não é tocado nesta fatia (sem schema novo). Testes unitários + integração obrigatórios e cobertos. |
+| II. Stack Fixa e Simplicidade (YAGNI)       | ✅ PASS | Clerk já está na constituição. Única adição de dep nova: `@clerk/nextjs` + libs de teste (Jest/RTL) + `zod`. Sem novos serviços. Sem features especulativas (papéis intra-org, SSO social, recuperação de senha custom, MFA enforcement — tudo fora de escopo).                               |
+| III. Entrega em Fatias Verticais            | ✅ PASS | Esta é uma fatia autocontida: login + cadastro + seleção de org + página autenticada + bloqueio universal. Testável e demonstrável isoladamente. Ciclo Spec Kit completo (specify → plan → tasks → implement).                                                                                |
+| IV. Operações Pesadas Assíncronas           | ✅ N/A  | Nenhuma operação pesada nesta fatia. Auth/lookup de org são rápidos e ficam no caminho síncrono normal.                                                                                                                                                                                       |
+| V. Segurança e Integridade de Dados         | ✅ PASS | TS strict; toda Server Action/Route Handler introduzida valida entrada com `zod` antes de qualquer trabalho; segredos só em `.env.local`; PostgreSQL não é tocado nesta fatia (sem schema novo). Testes unitários + integração obrigatórios e cobertos.                                       |
 
 **Resultado**: Sem violações. Sem entradas em Complexity Tracking.
 
@@ -137,4 +142,4 @@ Web service fullstack monolítico no Next.js — `app/` é a superfície de UI +
 
 ## Complexity Tracking
 
-*Sem violações à constituição — seção intencionalmente vazia.*
+_Sem violações à constituição — seção intencionalmente vazia._

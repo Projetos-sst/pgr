@@ -59,9 +59,9 @@ describe("US5 — bloqueio universal e tenant da sessão (FR-009, FR-020)", () =
       sessionId: "s1",
       orgId: "org_SESSION",
     });
-    const action = whoamiAction as unknown as (
-      fake?: { orgId: string },
-    ) => Promise<unknown>;
+    const action = whoamiAction as unknown as (fake?: {
+      orgId: string;
+    }) => Promise<unknown>;
     await expect(action({ orgId: "org_FAKE" })).resolves.toEqual({
       ok: true,
       userId: "u1",

@@ -70,20 +70,20 @@ Quality gates desta fatia (constituição §III): todos os quatro comandos acima
 
 > Execute do estado limpo (browser anônimo).
 
-| # | Passo | Resultado esperado |
-|---|---|---|
-| 1 | `http://localhost:3000/` | Landing pública, header com apenas "Entrar" (sem "Criar conta" — invite-only) |
-| 2 | Tentar `http://localhost:3000/dashboard` direto | Redireciona para `/sign-in?redirect_url=…` |
-| 3 | Tentar `GET http://localhost:3000/api/whoami` | HTTP 401 |
-| 4 | Acessar `/sign-up` direto, sem `__clerk_ticket` | Página exibe "Cadastro por convite" + link para `/sign-in` (sem widget Clerk) |
-| 5 | No Clerk Dashboard: criar org "ACME Segurança" + convidar `seu-email@…` como `org:member` | Você recebe e-mail com link contendo `?__clerk_ticket=…` |
-| 6 | Abrir link do convite (cai em `/sign-up?__clerk_ticket=…`) | Widget `<SignUp />` aparece; completar cadastro |
-| 7 | Após cadastro completo, redireciona para `/dashboard` | Exibe nome do usuário e nome da org "ACME Segurança" |
-| 8 | `GET http://localhost:3000/api/whoami` autenticado | 200, JSON `{ userId, orgId }` |
-| 9 | Header: `<OrganizationSwitcher>` — **não** deve mostrar "Criar nova organização" (setting OFF) | Apenas alternar entre orgs existentes |
-| 10 | Forjar `curl 'http://localhost:3000/api/whoami?orgId=org_FAKE'` autenticado | Resposta usa `orgId` da sessão; `?orgId` é ignorado |
-| 11 | Header: `<UserButton>` → Sign out | Volta para landing; passo 2 reproduz redirect |
-| 12 | Aguardar expiração (ou apagar cookie de sessão) e tentar `/dashboard` | Redireciona para `/sign-in` |
+| #   | Passo                                                                                          | Resultado esperado                                                            |
+| --- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 1   | `http://localhost:3000/`                                                                       | Landing pública, header com apenas "Entrar" (sem "Criar conta" — invite-only) |
+| 2   | Tentar `http://localhost:3000/dashboard` direto                                                | Redireciona para `/sign-in?redirect_url=…`                                    |
+| 3   | Tentar `GET http://localhost:3000/api/whoami`                                                  | HTTP 401                                                                      |
+| 4   | Acessar `/sign-up` direto, sem `__clerk_ticket`                                                | Página exibe "Cadastro por convite" + link para `/sign-in` (sem widget Clerk) |
+| 5   | No Clerk Dashboard: criar org "ACME Segurança" + convidar `seu-email@…` como `org:member`      | Você recebe e-mail com link contendo `?__clerk_ticket=…`                      |
+| 6   | Abrir link do convite (cai em `/sign-up?__clerk_ticket=…`)                                     | Widget `<SignUp />` aparece; completar cadastro                               |
+| 7   | Após cadastro completo, redireciona para `/dashboard`                                          | Exibe nome do usuário e nome da org "ACME Segurança"                          |
+| 8   | `GET http://localhost:3000/api/whoami` autenticado                                             | 200, JSON `{ userId, orgId }`                                                 |
+| 9   | Header: `<OrganizationSwitcher>` — **não** deve mostrar "Criar nova organização" (setting OFF) | Apenas alternar entre orgs existentes                                         |
+| 10  | Forjar `curl 'http://localhost:3000/api/whoami?orgId=org_FAKE'` autenticado                    | Resposta usa `orgId` da sessão; `?orgId` é ignorado                           |
+| 11  | Header: `<UserButton>` → Sign out                                                              | Volta para landing; passo 2 reproduz redirect                                 |
+| 12  | Aguardar expiração (ou apagar cookie de sessão) e tentar `/dashboard`                          | Redireciona para `/sign-in`                                                   |
 
 Cada item acima tem teste automatizado correspondente em `tests/integration/`.
 
@@ -91,13 +91,13 @@ Cada item acima tem teste automatizado correspondente em `tests/integration/`.
 
 ## 6. Como checar conformidade com a constituição
 
-| Princípio | Checagem prática |
-|---|---|
-| §I Multi-Tenant | `grep -RIn "request.headers" app/api lib/server` não deve encontrar leitura de `orgId` vinda do cliente. `requireOrgContext()` é o único caminho. |
-| §II Stack Fixa | `package.json` ganha apenas: `@clerk/nextjs`, `zod`, e libs de teste (jest, ts-jest/@swc/jest, RTL, jest-environment-jsdom). Nada mais. |
-| §III Fatia Vertical | `npm run test && npm run test:integration && npm run lint && npx tsc --noEmit` passam. |
-| §IV Async Pesado | N/A (sem operação pesada). |
-| §V Segurança/Integridade | Nenhum `.env*` (exceto `.env.example`) versionado; helpers `lib/auth/*` começam com `import 'server-only'`. |
+| Princípio                | Checagem prática                                                                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §I Multi-Tenant          | `grep -RIn "request.headers" app/api lib/server` não deve encontrar leitura de `orgId` vinda do cliente. `requireOrgContext()` é o único caminho. |
+| §II Stack Fixa           | `package.json` ganha apenas: `@clerk/nextjs`, `zod`, e libs de teste (jest, ts-jest/@swc/jest, RTL, jest-environment-jsdom). Nada mais.           |
+| §III Fatia Vertical      | `npm run test && npm run test:integration && npm run lint && npx tsc --noEmit` passam.                                                            |
+| §IV Async Pesado         | N/A (sem operação pesada).                                                                                                                        |
+| §V Segurança/Integridade | Nenhum `.env*` (exceto `.env.example`) versionado; helpers `lib/auth/*` começam com `import 'server-only'`.                                       |
 
 ---
 

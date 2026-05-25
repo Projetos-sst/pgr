@@ -45,12 +45,11 @@ describe("SignUpPage (invite-only)", () => {
   it("anônimo + sem __clerk_ticket: exibe mensagem de convite obrigatório", async () => {
     await renderPage({});
     expect(screen.queryByTestId("clerk-sign-up")).toBeNull();
-    expect(
-      screen.getByText(/Cadastro por convite/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /Entrar/i }),
-    ).toHaveAttribute("href", "/sign-in");
+    expect(screen.getByText(/Cadastro por convite/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Entrar/i })).toHaveAttribute(
+      "href",
+      "/sign-in",
+    );
   });
 
   it("anônimo + __clerk_ticket: monta o <SignUp /> do Clerk", async () => {
@@ -65,9 +64,9 @@ describe("SignUpPage (invite-only)", () => {
       isAuthenticated: true,
       userId: "u1",
     } as unknown as Awaited<ReturnType<typeof auth>>);
-    await expect(
-      SignUpPage({ searchParams: Promise.resolve({}) }),
-    ).rejects.toThrow("__redirect:/dashboard");
+    await expect(SignUpPage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
+      "__redirect:/dashboard",
+    );
     expect(mockedRedirect).toHaveBeenCalledWith("/dashboard");
   });
 

@@ -5,17 +5,17 @@
 SST Manager é um **SaaS B2B multiempresa de Segurança do Trabalho (SST)**. Cada
 empresa cliente é um _tenant_ isolado. O sistema cobre 9 módulos:
 
-| Módulo | Natureza |
-|---|---|
-| Funcionários | Cadastro (CRUD) — entidade base de vários módulos |
-| EPIs | Catálogo + controle de entregas |
+| Módulo                 | Natureza                                            |
+| ---------------------- | --------------------------------------------------- |
+| Funcionários           | Cadastro (CRUD) — entidade base de vários módulos   |
+| EPIs                   | Catálogo + controle de entregas                     |
 | PGR / Gestão de Riscos | Documental + regras de negócio (avaliação de risco) |
-| Treinamentos | Cadastro + controle de validade |
-| Documentos | Repositório de arquivos com validade |
-| Ordens de Serviço | Workflow com estados |
-| Acidentes | Registro + investigação |
-| Dashboards | Leitura/agregação (sem dados próprios) |
-| Geração de PDF | Operação pesada, assíncrona |
+| Treinamentos           | Cadastro + controle de validade                     |
+| Documentos             | Repositório de arquivos com validade                |
+| Ordens de Serviço      | Workflow com estados                                |
+| Acidentes              | Registro + investigação                             |
+| Dashboards             | Leitura/agregação (sem dados próprios)              |
+| Geração de PDF         | Operação pesada, assíncrona                         |
 
 Tecnicamente, é um sistema **CRUD-heavy com regras de negócio moderadas,
 workflows internos e forte dependência de dados por empresa**. A complexidade
@@ -28,15 +28,15 @@ Next.js.
 A stack é definida pela constituição (Princípio II) e **não muda** sem emenda
 formal:
 
-| Camada | Tecnologia |
-|---|---|
-| Aplicação (front + back) | Next.js 16.2.6 (App Router) + React 19 |
-| Hospedagem / execução | Vercel (serverless) |
-| Banco de dados | Supabase — PostgreSQL gerenciado |
-| Storage de arquivos | Supabase Storage |
-| Autenticação + organizações | Clerk |
-| Borda (DNS, WAF, cache) | Cloudflare |
-| Geração de PDF | Gotenberg (serviço auxiliar — ver doc 04) |
+| Camada                      | Tecnologia                                |
+| --------------------------- | ----------------------------------------- |
+| Aplicação (front + back)    | Next.js 16.2.6 (App Router) + React 19    |
+| Hospedagem / execução       | Vercel (serverless)                       |
+| Banco de dados              | Supabase — PostgreSQL gerenciado          |
+| Storage de arquivos         | Supabase Storage                          |
+| Autenticação + organizações | Clerk                                     |
+| Borda (DNS, WAF, cache)     | Cloudflare                                |
+| Geração de PDF              | Gotenberg (serviço auxiliar — ver doc 04) |
 
 ## Diagrama da arquitetura
 
@@ -82,16 +82,16 @@ Fluxo típico de uma requisição:
 
 ## Decisões arquiteturais (ADR resumido)
 
-| # | Decisão | Alternativas descartadas | Justificativa |
-|---|---|---|---|
-| AD-01 | **Drizzle ORM** com connection pooler do Supabase | Prisma (runtime mais pesado p/ serverless); cliente Supabase puro (transações e queries complexas menos ergonômicas) | Type-safe, leve, transações ACID limpas, bom encaixe serverless |
-| AD-02 | **Multi-tenant em duas camadas**: escopo por organização na aplicação (obrigatório) **+ RLS no Supabase** (backstop) | RLS como única barreira; escopo só na aplicação | Constituição exige RLS; defesa em profundidade — nenhuma camada é a única |
-| AD-03 | **Server Actions** como padrão para mutações | Route Handlers REST para tudo | Menos boilerplate, integração nativa com forms e cache do Next.js 16 |
-| AD-04 | **Route Handlers** só para webhooks, cron e downloads | — | São os casos onde Server Actions não se aplicam (chamadas externas/agendadas) |
-| AD-05 | **`features/`** separado de **`app/`** | Colocation total dentro de `app/` | Isola a lógica de domínio; mantém o App Router fino e o domínio testável |
-| AD-06 | **Gotenberg** como serviço auxiliar de PDF | Puppeteer dentro da função Vercel; `@react-pdf/renderer` | Resolve cold start / limite de bundle / memória; alta fidelidade HTML/CSS; zero código de serviço para manter |
-| AD-07 | **Zod** validando a entrada no boundary de toda Server Action e Route Handler | Validação ad-hoc | Exigência da constituição (Princípio V); schema único reaproveitado |
-| AD-08 | **Jobs assíncronos** via tabela `jobs` + Vercel Cron | Fila dedicada (QStash) já no MVP | YAGNI — a tabela + cron atende o MVP; QStash fica como evolução |
+| #     | Decisão                                                                                                              | Alternativas descartadas                                                                                             | Justificativa                                                                                                 |
+| ----- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| AD-01 | **Drizzle ORM** com connection pooler do Supabase                                                                    | Prisma (runtime mais pesado p/ serverless); cliente Supabase puro (transações e queries complexas menos ergonômicas) | Type-safe, leve, transações ACID limpas, bom encaixe serverless                                               |
+| AD-02 | **Multi-tenant em duas camadas**: escopo por organização na aplicação (obrigatório) **+ RLS no Supabase** (backstop) | RLS como única barreira; escopo só na aplicação                                                                      | Constituição exige RLS; defesa em profundidade — nenhuma camada é a única                                     |
+| AD-03 | **Server Actions** como padrão para mutações                                                                         | Route Handlers REST para tudo                                                                                        | Menos boilerplate, integração nativa com forms e cache do Next.js 16                                          |
+| AD-04 | **Route Handlers** só para webhooks, cron e downloads                                                                | —                                                                                                                    | São os casos onde Server Actions não se aplicam (chamadas externas/agendadas)                                 |
+| AD-05 | **`features/`** separado de **`app/`**                                                                               | Colocation total dentro de `app/`                                                                                    | Isola a lógica de domínio; mantém o App Router fino e o domínio testável                                      |
+| AD-06 | **Gotenberg** como serviço auxiliar de PDF                                                                           | Puppeteer dentro da função Vercel; `@react-pdf/renderer`                                                             | Resolve cold start / limite de bundle / memória; alta fidelidade HTML/CSS; zero código de serviço para manter |
+| AD-07 | **Zod** validando a entrada no boundary de toda Server Action e Route Handler                                        | Validação ad-hoc                                                                                                     | Exigência da constituição (Princípio V); schema único reaproveitado                                           |
+| AD-08 | **Jobs assíncronos** via tabela `jobs` + Vercel Cron                                                                 | Fila dedicada (QStash) já no MVP                                                                                     | YAGNI — a tabela + cron atende o MVP; QStash fica como evolução                                               |
 
 > Trade-off registrado em AD-06: o `Projeto.md` pede "manter a stack simples,
 > sem microserviços". O Gotenberg é **um único worker auxiliar stateless de
@@ -102,13 +102,13 @@ Fluxo típico de uma requisição:
 
 ## Como a arquitetura concretiza a constituição
 
-| Princípio da constituição | Como a arquitetura o realiza |
-|---|---|
-| **I. Isolamento Multi-Tenant** | `organization_id` (NOT NULL + índice) em toda tabela; `orgId` vem sempre da sessão Clerk; camada de `queries`/repositórios exige `orgId`; RLS habilitado como backstop; Storage particionado por organização |
-| **II. Stack Fixa e Simplicidade** | Stack da tabela acima; nenhuma infra nova além do Gotenberg (com emenda); YAGNI aplicado em cada doc deste roadmap |
-| **III. Entrega em Fatias Verticais** | `features/<modulo>/` permite construir um módulo de ponta a ponta; o doc 05 sequencia as fatias |
-| **IV. Operações Pesadas Assíncronas** | Tabela `jobs` + Vercel Cron; geração de PDF desacoplada da requisição; serviço Gotenberg externo |
-| **V. Segurança e Integridade** | TypeScript `strict`; Zod no boundary; constraints (FK/NOT NULL/UNIQUE/CHECK) no Postgres como fonte de verdade; segredos só em env vars |
+| Princípio da constituição             | Como a arquitetura o realiza                                                                                                                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **I. Isolamento Multi-Tenant**        | `organization_id` (NOT NULL + índice) em toda tabela; `orgId` vem sempre da sessão Clerk; camada de `queries`/repositórios exige `orgId`; RLS habilitado como backstop; Storage particionado por organização |
+| **II. Stack Fixa e Simplicidade**     | Stack da tabela acima; nenhuma infra nova além do Gotenberg (com emenda); YAGNI aplicado em cada doc deste roadmap                                                                                           |
+| **III. Entrega em Fatias Verticais**  | `features/<modulo>/` permite construir um módulo de ponta a ponta; o doc 05 sequencia as fatias                                                                                                              |
+| **IV. Operações Pesadas Assíncronas** | Tabela `jobs` + Vercel Cron; geração de PDF desacoplada da requisição; serviço Gotenberg externo                                                                                                             |
+| **V. Segurança e Integridade**        | TypeScript `strict`; Zod no boundary; constraints (FK/NOT NULL/UNIQUE/CHECK) no Postgres como fonte de verdade; segredos só em env vars                                                                      |
 
 ## Princípios de engenharia aplicados
 
@@ -132,12 +132,12 @@ Fluxo típico de uma requisição:
 
 ## Riscos macro
 
-| Risco | Mitigação |
-|---|---|
-| Prazo de 45 dias agressivo, sem folga | Escopo congelado; fatias verticais; P1 funcional antes da próxima |
-| Vazamento de dados entre tenants | Duas camadas (aplicação + RLS); teste de isolamento na Fase 7 |
-| Aplicação virar monólito desorganizado | Separação `app/` × `features/`; um módulo por fatia |
-| Dependência de serviço externo (Gotenberg) | Serviço stateless e substituível; geração assíncrona com retry |
-| Timeouts em operações pesadas | Princípio IV: nada pesado roda síncrono |
+| Risco                                      | Mitigação                                                         |
+| ------------------------------------------ | ----------------------------------------------------------------- |
+| Prazo de 45 dias agressivo, sem folga      | Escopo congelado; fatias verticais; P1 funcional antes da próxima |
+| Vazamento de dados entre tenants           | Duas camadas (aplicação + RLS); teste de isolamento na Fase 7     |
+| Aplicação virar monólito desorganizado     | Separação `app/` × `features/`; um módulo por fatia               |
+| Dependência de serviço externo (Gotenberg) | Serviço stateless e substituível; geração assíncrona com retry    |
+| Timeouts em operações pesadas              | Princípio IV: nada pesado roda síncrono                           |
 
 Detalhamento e mais riscos no documento [05 — Roadmap de Fases](./05-roadmap-de-fases.md).

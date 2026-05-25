@@ -70,9 +70,9 @@ describe("whoamiAction", () => {
       sessionId: "sess_1",
       orgId: "org_SESSION",
     });
-    const action = whoamiAction as unknown as (
-      fake?: { orgId: string },
-    ) => Promise<unknown>;
+    const action = whoamiAction as unknown as (fake?: {
+      orgId: string;
+    }) => Promise<unknown>;
     await expect(action({ orgId: "org_FAKE" })).resolves.toEqual({
       ok: true,
       userId: "user_1",

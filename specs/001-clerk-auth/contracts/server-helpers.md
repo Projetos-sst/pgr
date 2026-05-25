@@ -10,24 +10,25 @@ Estes helpers são a única superfície permitida para código de negócio obter
 
 ```ts
 // lib/auth/require-auth.ts
-import "server-only";                 // barreira: nunca importar de Client Component
+import "server-only"; // barreira: nunca importar de Client Component
 import type { AuthContext } from "./types";
 
 export async function requireAuth(): Promise<AuthContext>;
 ```
 
 **Behavior**:
+
 1. Chama `await auth()` de `@clerk/nextjs/server`.
 2. Se `isAuthenticated === false` ou `userId` ausente: lança `UnauthorizedError`.
 3. Caso contrário, retorna `{ userId, sessionId }` tipado.
 
 **Contract tests** (mockando `auth()`):
 
-| Caso | Setup `auth()` mock retorna | Resultado esperado |
-|---|---|---|
-| Anônimo | `{ isAuthenticated: false, userId: null }` | lança `UnauthorizedError` |
-| Sessão inválida (sem userId) | `{ isAuthenticated: true, userId: null }` | lança `UnauthorizedError` |
-| Autenticado | `{ isAuthenticated: true, userId: "user_1", sessionId: "sess_1" }` | retorna `{ userId: "user_1", sessionId: "sess_1" }` |
+| Caso                         | Setup `auth()` mock retorna                                        | Resultado esperado                                  |
+| ---------------------------- | ------------------------------------------------------------------ | --------------------------------------------------- |
+| Anônimo                      | `{ isAuthenticated: false, userId: null }`                         | lança `UnauthorizedError`                           |
+| Sessão inválida (sem userId) | `{ isAuthenticated: true, userId: null }`                          | lança `UnauthorizedError`                           |
+| Autenticado                  | `{ isAuthenticated: true, userId: "user_1", sessionId: "sess_1" }` | retorna `{ userId: "user_1", sessionId: "sess_1" }` |
 
 ---
 
@@ -42,6 +43,7 @@ export async function requireOrgContext(): Promise<OrgAuthContext>;
 ```
 
 **Behavior**:
+
 1. Chama `requireAuth()` internamente (logo, lança `UnauthorizedError` se anônimo).
 2. Se `orgId` ausente: lança `NoActiveOrgError`.
 3. Caso contrário, retorna `{ userId, sessionId, orgId, orgRole, orgSlug }`.
@@ -50,10 +52,10 @@ export async function requireOrgContext(): Promise<OrgAuthContext>;
 
 **Contract tests**:
 
-| Caso | Setup `auth()` mock retorna | Resultado esperado |
-|---|---|---|
-| Anônimo | `{ isAuthenticated: false }` | lança `UnauthorizedError` |
-| Autenticado sem org | `{ isAuthenticated: true, userId: "u1", orgId: null }` | lança `NoActiveOrgError` |
+| Caso                | Setup `auth()` mock retorna                                                  | Resultado esperado        |
+| ------------------- | ---------------------------------------------------------------------------- | ------------------------- |
+| Anônimo             | `{ isAuthenticated: false }`                                                 | lança `UnauthorizedError` |
+| Autenticado sem org | `{ isAuthenticated: true, userId: "u1", orgId: null }`                       | lança `NoActiveOrgError`  |
 | Autenticado com org | `{ isAuthenticated: true, userId: "u1", orgId: "o1", orgRole: "org:admin" }` | retorna contexto completo |
 
 ---
@@ -72,6 +74,7 @@ export class NoActiveOrgError extends Error {
 ```
 
 **Tratamento (alinhado a Next.js 16 oficial — research R11/R15)**:
+
 - **Server Components do `(app)` layout**: capturam exceções e usam `redirect()` de `next/navigation` para UX (`UnauthorizedError` → `redirect('/sign-in')`; `NoActiveOrgError` → `redirect('/select-organization')`).
 - **Route Handlers (`app/api/*`)**: usam `unauthorized()` / `forbidden()` de `next/navigation` (rendem 401/403 + páginas `app/unauthorized.tsx` / `app/forbidden.tsx`). Quando precisar de body JSON estruturado, `NextResponse.json({ error: 'CODE' }, { status })` sem stack.
 - **Server Actions consumidas por forms**: devolvem objeto discriminado `{ ok: false, error: 'UNAUTHORIZED' | 'NO_ACTIVE_ORG' }` em vez de propagar `Error.message` cru — evita vazar internals (FR-020).
@@ -96,12 +99,12 @@ export async function whoamiAction(): Promise<WhoamiPayload> {
 
 **Contract tests** (`tests/integration/auth-guards.test.ts`):
 
-| Caso | Setup | Resultado esperado |
-|---|---|---|
-| Sem sessão | `auth()` → anônimo | `whoamiAction()` rejeita com `UnauthorizedError` |
-| Sem org | `auth()` → autenticado, sem org | rejeita com `NoActiveOrgError` |
-| Org ativa | `auth()` → autenticado, com org | resolve `{ userId, orgId }` corretos |
-| Cliente "envia" orgId via input | (input adicionado ao input) | resultado IGNORA input; `orgId` é o da sessão |
+| Caso                            | Setup                           | Resultado esperado                               |
+| ------------------------------- | ------------------------------- | ------------------------------------------------ |
+| Sem sessão                      | `auth()` → anônimo              | `whoamiAction()` rejeita com `UnauthorizedError` |
+| Sem org                         | `auth()` → autenticado, sem org | rejeita com `NoActiveOrgError`                   |
+| Org ativa                       | `auth()` → autenticado, com org | resolve `{ userId, orgId }` corretos             |
+| Cliente "envia" orgId via input | (input adicionado ao input)     | resultado IGNORA input; `orgId` é o da sessão    |
 
 ---
 
@@ -128,11 +131,11 @@ export async function GET() {
 
 **Contract tests**:
 
-| Request | Setup `auth()` | Resposta esperada |
-|---|---|---|
-| `GET /api/whoami` sem sessão | anônimo | `401`, body vazio |
-| `GET /api/whoami?orgId=org_FAKE` autenticado sem org | sem org | `409 { error: "NO_ACTIVE_ORG" }` — `?orgId` é ignorado |
-| `GET /api/whoami` autenticado com org | com org `o1` | `200 { userId, orgId: "o1" }` |
+| Request                                              | Setup `auth()` | Resposta esperada                                      |
+| ---------------------------------------------------- | -------------- | ------------------------------------------------------ |
+| `GET /api/whoami` sem sessão                         | anônimo        | `401`, body vazio                                      |
+| `GET /api/whoami?orgId=org_FAKE` autenticado sem org | sem org        | `409 { error: "NO_ACTIVE_ORG" }` — `?orgId` é ignorado |
+| `GET /api/whoami` autenticado com org                | com org `o1`   | `200 { userId, orgId: "o1" }`                          |
 
 ---
 

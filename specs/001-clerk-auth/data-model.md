@@ -16,14 +16,15 @@ Quando a primeira fatia com persistência aparecer, espera-se que ela introduza 
 
 Identidade autenticável de uma pessoa.
 
-| Campo | Origem | Descrição |
-|---|---|---|
-| `id` (`userId`) | Clerk | Identificador estável, prefixo `user_…`. Único globalmente. |
-| `primaryEmailAddress` | Clerk | E-mail principal, usado para login. |
-| `firstName`, `lastName` | Clerk | Opcional, exibido pela UI do Clerk. |
-| `imageUrl` | Clerk | Avatar, usado pelo `<UserButton>`. |
+| Campo                   | Origem | Descrição                                                   |
+| ----------------------- | ------ | ----------------------------------------------------------- |
+| `id` (`userId`)         | Clerk  | Identificador estável, prefixo `user_…`. Único globalmente. |
+| `primaryEmailAddress`   | Clerk  | E-mail principal, usado para login.                         |
+| `firstName`, `lastName` | Clerk  | Opcional, exibido pela UI do Clerk.                         |
+| `imageUrl`              | Clerk  | Avatar, usado pelo `<UserButton>`.                          |
 
 **Regras**:
+
 - Um usuário pode pertencer a 0 ou mais organizações (memberships).
 - Sem `Personal Account` (desabilitado no dashboard Clerk — R5/R9 do research).
 
@@ -31,15 +32,16 @@ Identidade autenticável de uma pessoa.
 
 Empresa-cliente do SST Manager. **É o tenant** para o isolamento da constituição §I.
 
-| Campo | Origem | Descrição |
-|---|---|---|
-| `id` (`orgId`) | Clerk | Identificador estável, prefixo `org_…`. Único globalmente. **É o tenant.** |
-| `name` | Clerk | Nome legível da organização. |
-| `slug` | Clerk | Slug URL-safe (opcional para esta fatia). |
-| `imageUrl` | Clerk | Logo, exibido pelo `<OrganizationSwitcher>`. |
-| `createdAt` | Clerk | Data de criação. |
+| Campo          | Origem | Descrição                                                                  |
+| -------------- | ------ | -------------------------------------------------------------------------- |
+| `id` (`orgId`) | Clerk  | Identificador estável, prefixo `org_…`. Único globalmente. **É o tenant.** |
+| `name`         | Clerk  | Nome legível da organização.                                               |
+| `slug`         | Clerk  | Slug URL-safe (opcional para esta fatia).                                  |
+| `imageUrl`     | Clerk  | Logo, exibido pelo `<OrganizationSwitcher>`.                               |
+| `createdAt`    | Clerk  | Data de criação.                                                           |
 
 **Regras**:
+
 - Cada organização tem 1 ou mais membros.
 - O criador entra automaticamente como `org:admin` (default do Clerk).
 - Papéis intra-org (admin, basic_member, etc.) **não** são consumidos por esta fatia (Assumption da spec). Próximas fatias podem usar `has({ role })` quando precisarem.
@@ -48,15 +50,16 @@ Empresa-cliente do SST Manager. **É o tenant** para o isolamento da constituiç
 
 Vínculo Usuário × Organização.
 
-| Campo | Origem | Descrição |
-|---|---|---|
-| `id` | Clerk | Identificador estável do vínculo. |
-| `organization.id` | Clerk | FK lógica para `Organization`. |
-| `publicUserData.userId` | Clerk | FK lógica para `User`. |
-| `role` | Clerk | Papel dentro da org (ex.: `org:admin`, `org:member`). **Não consumido nesta fatia.** |
-| `createdAt` | Clerk | Quando o usuário entrou na org. |
+| Campo                   | Origem | Descrição                                                                            |
+| ----------------------- | ------ | ------------------------------------------------------------------------------------ |
+| `id`                    | Clerk  | Identificador estável do vínculo.                                                    |
+| `organization.id`       | Clerk  | FK lógica para `Organization`.                                                       |
+| `publicUserData.userId` | Clerk  | FK lógica para `User`.                                                               |
+| `role`                  | Clerk  | Papel dentro da org (ex.: `org:admin`, `org:member`). **Não consumido nesta fatia.** |
+| `createdAt`             | Clerk  | Quando o usuário entrou na org.                                                      |
 
 **Regras**:
+
 - Um usuário pode ter N memberships ativas; apenas **uma é "ativa" por sessão** (a `orgId` no `auth()`).
 
 ### Convite (`OrganizationInvitation`)
@@ -74,8 +77,8 @@ Toda Server Action, Route Handler e Server Component da área autenticada lê o 
 ```ts
 // lib/auth/types.ts
 export type AuthContext = {
-  userId: string;            // ex.: "user_2abc…" — não vazio
-  sessionId: string;         // ex.: "sess_2abc…" — não vazio
+  userId: string; // ex.: "user_2abc…" — não vazio
+  sessionId: string; // ex.: "sess_2abc…" — não vazio
 };
 ```
 
@@ -84,13 +87,14 @@ export type AuthContext = {
 ```ts
 // lib/auth/types.ts
 export type OrgAuthContext = AuthContext & {
-  orgId: string;             // ex.: "org_2abc…" — não vazio, vem de auth()
-  orgRole: string | null;    // ex.: "org:admin", null se Clerk não retornar
+  orgId: string; // ex.: "org_2abc…" — não vazio, vem de auth()
+  orgRole: string | null; // ex.: "org:admin", null se Clerk não retornar
   orgSlug: string | null;
 };
 ```
 
 **Invariantes**:
+
 1. `AuthContext.userId` **sempre** provém de `await auth()` (Clerk), **nunca** de input do cliente.
 2. `OrgAuthContext.orgId` **sempre** provém de `await auth()`, **nunca** de body/query/header.
 3. Se o Clerk retornar `isAuthenticated: false`, helpers devem lançar `UnauthorizedError` antes de retornar.
@@ -108,24 +112,24 @@ export type OrgAuthContext = AuthContext & {
 [AUTENTICADO *] -- sessão expira --> [ANÔNIMO]
 ```
 
-| Estado | Pode acessar rotas públicas? | Pode acessar `/dashboard` e área `(app)`? | Pode acessar `/select-organization`? |
-|---|---|---|---|
-| Anônimo | ✅ | ❌ (redirect `/sign-in`) | ❌ (redirect `/sign-in`) |
-| Autenticado sem org | ✅ | ❌ (redirect `/select-organization`) | ✅ |
-| Autenticado com org | ✅ | ✅ | ✅ (pode criar/trocar) |
+| Estado              | Pode acessar rotas públicas? | Pode acessar `/dashboard` e área `(app)`? | Pode acessar `/select-organization`? |
+| ------------------- | ---------------------------- | ----------------------------------------- | ------------------------------------ |
+| Anônimo             | ✅                           | ❌ (redirect `/sign-in`)                  | ❌ (redirect `/sign-in`)             |
+| Autenticado sem org | ✅                           | ❌ (redirect `/select-organization`)      | ✅                                   |
+| Autenticado com org | ✅                           | ✅                                        | ✅ (pode criar/trocar)               |
 
 ---
 
 ## Mapeamento entidade ↔ requisitos funcionais
 
-| FR | Entidade/Contrato envolvido |
-|---|---|
-| FR-001..003 (login/cadastro/sair) | `User` (Clerk) via `<SignIn />`, `<SignUp />`, `<UserButton>` |
-| FR-004 (`userId`/`orgId` disponíveis no servidor) | `AuthContext` / `OrgAuthContext` |
-| FR-005..009 (proteção e tenant da sessão) | Invariantes 1–4 do contrato de sessão |
-| FR-010..013 (criar/entrar/trocar org) | `Organization`, `OrganizationMembership` via `<OrganizationSwitcher>`, `<CreateOrganization>` |
-| FR-014 (página inicial autenticada) | `User` + `Organization` (somente leitura via `auth()`) |
-| FR-015 (validação de schema) | Schemas Zod por handler (não pertencem ao modelo de identidade) |
+| FR                                                | Entidade/Contrato envolvido                                                                   |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| FR-001..003 (login/cadastro/sair)                 | `User` (Clerk) via `<SignIn />`, `<SignUp />`, `<UserButton>`                                 |
+| FR-004 (`userId`/`orgId` disponíveis no servidor) | `AuthContext` / `OrgAuthContext`                                                              |
+| FR-005..009 (proteção e tenant da sessão)         | Invariantes 1–4 do contrato de sessão                                                         |
+| FR-010..013 (criar/entrar/trocar org)             | `Organization`, `OrganizationMembership` via `<OrganizationSwitcher>`, `<CreateOrganization>` |
+| FR-014 (página inicial autenticada)               | `User` + `Organization` (somente leitura via `auth()`)                                        |
+| FR-015 (validação de schema)                      | Schemas Zod por handler (não pertencem ao modelo de identidade)                               |
 
 ---
 

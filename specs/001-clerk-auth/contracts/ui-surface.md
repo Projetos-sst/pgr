@@ -8,17 +8,18 @@ Define o contrato visível da UI desta fatia: rotas existentes, qual componente 
 
 ## 1. Rotas — visibilidade e proteção
 
-| Rota | Tipo | Pública? | Proteção aplicada | Responsável pela proteção |
-|---|---|---|---|---|
-| `/` | Server Component | ✅ Pública | Nenhuma (landing) | — |
-| `/sign-in/[[...sign-in]]` | Server Component | ✅ Pública | Nenhuma | matcher do `proxy.ts` |
-| `/sign-up/[[...sign-up]]` | Server Component | ✅ Pública | Nenhuma | matcher do `proxy.ts` |
-| `/dashboard` (dentro de `(app)`) | Server Component | ❌ Privada | exige `userId` **e** `orgId` | `(app)/layout.tsx` → `requireOrgContext()` |
-| `/select-organization` (dentro de `(app)`) | Server Component | ❌ Privada | exige `userId` (org opcional) | `(app)/layout.tsx` em modo "sem org" |
-| `/api/whoami` | Route Handler GET | ❌ Privada | exige `userId` **e** `orgId` | handler chama `requireOrgContext()` + `unauthorized()`/`forbidden()` |
-| `/api/health` (futuro) | Route Handler GET | ✅ Pública | sem PII | matcher do `proxy.ts` |
+| Rota                                       | Tipo              | Pública?   | Proteção aplicada             | Responsável pela proteção                                            |
+| ------------------------------------------ | ----------------- | ---------- | ----------------------------- | -------------------------------------------------------------------- |
+| `/`                                        | Server Component  | ✅ Pública | Nenhuma (landing)             | —                                                                    |
+| `/sign-in/[[...sign-in]]`                  | Server Component  | ✅ Pública | Nenhuma                       | matcher do `proxy.ts`                                                |
+| `/sign-up/[[...sign-up]]`                  | Server Component  | ✅ Pública | Nenhuma                       | matcher do `proxy.ts`                                                |
+| `/dashboard` (dentro de `(app)`)           | Server Component  | ❌ Privada | exige `userId` **e** `orgId`  | `(app)/layout.tsx` → `requireOrgContext()`                           |
+| `/select-organization` (dentro de `(app)`) | Server Component  | ❌ Privada | exige `userId` (org opcional) | `(app)/layout.tsx` em modo "sem org"                                 |
+| `/api/whoami`                              | Route Handler GET | ❌ Privada | exige `userId` **e** `orgId`  | handler chama `requireOrgContext()` + `unauthorized()`/`forbidden()` |
+| `/api/health` (futuro)                     | Route Handler GET | ✅ Pública | sem PII                       | matcher do `proxy.ts`                                                |
 
 **Regra do `proxy.ts`** (resumo do contrato; código fica no plano):
+
 - Públicas: `/`, `/sign-in(.*)`, `/sign-up(.*)`, `/api/health`, `/__clerk/(.*)`.
 - Todo o resto chama `await auth.protect()` (Clerk redireciona para `/sign-in?redirect_url=…` em páginas; retorna 401 em handlers).
 
@@ -43,6 +44,7 @@ import { requireAuth } from "@/lib/auth/require-auth";
 ```
 
 Comportamento:
+
 1. `await requireAuth()`.
 2. Se ausente → `redirect('/sign-in')` (na prática `auth.protect()` no proxy já o fez — segundo nível de defesa).
 3. Lê `orgId` via `auth()`; se ausente → `redirect('/select-organization')`.
@@ -84,19 +86,19 @@ Comportamento:
 
 ## 3. Cenários de aceite (mapeados em testes de integração)
 
-| Cenário | Setup | Expectativa |
-|---|---|---|
-| Visitante acessa `/` | sem sessão | 200, landing pública com CTAs visíveis |
-| Visitante acessa `/dashboard` | sem sessão | 302 → `/sign-in?redirect_url=/dashboard` (do proxy/auth.protect) |
-| Visitante acessa `GET /api/whoami` | sem sessão | 401 (`unauthorized()`) |
-| Usuário autentica via `/sign-in` | credenciais válidas | 302 → `/dashboard` (ou `/select-organization` se sem org) |
-| Usuário sem org acessa `/dashboard` | autenticado, sem `orgId` | 302 → `/select-organization` |
-| Usuário cria 1ª org via `/select-organization` | autenticado, sem `orgId` | após sucesso → `/dashboard`; `auth()` passa a expor `orgId` |
-| Usuário troca org no `<OrganizationSwitcher>` | autenticado, em `/dashboard` | dashboard re-renderiza com novo `orgId` |
-| Usuário envia POST com campo `orgId='org_FAKE'` numa Server Action | autenticado em outra org | handler **ignora** o input; usa `orgId` da sessão (constituição §I) |
-| Sessão expira durante navegação | cookie inválido | 302 → `/sign-in?redirect_url=…` |
-| Usuário acessa rota de outra org via URL `?orgId=org_OUTRA` | autenticado em `org_MINHA` | handler ignora `?orgId`; comportamento é o de `org_MINHA` |
-| Usuário aciona "sair" no `<UserButton>` | autenticado | sessão encerrada; próxima requisição a `/dashboard` redireciona para `/sign-in` |
+| Cenário                                                            | Setup                        | Expectativa                                                                     |
+| ------------------------------------------------------------------ | ---------------------------- | ------------------------------------------------------------------------------- |
+| Visitante acessa `/`                                               | sem sessão                   | 200, landing pública com CTAs visíveis                                          |
+| Visitante acessa `/dashboard`                                      | sem sessão                   | 302 → `/sign-in?redirect_url=/dashboard` (do proxy/auth.protect)                |
+| Visitante acessa `GET /api/whoami`                                 | sem sessão                   | 401 (`unauthorized()`)                                                          |
+| Usuário autentica via `/sign-in`                                   | credenciais válidas          | 302 → `/dashboard` (ou `/select-organization` se sem org)                       |
+| Usuário sem org acessa `/dashboard`                                | autenticado, sem `orgId`     | 302 → `/select-organization`                                                    |
+| Usuário cria 1ª org via `/select-organization`                     | autenticado, sem `orgId`     | após sucesso → `/dashboard`; `auth()` passa a expor `orgId`                     |
+| Usuário troca org no `<OrganizationSwitcher>`                      | autenticado, em `/dashboard` | dashboard re-renderiza com novo `orgId`                                         |
+| Usuário envia POST com campo `orgId='org_FAKE'` numa Server Action | autenticado em outra org     | handler **ignora** o input; usa `orgId` da sessão (constituição §I)             |
+| Sessão expira durante navegação                                    | cookie inválido              | 302 → `/sign-in?redirect_url=…`                                                 |
+| Usuário acessa rota de outra org via URL `?orgId=org_OUTRA`        | autenticado em `org_MINHA`   | handler ignora `?orgId`; comportamento é o de `org_MINHA`                       |
+| Usuário aciona "sair" no `<UserButton>`                            | autenticado                  | sessão encerrada; próxima requisição a `/dashboard` redireciona para `/sign-in` |
 
 ---
 

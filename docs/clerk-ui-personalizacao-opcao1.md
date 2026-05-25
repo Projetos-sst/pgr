@@ -25,6 +25,7 @@ A personalização deve cobrir **todos** acima de forma consistente via configur
 O prop `appearance` aceita 4 grandes blocos:
 
 ### 2.1 `variables` — design tokens globais
+
 Tokens semânticos aplicados a todos os componentes. Mapeiam 1:1 com as CSS custom properties do projeto (`app/globals.css`).
 
 ```ts
@@ -49,23 +50,24 @@ variables: {
 > Hoje o `globals.css` define apenas `--background` e `--foreground`. **Ação pendente**: expandir os tokens (primary, muted, border, danger, etc.) antes de aplicar.
 
 ### 2.2 `elements` — classes por slot
+
 Override fino de cada slot interno via classes Tailwind. Exemplos dos slots mais usados:
 
-| Slot | Para que serve |
-|---|---|
-| `rootBox` | wrapper externo do componente |
-| `card` | card principal (sign-in/sign-up/profile) |
-| `headerTitle`, `headerSubtitle` | títulos do header |
-| `socialButtonsBlockButton` | botões OAuth |
-| `dividerLine`, `dividerText` | divisor "OR" |
-| `formFieldLabel`, `formFieldInput` | label e input dos forms |
-| `formButtonPrimary` | CTA principal (Continue, Sign in) |
-| `footerActionLink` | link "Sign up"/"Sign in" no rodapé |
-| `identityPreview` | preview de email/identidade |
-| `organizationSwitcherTrigger` | botão do switcher no header |
-| `organizationPreview` | linha de cada org na lista |
-| `userButtonAvatarBox`, `userButtonPopoverCard` | avatar e popover do UserButton |
-| `profileSectionTitle`, `profileSectionContent` | seções do UserProfile |
+| Slot                                           | Para que serve                           |
+| ---------------------------------------------- | ---------------------------------------- |
+| `rootBox`                                      | wrapper externo do componente            |
+| `card`                                         | card principal (sign-in/sign-up/profile) |
+| `headerTitle`, `headerSubtitle`                | títulos do header                        |
+| `socialButtonsBlockButton`                     | botões OAuth                             |
+| `dividerLine`, `dividerText`                   | divisor "OR"                             |
+| `formFieldLabel`, `formFieldInput`             | label e input dos forms                  |
+| `formButtonPrimary`                            | CTA principal (Continue, Sign in)        |
+| `footerActionLink`                             | link "Sign up"/"Sign in" no rodapé       |
+| `identityPreview`                              | preview de email/identidade              |
+| `organizationSwitcherTrigger`                  | botão do switcher no header              |
+| `organizationPreview`                          | linha de cada org na lista               |
+| `userButtonAvatarBox`, `userButtonPopoverCard` | avatar e popover do UserButton           |
+| `profileSectionTitle`, `profileSectionContent` | seções do UserProfile                    |
 
 ```ts
 elements: {
@@ -83,17 +85,21 @@ elements: {
 ```
 
 ### 2.3 `layout` — estrutura e branding
+
 - `logoImageUrl`, `logoPlacement` (`inside` | `outside` | `none`)
 - `socialButtonsPlacement` (`top` | `bottom`), `socialButtonsVariant` (`iconButton` | `blockButton`)
 - `showOptionalFields`, `helpPageUrl`, `privacyPageUrl`, `termsPageUrl`
 - `unsafe_disableDevelopmentModeWarnings` (apenas dev)
 
 ### 2.4 `baseTheme` (opcional)
+
 `@clerk/themes` traz `dark`, `neobrutalism`, `shadesOfPurple`, etc. Pode-se herdar e sobrescrever:
+
 ```ts
 import { dark } from '@clerk/themes'
 appearance={{ baseTheme: dark, variables: {...} }}
 ```
+
 > Útil se quisermos dark mode automático. Avaliar usar com `prefers-color-scheme` ou toggle manual.
 
 ---
@@ -101,21 +107,30 @@ appearance={{ baseTheme: dark, variables: {...} }}
 ## 3. Arquitetura proposta
 
 ### 3.1 Arquivo central de tema
+
 Criar `lib/clerk/appearance.ts` exportando uma constante única reutilizada por todos os pontos:
 
 ```ts
 // lib/clerk/appearance.ts
-import type { Appearance } from '@clerk/types'
+import type { Appearance } from "@clerk/types";
 
 export const clerkAppearance: Appearance = {
-  variables: { /* tokens globais */ },
-  elements:  { /* classes Tailwind por slot */ },
-  layout:    { /* logo, social buttons, links */ },
-}
+  variables: {
+    /* tokens globais */
+  },
+  elements: {
+    /* classes Tailwind por slot */
+  },
+  layout: {
+    /* logo, social buttons, links */
+  },
+};
 ```
 
 ### 3.2 Aplicação global
+
 `app/layout.tsx`:
+
 ```tsx
 <ClerkProvider appearance={clerkAppearance} localization={ptBR}>
   ...
@@ -123,13 +138,14 @@ export const clerkAppearance: Appearance = {
 ```
 
 ### 3.3 Overrides pontuais
+
 Quando um componente precisar divergir (ex.: `<OrganizationSwitcher />` no header com visual de chip), passar `appearance` apenas naquele componente — ele faz **merge** com o global.
 
 ```tsx
 <OrganizationSwitcher
   appearance={{
     elements: {
-      organizationSwitcherTrigger: 'h-9 px-3 rounded-full ...',
+      organizationSwitcherTrigger: "h-9 px-3 rounded-full ...",
     },
   }}
 />
@@ -140,6 +156,7 @@ Quando um componente precisar divergir (ex.: `<OrganizationSwitcher />` no heade
 ## 4. Localização (bônus)
 
 Como o projeto é PT-BR, aproveitar para configurar simultaneamente:
+
 ```ts
 import { ptBR } from '@clerk/localizations'
 <ClerkProvider localization={ptBR} appearance={clerkAppearance}>

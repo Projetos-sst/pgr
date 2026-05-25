@@ -60,9 +60,7 @@ describe("ProtectedLayout (auth + org inline)", () => {
     } as unknown as Awaited<ReturnType<typeof auth>>);
 
     await expect(renderLayout()).rejects.toThrow(/__redirect:\/sign-in/);
-    expect(mockedRedirect).toHaveBeenCalledWith(
-      "/sign-in?redirect_url=%2Fdashboard",
-    );
+    expect(mockedRedirect).toHaveBeenCalledWith("/sign-in?redirect_url=%2Fdashboard");
   });
 
   it("(b) sessão sem org → renderiza <OrganizationList /> inline (sem rota dedicada)", async () => {
