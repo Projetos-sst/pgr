@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-import { clerkClient } from "@clerk/nextjs/server";
+import { createClerkClient, type ClerkClient } from "@clerk/backend";
 
 import { upsertUser } from "@/lib/db/repositories/users";
 import { upsertOrg } from "@/lib/db/repositories/orgs";
@@ -16,8 +16,6 @@ interface Summary {
   errors: number;
 }
 
-type ClerkClient = Awaited<ReturnType<typeof clerkClient>>;
-
 export async function runBackfill(client: ClerkClient): Promise<Summary> {
   const summary: Summary = { orgs_processed: 0, memberships_processed: 0, errors: 0 };
 
@@ -27,7 +25,7 @@ export async function runBackfill(client: ClerkClient): Promise<Summary> {
         id: org.id,
         name: org.name ?? null,
         slug: org.slug ?? null,
-        imageUrl: (org as { imageUrl?: string | null }).imageUrl ?? null,
+        imageUrl: org.imageUrl ?? null,
       });
       summary.orgs_processed += 1;
       await backfillMemberships(client, org.id, summary);
@@ -97,7 +95,10 @@ async function* iterateMemberships(client: ClerkClient, organizationId: string) 
 }
 
 async function main(): Promise<void> {
-  const summary = await runBackfill(await clerkClient());
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (!secretKey) throw new Error("CLERK_SECRET_KEY is not set.");
+  const client = createClerkClient({ secretKey });
+  const summary = await runBackfill(client);
   console.log(JSON.stringify(summary));
   process.exit(summary.errors > 0 ? 1 : 0);
 }
