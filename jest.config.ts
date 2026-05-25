@@ -19,7 +19,10 @@ const config: Config = {
     {
       displayName: "unit",
       testEnvironment: "jsdom",
-      testMatch: ["<rootDir>/**/__tests__/**/*.test.ts?(x)"],
+      testMatch: [
+        "<rootDir>/**/__tests__/**/*.test.ts?(x)",
+        "<rootDir>/tests/unit/**/*.test.ts?(x)",
+      ],
       testPathIgnorePatterns: ["/node_modules/", "/.next/", "/tests/integration/"],
       moduleNameMapper: { "^@/(.*)$": "<rootDir>/$1" },
       transform: { "^.+\\.(t|j)sx?$": swcTransform },
