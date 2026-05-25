@@ -18,19 +18,8 @@ async function main(): Promise<void> {
     throw new Error("db-reset-dev.ts MUST NOT run in production");
   }
 
-  const url = process.env.DATABASE_URL_UNPOOLED;
-  if (!url) {
-    throw new Error("DATABASE_URL_UNPOOLED is not set.");
-  }
-  const parsed = new URL(url);
-  if (parsed.port !== "5432") {
-    throw new Error(`DATABASE_URL_UNPOOLED MUST use port 5432, got ${parsed.port}.`);
-  }
-  if (parsed.username !== "postgres") {
-    throw new Error(
-      `DATABASE_URL_UNPOOLED MUST authenticate as 'postgres', got ${parsed.username}.`,
-    );
-  }
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL is not set.");
 
   const sql = postgres(url, { max: 1, prepare: false });
   try {

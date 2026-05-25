@@ -8,50 +8,47 @@ import postgres from "postgres";
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
-// Idempotent SQL files kept OUT of Drizzle's journal so they don't fight the
-// snapshot tracker on every `db:generate` (they touch objects Drizzle doesn't
-// model: triggers, functions, roles, grants).
-const CUSTOM_SQL_FILES = ["0001_set_updated_at.sql", "0002_app_runtime_role.sql"];
+const TRIGGERS_MIGRATION = "0001_set_updated_at.sql";
+const ROLE_MIGRATION = "0002_app_runtime_role.sql";
 
 async function main(): Promise<void> {
-  const url = process.env.DATABASE_URL_UNPOOLED;
-  if (!url) throw new Error("DATABASE_URL_UNPOOLED is not set.");
-  const parsed = new URL(url);
-  if (parsed.port !== "5432") {
-    throw new Error(`DATABASE_URL_UNPOOLED MUST use port 5432, got ${parsed.port}.`);
-  }
-  if (parsed.username !== "postgres") {
-    throw new Error(
-      `DATABASE_URL_UNPOOLED MUST authenticate as 'postgres', got ${parsed.username}.`,
-    );
-  }
-
-  const appPassword = process.env.APP_RUNTIME_DB_PASSWORD;
-  if (!appPassword) throw new Error("APP_RUNTIME_DB_PASSWORD is not set.");
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL is not set.");
 
   const sql = postgres(url, { max: 1, prepare: false });
   try {
-    // GUC consumed by 0002_app_runtime_role.sql via current_setting(...).
-    await sql`select set_config('app.app_runtime_password', ${appPassword}, false)`;
-
     const db = drizzle(sql);
     const migrationsFolder = path.resolve(process.cwd(), "lib/db/migrations");
     await migrate(db, { migrationsFolder });
 
-    for (const file of CUSTOM_SQL_FILES) {
-      const content = fs.readFileSync(path.join(migrationsFolder, file), "utf8");
-      const statements = content
-        .split(/--> statement-breakpoint/g)
-        .map((s) => s.trim())
-        .filter(Boolean);
-      for (const stmt of statements) await sql.unsafe(stmt);
-      console.log(`OK — applied ${file}`);
+    await applySqlFile(sql, migrationsFolder, TRIGGERS_MIGRATION);
+
+    const appPassword = process.env.APP_RUNTIME_DB_PASSWORD;
+    if (appPassword) {
+      await sql`select set_config('app.app_runtime_password', ${appPassword}, false)`;
+      await applySqlFile(sql, migrationsFolder, ROLE_MIGRATION);
+    } else {
+      console.log(`SKIP — ${ROLE_MIGRATION} (APP_RUNTIME_DB_PASSWORD not set)`);
     }
 
     console.log("OK — migrations applied.");
   } finally {
     await sql.end({ timeout: 5 });
   }
+}
+
+async function applySqlFile(
+  sql: ReturnType<typeof postgres>,
+  folder: string,
+  file: string,
+): Promise<void> {
+  const content = fs.readFileSync(path.join(folder, file), "utf8");
+  const statements = content
+    .split(/--> statement-breakpoint/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  for (const stmt of statements) await sql.unsafe(stmt);
+  console.log(`OK — applied ${file}`);
 }
 
 main().catch((err) => {
