@@ -27,13 +27,13 @@ O _tenant_ é a **organização do Clerk**. As regras de modelagem:
 
 ## Convenções comuns a todas as tabelas
 
-| Coluna | Tipo | Observação |
-|---|---|---|
-| `id` | `uuid` | PK, default `gen_random_uuid()` |
-| `organization_id` | `text` | NOT NULL, indexado (exceto tabelas de referência globais) |
-| `created_at` | `timestamptz` | NOT NULL, default `now()` |
-| `updated_at` | `timestamptz` | NOT NULL, default `now()`, atualizado na escrita |
-| `created_by` | `text` | nullable — id do usuário Clerk (entidades principais) |
+| Coluna            | Tipo          | Observação                                                |
+| ----------------- | ------------- | --------------------------------------------------------- |
+| `id`              | `uuid`        | PK, default `gen_random_uuid()`                           |
+| `organization_id` | `text`        | NOT NULL, indexado (exceto tabelas de referência globais) |
+| `created_at`      | `timestamptz` | NOT NULL, default `now()`                                 |
+| `updated_at`      | `timestamptz` | NOT NULL, default `now()`, atualizado na escrita          |
+| `created_by`      | `text`        | nullable — id do usuário Clerk (entidades principais)     |
 
 - **Soft-delete**: **não** no MVP (YAGNI). Exclusão é física. Registrado como
   melhoria futura (doc 05) caso o domínio exija histórico legal.
@@ -54,79 +54,79 @@ referenciar autoria sem chamar a API do Clerk a cada render). Sincronizado por
 webhook (doc 04). É dado de referência: **não** tem `organization_id` (o vínculo
 usuário↔organização vive no Clerk).
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `text` PK | id do usuário no Clerk |
-| `email` | `text` * | |
-| `full_name` | `text` | |
+| Coluna      | Tipo      | Notas                  |
+| ----------- | --------- | ---------------------- |
+| `id`        | `text` PK | id do usuário no Clerk |
+| `email`     | `text` \* |                        |
+| `full_name` | `text`    |                        |
 
 ### Funcionários
 
-**`sectors`** (setores) — `id` PK · `name` * · `U(organization_id, name)`
+**`sectors`** (setores) — `id` PK · `name` \* · `U(organization_id, name)`
 
-**`job_roles`** (cargos/funções) — `id` PK · `title` * · `U(organization_id, title)`
+**`job_roles`** (cargos/funções) — `id` PK · `title` \* · `U(organization_id, title)`
 
 **`employees`** (funcionários geridos — trabalhadores das empresas, **não** são
 usuários do sistema):
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `full_name` | `text` * | |
-| `cpf` | `text` * | `U(organization_id, cpf)` |
-| `sector_id` | `uuid` FK→`sectors` | nullable |
-| `job_role_id` | `uuid` FK→`job_roles` | nullable |
-| `admission_date` | `date` | |
-| `status` | enum `employee_status` | `ativo` \| `inativo` \| `afastado` |
+| Coluna           | Tipo                   | Notas                              |
+| ---------------- | ---------------------- | ---------------------------------- |
+| `id`             | `uuid` PK              |                                    |
+| `full_name`      | `text` \*              |                                    |
+| `cpf`            | `text` \*              | `U(organization_id, cpf)`          |
+| `sector_id`      | `uuid` FK→`sectors`    | nullable                           |
+| `job_role_id`    | `uuid` FK→`job_roles`  | nullable                           |
+| `admission_date` | `date`                 |                                    |
+| `status`         | enum `employee_status` | `ativo` \| `inativo` \| `afastado` |
 
 ### EPIs
 
 **`epi_catalog`** — catálogo de EPIs:
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `name` | `text` * | |
-| `ca_number` | `text` | Certificado de Aprovação |
-| `type` | `text` | |
+| Coluna      | Tipo      | Notas                    |
+| ----------- | --------- | ------------------------ |
+| `id`        | `uuid` PK |                          |
+| `name`      | `text` \* |                          |
+| `ca_number` | `text`    | Certificado de Aprovação |
+| `type`      | `text`    |                          |
 
 **`epi_deliveries`** — entregas/devoluções de EPI a funcionários:
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `employee_id` | `uuid` FK→`employees` * | |
-| `epi_id` | `uuid` FK→`epi_catalog` * | |
-| `quantity` | `integer` * | `CHECK (quantity > 0)` |
-| `delivered_at` | `date` * | |
-| `expected_return_at` | `date` | nullable |
-| `returned_at` | `date` | nullable — preenchido na devolução |
+| Coluna               | Tipo                       | Notas                              |
+| -------------------- | -------------------------- | ---------------------------------- |
+| `id`                 | `uuid` PK                  |                                    |
+| `employee_id`        | `uuid` FK→`employees` \*   |                                    |
+| `epi_id`             | `uuid` FK→`epi_catalog` \* |                                    |
+| `quantity`           | `integer` \*               | `CHECK (quantity > 0)`             |
+| `delivered_at`       | `date` \*                  |                                    |
+| `expected_return_at` | `date`                     | nullable                           |
+| `returned_at`        | `date`                     | nullable — preenchido na devolução |
 
 ### PGR / Gestão de Riscos
 
-**`pgr_documents`** — `id` PK · `title` * · `reference_year` `integer` · `status`
+**`pgr_documents`** — `id` PK · `title` \* · `reference_year` `integer` · `status`
 enum `pgr_status` (`rascunho` \| `vigente` \| `arquivado`)
 
 **`risks`** (perigos/riscos identificados):
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `pgr_document_id` | `uuid` FK→`pgr_documents` * | |
-| `sector_id` | `uuid` FK→`sectors` | nullable |
-| `description` | `text` * | |
-| `risk_type` | enum `risk_type` | `fisico`\|`quimico`\|`biologico`\|`ergonomico`\|`acidente` |
+| Coluna            | Tipo                         | Notas                                                      |
+| ----------------- | ---------------------------- | ---------------------------------------------------------- |
+| `id`              | `uuid` PK                    |                                                            |
+| `pgr_document_id` | `uuid` FK→`pgr_documents` \* |                                                            |
+| `sector_id`       | `uuid` FK→`sectors`          | nullable                                                   |
+| `description`     | `text` \*                    |                                                            |
+| `risk_type`       | enum `risk_type`             | `fisico`\|`quimico`\|`biologico`\|`ergonomico`\|`acidente` |
 
 **`risk_assessments`** (avaliação probabilidade × severidade):
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `risk_id` | `uuid` FK→`risks` * | |
-| `probability` | `integer` * | `CHECK (probability BETWEEN 1 AND 5)` |
-| `severity` | `integer` * | `CHECK (severity BETWEEN 1 AND 5)` |
-| `risk_level` | `integer` * | persistido = `probability * severity` |
-| `assessed_at` | `date` * | |
+| Coluna        | Tipo                 | Notas                                 |
+| ------------- | -------------------- | ------------------------------------- |
+| `id`          | `uuid` PK            |                                       |
+| `risk_id`     | `uuid` FK→`risks` \* |                                       |
+| `probability` | `integer` \*         | `CHECK (probability BETWEEN 1 AND 5)` |
+| `severity`    | `integer` \*         | `CHECK (severity BETWEEN 1 AND 5)`    |
+| `risk_level`  | `integer` \*         | persistido = `probability * severity` |
+| `assessed_at` | `date` \*            |                                       |
 
 > `risk_level` é calculado na aplicação no momento da escrita e persistido — é o
 > critério de ordenação/priorização dos dashboards. A regra exata da matriz de
@@ -134,46 +134,46 @@ enum `pgr_status` (`rascunho` \| `vigente` \| `arquivado`)
 
 **`control_measures`** (medidas de controle / plano de ação):
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `risk_id` | `uuid` FK→`risks` * | |
-| `description` | `text` * | |
-| `responsible_employee_id` | `uuid` FK→`employees` | nullable |
-| `due_date` | `date` | nullable |
-| `status` | enum `measure_status` | `pendente`\|`em_andamento`\|`concluida` |
+| Coluna                    | Tipo                  | Notas                                   |
+| ------------------------- | --------------------- | --------------------------------------- |
+| `id`                      | `uuid` PK             |                                         |
+| `risk_id`                 | `uuid` FK→`risks` \*  |                                         |
+| `description`             | `text` \*             |                                         |
+| `responsible_employee_id` | `uuid` FK→`employees` | nullable                                |
+| `due_date`                | `date`                | nullable                                |
+| `status`                  | enum `measure_status` | `pendente`\|`em_andamento`\|`concluida` |
 
 ### Treinamentos
 
-**`training_catalog`** — `id` PK · `name` * · `nr_reference` `text` (ex.:
+**`training_catalog`** — `id` PK · `name` \* · `nr_reference` `text` (ex.:
 `NR-35`) · `workload_hours` `integer` · `validity_months` `integer` (0 = sem
 validade)
 
 **`training_records`** — registro de treinamento realizado por funcionário:
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `employee_id` | `uuid` FK→`employees` * | |
-| `training_id` | `uuid` FK→`training_catalog` * | |
-| `completed_at` | `date` * | |
-| `expires_at` | `date` | nullable — calculado de `validity_months` |
-| `certificate_document_id` | `uuid` FK→`documents` | nullable |
+| Coluna                    | Tipo                            | Notas                                     |
+| ------------------------- | ------------------------------- | ----------------------------------------- |
+| `id`                      | `uuid` PK                       |                                           |
+| `employee_id`             | `uuid` FK→`employees` \*        |                                           |
+| `training_id`             | `uuid` FK→`training_catalog` \* |                                           |
+| `completed_at`            | `date` \*                       |                                           |
+| `expires_at`              | `date`                          | nullable — calculado de `validity_months` |
+| `certificate_document_id` | `uuid` FK→`documents`           | nullable                                  |
 
 ### Documentos
 
 **`documents`** — repositório de arquivos com validade:
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `title` | `text` * | |
-| `document_type` | enum `document_type` | tipos de documento de SST |
-| `storage_path` | `text` * | chave do objeto no Supabase Storage |
-| `valid_from` | `date` | nullable |
-| `valid_until` | `date` | nullable |
-| `related_entity_type` | `text` | nullable — ex.: `employee`, `pgr_document` |
-| `related_entity_id` | `uuid` | nullable |
+| Coluna                | Tipo                 | Notas                                      |
+| --------------------- | -------------------- | ------------------------------------------ |
+| `id`                  | `uuid` PK            |                                            |
+| `title`               | `text` \*            |                                            |
+| `document_type`       | enum `document_type` | tipos de documento de SST                  |
+| `storage_path`        | `text` \*            | chave do objeto no Supabase Storage        |
+| `valid_from`          | `date`               | nullable                                   |
+| `valid_until`         | `date`               | nullable                                   |
+| `related_entity_type` | `text`               | nullable — ex.: `employee`, `pgr_document` |
+| `related_entity_id`   | `uuid`               | nullable                                   |
 
 > `related_entity_*` é um vínculo polimórfico **leve e sem FK**. Trade-off
 > consciente: ganha-se flexibilidade para anexar documentos a qualquer entidade
@@ -185,37 +185,37 @@ validade)
 
 **`service_orders`**:
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `number` | `integer` * | sequencial por organização — `U(organization_id, number)` |
-| `title` | `text` * | |
-| `description` | `text` | |
-| `status` | enum `service_order_status` | `aberta`\|`em_andamento`\|`concluida`\|`cancelada` |
-| `assigned_employee_id` | `uuid` FK→`employees` | nullable |
-| `opened_at` | `date` * | |
-| `due_date` | `date` | nullable |
-| `closed_at` | `date` | nullable |
+| Coluna                 | Tipo                        | Notas                                                     |
+| ---------------------- | --------------------------- | --------------------------------------------------------- |
+| `id`                   | `uuid` PK                   |                                                           |
+| `number`               | `integer` \*                | sequencial por organização — `U(organization_id, number)` |
+| `title`                | `text` \*                   |                                                           |
+| `description`          | `text`                      |                                                           |
+| `status`               | enum `service_order_status` | `aberta`\|`em_andamento`\|`concluida`\|`cancelada`        |
+| `assigned_employee_id` | `uuid` FK→`employees`       | nullable                                                  |
+| `opened_at`            | `date` \*                   |                                                           |
+| `due_date`             | `date`                      | nullable                                                  |
+| `closed_at`            | `date`                      | nullable                                                  |
 
 **`service_order_items`** — itens/checklist da OS — `id` PK ·
-`service_order_id` FK→`service_orders` * · `description` `text` * · `done`
+`service_order_id` FK→`service_orders` _ · `description` `text` _ · `done`
 `boolean` default `false`
 
 ### Acidentes
 
 **`accidents`**:
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `employee_id` | `uuid` FK→`employees` * | |
-| `occurred_at` | `timestamptz` * | |
-| `accident_type` | enum `accident_type` | `tipico`\|`trajeto`\|`doenca_ocupacional` |
-| `severity` | enum `accident_severity` | `leve`\|`moderado`\|`grave`\|`fatal` |
-| `description` | `text` * | |
-| `cat_number` | `text` | nullable — Comunicação de Acidente de Trabalho |
-| `cat_issued_at` | `date` | nullable |
-| `investigation_notes` | `text` | nullable |
+| Coluna                | Tipo                     | Notas                                          |
+| --------------------- | ------------------------ | ---------------------------------------------- |
+| `id`                  | `uuid` PK                |                                                |
+| `employee_id`         | `uuid` FK→`employees` \* |                                                |
+| `occurred_at`         | `timestamptz` \*         |                                                |
+| `accident_type`       | enum `accident_type`     | `tipico`\|`trajeto`\|`doenca_ocupacional`      |
+| `severity`            | enum `accident_severity` | `leve`\|`moderado`\|`grave`\|`fatal`           |
+| `description`         | `text` \*                |                                                |
+| `cat_number`          | `text`                   | nullable — Comunicação de Acidente de Trabalho |
+| `cat_issued_at`       | `date`                   | nullable                                       |
+| `investigation_notes` | `text`                   | nullable                                       |
 
 ### Dashboards
 
@@ -228,16 +228,16 @@ acima — sempre escopadas por `organization_id`. Ficam em
 
 **`jobs`** — fila leve para operações pesadas (Princípio IV):
 
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `type` | enum `job_type` | ex.: `pdf_generation` |
-| `status` | enum `job_status` | `pendente`\|`processando`\|`concluido`\|`falhou` |
-| `payload` | `jsonb` * | dados de entrada do job |
-| `result_storage_path` | `text` | nullable — resultado (ex.: PDF) no Storage |
-| `error` | `text` | nullable |
-| `attempts` | `integer` * | default `0` |
-| `processed_at` | `timestamptz` | nullable |
+| Coluna                | Tipo              | Notas                                            |
+| --------------------- | ----------------- | ------------------------------------------------ |
+| `id`                  | `uuid` PK         |                                                  |
+| `type`                | enum `job_type`   | ex.: `pdf_generation`                            |
+| `status`              | enum `job_status` | `pendente`\|`processando`\|`concluido`\|`falhou` |
+| `payload`             | `jsonb` \*        | dados de entrada do job                          |
+| `result_storage_path` | `text`            | nullable — resultado (ex.: PDF) no Storage       |
+| `error`               | `text`            | nullable                                         |
+| `attempts`            | `integer` \*      | default `0`                                      |
+| `processed_at`        | `timestamptz`     | nullable                                         |
 
 Funcionamento detalhado no doc 04.
 

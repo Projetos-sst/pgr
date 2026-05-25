@@ -10,12 +10,12 @@ fonte de verdade de usuários e do vínculo usuário↔organização.
 
 ### Responsabilidades
 
-| O Clerk faz | A aplicação faz |
-|---|---|
-| Login, sessão, MFA | Lê a sessão para obter `userId` e `orgId` |
+| O Clerk faz                 | A aplicação faz                                 |
+| --------------------------- | ----------------------------------------------- |
+| Login, sessão, MFA          | Lê a sessão para obter `userId` e `orgId`       |
 | Organizations e memberships | Usa `orgId` como `organization_id` em todo dado |
-| Troca de organização ativa | Renderiza o `<OrganizationSwitcher />` no shell |
-| Convites e papéis na org | Lê o papel para autorização nas Server Actions |
+| Troca de organização ativa  | Renderiza o `<OrganizationSwitcher />` no shell |
+| Convites e papéis na org    | Lê o papel para autorização nas Server Actions  |
 
 ### Pontos de implementação
 
@@ -60,11 +60,11 @@ organização — nenhum tenant alcança a partição de outro.
 
 ### Fluxos
 
-| Fluxo | Como |
-|---|---|
-| **Upload** | Server Action recebe o arquivo, valida (tipo, tamanho) e envia via `lib/storage.ts`; grava a `storage_path` na tabela `documents` |
-| **Download** | `lib/storage.ts` gera uma **URL assinada** de curta duração; o cliente baixa direto do Supabase |
-| **Exclusão** | Server Action remove o objeto e o registro na mesma operação |
+| Fluxo        | Como                                                                                                                              |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Upload**   | Server Action recebe o arquivo, valida (tipo, tamanho) e envia via `lib/storage.ts`; grava a `storage_path` na tabela `documents` |
+| **Download** | `lib/storage.ts` gera uma **URL assinada** de curta duração; o cliente baixa direto do Supabase                                   |
+| **Exclusão** | Server Action remove o objeto e o registro na mesma operação                                                                      |
 
 Buckets **privados** — nada de bucket público. Todo acesso é via URL assinada
 gerada no servidor, após checar o tenant.
@@ -167,18 +167,18 @@ Todos os segredos vivem **apenas** em variáveis de ambiente (constituição,
 Princípio V) — nunca commitados. Configuradas na Vercel (e num `.env.local` para
 desenvolvimento, ignorado pelo Git).
 
-| Variável | Uso |
-|---|---|
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk (cliente) |
-| `CLERK_SECRET_KEY` | Clerk (servidor) |
-| `CLERK_WEBHOOK_SIGNING_SECRET` | Verificação do webhook do Clerk |
-| `DATABASE_URL` | Postgres via pooler (transaction mode, papel restrito p/ RLS) |
-| `DATABASE_URL_UNPOOLED` | Conexão direta — só para rodar migrations |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Operações de Storage no servidor |
-| `GOTENBERG_URL` | Endpoint do serviço de PDF |
-| `GOTENBERG_TOKEN` | Autenticação do endpoint do Gotenberg |
-| `CRON_SECRET` | Protege os endpoints de Vercel Cron |
+| Variável                            | Uso                                                           |
+| ----------------------------------- | ------------------------------------------------------------- |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk (cliente)                                               |
+| `CLERK_SECRET_KEY`                  | Clerk (servidor)                                              |
+| `CLERK_WEBHOOK_SIGNING_SECRET`      | Verificação do webhook do Clerk                               |
+| `DATABASE_URL`                      | Postgres via pooler (transaction mode, papel restrito p/ RLS) |
+| `DATABASE_URL_UNPOOLED`             | Conexão direta — só para rodar migrations                     |
+| `NEXT_PUBLIC_SUPABASE_URL`          | Supabase                                                      |
+| `SUPABASE_SERVICE_ROLE_KEY`         | Operações de Storage no servidor                              |
+| `GOTENBERG_URL`                     | Endpoint do serviço de PDF                                    |
+| `GOTENBERG_TOKEN`                   | Autenticação do endpoint do Gotenberg                         |
+| `CRON_SECRET`                       | Protege os endpoints de Vercel Cron                           |
 
 > O `DATABASE_URL` usa um **papel restrito sujeito a RLS** (doc 02) — não o
 > `service_role` nem o superusuário. É o que torna o RLS um backstop real.

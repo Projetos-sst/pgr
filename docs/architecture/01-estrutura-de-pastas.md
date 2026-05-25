@@ -123,13 +123,13 @@ Tudo o que é mutação disparada pela UI usa **Server Action**, não Route Hand
 
 Cada módulo é uma fatia vertical autocontida. Arquivos padronizados:
 
-| Arquivo | Responsabilidade | Diretiva |
-|---|---|---|
-| `actions.ts` | Mutações: criar, atualizar, excluir | `'use server'` |
-| `queries.ts` | Leituras org-scoped (lista, detalhe, agregação) | servidor |
-| `schema.ts` | Schemas Zod de entrada | — |
-| `types.ts` | Tipos derivados dos schemas e do banco | — |
-| `components/` | UI específica do módulo (forms, tabelas) | mista |
+| Arquivo       | Responsabilidade                                | Diretiva       |
+| ------------- | ----------------------------------------------- | -------------- |
+| `actions.ts`  | Mutações: criar, atualizar, excluir             | `'use server'` |
+| `queries.ts`  | Leituras org-scoped (lista, detalhe, agregação) | servidor       |
+| `schema.ts`   | Schemas Zod de entrada                          | —              |
+| `types.ts`    | Tipos derivados dos schemas e do banco          | —              |
+| `components/` | UI específica do módulo (forms, tabelas)        | mista          |
 
 Um módulo **pode** importar de `lib/` e de `components/`. Um módulo **não deve**
 importar de outro módulo `features/`. Se dois módulos precisam da mesma coisa,
@@ -149,12 +149,12 @@ de autenticação/tenant, Storage, PDF, jobs. É a camada que os módulos consom
 
 ## Fronteira servidor / cliente
 
-| Contexto | Regra |
-|---|---|
-| Server Components (padrão) | Podem chamar `queries.ts` e ler o banco diretamente |
-| `actions.ts` | `'use server'` no topo; sempre revalidam auth + org internamente |
-| Client Components | `'use client'`; recebem dados via props; chamam Server Actions via `<form action>` ou `useActionState` |
-| `proxy.ts` | Roda antes da renderização; protege rotas; **não** é a única barreira de auth |
+| Contexto                   | Regra                                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Server Components (padrão) | Podem chamar `queries.ts` e ler o banco diretamente                                                    |
+| `actions.ts`               | `'use server'` no topo; sempre revalidam auth + org internamente                                       |
+| Client Components          | `'use client'`; recebem dados via props; chamam Server Actions via `<form action>` ou `useActionState` |
+| `proxy.ts`                 | Roda antes da renderização; protege rotas; **não** é a única barreira de auth                          |
 
 Regra de ouro: **dado sensível e regra de negócio ficam no servidor**. O cliente
 só recebe o que precisa renderizar.

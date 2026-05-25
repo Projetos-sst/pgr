@@ -23,11 +23,11 @@ montado de antemão — sem cair em waterfall.
         └── TASK   →  gerada pelo Spec Kit  →  /speckit-tasks, just-in-time
 ```
 
-| Nível | Onde vive | Quem cria | Quando |
-|---|---|---|---|
-| Épico | Milestone | Roadmap (doc 05) | já definido |
-| **Entregável** | **Issue** | **Este inventário** | **agora** |
-| Task | `tasks.md` / issues filhas | `/speckit-tasks` | por fatia, just-in-time |
+| Nível          | Onde vive                  | Quem cria           | Quando                  |
+| -------------- | -------------------------- | ------------------- | ----------------------- |
+| Épico          | Milestone                  | Roadmap (doc 05)    | já definido             |
+| **Entregável** | **Issue**                  | **Este inventário** | **agora**               |
+| Task           | `tasks.md` / issues filhas | `/speckit-tasks`    | por fatia, just-in-time |
 
 Regra: **não** quebre os entregáveis em tasks de implementação à mão. Isso é
 trabalho do `/speckit-tasks`, feito quando a fatia começa — com o spec e o plan
@@ -35,16 +35,16 @@ já prontos. Criar antes é chutar.
 
 ## Milestones (as 8 fases)
 
-| Milestone | Dias | Depende de |
-|---|---|---|
-| Fase 0 — Fundação | 1–5 | — |
-| Fase 1 — Funcionários | 6–12 | Fase 0 |
-| Fase 2 — EPIs | 13–19 | Fase 1 |
-| Fase 3 — PGR / Gestão de Riscos | 20–27 | Fase 1 |
-| Fase 4 — Treinamentos | 28–33 | Fase 1 |
-| Fase 5 — Documentos + Geração de PDF | 34–38 | Fases 3, 4 |
-| Fase 6 — Ordens de Serviço + Acidentes | 39–42 | Fase 1 |
-| Fase 7 — Dashboards + Hardening | 43–45 | Fases 1–6 |
+| Milestone                              | Dias  | Depende de |
+| -------------------------------------- | ----- | ---------- |
+| Fase 0 — Fundação                      | 1–5   | —          |
+| Fase 1 — Funcionários                  | 6–12  | Fase 0     |
+| Fase 2 — EPIs                          | 13–19 | Fase 1     |
+| Fase 3 — PGR / Gestão de Riscos        | 20–27 | Fase 1     |
+| Fase 4 — Treinamentos                  | 28–33 | Fase 1     |
+| Fase 5 — Documentos + Geração de PDF   | 34–38 | Fases 3, 4 |
+| Fase 6 — Ordens de Serviço + Acidentes | 39–42 | Fase 1     |
+| Fase 7 — Dashboards + Hardening        | 43–45 | Fases 1–6  |
 
 ## Entregáveis por fase
 
@@ -52,97 +52,97 @@ Cada linha abaixo vira uma **issue** no GitHub, vinculada ao milestone da fase.
 
 ### Fase 0 — Fundação (9 entregáveis)
 
-| Entregável | Tipo |
-|---|---|
-| Integração do Clerk (autenticação + organizações) | infra |
-| Telas de autenticação (login, cadastro, recuperação de senha) | tela |
-| Onboarding e troca de organização | tela |
-| Setup do banco de dados (Supabase + Drizzle) | dados |
-| Padrão de RLS e isolamento multi-tenant | dados |
-| Helpers de autenticação e contexto de tenant | infra |
-| Shell da aplicação (layout, sidebar, navegação) | tela |
-| Biblioteca de componentes de UI base | tela |
-| Quality gates (lint, typecheck, CI) | qualidade |
+| Entregável                                                    | Tipo      |
+| ------------------------------------------------------------- | --------- |
+| Integração do Clerk (autenticação + organizações)             | infra     |
+| Telas de autenticação (login, cadastro, recuperação de senha) | tela      |
+| Onboarding e troca de organização                             | tela      |
+| Setup do banco de dados (Supabase + Drizzle)                  | dados     |
+| Padrão de RLS e isolamento multi-tenant                       | dados     |
+| Helpers de autenticação e contexto de tenant                  | infra     |
+| Shell da aplicação (layout, sidebar, navegação)               | tela      |
+| Biblioteca de componentes de UI base                          | tela      |
+| Quality gates (lint, typecheck, CI)                           | qualidade |
 
 > Login, cadastro e recuperação de senha são **componentes do Clerk** — o
 > entregável é configurá-los e estilizá-los, não construí-los do zero.
 
 ### Fase 1 — Funcionários (6 entregáveis)
 
-| Entregável | Tipo |
-|---|---|
+| Entregável                                          | Tipo  |
+| --------------------------------------------------- | ----- |
 | Modelagem de dados — Funcionários, Setores e Cargos | dados |
-| CRUD de Setores | tela |
-| CRUD de Cargos/Funções | tela |
-| Listagem de funcionários | tela |
-| Cadastro e edição de funcionário | tela |
-| Detalhe do funcionário | tela |
+| CRUD de Setores                                     | tela  |
+| CRUD de Cargos/Funções                              | tela  |
+| Listagem de funcionários                            | tela  |
+| Cadastro e edição de funcionário                    | tela  |
+| Detalhe do funcionário                              | tela  |
 
 ### Fase 2 — EPIs (5 entregáveis)
 
-| Entregável | Tipo |
-|---|---|
+| Entregável                                      | Tipo  |
+| ----------------------------------------------- | ----- |
 | Modelagem de dados — Catálogo e Entregas de EPI | dados |
-| CRUD do catálogo de EPIs | tela |
-| Registro de entrega de EPI | tela |
-| Registro de devolução de EPI | tela |
-| Histórico de entregas por funcionário | tela |
+| CRUD do catálogo de EPIs                        | tela  |
+| Registro de entrega de EPI                      | tela  |
+| Registro de devolução de EPI                    | tela  |
+| Histórico de entregas por funcionário           | tela  |
 
 ### Fase 3 — PGR / Gestão de Riscos (6 entregáveis)
 
-| Entregável | Tipo |
-|---|---|
+| Entregável                                             | Tipo  |
+| ------------------------------------------------------ | ----- |
 | Modelagem de dados — PGR, Riscos, Avaliações e Medidas | dados |
-| CRUD do documento de PGR | tela |
-| Cadastro de riscos no PGR | tela |
-| Avaliação de risco (probabilidade × severidade) | tela |
-| Plano de ação / medidas de controle | tela |
-| Visão consolidada do PGR | tela |
+| CRUD do documento de PGR                               | tela  |
+| Cadastro de riscos no PGR                              | tela  |
+| Avaliação de risco (probabilidade × severidade)        | tela  |
+| Plano de ação / medidas de controle                    | tela  |
+| Visão consolidada do PGR                               | tela  |
 
 ### Fase 4 — Treinamentos (4 entregáveis)
 
-| Entregável | Tipo |
-|---|---|
+| Entregável                                               | Tipo  |
+| -------------------------------------------------------- | ----- |
 | Modelagem de dados — Catálogo e Registros de Treinamento | dados |
-| CRUD do catálogo de treinamentos | tela |
-| Registro de treinamento por funcionário | tela |
-| Controle de validade de treinamentos | tela |
+| CRUD do catálogo de treinamentos                         | tela  |
+| Registro de treinamento por funcionário                  | tela  |
+| Controle de validade de treinamentos                     | tela  |
 
 ### Fase 5 — Documentos + Geração de PDF (9 entregáveis)
 
-| Entregável | Tipo |
-|---|---|
+| Entregável                                   | Tipo       |
+| -------------------------------------------- | ---------- |
 | Emenda da constituição — adoção do Gotenberg | governança |
-| Modelagem de dados — Documentos e Jobs | dados |
-| Upload e listagem de documentos | tela |
-| Download de documentos via URL assinada | backend |
-| Deploy do serviço Gotenberg | infra |
-| Cliente de geração de PDF (`lib/pdf.ts`) | backend |
-| Geração de PDF de documento único | backend |
-| Geração de PDF em lote (jobs + Vercel Cron) | backend |
-| Template de PDF do PGR | tela |
+| Modelagem de dados — Documentos e Jobs       | dados      |
+| Upload e listagem de documentos              | tela       |
+| Download de documentos via URL assinada      | backend    |
+| Deploy do serviço Gotenberg                  | infra      |
+| Cliente de geração de PDF (`lib/pdf.ts`)     | backend    |
+| Geração de PDF de documento único            | backend    |
+| Geração de PDF em lote (jobs + Vercel Cron)  | backend    |
+| Template de PDF do PGR                       | tela       |
 
 ### Fase 6 — Ordens de Serviço + Acidentes (6 entregáveis)
 
-| Entregável | Tipo |
-|---|---|
+| Entregável                                         | Tipo  |
+| -------------------------------------------------- | ----- |
 | Modelagem de dados — Ordens de Serviço e Acidentes | dados |
-| Listagem de ordens de serviço | tela |
-| Abertura e edição de OS (com itens) | tela |
-| Workflow de status da OS | tela |
-| Registro de acidentes | tela |
-| Listagem e detalhe de acidentes | tela |
+| Listagem de ordens de serviço                      | tela  |
+| Abertura e edição de OS (com itens)                | tela  |
+| Workflow de status da OS                           | tela  |
+| Registro de acidentes                              | tela  |
+| Listagem e detalhe de acidentes                    | tela  |
 
 ### Fase 7 — Dashboards + Hardening (6 entregáveis)
 
-| Entregável | Tipo |
-|---|---|
-| Queries de agregação para dashboards | backend |
-| Telas de dashboard | tela |
-| Teste de isolamento multi-tenant | qualidade |
-| Revisão de performance | qualidade |
-| Revisão de segurança | qualidade |
-| Deploy de produção e smoke test | infra |
+| Entregável                           | Tipo      |
+| ------------------------------------ | --------- |
+| Queries de agregação para dashboards | backend   |
+| Telas de dashboard                   | tela      |
+| Teste de isolamento multi-tenant     | qualidade |
+| Revisão de performance               | qualidade |
+| Revisão de segurança                 | qualidade |
+| Deploy de produção e smoke test      | infra     |
 
 **Total: 51 entregáveis em 8 milestones.**
 

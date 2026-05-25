@@ -5,6 +5,8 @@
 /.pnp
 .pnp.*
 .yarn/*
+# Use npm (package-lock.json) as single source of truth
+yarn.lock
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
@@ -33,6 +35,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -40,3 +43,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# clerk configuration (can include secrets)
+/.clerk/
+
+# skills (installed via `npx skills install`; reproducible from skills-lock.json)
+/.agents/

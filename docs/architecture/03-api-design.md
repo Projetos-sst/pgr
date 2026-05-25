@@ -6,11 +6,11 @@ Técnicas"). Este documento define quando usar cada um e os padrões obrigatóri
 
 ## Quando usar cada mecanismo
 
-| Mecanismo | Use para | Não use para |
-|---|---|---|
-| **Server Action** (`'use server'`) | Toda mutação disparada pela UI: criar, atualizar, excluir, mudar status | Chamadas de sistemas externos; tarefas agendadas |
-| **Route Handler** (`route.ts`) | Webhooks (Clerk), endpoints de Vercel Cron, downloads / URLs assinadas | Mutações de formulário (use Server Action) |
-| **Server Component + `queries.ts`** | Toda leitura para renderizar página | Mutar dados |
+| Mecanismo                           | Use para                                                                | Não use para                                     |
+| ----------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------ |
+| **Server Action** (`'use server'`)  | Toda mutação disparada pela UI: criar, atualizar, excluir, mudar status | Chamadas de sistemas externos; tarefas agendadas |
+| **Route Handler** (`route.ts`)      | Webhooks (Clerk), endpoints de Vercel Cron, downloads / URLs assinadas  | Mutações de formulário (use Server Action)       |
+| **Server Component + `queries.ts`** | Toda leitura para renderizar página                                     | Mutar dados                                      |
 
 Regra prática: **se quem dispara é o usuário pela interface, é Server Action.**
 Route Handler é só para quem chama de fora (Clerk, Cron) ou para servir arquivo.
@@ -38,7 +38,7 @@ exibir inline.
 Toda Server Action segue a mesma sequência. A ordem importa:
 
 ```ts
-'use server';
+"use server";
 
 export async function createEmployee(
   _prev: unknown,
@@ -50,8 +50,11 @@ export async function createEmployee(
   // 2. VALIDAÇÃO — schema Zod no boundary (constituição, Princípio V)
   const parsed = employeeSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return { ok: false, error: 'Dados inválidos',
-             fieldErrors: parsed.error.flatten().fieldErrors };
+    return {
+      ok: false,
+      error: "Dados inválidos",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   // 3. AUTORIZAÇÃO — checar permissão do usuário na organização, se aplicável
@@ -82,7 +85,7 @@ Pontos não-negociáveis:
 Formulários usam `useActionState` para estado de envio e erros:
 
 ```tsx
-'use client';
+"use client";
 const [state, formAction, pending] = useActionState(createEmployee, null);
 return <form action={formAction}>{/* ...campos, state?.fieldErrors... */}</form>;
 ```
@@ -163,14 +166,14 @@ Resultado: o `WHERE organization_id` explícito é a 1ª barreira; o RLS via
 
 ### Convenções
 
-| Aspecto | Padrão |
-|---|---|
-| Métodos | Exportar `GET`/`POST`/etc. conforme o caso |
-| `params` | Assíncrono no Next.js 16 — `const { job } = await params` |
-| Sucesso | `Response.json(data)` (200) |
-| Erro de validação | `Response.json({ error }, { status: 400 })` |
-| Não autorizado | `status: 401`; sem permissão `403` |
-| Erro interno | `status: 500`, sem vazar detalhes internos |
+| Aspecto           | Padrão                                                    |
+| ----------------- | --------------------------------------------------------- |
+| Métodos           | Exportar `GET`/`POST`/etc. conforme o caso                |
+| `params`          | Assíncrono no Next.js 16 — `const { job } = await params` |
+| Sucesso           | `Response.json(data)` (200)                               |
+| Erro de validação | `Response.json({ error }, { status: 400 })`               |
+| Não autorizado    | `status: 401`; sem permissão `403`                        |
+| Erro interno      | `status: 500`, sem vazar detalhes internos                |
 
 ## Cache e revalidação (Next.js 16)
 
@@ -178,7 +181,7 @@ O Next.js 16 usa o modelo **Cache Components**. Diretrizes:
 
 - **Leituras**: marcar funções de `queries.ts` cacheáveis com `'use cache'` +
   `cacheLife(...)` quando os dados toleram alguma defasagem; etiquetar com
-  `cacheTag(\`<entidade>:${orgId}\`)`. **A tag inclui o `orgId`** — invalidação
+  `cacheTag(\`<entidade>:${orgId}\`)`. **A tag inclui o `orgId`\*\* — invalidação
   e cache nunca cruzam tenants.
 - **Após mutação**: a Server Action chama `revalidateTag(tag, profile)` (ou
   `updateTag` quando o usuário precisa ver imediatamente a própria escrita).
@@ -189,26 +192,26 @@ O Next.js 16 usa o modelo **Cache Components**. Diretrizes:
 
 ## Tratamento de erros
 
-| Origem | Tratamento |
-|---|---|
-| Validação (Zod) | `Result` com `fieldErrors`; formulário exibe inline |
-| Regra de negócio | `Result` com `error` legível em português |
-| Falha inesperada | Logar no servidor; `Result` com mensagem genérica; nunca vazar stack/SQL ao cliente |
-| Erro de renderização | `app/error.tsx` (boundary de rota) |
-| Rota/recurso inexistente | `app/not-found.tsx` |
+| Origem                   | Tratamento                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| Validação (Zod)          | `Result` com `fieldErrors`; formulário exibe inline                                 |
+| Regra de negócio         | `Result` com `error` legível em português                                           |
+| Falha inesperada         | Logar no servidor; `Result` com mensagem genérica; nunca vazar stack/SQL ao cliente |
+| Erro de renderização     | `app/error.tsx` (boundary de rota)                                                  |
+| Rota/recurso inexistente | `app/not-found.tsx`                                                                 |
 
 Princípio: **erros esperados são valores** (`Result`); **erros inesperados** são
 exceções que sobem para o boundary. A UI nunca recebe detalhe técnico interno.
 
 ## Resumo dos contratos
 
-| Operação | Mecanismo | Local |
-|---|---|---|
-| Listar / detalhar | Server Component + `queries.ts` | `features/<m>/queries.ts` |
-| Criar / editar / excluir | Server Action | `features/<m>/actions.ts` |
-| Mudar status / workflow | Server Action | `features/<m>/actions.ts` |
-| Agregação de dashboard | `queries.ts` | `features/dashboard/queries.ts` |
-| Sincronização Clerk | Route Handler | `app/api/webhooks/clerk/` |
-| Processar jobs | Route Handler + Vercel Cron | `app/api/cron/[job]/` |
-| Upload de arquivo | Server Action + `lib/storage.ts` | `features/documentos/actions.ts` |
-| Download de arquivo | URL assinada (`lib/storage.ts`) | — |
+| Operação                 | Mecanismo                        | Local                            |
+| ------------------------ | -------------------------------- | -------------------------------- |
+| Listar / detalhar        | Server Component + `queries.ts`  | `features/<m>/queries.ts`        |
+| Criar / editar / excluir | Server Action                    | `features/<m>/actions.ts`        |
+| Mudar status / workflow  | Server Action                    | `features/<m>/actions.ts`        |
+| Agregação de dashboard   | `queries.ts`                     | `features/dashboard/queries.ts`  |
+| Sincronização Clerk      | Route Handler                    | `app/api/webhooks/clerk/`        |
+| Processar jobs           | Route Handler + Vercel Cron      | `app/api/cron/[job]/`            |
+| Upload de arquivo        | Server Action + `lib/storage.ts` | `features/documentos/actions.ts` |
+| Download de arquivo      | URL assinada (`lib/storage.ts`)  | —                                |

@@ -21,17 +21,17 @@ produto fora deste fluxo. Dois caminhos, conforme o que você vai fazer:
 Ordem oficial — dependência estrita da esquerda para a direita: não dá para
 planejar sem spec, nem implementar sem tasks.
 
-| Comando | Função | Tipo |
-|---|---|---|
-| `/speckit-constitution` | Princípios não-negociáveis do projeto | Uma vez |
-| `/speckit-specify` | Especificação da feature (o **quê** e o **porquê**) | Obrigatório |
-| `/speckit-clarify` | Até 5 perguntas para eliminar ambiguidade | Quality gate |
-| `/speckit-plan` | Plano técnico (stack, arquitetura, modelo de dados) | Obrigatório |
-| `/speckit-tasks` | `tasks.md` ordenado por dependência e prioridade | Obrigatório |
-| `/speckit-analyze` | Consistência spec ↔ plan ↔ tasks (read-only) | Quality gate |
-| `/speckit-checklist` | Checklist de qualidade focado | Opcional |
-| `/speckit-implement` | Executa as tasks, gera o código e **commita** | Obrigatório |
-| `/speckit-taskstoissues` | Converte tasks em issues do GitHub | Opcional |
+| Comando                  | Função                                              | Tipo         |
+| ------------------------ | --------------------------------------------------- | ------------ |
+| `/speckit-constitution`  | Princípios não-negociáveis do projeto               | Uma vez      |
+| `/speckit-specify`       | Especificação da feature (o **quê** e o **porquê**) | Obrigatório  |
+| `/speckit-clarify`       | Até 5 perguntas para eliminar ambiguidade           | Quality gate |
+| `/speckit-plan`          | Plano técnico (stack, arquitetura, modelo de dados) | Obrigatório  |
+| `/speckit-tasks`         | `tasks.md` ordenado por dependência e prioridade    | Obrigatório  |
+| `/speckit-analyze`       | Consistência spec ↔ plan ↔ tasks (read-only)        | Quality gate |
+| `/speckit-checklist`     | Checklist de qualidade focado                       | Opcional     |
+| `/speckit-implement`     | Executa as tasks, gera o código e **commita**       | Obrigatório  |
+| `/speckit-taskstoissues` | Converte tasks em issues do GitHub                  | Opcional     |
 
 **Hooks automáticos de Git** (extensão `git`):
 
@@ -49,14 +49,14 @@ Usamos **GitFlow padrão + Conventional Commits**. Sem tags de task.
 
 Formato: `<tipo>/<descrição-curta-kebab>`
 
-| Tipo | Quando usar |
-|---|---|
-| `feature/` | Funcionalidade nova (Workflow 1) |
-| `fix/` | Correção de bug (Workflow 2 — Trilha A) |
-| `hotfix/` | Correção urgente em produção |
+| Tipo        | Quando usar                              |
+| ----------- | ---------------------------------------- |
+| `feature/`  | Funcionalidade nova (Workflow 1)         |
+| `fix/`      | Correção de bug (Workflow 2 — Trilha A)  |
+| `hotfix/`   | Correção urgente em produção             |
 | `refactor/` | Refatoração sem mudança de comportamento |
-| `chore/` | Manutenção (deps, config, build) |
-| `docs/` | Apenas documentação |
+| `chore/`    | Manutenção (deps, config, build)         |
+| `docs/`     | Apenas documentação                      |
 
 Exemplos: `feature/cadastro-de-empresas`, `feature/geracao-pgr-pdf`,
 `fix/pdf-pgr-encoding`, `refactor/repositorio-funcionarios`.
@@ -67,6 +67,7 @@ Formato: `<tipo>: <descrição no imperativo>` — tipos: `feat`, `fix`,
 `refactor`, `chore`, `docs`, `test`, `perf`, `style`, `build`, `ci`.
 
 Exemplos:
+
 - `feat: adiciona cadastro de empresas com isolamento por organização`
 - `fix: corrige encoding UTF-8 no PDF do PGR`
 - `refactor: extrai validação de CNPJ para módulo compartilhado`
@@ -222,8 +223,8 @@ gh pr create   # título: "feat: <descrição>"
 
 Primeiro **classifique** a mudança — isso decide quanto processo aplicar.
 
-> **Critério A vs. B**: mudou *o que o sistema deve fazer* (requisito/regra)?
-> → Trilha B. Está só *consertando o que já deveria funcionar*? → Trilha A.
+> **Critério A vs. B**: mudou _o que o sistema deve fazer_ (requisito/regra)?
+> → Trilha B. Está só _consertando o que já deveria funcionar_? → Trilha A.
 
 ### Trilha A — Correção pequena / bug isolado
 
@@ -314,13 +315,13 @@ gh pr create   # título: "feat: <descrição>"
 
 ## Tabela de decisão rápida
 
-| Pergunta | Sim → | Não → |
-|---|---|---|
-| O código já existe no repo? | Workflow 2 | Workflow 1 |
-| Vou criar tela/rota/modelo que não existe? | Workflow 1 | Workflow 2 |
-| Estou só consertando algo que já deveria funcionar? | Workflow 2 — Trilha A | — |
-| Estou mudando uma regra de negócio existente? | Workflow 2 — Trilha B | Trilha A |
-| A mudança preserva o contrato externo? | Trilha A ou B com escopo enxuto | Workflow 1 se for reescrita |
+| Pergunta                                            | Sim →                           | Não →                       |
+| --------------------------------------------------- | ------------------------------- | --------------------------- |
+| O código já existe no repo?                         | Workflow 2                      | Workflow 1                  |
+| Vou criar tela/rota/modelo que não existe?          | Workflow 1                      | Workflow 2                  |
+| Estou só consertando algo que já deveria funcionar? | Workflow 2 — Trilha A           | —                           |
+| Estou mudando uma regra de negócio existente?       | Workflow 2 — Trilha B           | Trilha A                    |
+| A mudança preserva o contrato externo?              | Trilha A ou B com escopo enxuto | Workflow 1 se for reescrita |
 
 **Dica de escopo**: se a "manutenção" cresceu para tocar 80% do módulo, trate
 como Workflow 1 (reescrita) com novo nome. Specs de manutenção pequenas e
@@ -359,17 +360,17 @@ spec-driven development com IA:
 
 ## Armadilhas comuns
 
-| Errado | Certo |
-|---|---|
-| Spec gigante cobrindo o módulo inteiro para mudar 1 coisa | Spec só do delta (Workflow 2 — Trilha B) |
-| Codar primeiro e gerar a spec depois "para documentar" | Spec antes do código — sempre |
-| Pular `/speckit-clarify` com `[NEEDS CLARIFICATION]` na spec | Resolver antes do `/speckit-plan` |
-| Pular `/speckit-analyze` e ir direto implementar | Rodar `analyze` — é barato e pega erros cedo |
-| Colocar stack/arquitetura dentro da `spec.md` | Tecnologia vai no `/speckit-plan` |
-| Commit direto na `main` | Sempre feature branch → PR |
-| Branch/commit sem o padrão (`feature/...`, `feat: ...`) | Seguir GitFlow + Conventional Commits |
-| Rodar o ciclo Spec Kit completo para um typo | Workflow 2 — Trilha A (direto) |
-| Aceitar o código do agente sem revisar | Checkpoint humano em cada artefato |
+| Errado                                                       | Certo                                        |
+| ------------------------------------------------------------ | -------------------------------------------- |
+| Spec gigante cobrindo o módulo inteiro para mudar 1 coisa    | Spec só do delta (Workflow 2 — Trilha B)     |
+| Codar primeiro e gerar a spec depois "para documentar"       | Spec antes do código — sempre                |
+| Pular `/speckit-clarify` com `[NEEDS CLARIFICATION]` na spec | Resolver antes do `/speckit-plan`            |
+| Pular `/speckit-analyze` e ir direto implementar             | Rodar `analyze` — é barato e pega erros cedo |
+| Colocar stack/arquitetura dentro da `spec.md`                | Tecnologia vai no `/speckit-plan`            |
+| Commit direto na `main`                                      | Sempre feature branch → PR                   |
+| Branch/commit sem o padrão (`feature/...`, `feat: ...`)      | Seguir GitFlow + Conventional Commits        |
+| Rodar o ciclo Spec Kit completo para um typo                 | Workflow 2 — Trilha A (direto)               |
+| Aceitar o código do agente sem revisar                       | Checkpoint humano em cada artefato           |
 
 ---
 

@@ -126,28 +126,28 @@ Fechamento.
 
 ## Resumo
 
-| Fase | Dias | Módulo | Depende de |
-|---|---|---|---|
-| 0 | 1–5 | Fundação | — |
-| 1 | 6–12 | Funcionários, Setores, Cargos | Fase 0 |
-| 2 | 13–19 | EPIs | Fase 1 |
-| 3 | 20–27 | PGR / Riscos | Fase 1 |
-| 4 | 28–33 | Treinamentos | Fase 1 |
-| 5 | 34–38 | Documentos + PDF | Fases 3, 4 |
-| 6 | 39–42 | Ordens de Serviço + Acidentes | Fase 1 |
-| 7 | 43–45 | Dashboards + Hardening | Fases 1–6 |
+| Fase | Dias  | Módulo                        | Depende de |
+| ---- | ----- | ----------------------------- | ---------- |
+| 0    | 1–5   | Fundação                      | —          |
+| 1    | 6–12  | Funcionários, Setores, Cargos | Fase 0     |
+| 2    | 13–19 | EPIs                          | Fase 1     |
+| 3    | 20–27 | PGR / Riscos                  | Fase 1     |
+| 4    | 28–33 | Treinamentos                  | Fase 1     |
+| 5    | 34–38 | Documentos + PDF              | Fases 3, 4 |
+| 6    | 39–42 | Ordens de Serviço + Acidentes | Fase 1     |
+| 7    | 43–45 | Dashboards + Hardening        | Fases 1–6  |
 
 ## Riscos e trade-offs
 
-| Risco | Impacto | Mitigação |
-|---|---|---|
-| **Prazo de 45 dias sem folga** | Atraso em cascata | Escopo congelado; P1 de cada fase funcional antes de avançar; cortar para o P1 se uma fase atrasar |
-| **PGR estourar a janela (Fase 3)** | Empurra Fases 4–7 | Entregar PGR em P1 (CRUD + avaliação) e deixar refinamentos para depois; é a fase de maior incerteza |
-| **Modelagem de dados errada cedo** | Retrabalho caro | Migrations versionadas; revisar o `data-model.md` de cada fatia contra o doc 02 |
-| **Vazamento entre tenants** | Falha crítica de SaaS B2B | Dupla barreira (aplicação + RLS); teste de isolamento na Fase 7 — idealmente antecipado |
-| **Dependência do Gotenberg** | PDF indisponível | Serviço stateless e substituível; geração em lote assíncrona com `attempts`/retry |
-| **Cold start / limites serverless** | Timeout em operação pesada | Princípio IV: nada pesado roda síncrono; PDF fora da Vercel |
-| **Sem test runner configurado** | Regressões silenciosas | Constituição: testar caminhos críticos (isolamento, regras de negócio); configurar runner mínimo se a Fase 7 permitir |
+| Risco                               | Impacto                    | Mitigação                                                                                                             |
+| ----------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Prazo de 45 dias sem folga**      | Atraso em cascata          | Escopo congelado; P1 de cada fase funcional antes de avançar; cortar para o P1 se uma fase atrasar                    |
+| **PGR estourar a janela (Fase 3)**  | Empurra Fases 4–7          | Entregar PGR em P1 (CRUD + avaliação) e deixar refinamentos para depois; é a fase de maior incerteza                  |
+| **Modelagem de dados errada cedo**  | Retrabalho caro            | Migrations versionadas; revisar o `data-model.md` de cada fatia contra o doc 02                                       |
+| **Vazamento entre tenants**         | Falha crítica de SaaS B2B  | Dupla barreira (aplicação + RLS); teste de isolamento na Fase 7 — idealmente antecipado                               |
+| **Dependência do Gotenberg**        | PDF indisponível           | Serviço stateless e substituível; geração em lote assíncrona com `attempts`/retry                                     |
+| **Cold start / limites serverless** | Timeout em operação pesada | Princípio IV: nada pesado roda síncrono; PDF fora da Vercel                                                           |
+| **Sem test runner configurado**     | Regressões silenciosas     | Constituição: testar caminhos críticos (isolamento, regras de negócio); configurar runner mínimo se a Fase 7 permitir |
 
 ## Melhorias futuras (pós-validação — fora do MVP)
 
