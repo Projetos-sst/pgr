@@ -73,10 +73,6 @@ const nextConfig: NextConfig = {
         headers: noStoreHeaders,
       },
       {
-        source: "/__clerk/:path*",
-        headers: noStoreHeaders,
-      },
-      {
         source: "/dashboard/:path*",
         headers: noStoreHeaders,
       },

@@ -44,7 +44,6 @@ export default function RootLayout({
           signInFallbackRedirectUrl="/dashboard"
           signUpFallbackRedirectUrl="/dashboard"
           afterSignOutUrl="/"
-          proxyUrl={process.env.NEXT_PUBLIC_CLERK_PROXY_URL}
         >
           <header className="flex items-center justify-between gap-4 border-b border-black/8 px-6 py-4">
             <Link

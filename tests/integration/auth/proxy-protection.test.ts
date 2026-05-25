@@ -26,12 +26,11 @@ describe("proxy.ts — deny-by-default", () => {
       "/",
       "/sign-in(.*)",
       "/sign-up(.*)",
-      "/__clerk/(.*)",
     ]);
     return matcher({ url: `http://localhost${pathname}` } as never);
   };
 
-  it.each(["/", "/sign-in", "/sign-in/factor-one", "/sign-up", "/__clerk/foo"])(
+  it.each(["/", "/sign-in", "/sign-in/factor-one", "/sign-up"])(
     "rota pública %s não dispara auth.protect()",
     (path) => {
       expect(isPublic(path)).toBe(true);
