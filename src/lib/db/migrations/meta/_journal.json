@@ -8,6 +8,20 @@
       "when": 1779688977439,
       "tag": "0000_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779688977440,
+      "tag": "0001_set_updated_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779688977441,
+      "tag": "0002_app_runtime_role",
+      "breakpoints": true
     }
   ]
 }

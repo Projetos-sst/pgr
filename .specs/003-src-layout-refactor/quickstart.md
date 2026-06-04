@@ -49,6 +49,25 @@ npm run db:migrate        # aplica migrations journaladas (drizzle-kit migrate)
 npm run db:studio         # drizzle studio
 ```
 
+## Variáveis de ambiente (banco)
+
+| Variável               | Usuário        | Porta | Uso                                          |
+| ---------------------- | -------------- | ----- | -------------------------------------------- |
+| `DATABASE_URL`         | `app_runtime`  | 6543  | App em runtime (pooler, sujeito a RLS)       |
+| `DATABASE_URL_UNPOOLED`| `postgres`     | 5432  | `drizzle-kit` (migrate, generate, studio)    |
+| `INTEGRATION_DATABASE_URL` | qualquer   | —     | Testes de integração (branch efêmero)        |
+
+**`drizzle.config.ts` lê `DATABASE_URL_UNPOOLED`** — conexão direta necessária para DDL.
+
+## Passo de infra: criar o role `app_runtime` (Supabase SQL Editor — uma vez por projeto)
+
+```sql
+create role app_runtime login password '<senha>' nobypassrls noinherit;
+```
+
+Execute no **SQL Editor do Supabase** (não vai para versionamento). Depois, `npm run db:migrate`
+aplica os grants de `0002_app_runtime_role.sql` normalmente.
+
 ## Gotchas
 
 - **Cache do Next**: após mover pastas, limpe `.next/` (`rm -rf .next`) — tipos gerados antigos
@@ -56,9 +75,8 @@ npm run db:studio         # drizzle studio
 - **Guard de bundle (ESLint)**: importar `@/lib/db` em `src/app`/`src/components` falha o lint
   (`no-restricted-imports`), exceto em route handlers / `src/app/api/**`. Acesso a DB vai por
   repositório server-only chamado de route handler ou Server Action.
-- **Triggers/role não são journaladas**: `drizzle-kit migrate` aplica só o `0000`. Os `.sql`
-  `0001`/`0002` já foram aplicados (one-off) e seguem em `src/lib/db/migrations` para o setup da
-  integração (`applyMigrations`).
+- **`app_runtime` deve existir antes de `db:migrate`**: a migration `0002` aplica grants ao role;
+  se o role não existir, o `GRANT` falha. Execute o passo de infra acima antes do primeiro migrate.
 - **Padrões de engenharia**: regras de Clean Code/KISS/YAGNI/DRY/Fowler em `~/.claude/CODE_STANDARDS.md`.
 
 ## Validação desta fatia (estado entregue)
