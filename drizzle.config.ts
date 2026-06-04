@@ -9,8 +9,8 @@ if (!url) throw new Error("DATABASE_URL is not set.");
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./lib/db/schema",
-  out: "./lib/db/migrations",
+  schema: "./src/lib/db/schema",
+  out: "./src/lib/db/migrations",
   dbCredentials: { url },
   strict: true,
   verbose: true,
