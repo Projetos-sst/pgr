@@ -2,7 +2,7 @@ node_modules
 .next
 coverage
 package-lock.json
-src/lib/db/migrations
+src/shared/db/migrations
 .agents
 .claude
 .specify
