@@ -46,8 +46,8 @@ lugares, extraia constante/função/módulo.
 - Sem features, camadas ou abstrações especulativas "para o futuro".
 - Não crie estrutura de domínio, generalizações ou pontos de extensão sem uso real.
 - Abstração precoce é dívida: custa manutenção sem entregar valor.
-- Antes de adicionar uma camada/abstração, pergunte: *"Isto resolve um problema que
-  existe hoje?"* Se não, não adicione.
+- Antes de adicionar uma camada/abstração, pergunte: _"Isto resolve um problema que
+  existe hoje?"_ Se não, não adicione.
 
 ❌ **Errado**: "Build login form" → login + registro + reset de senha + 2FA + SSO.
 ✅ **Certo**: "Build login form" → apenas o login form.
@@ -449,11 +449,11 @@ Escolher abordagem correta reduz latência sem perder manutenção.
 - Usar SQL raw para consultas críticas de performance, sempre encapsulado em repository
   e com testes.
 
-| Cenário                       | Abordagem preferida    | Requisito mínimo   |
-| ----------------------------- | ---------------------- | ------------------ |
-| CRUD simples                  | ORM                    | DTO validado       |
-| Relatório com joins complexos | SQL raw em repository  | Benchmark e teste  |
-| Query crítica com degradação  | SQL raw otimizado      | Plano de execução  |
+| Cenário                       | Abordagem preferida   | Requisito mínimo  |
+| ----------------------------- | --------------------- | ----------------- |
+| CRUD simples                  | ORM                   | DTO validado      |
+| Relatório com joins complexos | SQL raw em repository | Benchmark e teste |
+| Query crítica com degradação  | SQL raw otimizado     | Plano de execução |
 
 ### Regra: Indexação orientada a acesso
 
@@ -520,11 +520,11 @@ Distribuição equilibrada de testes reduz custo e aumenta confiança.
 - Usar integração para contratos entre camadas e banco.
 - Usar E2E para jornadas críticas.
 
-| Tipo       | Objetivo                            | Frequência |
-| ---------- | ----------------------------------- | ---------- |
-| Unitário   | Regra isolada                       | Alta       |
-| Integração | Integração service/repository/DB    | Média      |
-| E2E        | Fluxo crítico de negócio            | Seletiva   |
+| Tipo       | Objetivo                         | Frequência |
+| ---------- | -------------------------------- | ---------- |
+| Unitário   | Regra isolada                    | Alta       |
+| Integração | Integração service/repository/DB | Média      |
+| E2E        | Fluxo crítico de negócio         | Seletiva   |
 
 ### Regra: Cenários críticos obrigatórios
 

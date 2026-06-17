@@ -51,11 +51,11 @@ npm run db:studio         # drizzle studio
 
 ## Variáveis de ambiente (banco)
 
-| Variável               | Usuário        | Porta | Uso                                          |
-| ---------------------- | -------------- | ----- | -------------------------------------------- |
-| `DATABASE_URL`         | `app_runtime`  | 6543  | App em runtime (pooler, sujeito a RLS)       |
-| `DATABASE_URL_UNPOOLED`| `postgres`     | 5432  | `drizzle-kit` (migrate, generate, studio)    |
-| `INTEGRATION_DATABASE_URL` | qualquer   | —     | Testes de integração (branch efêmero)        |
+| Variável                   | Usuário       | Porta | Uso                                       |
+| -------------------------- | ------------- | ----- | ----------------------------------------- |
+| `DATABASE_URL`             | `app_runtime` | 6543  | App em runtime (pooler, sujeito a RLS)    |
+| `DATABASE_URL_UNPOOLED`    | `postgres`    | 5432  | `drizzle-kit` (migrate, generate, studio) |
+| `INTEGRATION_DATABASE_URL` | qualquer      | —     | Testes de integração (branch efêmero)     |
 
 **`drizzle.config.ts` lê `DATABASE_URL_UNPOOLED`** — conexão direta necessária para DDL.
 

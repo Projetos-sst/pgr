@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Placeholders that only satisfy format/import-time validation. No real
+  # credentials: integration tests that need a database skip themselves when
+  # INTEGRATION_DATABASE_URL is absent (see src/__tests__/integration/_helpers).
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZmFrZS1jbGVyay5hY2NvdW50cy5kZXYk
+  CLERK_SECRET_KEY: sk_test_ci_dummy_secret_key_000000000000000000
+  CLERK_WEBHOOK_SIGNING_SECRET: whsec_ci_dummy_000000000000000000000000
+  NEXT_PUBLIC_SUPABASE_URL: https://ci-dummy-project.supabase.co
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_dummy_000000000000000000
+  SUPABASE_SECRET_KEY: sb_secret_ci_dummy_000000000000000000
+  DATABASE_URL: postgresql://app_runtime:dummy@localhost:6543/postgres
+  DATABASE_URL_UNPOOLED: postgresql://postgres:dummy@localhost:5432/postgres
+
+jobs:
+  quality:
+    name: Lint, format & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Prettier
+        run: npm run format:check
+      - name: ESLint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+
+  test:
+    name: Unit & integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Unit tests (front + business logic)
+        run: npm run test
+      - name: Integration tests (server actions + route handlers)
+        run: npm run test:integration
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Next.js build
+        run: npm run build
