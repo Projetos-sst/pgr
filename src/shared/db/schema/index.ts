@@ -5,3 +5,4 @@ export {
   type OrgMembership,
   type NewOrgMembership,
 } from "./org-memberships";
+export { tenantProbe, type TenantProbe, type NewTenantProbe } from "./tenant-probe";

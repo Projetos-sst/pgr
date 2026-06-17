@@ -2,6 +2,7 @@
 
 import { requireOrgContext } from "@/shared/auth/require-org-context";
 import { NoActiveOrgError, UnauthorizedError } from "@/shared/auth/errors";
+import { logTenantEvent } from "@/shared/tenant/audit-log";
 
 export type MeResult =
   | { ok: true; userId: string; orgId: string }
@@ -13,7 +14,13 @@ export async function meAction(): Promise<MeResult> {
     return { ok: true, userId: ctx.userId, orgId: ctx.orgId };
   } catch (err) {
     if (err instanceof UnauthorizedError) return { ok: false, error: "UNAUTHORIZED" };
-    if (err instanceof NoActiveOrgError) return { ok: false, error: "NO_ACTIVE_ORG" };
+    if (err instanceof NoActiveOrgError) {
+      logTenantEvent("info", {
+        operation: "tenant.access_blocked_no_org",
+        outcome: "blocked",
+      });
+      return { ok: false, error: "NO_ACTIVE_ORG" };
+    }
     throw err;
   }
 }

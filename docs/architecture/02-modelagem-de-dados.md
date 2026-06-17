@@ -313,6 +313,14 @@ mode_ usado em serverless. Isso significa que **mesmo que uma query esqueça o
 O wrapper que aplica o `SET LOCAL` automaticamente é descrito no doc 03
 (`orgScopedDb`).
 
+> **Exemplo canônico implementado** (fatia 004): a tabela de referência
+> permanente `tenant_probe` (`src/shared/db/schema/tenant-probe.ts`) demonstra o
+> padrão completo — policy `USING`/`WITH CHECK` com
+> `current_setting('app.current_org', true)` `TO app_runtime`, índice e migration
+> Drizzle Kit. Todo novo módulo com `organization_id` MUST replicar esse padrão.
+> Contrato completo:
+> `.specs/004-multi-tenant-isolation/contracts/withorg-and-rls.md`.
+
 ## Conexão e migrations
 
 - **Driver**: `postgres-js` (compatível serverless).

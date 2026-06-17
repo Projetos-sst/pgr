@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 import { NO_STORE_HEADERS } from "@/shared/http/no-store";
+import { ACTIVE_ORG_COOKIE, reconcileActiveOrg } from "@/shared/tenant/org-switch";
 
 const isPublicRoute = createRouteMatcher([
   "/",
@@ -13,12 +14,31 @@ const isPublicRoute = createRouteMatcher([
 const NO_STORE_PATH_PREFIXES = ["/api/", "/sign-in", "/sign-up", "/dashboard"];
 
 export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
-    await auth.protect();
-  }
-
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
+
+  if (!isPublicRoute(request)) {
+    await auth.protect();
+
+    const { orgId, userId } = await auth();
+    const lastSeenOrgId = request.cookies.get(ACTIVE_ORG_COOKIE)?.value ?? null;
+    const { nextCookieValue } = reconcileActiveOrg({
+      activeOrgId: orgId ?? null,
+      lastSeenOrgId,
+      userId: userId ?? null,
+    });
+
+    if (nextCookieValue === null) {
+      response.cookies.delete(ACTIVE_ORG_COOKIE);
+    } else if (nextCookieValue !== lastSeenOrgId) {
+      response.cookies.set(ACTIVE_ORG_COOKIE, nextCookieValue, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: true,
+        path: "/",
+      });
+    }
+  }
 
   if (NO_STORE_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     for (const [name, value] of Object.entries(NO_STORE_HEADERS)) {

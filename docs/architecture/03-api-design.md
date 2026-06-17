@@ -138,6 +138,14 @@ export async function listEmployees(orgId: string) {
 Resultado: o `WHERE organization_id` explícito é a 1ª barreira; o RLS via
 `SET LOCAL` é a 2ª. Esquecer uma não vaza dados — a outra ainda filtra.
 
+> **Implementado na fatia 004**: o helper canônico chama-se **`withOrg`**
+> (`src/shared/db/with-org.ts`) e fixa o tenant com
+> `set_config('app.current_org', $1, true)` (bind parameter — não interpolação de
+> string), escopado à transação e compatível com o pooler em _transaction mode_.
+> Exemplo replicável de leitura/escrita org-scoped em
+> `src/shared/db/repositories/tenant-probe.ts`; contrato completo em
+> `.specs/004-multi-tenant-isolation/contracts/withorg-and-rls.md`.
+
 ## Validação com Zod
 
 - Um `schema.ts` por módulo define os schemas de entrada.
