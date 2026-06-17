@@ -25,22 +25,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- SPECKIT START -->
 
-Current active feature: **`feature/drizzle-orm-setup`** (Drizzle ORM + `org_memberships` — camada de persistência code-first).
+Branch: **`feature/drizzle-orm-setup`**. Entrega a camada de persistência (`002`) e a
+reorganização `src/` + refatoração (`003`).
 
-Read the implementation plan and design artifacts before writing code:
+Estrutura/refatoração — `.specs/003-src-layout-refactor/`:
 
-- Plan: `specs/002-drizzle-memberships/plan.md`
-- Spec: `specs/002-drizzle-memberships/spec.md` (+ `Clarifications` Session 2026-05-25)
-- Research (decisões técnicas resolvidas): `specs/002-drizzle-memberships/research.md`
-- Data model (entidades, RLS, triggers, papel restrito): `specs/002-drizzle-memberships/data-model.md`
-- Contracts: `specs/002-drizzle-memberships/contracts/db-client.md`, `contracts/webhook-handlers.md`, `contracts/backfill-script.md`
-- Quickstart (setup + reset + rollout): `specs/002-drizzle-memberships/quickstart.md`
+- Plan: `.specs/003-src-layout-refactor/plan.md`
+- Spec / Research / Data model / Contracts / Quickstart no mesmo diretório.
+- Código de aplicação e testes vivem sob `src/`; o alias `@/*` mapeia `./src/*`. A raiz contém
+  apenas configuração e tooling.
+
+Persistência (Drizzle ORM + `org_memberships`) — `.specs/002-drizzle-memberships/`:
+
+- Plan / Spec (+ Clarifications 2026-05-25) / Research / Data model / Quickstart.
+- Contracts: `contracts/db-client.md`, `contracts/webhook-handlers.md`, `contracts/backfill-script.md`.
 
 Notas chave:
 
 - Drizzle é **dono code-first único** da estrutura do banco; `supabase/migrations/` é removida ao final.
-- Cliente Drizzle (`lib/db/index.ts`) conecta via pooler (porta 6543) como papel restrito `app_runtime`; `drizzle-kit` usa conexão direta (porta 5432) como `postgres`.
+- Cliente Drizzle (`src/lib/db/index.ts`) conecta via pooler (porta 6543) como papel restrito `app_runtime`; `drizzle-kit` usa conexão direta (porta 5432) como `postgres`.
 - Drizzle nesta fatia é **admin/sistema only** — dados por-usuário continuam via `@supabase/supabase-js` (que injeta o JWT do Clerk).
-- Escritas em `users`/`orgs`/`org_memberships` continuam via `getSupabaseAdminClient()` no webhook; Drizzle compartilha apenas os tipos.
+- Escritas em `users`/`orgs`/`org_memberships` continuam via `getRlsBypassingSupabaseClient()` no webhook; Drizzle compartilha apenas os tipos.
 - Integração para esta fatia usa **Postgres efêmero** (branch Supabase), não SQLite, por causa de RLS/triggers/`auth.jwt()`. Outras fatias seguem com SQLite.
 <!-- SPECKIT END -->
