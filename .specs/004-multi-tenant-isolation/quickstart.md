@@ -9,13 +9,13 @@
 
 ## Variáveis de ambiente
 
-| Variável | Uso |
-| --- | --- |
-| `DATABASE_URL` | Runtime — pooler (6543) como `app_runtime` (sujeito a RLS) |
-| `DATABASE_URL_UNPOOLED` | Migrations — conexão direta como owner (`drizzle-kit`) |
+| Variável                                                      | Uso                                                                    |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `DATABASE_URL`                                                | Runtime — pooler (6543) como `app_runtime` (sujeito a RLS)             |
+| `DATABASE_URL_UNPOOLED`                                       | Migrations — conexão direta como owner (`drizzle-kit`)                 |
 | `INTEGRATION_DATABASE_URL` / `INTEGRATION_DATABASE_URL_ADMIN` | Postgres efêmero (owner/admin) p/ aplicar migrations e seed nos testes |
-| `INTEGRATION_APP_RUNTIME_URL` | Postgres efêmero conectado como `app_runtime` p/ testes de RLS |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` | Clerk |
+| `INTEGRATION_APP_RUNTIME_URL`                                 | Postgres efêmero conectado como `app_runtime` p/ testes de RLS         |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`      | Clerk                                                                  |
 
 Sem `INTEGRATION_APP_RUNTIME_URL`/`INTEGRATION_DATABASE_URL`, os testes de RLS são
 `describe.skip` (mesmo comportamento de `least-privilege.test.ts`).
@@ -52,8 +52,8 @@ npm run lint && npm run typecheck
 
 1. Adicione `organization_id text NOT NULL` + índice na tabela.
 2. No schema Drizzle, adicione `pgPolicy("<tabela>_isolation", { for:"all",
-   to: appRuntimeRole, using: …current_setting('app.current_org', true)…,
-   withCheck: … })` e `.enableRLS()`.
+to: appRuntimeRole, using: …current_setting('app.current_org', true)…,
+withCheck: … })` e `.enableRLS()`.
 3. Gere a migration e inclua o `GRANT ... TO app_runtime`.
 4. Em `queries.ts`/`actions.ts`, receba `orgId` (de `requireOrgContext()`) e use
    `withOrg(orgId, (tx) => …)` com `WHERE organization_id = orgId` explícito.

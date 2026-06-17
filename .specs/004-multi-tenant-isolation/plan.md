@@ -44,13 +44,13 @@ code-first do schema) e o harness de integração contra **Postgres efêmero**
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-| Princípio | Avaliação |
-| --- | --- |
+| Princípio                                       | Avaliação                                                                                                                                                                                                                     |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **I. Isolamento Multi-Tenant (NÃO-NEGOCIÁVEL)** | ✅ É o objeto da fatia. `orgId` sempre da sessão Clerk (`requireOrgContext`); escopo na aplicação (`withOrg` + `WHERE`) como 1ª barreira; RLS como backstop pelo papel `app_runtime` sujeito a RLS; sem acesso sem org ativa. |
-| **II. Stack Fixa e Simplicidade (YAGNI)** | ✅ Zero infra nova. Componentes nativos do Clerk; Drizzle/postgres-js já presentes; logger estrutural reaproveitado. Tabela de demonstração mínima. |
-| **III. Entrega em Fatias Verticais** | ✅ Fatia única e coesa, testável e demonstrável isoladamente; P1 → P3 priorizados na spec. |
-| **IV. Operações Pesadas Assíncronas** | ✅ N/A — não há operação pesada. |
-| **V. Segurança e Integridade de Dados** | ✅ TS `strict`; tenant nunca de input do cliente; `set_config` parametrizado (sem injeção); constraints (`NOT NULL`, índice) na tabela de demonstração; segredos só em env; logs sem PII/segredos. |
+| **II. Stack Fixa e Simplicidade (YAGNI)**       | ✅ Zero infra nova. Componentes nativos do Clerk; Drizzle/postgres-js já presentes; logger estrutural reaproveitado. Tabela de demonstração mínima.                                                                           |
+| **III. Entrega em Fatias Verticais**            | ✅ Fatia única e coesa, testável e demonstrável isoladamente; P1 → P3 priorizados na spec.                                                                                                                                    |
+| **IV. Operações Pesadas Assíncronas**           | ✅ N/A — não há operação pesada.                                                                                                                                                                                              |
+| **V. Segurança e Integridade de Dados**         | ✅ TS `strict`; tenant nunca de input do cliente; `set_config` parametrizado (sem injeção); constraints (`NOT NULL`, índice) na tabela de demonstração; segredos só em env; logs sem PII/segredos.                            |
 
 **Resultado**: PASS — sem violações. **Complexity Tracking** vazio.
 

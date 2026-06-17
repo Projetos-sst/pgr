@@ -17,6 +17,7 @@ export async function withOrg<T>(
 ```
 
 Comportamento (contrato):
+
 1. Abre `db.transaction(async (tx) => { … })`.
 2. Primeira instrução: `await tx.execute(sql\`select set_config('app.current_org', ${orgId}, true)\`)`.
    - `orgId` vai como **bind parameter** — nunca interpolado em string.
@@ -25,10 +26,12 @@ Comportamento (contrato):
    existir — não vaza para a próxima operação no pool.
 
 Pré-condições:
+
 - `orgId` é o da sessão (`requireOrgContext().orgId`) — nunca de input do cliente.
 - A conexão é a do `app_runtime` (pooler, transaction mode).
 
 Garantias verificáveis:
+
 - Dentro de `fn`, uma query **sem** `WHERE organization_id` em uma tabela com RLS
   retorna só linhas do tenant (FR-013).
 - Sem `withOrg` (ou com tenant não setado), a mesma query retorna 0 linhas (FR-014,
@@ -59,11 +62,12 @@ pgPolicy("<tabela>_isolation", {
   to: appRuntimeRole,
   using: sql`${table.organizationId} = current_setting('app.current_org', true)`,
   withCheck: sql`${table.organizationId} = current_setting('app.current_org', true)`,
-})
+});
 // ... .enableRLS()
 ```
 
 Invariantes:
+
 - `app_runtime` **não** é owner e **não** tem `BYPASSRLS` (validado em
   `least-privilege.test.ts`).
 - A aplicação conecta **somente** como `app_runtime` (FR-017).

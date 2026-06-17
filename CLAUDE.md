@@ -50,4 +50,5 @@ Notas chave (`004`):
 Histórico: persistência Drizzle + `org_memberships` (`002`, `.specs/002-drizzle-memberships/`);
 reorganização `src/` (`003`, `.specs/003-src-layout-refactor/`). Drizzle é dono code-first único do schema;
 runtime conecta como `app_runtime` (pooler 6543), `drizzle-kit` usa conexão direta como owner.
+
 <!-- SPECKIT END -->

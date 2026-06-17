@@ -7,25 +7,22 @@
 type TenantEventOutcome = "ok" | "blocked" | "rejected";
 
 type TenantAuditFields = {
-  operation: string;     // ex.: "tenant.org_switched"
+  operation: string; // ex.: "tenant.org_switched"
   outcome: TenantEventOutcome;
   requestId?: string;
   orgId?: string | null;
   userId?: string | null;
 };
 
-export function logTenantEvent(
-  level: "info" | "error",
-  fields: TenantAuditFields,
-): void;
+export function logTenantEvent(level: "info" | "error", fields: TenantAuditFields): void;
 ```
 
 ## Eventos
 
-| `operation` | Quando | `outcome` | Nível |
-| --- | --- | --- | --- |
-| `tenant.org_switched` | Troca de organização ativa concluída | `ok` | info |
-| `tenant.access_blocked_no_org` | Acesso à área autenticada / action sem org ativa | `blocked` | info |
+| `operation`                    | Quando                                           | `outcome`  | Nível |
+| ------------------------------ | ------------------------------------------------ | ---------- | ----- |
+| `tenant.org_switched`          | Troca de organização ativa concluída             | `ok`       | info  |
+| `tenant.access_blocked_no_org` | Acesso à área autenticada / action sem org ativa | `blocked`  | info  |
 | `tenant.cross_tenant_rejected` | Banco rejeita leitura/escrita cross-tenant (RLS) | `rejected` | error |
 
 ## Regras

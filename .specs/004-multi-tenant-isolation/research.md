@@ -10,6 +10,7 @@ primeira instrução, executa `select set_config('app.current_org', ${orgId}, tr
 antes de rodar `fn(tx)`.
 
 **Rationale**:
+
 - `set_config(name, value, is_local=true)` é escopado à transação — equivalente a
   `SET LOCAL`, mas **aceita bind parameter**, o que evita interpolar `orgId` em SQL
   (proteção contra injeção; Princípio V).
@@ -31,6 +32,7 @@ schema Drizzle e materializadas por migration. O papel é declarado com
 `pgRole("app_runtime").existing()` (ele é criado fora do Drizzle — infra step).
 
 **Rationale**:
+
 - Há **dois mecanismos de RLS coexistindo**, e eles não conflitam:
   - **JWT-based** (`auth.jwt() ->> 'org_id'`, `TO authenticated`) — caminho do
     `@supabase/supabase-js` per-usuário, já existente em `orgs`/`users`/`org_memberships`.
@@ -115,6 +117,7 @@ rejeitado na clarificação).
 ## 7. Estratégia de testes (reconciliação SQLite × Postgres)
 
 **Decision**:
+
 - **Unitários** (jsdom): detecção de "usuário sem organização", regra de bloqueio,
   resolução do `orgId` a partir da sessão — com `auth()` do Clerk mockado, sem DB.
 - **Integração app-layer** (node): caminho de bloqueio de Server Actions/Route

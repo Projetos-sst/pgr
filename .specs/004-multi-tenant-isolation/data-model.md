@@ -10,18 +10,19 @@ entidades de identidade vivem no Clerk e na sessão — não no banco.
 
 Exemplo canônico do padrão de isolamento. Mínima de propósito.
 
-| Coluna            | Tipo          | Constraints                                   |
-| ----------------- | ------------- | --------------------------------------------- |
-| `id`              | `uuid`        | PK, default `gen_random_uuid()`               |
-| `organization_id` | `text`        | `NOT NULL`, indexado                          |
-| `label`           | `text`        | nullable — só para tornar os testes legíveis  |
-| `created_at`      | `timestamptz` | `NOT NULL`, default `now()`                   |
+| Coluna            | Tipo          | Constraints                                  |
+| ----------------- | ------------- | -------------------------------------------- |
+| `id`              | `uuid`        | PK, default `gen_random_uuid()`              |
+| `organization_id` | `text`        | `NOT NULL`, indexado                         |
+| `label`           | `text`        | nullable — só para tornar os testes legíveis |
+| `created_at`      | `timestamptz` | `NOT NULL`, default `now()`                  |
 
 **Índice**: `idx_tenant_probe_organization_id` em `(organization_id)`.
 
 **RLS**: habilitado (`ENABLE ROW LEVEL SECURITY`).
 
 **Policy** `tenant_probe_isolation`, `TO app_runtime`, `FOR ALL`:
+
 - `USING (organization_id = current_setting('app.current_org', true))`
 - `WITH CHECK (organization_id = current_setting('app.current_org', true))`
 
@@ -39,13 +40,13 @@ gerada por `drizzle-kit generate`; GRANTs adicionados como SQL custom na migrati
 
 ### Tenant ativo da transação (variável de sessão)
 
-| Item | Valor |
-| --- | --- |
-| Nome | `app.current_org` |
-| Origem | `orgId` da sessão Clerk (`requireOrgContext`) |
-| Escopo | Transação (`set_config(..., true)`) |
-| Setado por | `withOrg(orgId, fn)` — primeira instrução da transação |
-| Ausente | `current_setting('app.current_org', true)` → vazio → 0 linhas de negócio |
+| Item       | Valor                                                                    |
+| ---------- | ------------------------------------------------------------------------ |
+| Nome       | `app.current_org`                                                        |
+| Origem     | `orgId` da sessão Clerk (`requireOrgContext`)                            |
+| Escopo     | Transação (`set_config(..., true)`)                                      |
+| Setado por | `withOrg(orgId, fn)` — primeira instrução da transação                   |
+| Ausente    | `current_setting('app.current_org', true)` → vazio → 0 linhas de negócio |
 
 ### Sessão / Organização ativa (Clerk — não persistido no nosso banco)
 

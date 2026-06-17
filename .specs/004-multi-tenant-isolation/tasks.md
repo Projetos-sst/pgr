@@ -31,8 +31,8 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 **Purpose**: estrutura e pré-condições do ambiente
 
-- [X] T001 Criar diretório `src/shared/tenant/` para utilitários de contexto de tenant (auditoria) conforme `plan.md`
-- [X] T002 [P] Validar que o projeto `integration` do `jest.config.ts` enxerga as env de integração já documentadas no `quickstart.md` (`INTEGRATION_DATABASE_URL`, `INTEGRATION_DATABASE_URL_ADMIN`, `INTEGRATION_APP_RUNTIME_URL`) — sem as quais os testes RLS ficam `describe.skip`
+- [x] T001 Criar diretório `src/shared/tenant/` para utilitários de contexto de tenant (auditoria) conforme `plan.md`
+- [x] T002 [P] Validar que o projeto `integration` do `jest.config.ts` enxerga as env de integração já documentadas no `quickstart.md` (`INTEGRATION_DATABASE_URL`, `INTEGRATION_DATABASE_URL_ADMIN`, `INTEGRATION_APP_RUNTIME_URL`) — sem as quais os testes RLS ficam `describe.skip`
 
 ---
 
@@ -42,10 +42,10 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 **⚠️ CRITICAL**: nenhuma story começa antes desta fase.
 
-- [X] T003 [P] Declarar o papel existente `app_runtime` em `src/shared/db/roles.ts` via `pgRole("app_runtime").existing()` (exportar `appRuntimeRole`) — usado pelas policies GUC
-- [X] T004 [P] Implementar o logger de auditoria `logTenantEvent` em `src/shared/tenant/audit-log.ts` (espelhar `src/shared/clerk-sync/log.ts`; eventos e campos conforme `contracts/audit-events.md`)
-- [X] T005 [P] Teste unitário de `logTenantEvent` (formato + ausência de PII/segredos) em `src/__tests__/unit/shared/tenant/audit-log.test.ts`
-- [X] T006 Estender o helper de integração `src/__tests__/integration/_helpers/db.ts` com `withOrgTx(client, orgId, fn)` que abre transação e faz `set_config('app.current_org', $1, true)` antes do callback (suporte aos testes de RLS)
+- [x] T003 [P] Declarar o papel existente `app_runtime` em `src/shared/db/roles.ts` via `pgRole("app_runtime").existing()` (exportar `appRuntimeRole`) — usado pelas policies GUC
+- [x] T004 [P] Implementar o logger de auditoria `logTenantEvent` em `src/shared/tenant/audit-log.ts` (espelhar `src/shared/clerk-sync/log.ts`; eventos e campos conforme `contracts/audit-events.md`)
+- [x] T005 [P] Teste unitário de `logTenantEvent` (formato + ausência de PII/segredos) em `src/__tests__/unit/shared/tenant/audit-log.test.ts`
+- [x] T006 Estender o helper de integração `src/__tests__/integration/_helpers/db.ts` com `withOrgTx(client, orgId, fn)` que abre transação e faz `set_config('app.current_org', $1, true)` antes do callback (suporte aos testes de RLS)
 
 **Checkpoint**: fundação pronta — stories podem começar.
 
@@ -59,16 +59,16 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 ### Tests for User Story 4 ⚠️
 
-- [X] T007 [P] [US4] Teste de integração (deve FALHAR primeiro) do caminho crítico de isolamento em `src/__tests__/integration/shared/db/tenant-isolation.test.ts`: com tenant A fixado, `select` sem `where` em `tenant_probe` retorna só A; com B, só B; sem tenant fixado, 0 linhas; **com um `orgId` inexistente/inválido fixado, 0 linhas** (FR-018) (gate por `INTEGRATION_APP_RUNTIME_URL`)
-- [X] T008 [P] [US4] Teste unitário de `withOrg` emitindo `set_config('app.current_org', $1, true)` parametrizado dentro de transação (tx mockada) em `src/__tests__/unit/shared/db/with-org.test.ts`
+- [x] T007 [P] [US4] Teste de integração (deve FALHAR primeiro) do caminho crítico de isolamento em `src/__tests__/integration/shared/db/tenant-isolation.test.ts`: com tenant A fixado, `select` sem `where` em `tenant_probe` retorna só A; com B, só B; sem tenant fixado, 0 linhas; **com um `orgId` inexistente/inválido fixado, 0 linhas** (FR-018) (gate por `INTEGRATION_APP_RUNTIME_URL`)
+- [x] T008 [P] [US4] Teste unitário de `withOrg` emitindo `set_config('app.current_org', $1, true)` parametrizado dentro de transação (tx mockada) em `src/__tests__/unit/shared/db/with-org.test.ts`
 
 ### Implementation for User Story 4
 
-- [X] T009 [P] [US4] Definir o schema `tenant_probe` (`id` uuid PK, `organization_id` text NOT NULL, `label` text, `created_at`) + índice em `organization_id` + `pgPolicy("tenant_probe_isolation", { for:"all", to: appRuntimeRole, using/withCheck: current_setting('app.current_org', true) })` + `.enableRLS()` em `src/shared/db/schema/tenant-probe.ts`
-- [X] T010 [US4] Re-exportar `tenantProbe`/tipos em `src/shared/db/schema/index.ts`
-- [X] T011 [US4] Implementar `withOrg(orgId, fn)` em `src/shared/db/with-org.ts` (abre `db.transaction`, executa `set_config('app.current_org', $1, true)`, roda `fn(tx)`) conforme `contracts/withorg-and-rls.md`
-- [X] T012 [US4] Gerar a migration `0003_*` com `npm run db:generate` e adicionar como SQL custom `GRANT SELECT, INSERT, UPDATE, DELETE ON public.tenant_probe TO app_runtime` no arquivo em `src/shared/db/migrations/`
-- [X] T013 [US4] Fazer T007/T008 passarem (aplicar migration no Postgres efêmero, rodar `npm run test:integration` e `npm run test`)
+- [x] T009 [P] [US4] Definir o schema `tenant_probe` (`id` uuid PK, `organization_id` text NOT NULL, `label` text, `created_at`) + índice em `organization_id` + `pgPolicy("tenant_probe_isolation", { for:"all", to: appRuntimeRole, using/withCheck: current_setting('app.current_org', true) })` + `.enableRLS()` em `src/shared/db/schema/tenant-probe.ts`
+- [x] T010 [US4] Re-exportar `tenantProbe`/tipos em `src/shared/db/schema/index.ts`
+- [x] T011 [US4] Implementar `withOrg(orgId, fn)` em `src/shared/db/with-org.ts` (abre `db.transaction`, executa `set_config('app.current_org', $1, true)`, roda `fn(tx)`) conforme `contracts/withorg-and-rls.md`
+- [x] T012 [US4] Gerar a migration `0003_*` com `npm run db:generate` e adicionar como SQL custom `GRANT SELECT, INSERT, UPDATE, DELETE ON public.tenant_probe TO app_runtime` no arquivo em `src/shared/db/migrations/`
+- [x] T013 [US4] Fazer T007/T008 passarem (aplicar migration no Postgres efêmero, rodar `npm run test:integration` e `npm run test`)
 
 **Checkpoint**: infraestrutura de RLS pronta e provada — US3/US7/US9 podem prosseguir.
 
@@ -84,11 +84,11 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 ### Tests for User Story 3 ⚠️
 
-- [X] T014 [P] [US3] Estender `src/__tests__/integration/shared/db/tenant-isolation.test.ts`: (a) `select` SEM `where(organizationId)` dentro de `withOrg(A)` retorna só A; (b) após `withOrg(A)`, uma query "bare" subsequente (sem `withOrg`) retorna 0 linhas (escopo não vaza da transação — SC-011)
+- [x] T014 [P] [US3] Estender `src/__tests__/integration/shared/db/tenant-isolation.test.ts`: (a) `select` SEM `where(organizationId)` dentro de `withOrg(A)` retorna só A; (b) após `withOrg(A)`, uma query "bare" subsequente (sem `withOrg`) retorna 0 linhas (escopo não vaza da transação — SC-011)
 
 ### Implementation for User Story 3
 
-- [X] T015 [US3] Adicionar exemplo de leitura org-scoped `listTenantProbes(orgId)` em `src/shared/db/repositories/tenant-probe.ts` usando `withOrg(orgId, (tx) => tx.select()...where(eq(...)))` (demonstra 1ª + 2ª barreira); cobrir com o teste de T014
+- [x] T015 [US3] Adicionar exemplo de leitura org-scoped `listTenantProbes(orgId)` em `src/shared/db/repositories/tenant-probe.ts` usando `withOrg(orgId, (tx) => tx.select()...where(eq(...)))` (demonstra 1ª + 2ª barreira); cobrir com o teste de T014
 
 **Checkpoint**: backstop de leitura comprovado.
 
@@ -102,14 +102,14 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 ### Tests for User Story 1 ⚠️
 
-- [X] T016 [P] [US1] Teste unitário de detecção "usuário sem organização" e resolução do `orgId` da sessão em `src/__tests__/unit/shared/auth/require-org-context.test.ts` (criar/estender; `auth()` mockado)
-- [X] T017 [P] [US1] Teste de integração (Clerk mockado) do redirect do layout protegido para `/onboarding` quando sem `orgId`, **incluindo o caso de usuário removido da org ativa** (sessão perde `orgId`) → mesmo redirect (FR-010), em `src/__tests__/integration/auth/onboarding-guard.test.tsx`
+- [x] T016 [P] [US1] Teste unitário de detecção "usuário sem organização" e resolução do `orgId` da sessão em `src/__tests__/unit/shared/auth/require-org-context.test.ts` (criar/estender; `auth()` mockado)
+- [x] T017 [P] [US1] Teste de integração (Clerk mockado) do redirect do layout protegido para `/onboarding` quando sem `orgId`, **incluindo o caso de usuário removido da org ativa** (sessão perde `orgId`) → mesmo redirect (FR-010), em `src/__tests__/integration/auth/onboarding-guard.test.tsx`
 
 ### Implementation for User Story 1
 
-- [X] T018 [US1] Criar `src/app/(protected)/onboarding/page.tsx` com `<CreateOrganization afterCreateOrganizationUrl="/dashboard" />` conforme `contracts/onboarding-and-shell.md`
-- [X] T019 [US1] Refatorar `src/app/(protected)/layout.tsx`: tratar `NoActiveOrgError`/sessão sem `orgId` com `redirect('/onboarding')` (remover o `<OrganizationList>` inline) e renderizar o shell para os filhos
-- [X] T020 [US1] Validar fluxo criar-org → `/dashboard` (teste de integração com transição de sessão mockada / passo do `quickstart.md`)
+- [x] T018 [US1] Criar `src/app/(protected)/onboarding/page.tsx` com `<CreateOrganization afterCreateOrganizationUrl="/dashboard" />` conforme `contracts/onboarding-and-shell.md`
+- [x] T019 [US1] Refatorar `src/app/(protected)/layout.tsx`: tratar `NoActiveOrgError`/sessão sem `orgId` com `redirect('/onboarding')` (remover o `<OrganizationList>` inline) e renderizar o shell para os filhos
+- [x] T020 [US1] Validar fluxo criar-org → `/dashboard` (teste de integração com transição de sessão mockada / passo do `quickstart.md`)
 
 **Checkpoint**: onboarding por criação funcional e testável.
 
@@ -123,12 +123,12 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 ### Tests for User Story 2 ⚠️
 
-- [X] T021 [P] [US2] Teste de integração (auth mockado, duas orgs) em `src/__tests__/integration/auth/org-switch.test.tsx`: leitura usa o `orgId` ativo e nenhuma chave/tag de cache cruza tenants
+- [x] T021 [P] [US2] Teste de integração (auth mockado, duas orgs) em `src/__tests__/integration/auth/org-switch.test.tsx`: leitura usa o `orgId` ativo e nenhuma chave/tag de cache cruza tenants
 
 ### Implementation for User Story 2
 
-- [X] T022 [US2] Adicionar `<OrganizationSwitcher hidePersonal afterSelectOrganizationUrl="/dashboard" />` ao shell em `src/app/(protected)/layout.tsx` (FR-004)
-- [X] T023 [US2] Emitir `tenant.org_switched` via `logTenantEvent` no **ponto de entrada pós-troca** (shell carregado após `afterSelectOrganizationUrl`), comparando o `orgId` ativo com o último observado na sessão — em `src/app/(protected)/layout.tsx` + utilitário em `src/shared/tenant/` (FR-020/SC-013)
+- [x] T022 [US2] Adicionar `<OrganizationSwitcher hidePersonal afterSelectOrganizationUrl="/dashboard" />` ao shell em `src/app/(protected)/layout.tsx` (FR-004)
+- [x] T023 [US2] Emitir `tenant.org_switched` via `logTenantEvent` no **ponto de entrada pós-troca** (shell carregado após `afterSelectOrganizationUrl`), comparando o `orgId` ativo com o último observado na sessão — em `src/app/(protected)/layout.tsx` + utilitário em `src/shared/tenant/` (FR-020/SC-013)
 
 **Checkpoint**: troca de organização funcional; isolamento de exibição garantido pelo `orgId` da sessão.
 
@@ -144,11 +144,11 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 ### Tests for User Story 5 ⚠️
 
-- [X] T024 [P] [US5] Teste de integração (mockado) de que convites pendentes são exibidos em `/onboarding` em `src/__tests__/integration/auth/onboarding-invite.test.tsx`
+- [x] T024 [P] [US5] Teste de integração (mockado) de que convites pendentes são exibidos em `/onboarding` em `src/__tests__/integration/auth/onboarding-invite.test.tsx`
 
 ### Implementation for User Story 5
 
-- [X] T025 [US5] Acrescentar `<OrganizationList hidePersonal afterSelectOrganizationUrl="/dashboard" />` em `src/app/(protected)/onboarding/page.tsx` para exibir/aceitar convites (FR-003)
+- [x] T025 [US5] Acrescentar `<OrganizationList hidePersonal afterSelectOrganizationUrl="/dashboard" />` em `src/app/(protected)/onboarding/page.tsx` para exibir/aceitar convites (FR-003)
 
 **Checkpoint**: onboarding por convite funcional.
 
@@ -162,7 +162,7 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 ### Tests for User Story 6 ⚠️
 
-- [X] T026 [P] [US6] Teste de integração (auth mockado) em `src/__tests__/integration/auth/org-persistence.test.tsx`: a org ativa persiste após "reload" (sessão retém `orgId`) e o app não lê org de input do cliente (FR-008/SC-006)
+- [x] T026 [P] [US6] Teste de integração (auth mockado) em `src/__tests__/integration/auth/org-persistence.test.tsx`: a org ativa persiste após "reload" (sessão retém `orgId`) e o app não lê org de input do cliente (FR-008/SC-006)
 
 **Checkpoint**: persistência garantida pela sessão Clerk (sem storage próprio).
 
@@ -178,11 +178,11 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 ### Tests for User Story 7 ⚠️
 
-- [X] T027 [P] [US7] Teste de integração de rejeição de escrita cross-tenant em `src/__tests__/integration/shared/db/tenant-write-rejection.test.ts`: dentro de `withOrg(A)`, `insert` e `update` com `organization_id = B` são rejeitados pelo banco
+- [x] T027 [P] [US7] Teste de integração de rejeição de escrita cross-tenant em `src/__tests__/integration/shared/db/tenant-write-rejection.test.ts`: dentro de `withOrg(A)`, `insert` e `update` com `organization_id = B` são rejeitados pelo banco
 
 ### Implementation for User Story 7
 
-- [X] T028 [US7] No repositório `src/shared/db/repositories/tenant-probe.ts`, capturar a rejeição do banco e convertê-la em `Result`/erro sem vazar SQL, emitindo `tenant.cross_tenant_rejected` via `logTenantEvent` (FR-015/FR-020)
+- [x] T028 [US7] No repositório `src/shared/db/repositories/tenant-probe.ts`, capturar a rejeição do banco e convertê-la em `Result`/erro sem vazar SQL, emitindo `tenant.cross_tenant_rejected` via `logTenantEvent` (FR-015/FR-020)
 
 **Checkpoint**: backstop de escrita comprovado.
 
@@ -196,12 +196,12 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 ### Tests for User Story 8 ⚠️
 
-- [X] T029 [P] [US8] Teste unitário da regra de bloqueio (sem `orgId` → bloqueia) em `src/__tests__/unit/shared/auth/require-org-context.test.ts` (estender)
-- [X] T030 [P] [US8] Teste de integração (mock sem org) de que uma Server Action / Route Handler de negócio é bloqueada antes do acesso ao banco em `src/__tests__/integration/auth/no-org-block.test.ts`
+- [x] T029 [P] [US8] Teste unitário da regra de bloqueio (sem `orgId` → bloqueia) em `src/__tests__/unit/shared/auth/require-org-context.test.ts` (estender)
+- [x] T030 [P] [US8] Teste de integração (mock sem org) de que uma Server Action / Route Handler de negócio é bloqueada antes do acesso ao banco em `src/__tests__/integration/auth/no-org-block.test.ts`
 
 ### Implementation for User Story 8
 
-- [X] T031 [US8] Garantir que as entradas de negócio chamem `requireOrgContext()` no topo e emitam `tenant.access_blocked_no_org` no caminho de bloqueio; aplicar/demonstrar no handler de exemplo (`src/shared/server/actions/me.ts` e/ou `src/app/api/me`) conforme `contracts/onboarding-and-shell.md`
+- [x] T031 [US8] Garantir que as entradas de negócio chamem `requireOrgContext()` no topo e emitam `tenant.access_blocked_no_org` no caminho de bloqueio; aplicar/demonstrar no handler de exemplo (`src/shared/server/actions/me.ts` e/ou `src/app/api/me`) conforme `contracts/onboarding-and-shell.md`
 
 **Checkpoint**: invariante "sem tenant, sem dado" garantida em todos os caminhos.
 
@@ -217,7 +217,7 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 ### Implementation for User Story 9
 
-- [X] T032 [US9] Acrescentar, na doc existente `docs/architecture/02-modelagem-de-dados.md` (seção RLS) e/ou `docs/architecture/03-api-design.md`, um ponteiro para o exemplo canônico `tenant_probe` e o contrato `contracts/withorg-and-rls.md`, exigindo o padrão em novos módulos (editar arquivos existentes — não criar novos)
+- [x] T032 [US9] Acrescentar, na doc existente `docs/architecture/02-modelagem-de-dados.md` (seção RLS) e/ou `docs/architecture/03-api-design.md`, um ponteiro para o exemplo canônico `tenant_probe` e o contrato `contracts/withorg-and-rls.md`, exigindo o padrão em novos módulos (editar arquivos existentes — não criar novos)
 
 **Checkpoint**: padrão documentado e exigível em revisão.
 
@@ -225,9 +225,9 @@ Projeto único Next.js fullstack, layout `src/`; alias `@/*` → `./src/*`.
 
 ## Phase 12: Polish & Cross-Cutting Concerns
 
-- [X] T033 [P] Rodar o quality gate completo: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:integration` (todos verdes); confirmar que a garantia de papel restrito permanece válida — `app_runtime` conecta sem `BYPASSRLS` (re-rodar `src/__tests__/integration/shared/db/least-privilege.test.ts`, FR-017)
-- [X] T034 [P] Validar `quickstart.md` ponta a ponta (aplicar migration + testes RLS no Postgres efêmero)
-- [X] T035 Limpeza: sem `any`, nomes intencionais, sem código morto; revisar logs (zero PII/segredos)
+- [x] T033 [P] Rodar o quality gate completo: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:integration` (todos verdes); confirmar que a garantia de papel restrito permanece válida — `app_runtime` conecta sem `BYPASSRLS` (re-rodar `src/__tests__/integration/shared/db/least-privilege.test.ts`, FR-017)
+- [x] T034 [P] Validar `quickstart.md` ponta a ponta (aplicar migration + testes RLS no Postgres efêmero)
+- [x] T035 Limpeza: sem `any`, nomes intencionais, sem código morto; revisar logs (zero PII/segredos)
 
 ---
 
