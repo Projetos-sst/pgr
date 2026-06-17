@@ -25,26 +25,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/drizzle-orm-setup`**. Entrega a camada de persistência (`002`) e a
-reorganização `src/` + refatoração (`003`).
+Branch: **`feature/multi-tenant-isolation`**. Entrega o isolamento multi-tenant de
+ponta a ponta (`004`): onboarding/troca de organização + backstop de RLS.
 
-Estrutura/refatoração — `.specs/003-src-layout-refactor/`:
+Fatia atual (`004`) — `.specs/004-multi-tenant-isolation/`:
 
-- Plan: `.specs/003-src-layout-refactor/plan.md`
-- Spec / Research / Data model / Contracts / Quickstart no mesmo diretório.
-- Código de aplicação e testes vivem sob `src/`; o alias `@/*` mapeia `./src/*`. A raiz contém
-  apenas configuração e tooling.
+- Plan: `.specs/004-multi-tenant-isolation/plan.md`
+- Spec (+ Clarifications 2026-06-17) / Research / Data model / Quickstart no mesmo diretório.
+- Contracts: `contracts/withorg-and-rls.md`, `contracts/onboarding-and-shell.md`, `contracts/audit-events.md`.
 
-Persistência (Drizzle ORM + `org_memberships`) — `.specs/002-drizzle-memberships/`:
+Notas chave (`004`):
 
-- Plan / Spec (+ Clarifications 2026-05-25) / Research / Data model / Quickstart.
-- Contracts: `contracts/db-client.md`, `contracts/webhook-handlers.md`, `contracts/backfill-script.md`.
+- **Duas camadas**: escopo por org na aplicação (1ª barreira) + RLS no Postgres (backstop).
+- `orgId` vem **sempre** da sessão Clerk via `requireOrgContext()` — nunca de input do cliente.
+- Helper `withOrg(orgId, fn)` abre transação e fixa o tenant com
+  `set_config('app.current_org', $1, true)` (parametrizado; escopo por transação, compatível com pooler).
+- Policies do caminho **Drizzle/`app_runtime`** usam `current_setting('app.current_org', true)` (`USING`/`WITH CHECK`),
+  distintas das policies `auth.jwt()`/`authenticated` (caminho `supabase-js`) das tabelas core.
+- Tabela de referência permanente `tenant_probe` demonstra o padrão via migration; cada módulo futuro herda.
+- Onboarding e seletor usam componentes nativos do Clerk; sem org ativa → `/onboarding` (sem render de negócio).
+- Auditoria de fronteira de tenant via `logTenantEvent` (sem PII/segredos).
+- Testes: bloqueio app-layer com `auth()` mockado (sem DB); RLS contra **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite.
 
-Notas chave:
+Histórico: persistência Drizzle + `org_memberships` (`002`, `.specs/002-drizzle-memberships/`);
+reorganização `src/` (`003`, `.specs/003-src-layout-refactor/`). Drizzle é dono code-first único do schema;
+runtime conecta como `app_runtime` (pooler 6543), `drizzle-kit` usa conexão direta como owner.
 
-- Drizzle é **dono code-first único** da estrutura do banco; `supabase/migrations/` é removida ao final.
-- Cliente Drizzle (`src/lib/db/index.ts`) conecta via pooler (porta 6543) como papel restrito `app_runtime`; `drizzle-kit` usa conexão direta (porta 5432) como `postgres`.
-- Drizzle nesta fatia é **admin/sistema only** — dados por-usuário continuam via `@supabase/supabase-js` (que injeta o JWT do Clerk).
-- Escritas em `users`/`orgs`/`org_memberships` continuam via `getRlsBypassingSupabaseClient()` no webhook; Drizzle compartilha apenas os tipos.
-- Integração para esta fatia usa **Postgres efêmero** (branch Supabase), não SQLite, por causa de RLS/triggers/`auth.jwt()`. Outras fatias seguem com SQLite.
 <!-- SPECKIT END -->

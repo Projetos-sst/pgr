@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { OrganizationList } from "@clerk/nextjs";
+import { OrganizationSwitcher } from "@clerk/nextjs";
 
 import { NoActiveOrgError, UnauthorizedError } from "@/shared/auth/errors";
 import { getSessionOrNull } from "@/shared/auth/get-session";
@@ -27,16 +27,15 @@ export default async function ProtectedLayout({
 
   const session = await getSessionOrNull();
   if (!session.orgId) {
-    return (
-      <main className="flex flex-1 items-center justify-center px-6 py-12">
-        <OrganizationList
-          hidePersonal
-          afterCreateOrganizationUrl="/dashboard"
-          afterSelectOrganizationUrl="/dashboard"
-        />
-      </main>
-    );
+    redirect("/onboarding");
   }
 
-  return <>{children}</>;
+  return (
+    <div className="flex min-h-screen flex-col">
+      <header className="flex items-center justify-end border-b border-black/10 px-6 py-3 dark:border-white/10">
+        <OrganizationSwitcher hidePersonal afterSelectOrganizationUrl="/dashboard" />
+      </header>
+      <main className="flex flex-1 flex-col">{children}</main>
+    </div>
+  );
 }

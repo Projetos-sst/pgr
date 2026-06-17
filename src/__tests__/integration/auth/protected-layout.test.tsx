@@ -17,22 +17,16 @@ jest.mock("next/headers", () => ({
   })),
 }));
 
-type ListProps = {
-  hidePersonal?: boolean;
-  afterSelectOrganizationUrl?: string;
-  afterCreateOrganizationUrl?: string;
-};
-
 jest.mock("@clerk/nextjs", () => ({
-  OrganizationList: (props: ListProps) => (
+  OrganizationSwitcher: (props: {
+    hidePersonal?: boolean;
+    afterSelectOrganizationUrl?: string;
+  }) => (
     <div
-      data-testid="org-list"
+      data-testid="org-switcher"
       data-hide-personal={String(Boolean(props.hidePersonal))}
       data-after-select={props.afterSelectOrganizationUrl}
-      data-after-create={props.afterCreateOrganizationUrl}
-    >
-      <div data-testid="pending-invitations">convite pendente (mock C3)</div>
-    </div>
+    />
   ),
 }));
 
@@ -46,7 +40,7 @@ const renderLayout = async () => {
   return render(node as React.ReactElement);
 };
 
-describe("ProtectedLayout (auth + org inline)", () => {
+describe("ProtectedLayout (auth + bloqueio de org)", () => {
   beforeEach(() => {
     mockedAuth.mockReset();
     mockedRedirect.mockClear();
@@ -63,7 +57,7 @@ describe("ProtectedLayout (auth + org inline)", () => {
     expect(mockedRedirect).toHaveBeenCalledWith("/sign-in?redirect_url=%2Fdashboard");
   });
 
-  it("(b) sessão sem org → renderiza <OrganizationList /> inline (sem rota dedicada)", async () => {
+  it("(b) sessão sem org → redirect('/onboarding')", async () => {
     mockedAuth.mockResolvedValue({
       isAuthenticated: true,
       userId: "user_1",
@@ -71,15 +65,11 @@ describe("ProtectedLayout (auth + org inline)", () => {
       orgId: null,
     } as unknown as Awaited<ReturnType<typeof auth>>);
 
-    await renderLayout();
-    const list = screen.getByTestId("org-list");
-    expect(list).toHaveAttribute("data-hide-personal", "true");
-    expect(list).toHaveAttribute("data-after-select", "/dashboard");
-    expect(list).toHaveAttribute("data-after-create", "/dashboard");
-    expect(mockedRedirect).not.toHaveBeenCalled();
+    await expect(renderLayout()).rejects.toThrow(/__redirect:\/onboarding/);
+    expect(mockedRedirect).toHaveBeenCalledWith("/onboarding");
   });
 
-  it("(c) sessão com org → renderiza children", async () => {
+  it("(c) sessão com org → renderiza shell (switcher) + children", async () => {
     mockedAuth.mockResolvedValue({
       isAuthenticated: true,
       userId: "user_1",
@@ -91,18 +81,9 @@ describe("ProtectedLayout (auth + org inline)", () => {
 
     const { container } = await renderLayout();
     expect(container.textContent).toContain("conteúdo");
+    const switcher = screen.getByTestId("org-switcher");
+    expect(switcher).toHaveAttribute("data-hide-personal", "true");
+    expect(switcher).toHaveAttribute("data-after-select", "/dashboard");
     expect(mockedRedirect).not.toHaveBeenCalled();
-  });
-
-  it("(d) C3 — exibe convites pendentes via OrganizationList quando há (FR-011)", async () => {
-    mockedAuth.mockResolvedValue({
-      isAuthenticated: true,
-      userId: "user_1",
-      sessionId: "sess_1",
-      orgId: null,
-    } as unknown as Awaited<ReturnType<typeof auth>>);
-
-    await renderLayout();
-    expect(screen.getByTestId("pending-invitations")).toBeInTheDocument();
   });
 });
