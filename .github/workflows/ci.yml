@@ -33,7 +33,9 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      # npm install (not ci): the lockfile omits Linux-only optional native
+      # deps (@emnapi/*) recorded on the dev machine, which makes `npm ci` abort.
+      - run: npm install --no-audit --no-fund
       - name: Prettier
         run: npm run format:check
       - name: ESLint
@@ -50,7 +52,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - name: Unit tests (front + business logic)
         run: npm run test
       - name: Integration tests (server actions + route handlers)
@@ -65,6 +67,6 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - name: Next.js build
         run: npm run build
