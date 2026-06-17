@@ -33,7 +33,7 @@ export async function setJwtClaims(
 }
 
 export async function applyMigrations(sql: ReturnType<typeof postgres>): Promise<void> {
-  const folder = path.resolve(process.cwd(), "src/lib/db/migrations");
+  const folder = path.resolve(process.cwd(), "src/shared/db/migrations");
   const files = fs
     .readdirSync(folder)
     .filter((f) => f.endsWith(".sql"))

@@ -1,11 +1,11 @@
 import postgres from "postgres";
 
-import { upsertUser } from "@/lib/db/repositories/users";
-import { upsertOrg } from "@/lib/db/repositories/orgs";
+import { upsertUser } from "@/shared/db/repositories/users";
+import { upsertOrg } from "@/shared/db/repositories/orgs";
 import {
   deleteOrgMembership,
   upsertOrgMembership,
-} from "@/lib/db/repositories/org-memberships";
+} from "@/shared/db/repositories/org-memberships";
 import { adminClient, truncateAll } from "../_helpers/db";
 
 const shouldRun =

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { clerkClient } from "@clerk/nextjs/server";
 
-import { requireOrgContext } from "@/lib/auth/require-org-context";
+import { requireOrgContext } from "@/shared/auth/require-org-context";
 
 export const dynamic = "force-dynamic";
 

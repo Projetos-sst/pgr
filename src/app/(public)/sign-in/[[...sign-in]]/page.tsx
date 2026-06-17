@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { SignIn } from "@clerk/nextjs";
 
-import { getSessionOrNull } from "@/lib/auth/get-session";
+import { getSessionOrNull } from "@/shared/auth/get-session";
 
 export default async function SignInPage() {
   const session = await getSessionOrNull();

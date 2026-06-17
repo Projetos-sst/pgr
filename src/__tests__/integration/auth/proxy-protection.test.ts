@@ -30,7 +30,7 @@ describe("proxy.ts — deny-by-default", () => {
     },
   );
 
-  it.each(["/dashboard", "/select-organization", "/api/whoami", "/api/anything"])(
+  it.each(["/dashboard", "/select-organization", "/api/me", "/api/anything"])(
     "rota privada %s exige auth.protect()",
     (path) => {
       expect(isPublic(path)).toBe(false);

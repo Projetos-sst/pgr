@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 
-import { GET as whoamiRouteHandler } from "@/app/api/whoami/route";
-import { whoamiAction } from "@/lib/server/actions/whoami";
+import { GET as meRouteHandler } from "@/app/api/me/route";
+import { meAction } from "@/shared/server/actions/me";
 
 const mockedAuth = auth as jest.MockedFunction<typeof auth>;
 
@@ -29,37 +29,35 @@ const setSession = (session: SessionOverride) => {
 describe("US5 — bloqueio universal e tenant da sessão (FR-009, FR-020)", () => {
   beforeEach(() => mockedAuth.mockReset());
 
-  it("(a) whoamiAction rejeita sem sessão", async () => {
+  it("(a) meAction rejeita sem sessão", async () => {
     setSession({ isAuthenticated: false });
-    await expect(whoamiAction()).resolves.toEqual({
+    await expect(meAction()).resolves.toEqual({
       ok: false,
       error: "UNAUTHORIZED",
     });
   });
 
-  it("(b) whoamiAction rejeita sem org", async () => {
+  it("(b) meAction rejeita sem org", async () => {
     setSession({
       isAuthenticated: true,
       userId: "u1",
       sessionId: "s1",
       orgId: null,
     });
-    await expect(whoamiAction()).resolves.toEqual({
+    await expect(meAction()).resolves.toEqual({
       ok: false,
       error: "NO_ACTIVE_ORG",
     });
   });
 
-  it("(c) whoamiAction ignora orgId passado como parâmetro extra", async () => {
+  it("(c) meAction ignora orgId passado como parâmetro extra", async () => {
     setSession({
       isAuthenticated: true,
       userId: "u1",
       sessionId: "s1",
       orgId: "org_SESSION",
     });
-    const action = whoamiAction as unknown as (fake?: {
-      orgId: string;
-    }) => Promise<unknown>;
+    const action = meAction as unknown as (fake?: { orgId: string }) => Promise<unknown>;
     await expect(action({ orgId: "org_FAKE" })).resolves.toEqual({
       ok: true,
       userId: "u1",
@@ -67,20 +65,20 @@ describe("US5 — bloqueio universal e tenant da sessão (FR-009, FR-020)", () =
     });
   });
 
-  it("(d) GET /api/whoami retorna 401 sem sessão", async () => {
+  it("(d) GET /api/me retorna 401 sem sessão", async () => {
     setSession({ isAuthenticated: false });
-    const res = await whoamiRouteHandler();
+    const res = await meRouteHandler();
     expect(res.status).toBe(401);
   });
 
-  it("(e) GET /api/whoami?orgId=org_FAKE devolve orgId da SESSÃO", async () => {
+  it("(e) GET /api/me?orgId=org_FAKE devolve orgId da SESSÃO", async () => {
     setSession({
       isAuthenticated: true,
       userId: "u1",
       sessionId: "s1",
       orgId: "org_SESSION",
     });
-    const res = await whoamiRouteHandler();
+    const res = await meRouteHandler();
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.orgId).toBe("org_SESSION");
@@ -96,9 +94,7 @@ describe("US5 — bloqueio universal e tenant da sessão (FR-009, FR-020)", () =
     });
     const formData = new FormData();
     formData.append("orgId", "org_FAKE");
-    const action = whoamiAction as unknown as (
-      fd?: FormData,
-    ) => Promise<{ orgId?: string }>;
+    const action = meAction as unknown as (fd?: FormData) => Promise<{ orgId?: string }>;
     const out = await action(formData);
     expect(out).toEqual({
       ok: true,
@@ -114,14 +110,14 @@ describe("US5 — bloqueio universal e tenant da sessão (FR-009, FR-020)", () =
       sessionId: "s1",
       orgId: "org_SESSION",
     });
-    const res = await whoamiRouteHandler();
+    const res = await meRouteHandler();
     const body = await res.json();
     expect(body.orgId).toBe("org_SESSION");
   });
 
   it("(f) body do 401 NÃO contém keys sensíveis", async () => {
     setSession({ isAuthenticated: false });
-    const res = await whoamiRouteHandler();
+    const res = await meRouteHandler();
     expect(res.status).toBe(401);
     const text = await res.text();
     expect(text).toBe("");
@@ -136,7 +132,7 @@ describe("US5 — bloqueio universal e tenant da sessão (FR-009, FR-020)", () =
       sessionId: "s1",
       orgId: null,
     });
-    const res = await whoamiRouteHandler();
+    const res = await meRouteHandler();
     expect(res.status).toBe(403);
     expect(res.headers.get("Cache-Control")).toContain("no-store");
     const body = await res.json();
@@ -151,7 +147,7 @@ describe("US5 — bloqueio universal e tenant da sessão (FR-009, FR-020)", () =
       sessionId: "s1",
       orgId: "org_SESSION",
     });
-    const res = await whoamiRouteHandler();
+    const res = await meRouteHandler();
     expect(res.status).toBe(200);
     const cc = res.headers.get("Cache-Control");
     expect(cc).toContain("no-store");
@@ -160,14 +156,14 @@ describe("US5 — bloqueio universal e tenant da sessão (FR-009, FR-020)", () =
 
   it("(j) Cache-Control no-store em respostas 401 (não cacheia decisões de auth)", async () => {
     setSession({ isAuthenticated: false });
-    const res = await whoamiRouteHandler();
+    const res = await meRouteHandler();
     expect(res.status).toBe(401);
     expect(res.headers.get("Cache-Control")).toContain("no-store");
   });
 
   it("(h) Server Action erro não inclui stack nem Error.message cru", async () => {
     setSession({ isAuthenticated: false });
-    const out = await whoamiAction();
+    const out = await meAction();
     expect(out).toEqual({ ok: false, error: "UNAUTHORIZED" });
     const serialized = JSON.stringify(out);
     expect(serialized).not.toContain("stack");

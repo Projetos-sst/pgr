@@ -2,9 +2,9 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { OrganizationList } from "@clerk/nextjs";
 
-import { NoActiveOrgError, UnauthorizedError } from "@/lib/auth/errors";
-import { getSessionOrNull } from "@/lib/auth/get-session";
-import { requireAuth } from "@/lib/auth/require-auth";
+import { NoActiveOrgError, UnauthorizedError } from "@/shared/auth/errors";
+import { getSessionOrNull } from "@/shared/auth/get-session";
+import { requireAuth } from "@/shared/auth/require-auth";
 
 export default async function ProtectedLayout({
   children,

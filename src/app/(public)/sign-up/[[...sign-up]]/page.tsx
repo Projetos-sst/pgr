@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignUp } from "@clerk/nextjs";
 
-import { getSessionOrNull } from "@/lib/auth/get-session";
+import { getSessionOrNull } from "@/shared/auth/get-session";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

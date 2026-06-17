@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-import { NO_STORE_HEADERS } from "@/lib/http/no-store";
+import { NO_STORE_HEADERS } from "@/shared/http/no-store";
 
 const isPublicRoute = createRouteMatcher([
   "/",

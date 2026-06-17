@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 jest.mock("@clerk/nextjs/webhooks", () => ({
   verifyWebhook: jest.fn(),
 }));
-jest.mock("@/lib/supabase/admin", () => ({
+jest.mock("@/shared/supabase/admin", () => ({
   getRlsBypassingSupabaseClient: jest.fn(() => ({
     from: jest.fn(() => ({
       upsert: jest.fn(() => Promise.resolve({ error: null })),
@@ -15,22 +15,22 @@ jest.mock("@/lib/supabase/admin", () => ({
     })),
   })),
 }));
-jest.mock("@/lib/db/repositories/users", () => ({
+jest.mock("@/shared/db/repositories/users", () => ({
   upsertUser: jest.fn(async () => ({})),
 }));
-jest.mock("@/lib/db/repositories/orgs", () => ({
+jest.mock("@/shared/db/repositories/orgs", () => ({
   upsertOrg: jest.fn(async () => ({})),
 }));
-jest.mock("@/lib/db/repositories/org-memberships", () => ({
+jest.mock("@/shared/db/repositories/org-memberships", () => ({
   upsertOrgMembership: jest.fn(async () => ({})),
   deleteOrgMembership: jest.fn(async () => undefined),
 }));
 
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import { POST } from "@/app/api/webhooks/clerk/route";
-import * as usersRepo from "@/lib/db/repositories/users";
-import * as orgsRepo from "@/lib/db/repositories/orgs";
-import * as mRepo from "@/lib/db/repositories/org-memberships";
+import * as usersRepo from "@/shared/db/repositories/users";
+import * as orgsRepo from "@/shared/db/repositories/orgs";
+import * as mRepo from "@/shared/db/repositories/org-memberships";
 
 const validMembershipData = {
   id: "orgmem_1",

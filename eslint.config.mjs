@@ -5,9 +5,9 @@ import nextTs from "eslint-config-next/typescript";
 const noDbInClientBundle = {
   patterns: [
     {
-      group: ["@/lib/db", "@/lib/db/**"],
+      group: ["@/shared/db", "@/shared/db/**"],
       message:
-        "Drizzle/Postgres não pode vazar para o bundle do cliente. Importe @/lib/db apenas em route handlers, Server Actions ou módulos server-only.",
+        "Drizzle/Postgres não pode vazar para o bundle do cliente. Importe @/shared/db apenas em route handlers, Server Actions ou módulos server-only.",
     },
   ],
 };
