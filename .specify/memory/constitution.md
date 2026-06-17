@@ -1,27 +1,32 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: (template) → 1.0.0
-Ratification: initial adoption (constitution created from template)
+Version change: 1.1.0 → 1.2.0 (MINOR — seção materialmente expandida)
+Last amended: 2026-06-17
 
-Modified principles (placeholders → concrete):
-- [PRINCIPLE_1] → I. Isolamento Multi-Tenant (NÃO-NEGOCIÁVEL)
-- [PRINCIPLE_2] → II. Stack Fixa e Simplicidade (YAGNI)
-- [PRINCIPLE_3] → III. Entrega em Fatias Verticais
-- [PRINCIPLE_4] → IV. Operações Pesadas São Assíncronas
-- [PRINCIPLE_5] → V. Segurança e Integridade de Dados
+Modified sections:
+- "Fluxo de Desenvolvimento & Quality Gates" → cláusula de testes de Integração
+  expandida com exceção: fatias dependentes de recursos exclusivos do PostgreSQL
+  (RLS/policies, triggers, auth.jwt()/current_setting) MUST usar Postgres efêmero
+  como banco de integração; SQLite permanece o default para as demais fatias.
 
-Added sections:
-- Restrições Técnicas & Stack (era [SECTION_2])
-- Fluxo de Desenvolvimento & Quality Gates (era [SECTION_3])
+Rationale: o Princípio I exige RLS como backstop comprovável, e o SQLite não
+suporta RLS/policies/triggers — a redação anterior, lida ao pé da letra, era
+incompatível com o próprio Princípio I. A emenda alinha o texto à prática já
+existente (ver .specs/004-multi-tenant-isolation e o teste least-privilege.test.ts).
 
-Removed sections: none
+Principles modified: none (nenhum princípio adicionado, removido ou redefinido).
+Added sections: none. Removed sections: none.
 
 Templates reviewed for consistency:
-- .specify/templates/plan-template.md ........ ✅ ok (Constitution Check é preenchido pelo /speckit-plan)
+- .specify/templates/plan-template.md ........ ✅ ok (Constitution Check preenchido pelo /speckit-plan; sem referência hardcoded a SQLite)
 - .specify/templates/spec-template.md ......... ✅ ok (sem conflito)
 - .specify/templates/tasks-template.md ........ ✅ ok (sem conflito)
 - .specify/templates/checklist-template.md .... ✅ ok (sem conflito)
+
+Histórico:
+- (template) → 1.0.0: adoção inicial (5 princípios + 2 seções).
+- 1.1.0: ajustes anteriores de governança/seções.
 
 Follow-up TODOs: none
 -->
@@ -140,7 +145,14 @@ de dados que, neste domínio, pode ter consequências regulatórias.
     MUST ter testes unitários (Jest + Testing Library).
   - **Integração**: toda Server Action e Route Handler MUST ter testes de
     integração. O ambiente de integração usa SQLite em memória como banco
-    substituto — setup simples, sem dependência de serviços externos.
+    substituto **por padrão** — setup simples, sem dependência de serviços
+    externos.
+    - **Exceção (recursos exclusivos do PostgreSQL)**: fatias cujo comportamento
+      depende de Row Level Security (RLS)/policies, triggers ou
+      `auth.jwt()`/`current_setting` MUST usar um **Postgres efêmero** (ex.:
+      branch do Supabase) como banco de integração — o SQLite não suporta esses
+      recursos e não conseguiria provar o backstop. Decorre do Princípio I, que
+      exige RLS comprovável. O SQLite permanece o default para as demais fatias.
   - Uma fatia só é considerada concluída quando os testes passam (`npm run
 test` e `npm run test:integration`).
 - Mudanças são revisadas quanto à conformidade com esta constituição antes do
@@ -158,4 +170,4 @@ test` e `npm run test:integration`).
   "Constitution Check"; violações justificadas vão em "Complexity Tracking".
 - Orientação de runtime para agentes: `CLAUDE.md` e `AGENTS.md`.
 
-**Version**: 1.1.0 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-05-20
+**Version**: 1.2.0 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-06-17
