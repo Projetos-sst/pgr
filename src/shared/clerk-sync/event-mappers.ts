@@ -55,6 +55,26 @@ export function toOrgMembershipRow(
   };
 }
 
+export const ClerkUserPayload = z.object({
+  id: z.string().min(1),
+  email_addresses: z
+    .array(z.object({ id: z.string(), email_address: z.string() }))
+    .optional(),
+  primary_email_address_id: z.string().nullable().optional(),
+  first_name: z.string().nullable().optional(),
+  last_name: z.string().nullable().optional(),
+  image_url: z.string().nullable().optional(),
+});
+
+export type ClerkUserPayloadT = z.infer<typeof ClerkUserPayload>;
+
+export function nameFromUser(data: ClerkUserPayloadT): string | null {
+  const parts = [data.first_name, data.last_name].filter((part): part is string =>
+    Boolean(part),
+  );
+  return parts.length > 0 ? parts.join(" ") : null;
+}
+
 export type ClerkUserEventData = {
   id: string;
   email_addresses?: { id: string; email_address: string }[];

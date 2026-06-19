@@ -20,6 +20,15 @@ export class NoActiveOrgError extends AppError {
   }
 }
 
+export class NoTenantContextError extends AppError {
+  readonly code = "NO_TENANT_CONTEXT" as const;
+  readonly status = 403;
+
+  constructor(message = "NO_TENANT_CONTEXT") {
+    super(message);
+  }
+}
+
 export class OrgQuotaExceededError extends AppError {
   readonly code = "ORG_QUOTA_EXCEEDED" as const;
   readonly status = 403;
