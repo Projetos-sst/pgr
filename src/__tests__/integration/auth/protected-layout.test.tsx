@@ -67,7 +67,7 @@ describe("ProtectedLayout (gate Modelo B via requireTenantContext)", () => {
     expect(mockedRedirect).toHaveBeenCalledWith("/sign-in");
   });
 
-  it("(c) tenant ativo resolvido → renderiza shell (switcher) + children, sem onboarding", async () => {
+  it("(c) tenant ativo resolvido → renderiza children, sem onboarding nem switcher duplicado", async () => {
     mockedRequire.mockResolvedValue({
       userId: "user_1",
       tenantId: "tenant_1",
@@ -77,9 +77,7 @@ describe("ProtectedLayout (gate Modelo B via requireTenantContext)", () => {
 
     const { container } = await renderLayout();
     expect(container.textContent).toContain("conteúdo");
-    const switcher = screen.getByTestId("org-switcher");
-    expect(switcher).toHaveAttribute("data-hide-personal", "true");
-    expect(switcher).toHaveAttribute("data-after-select", "/dashboard");
+    expect(screen.queryByTestId("org-switcher")).toBeNull();
     expect(mockedRedirect).not.toHaveBeenCalled();
   });
 });
