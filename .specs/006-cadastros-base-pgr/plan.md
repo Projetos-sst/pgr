@@ -105,6 +105,9 @@ constituição é necessária (a v1.2.1 já reflete o Modelo B que esta fatia co
 ```text
 src/
 ├── shared/
+│   ├── domains/
+│   │   └── pgr/
+│   │       └── validation.ts            # NOVO — zod de domínio (enums, risk_grade, worker_count, cpf/cnpj)
 │   └── db/
 │       ├── with-org.ts                  # reutilizado (withOrg)
 │       ├── roles.ts                     # reutilizado (appRuntimeRole)
@@ -138,9 +141,11 @@ src/
             ├── ges-isolation.test.ts          # NOVO
             ├── job-roles-isolation.test.ts    # NOVO
             ├── categories-isolation.test.ts   # NOVO
-            ├── employees-isolation.test.ts    # NOVO — + UNIQUE(org_id,cpf), CPF cross-org permitido
-            ├── ges-job-roles-isolation.test.ts# NOVO — + worker_count CHECK, UNIQUE(org_id,ges,role)
+            ├── employees-isolation.test.ts    # NOVO — RLS A/B
+            ├── ges-job-roles-isolation.test.ts# NOVO — RLS A/B
             ├── pgr-chain-integrity.test.ts    # NOVO — FK ao longo da cadeia + ON DELETE cascade/set null
+            ├── pgr-constraints.test.ts        # NOVO — UNIQUE(cpf/ges_role/title/type_name) + CHECK + enum
+            ├── migration-shape.test.ts        # NOVO — introspecção: RLS/policy/GRANT/trigger/enum/CHECK
             └── exposed-workers.test.ts        # NOVO — nº de expostos = SUM em Postgres real
 ```
 

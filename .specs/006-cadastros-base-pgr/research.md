@@ -85,13 +85,13 @@ padrão existente. Cada item: Decisão · Rationale · Alternativas consideradas
 ## R6 — `categories`: unicidade `UNIQUE(org_id, type, name)`
 
 - **Decisão**: Adicionar `UNIQUE(org_id, type, name)` (nome único dentro do tipo, por
-  tenant). _Origem: questão de clarificação Q5 não respondida (usuário avançou para o
-  plano); adotado o padrão recomendado como default informado — revisitável._
+  tenant). **Confirmado** e registrado como requisito (spec Clarifications 2026-06-19 +
+  FR-017) — não é mais decisão em aberto.
 - **Rationale**: Mantém o catálogo limpo (sem "Capacete" duplicado) e é consistente com a
   unicidade-por-tenant (`UNIQUE(org_id, …)`) das demais tabelas.
 - **Alternativas**: `UNIQUE(org_id, name)` (ignora tipo — impediria um EPI e uma máquina
   homônimos, improvável mas possível); sem unicidade (permite duplicatas — adia o problema
-  para a UI). Ambos preteridos; decisão de baixo risco e facilmente ajustável.
+  para a UI). Ambos preteridos.
 
 ## R7 — Geração e aplicação da migration `0005_*`
 

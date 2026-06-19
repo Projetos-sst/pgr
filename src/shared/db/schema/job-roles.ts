@@ -1,0 +1,53 @@
+import {
+  pgTable,
+  text,
+  uuid,
+  timestamp,
+  index,
+  uniqueIndex,
+  pgPolicy,
+} from "drizzle-orm/pg-core";
+import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
+
+import { appRuntimeRole } from "../roles";
+import { orgs } from "./orgs";
+import { companies } from "./companies";
+
+const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
+
+export const jobRoles = pgTable(
+  "job_roles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    cbo: text("cbo"),
+    workSchedule: text("work_schedule"),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_job_roles_org_id").on(table.orgId),
+    index("idx_job_roles_company_id").on(table.companyId),
+    uniqueIndex("uq_job_roles_org_company_title").on(
+      table.orgId,
+      table.companyId,
+      table.title,
+    ),
+    pgPolicy("job_roles_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+  ],
+).enableRLS();
+
+export type JobRole = InferSelectModel<typeof jobRoles>;
+export type NewJobRole = InferInsertModel<typeof jobRoles>;

@@ -2,15 +2,18 @@ import {
   pgTable,
   text,
   uuid,
+  smallint,
   timestamp,
   index,
   uniqueIndex,
+  check,
   pgPolicy,
 } from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 
 import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
+import { addressColumns } from "./address-columns";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -22,12 +25,22 @@ export const companies = pgTable(
       .notNull()
       .references(() => orgs.id, { onDelete: "cascade" }),
     cnpj: text("cnpj"),
-    razaoSocial: text("razao_social"),
+    razaoSocial: text("razao_social").notNull(),
+    nomeFantasia: text("nome_fantasia"),
+    phone: text("phone"),
+    email: text("email"),
+    cnae: text("cnae"),
+    mainActivity: text("main_activity"),
+    riskGrade: smallint("risk_grade"),
+    logoPath: text("logo_path"),
+    ...addressColumns(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("idx_companies_org_id").on(table.orgId),
     uniqueIndex("uq_companies_org_id_cnpj").on(table.orgId, table.cnpj),
+    check("companies_risk_grade_check", sql`risk_grade between 1 and 4`),
     pgPolicy("companies_isolation", {
       for: "all",
       to: appRuntimeRole,

@@ -52,6 +52,9 @@ escolha e o porquê.
   apagar a empresa remove seus funcionários (consistente com a cadeia e o edge case
   "apagar `companies` afeta seus … `employees`"). `ges_id`/`job_role_id` seguem nullable
   com `SET NULL`.
+- Q: `categories` tem regra de unicidade? → A: **`UNIQUE(org_id, type, name)`** — nome
+  único por tipo dentro do tenant; consistente com a unicidade-por-tenant das demais
+  tabelas (mantém o catálogo sem duplicatas).
 - Q: Quais valores do enum `employee_status`? → A: **`active | on_leave | dismissed`**
   (exposto agora / afastado temporariamente / desligado) — conjunto mínimo suficiente
   para a exposição do PGR; sub-estados de RH podem ser acrescidos depois.
@@ -220,6 +223,8 @@ e que os enums e CHECKs foram criados.
   associada duas vezes ao mesmo GES.
 - `U(org_id, company_id, title)` em `job_roles`: função duplicada por nome na mesma
   empresa é bloqueada.
+- `U(org_id, type, name)` em `categories`: categoria duplicada por nome dentro do mesmo
+  tipo (`epi`/`machine`) no tenant é bloqueada.
 
 **Derivação do nº de expostos**
 
@@ -286,14 +291,16 @@ e que os enums e CHECKs foram criados.
   rejeitada pelo banco.
 - **FR-014**: `ON DELETE` MUST ser previsível dentro do tenant: `CASCADE` descendo a cadeia
   da empresa (`companies → work_units → ges → ges_job_roles`, e
-  `companies → employees`); as FKs nullable de `employees` para `ges`/`job_roles` usam
-  `SET NULL`.
+  `companies → employees`); apagar uma `job_roles` também `CASCADE` em suas linhas de
+  `ges_job_roles` (a associação não existe sem a função); as FKs nullable de `employees`
+  para `ges`/`job_roles` usam `SET NULL`.
 - **FR-015**: `employees` MUST impor `UNIQUE(org_id, cpf)` — CPF duplicado na mesma org é
   bloqueado; o mesmo CPF em orgs distintas é permitido.
 - **FR-016**: O CNPJ MUST **não** ser único global (consistente com a `005`): o mesmo CNPJ
   pode existir como empresas distintas em tenants distintos.
 - **FR-017**: `ges_job_roles` MUST impor `UNIQUE(org_id, ges_id, job_role_id)`; `job_roles`
-  MUST impor `UNIQUE(org_id, company_id, title)`.
+  MUST impor `UNIQUE(org_id, company_id, title)`; `categories` MUST impor
+  `UNIQUE(org_id, type, name)`.
 - **FR-018**: Os domínios fechados MUST ser impostos pelo banco. Enums:
   `category_type` (`epi | machine`); `employee_status` (`active | on_leave | dismissed`);
   `employee_sex` e `marital_status` (membros conforme Clarifications). `risk_grade` via
@@ -329,10 +336,11 @@ e que os enums e CHECKs foram criados.
   entrada por schema (zod) antes da regra de negócio. _Nesta fatia entram os repositórios
   e a validação de domínio; as Server Actions de CRUD com UI são fatia futura — a
   fundação de validação (schemas de entrada e domínios de enum) é entregue agora._
-- **FR-025**: Os eventos de fronteira de tenant (bloqueio por falta de tenant ativo,
-  rejeição cross-tenant pelo banco) MUST gerar log de auditoria com correlação
-  (`requestId`, `orgId`, `userId`, operação) e SEM PII, segredos ou payloads sensíveis
-  (`logTenantEvent`, padrão da `004`).
+- **FR-025**: A **rejeição cross-tenant pelo banco** (`WITH CHECK`) nos repositórios de
+  cadastro MUST gerar log de auditoria com correlação (`requestId`, `orgId`, `userId`,
+  operação) e SEM PII, segredos ou payloads sensíveis (`logTenantEvent`, padrão da `004`).
+  _O bloqueio por falta de tenant ativo é herdado de `requireTenantContext()` da `005`
+  (fora dos repositórios desta fatia) — não há novo caminho de bloqueio aqui._
 
 ### Key Entities
 
