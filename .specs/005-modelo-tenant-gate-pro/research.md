@@ -14,6 +14,7 @@ nós** no cadastro (não mais necessariamente o id da org do Clerk). Adicionar c
 O GUC `app.current_org` continua recebendo `orgs.id`.
 
 **Rationale**:
+
 - O briefing (§8) propõe `orgs.id uuid` + `clerk_org_id`. Funcionalmente, um `text`
   carregando um UUID gerado (`gen_random_uuid()::text`) é equivalente para RLS/`withOrg`
   e **evita uma migração destrutiva** `text→uuid` que cascataria em `org_memberships.org_id`
@@ -25,6 +26,7 @@ O GUC `app.current_org` continua recebendo `orgs.id`.
   cobre o free (sem Clerk Org, custo zero — briefing §6.2).
 
 **Alternativas consideradas**:
+
 - **`orgs.id uuid` (briefing literal)**: mais "limpo" no tipo, mas migração destrutiva e
   reescrita ampla de FKs/sync sem ganho funcional nesta fatia. Rejeitada por YAGNI.
 - **Reusar `orgs.id` = Clerk org id (status quo `004`)**: impossível no Modelo B — free
@@ -36,6 +38,7 @@ O GUC `app.current_org` continua recebendo `orgs.id`.
 
 **Decisão**: Introduzir `requireTenantContext()` (em `src/shared/auth/`) que resolve o
 tenant ativo assim:
+
 1. Obtém `userId` da sessão Clerk (`auth()` / `assertAuthenticated`).
 2. Consulta `org_memberships` do `userId` (via caminho admin, fonte da verdade nossa).
 3. **0 memberships** → aciona o provisionamento idempotente (R3) e re-resolve; se ainda 0
@@ -48,6 +51,7 @@ tenant ativo assim:
 6. Retorna `{ userId, tenantId, plan, role }` para alimentar `withOrg(tenantId, …)`.
 
 **Rationale**:
+
 - Corrige a premissa da `004`: `requireOrgContext()` depende de `session.orgId`, que é nulo
   para o free → quebraria todo free. A resolução por `org_memberships` (Inv-2) torna a
   "org ativa" um conceito **nosso**, free e PRO na mesma lista.
@@ -56,6 +60,7 @@ tenant ativo assim:
 - Nunca lê tenant de input do cliente (Princípio I): o id vem de `userId`→memberships.
 
 **Alternativas**:
+
 - **Evoluir `requireOrgContext()` in-place**: arriscaria a `004` (testes/onboarding Clerk).
   Preferida a coexistência explícita e um corte controlado no `layout (protected)`.
 - **Persistir `active_tenant_id` na sessão Clerk (publicMetadata)**: acopla ao Clerk o que
@@ -70,6 +75,7 @@ tenant ativo assim:
 e (b) uma `org_memberships (org_id, user_id, role='owner')`. Idempotência = no-op se o
 usuário já possui um membership `owner` de um tenant pessoal. Chamada em **dois pontos** que
 delegam à mesma função:
+
 - **Primário**: handler `user.created` do `clerk-sync-service` (após `replaceUser`),
   determinístico e testável — consistente com o sync da `002`.
 - **Rede de segurança**: `requireTenantContext()` quando encontra 0 memberships (R2,
@@ -79,6 +85,7 @@ Persistência via repositório admin (`getRlsBypassingSupabaseClient`), como tod
 `002` (escrita fora de RLS — é provisionamento de sistema, não acesso de tenant).
 
 **Rationale**:
+
 - Atende FR-001 (todo cadastro → tenant próprio + owner) e o default D1 do briefing (sempre
   cria workspace pessoal free; custo zero por não ser Clerk Org).
 - Idempotência evita duplicar identidade/tenant em reentregas de webhook (Princípio V;
@@ -87,6 +94,7 @@ Persistência via repositório admin (`getRlsBypassingSupabaseClient`), como tod
   introduzir provisionamento especulativo a cada request (só dispara com 0 memberships).
 
 **Alternativas**:
+
 - **Só webhook**: simples, mas sujeito a atraso → primeiro acesso veria "sem tenant".
 - **Só lazy no request**: self-healing, mas sem o ponto determinístico/testável do webhook.
   A combinação (uma função, dois gatilhos) é o equilíbrio robustez × simplicidade.
@@ -104,6 +112,7 @@ como SQL custom na migration. Índice em `(org_id)`; **único `(org_id, cnpj)`**
 intra-tenant); **sem** unicidade global de `cnpj`.
 
 **Rationale**:
+
 - Materializa "empresa-cliente = dado dentro do tenant" (FR-010): isolada por `org_id`,
   **não** é fronteira de isolamento — é a primeira tabela de negócio a herdar o padrão
   provado na `004`.
@@ -115,6 +124,7 @@ intra-tenant); **sem** unicidade global de `cnpj`.
   ela.
 
 **Alternativas**:
+
 - **`cnpj` único global**: violaria FR-018 (mesmo CNPJ atendido por dois escritórios).
   Rejeitada.
 - **Adiar `companies` para a fatia de CRUD**: a spec inclui a entidade no modelo desta
@@ -125,12 +135,15 @@ intra-tenant); **sem** unicidade global de `cnpj`.
 ## R5 — Extensões de `org_memberships`: `scoped_company_id` (e papéis)
 
 **Decisão**: Adicionar `scoped_company_id uuid NULL FK→companies.id` (preenchido só para
-papel `cliente`; ausente nos demais). Manter `role text`. Os papéis de domínio são
-`owner | colaborador | cliente`; nesta fatia **apenas `owner`** é escrito (pelo
-provisionamento). **Não** adicionar `status` (suspended/pending) agora — pertence ao convite
-e ao downgrade (futuros).
+papel `cliente`; ausente nos demais). Manter `role text`. Os papéis de domínio (nosso, em
+inglês) são `owner | collaborator | client` (mapeando `proprietário | colaborador | cliente`);
+nesta fatia **apenas `owner`** é escrito (pelo provisionamento). O caminho Clerk-org do PRO
+persiste o papel nativo do Clerk (`org:admin | org:member`) — domínio separado, reconciliado
+na fatia de convite. **Não** adicionar `status` (suspended/pending) agora — pertence ao
+convite e ao downgrade (futuros).
 
 **Rationale**:
+
 - `scoped_company_id` é explicitamente in-scope (FR-016: o vínculo `cliente` registra escopo
   por empresa). FK garante integridade (Princípio V).
 - Papel/escopo resolvidos **por vínculo do tenant ativo** (FR-017, Inv-1) — atributo da
@@ -141,6 +154,7 @@ e ao downgrade (futuros).
   convite; aqui só geramos `owner`.
 
 **Alternativas**:
+
 - **`role` como enum PG + CHECK agora**: travaria valores antes de a fatia de convite
   definir o mapeamento Clerk↔domínio. Adiada; `text` por ora (consistente com `002`).
 
@@ -154,12 +168,14 @@ que **só** reflete o campo (retorna `plan === 'pro'`) — **sem** bloquear nada
 (FR-013 é futuro). O plano é resolvido sempre do **tenant ativo** (Inv-1), nunca do usuário.
 
 **Rationale**:
+
 - Entrega o headline da fatia (FR-011/FR-012) com a garantia no banco (default + CHECK,
   Princípio V): impossível um tenant sem plano ou com valor inválido (SC-006).
 - Centralizar a leitura num helper prepara o Gate PRO futuro sem espalhar a regra, mas sem
   implementar enforcement (KISS).
 
 **Alternativas**:
+
 - **Enum PG `plan`**: equivalente; `text`+CHECK é mais simples de evoluir e consistente com
   o estilo atual. Mantido `text`+CHECK.
 
@@ -168,6 +184,7 @@ que **só** reflete o campo (retorna `plan === 'pro'`) — **sem** bloquear nada
 ## R7 — Testes: app-layer em SQLite/mocks; isolamento em Postgres efêmero
 
 **Decisão**: Seguir o padrão `004`/constituição v1.2.0:
+
 - **Unitários** (regra de negócio): idempotência do provisionamento, papel `owner`, default
   `free`, resolução do tenant ativo (1→ele; 0→provisiona/bloqueia), elegibilidade de seletor
   (1 vínculo→não; 2+→sim), resolução de plano/papel pelo tenant ativo. Sem DB.
@@ -185,12 +202,12 @@ default.
 
 ## Resumo das decisões
 
-| # | Decisão | FR/Inv | Escopo |
-| --- | --- | --- | --- |
-| R1 | `orgs.id text` canônico nosso + `clerk_org_id` nullable único | FR-001/014 | agora (id); clerk_org_id agora (coluna), uso futuro |
-| R2 | Tenant ativo de `org_memberships` (`requireTenantContext`) | FR-002/019/020, Inv-2 | agora |
-| R3 | `provisionPersonalTenant` idempotente (webhook + self-heal) | FR-001/003/004, Inv-3, D1 | agora |
-| R4 | `companies` herda RLS de `tenant_probe`; único `(org_id,cnpj)` | FR-010/018 | tabela+RLS agora; escopo `cliente` futuro |
-| R5 | `org_memberships.scoped_company_id`; papéis; sem `status` | FR-015/016/017 | `scoped_company_id` agora; `status` futuro |
-| R6 | `orgs.plan` NOT NULL default free + CHECK; helper só-leitura | FR-011/012, Inv-1 | campo agora; enforcement futuro |
-| R7 | Unit/app em mock/SQLite; RLS em Postgres efêmero | spec "Definição de pronto" | agora |
+| #   | Decisão                                                        | FR/Inv                     | Escopo                                              |
+| --- | -------------------------------------------------------------- | -------------------------- | --------------------------------------------------- |
+| R1  | `orgs.id text` canônico nosso + `clerk_org_id` nullable único  | FR-001/014                 | agora (id); clerk_org_id agora (coluna), uso futuro |
+| R2  | Tenant ativo de `org_memberships` (`requireTenantContext`)     | FR-002/019/020, Inv-2      | agora                                               |
+| R3  | `provisionPersonalTenant` idempotente (webhook + self-heal)    | FR-001/003/004, Inv-3, D1  | agora                                               |
+| R4  | `companies` herda RLS de `tenant_probe`; único `(org_id,cnpj)` | FR-010/018                 | tabela+RLS agora; escopo `cliente` futuro           |
+| R5  | `org_memberships.scoped_company_id`; papéis; sem `status`      | FR-015/016/017             | `scoped_company_id` agora; `status` futuro          |
+| R6  | `orgs.plan` NOT NULL default free + CHECK; helper só-leitura   | FR-011/012, Inv-1          | campo agora; enforcement futuro                     |
+| R7  | Unit/app em mock/SQLite; RLS em Postgres efêmero               | spec "Definição de pronto" | agora                                               |

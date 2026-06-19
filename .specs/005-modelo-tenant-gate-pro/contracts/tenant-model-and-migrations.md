@@ -33,9 +33,10 @@ scopedCompanyId: uuid("scoped_company_id").references(() => companies.id, {
 
 - `scoped_company_id`: `uuid` nullable, FK→`companies.id`. Preenchido só para `role='cliente'`
   _(futuro)_. Demais papéis: `null`.
-- `role` permanece `text` (domínio `owner｜colaborador｜cliente`); nesta fatia só `owner` é
-  escrito. **Sem** `CHECK` de role nesta fatia (mapeamento Clerk↔domínio é da fatia de
-  convite — R5).
+- `role` permanece `text` (domínio nosso em inglês `owner｜collaborator｜client`, mapeando
+  `proprietário｜colaborador｜cliente`); nesta fatia só `owner` é escrito. **Sem** `CHECK` de
+  role nesta fatia — o caminho Clerk-org do PRO persiste o papel nativo do Clerk
+  (`org:admin｜org:member`); o mapeamento Clerk↔domínio é da fatia de convite (R5).
 
 ## 3. `companies` — tabela nova (herda o padrão `tenant_probe`)
 

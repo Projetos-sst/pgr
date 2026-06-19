@@ -273,7 +273,9 @@ registrada** nesta fatia; o **enforcement** vem em fatia futura.
   meio de vínculos, com **papel por vínculo**; o vínculo é **aditivo** (nunca substitui
   um existente).
 - **FR-004**: O modelo MUST garantir **1 identidade por CPF/e-mail** — sem identidade/
-  login duplicado para o mesmo CPF/e-mail.
+  login duplicado para o mesmo CPF/e-mail. _Nesta fatia a unicidade é assegurada
+  estruturalmente pelo provedor de auth (dono da identidade) + PK de `users.id`; a
+  reconciliação por CPF/e-mail no aceite de convite (Inv-3) é fatia futura._
 
 **B — Isolamento por tenant (backstop no banco, herdado da `004`)**
 
@@ -306,8 +308,12 @@ registrada** nesta fatia; o **enforcement** vem em fatia futura.
 
 **D — Modelo de identidade/vínculo e empresa-cliente (fundação estrutural)**
 
-- **FR-015**: O **vínculo** MUST registrar um **papel** dentre `proprietário |
-  colaborador | cliente`.
+- **FR-015**: O **vínculo** MUST registrar um **papel**. Os papéis conceituais
+  `proprietário | colaborador | cliente` são persistidos com identificadores em inglês
+  (padrão de código): `proprietário → owner`, `colaborador → collaborator`,
+  `cliente → client`. Nesta fatia somente `owner` é escrito (provisionamento do tenant
+  pessoal). _Nota: o caminho Clerk-org do PRO (futuro) persiste o papel nativo do Clerk
+  (`org:admin`, `org:member`) — domínio separado, reconciliado na fatia de convite._
 - **FR-016**: O vínculo de papel `cliente` MUST poder registrar um **escopo por
   empresa-cliente** (restrição a uma empresa específica do tenant); para os demais
   papéis, o escopo por empresa é ausente.
@@ -340,7 +346,11 @@ registrada** nesta fatia; o **enforcement** vem em fatia futura.
 **G — Validação e auditoria (transversais)**
 
 - **FR-025**: Toda Server Action / Route Handler que cria tenant, cria vínculo ou lê/grava
-  dado de negócio MUST validar a entrada por schema antes da regra de negócio.
+  dado de negócio MUST validar a entrada por schema antes da regra de negócio. _Nesta
+  fatia o único ponto de entrada é o webhook `user.created`, cuja validação é reutilizada
+  (assinatura via `verifyWebhook` + schema zod dos event-mappers) antes de
+  `provisionPersonalTenant`; o teste de integração assegura esse contrato. Server Actions
+  de CRUD de `companies` são fatia futura._
 - **FR-026**: Os eventos de fronteira de tenant — criação de tenant/vínculo no cadastro,
   bloqueio por falta de tenant ativo e rejeição cross-tenant pelo banco — MUST gerar log
   de auditoria com correlação (`requestId`, `tenant`/`orgId`, `userId`, operação) e SEM

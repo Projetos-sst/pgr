@@ -11,16 +11,16 @@ modelado agora, usado em fatia posterior.
 
 ## `orgs` — tenant (escritório/workspace)
 
-| Coluna | Tipo | Constraints | Origem |
-| --- | --- | --- | --- |
-| `id` | `text` | PK | **[mantido]** agora id **canônico nosso**, gerado no cadastro (R1) |
-| `name` | `text` | nullable | [mantido] |
-| `slug` | `text` | unique nullable | [mantido] |
-| `image_url` | `text` | nullable | [mantido] |
-| `plan` | `text` | `NOT NULL DEFAULT 'free'`, `CHECK (plan IN ('free','pro'))` | **[novo]** FR-011 |
-| `clerk_org_id` | `text` | unique, nullable | **[novo]** mapeia → Clerk Org; só PRO _(futuro)_ |
-| `created_at` | `timestamptz` | `NOT NULL DEFAULT now()` | [mantido] |
-| `updated_at` | `timestamptz` | `NOT NULL DEFAULT now()` | [mantido] |
+| Coluna         | Tipo          | Constraints                                                 | Origem                                                             |
+| -------------- | ------------- | ----------------------------------------------------------- | ------------------------------------------------------------------ |
+| `id`           | `text`        | PK                                                          | **[mantido]** agora id **canônico nosso**, gerado no cadastro (R1) |
+| `name`         | `text`        | nullable                                                    | [mantido]                                                          |
+| `slug`         | `text`        | unique nullable                                             | [mantido]                                                          |
+| `image_url`    | `text`        | nullable                                                    | [mantido]                                                          |
+| `plan`         | `text`        | `NOT NULL DEFAULT 'free'`, `CHECK (plan IN ('free','pro'))` | **[novo]** FR-011                                                  |
+| `clerk_org_id` | `text`        | unique, nullable                                            | **[novo]** mapeia → Clerk Org; só PRO _(futuro)_                   |
+| `created_at`   | `timestamptz` | `NOT NULL DEFAULT now()`                                    | [mantido]                                                          |
+| `updated_at`   | `timestamptz` | `NOT NULL DEFAULT now()`                                    | [mantido]                                                          |
 
 **RLS** [mantido]: policy core `orgs_select_active_org` (`auth.jwt() ->> 'org_id'`,
 `TO authenticated`) — caminho supabase-js das tabelas core. A leitura/escrita tenant-scoped
@@ -33,23 +33,28 @@ de negócio usa o caminho `app_runtime`/GUC (ver `companies`).
 
 ## `org_memberships` — vínculo identidade↔tenant (N:N, com papel)
 
-| Coluna | Tipo | Constraints | Origem |
-| --- | --- | --- | --- |
-| `org_id` | `text` | FK→`orgs.id` `ON DELETE CASCADE`, PK(org_id,user_id) | [mantido] |
-| `user_id` | `text` | FK→`users.id` `ON DELETE CASCADE`, PK(org_id,user_id) | [mantido] |
-| `role` | `text` | `NOT NULL` — domínio `owner｜colaborador｜cliente` | [mantido] (nesta fatia só `owner` é escrito) |
-| `scoped_company_id` | `uuid` | nullable, FK→`companies.id` `ON DELETE CASCADE` | **[novo]** FR-016; preenchido só p/ `cliente` _(futuro)_ |
-| `created_at` | `timestamptz` | `NOT NULL DEFAULT now()` | [mantido] |
-| `updated_at` | `timestamptz` | `NOT NULL DEFAULT now()` | [mantido] |
+| Coluna              | Tipo          | Constraints                                              | Origem                                                   |
+| ------------------- | ------------- | -------------------------------------------------------- | -------------------------------------------------------- |
+| `org_id`            | `text`        | FK→`orgs.id` `ON DELETE CASCADE`, PK(org_id,user_id)     | [mantido]                                                |
+| `user_id`           | `text`        | FK→`users.id` `ON DELETE CASCADE`, PK(org_id,user_id)    | [mantido]                                                |
+| `role`              | `text`        | `NOT NULL` — domínio nosso `owner｜collaborator｜client` | [mantido] (nesta fatia só `owner` é escrito)             |
+| `scoped_company_id` | `uuid`        | nullable, FK→`companies.id` `ON DELETE CASCADE`          | **[novo]** FR-016; preenchido só p/ `cliente` _(futuro)_ |
+| `created_at`        | `timestamptz` | `NOT NULL DEFAULT now()`                                 | [mantido]                                                |
+| `updated_at`        | `timestamptz` | `NOT NULL DEFAULT now()`                                 | [mantido]                                                |
 
 **Índices**: `org_memberships_user_idx (user_id)` [mantido] — base da resolução do tenant
 ativo (R2). **RLS** [mantido]: `org_memberships_select_active_org` (`auth.jwt()`).
 
 **Regras**:
+
 - Vínculo **aditivo** (FR-003): uma identidade acumula N memberships; nunca substitui.
 - Papel/escopo resolvidos **por linha** do tenant ativo (FR-017, Inv-1) — nunca global.
-- `scoped_company_id` ausente para `owner｜colaborador`; presente para `cliente` _(futuro)_.
+- `scoped_company_id` ausente para `owner｜collaborator`; presente para `client` _(futuro)_.
 - **Não** há coluna `status` nesta fatia (suspender/pending são futuros — R5).
+- **Convenção de `role`**: domínio nosso em inglês `owner｜collaborator｜client` (mapeia os
+  papéis conceituais `proprietário｜colaborador｜cliente`). O caminho Clerk-org do PRO
+  (futuro) persiste o papel **nativo do Clerk** (`org:admin`, `org:member`) — domínio
+  separado, sem CHECK nesta fatia; a reconciliação Clerk↔domínio é da fatia de convite.
 
 ---
 
@@ -57,19 +62,20 @@ ativo (R2). **RLS** [mantido]: `org_memberships_select_active_org` (`auth.jwt()`
 
 Primeira tabela de negócio a herdar o padrão de RLS de `tenant_probe`.
 
-| Coluna | Tipo | Constraints |
-| --- | --- | --- |
-| `id` | `uuid` | PK `DEFAULT gen_random_uuid()` |
-| `org_id` | `text` | `NOT NULL`, FK→`orgs.id` `ON DELETE CASCADE`, indexado |
-| `cnpj` | `text` | nullable (validação de formato na app) |
-| `razao_social` | `text` | nullable |
-| `created_at` | `timestamptz` | `NOT NULL DEFAULT now()` |
+| Coluna         | Tipo          | Constraints                                            |
+| -------------- | ------------- | ------------------------------------------------------ |
+| `id`           | `uuid`        | PK `DEFAULT gen_random_uuid()`                         |
+| `org_id`       | `text`        | `NOT NULL`, FK→`orgs.id` `ON DELETE CASCADE`, indexado |
+| `cnpj`         | `text`        | nullable (validação de formato na app)                 |
+| `razao_social` | `text`        | nullable                                               |
+| `created_at`   | `timestamptz` | `NOT NULL DEFAULT now()`                               |
 
 **Índices**: `idx_companies_org_id (org_id)`; **`uq_companies_org_id_cnpj (org_id, cnpj)`**
 (dedup intra-tenant; **sem** unicidade global de `cnpj` — FR-018).
 
 **RLS**: `ENABLE ROW LEVEL SECURITY`. Policy `companies_isolation`, `TO app_runtime`,
 `FOR ALL`:
+
 - `USING (org_id = current_setting('app.current_org', true))`
 - `WITH CHECK (org_id = current_setting('app.current_org', true))`
 
@@ -94,12 +100,12 @@ alvo dos testes de isolamento. `companies` é a primeira tabela de negócio a re
 
 ## Identidade e tenant ativo (não persiste id de tenant no cliente)
 
-| Item | Valor |
-| --- | --- |
-| **Identidade (User)** | `users.id` = id Clerk (text); 1 por login. CPF/e-mail únicos são do provedor de auth _(reconciliação por CPF é futura — convite)_ |
-| **Tenant ativo** | resolvido de `org_memberships` pelo `userId` da sessão (R2) — **nunca** de input do cliente (FR-002) |
-| **GUC `app.current_org`** | recebe `orgs.id` (nosso id canônico) via `withOrg(tenantId, …)`; escopo de transação; ausente → 0 linhas |
-| **Elegibilidade de seletor** | `count(memberships(userId)) ≥ 2` (FR-020) — renderização do seletor é _(futuro)_ |
+| Item                         | Valor                                                                                                                             |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Identidade (User)**        | `users.id` = id Clerk (text); 1 por login. CPF/e-mail únicos são do provedor de auth _(reconciliação por CPF é futura — convite)_ |
+| **Tenant ativo**             | resolvido de `org_memberships` pelo `userId` da sessão (R2) — **nunca** de input do cliente (FR-002)                              |
+| **GUC `app.current_org`**    | recebe `orgs.id` (nosso id canônico) via `withOrg(tenantId, …)`; escopo de transação; ausente → 0 linhas                          |
+| **Elegibilidade de seletor** | `count(memberships(userId)) ≥ 2` (FR-020) — renderização do seletor é _(futuro)_                                                  |
 
 ---
 
