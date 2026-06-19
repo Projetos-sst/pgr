@@ -1,7 +1,6 @@
 /**
  * @jest-environment jsdom
  */
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 jest.mock("next/navigation", () => ({
@@ -18,44 +17,44 @@ jest.mock("@clerk/nextjs", () => ({
   OrganizationSwitcher: () => <div data-testid="org-switcher" />,
 }));
 
+jest.mock("@/shared/auth/require-tenant-context", () => ({
+  requireTenantContext: jest.fn(),
+}));
+
+import { requireTenantContext } from "@/shared/auth/require-tenant-context";
+import { NoTenantContextError } from "@/shared/auth/errors";
 import ProtectedLayout from "@/app/(protected)/layout";
 
-const mockedAuth = auth as jest.MockedFunction<typeof auth>;
+const mockedRequire = requireTenantContext as jest.MockedFunction<
+  typeof requireTenantContext
+>;
 const mockedRedirect = redirect as unknown as jest.Mock;
-
-const setSession = (orgId: string | null) =>
-  mockedAuth.mockResolvedValue({
-    isAuthenticated: true,
-    userId: "user_1",
-    sessionId: "sess_1",
-    orgId,
-    orgRole: orgId ? "org:member" : null,
-    orgSlug: orgId ? "acme" : null,
-  } as unknown as Awaited<ReturnType<typeof auth>>);
 
 const runLayout = () => ProtectedLayout({ children: <span>negócio</span> });
 
-describe("onboarding guard (bloqueio sem org ativa)", () => {
+describe("Modelo B — onboarding superseded (US1: sem onboarding para free)", () => {
   beforeEach(() => {
-    mockedAuth.mockReset();
+    mockedRequire.mockReset();
     mockedRedirect.mockClear();
   });
 
-  it("usuário autenticado sem org ativa → /onboarding (FR-007)", async () => {
-    setSession(null);
-    await expect(runLayout()).rejects.toThrow(/__redirect:\/onboarding/);
-    expect(mockedRedirect).toHaveBeenCalledWith("/onboarding");
-  });
+  it("free com tenant próprio resolvido → segue para o shell, SEM redirect('/onboarding')", async () => {
+    mockedRequire.mockResolvedValue({
+      userId: "user_1",
+      tenantId: "tenant_1",
+      plan: "free",
+      role: "owner",
+    });
 
-  it("usuário removido da org ativa (sessão perde orgId) → /onboarding (FR-010)", async () => {
-    setSession(null);
-    await expect(runLayout()).rejects.toThrow(/__redirect:\/onboarding/);
-    expect(mockedRedirect).toHaveBeenCalledWith("/onboarding");
-  });
-
-  it("com org ativa, não redireciona (segue para o shell)", async () => {
-    setSession("org_1");
     await expect(runLayout()).resolves.toBeDefined();
     expect(mockedRedirect).not.toHaveBeenCalled();
+  });
+
+  it("sem tenant ativo → bloqueio em '/sign-in' (nunca '/onboarding') (FR-024)", async () => {
+    mockedRequire.mockRejectedValue(new NoTenantContextError());
+
+    await expect(runLayout()).rejects.toThrow(/__redirect:\/sign-in/);
+    expect(mockedRedirect).toHaveBeenCalledWith("/sign-in");
+    expect(mockedRedirect).not.toHaveBeenCalledWith("/onboarding");
   });
 });

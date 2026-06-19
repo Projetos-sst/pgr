@@ -49,3 +49,6 @@ next-env.d.ts
 
 # skills (installed via `npx skills install`; reproducible from skills-lock.json)
 /.agents/
+
+# playwright mcp artifacts (snapshots, console logs, screenshots)
+/.playwright-mcp/
