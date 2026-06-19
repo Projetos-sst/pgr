@@ -2,7 +2,6 @@
  * @jest-environment jsdom
  */
 import { render, screen } from "@testing-library/react";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 jest.mock("next/navigation", () => ({
@@ -30,9 +29,17 @@ jest.mock("@clerk/nextjs", () => ({
   ),
 }));
 
+jest.mock("@/shared/auth/require-tenant-context", () => ({
+  requireTenantContext: jest.fn(),
+}));
+
+import { requireTenantContext } from "@/shared/auth/require-tenant-context";
+import { NoTenantContextError, UnauthorizedError } from "@/shared/auth/errors";
 import ProtectedLayout from "@/app/(protected)/layout";
 
-const mockedAuth = auth as jest.MockedFunction<typeof auth>;
+const mockedRequire = requireTenantContext as jest.MockedFunction<
+  typeof requireTenantContext
+>;
 const mockedRedirect = redirect as unknown as jest.Mock;
 
 const renderLayout = async () => {
@@ -40,44 +47,33 @@ const renderLayout = async () => {
   return render(node as React.ReactElement);
 };
 
-describe("ProtectedLayout (auth + bloqueio de org)", () => {
+describe("ProtectedLayout (gate Modelo B via requireTenantContext)", () => {
   beforeEach(() => {
-    mockedAuth.mockReset();
+    mockedRequire.mockReset();
     mockedRedirect.mockClear();
   });
 
-  it("(a) sem sessão → redirect('/sign-in')", async () => {
-    mockedAuth.mockResolvedValue({
-      isAuthenticated: false,
-      userId: null,
-      sessionId: null,
-    } as unknown as Awaited<ReturnType<typeof auth>>);
+  it("(a) sem sessão (UnauthorizedError) → redirect('/sign-in?redirect_url=...')", async () => {
+    mockedRequire.mockRejectedValue(new UnauthorizedError());
 
     await expect(renderLayout()).rejects.toThrow(/__redirect:\/sign-in/);
     expect(mockedRedirect).toHaveBeenCalledWith("/sign-in?redirect_url=%2Fdashboard");
   });
 
-  it("(b) sessão sem org → redirect('/onboarding')", async () => {
-    mockedAuth.mockResolvedValue({
-      isAuthenticated: true,
-      userId: "user_1",
-      sessionId: "sess_1",
-      orgId: null,
-    } as unknown as Awaited<ReturnType<typeof auth>>);
+  it("(b) sem tenant ativo (NoTenantContextError) → redirect('/sign-in') (FR-024)", async () => {
+    mockedRequire.mockRejectedValue(new NoTenantContextError());
 
-    await expect(renderLayout()).rejects.toThrow(/__redirect:\/onboarding/);
-    expect(mockedRedirect).toHaveBeenCalledWith("/onboarding");
+    await expect(renderLayout()).rejects.toThrow(/__redirect:\/sign-in/);
+    expect(mockedRedirect).toHaveBeenCalledWith("/sign-in");
   });
 
-  it("(c) sessão com org → renderiza shell (switcher) + children", async () => {
-    mockedAuth.mockResolvedValue({
-      isAuthenticated: true,
+  it("(c) tenant ativo resolvido → renderiza shell (switcher) + children, sem onboarding", async () => {
+    mockedRequire.mockResolvedValue({
       userId: "user_1",
-      sessionId: "sess_1",
-      orgId: "org_1",
-      orgRole: "org:admin",
-      orgSlug: "acme",
-    } as unknown as Awaited<ReturnType<typeof auth>>);
+      tenantId: "tenant_1",
+      plan: "free",
+      role: "owner",
+    });
 
     const { container } = await renderLayout();
     expect(container.textContent).toContain("conteúdo");
