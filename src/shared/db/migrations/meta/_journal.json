@@ -36,6 +36,13 @@
       "when": 1781845632882,
       "tag": "0004_modelo_tenant_gate_pro",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781899271669,
+      "tag": "0005_cadastros_base_pgr",
+      "breakpoints": true
     }
   ]
 }

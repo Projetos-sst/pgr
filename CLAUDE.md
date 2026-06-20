@@ -25,45 +25,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/modelo-tenant-gate-pro`**. Corrige a premissa de tenant da `004` e
-estabelece a fundação de identidade/membership do **Modelo B** + o campo de plano (`005`).
+Branch: **`feature/cadastros-base-pgr`**. Primeira fatia de **dados de domínio** do PGR:
+modela e migra as 7 tabelas base da cadeia Empresa → Unidade de Obra → GES → Função /
+Funcionário, sobre o Modelo B de tenant da `005` (`006`).
 
-Fatia atual (`005`) — `.specs/005-modelo-tenant-gate-pro/`:
+Fatia atual (`006`) — `.specs/006-cadastros-base-pgr/`:
 
-- Plan: `.specs/005-modelo-tenant-gate-pro/plan.md`
+- Plan: `.specs/006-cadastros-base-pgr/plan.md`
 - Spec (+ Clarifications 2026-06-19) / Research / Data model / Quickstart no mesmo diretório.
-- Contracts: `contracts/tenant-model-and-migrations.md`, `contracts/tenant-provisioning.md`, `contracts/tenant-context-resolution.md`.
-- Briefing (fonte): `docs/briefing-equipe-acessos-gate-pro.md`.
+- Contracts: `contracts/schema-and-migrations.md`, `contracts/repositories-and-validation.md`.
+- Briefing (fonte): `docs/briefing-cadastros-base-pgr.md`.
 
-Notas chave (`005`):
+Notas chave (`006`):
 
-- **Modelo B**: tenant = **escritório** (nosso `orgs.id`), não a org do Clerk. Empresa-cliente
-  (`companies`, `org_id`) é **dimensão** dentro do tenant, não fronteira de isolamento.
-- **Correção da `004`**: o tenant ativo vem das **nossas** `org_memberships` (chaveadas pelo
-  `userId` da sessão) via novo `requireTenantContext()` — **não** de `session.orgId` (free
-  não tem Clerk Org). `requireOrgContext()` é mantido para o caminho Clerk-org do PRO (futuro).
-- **Provisionamento**: `user.created` (clerk-sync) chama `provisionPersonalTenant(userId)`
-  idempotente → cria `orgs(plan='free', clerk_org_id=null)` + membership `owner`; self-heal
-  no `requireTenantContext()` se 0 memberships (corrida de webhook).
-- **Plano**: `orgs.plan` `NOT NULL DEFAULT 'free' CHECK in ('free','pro')` — **campo apenas**,
-  sem enforcement. Plano é do **tenant ativo** (Inv-1), nunca do usuário.
-- **Schema**: +`orgs.plan`/`clerk_org_id`(unique nullable); +`org_memberships.scoped_company_id`
-  (FK companies, p/ papel `cliente` futuro); +`companies` (RLS por `org_id`, herda
-  `tenant_probe`; único `(org_id,cnpj)`, sem único global). Migration `0004_*` (GRANT custom).
-- **Motor de isolamento da `004` intacto**: `withOrg` + `set_config('app.current_org', …)`,
-  policies `app_runtime`/GUC, `tenant_probe`, `logTenantEvent`. Muda só a **origem** do id.
-- **Fora desta fatia**: enforcement do gate, convite/UI Equipe e Acessos, auto-criação de
-  Clerk Org no upgrade, policy de escopo por empresa do `cliente`, seletor, billing.
-- **Constituição emendada → v1.2.1**: Princípio I agora reflete o Modelo B (tenant = nosso
-  `orgs.id` resolvido da sessão via `org_memberships`; empresa-cliente = dimensão interna;
-  Clerk Org = UI B2B do PRO, opcional). Regra não-negociável preservada (tenant da sessão,
-  nunca do cliente).
-- Testes: unit/app-layer em mock/SQLite; RLS de `companies` contra **Postgres efêmero**
-  (`INTEGRATION_*`), nunca SQLite.
+- **Cadeia**: `companies` (ALTER) → `work_units` → `ges` → `ges_job_roles` ← `job_roles`;
+  `employees` (`company_id*`, `ges_id`/`job_role_id` nullable); `categories` (catálogo
+  `epi|machine`). `ges` **substitui** `sectors` do doc 02.
+- **Isolamento (herdado, intacto)**: toda tabela nova + `companies` tem `org_id text NOT NULL
+  → orgs.id` indexado, RLS `app_runtime` (`current_setting('app.current_org', true)`), GRANT —
+  réplica de `tenant_probe`/`companies`. Acesso via `withOrg`; tenant ativo de
+  `requireTenantContext()`, nunca de input do cliente.
+- **Nº de trabalhadores expostos por GES**: **DERIVADO** por agregação na leitura
+  (`SUM(worker_count)` de `ges_job_roles`); 0 sem associações; **sem coluna nem trigger**.
+- **Integridade no banco**: 4 `pgEnum` (`category_type`, `employee_sex`, `marital_status`,
+  `employee_status`); `CHECK risk_grade between 1 and 4`; `CHECK worker_count > 0`;
+  `UNIQUE(org_id, cpf)` / `(org_id, ges_id, job_role_id)` / `(org_id, company_id, title)` /
+  `(org_id, type, name)`. CNPJ **não** é único global.
+- **ON DELETE**: `CASCADE` descendo a cadeia da empresa (`companies → work_units → ges →
+  ges_job_roles` e `companies → employees`); `SET NULL` em `employees → ges/job_roles`.
+- **`companies.razao_social` passa a `NOT NULL`**. Campos `*_path` (logo/foto) entram só
+  como texto — upload é futuro.
+- **Migration `0005_*`** (drizzle-kit) com GRANT + triggers `set_updated_at` como SQL custom
+  (padrão `0001`/`0003`), aplicada via conexão direta unpooled (owner).
+- **Fora desta fatia**: UI/formulários, lookup de CNPJ, ViaCEP, upload, tabela de CBO,
+  vínculo com treinamentos, Server Actions de CRUD com interface, vínculo `employees`↔`risks`.
+- Testes: unit (validação zod + agregação em mock); RLS/integridade/cadeia contra **Postgres
+  efêmero** (`INTEGRATION_*`), nunca SQLite.
 
 Histórico: Clerk auth (`001`); persistência Drizzle + `org_memberships` (`002`); reorganização
-`src/` (`003`); isolamento multi-tenant + RLS backstop + `tenant_probe` (`004`). Drizzle é dono
-code-first do schema; runtime conecta como `app_runtime` (pooler 6543), `drizzle-kit` usa
-conexão direta como owner.
+`src/` (`003`); isolamento multi-tenant + RLS backstop + `tenant_probe` (`004`); Modelo B de
+tenant (escritório = `orgs.id`) + provisionamento + `companies` + campo de plano `free|pro` +
+constituição v1.2.1 (`005`). Drizzle é dono code-first do schema; runtime conecta como
+`app_runtime` (pooler 6543), `drizzle-kit` usa conexão direta como owner.
 
 <!-- SPECKIT END -->

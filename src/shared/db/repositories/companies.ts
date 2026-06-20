@@ -5,7 +5,7 @@ import { companies, type Company } from "@/shared/db/schema";
 
 export type NewCompanyInput = {
   cnpj?: string | null;
-  razaoSocial?: string | null;
+  razaoSocial: string;
 };
 
 export async function listCompanies(tenantId: string): Promise<Company[]> {
@@ -22,7 +22,7 @@ export async function createCompany(
       .values({
         orgId: tenantId,
         cnpj: input.cnpj ?? null,
-        razaoSocial: input.razaoSocial ?? null,
+        razaoSocial: input.razaoSocial,
       })
       .returning();
     return row;
