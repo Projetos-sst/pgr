@@ -58,6 +58,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
+    authInterrupts: true,
     serverActions: {
       allowedOrigins: allowedOrigins.length > 0 ? allowedOrigins : undefined,
     },
