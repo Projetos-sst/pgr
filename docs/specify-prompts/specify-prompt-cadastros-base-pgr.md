@@ -11,17 +11,19 @@ associação Função↔GES. Esta é a PRIMEIRA fatia de dados de domínio e fix
 de nomes e padrões para todo o PGR.
 
 ANEXO OBRIGATÓRIO (fonte da verdade — leia INTEIRO antes de escrever a spec):
+
 - docs/briefing-cadastros-base-pgr.md
-Ele contém as decisões travadas no brainstorming, as divergências entre a issue original
-e o estado real do repo, o mapa de nomes (inglês), a reconciliação com o doc 02, o
-modelo de colunas MVP por tabela, as regras de RLS/integridade e o escopo in/out. A spec
-NÃO pode reintroduzir as premissas erradas da issue original (tenant = org do Clerk,
-tabelas em PT, criar `empresas` nova) — todas já corrigidas pela fatia 005.
+  Ele contém as decisões travadas no brainstorming, as divergências entre a issue original
+  e o estado real do repo, o mapa de nomes (inglês), a reconciliação com o doc 02, o
+  modelo de colunas MVP por tabela, as regras de RLS/integridade e o escopo in/out. A spec
+  NÃO pode reintroduzir as premissas erradas da issue original (tenant = org do Clerk,
+  tabelas em PT, criar `empresas` nova) — todas já corrigidas pela fatia 005.
 
 CONTEXTO:
 Projeto SST Manager — SaaS B2B multiempresa de Segurança do Trabalho (inspirado no
 ePGR). Antes de escrever a spec, leia os padrões já vigentes no repo e LISTE os arquivos
 que vai ler. No mínimo:
+
 - `.specs/005-modelo-tenant-gate-pro/` (spec, data-model, contracts) — o Modelo B de
   tenant que esta fatia OBRIGATORIAMENTE segue.
 - `.specs/004-multi-tenant-isolation/contracts/withorg-and-rls.md` — o motor de
@@ -56,9 +58,9 @@ A spec deve tratar o seguinte como CONTRATO VIGENTE e NÃO o reabrir:
    `current_setting('app.current_org', true)`, no papel restrito `app_runtime` (a app
    NÃO conecta como owner). RLS é **backstop** (defesa em profundidade), nunca a única
    barreira. Toda tabela nova MUST replicar o padrão `tenant_probe`/`companies`:
-     ENABLE ROW LEVEL SECURITY; POLICY "<t>_isolation" FOR ALL TO app_runtime
-     USING/WITH CHECK (org_id = current_setting('app.current_org', true));
-     GRANT SELECT,INSERT,UPDATE,DELETE ON public.<t> TO app_runtime;
+   ENABLE ROW LEVEL SECURITY; POLICY "<t>\_isolation" FOR ALL TO app_runtime
+   USING/WITH CHECK (org_id = current_setting('app.current_org', true));
+   GRANT SELECT,INSERT,UPDATE,DELETE ON public.<t> TO app_runtime;
 
 4. PLANO É DO TENANT. `orgs.plan` `free|pro` (NOT NULL DEFAULT 'free' CHECK) já existe; é
    propriedade do tenant (Inv-1), sem enforcement nesta fatia. Esta fatia NÃO toca o
@@ -80,6 +82,7 @@ A spec deve tratar o seguinte como CONTRATO VIGENTE e NÃO o reabrir:
    antes da regra de negócio.
 
 INVARIANTES que esta fatia MUST honrar (da 005):
+
 - Inv-1 — escopo/permissão sempre pelo **tenant ativo**, nunca atributo global do usuário.
 - O backstop de RLS é real: consulta sem filtro só vê o tenant ativo; sem tenant ativo →
   vazio (nunca tudo); escrita cross-tenant é rejeitada pelo banco.
@@ -87,6 +90,7 @@ INVARIANTES que esta fatia MUST honrar (da 005):
 ═══════════════════════════════════════════════════════════════════════════════════════
 DECISÃO DE MODELO desta fatia (registrar como regra — o "o quê", não a solução técnica)
 ═══════════════════════════════════════════════════════════════════════════════════════
+
 - A cadeia de dados é: **Empresa (`companies`) → Unidade de Obra (`work_units`) → GES
   (`ges`) → Função (`job_roles`) / Funcionário (`employees`)**, com a junção
   **`ges_job_roles`** (GES↔Função + nº de trabalhadores) e o catálogo **`categories`**
@@ -105,6 +109,7 @@ DECISÃO DE MODELO desta fatia (registrar como regra — o "o quê", não a solu
 EDGE CASES que a spec MUST cobrir como regra verificável
 ═══════════════════════════════════════════════════════════════════════════════════════
 Isolamento (herdado, por TABELA nova):
+
 - Dados do escritório A nunca aparecem para B — mesmo numa consulta SEM filtro de tenant
   (backstop RLS), em cada uma das 6 tabelas novas + `companies`.
 - Sem tenant ativo fixado na transação → 0 linhas de negócio (nunca tudo).
@@ -113,6 +118,7 @@ Isolamento (herdado, por TABELA nova):
 - Fixação do tenant escopada à transação — fora dela o valor não vaza no pool.
 
 Integridade e unicidade:
+
 - `UNIQUE(org_id, cpf)` em `employees`: mesmo CPF em orgs distintas é permitido; CPF
   duplicado na mesma org é bloqueado.
 - CNPJ não é único global (consistente com `companies`/FR-018 da 005).
@@ -124,6 +130,7 @@ Integridade e unicidade:
   rejeitado. `worker_count` ≤ 0 em `ges_job_roles` é rejeitado.
 
 Derivação do nº de expostos:
+
 - GES sem nenhuma associação em `ges_job_roles` → nº de expostos = 0.
 - Adicionar/remover/alterar `worker_count` numa associação reflete imediatamente no nº de
   expostos do GES (fonte única; sem drift).
@@ -132,6 +139,7 @@ Derivação do nº de expostos:
 ESCOPO
 ═══════════════════════════════════════════════════════════════════════════════════════
 DENTRO:
+
 - Schemas Drizzle das 7 entidades (1 arquivo por tabela em `src/shared/db/schema/`,
   re-exportados pelo index).
 - `ALTER` em `companies` (novas colunas do briefing §5.1) + `CREATE` das 6 novas tabelas.
@@ -143,6 +151,7 @@ DENTRO:
   lint e checagem de tipos verdes.
 
 FORA (fatias futuras / YAGNI — registrar como Out of Scope):
+
 - UI/formulários das 7 entidades; lookup de CNPJ; ViaCEP; upload de logo/foto 3x4 (só os
   campos `*_path` entram agora).
 - Tabela de referência de CBO (CBO é campo texto em `job_roles`).
@@ -152,6 +161,7 @@ FORA (fatias futuras / YAGNI — registrar como Out of Scope):
 - Enforcement de plano/gate; vínculo `employees` ↔ `risks` (módulo PGR).
 
 Decisões em aberto a resolver via Clarifications (ver briefing §10):
+
 1. Nomes `work_units` e `ges_job_roles`.
 2. Nº de expostos: agregação na leitura (recomendado) vs coluna recalculada na action.
 3. `razao_social` passa a `NOT NULL`?
