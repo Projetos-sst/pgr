@@ -76,18 +76,21 @@ export async function listGes(
   }
   const where = and(...filters);
 
-  const exposedExpr = sql<number>`coalesce((select sum(r.worker_count) from ges_job_roles r where r.ges_id = ${ges.id} and r.org_id = ${orgId}), 0)::int`;
-
   return withOrg(orgId, async (tx) => {
     const rows = await tx
       .select({
         id: ges.id,
         name: ges.name,
         processDescription: ges.processDescription,
-        exposed: exposedExpr,
+        exposed: sql<number>`coalesce(sum(${gesJobRoles.workerCount}), 0)::int`,
       })
       .from(ges)
+      .leftJoin(
+        gesJobRoles,
+        and(eq(gesJobRoles.gesId, ges.id), eq(gesJobRoles.orgId, orgId)),
+      )
       .where(where)
+      .groupBy(ges.id)
       .orderBy(desc(ges.createdAt))
       .limit(limit)
       .offset(offset);
