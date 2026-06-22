@@ -127,15 +127,20 @@ export async function updateGesJobRole(
   input: { workerCount: number; workSchedule?: string | null },
 ): Promise<GesJobRole | null> {
   const workerCount = workerCountSchema.parse(input.workerCount);
+  const patch: { workerCount: number; updatedAt: Date; workSchedule?: string | null } = {
+    workerCount,
+    updatedAt: new Date(),
+  };
+  // Update parcial: a UI (edição inline da quantidade) e o REST enviam só workerCount.
+  // workSchedule ausente PRESERVA o valor existente — gravar `?? null` apagava o horário.
+  if (input.workSchedule !== undefined) {
+    patch.workSchedule = input.workSchedule;
+  }
   return auditedTenantWrite(orgId, "pgr.ges_job_roles.write_rejected", () =>
     withOrg(orgId, async (tx) => {
       const [row] = await tx
         .update(gesJobRoles)
-        .set({
-          workerCount,
-          workSchedule: input.workSchedule ?? null,
-          updatedAt: new Date(),
-        })
+        .set(patch)
         .where(and(eq(gesJobRoles.orgId, orgId), eq(gesJobRoles.id, id)))
         .returning();
       return row ?? null;
