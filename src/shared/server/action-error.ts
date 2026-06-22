@@ -11,10 +11,23 @@ const PG_ERROR_MAP: Record<string, { code: string; message: string }> = {
   "23502": { code: "VALIDATION", message: "Campo obrigatório ausente." },
 };
 
+const PG_SQLSTATE = /^[0-9A-Z]{5}$/;
+const MAX_CAUSE_DEPTH = 5;
+
+/**
+ * Walks the `cause` chain because postgres-js errors surfaced through Drizzle are
+ * wrapped: the top-level Error carries `message: "Failed query: ..."` and the real
+ * SQLSTATE lives on `error.cause.code`. Reading only the top level made every DB
+ * constraint violation fall through to an unmapped 500 instead of its 4xx code.
+ */
 function postgresErrorCode(error: unknown): string | null {
-  if (error && typeof error === "object" && "code" in error) {
-    const code = (error as { code: unknown }).code;
-    if (typeof code === "string" && /^[0-9A-Z]{5}$/.test(code)) return code;
+  let current: unknown = error;
+  for (let depth = 0; depth <= MAX_CAUSE_DEPTH && current; depth += 1) {
+    if (typeof current === "object" && "code" in current) {
+      const code = (current as { code: unknown }).code;
+      if (typeof code === "string" && PG_SQLSTATE.test(code)) return code;
+    }
+    current = (current as { cause?: unknown }).cause;
   }
   return null;
 }
