@@ -19,17 +19,17 @@ function onlyDigits(value: string): string {
 }
 
 export const cpfSchema = z
-  .string()
+  .string({ error: "CPF é obrigatório" })
   .transform(onlyDigits)
   .refine((digits) => digits.length === 11, {
-    message: "cpf must have 11 digits",
+    message: "CPF deve ter 11 dígitos",
   });
 
 export const cnpjSchema = z
-  .string()
+  .string({ error: "CNPJ inválido" })
   .transform(onlyDigits)
   .refine((digits) => digits.length === 14, {
-    message: "cnpj must have 14 digits",
+    message: "CNPJ deve ter 14 dígitos",
   });
 
 export type CategoryType = z.infer<typeof categoryTypeSchema>;

@@ -26,7 +26,9 @@ export type GesValues = z.output<typeof gesInputSchema>;
 export const gesJobRoleInputSchema = z.object({
   gesId: requiredUuid("GES é obrigatório"),
   jobRoleId: requiredUuid("Função é obrigatória"),
-  workerCount: z.coerce.number().pipe(workerCountSchema),
+  workerCount: z.coerce
+    .number({ error: "Quantidade de trabalhadores é obrigatória" })
+    .pipe(workerCountSchema),
   workSchedule: optionalString,
 });
 
@@ -34,7 +36,9 @@ export type GesJobRoleInput = z.input<typeof gesJobRoleInputSchema>;
 export type GesJobRoleValues = z.output<typeof gesJobRoleInputSchema>;
 
 export const gesJobRoleUpdateSchema = z.object({
-  workerCount: z.coerce.number().pipe(workerCountSchema),
+  workerCount: z.coerce
+    .number({ error: "Quantidade de trabalhadores é obrigatória" })
+    .pipe(workerCountSchema),
   workSchedule: optionalString,
 });
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Company } from "@/shared/db/schema";
 
 import { cnpjSchema, riskGradeSchema } from "./validation";
-import { optionalString } from "./form-fields";
+import { optionalString, requiredString } from "./form-fields";
 
 export type { Company } from "@/shared/db/schema";
 export type { CompanyOption } from "@/shared/db/repositories/companies";
@@ -13,11 +13,13 @@ const cnpjOptional = z.preprocess(
   cnpjSchema.optional(),
 );
 
-const riskGradeInput = z.coerce.number().pipe(riskGradeSchema);
+const riskGradeInput = z.coerce
+  .number({ error: "Grau de risco é obrigatório (1 a 4)" })
+  .pipe(riskGradeSchema);
 
 export const companyInputSchema = z.object({
   cnpj: cnpjOptional,
-  razaoSocial: z.string().trim().min(1, "Razão social é obrigatória"),
+  razaoSocial: requiredString("Razão social é obrigatória"),
   nomeFantasia: optionalString,
   phone: optionalString,
   email: optionalString,
