@@ -163,23 +163,31 @@ read_feature_json_feature_directory() {
     local fj="$repo_root/.specify/feature.json"
     [[ -f "$fj" ]] || { printf '%s' ''; return 0; }
 
+    # Try parsers in order, FALLING THROUGH whenever one yields an empty result.
+    # This is deliberate: on Windows, `python3` may resolve to a non-functional
+    # Microsoft Store stub that exits non-zero with empty stdout. The previous
+    # if/elif structure stopped at the first *available* parser, so a broken
+    # python3 stub blocked the working grep/sed fallback. Chaining on emptiness
+    # makes resolution robust regardless of which tools actually work.
     local _fd=''
     if command -v jq >/dev/null 2>&1; then
-        if ! _fd=$(jq -r '.feature_directory // empty' "$fj" 2>/dev/null); then
-            _fd=''
-        fi
-    elif command -v python3 >/dev/null 2>&1; then
+        _fd=$(jq -r '.feature_directory // empty' "$fj" 2>/dev/null) || _fd=''
+    fi
+    if [[ -z "$_fd" ]] && command -v python3 >/dev/null 2>&1; then
         # Use Python so pretty-printed/multi-line JSON still parses correctly.
-        if ! _fd=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); v=d.get('feature_directory'); print(v if v else '')" "$fj" 2>/dev/null); then
-            _fd=''
-        fi
-    else
+        _fd=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); v=d.get('feature_directory'); print(v if v else '')" "$fj" 2>/dev/null) || _fd=''
+    fi
+    if [[ -z "$_fd" ]]; then
         # Last-resort single-line grep/sed fallback. The `|| true` guards against
         # grep returning 1 (no match) aborting under `set -e` / `pipefail`.
         _fd=$( { grep -E '"feature_directory"[[:space:]]*:' "$fj" 2>/dev/null || true; } \
             | head -n 1 \
             | sed -E 's/^[^:]*:[[:space:]]*"([^"]*)".*$/\1/' )
     fi
+
+    # Strip a trailing carriage return so CRLF-encoded feature.json files
+    # (common on Windows) do not corrupt the resolved path.
+    _fd="${_fd%$'\r'}"
 
     printf '%s' "$_fd"
     return 0

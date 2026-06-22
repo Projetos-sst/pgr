@@ -20,3 +20,25 @@ export {
   type NewEmployee,
 } from "./employees";
 export { gesJobRoles, type GesJobRole, type NewGesJobRole } from "./ges-job-roles";
+export {
+  epiCatalog,
+  epiStock,
+  stockMovements,
+  epiDeliveries,
+  epiDeliveryItems,
+  epiRisk,
+  stockMovementType,
+  epiSignatureStatus,
+  type EpiCatalog,
+  type NewEpiCatalog,
+  type EpiStock,
+  type NewEpiStock,
+  type StockMovement,
+  type NewStockMovement,
+  type EpiDelivery,
+  type NewEpiDelivery,
+  type EpiDeliveryItem,
+  type NewEpiDeliveryItem,
+  type EpiRisk,
+  type NewEpiRisk,
+} from "./epis";

@@ -25,36 +25,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/pgr-base-cruds`**. Fatia atual (`007`) — **CRUD completo** (criar, listar
-paginado, detalhar, editar, excluir) das 5 entidades da cadeia do PGR (Empresa, Unidade de Obra,
-Função, GES + gestão de `ges_job_roles`, Funcionário) em UI (App Router) + Server Actions, sobre
-o modelo de dados da `006`. Consolida 5 cards (#69, #71, #12, #13, #14) numa fatia única.
+Branch: **`feature/epi-data-model`**. Fatia atual (`008`) — **modelo de dados do módulo de
+EPIs** (fundação da Fase 2 / paridade com o ePGR): 6 tabelas novas (`epi_catalog`, `epi_stock`,
+`stock_movements`, `epi_deliveries`, `epi_delivery_items`, `epi_risk`) + 2 enums novos
+(`stock_movement_type`, `epi_signature_status`), isoladas por tenant. Fatia de **modelagem
+pura** (schema + migration + RLS + testes), análoga à `006` — sem UI/Server Actions/CRUD.
 
-Fatia atual (`007`) — `.specs/007-pgr-base-cruds/`:
+Fatia atual (`008`) — `.specs/008-epi-data-model/`:
 
-- Plan: `.specs/007-pgr-base-cruds/plan.md`
-- Spec (+ Clarifications 2026-06-20) / Research / Data model / Quickstart no mesmo diretório.
-- Contracts: `contracts/action-result.md`, `contracts/server-actions.md`, `contracts/repositories.md`.
-- Briefings (fonte): `docs/briefings/007-0{1..5}-*.md`.
+- Plan: `.specs/008-epi-data-model/plan.md`
+- Spec (+ Clarifications 2026-06-22) / Research / Data model / Quickstart no mesmo diretório.
+- Contracts: `contracts/schema-and-migrations.md`.
+- Briefing (fonte): `docs/briefings/briefing-epi-data-model.md`.
 
-Notas chave (`007`):
+Notas chave (`008`):
 
-- **CRUD completo**: estende os repositórios da `006` (hoje só `list`/`create`) com
-  `getById`/`update`/`delete`/busca + **paginação offset** (`{rows,total}`, pageSize 20); `createCompany`
-  passa a persistir **todos** os campos da `006` (endereço/risk_grade/cnae/etc.).
-- **Contrato de retorno**: `ActionResult<T> = {ok:true;data} | {ok:false;error:{code,message,fields?}}`
-  em `src/shared/server/result.ts` (novo, FR-063) — segue a forma de `me.ts`; sem exceção crua na UI.
-- **Autorização por papel** (FR-065): `requireOfficeStaff()` (novo) sobre `requireTenantContext().role`;
-  `owner`/`collaborator` operam, papel `client` → `ForbiddenError`/403 (`app/forbidden.tsx`).
-- **Exclusão**: confirmar-com-aviso (sem bloqueio); cascade/SET NULL pelo banco (`006`); helpers de
-  contagem de dependentes p/ o aviso.
-- **Isolamento (intacto)**: tudo via `withOrg` + RLS backstop; tenant da sessão, nunca do cliente.
-  Nº de expostos derivado (reuso de `exposed-workers`). Server Actions em `server/actions/pgr/`,
-  schemas/DTO em `domains/pgr/`. **Sem migration nova.**
-- Testes: unit (zod/DTO/derivação/mapeamento de erro); integração de Server Actions + 404
-  cross-tenant + isolamento contra **Postgres efêmero** (`INTEGRATION_*`/`runIsolationSuite`), nunca SQLite.
+- **Reuso de `categories`** (006) como taxonomia EPI/máquina — **sem** `epi_categories`;
+  `epi_catalog.category_id → categories`. **`epi_risk → ges`** de forma **interina** (não há
+  tabela `risks` ainda) — dívida técnica registrada.
+- **FR-002a (delta pendente)**: garantir no banco `epi_catalog.type == categories.type` via
+  **FK composta** `(category_id, type) → categories(id, type)` + `UNIQUE(id, type)` em
+  `categories`. Hoje o código tem FK simples; esse é o trabalho restante da fatia.
+- **Constraints**: `CHECK quantity > 0` (movimentos/itens), `balance/min_quantity ≥ 0`;
+  `UNIQUE(org, catalog)` estoque, `(org, catalog, ges)` risco; `auth_token` único **global**
+  (índice parcial); enums fechados. Saldo **materializado** (manutenção é Fase 2).
+- **ON DELETE**: `CASCADE` na cadeia de posse + `employees → epi_deliveries`; `SET NULL` em
+  `stock_movements.delivery_id`; `RESTRICT` em `epi_catalog.category_id` e
+  `epi_delivery_items.catalog_id` (protege taxonomia/histórico).
+- **Isolamento (intacto)**: toda tabela tem `org_id → orgs.id` indexado, RLS `app_runtime`
+  (`current_setting('app.current_org', true)`), GRANT; acesso via `withOrg`, tenant da sessão.
+- **Migration `0007_epi_data_model`** (drizzle-kit) com GRANT + triggers `set_updated_at` como
+  SQL custom (padrão `0005`), aplicada via conexão direta unpooled (owner).
+- Testes: unit (zod dos enums/quantidade); constraints + forma da migration + **6 suítes de
+  isolamento** contra **Postgres efêmero** (`INTEGRATION_*`/`runIsolationSuite`), nunca SQLite.
 
-Fatia anterior (`006`) — `.specs/006-cadastros-base-pgr/` (modelo de dados; migration `0005`).
+Fatia anterior (`007`) — `.specs/007-pgr-base-cruds/`: **CRUD completo** das 5 entidades da
+cadeia do PGR em UI (App Router) + Server Actions sobre o modelo da `006`; contrato
+`ActionResult<T>` em `src/shared/server/result.ts`; autorização por papel `requireOfficeStaff()`
+(`client` → 403); paginação offset; **sem migration nova**. Testes unit + integração de Server
+Actions + isolamento contra Postgres efêmero.
+
+Fatia (`006`) — `.specs/006-cadastros-base-pgr/` (modelo de dados; migration `0005`).
 
 Notas chave (`006`):
 
