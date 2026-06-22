@@ -43,6 +43,13 @@
       "when": 1781899271669,
       "tag": "0005_cadastros_base_pgr",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782086792789,
+      "tag": "0006_close_data_api_anon_authenticated",
+      "breakpoints": true
     }
   ]
 }
