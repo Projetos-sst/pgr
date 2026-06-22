@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { clerkClient } from "@clerk/nextjs/server";
 
-import { requireOrgContext } from "@/shared/auth/require-org-context";
+import { getTenantSwitcher } from "@/shared/tenant/switcher";
 
 export const dynamic = "force-dynamic";
 
@@ -35,18 +33,9 @@ const PGR_MODULES = [
 ];
 
 export default async function DashboardPage() {
-  const ctx = await requireOrgContext();
-  const client = await clerkClient();
-
-  let orgName: string;
-  try {
-    const org = await client.organizations.getOrganization({
-      organizationId: ctx.orgId,
-    });
-    orgName = org.name;
-  } catch {
-    redirect("/sign-in");
-  }
+  const switcher = await getTenantSwitcher();
+  const activeOrg = switcher?.options.find((option) => option.isActive);
+  const orgName = activeOrg?.name ?? "Minha organização";
 
   return (
     <div className="flex flex-1 flex-col gap-8 px-6 py-8">
