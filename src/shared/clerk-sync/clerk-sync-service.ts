@@ -8,10 +8,13 @@ import {
 } from "@/shared/db/repositories/org-memberships";
 import { deleteOrg, replaceOrg, upsertOrg } from "@/shared/db/repositories/orgs";
 import { deleteUser, replaceUser, upsertUser } from "@/shared/db/repositories/users";
+import { provisionPersonalTenant } from "@/shared/tenant/provision-personal-tenant";
 
 import {
   type ClerkOrgEventData,
   type ClerkUserEventData,
+  ClerkUserPayload,
+  nameFromUser,
   OrganizationMembershipPayload,
   type OrganizationMembershipPayloadT,
   orgEventToRow,
@@ -34,8 +37,9 @@ const INVALID_PAYLOAD: ClerkSyncResult = { status: "invalid_payload" };
 export async function handleClerkEvent(event: WebhookEvent): Promise<ClerkSyncResult> {
   switch (event.type) {
     case "user.created":
+      return syncUser(event.data, { provisionTenant: true });
     case "user.updated":
-      return syncUser(event.data);
+      return syncUser(event.data, { provisionTenant: false });
     case "user.deleted":
       return removeUser(event.data.id);
     case "organization.created":
@@ -53,9 +57,34 @@ export async function handleClerkEvent(event: WebhookEvent): Promise<ClerkSyncRe
   }
 }
 
-async function syncUser(data: ClerkUserEventData): Promise<ClerkSyncResult> {
-  await replaceUser(userEventToRow(data));
-  logClerkSync("info", { operation: "user.sync", phase: "finish", user_id: data.id });
+async function syncUser(
+  data: ClerkUserEventData,
+  options: { provisionTenant: boolean },
+): Promise<ClerkSyncResult> {
+  const parsed = ClerkUserPayload.safeParse(data);
+  if (!parsed.success) {
+    logClerkSync("error", {
+      operation: "user.sync",
+      phase: "rejected",
+      reason: "invalid_payload",
+    });
+    return INVALID_PAYLOAD;
+  }
+
+  await replaceUser(userEventToRow(parsed.data));
+
+  if (options.provisionTenant) {
+    await provisionPersonalTenant({
+      userId: parsed.data.id,
+      name: nameFromUser(parsed.data),
+    });
+  }
+
+  logClerkSync("info", {
+    operation: "user.sync",
+    phase: "finish",
+    user_id: parsed.data.id,
+  });
   return OK;
 }
 

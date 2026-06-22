@@ -3,22 +3,28 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 import { NO_STORE_HEADERS } from "@/shared/http/no-store";
 
+// Bypass dev da REST API: libera /api/v1 sem sessao Clerk APENAS fora de producao
+// e com flag explicita. Em producao (APP_ENV=production) nunca e publico.
+const devApiBypass =
+  process.env.APP_ENV !== "production" && process.env.DEV_API_AUTH_BYPASS === "true";
+
 const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks/(.*)",
+  ...(devApiBypass ? ["/api/v1/(.*)"] : []),
 ]);
 
 const NO_STORE_PATH_PREFIXES = ["/api/", "/sign-in", "/sign-up", "/dashboard"];
 
 export default clerkMiddleware(async (auth, request) => {
+  const response = NextResponse.next();
+  const { pathname } = request.nextUrl;
+
   if (!isPublicRoute(request)) {
     await auth.protect();
   }
-
-  const response = NextResponse.next();
-  const { pathname } = request.nextUrl;
 
   if (NO_STORE_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     for (const [name, value] of Object.entries(NO_STORE_HEADERS)) {

@@ -1,6 +1,7 @@
 import {
   pgTable,
   text,
+  uuid,
   timestamp,
   primaryKey,
   index,
@@ -11,6 +12,7 @@ import { authenticatedRole } from "drizzle-orm/supabase";
 
 import { orgs } from "./orgs";
 import { users } from "./users";
+import { companies } from "./companies";
 
 export const orgMemberships = pgTable(
   "org_memberships",
@@ -22,6 +24,9 @@ export const orgMemberships = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     role: text("role").notNull(),
+    scopedCompanyId: uuid("scoped_company_id").references(() => companies.id, {
+      onDelete: "cascade",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

@@ -1,27 +1,44 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: (template) → 1.0.0
-Ratification: initial adoption (constitution created from template)
+Version change: 1.2.0 → 1.2.1 (PATCH — clarificação/correção de Princípio I)
+Last amended: 2026-06-19
 
-Modified principles (placeholders → concrete):
-- [PRINCIPLE_1] → I. Isolamento Multi-Tenant (NÃO-NEGOCIÁVEL)
-- [PRINCIPLE_2] → II. Stack Fixa e Simplicidade (YAGNI)
-- [PRINCIPLE_3] → III. Entrega em Fatias Verticais
-- [PRINCIPLE_4] → IV. Operações Pesadas São Assíncronas
-- [PRINCIPLE_5] → V. Segurança e Integridade de Dados
+Modified sections:
+- Princípio I (Isolamento Multi-Tenant): corrigido o identificador de tenant — de
+  "organização do Clerk" para "o tenant = escritório/workspace (`orgs.id` no nosso
+  banco), resolvido da sessão autenticada via vínculos (`org_memberships`)". Adicionada
+  a distinção empresa-cliente (`company_id`, dimensão de dados DENTRO do tenant) vs.
+  tenant (`org_id`, fronteira de isolamento). A organização do Clerk passa a ser apenas
+  a camada de UI B2B do plano PRO (`orgs.clerk_org_id`), opcional; contas free têm
+  tenant isolado sem organização no Clerk.
+- "Restrições Técnicas & Stack" → linha Auth/Multi-tenant ajustada à mesma premissa.
 
-Added sections:
-- Restrições Técnicas & Stack (era [SECTION_2])
-- Fluxo de Desenvolvimento & Quality Gates (era [SECTION_3])
+Rationale: a fatia 005 (.specs/005-modelo-tenant-gate-pro) adota o Modelo B — o tenant
+é o escritório do profissional de SST, e contas free têm tenant isolado SEM organização
+no Clerk. Logo, o identificador de tenant não pode ser a org do Clerk. A redação anterior
+assumia "org do Clerk = tenant" (premissa da 004), incompatível com o free. A emenda
+corrige o descritor SEM relaxar a regra não-negociável: o tenant continua vindo sempre da
+sessão autenticada e NUNCA de input do cliente.
 
-Removed sections: none
+Classificação PATCH: nenhum princípio adicionado, removido ou redefinido de forma
+incompatível; a regra não-negociável (isolamento + tenant da sessão) é preservada — apenas
+o identificador é descrito com precisão e estendido ao caminho free.
+
+Principles modified: I (clarificado, não redefinido em incompatibilidade).
+Added sections: none. Removed sections: none.
 
 Templates reviewed for consistency:
-- .specify/templates/plan-template.md ........ ✅ ok (Constitution Check é preenchido pelo /speckit-plan)
+- .specify/templates/plan-template.md ........ ✅ ok (Constitution Check preenchido pelo /speckit-plan; sem referência hardcoded ao identificador de tenant)
 - .specify/templates/spec-template.md ......... ✅ ok (sem conflito)
 - .specify/templates/tasks-template.md ........ ✅ ok (sem conflito)
 - .specify/templates/checklist-template.md .... ✅ ok (sem conflito)
+
+Histórico:
+- (template) → 1.0.0: adoção inicial (5 princípios + 2 seções).
+- 1.1.0: ajustes anteriores de governança/seções.
+- 1.2.0: exceção de Postgres efêmero para RLS/policies/triggers na cláusula de Integração.
+- 1.2.1: correção do identificador de tenant no Princípio I (Modelo B — tenant = escritório/`orgs.id`).
 
 Follow-up TODOs: none
 -->
@@ -36,20 +53,31 @@ produto, arquitetura e código. Ela supersede preferências individuais.
 
 ### I. Isolamento Multi-Tenant (NÃO-NEGOCIÁVEL)
 
-Toda leitura e escrita de dados de negócio MUST ser escopada pela organização
-ativa. As regras:
+Toda leitura e escrita de dados de negócio MUST ser escopada pelo **tenant
+ativo** — o escritório/workspace do profissional de SST, identificado pelo
+`orgs.id` no nosso banco. As regras:
 
-- O identificador de tenant (organização do Clerk) MUST vir sempre da sessão
-  autenticada — NUNCA de input do cliente (body, query, header).
-- Nenhuma query pode acessar dados de empresa sem o filtro de tenant aplicado.
+- O identificador do tenant ativo MUST vir sempre da sessão autenticada —
+  resolvido a partir do `userId` da sessão e dos vínculos do nosso sistema
+  (`org_memberships`) — e NUNCA de input do cliente (body, query, header).
+- A organização do Clerk NÃO é o identificador de tenant. Quando existir, é
+  apenas a camada de UI B2B do plano PRO (`orgs.clerk_org_id`); contas free têm
+  tenant isolado SEM organização no Clerk.
+- A "empresa-cliente" (`company_id`) é uma dimensão de dados DENTRO do tenant —
+  NÃO uma fronteira de isolamento. A fronteira de isolamento é sempre o tenant
+  (`org_id`).
+- Nenhuma query pode acessar dados de negócio sem o filtro de tenant aplicado.
 - O Row Level Security (RLS) do Supabase MUST estar habilitado em toda tabela
-  que contém dados de empresa, como defesa em profundidade — nunca a única
+  que contém dados de negócio, como defesa em profundidade — nunca a única
   barreira.
-- Storage de arquivos MUST particionar/autorizar acesso por organização.
+- Storage de arquivos MUST particionar/autorizar acesso por tenant.
 
-**Rationale**: Vazamento de dados entre empresas é a falha crítica de um SaaS
+**Rationale**: Vazamento de dados entre escritórios é a falha crítica de um SaaS
 B2B e o maior risco identificado para este produto. Não há cenário em que
-relaxar este princípio seja aceitável.
+relaxar este princípio seja aceitável. O tenant é o escritório (não a
+empresa-cliente, que é uma dimensão interna): essa premissa (Modelo B) garante
+isolamento desde o cadastro, inclusive para contas free sem organização no
+Clerk.
 
 ### II. Stack Fixa e Simplicidade (YAGNI)
 
@@ -123,7 +151,10 @@ de dados que, neste domínio, pode ter consequências regulatórias.
   repositório.
 - **Execução/Deploy**: Vercel (serverless, escala automática).
 - **Dados**: Supabase — PostgreSQL gerenciado e Storage de arquivos.
-- **Auth/Multi-tenant**: Clerk — sessões, usuários e organizações.
+- **Auth/Multi-tenant**: Clerk — sessões e identidade (usuários). O **tenant** (escritório)
+  é o `orgs.id` do nosso banco, resolvido pela sessão via `org_memberships` (não a org do
+  Clerk). Organizações do Clerk, quando existirem, são a camada de UI B2B do plano PRO
+  (`orgs.clerk_org_id`).
 - **Borda**: Cloudflare — DNS, cache, WAF e mitigação.
 - Backend e frontend são unificados no Next.js (Server Actions e Route
   Handlers); NÃO há API separada tradicional.
@@ -140,7 +171,14 @@ de dados que, neste domínio, pode ter consequências regulatórias.
     MUST ter testes unitários (Jest + Testing Library).
   - **Integração**: toda Server Action e Route Handler MUST ter testes de
     integração. O ambiente de integração usa SQLite em memória como banco
-    substituto — setup simples, sem dependência de serviços externos.
+    substituto **por padrão** — setup simples, sem dependência de serviços
+    externos.
+    - **Exceção (recursos exclusivos do PostgreSQL)**: fatias cujo comportamento
+      depende de Row Level Security (RLS)/policies, triggers ou
+      `auth.jwt()`/`current_setting` MUST usar um **Postgres efêmero** (ex.:
+      branch do Supabase) como banco de integração — o SQLite não suporta esses
+      recursos e não conseguiria provar o backstop. Decorre do Princípio I, que
+      exige RLS comprovável. O SQLite permanece o default para as demais fatias.
   - Uma fatia só é considerada concluída quando os testes passam (`npm run
 test` e `npm run test:integration`).
 - Mudanças são revisadas quanto à conformidade com esta constituição antes do
@@ -158,4 +196,4 @@ test` e `npm run test:integration`).
   "Constitution Check"; violações justificadas vão em "Complexity Tracking".
 - Orientação de runtime para agentes: `CLAUDE.md` e `AGENTS.md`.
 
-**Version**: 1.1.0 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-05-20
+**Version**: 1.2.1 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-06-19

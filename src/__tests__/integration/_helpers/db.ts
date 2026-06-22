@@ -32,6 +32,17 @@ export async function setJwtClaims(
   await sql`select set_config('request.jwt.claims', ${value}, true)`;
 }
 
+export async function withOrgTx<T>(
+  sql: ReturnType<typeof postgres>,
+  orgId: string,
+  fn: (tx: ReturnType<typeof postgres>) => Promise<T>,
+): Promise<T> {
+  return sql.begin(async (tx) => {
+    await tx`select set_config('app.current_org', ${orgId}, true)`;
+    return fn(tx as unknown as ReturnType<typeof postgres>);
+  }) as Promise<T>;
+}
+
 export async function applyMigrations(sql: ReturnType<typeof postgres>): Promise<void> {
   const folder = path.resolve(process.cwd(), "src/shared/db/migrations");
   const files = fs

@@ -25,26 +25,67 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/drizzle-orm-setup`**. Entrega a camada de persistência (`002`) e a
-reorganização `src/` + refatoração (`003`).
+Branch: **`feature/pgr-base-cruds`**. Fatia atual (`007`) — **CRUD completo** (criar, listar
+paginado, detalhar, editar, excluir) das 5 entidades da cadeia do PGR (Empresa, Unidade de Obra,
+Função, GES + gestão de `ges_job_roles`, Funcionário) em UI (App Router) + Server Actions, sobre
+o modelo de dados da `006`. Consolida 5 cards (#69, #71, #12, #13, #14) numa fatia única.
 
-Estrutura/refatoração — `.specs/003-src-layout-refactor/`:
+Fatia atual (`007`) — `.specs/007-pgr-base-cruds/`:
 
-- Plan: `.specs/003-src-layout-refactor/plan.md`
-- Spec / Research / Data model / Contracts / Quickstart no mesmo diretório.
-- Código de aplicação e testes vivem sob `src/`; o alias `@/*` mapeia `./src/*`. A raiz contém
-  apenas configuração e tooling.
+- Plan: `.specs/007-pgr-base-cruds/plan.md`
+- Spec (+ Clarifications 2026-06-20) / Research / Data model / Quickstart no mesmo diretório.
+- Contracts: `contracts/action-result.md`, `contracts/server-actions.md`, `contracts/repositories.md`.
+- Briefings (fonte): `docs/briefings/007-0{1..5}-*.md`.
 
-Persistência (Drizzle ORM + `org_memberships`) — `.specs/002-drizzle-memberships/`:
+Notas chave (`007`):
 
-- Plan / Spec (+ Clarifications 2026-05-25) / Research / Data model / Quickstart.
-- Contracts: `contracts/db-client.md`, `contracts/webhook-handlers.md`, `contracts/backfill-script.md`.
+- **CRUD completo**: estende os repositórios da `006` (hoje só `list`/`create`) com
+  `getById`/`update`/`delete`/busca + **paginação offset** (`{rows,total}`, pageSize 20); `createCompany`
+  passa a persistir **todos** os campos da `006` (endereço/risk_grade/cnae/etc.).
+- **Contrato de retorno**: `ActionResult<T> = {ok:true;data} | {ok:false;error:{code,message,fields?}}`
+  em `src/shared/server/result.ts` (novo, FR-063) — segue a forma de `me.ts`; sem exceção crua na UI.
+- **Autorização por papel** (FR-065): `requireOfficeStaff()` (novo) sobre `requireTenantContext().role`;
+  `owner`/`collaborator` operam, papel `client` → `ForbiddenError`/403 (`app/forbidden.tsx`).
+- **Exclusão**: confirmar-com-aviso (sem bloqueio); cascade/SET NULL pelo banco (`006`); helpers de
+  contagem de dependentes p/ o aviso.
+- **Isolamento (intacto)**: tudo via `withOrg` + RLS backstop; tenant da sessão, nunca do cliente.
+  Nº de expostos derivado (reuso de `exposed-workers`). Server Actions em `server/actions/pgr/`,
+  schemas/DTO em `domains/pgr/`. **Sem migration nova.**
+- Testes: unit (zod/DTO/derivação/mapeamento de erro); integração de Server Actions + 404
+  cross-tenant + isolamento contra **Postgres efêmero** (`INTEGRATION_*`/`runIsolationSuite`), nunca SQLite.
 
-Notas chave:
+Fatia anterior (`006`) — `.specs/006-cadastros-base-pgr/` (modelo de dados; migration `0005`).
 
-- Drizzle é **dono code-first único** da estrutura do banco; `supabase/migrations/` é removida ao final.
-- Cliente Drizzle (`src/lib/db/index.ts`) conecta via pooler (porta 6543) como papel restrito `app_runtime`; `drizzle-kit` usa conexão direta (porta 5432) como `postgres`.
-- Drizzle nesta fatia é **admin/sistema only** — dados por-usuário continuam via `@supabase/supabase-js` (que injeta o JWT do Clerk).
-- Escritas em `users`/`orgs`/`org_memberships` continuam via `getRlsBypassingSupabaseClient()` no webhook; Drizzle compartilha apenas os tipos.
-- Integração para esta fatia usa **Postgres efêmero** (branch Supabase), não SQLite, por causa de RLS/triggers/`auth.jwt()`. Outras fatias seguem com SQLite.
+Notas chave (`006`):
+
+- **Cadeia**: `companies` (ALTER) → `work_units` → `ges` → `ges_job_roles` ← `job_roles`;
+  `employees` (`company_id*`, `ges_id`/`job_role_id` nullable); `categories` (catálogo
+  `epi|machine`). `ges` **substitui** `sectors` do doc 02.
+- **Isolamento (herdado, intacto)**: toda tabela nova + `companies` tem `org_id text NOT NULL
+→ orgs.id` indexado, RLS `app_runtime` (`current_setting('app.current_org', true)`), GRANT —
+  réplica de `tenant_probe`/`companies`. Acesso via `withOrg`; tenant ativo de
+  `requireTenantContext()`, nunca de input do cliente.
+- **Nº de trabalhadores expostos por GES**: **DERIVADO** por agregação na leitura
+  (`SUM(worker_count)` de `ges_job_roles`); 0 sem associações; **sem coluna nem trigger**.
+- **Integridade no banco**: 4 `pgEnum` (`category_type`, `employee_sex`, `marital_status`,
+  `employee_status`); `CHECK risk_grade between 1 and 4`; `CHECK worker_count > 0`;
+  `UNIQUE(org_id, cpf)` / `(org_id, ges_id, job_role_id)` / `(org_id, company_id, title)` /
+  `(org_id, type, name)`. CNPJ **não** é único global.
+- **ON DELETE**: `CASCADE` descendo a cadeia da empresa (`companies → work_units → ges →
+ges_job_roles` e `companies → employees`); `SET NULL` em `employees → ges/job_roles`.
+- **`companies.razao_social` passa a `NOT NULL`**. Campos `*_path` (logo/foto) entram só
+  como texto — upload é futuro.
+- **Migration `0005_*`** (drizzle-kit) com GRANT + triggers `set_updated_at` como SQL custom
+  (padrão `0001`/`0003`), aplicada via conexão direta unpooled (owner).
+- **Fora desta fatia**: UI/formulários, lookup de CNPJ, ViaCEP, upload, tabela de CBO,
+  vínculo com treinamentos, Server Actions de CRUD com interface, vínculo `employees`↔`risks`.
+- Testes: unit (validação zod + agregação em mock); RLS/integridade/cadeia contra **Postgres
+  efêmero** (`INTEGRATION_*`), nunca SQLite.
+
+Histórico: Clerk auth (`001`); persistência Drizzle + `org_memberships` (`002`); reorganização
+`src/` (`003`); isolamento multi-tenant + RLS backstop + `tenant_probe` (`004`); Modelo B de
+tenant (escritório = `orgs.id`) + provisionamento + `companies` + campo de plano `free|pro` +
+constituição v1.2.1 (`005`). Drizzle é dono code-first do schema; runtime conecta como
+`app_runtime` (pooler 6543), `drizzle-kit` usa conexão direta como owner.
+
 <!-- SPECKIT END -->

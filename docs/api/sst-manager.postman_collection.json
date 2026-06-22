@@ -1,0 +1,641 @@
+{
+  "info": {
+    "name": "SST Manager — REST API (/api/v1)",
+    "_postman_id": "c1a2b3d4-0001-4aaa-9bbb-sstmanagerrest1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "API REST (Route Handlers em app/api/v1) — GET/POST/PUT/DELETE. Reusa os mesmos repositorios + validacao + contrato de erro das Server Actions.\n\nAMBIENTES: troque a variavel `baseUrl` (local/homolog/prod). As variaveis ficam na propria colecao (Variables) — nao ha arquivos de environment separados.\n\nAUTENTICACAO (2 modos):\n1) Bypass DEV (local/homolog): com APP_ENV!=production e DEV_API_AUTH_BYPASS=true no servidor, mande os headers `x-dev-tenant` (id do escritorio) e `x-dev-role` (owner|collaborator|client) — ja referenciados via {{devTenant}}/{{devRole}}. Sem token Clerk. IMPOSSIVEL em producao (kill-switch por APP_ENV).\n2) Auth real (qualquer ambiente, inclusive prod): deixe devTenant/devRole vazios e adicione um header `Cookie: __session=<token>; tenant_active_org=<orgId>` (ou `Authorization: Bearer <session token>`). Obtenha o token no navegador: window.Clerk.session.getToken().\n\nRESPOSTAS: recurso no corpo (200/201) ou 204 (delete). Erros: { error: { code, message, fields? } } com status HTTP: 422 VALIDATION, 409 DUPLICATE, 422 FK_NOT_FOUND, 403 FORBIDDEN/NO_TENANT_CONTEXT, 404 NOT_FOUND, 401 UNAUTHORIZED."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "devTenant", "value": "<orgId do escritorio de teste>" },
+    { "key": "devRole", "value": "owner" },
+    { "key": "companyId", "value": "" },
+    { "key": "workUnitId", "value": "" },
+    { "key": "jobRoleId", "value": "" },
+    { "key": "gesId", "value": "" },
+    { "key": "linkId", "value": "" },
+    { "key": "employeeId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Empresa",
+      "item": [
+        {
+          "name": "GET /companies (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies?search=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"],
+              "query": [
+                { "key": "search", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /companies (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razaoSocial\": \"Acme Ltda\",\n  \"riskGrade\": 2,\n  \"cnpj\": \"11222333000181\",\n  \"city\": \"Campinas\",\n  \"state\": \"SP\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /companies/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /companies/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razaoSocial\": \"Acme Ltda (alterada)\",\n  \"riskGrade\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /companies/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /companies/:id/dependents",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/dependents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "dependents"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unidade de Obra",
+      "item": [
+        {
+          "name": "GET /work-units (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-units?companyId={{companyId}}&search=&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-units"],
+              "query": [
+                { "key": "companyId", "value": "{{companyId}}" },
+                { "key": "search", "value": "" },
+                { "key": "page", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /work-units (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-units",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-units"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"name\": \"Canteiro 1\",\n  \"description\": \"Obra X\",\n  \"contractNumber\": \"CT-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /work-units/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-units/{{workUnitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-units", "{{workUnitId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /work-units/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-units/{{workUnitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-units", "{{workUnitId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"name\": \"Canteiro 1 (alterado)\",\n  \"description\": \"Obra X\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /work-units/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-units/{{workUnitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-units", "{{workUnitId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /work-units/:id/dependents",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-units/{{workUnitId}}/dependents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-units", "{{workUnitId}}", "dependents"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Funcao (Cargo)",
+      "item": [
+        {
+          "name": "GET /job-roles (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles?companyId={{companyId}}&search=&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-roles"],
+              "query": [
+                { "key": "companyId", "value": "{{companyId}}" },
+                { "key": "search", "value": "" },
+                { "key": "page", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /job-roles (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-roles"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"title\": \"Pedreiro\",\n  \"cbo\": \"7152-10\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /job-roles/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-roles", "{{jobRoleId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /job-roles/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-roles", "{{jobRoleId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"title\": \"Pedreiro Senior\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /job-roles/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-roles", "{{jobRoleId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /job-roles/:id/dependents",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}/dependents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-roles", "{{jobRoleId}}", "dependents"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GES + vinculos",
+      "item": [
+        {
+          "name": "GET /ges (list + totalWorkers)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges?companyId={{companyId}}&workUnitId=&search=&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges"],
+              "query": [
+                { "key": "companyId", "value": "{{companyId}}" },
+                { "key": "workUnitId", "value": "" },
+                { "key": "search", "value": "" },
+                { "key": "page", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /ges (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"name\": \"GES Pintura\",\n  \"ventilation\": \"Natural\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /ges/:id (com exposedWorkers)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /ges/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"name\": \"GES Pintura (alterado)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /ges/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /ges/:id/dependents",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/dependents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "dependents"]
+            }
+          }
+        },
+        {
+          "name": "GET /ges/:id/job-roles (vinculos)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/job-roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "job-roles"]
+            }
+          }
+        },
+        {
+          "name": "GET /ges/:id/job-roles?available=true",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/job-roles?available=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "job-roles"],
+              "query": [{ "key": "available", "value": "true" }]
+            }
+          }
+        },
+        {
+          "name": "POST /ges/:id/job-roles (add vinculo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/job-roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "job-roles"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobRoleId\": \"{{jobRoleId}}\",\n  \"workerCount\": 3,\n  \"workSchedule\": \"44h\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /ges/:id/job-roles/:linkId",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/job-roles/{{linkId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "job-roles", "{{linkId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"workerCount\": 5\n}" }
+          }
+        },
+        {
+          "name": "DELETE /ges/:id/job-roles/:linkId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/job-roles/{{linkId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "job-roles", "{{linkId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Funcionario",
+      "item": [
+        {
+          "name": "GET /employees (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees?companyId={{companyId}}&status=active&search=&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees"],
+              "query": [
+                { "key": "companyId", "value": "{{companyId}}" },
+                { "key": "status", "value": "active" },
+                { "key": "search", "value": "" },
+                { "key": "page", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /employees (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"fullName\": \"Maria Silva\",\n  \"cpf\": \"12345678901\",\n  \"status\": \"active\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /employees/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /employees/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"fullName\": \"Maria Silva\",\n  \"cpf\": \"12345678901\",\n  \"status\": \"on_leave\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /employees/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
