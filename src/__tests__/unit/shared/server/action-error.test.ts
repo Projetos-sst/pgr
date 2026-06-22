@@ -31,7 +31,10 @@ describe("toActionError", () => {
     expect(result.success).toBe(false);
     const mapped = toActionError(result.error);
     expect(mapped?.code).toBe("VALIDATION");
-    expect(mapped?.fields).toMatchObject({ cpf: expect.any(String), risk: expect.any(String) });
+    expect(mapped?.fields).toMatchObject({
+      cpf: expect.any(String),
+      risk: expect.any(String),
+    });
   });
 
   it("AppError → seu próprio code", () => {

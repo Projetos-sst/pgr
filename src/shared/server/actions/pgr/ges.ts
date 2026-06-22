@@ -71,9 +71,7 @@ export async function updateGesAction(
   );
 }
 
-export async function deleteGesAction(
-  id: string,
-): Promise<ActionResult<{ id: string }>> {
+export async function deleteGesAction(id: string): Promise<ActionResult<{ id: string }>> {
   return officeAction(
     "pgr.ges.delete",
     async ({ tenantId }) => {

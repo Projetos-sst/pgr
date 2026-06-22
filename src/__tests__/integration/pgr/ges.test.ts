@@ -109,7 +109,9 @@ const asOwner = (tenantId: string) =>
     if (!linked.ok) return;
     const linkId = linked.data[0].id;
 
-    const updated = await updateGesJobRoleAction(linkId, PGR_IDS.gesA, { workerCount: "5" });
+    const updated = await updateGesJobRoleAction(linkId, PGR_IDS.gesA, {
+      workerCount: "5",
+    });
     expect(updated.ok).toBe(true);
     let exposed = await getGesAction(PGR_IDS.gesA);
     expect(exposed.ok && exposed.data.exposedWorkers).toBe(5);

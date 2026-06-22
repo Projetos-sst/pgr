@@ -132,13 +132,7 @@ export function Pagination({
   );
 }
 
-export function Table({
-  headers,
-  children,
-}: {
-  headers: string[];
-  children: ReactNode;
-}) {
+export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/10">
       <table className="w-full border-collapse text-sm">

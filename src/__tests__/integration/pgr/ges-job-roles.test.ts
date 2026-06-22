@@ -29,49 +29,56 @@ async function readLink(admin: ReturnType<typeof postgres>) {
   return row as { worker_count: number; work_schedule: string | null };
 }
 
-(shouldRun ? describe : describe.skip)("Server Actions — ges_job_roles update (US4)", () => {
-  let admin: ReturnType<typeof postgres>;
+(shouldRun ? describe : describe.skip)(
+  "Server Actions — ges_job_roles update (US4)",
+  () => {
+    let admin: ReturnType<typeof postgres>;
 
-  beforeAll(async () => {
-    admin = adminClient();
-    await applyMigrations(admin);
-  });
-  afterAll(async () => {
-    await admin.end({ timeout: 5 });
-  });
-  beforeEach(async () => {
-    await seedPgrBase(admin);
-    mockedGate.mockReset();
-    asOwner("org_a");
-  });
-
-  it("update parcial (só workerCount) PRESERVA o workSchedule existente", async () => {
-    const withSchedule = await updateGesJobRoleAction(PGR_IDS.gesJobRoleA, PGR_IDS.gesA, {
-      workerCount: 3,
-      workSchedule: "44h",
+    beforeAll(async () => {
+      admin = adminClient();
+      await applyMigrations(admin);
     });
-    expect(withSchedule.ok).toBe(true);
-    expect((await readLink(admin)).work_schedule).toBe("44h");
-
-    const partial = await updateGesJobRoleAction(PGR_IDS.gesJobRoleA, PGR_IDS.gesA, {
-      workerCount: 9,
+    afterAll(async () => {
+      await admin.end({ timeout: 5 });
     });
-    expect(partial.ok).toBe(true);
-
-    const row = await readLink(admin);
-    expect(row.worker_count).toBe(9);
-    expect(row.work_schedule).toBe("44h");
-  });
-
-  it("update com workSchedule novo sobrescreve", async () => {
-    await updateGesJobRoleAction(PGR_IDS.gesJobRoleA, PGR_IDS.gesA, {
-      workerCount: 3,
-      workSchedule: "44h",
+    beforeEach(async () => {
+      await seedPgrBase(admin);
+      mockedGate.mockReset();
+      asOwner("org_a");
     });
-    await updateGesJobRoleAction(PGR_IDS.gesJobRoleA, PGR_IDS.gesA, {
-      workerCount: 3,
-      workSchedule: "40h",
+
+    it("update parcial (só workerCount) PRESERVA o workSchedule existente", async () => {
+      const withSchedule = await updateGesJobRoleAction(
+        PGR_IDS.gesJobRoleA,
+        PGR_IDS.gesA,
+        {
+          workerCount: 3,
+          workSchedule: "44h",
+        },
+      );
+      expect(withSchedule.ok).toBe(true);
+      expect((await readLink(admin)).work_schedule).toBe("44h");
+
+      const partial = await updateGesJobRoleAction(PGR_IDS.gesJobRoleA, PGR_IDS.gesA, {
+        workerCount: 9,
+      });
+      expect(partial.ok).toBe(true);
+
+      const row = await readLink(admin);
+      expect(row.worker_count).toBe(9);
+      expect(row.work_schedule).toBe("44h");
     });
-    expect((await readLink(admin)).work_schedule).toBe("40h");
-  });
-});
+
+    it("update com workSchedule novo sobrescreve", async () => {
+      await updateGesJobRoleAction(PGR_IDS.gesJobRoleA, PGR_IDS.gesA, {
+        workerCount: 3,
+        workSchedule: "44h",
+      });
+      await updateGesJobRoleAction(PGR_IDS.gesJobRoleA, PGR_IDS.gesA, {
+        workerCount: 3,
+        workSchedule: "40h",
+      });
+      expect((await readLink(admin)).work_schedule).toBe("40h");
+    });
+  },
+);

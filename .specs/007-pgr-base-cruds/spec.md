@@ -217,17 +217,20 @@ confirmação.
 ### Edge Cases
 
 **Empresa**
+
 - CNPJ duplicado no mesmo escritório → bloqueado; mesmo CNPJ em escritórios distintos → permitido.
 - Grau de Risco fora de 1..4 ou ausente → rejeitado.
 - CNPJ com formato inválido (≠ 14 dígitos) → rejeitado; CNPJ vazio → aceito (opcional).
 - Excluir empresa com filhos → confirmação + aviso explícito de cascata.
 
 **Unidade de Obra**
+
 - Empresa sem endereço → "preencher com endereço da empresa" desabilitado.
 - Excluir unidade com GES vinculados → aviso de cascata antes de confirmar.
 - Empresa de outro escritório → nunca selecionável.
 
 **GES + vínculos**
+
 - GES sem funções vinculadas → nº de expostos = 0 (e card "Total" = 0), nunca erro.
 - `worker_count` ≤ 0 → rejeitado.
 - Mesma função vinculada duas vezes ao mesmo GES → bloqueado.
@@ -237,11 +240,13 @@ confirmação.
 - Soma do card "Total" nunca cruza escritórios.
 
 **Função (Cargo)**
+
 - Título duplicado na mesma empresa → bloqueado; mesmo título em empresas diferentes → permitido.
 - Excluir função vinculada a GES (vínculo removido, expostos caem) ou a funcionários (função do
   funcionário fica nula) → avisar do impacto.
 
 **Funcionário**
+
 - CPF inválido → rejeitado; CPF duplicado no mesmo escritório → rejeitado; mesmo CPF em outro
   escritório → aceito.
 - GES sem funções → seletor de Função vazio; salvar sem função é permitido.
@@ -251,6 +256,7 @@ confirmação.
 - Valor de enum fora do conjunto → rejeitado.
 
 **Geral (todas as entidades)**
+
 - Sem escritório ativo (contexto de tenant inexistente/inválido) → listagem vazia, **jamais**
   dados de outro escritório.
 - Registro de outro escritório → 404 no detalhe/edição/exclusão, e nunca presente na listagem.

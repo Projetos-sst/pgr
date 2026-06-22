@@ -23,21 +23,21 @@ fronteira de isolamento.
 
 `companies` foi criada na 005 e estendida na 006 (migration `0005`). Colunas reais:
 
-| Coluna | Tipo | Constraint | Obrigatório no CRUD |
-| --- | --- | --- | --- |
-| `id` | `uuid` | PK `gen_random_uuid()` | — |
-| `org_id` | `text` | `NOT NULL` FK→`orgs.id` cascade, indexado | derivado do tenant ativo |
-| `cnpj` | `text` | nullable | não (validar formato se preenchido) |
-| `razao_social` | `text` | **`NOT NULL`** | **sim** |
-| `nome_fantasia` | `text` | nullable | não |
-| `phone` | `text` | nullable | não |
-| `email` | `text` | nullable | não |
-| `cnae` | `text` | nullable | não |
-| `main_activity` | `text` | nullable | não |
-| `risk_grade` | `smallint` | `CHECK (between 1 and 4)` (NR-04) | **sim** (regra de negócio) |
-| `logo_path` | `text` | nullable (chave de Storage; upload deferido) | não |
-| endereço | `text` × 7 | `zip_code`/`street`/`number`/`complement`/`district`/`city`/`state` | não |
-| `created_at`/`updated_at` | `timestamptz` | `NOT NULL DEFAULT now()` + trigger `set_updated_at` | — |
+| Coluna                    | Tipo          | Constraint                                                          | Obrigatório no CRUD                 |
+| ------------------------- | ------------- | ------------------------------------------------------------------- | ----------------------------------- |
+| `id`                      | `uuid`        | PK `gen_random_uuid()`                                              | —                                   |
+| `org_id`                  | `text`        | `NOT NULL` FK→`orgs.id` cascade, indexado                           | derivado do tenant ativo            |
+| `cnpj`                    | `text`        | nullable                                                            | não (validar formato se preenchido) |
+| `razao_social`            | `text`        | **`NOT NULL`**                                                      | **sim**                             |
+| `nome_fantasia`           | `text`        | nullable                                                            | não                                 |
+| `phone`                   | `text`        | nullable                                                            | não                                 |
+| `email`                   | `text`        | nullable                                                            | não                                 |
+| `cnae`                    | `text`        | nullable                                                            | não                                 |
+| `main_activity`           | `text`        | nullable                                                            | não                                 |
+| `risk_grade`              | `smallint`    | `CHECK (between 1 and 4)` (NR-04)                                   | **sim** (regra de negócio)          |
+| `logo_path`               | `text`        | nullable (chave de Storage; upload deferido)                        | não                                 |
+| endereço                  | `text` × 7    | `zip_code`/`street`/`number`/`complement`/`district`/`city`/`state` | não                                 |
+| `created_at`/`updated_at` | `timestamptz` | `NOT NULL DEFAULT now()` + trigger `set_updated_at`                 | —                                   |
 
 **Constraints relevantes**: `idx_companies_org_id`; `uq_companies_org_id_cnpj` (dedup
 **por tenant** — mesmo CNPJ pode existir em escritórios distintos; **não** há único global);
@@ -61,13 +61,13 @@ fronteira de isolamento.
 > `listCompanies` e `createCompany`, e o `createCompany` **ignora** os campos novos da 006
 > (só grava `cnpj`/`razaoSocial`). Isso é uma **lacuna da task** — a 007 deve corrigir.
 
-| Método | Estado | Ação na 007 |
-| --- | --- | --- |
-| `listCompanies(orgId, { search? })` | parcial (sem busca) | **estender** com busca por razão social/CNPJ |
-| `getCompanyById(orgId, id)` | **inexistente** | **criar** (detalhe; retorna `null`/404 cross-tenant) |
-| `createCompany(orgId, input)` | parcial | **estender** input para todos os campos da 006 |
-| `updateCompany(orgId, id, input)` | **inexistente** | **criar** |
-| `deleteCompany(orgId, id)` | **inexistente** | **criar** (com semântica de cascata) |
+| Método                              | Estado              | Ação na 007                                          |
+| ----------------------------------- | ------------------- | ---------------------------------------------------- |
+| `listCompanies(orgId, { search? })` | parcial (sem busca) | **estender** com busca por razão social/CNPJ         |
+| `getCompanyById(orgId, id)`         | **inexistente**     | **criar** (detalhe; retorna `null`/404 cross-tenant) |
+| `createCompany(orgId, input)`       | parcial             | **estender** input para todos os campos da 006       |
+| `updateCompany(orgId, id, input)`   | **inexistente**     | **criar**                                            |
+| `deleteCompany(orgId, id)`          | **inexistente**     | **criar** (com semântica de cascata)                 |
 
 ## 5. Regras de negócio & validação
 

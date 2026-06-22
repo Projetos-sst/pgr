@@ -6,6 +6,7 @@ filtro). Escritas envolvidas por `auditedTenantWrite(tenantId, "<evento>", fn)`.
 inferidos do Drizzle (`Company`, `WorkUnit`, `JobRole`, `Ges`, `GesJobRole`, `Employee`).
 
 ## Convenções
+
 - **Paginação**: `Paginated<T> = { rows: T[]; total: number }`; entrada `{ page = 1; pageSize = 20 }`.
   `limit = pageSize`, `offset = (page-1)*pageSize`; `total` via `count(*)` no mesmo filtro.
 - **getById**: retorna `T | null` (id ausente no tenant → `null` → `NOT_FOUND` na action).
@@ -14,6 +15,7 @@ inferidos do Drizzle (`Company`, `WorkUnit`, `JobRole`, `Ges`, `GesJobRole`, `Em
 - **Inputs**: tipos `*Input` com todos os campos editáveis da 006 (não só um subconjunto).
 
 ## Empresa — `companies.ts`
+
 ```
 listCompanies(tenantId, { search?, page?, pageSize? }) : Paginated<CompanyListItem>
 getCompanyById(tenantId, id) : Company | null
@@ -22,10 +24,12 @@ updateCompany(tenantId, id, input: CompanyInput) : Company | null
 deleteCompany(tenantId, id) : boolean
 countCompanyDependents(tenantId, id) : { workUnits; ges; jobRoles; employees }
 ```
+
 `CompanyInput`: `cnpj?, razaoSocial, nomeFantasia?, phone?, email?, cnae?, mainActivity?,
 riskGrade, logoPath?, zipCode?, street?, number?, complement?, district?, city?, state?`.
 
 ## Unidade de Obra — `work-units.ts`
+
 ```
 listWorkUnits(tenantId, { companyId?, search?, page?, pageSize? }) : Paginated<WorkUnit>
 getWorkUnitById(tenantId, id) : WorkUnit | null
@@ -36,6 +40,7 @@ countWorkUnitDependents(tenantId, id) : { ges }
 ```
 
 ## Função — `job-roles.ts`
+
 ```
 listJobRoles(tenantId, { companyId?, search?, page?, pageSize? }) : Paginated<JobRole>
 getJobRoleById(tenantId, id) : JobRole | null
@@ -46,6 +51,7 @@ countJobRoleDependents(tenantId, id) : { gesLinks; employees }
 ```
 
 ## GES — `ges.ts`
+
 ```
 listGes(tenantId, { companyId?, workUnitId?, search?, page?, pageSize? })
     : Paginated<GesListItem> & { totalWorkers: number }     // totalWorkers derivado no escopo filtrado
@@ -57,6 +63,7 @@ exposedWorkersByGesMap(tenantId) : Record<string, number>   // REUSO
 ```
 
 ## Vínculo GES↔Função — `ges-job-roles.ts`
+
 ```
 listGesJobRoles(tenantId, { gesId }) : GesJobRoleItem[]                 // join job_roles p/ título
 listAvailableJobRolesForGes(tenantId, gesId, companyId) : JobRoleOption[]  // funções da empresa NÃO vinculadas
@@ -66,6 +73,7 @@ deleteGesJobRole(tenantId, id) : boolean
 ```
 
 ## Funcionário — `employees.ts`
+
 ```
 listEmployees(tenantId, { companyId?, status?, search?, page?, pageSize? }) : Paginated<EmployeeListItem>
 getEmployeeById(tenantId, id) : Employee | null
@@ -75,6 +83,7 @@ deleteEmployee(tenantId, id) : boolean
 ```
 
 ## Isolamento (invariantes para os testes)
+
 - Toda query carrega `where org_id = tenantId` **e** roda sob `withOrg` (GUC + RLS).
 - `getById`/`update`/`delete` de id de outro tenant → `null`/`false` (nunca dado alheio).
 - `UNIQUE(org_id, cpf)` e `uq_companies_org_id_cnpj`: mesmo valor aceito em orgs distintas,

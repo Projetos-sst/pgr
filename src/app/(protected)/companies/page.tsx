@@ -51,7 +51,10 @@ export default async function CompaniesPage({
           {rows.map((row) => (
             <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
               <td className="px-4 py-2">
-                <Link href={`/companies/${row.id}/edit`} className="font-medium hover:underline">
+                <Link
+                  href={`/companies/${row.id}/edit`}
+                  className="font-medium hover:underline"
+                >
                   {row.razaoSocial}
                 </Link>
               </td>

@@ -12,16 +12,16 @@ canteiro/filial/local de prestação de serviço, com endereço próprio, sob um
 
 ## 2. Modelo de dados já existente (006)
 
-| Coluna | Tipo | Constraint | Obrigatório no CRUD |
-| --- | --- | --- | --- |
-| `id` | `uuid` | PK | — |
-| `org_id` | `text` | `NOT NULL` FK→`orgs.id` cascade, indexado | derivado do tenant |
-| `company_id` | `uuid` | **`NOT NULL`** FK→`companies.id` cascade, indexado | **sim** |
-| `name` | `text` | **`NOT NULL`** (nome/local) | **sim** |
-| `contract_number` | `text` | nullable (nº do contrato) | não |
-| `description` | `text` | **`NOT NULL`** (objeto/descrição) | **sim** |
-| endereço | `text` × 7 | `zip_code`…`state` nullable | não |
-| `created_at`/`updated_at` | `timestamptz` | `DEFAULT now()` + trigger | — |
+| Coluna                    | Tipo          | Constraint                                         | Obrigatório no CRUD |
+| ------------------------- | ------------- | -------------------------------------------------- | ------------------- |
+| `id`                      | `uuid`        | PK                                                 | —                   |
+| `org_id`                  | `text`        | `NOT NULL` FK→`orgs.id` cascade, indexado          | derivado do tenant  |
+| `company_id`              | `uuid`        | **`NOT NULL`** FK→`companies.id` cascade, indexado | **sim**             |
+| `name`                    | `text`        | **`NOT NULL`** (nome/local)                        | **sim**             |
+| `contract_number`         | `text`        | nullable (nº do contrato)                          | não                 |
+| `description`             | `text`        | **`NOT NULL`** (objeto/descrição)                  | **sim**             |
+| endereço                  | `text` × 7    | `zip_code`…`state` nullable                        | não                 |
+| `created_at`/`updated_at` | `timestamptz` | `DEFAULT now()` + trigger                          | —                   |
 
 Filha de `companies` (cascade); pai de `ges`. RLS `work_units_isolation` (`app_runtime`/GUC).
 
@@ -41,13 +41,13 @@ Filha de `companies` (cascade); pai de `ges`. RLS `work_units_isolation` (`app_r
 > `createWorkUnit`. Faltam `getById`, `update`, `delete` e busca — **lacuna da task** que a 007
 > corrige (CRUD completo).
 
-| Método | Estado | Ação na 007 |
-| --- | --- | --- |
-| `listWorkUnits(orgId, { search?, companyId? })` | parcial (sem busca/filtro) | **estender** |
-| `getWorkUnitById(orgId, id)` | **inexistente** | **criar** |
-| `createWorkUnit(orgId, input)` | existe | manter |
-| `updateWorkUnit(orgId, id, input)` | **inexistente** | **criar** |
-| `deleteWorkUnit(orgId, id)` | **inexistente** | **criar** (bloqueio/aviso se há GES) |
+| Método                                          | Estado                     | Ação na 007                          |
+| ----------------------------------------------- | -------------------------- | ------------------------------------ |
+| `listWorkUnits(orgId, { search?, companyId? })` | parcial (sem busca/filtro) | **estender**                         |
+| `getWorkUnitById(orgId, id)`                    | **inexistente**            | **criar**                            |
+| `createWorkUnit(orgId, input)`                  | existe                     | manter                               |
+| `updateWorkUnit(orgId, id, input)`              | **inexistente**            | **criar**                            |
+| `deleteWorkUnit(orgId, id)`                     | **inexistente**            | **criar** (bloqueio/aviso se há GES) |
 
 ## 5. Regras de negócio & validação
 

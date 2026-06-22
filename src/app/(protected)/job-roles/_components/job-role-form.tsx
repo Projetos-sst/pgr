@@ -68,9 +68,20 @@ export function JobRoleForm({
         options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
         error={errors.companyId}
       />
-      <TextField label="Título" name="title" required defaultValue={jobRole?.title} error={errors.title} />
+      <TextField
+        label="Título"
+        name="title"
+        required
+        defaultValue={jobRole?.title}
+        error={errors.title}
+      />
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="CBO" name="cbo" defaultValue={jobRole?.cbo} error={errors.cbo} />
+        <TextField
+          label="CBO"
+          name="cbo"
+          defaultValue={jobRole?.cbo}
+          error={errors.cbo}
+        />
         <TextField
           label="Jornada"
           name="workSchedule"
@@ -86,7 +97,10 @@ export function JobRoleForm({
       />
       <FieldError message={errors._} />
       <FormActions>
-        <SubmitButton pending={pending} label={jobRole ? "Salvar alterações" : "Criar função"} />
+        <SubmitButton
+          pending={pending}
+          label={jobRole ? "Salvar alterações" : "Criar função"}
+        />
       </FormActions>
     </form>
   );

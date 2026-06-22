@@ -23,11 +23,7 @@ type SearchParams = Promise<{
   workUnitId?: string;
 }>;
 
-export default async function GesPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function GesPage({ searchParams }: { searchParams: SearchParams }) {
   await requireOfficeStaffPage();
   const sp = await searchParams;
   const { page, pageSize } = resolvePageParams({
@@ -70,7 +66,10 @@ export default async function GesPage({
           {rows.map((row) => (
             <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
               <td className="px-4 py-2">
-                <Link href={`/ges/${row.id}/edit`} className="font-medium hover:underline">
+                <Link
+                  href={`/ges/${row.id}/edit`}
+                  className="font-medium hover:underline"
+                >
                   {row.name}
                 </Link>
               </td>

@@ -101,12 +101,17 @@ export async function listEmployees(
   const { limit, offset } = resolvePageParams(params);
   const filters: SQL[] = [eq(employees.orgId, orgId)];
   if (params.companyId) filters.push(eq(employees.companyId, params.companyId));
-  if (params.status) filters.push(eq(employees.status, params.status as Employee["status"]));
+  if (params.status)
+    filters.push(eq(employees.status, params.status as Employee["status"]));
   const search = params.search?.trim();
   if (search) {
     const term = `%${search}%`;
     filters.push(
-      or(ilike(employees.fullName, term), ilike(ges.name, term), ilike(jobRoles.title, term))!,
+      or(
+        ilike(employees.fullName, term),
+        ilike(ges.name, term),
+        ilike(jobRoles.title, term),
+      )!,
     );
   }
   const where = and(...filters);

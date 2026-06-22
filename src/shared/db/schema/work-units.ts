@@ -1,11 +1,4 @@
-import {
-  pgTable,
-  text,
-  uuid,
-  timestamp,
-  index,
-  pgPolicy,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, timestamp, index, pgPolicy } from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 
 import { appRuntimeRole } from "../roles";

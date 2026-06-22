@@ -8,10 +8,20 @@ de migration (Princípio I/V).
 ## 1. Enums (`pgEnum`) — `src/shared/db/schema/`
 
 ```ts
-export const categoryType   = pgEnum("category_type",   ["epi", "machine"]);
-export const employeeSex     = pgEnum("employee_sex",     ["male", "female", "not_informed"]);
-export const maritalStatus   = pgEnum("marital_status",   ["single", "married", "divorced", "widowed", "stable_union"]);
-export const employeeStatus  = pgEnum("employee_status",  ["active", "on_leave", "dismissed"]);
+export const categoryType = pgEnum("category_type", ["epi", "machine"]);
+export const employeeSex = pgEnum("employee_sex", ["male", "female", "not_informed"]);
+export const maritalStatus = pgEnum("marital_status", [
+  "single",
+  "married",
+  "divorced",
+  "widowed",
+  "stable_union",
+]);
+export const employeeStatus = pgEnum("employee_status", [
+  "active",
+  "on_leave",
+  "dismissed",
+]);
 ```
 
 ## 2. Padrão replicado por tabela nova
@@ -49,8 +59,8 @@ export type New<Entity> = InferInsertModel<typeof <entity>>;
 Constraints específicas por tabela (Drizzle):
 
 - **`companies`** (ALTER): `razaoSocial` passa a `.notNull()`; `+nomeFantasia/phone/email/
-  cnae/mainActivity`; `riskGrade smallint` + `check("companies_risk_grade_check", sql\`risk_grade between 1 and 4\`)`;
-  `+logoPath`; colunas de endereço; `updatedAt`. Mantém `uq_companies_org_id_cnpj` e a
+cnae/mainActivity`; `riskGrade smallint` + `check("companies_risk_grade_check", sql\`risk_grade between 1 and 4\`)`;
+`+logoPath`; colunas de endereço; `updatedAt`. Mantém `uq_companies_org_id_cnpj` e a
   policy/GRANT existentes.
 - **`work_units`**: `companyId uuid notNull references(companies, onDelete:"cascade")` +
   `index("idx_work_units_company_id")`; `name*`, `description*`, `contract_number`, endereço.
@@ -66,7 +76,7 @@ Constraints específicas por tabela (Drizzle):
   `uniqueIndex("uq_employees_org_cpf").on(orgId, cpf)`.
 - **`ges_job_roles`**: `gesId*` (cascade) + `jobRoleId*` (cascade) + índices;
   `workerCount integer notNull` + `check("ges_job_roles_worker_count_check", sql\`worker_count > 0\`)`;
-  `workSchedule`; `uniqueIndex("uq_ges_job_roles_org_ges_role").on(orgId, gesId, jobRoleId)`.
+`workSchedule`; `uniqueIndex("uq_ges_job_roles_org_ges_role").on(orgId, gesId, jobRoleId)`.
 
 `src/shared/db/schema/index.ts` re-exporta as 6 tabelas novas (+ tipos) e os enums.
 

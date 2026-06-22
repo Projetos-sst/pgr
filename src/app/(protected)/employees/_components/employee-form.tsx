@@ -155,10 +155,28 @@ export function EmployeeForm({
 
       <fieldset className="grid gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
         <legend className="px-1 text-sm font-medium">Geral</legend>
-        <TextField label="Nome completo" name="fullName" required defaultValue={employee?.fullName} error={errors.fullName} />
+        <TextField
+          label="Nome completo"
+          name="fullName"
+          required
+          defaultValue={employee?.fullName}
+          error={errors.fullName}
+        />
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="CPF" name="cpf" required defaultValue={employee?.cpf} error={errors.cpf} />
-          <SelectField label="Status" name="status" defaultValue={employee?.status ?? "active"} options={STATUS_OPTIONS} error={errors.status} />
+          <TextField
+            label="CPF"
+            name="cpf"
+            required
+            defaultValue={employee?.cpf}
+            error={errors.cpf}
+          />
+          <SelectField
+            label="Status"
+            name="status"
+            defaultValue={employee?.status ?? "active"}
+            options={STATUS_OPTIONS}
+            error={errors.status}
+          />
         </div>
         <SelectField
           label="Empresa"
@@ -185,19 +203,52 @@ export function EmployeeForm({
             value={jobRoleId}
             onChange={setJobRoleId}
             options={functionOptions.map((f) => ({ value: f.jobRoleId, label: f.title }))}
-            emptyLabel={gesId && functionOptions.length === 0 ? "GES sem funções" : "— sem função —"}
+            emptyLabel={
+              gesId && functionOptions.length === 0 ? "GES sem funções" : "— sem função —"
+            }
             error={errors.jobRoleId}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <TextField label="Data de nascimento" name="birthDate" type="date" defaultValue={employee?.birthDate} />
-          <SelectField label="Sexo" name="sex" defaultValue={employee?.sex} options={SEX_OPTIONS} emptyLabel="— não informado —" />
-          <SelectField label="Estado civil" name="maritalStatus" defaultValue={employee?.maritalStatus} options={MARITAL_OPTIONS} emptyLabel="— não informado —" />
+          <TextField
+            label="Data de nascimento"
+            name="birthDate"
+            type="date"
+            defaultValue={employee?.birthDate}
+          />
+          <SelectField
+            label="Sexo"
+            name="sex"
+            defaultValue={employee?.sex}
+            options={SEX_OPTIONS}
+            emptyLabel="— não informado —"
+          />
+          <SelectField
+            label="Estado civil"
+            name="maritalStatus"
+            defaultValue={employee?.maritalStatus}
+            options={MARITAL_OPTIONS}
+            emptyLabel="— não informado —"
+          />
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <TextField label="Admissão" name="admissionDate" type="date" defaultValue={employee?.admissionDate} />
-          <TextField label="Desligamento" name="dismissalDate" type="date" defaultValue={employee?.dismissalDate} />
-          <TextField label="Matrícula" name="registration" defaultValue={employee?.registration} />
+          <TextField
+            label="Admissão"
+            name="admissionDate"
+            type="date"
+            defaultValue={employee?.admissionDate}
+          />
+          <TextField
+            label="Desligamento"
+            name="dismissalDate"
+            type="date"
+            defaultValue={employee?.dismissalDate}
+          />
+          <TextField
+            label="Matrícula"
+            name="registration"
+            defaultValue={employee?.registration}
+          />
         </div>
       </fieldset>
 
@@ -209,29 +260,53 @@ export function EmployeeForm({
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
           <TextField label="RG" name="rg" defaultValue={employee?.rg} />
-          <TextField label="Crachá" name="badgeNumber" defaultValue={employee?.badgeNumber} />
-          <TextField label="Validade do crachá" name="badgeValidUntil" type="date" defaultValue={employee?.badgeValidUntil} />
+          <TextField
+            label="Crachá"
+            name="badgeNumber"
+            defaultValue={employee?.badgeNumber}
+          />
+          <TextField
+            label="Validade do crachá"
+            name="badgeValidUntil"
+            type="date"
+            defaultValue={employee?.badgeValidUntil}
+          />
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <TextField label="Tipo sanguíneo" name="bloodType" defaultValue={employee?.bloodType} />
+          <TextField
+            label="Tipo sanguíneo"
+            name="bloodType"
+            defaultValue={employee?.bloodType}
+          />
           <TextField label="CEP" name="zipCode" defaultValue={employee?.zipCode} />
           <TextField label="Logradouro" name="street" defaultValue={employee?.street} />
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
           <TextField label="Número" name="number" defaultValue={employee?.number} />
-          <TextField label="Complemento" name="complement" defaultValue={employee?.complement} />
+          <TextField
+            label="Complemento"
+            name="complement"
+            defaultValue={employee?.complement}
+          />
           <TextField label="Bairro" name="district" defaultValue={employee?.district} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Cidade" name="city" defaultValue={employee?.city} />
           <TextField label="UF" name="state" defaultValue={employee?.state} />
         </div>
-        <TextField label="Foto (caminho)" name="photoPath" defaultValue={employee?.photoPath} />
+        <TextField
+          label="Foto (caminho)"
+          name="photoPath"
+          defaultValue={employee?.photoPath}
+        />
       </fieldset>
 
       <FieldError message={errors._} />
       <FormActions>
-        <SubmitButton pending={pending} label={employee ? "Salvar alterações" : "Criar funcionário"} />
+        <SubmitButton
+          pending={pending}
+          label={employee ? "Salvar alterações" : "Criar funcionário"}
+        />
       </FormActions>
     </form>
   );

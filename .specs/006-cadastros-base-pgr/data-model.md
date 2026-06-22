@@ -33,12 +33,12 @@ text`, `district text`, `city text`, `state text`.
 
 ## Enums (`pgEnum`)
 
-| Enum              | Valores                                                        | Usado em            |
-| ----------------- | ------------------------------------------------------------- | ------------------- |
-| `category_type`   | `epi`, `machine`                                              | `categories.type`   |
-| `employee_sex`    | `male`, `female`, `not_informed`                              | `employees.sex`     |
-| `marital_status`  | `single`, `married`, `divorced`, `widowed`, `stable_union`    | `employees.marital_status` |
-| `employee_status` | `active`, `on_leave`, `dismissed`                             | `employees.status`  |
+| Enum              | Valores                                                    | Usado em                   |
+| ----------------- | ---------------------------------------------------------- | -------------------------- |
+| `category_type`   | `epi`, `machine`                                           | `categories.type`          |
+| `employee_sex`    | `male`, `female`, `not_informed`                           | `employees.sex`            |
+| `marital_status`  | `single`, `married`, `divorced`, `widowed`, `stable_union` | `employees.marital_status` |
+| `employee_status` | `active`, `on_leave`, `dismissed`                          | `employees.status`         |
 
 Valor fora do conjunto → rejeitado pelo banco (FR-018, SC-008).
 
@@ -50,18 +50,18 @@ Existentes [mantido]: `id`, `org_id` (FK cascade, indexado), `cnpj`, `razao_soci
 `created_at`; índice `idx_companies_org_id`, `uq_companies_org_id_cnpj`, policy
 `companies_isolation`, GRANT.
 
-| Coluna           | Tipo          | Constraints                                  | Origem    |
-| ---------------- | ------------- | -------------------------------------------- | --------- |
-| `razao_social`   | `text`        | `*` — passa a **`NOT NULL`** (A3/R5)         | [alterado] |
-| `nome_fantasia`  | `text`        | nullable                                     | **[novo]** |
-| `phone`          | `text`        | nullable                                     | **[novo]** |
-| `email`          | `text`        | nullable                                     | **[novo]** |
-| `cnae`           | `text`        | nullable                                     | **[novo]** |
-| `main_activity`  | `text`        | nullable                                     | **[novo]** |
-| `risk_grade`     | `smallint`    | nullable, `CHECK (risk_grade between 1 and 4)` (NR-04) | **[novo]** |
-| `logo_path`      | `text`        | nullable (chave de Storage; upload _(deferido)_) | **[novo]** |
-| _endereço_       | —             | `zip_code`/`street`/`number`/`complement`/`district`/`city`/`state` `text` nullable | **[novo]** |
-| `updated_at`     | `timestamptz` | `*` `DEFAULT now()` + trigger `set_updated_at_companies` | **[novo]** |
+| Coluna          | Tipo          | Constraints                                                                         | Origem     |
+| --------------- | ------------- | ----------------------------------------------------------------------------------- | ---------- |
+| `razao_social`  | `text`        | `*` — passa a **`NOT NULL`** (A3/R5)                                                | [alterado] |
+| `nome_fantasia` | `text`        | nullable                                                                            | **[novo]** |
+| `phone`         | `text`        | nullable                                                                            | **[novo]** |
+| `email`         | `text`        | nullable                                                                            | **[novo]** |
+| `cnae`          | `text`        | nullable                                                                            | **[novo]** |
+| `main_activity` | `text`        | nullable                                                                            | **[novo]** |
+| `risk_grade`    | `smallint`    | nullable, `CHECK (risk_grade between 1 and 4)` (NR-04)                              | **[novo]** |
+| `logo_path`     | `text`        | nullable (chave de Storage; upload _(deferido)_)                                    | **[novo]** |
+| _endereço_      | —             | `zip_code`/`street`/`number`/`complement`/`district`/`city`/`state` `text` nullable | **[novo]** |
+| `updated_at`    | `timestamptz` | `*` `DEFAULT now()` + trigger `set_updated_at_companies`                            | **[novo]** |
 
 - `cnpj` **não** é único global; `uq_companies_org_id_cnpj` (já existente) mantém a
   unicidade-por-tenant (FR-016). Mesmo CNPJ em tenants distintos = empresas distintas.
@@ -71,12 +71,12 @@ Existentes [mantido]: `id`, `org_id` (FK cascade, indexado), `cnpj`, `razao_soci
 
 ## `work_units` — Unidade de Obra **[novo]**
 
-| Coluna            | Tipo   | Constraints                                              |
-| ----------------- | ------ | ------------------------------------------------------- |
-| `company_id`      | `uuid` | `*` FK→`companies.id` `ON DELETE CASCADE`, indexado     |
-| `name`            | `text` | `*`                                                     |
-| `contract_number` | `text` | nullable                                                |
-| `description`     | `text` | `*`                                                     |
+| Coluna            | Tipo   | Constraints                                                 |
+| ----------------- | ------ | ----------------------------------------------------------- |
+| `company_id`      | `uuid` | `*` FK→`companies.id` `ON DELETE CASCADE`, indexado         |
+| `name`            | `text` | `*`                                                         |
+| `contract_number` | `text` | nullable                                                    |
+| `description`     | `text` | `*`                                                         |
 | _endereço_        | —      | colunas de endereço `text` nullable (ViaCEP é _(deferido)_) |
 
 - Contrato/local de obra de uma empresa. Filha de `companies`; pai de `ges`.
@@ -96,7 +96,7 @@ Existentes [mantido]: `id`, `org_id` (FK cascade, indexado), `cnpj`, `razao_soci
 | `floor`                 | `text`    | nullable (piso)                                      |
 | `roof`                  | `text`    | nullable (cobertura)                                 |
 | `lighting`              | `text`    | nullable (iluminação)                                |
-| `ventilation`          | `text`    | nullable (ventilação)                                |
+| `ventilation`           | `text`    | nullable (ventilação)                                |
 | `other_characteristics` | `text`    | nullable                                             |
 
 - **Nº de trabalhadores expostos**: **NÃO** é coluna — derivado de `ges_job_roles` (R1).
@@ -123,11 +123,11 @@ Existentes [mantido]: `id`, `org_id` (FK cascade, indexado), `cnpj`, `razao_soci
 
 ## `categories` — catálogo EPI / Máquinas **[novo]**
 
-| Coluna | Tipo            | Constraints |
-| ------ | --------------- | ----------- |
+| Coluna | Tipo            | Constraints          |
+| ------ | --------------- | -------------------- |
 | `type` | `category_type` | `*` (`epi｜machine`) |
-| `name` | `text`          | `*`         |
-| `note` | `text`          | nullable    |
+| `name` | `text`          | `*`                  |
+| `note` | `text`          | nullable             |
 
 - **`UNIQUE(org_id, type, name)`** (R6 — default informado, revisitável). Catálogo
   independente da cadeia da empresa (sem FK a `companies`).
@@ -136,28 +136,28 @@ Existentes [mantido]: `id`, `org_id` (FK cascade, indexado), `cnpj`, `razao_soci
 
 ## `employees` — Funcionário **[novo]**
 
-| Coluna              | Tipo              | Constraints                                              |
-| ------------------- | ----------------- | ------------------------------------------------------- |
-| `company_id`        | `uuid`            | `*` FK→`companies.id` `ON DELETE CASCADE`, indexado (Q1)  |
-| `ges_id`            | `uuid`            | nullable, FK→`ges.id` `ON DELETE SET NULL`, indexado    |
+| Coluna              | Tipo              | Constraints                                                |
+| ------------------- | ----------------- | ---------------------------------------------------------- |
+| `company_id`        | `uuid`            | `*` FK→`companies.id` `ON DELETE CASCADE`, indexado (Q1)   |
+| `ges_id`            | `uuid`            | nullable, FK→`ges.id` `ON DELETE SET NULL`, indexado       |
 | `job_role_id`       | `uuid`            | nullable, FK→`job_roles.id` `ON DELETE SET NULL`, indexado |
-| `full_name`         | `text`            | `*`                                                     |
-| `cpf`               | `text`            | `*`                                                     |
-| `birth_date`        | `date`            | nullable                                                |
-| `sex`               | `employee_sex`    | nullable                                                |
-| `marital_status`    | `marital_status`  | nullable                                                |
-| `phone`             | `text`            | nullable                                                |
-| `email`             | `text`            | nullable                                                |
-| `rg`                | `text`            | nullable                                                |
-| `badge_number`      | `text`            | nullable (crachá)                                       |
-| `badge_valid_until` | `date`            | nullable                                                |
-| `registration`      | `text`            | nullable (matrícula)                                    |
-| `blood_type`        | `text`            | nullable                                                |
-| `admission_date`    | `date`            | nullable                                                |
-| `dismissal_date`    | `date`            | nullable                                                |
-| _endereço_          | —                 | colunas de endereço `text` nullable                     |
-| `photo_path`        | `text`            | nullable (foto 3x4; upload _(deferido)_)                |
-| `status`            | `employee_status` | `*` `DEFAULT 'active'`                                   |
+| `full_name`         | `text`            | `*`                                                        |
+| `cpf`               | `text`            | `*`                                                        |
+| `birth_date`        | `date`            | nullable                                                   |
+| `sex`               | `employee_sex`    | nullable                                                   |
+| `marital_status`    | `marital_status`  | nullable                                                   |
+| `phone`             | `text`            | nullable                                                   |
+| `email`             | `text`            | nullable                                                   |
+| `rg`                | `text`            | nullable                                                   |
+| `badge_number`      | `text`            | nullable (crachá)                                          |
+| `badge_valid_until` | `date`            | nullable                                                   |
+| `registration`      | `text`            | nullable (matrícula)                                       |
+| `blood_type`        | `text`            | nullable                                                   |
+| `admission_date`    | `date`            | nullable                                                   |
+| `dismissal_date`    | `date`            | nullable                                                   |
+| _endereço_          | —                 | colunas de endereço `text` nullable                        |
+| `photo_path`        | `text`            | nullable (foto 3x4; upload _(deferido)_)                   |
+| `status`            | `employee_status` | `*` `DEFAULT 'active'`                                     |
 
 - **`UNIQUE(org_id, cpf)`** (FR-015) — CPF único por tenant; mesmo CPF em orgs distintas é
   permitido (CPF não é global).

@@ -77,7 +77,12 @@ export function CompanyForm({ company }: { company?: Company }) {
         error={errors.razaoSocial}
       />
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="CNPJ" name="cnpj" defaultValue={company?.cnpj} error={errors.cnpj} />
+        <TextField
+          label="CNPJ"
+          name="cnpj"
+          defaultValue={company?.cnpj}
+          error={errors.cnpj}
+        />
         <TextField
           label="Nome fantasia"
           name="nomeFantasia"
@@ -94,7 +99,12 @@ export function CompanyForm({ company }: { company?: Company }) {
           options={RISK_GRADE_OPTIONS}
           error={errors.riskGrade}
         />
-        <TextField label="CNAE" name="cnae" defaultValue={company?.cnae} error={errors.cnae} />
+        <TextField
+          label="CNAE"
+          name="cnae"
+          defaultValue={company?.cnae}
+          error={errors.cnae}
+        />
       </div>
       <TextField
         label="Atividade principal"
@@ -103,30 +113,83 @@ export function CompanyForm({ company }: { company?: Company }) {
         error={errors.mainActivity}
       />
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="Telefone" name="phone" defaultValue={company?.phone} error={errors.phone} />
-        <TextField label="E-mail" name="email" defaultValue={company?.email} error={errors.email} />
+        <TextField
+          label="Telefone"
+          name="phone"
+          defaultValue={company?.phone}
+          error={errors.phone}
+        />
+        <TextField
+          label="E-mail"
+          name="email"
+          defaultValue={company?.email}
+          error={errors.email}
+        />
       </div>
 
       <fieldset className="grid gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
         <legend className="px-1 text-sm font-medium">Endereço</legend>
         <div className="grid gap-4 sm:grid-cols-3">
-          <TextField label="CEP" name="zipCode" defaultValue={company?.zipCode} error={errors.zipCode} />
-          <TextField label="Logradouro" name="street" defaultValue={company?.street} error={errors.street} />
-          <TextField label="Número" name="number" defaultValue={company?.number} error={errors.number} />
+          <TextField
+            label="CEP"
+            name="zipCode"
+            defaultValue={company?.zipCode}
+            error={errors.zipCode}
+          />
+          <TextField
+            label="Logradouro"
+            name="street"
+            defaultValue={company?.street}
+            error={errors.street}
+          />
+          <TextField
+            label="Número"
+            name="number"
+            defaultValue={company?.number}
+            error={errors.number}
+          />
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <TextField label="Complemento" name="complement" defaultValue={company?.complement} error={errors.complement} />
-          <TextField label="Bairro" name="district" defaultValue={company?.district} error={errors.district} />
-          <TextField label="Cidade" name="city" defaultValue={company?.city} error={errors.city} />
+          <TextField
+            label="Complemento"
+            name="complement"
+            defaultValue={company?.complement}
+            error={errors.complement}
+          />
+          <TextField
+            label="Bairro"
+            name="district"
+            defaultValue={company?.district}
+            error={errors.district}
+          />
+          <TextField
+            label="Cidade"
+            name="city"
+            defaultValue={company?.city}
+            error={errors.city}
+          />
         </div>
-        <TextField label="UF" name="state" defaultValue={company?.state} error={errors.state} />
+        <TextField
+          label="UF"
+          name="state"
+          defaultValue={company?.state}
+          error={errors.state}
+        />
       </fieldset>
 
-      <TextField label="Logo (caminho)" name="logoPath" defaultValue={company?.logoPath} error={errors.logoPath} />
+      <TextField
+        label="Logo (caminho)"
+        name="logoPath"
+        defaultValue={company?.logoPath}
+        error={errors.logoPath}
+      />
       <FieldError message={errors._} />
 
       <FormActions>
-        <SubmitButton pending={pending} label={company ? "Salvar alterações" : "Criar empresa"} />
+        <SubmitButton
+          pending={pending}
+          label={company ? "Salvar alterações" : "Criar empresa"}
+        />
       </FormActions>
     </form>
   );

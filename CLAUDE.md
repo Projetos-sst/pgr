@@ -62,7 +62,7 @@ Notas chave (`006`):
   `employees` (`company_id*`, `ges_id`/`job_role_id` nullable); `categories` (catálogo
   `epi|machine`). `ges` **substitui** `sectors` do doc 02.
 - **Isolamento (herdado, intacto)**: toda tabela nova + `companies` tem `org_id text NOT NULL
-  → orgs.id` indexado, RLS `app_runtime` (`current_setting('app.current_org', true)`), GRANT —
+→ orgs.id` indexado, RLS `app_runtime` (`current_setting('app.current_org', true)`), GRANT —
   réplica de `tenant_probe`/`companies`. Acesso via `withOrg`; tenant ativo de
   `requireTenantContext()`, nunca de input do cliente.
 - **Nº de trabalhadores expostos por GES**: **DERIVADO** por agregação na leitura
@@ -72,7 +72,7 @@ Notas chave (`006`):
   `UNIQUE(org_id, cpf)` / `(org_id, ges_id, job_role_id)` / `(org_id, company_id, title)` /
   `(org_id, type, name)`. CNPJ **não** é único global.
 - **ON DELETE**: `CASCADE` descendo a cadeia da empresa (`companies → work_units → ges →
-  ges_job_roles` e `companies → employees`); `SET NULL` em `employees → ges/job_roles`.
+ges_job_roles` e `companies → employees`); `SET NULL` em `employees → ges/job_roles`.
 - **`companies.razao_social` passa a `NOT NULL`**. Campos `*_path` (logo/foto) entram só
   como texto — upload é futuro.
 - **Migration `0005_*`** (drizzle-kit) com GRANT + triggers `set_updated_at` como SQL custom

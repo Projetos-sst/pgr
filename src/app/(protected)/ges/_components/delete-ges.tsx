@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  deleteGesAction,
-  getGesDependentsAction,
-} from "@/shared/server/actions/pgr/ges";
+import { deleteGesAction, getGesDependentsAction } from "@/shared/server/actions/pgr/ges";
 
 import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 

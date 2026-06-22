@@ -13,15 +13,15 @@ na lotação do **Funcionário** (`employees.job_role_id`).
 
 ## 2. Modelo de dados já existente (006)
 
-| Coluna | Tipo | Constraint | Obrigatório |
-| --- | --- | --- | --- |
-| `id` | `uuid` | PK | — |
-| `org_id` | `text` | `NOT NULL` FK→`orgs.id` cascade | tenant |
-| `company_id` | `uuid` | **`NOT NULL`** FK→`companies.id` cascade, indexado | **sim** |
-| `title` | `text` | **`NOT NULL`** (título/nome) | **sim** |
-| `cbo` | `text` | nullable (texto livre; tabela de CBO deferida) | não |
-| `work_schedule` | `text` | nullable (jornada) | não |
-| `description` | `text` | nullable | não |
+| Coluna          | Tipo   | Constraint                                         | Obrigatório |
+| --------------- | ------ | -------------------------------------------------- | ----------- |
+| `id`            | `uuid` | PK                                                 | —           |
+| `org_id`        | `text` | `NOT NULL` FK→`orgs.id` cascade                    | tenant      |
+| `company_id`    | `uuid` | **`NOT NULL`** FK→`companies.id` cascade, indexado | **sim**     |
+| `title`         | `text` | **`NOT NULL`** (título/nome)                       | **sim**     |
+| `cbo`           | `text` | nullable (texto livre; tabela de CBO deferida)     | não         |
+| `work_schedule` | `text` | nullable (jornada)                                 | não         |
+| `description`   | `text` | nullable                                           | não         |
 
 **`UNIQUE(org_id, company_id, title)`** — função não duplica por nome na mesma empresa do tenant.
 
@@ -39,14 +39,14 @@ na lotação do **Funcionário** (`employees.job_role_id`).
 > `job-roles.ts` só tem `listJobRoles` e `createJobRole`. Faltam `getById`, `update`, `delete`,
 > busca/filtro e a checagem de vínculos antes de excluir — **lacuna da task** que a 007 corrige.
 
-| Método | Estado | Ação na 007 |
-| --- | --- | --- |
-| `listJobRoles(orgId, { companyId?, search? })` | parcial | **estender** |
-| `getJobRoleById(orgId, id)` | **inexistente** | **criar** |
-| `createJobRole(orgId, input)` | existe | manter |
-| `updateJobRole(orgId, id, input)` | **inexistente** | **criar** |
-| `deleteJobRole(orgId, id)` | **inexistente** | **criar** (checar vínculos GES/funcionários) |
-| contagem de vínculos (`ges_job_roles` / `employees`) | **inexistente** | **criar** p/ aviso de exclusão |
+| Método                                               | Estado          | Ação na 007                                  |
+| ---------------------------------------------------- | --------------- | -------------------------------------------- |
+| `listJobRoles(orgId, { companyId?, search? })`       | parcial         | **estender**                                 |
+| `getJobRoleById(orgId, id)`                          | **inexistente** | **criar**                                    |
+| `createJobRole(orgId, input)`                        | existe          | manter                                       |
+| `updateJobRole(orgId, id, input)`                    | **inexistente** | **criar**                                    |
+| `deleteJobRole(orgId, id)`                           | **inexistente** | **criar** (checar vínculos GES/funcionários) |
+| contagem de vínculos (`ges_job_roles` / `employees`) | **inexistente** | **criar** p/ aviso de exclusão               |
 
 ## 5. Regras de negócio & validação
 

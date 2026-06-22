@@ -52,13 +52,13 @@ SST (dezenas a centenas de registros por entidade) — paginação offset é suf
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-| Princípio | Status | Como o plano atende |
-| --- | --- | --- |
+| Princípio                                    | Status  | Como o plano atende                                                                                                                                                                                                                                             |
+| -------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | I — Isolamento Multi-Tenant (NÃO-NEGOCIÁVEL) | ✅ PASS | Todo acesso via `withOrg(tenantId, …)`; `tenantId` de `requireTenantContext()` (sessão), nunca de input do cliente; RLS `*_isolation` como backstop (herdado 006); `company_id` tratado como dimensão, não fronteira. Testes de isolamento em Postgres efêmero. |
-| II — Stack Fixa & Simplicidade (YAGNI) | ✅ PASS | Sem nova infra; sem lib de formulário; paginação offset simples; `ActionResult` minimalista; reuso de repositórios/validadores/helpers da 006. |
-| III — Entrega em Fatias Verticais | ✅ PASS | Uma fatia vertical; US1 (Empresa) é o MVP independentemente testável; demais histórias na ordem da cadeia. |
-| IV — Operações Pesadas Assíncronas | ✅ PASS | Apenas CRUD rápido e síncrono; sem geração em lote/import. Upload (logo/foto) está fora de escopo. |
-| V — Segurança e Integridade de Dados | ✅ PASS | TS `strict`, sem `any`; zod em toda Server Action antes do banco; constraints do Postgres (FK/UNIQUE/CHECK/enums) da 006 são a fonte de verdade; segredos só em env. |
+| II — Stack Fixa & Simplicidade (YAGNI)       | ✅ PASS | Sem nova infra; sem lib de formulário; paginação offset simples; `ActionResult` minimalista; reuso de repositórios/validadores/helpers da 006.                                                                                                                  |
+| III — Entrega em Fatias Verticais            | ✅ PASS | Uma fatia vertical; US1 (Empresa) é o MVP independentemente testável; demais histórias na ordem da cadeia.                                                                                                                                                      |
+| IV — Operações Pesadas Assíncronas           | ✅ PASS | Apenas CRUD rápido e síncrono; sem geração em lote/import. Upload (logo/foto) está fora de escopo.                                                                                                                                                              |
+| V — Segurança e Integridade de Dados         | ✅ PASS | TS `strict`, sem `any`; zod em toda Server Action antes do banco; constraints do Postgres (FK/UNIQUE/CHECK/enums) da 006 são a fonte de verdade; segredos só em env.                                                                                            |
 
 **Gate de testes (Princípio "Fluxo/Quality Gates")**: a fatia depende de RLS/GUC ⇒ os testes de
 isolamento usam **Postgres efêmero** (exceção explícita da constituição). Unitários e integração

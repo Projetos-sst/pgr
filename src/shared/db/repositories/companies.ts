@@ -105,10 +105,7 @@ export async function listCompanyOptions(orgId: string): Promise<CompanyOption[]
   );
 }
 
-export async function getCompanyById(
-  orgId: string,
-  id: string,
-): Promise<Company | null> {
+export async function getCompanyById(orgId: string, id: string): Promise<Company | null> {
   return withOrg(orgId, async (tx) => {
     const [row] = await tx
       .select()

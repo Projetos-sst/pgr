@@ -21,7 +21,7 @@ const STATUS_LABEL: Record<string, string> = {
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div className="flex flex-col">
-      <span className="text-xs uppercase tracking-wide text-zinc-500">{label}</span>
+      <span className="text-xs tracking-wide text-zinc-500 uppercase">{label}</span>
       <span className="text-sm">{value && value !== "" ? value : "—"}</span>
     </div>
   );

@@ -4,9 +4,7 @@ export type ActionError = {
   fields?: Record<string, string>;
 };
 
-export type ActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: ActionError };
+export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: ActionError };
 
 export function ok<T>(data: T): ActionResult<T> {
   return { ok: true, data };

@@ -13,7 +13,9 @@ function firstMessage(schema: z.ZodTypeAny, input: unknown): string | null {
 function messageByField(schema: z.ZodTypeAny, input: unknown): Record<string, string> {
   const result = schema.safeParse(input);
   if (result.success) return {};
-  return Object.fromEntries(result.error.issues.map((i) => [i.path.join("."), i.message]));
+  return Object.fromEntries(
+    result.error.issues.map((i) => [i.path.join("."), i.message]),
+  );
 }
 
 describe("requiredString — mensagem custom em todos os modos de falha", () => {
@@ -55,14 +57,15 @@ describe("contrato 422 por entidade — campo obrigatório ausente é pt-BR", ()
 
   it("employees: companyId ausente", () => {
     expect(
-      messageByField(employeeInputSchema, { fullName: "x", cpf: "39053344705" }).companyId,
+      messageByField(employeeInputSchema, { fullName: "x", cpf: "39053344705" })
+        .companyId,
     ).toBe("Empresa é obrigatória");
   });
 
   it("employees: cpf ausente é pt-BR", () => {
-    expect(messageByField(employeeInputSchema, { companyId: undefined, fullName: "x" }).cpf).toBe(
-      "CPF é obrigatório",
-    );
+    expect(
+      messageByField(employeeInputSchema, { companyId: undefined, fullName: "x" }).cpf,
+    ).toBe("CPF é obrigatório");
   });
 
   it("companies: riskGrade numérico ausente é pt-BR (não 'received NaN')", () => {

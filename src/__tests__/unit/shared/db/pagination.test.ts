@@ -1,8 +1,4 @@
-import {
-  resolvePageParams,
-  PAGE_SIZE_DEFAULT,
-  PAGE_SIZE_MAX,
-} from "@/shared/pagination";
+import { resolvePageParams, PAGE_SIZE_DEFAULT, PAGE_SIZE_MAX } from "@/shared/pagination";
 
 describe("resolvePageParams", () => {
   it("usa defaults quando entrada ausente", () => {

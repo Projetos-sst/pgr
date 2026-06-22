@@ -1,7 +1,4 @@
-import {
-  companyInputSchema,
-  toCompanyListItem,
-} from "@/shared/domains/pgr/companies";
+import { companyInputSchema, toCompanyListItem } from "@/shared/domains/pgr/companies";
 import type { Company } from "@/shared/db/schema";
 
 describe("companyInputSchema (US1)", () => {

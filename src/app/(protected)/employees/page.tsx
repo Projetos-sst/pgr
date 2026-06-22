@@ -105,7 +105,10 @@ export default async function EmployeesPage({
           {rows.map((row) => (
             <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
               <td className="px-4 py-2">
-                <Link href={`/employees/${row.id}`} className="font-medium hover:underline">
+                <Link
+                  href={`/employees/${row.id}`}
+                  className="font-medium hover:underline"
+                >
                   {row.fullName}
                 </Link>
               </td>

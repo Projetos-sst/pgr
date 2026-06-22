@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { optionalString, requiredString, requiredUuid, optionalUuid } from "./form-fields";
+import {
+  optionalString,
+  requiredString,
+  requiredUuid,
+  optionalUuid,
+} from "./form-fields";
 
 export type { Employee } from "@/shared/db/schema/employees";
 import {

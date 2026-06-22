@@ -16,7 +16,9 @@ describe("workUnitInputSchema (US2)", () => {
   });
 
   it("exige companyId em formato uuid", () => {
-    expect(() => workUnitInputSchema.parse({ ...base, companyId: "not-a-uuid" })).toThrow();
+    expect(() =>
+      workUnitInputSchema.parse({ ...base, companyId: "not-a-uuid" }),
+    ).toThrow();
   });
 
   it("normaliza endereço vazio para undefined", () => {

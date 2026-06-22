@@ -56,7 +56,10 @@ export default async function JobRolesPage({
           {rows.map((row) => (
             <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
               <td className="px-4 py-2">
-                <Link href={`/job-roles/${row.id}/edit`} className="font-medium hover:underline">
+                <Link
+                  href={`/job-roles/${row.id}/edit`}
+                  className="font-medium hover:underline"
+                >
                   {row.title}
                 </Link>
               </td>

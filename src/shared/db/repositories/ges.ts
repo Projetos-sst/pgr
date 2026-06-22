@@ -6,7 +6,11 @@ import {
   resolveExposedTotal,
   buildExposedWorkersMap,
 } from "@/shared/domains/pgr/exposed-workers";
-import { toGesListItem, type GesListItem, type GesValues } from "@/shared/domains/pgr/ges";
+import {
+  toGesListItem,
+  type GesListItem,
+  type GesValues,
+} from "@/shared/domains/pgr/ges";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
@@ -109,9 +113,7 @@ export async function listGes(
       .where(and(eq(gesJobRoles.orgId, orgId), where));
 
     return {
-      rows: rows.map((row) =>
-        toGesListItem(row, { total: row.exposed }),
-      ),
+      rows: rows.map((row) => toGesListItem(row, { total: row.exposed })),
       total,
       totalWorkers,
     };

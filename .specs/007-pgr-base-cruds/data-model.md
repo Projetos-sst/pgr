@@ -7,14 +7,14 @@
 
 ## Entidades (resumo — detalhe nos briefings)
 
-| Entidade | Tabela | Obrigatórios (CRUD) | Unicidade (por tenant) | Integridade relevante |
-| --- | --- | --- | --- | --- |
-| Empresa | `companies` | `razao_social`, `risk_grade` (1–4) | `(org_id, cnpj)` | `risk_grade` CHECK 1..4; cnpj 14 díg. se preenchido |
-| Unidade de Obra | `work_units` | `name`, `description`, `company_id` | — | FK `company_id` cascade |
-| Função | `job_roles` | `title`, `company_id` | `(org_id, company_id, title)` | FK `company_id` cascade |
-| GES | `ges` | `name`, `company_id`, `work_unit_id` | — | FK cascade; `work_unit_id` ⊂ `company_id` |
-| Vínculo GES↔Função | `ges_job_roles` | `ges_id`, `job_role_id`, `worker_count`>0 | `(org_id, ges_id, job_role_id)` | CHECK `worker_count>0`; cascade |
-| Funcionário | `employees` | `full_name`, `cpf`, `company_id` | `(org_id, cpf)` | `ges_id`/`job_role_id` SET NULL; enums |
+| Entidade           | Tabela          | Obrigatórios (CRUD)                       | Unicidade (por tenant)          | Integridade relevante                               |
+| ------------------ | --------------- | ----------------------------------------- | ------------------------------- | --------------------------------------------------- |
+| Empresa            | `companies`     | `razao_social`, `risk_grade` (1–4)        | `(org_id, cnpj)`                | `risk_grade` CHECK 1..4; cnpj 14 díg. se preenchido |
+| Unidade de Obra    | `work_units`    | `name`, `description`, `company_id`       | —                               | FK `company_id` cascade                             |
+| Função             | `job_roles`     | `title`, `company_id`                     | `(org_id, company_id, title)`   | FK `company_id` cascade                             |
+| GES                | `ges`           | `name`, `company_id`, `work_unit_id`      | —                               | FK cascade; `work_unit_id` ⊂ `company_id`           |
+| Vínculo GES↔Função | `ges_job_roles` | `ges_id`, `job_role_id`, `worker_count`>0 | `(org_id, ges_id, job_role_id)` | CHECK `worker_count>0`; cascade                     |
+| Funcionário        | `employees`     | `full_name`, `cpf`, `company_id`          | `(org_id, cpf)`                 | `ges_id`/`job_role_id` SET NULL; enums              |
 
 Enums (já existentes): `category_type(epi,machine)`, `employee_sex(male,female,not_informed)`,
 `marital_status(single,married,divorced,widowed,stable_union)`,
@@ -33,6 +33,7 @@ Convenção: todas recebem `tenantId: string` (da sessão), rodam em `withOrg`, 
 `list*` retorna `{ rows, total }` (paginação offset, `pageSize` padrão 20).
 
 ### Empresa (`repositories/companies.ts`)
+
 - `listCompanies(tenantId, { search?, page?, pageSize? })` → `{ rows: CompanyListItem[], total }`
   — **estender** (busca por razão social/CNPJ + paginação).
 - `getCompanyById(tenantId, id)` → `Company | null` — **criar**.
@@ -44,17 +45,20 @@ Convenção: todas recebem `tenantId: string` (da sessão), rodam em `withOrg`, 
   (aviso de exclusão).
 
 ### Unidade de Obra (`repositories/work-units.ts`)
+
 - `listWorkUnits(tenantId, { companyId?, search?, page?, pageSize? })` → `{ rows, total }` — **estender**.
 - `getWorkUnitById(tenantId, id)` → `WorkUnit | null` — **criar**.
 - `createWorkUnit` / `updateWorkUnit` / `deleteWorkUnit` — **criar update/delete**.
 - `countWorkUnitDependents(tenantId, id)` → `{ ges }` — **criar**.
 
 ### Função (`repositories/job-roles.ts`)
+
 - `listJobRoles(tenantId, { companyId?, search?, page?, pageSize? })` → `{ rows, total }` — **estender**.
 - `getJobRoleById` / `updateJobRole` / `deleteJobRole` — **criar**.
 - `countJobRoleDependents(tenantId, id)` → `{ gesLinks, employees }` — **criar** (aviso).
 
 ### GES (`repositories/ges.ts`)
+
 - `listGes(tenantId, { companyId?, workUnitId?, search?, page?, pageSize? })` →
   `{ rows: GesListItem[], total, totalWorkers }` — **estender** (filtros + card "Total" derivado
   via `exposedWorkersByGesMap`).
@@ -63,6 +67,7 @@ Convenção: todas recebem `tenantId: string` (da sessão), rodam em `withOrg`, 
 - (reuso) `countExposedWorkersByGes`, `exposedWorkersByGesMap`.
 
 ### Vínculo GES↔Função (`repositories/ges-job-roles.ts`)
+
 - `listGesJobRoles(tenantId, { gesId })` → `GesJobRoleItem[]` (join `job_roles` p/ título) — **estender**.
 - `listAvailableJobRolesForGes(tenantId, gesId, companyId)` → `JobRoleOption[]` (funções da
   empresa **não** vinculadas ao GES) — **criar**.
@@ -71,6 +76,7 @@ Convenção: todas recebem `tenantId: string` (da sessão), rodam em `withOrg`, 
 - (reuso) `createGesJobRole`.
 
 ### Funcionário (`repositories/employees.ts`)
+
 - `listEmployees(tenantId, { companyId?, status?, search?, page?, pageSize? })` →
   `{ rows: EmployeeListItem[], total }` (join p/ GES/Obra/Empresa na lista) — **estender**.
 - `getEmployeeById(tenantId, id)` → `Employee | null` — **criar**.

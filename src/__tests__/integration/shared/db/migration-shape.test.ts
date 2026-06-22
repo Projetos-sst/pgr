@@ -53,15 +53,18 @@ const ENUMS: Record<string, string[]> = {
       expect(rows).toHaveLength(1);
     });
 
-    it.each(NEW_TABLES)("%s concede SELECT/INSERT/UPDATE/DELETE a app_runtime", async (table) => {
-      const rows = await admin<{ privilege_type: string }[]>`
+    it.each(NEW_TABLES)(
+      "%s concede SELECT/INSERT/UPDATE/DELETE a app_runtime",
+      async (table) => {
+        const rows = await admin<{ privilege_type: string }[]>`
         select privilege_type from information_schema.role_table_grants
         where grantee = 'app_runtime' and table_schema = 'public' and table_name = ${table}`;
-      const granted = new Set(rows.map((r) => r.privilege_type));
-      for (const priv of ["SELECT", "INSERT", "UPDATE", "DELETE"]) {
-        expect(granted.has(priv)).toBe(true);
-      }
-    });
+        const granted = new Set(rows.map((r) => r.privilege_type));
+        for (const priv of ["SELECT", "INSERT", "UPDATE", "DELETE"]) {
+          expect(granted.has(priv)).toBe(true);
+        }
+      },
+    );
 
     it.each(NEW_TABLES)("%s tem trigger set_updated_at_<t>", async (table) => {
       const rows = await admin<{ tgname: string }[]>`
@@ -69,13 +72,16 @@ const ENUMS: Record<string, string[]> = {
       expect(rows).toHaveLength(1);
     });
 
-    it.each(Object.entries(ENUMS))("enum %s tem os membros esperados", async (name, members) => {
-      const rows = await admin<{ enumlabel: string }[]>`
+    it.each(Object.entries(ENUMS))(
+      "enum %s tem os membros esperados",
+      async (name, members) => {
+        const rows = await admin<{ enumlabel: string }[]>`
         select enumlabel from pg_enum e
         join pg_type t on t.oid = e.enumtypid
         where t.typname = ${name} order by e.enumsortorder`;
-      expect(rows.map((r) => r.enumlabel)).toEqual(members);
-    });
+        expect(rows.map((r) => r.enumlabel)).toEqual(members);
+      },
+    );
 
     it("companies.razao_social é NOT NULL", async () => {
       const [row] = await admin<{ is_nullable: string }[]>`

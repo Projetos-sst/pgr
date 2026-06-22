@@ -1,7 +1,4 @@
-import {
-  employeeInputSchema,
-  toEmployeeListItem,
-} from "@/shared/domains/pgr/employees";
+import { employeeInputSchema, toEmployeeListItem } from "@/shared/domains/pgr/employees";
 
 const COMPANY_ID = "11111111-1111-1111-1111-111111111111";
 

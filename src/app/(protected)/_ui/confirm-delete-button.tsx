@@ -73,8 +73,8 @@ export function ConfirmDeleteButton({
           <div className="w-full max-w-md rounded-lg border border-black/10 bg-white p-6 shadow-lg dark:border-white/10 dark:bg-zinc-900">
             <h2 className="text-lg font-semibold">Excluir {entityName}?</h2>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Esta ação é permanente. Os registros vinculados são removidos em cascata
-              (ou desvinculados), conforme a integridade do banco.
+              Esta ação é permanente. Os registros vinculados são removidos em cascata (ou
+              desvinculados), conforme a integridade do banco.
             </p>
 
             {dependentEntries.length > 0 ? (

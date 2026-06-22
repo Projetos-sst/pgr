@@ -11,21 +11,22 @@ Garante que o tenant **nunca** vem de input do cliente (Princípio I).
 ```ts
 type TenantContext = {
   userId: string;
-  tenantId: string;          // orgs.id (nosso id canônico)
-  plan: "free" | "pro";      // do tenant ativo (Inv-1)
-  role: string;              // papel no tenant ativo (org_memberships.role)
+  tenantId: string; // orgs.id (nosso id canônico)
+  plan: "free" | "pro"; // do tenant ativo (Inv-1)
+  role: string; // papel no tenant ativo (org_memberships.role)
 };
 
 export async function requireTenantContext(): Promise<TenantContext>;
 ```
 
 **Algoritmo**:
+
 1. `userId` ← sessão Clerk (`auth()` / `assertAuthenticated`). Sem sessão → erro de auth
    (caminho existente).
 2. Lê memberships do `userId` (com o `plan` do tenant via join `orgs`).
 3. **0 memberships** → `provisionPersonalTenant({ userId })` (self-heal) e relê. Se ainda 0
    → `NoTenantContextError` (bloqueio; `logTenantEvent("error", { operation:
-   "tenant.context", outcome: "blocked", userId })`).
+"tenant.context", outcome: "blocked", userId })`).
 4. **1 membership** → tenant ativo = esse. Retorna `{ userId, tenantId, plan, role }`.
 5. **2+ memberships** _(prático só com convite, futuro)_ → escolher pelo cookie
    `ACTIVE_ORG_COOKIE` (`tenant_active_org`, já em `org-switch.ts`) se apontar para um
@@ -60,7 +61,7 @@ do PRO (futuro), não é removido.
 
 ```ts
 export function isTeamManagementAvailable(plan: "free" | "pro"): boolean {
-  return plan === "pro";  // reflete o campo; NÃO bloqueia nada nesta fatia (FR-013 futuro)
+  return plan === "pro"; // reflete o campo; NÃO bloqueia nada nesta fatia (FR-013 futuro)
 }
 ```
 
@@ -68,7 +69,7 @@ export function isTeamManagementAvailable(plan: "free" | "pro"): boolean {
 
 ```ts
 export function isSwitcherEligible(membershipCount: number): boolean {
-  return membershipCount >= 2;  // FR-020 (renderização do seletor é futura)
+  return membershipCount >= 2; // FR-020 (renderização do seletor é futura)
 }
 ```
 

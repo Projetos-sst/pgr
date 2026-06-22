@@ -45,11 +45,11 @@ function companyHasAddress(company?: CompanyOption): boolean {
   if (!company) return false;
   return Boolean(
     company.zipCode ||
-      company.street ||
-      company.number ||
-      company.district ||
-      company.city ||
-      company.state,
+    company.street ||
+    company.number ||
+    company.district ||
+    company.city ||
+    company.state,
   );
 }
 
@@ -128,7 +128,13 @@ export function WorkUnitForm({
         options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
         error={errors.companyId}
       />
-      <TextField label="Nome" name="name" required defaultValue={workUnit?.name} error={errors.name} />
+      <TextField
+        label="Nome"
+        name="name"
+        required
+        defaultValue={workUnit?.name}
+        error={errors.name}
+      />
       <TextField
         label="Objeto/descrição"
         name="description"
@@ -154,21 +160,59 @@ export function WorkUnitForm({
           Preencher com endereço da empresa
         </button>
         <div className="grid gap-4 sm:grid-cols-3">
-          <TextField label="CEP" name="zipCode" value={address.zipCode} onChange={setAddressField("zipCode")} />
-          <TextField label="Logradouro" name="street" value={address.street} onChange={setAddressField("street")} />
-          <TextField label="Número" name="number" value={address.number} onChange={setAddressField("number")} />
+          <TextField
+            label="CEP"
+            name="zipCode"
+            value={address.zipCode}
+            onChange={setAddressField("zipCode")}
+          />
+          <TextField
+            label="Logradouro"
+            name="street"
+            value={address.street}
+            onChange={setAddressField("street")}
+          />
+          <TextField
+            label="Número"
+            name="number"
+            value={address.number}
+            onChange={setAddressField("number")}
+          />
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <TextField label="Complemento" name="complement" value={address.complement} onChange={setAddressField("complement")} />
-          <TextField label="Bairro" name="district" value={address.district} onChange={setAddressField("district")} />
-          <TextField label="Cidade" name="city" value={address.city} onChange={setAddressField("city")} />
+          <TextField
+            label="Complemento"
+            name="complement"
+            value={address.complement}
+            onChange={setAddressField("complement")}
+          />
+          <TextField
+            label="Bairro"
+            name="district"
+            value={address.district}
+            onChange={setAddressField("district")}
+          />
+          <TextField
+            label="Cidade"
+            name="city"
+            value={address.city}
+            onChange={setAddressField("city")}
+          />
         </div>
-        <TextField label="UF" name="state" value={address.state} onChange={setAddressField("state")} />
+        <TextField
+          label="UF"
+          name="state"
+          value={address.state}
+          onChange={setAddressField("state")}
+        />
       </fieldset>
 
       <FieldError message={errors._} />
       <FormActions>
-        <SubmitButton pending={pending} label={workUnit ? "Salvar alterações" : "Criar unidade"} />
+        <SubmitButton
+          pending={pending}
+          label={workUnit ? "Salvar alterações" : "Criar unidade"}
+        />
       </FormActions>
     </form>
   );

@@ -13,26 +13,26 @@ treinamentos, acidentes e medidas de controle nas fases seguintes.
 
 ## 2. Modelo de dados já existente (006)
 
-| Coluna | Tipo | Constraint | Obrigatório |
-| --- | --- | --- | --- |
-| `id` | `uuid` | PK | — |
-| `org_id` | `text` | `NOT NULL` FK→`orgs.id` cascade | tenant |
-| `company_id` | `uuid` | **`NOT NULL`** FK→`companies.id` cascade, indexado | **sim** |
-| `ges_id` | `uuid` | nullable FK→`ges.id` **`SET NULL`**, indexado | não |
-| `job_role_id` | `uuid` | nullable FK→`job_roles.id` **`SET NULL`**, indexado | não |
-| `full_name` | `text` | **`NOT NULL`** | **sim** |
-| `cpf` | `text` | **`NOT NULL`** | **sim** |
-| `birth_date` | `date` | nullable | não |
-| `sex` | `employee_sex` | nullable (`male｜female｜not_informed`) | não |
-| `marital_status` | `marital_status` | nullable (`single｜married｜divorced｜widowed｜stable_union`) | não |
-| `phone` / `email` / `rg` | `text` | nullable | não |
-| `badge_number` / `badge_valid_until` | `text` / `date` | nullable (crachá/validade) | não |
-| `registration` | `text` | nullable (matrícula) | não |
-| `blood_type` | `text` | nullable | não |
-| `admission_date` / `dismissal_date` | `date` | nullable | não |
-| endereço | `text` × 7 | `zip_code`…`state` nullable | não |
-| `photo_path` | `text` | nullable (foto 3x4; upload deferido) | não |
-| `status` | `employee_status` | **`NOT NULL DEFAULT 'active'`** (`active｜on_leave｜dismissed`) | sim (default) |
+| Coluna                               | Tipo              | Constraint                                                      | Obrigatório   |
+| ------------------------------------ | ----------------- | --------------------------------------------------------------- | ------------- |
+| `id`                                 | `uuid`            | PK                                                              | —             |
+| `org_id`                             | `text`            | `NOT NULL` FK→`orgs.id` cascade                                 | tenant        |
+| `company_id`                         | `uuid`            | **`NOT NULL`** FK→`companies.id` cascade, indexado              | **sim**       |
+| `ges_id`                             | `uuid`            | nullable FK→`ges.id` **`SET NULL`**, indexado                   | não           |
+| `job_role_id`                        | `uuid`            | nullable FK→`job_roles.id` **`SET NULL`**, indexado             | não           |
+| `full_name`                          | `text`            | **`NOT NULL`**                                                  | **sim**       |
+| `cpf`                                | `text`            | **`NOT NULL`**                                                  | **sim**       |
+| `birth_date`                         | `date`            | nullable                                                        | não           |
+| `sex`                                | `employee_sex`    | nullable (`male｜female｜not_informed`)                         | não           |
+| `marital_status`                     | `marital_status`  | nullable (`single｜married｜divorced｜widowed｜stable_union`)   | não           |
+| `phone` / `email` / `rg`             | `text`            | nullable                                                        | não           |
+| `badge_number` / `badge_valid_until` | `text` / `date`   | nullable (crachá/validade)                                      | não           |
+| `registration`                       | `text`            | nullable (matrícula)                                            | não           |
+| `blood_type`                         | `text`            | nullable                                                        | não           |
+| `admission_date` / `dismissal_date`  | `date`            | nullable                                                        | não           |
+| endereço                             | `text` × 7        | `zip_code`…`state` nullable                                     | não           |
+| `photo_path`                         | `text`            | nullable (foto 3x4; upload deferido)                            | não           |
+| `status`                             | `employee_status` | **`NOT NULL DEFAULT 'active'`** (`active｜on_leave｜dismissed`) | sim (default) |
 
 **`UNIQUE(org_id, cpf)`** — CPF único por tenant; mesmo CPF em escritórios distintos é permitido.
 
@@ -55,14 +55,14 @@ treinamentos, acidentes e medidas de controle nas fases seguintes.
 > `getById` (detalhe/404 cross-tenant), `update`, `delete`, busca/filtros e o picker de funções
 > do GES — **lacuna da task** que a 007 corrige.
 
-| Método | Estado | Ação na 007 |
-| --- | --- | --- |
-| `listEmployees(orgId, { companyId?, status?, search? })` | parcial | **estender** filtros/busca + join p/ exibir GES/Obra/Empresa |
-| `getEmployeeById(orgId, id)` | **inexistente** | **criar** (retorna `null` → 404 cross-tenant) |
-| `createEmployee(orgId, input)` | existe (valida CPF/enums) | manter |
-| `updateEmployee(orgId, id, input)` | **inexistente** | **criar** (revalidar CPF/enums) |
-| `deleteEmployee(orgId, id)` | **inexistente** | **criar** |
-| funções do GES selecionado (via `ges_job_roles`) | **inexistente** | **criar** query p/ o picker |
+| Método                                                   | Estado                    | Ação na 007                                                  |
+| -------------------------------------------------------- | ------------------------- | ------------------------------------------------------------ |
+| `listEmployees(orgId, { companyId?, status?, search? })` | parcial                   | **estender** filtros/busca + join p/ exibir GES/Obra/Empresa |
+| `getEmployeeById(orgId, id)`                             | **inexistente**           | **criar** (retorna `null` → 404 cross-tenant)                |
+| `createEmployee(orgId, input)`                           | existe (valida CPF/enums) | manter                                                       |
+| `updateEmployee(orgId, id, input)`                       | **inexistente**           | **criar** (revalidar CPF/enums)                              |
+| `deleteEmployee(orgId, id)`                              | **inexistente**           | **criar**                                                    |
+| funções do GES selecionado (via `ges_job_roles`)         | **inexistente**           | **criar** query p/ o picker                                  |
 
 ## 5. Regras de negócio & validação
 

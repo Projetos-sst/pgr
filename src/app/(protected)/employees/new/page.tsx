@@ -12,7 +12,10 @@ export default async function NewEmployeePage() {
   const companies = result.ok ? result.data : [];
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Novo funcionário" description="Empresa obrigatória; GES/função opcionais." />
+      <PageHeader
+        title="Novo funcionário"
+        description="Empresa obrigatória; GES/função opcionais."
+      />
       <EmployeeForm companies={companies} />
     </div>
   );
