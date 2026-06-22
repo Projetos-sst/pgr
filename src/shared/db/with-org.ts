@@ -6,7 +6,7 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { db } from "./index";
 import * as schema from "./schema";
 
-type TenantTransaction = Parameters<
+export type TenantTransaction = Parameters<
   Parameters<PostgresJsDatabase<typeof schema>["transaction"]>[0]
 >[0];
 

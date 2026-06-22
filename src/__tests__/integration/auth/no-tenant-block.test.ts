@@ -63,6 +63,7 @@ describe("requireTenantContext — bloqueio sem tenant ativo (FR-024)", () => {
     mockedList.mockResolvedValue([
       {
         orgId: "tenant_1",
+        name: null,
         role: "owner",
         scopedCompanyId: null,
         plan: "free",

@@ -34,6 +34,7 @@ export async function ensureOwnerMembership(args: {
 
 export type TenantMembershipRow = {
   orgId: string;
+  name: string | null;
   role: string;
   scopedCompanyId: string | null;
   plan: string;
@@ -45,7 +46,7 @@ export async function listTenantMembershipsByUser(
 ): Promise<TenantMembershipRow[]> {
   const { data, error } = await getRlsBypassingSupabaseClient()
     .from("org_memberships")
-    .select("org_id, role, scoped_company_id, orgs!inner(plan, clerk_org_id)")
+    .select("org_id, role, scoped_company_id, orgs!inner(name, plan, clerk_org_id)")
     .eq("user_id", userId);
 
   if (error) throw error;
@@ -78,6 +79,7 @@ function mapTenantMembershipRow(row: Record<string, unknown>): TenantMembershipR
   const org = normalizeEmbeddedOrg(row.orgs);
   return {
     orgId: row.org_id as string,
+    name: (org?.name as string | null) ?? null,
     role: row.role as string,
     scopedCompanyId: (row.scoped_company_id as string | null) ?? null,
     plan: (org?.plan as string) ?? "free",

@@ -17,9 +17,12 @@ export async function listWorkUnits(orgId: string, filters?: WorkUnitFilters) {
 }
 
 export async function createWorkUnit(orgId: string, input: NewWorkUnitInput) {
-  const data = parseNewWorkUnit(input);          // zod — valida ANTES de tocar o banco
+  const data = parseNewWorkUnit(input); // zod — valida ANTES de tocar o banco
   return withOrg(orgId, (tx) =>
-    tx.insert(workUnits).values({ ...data, orgId }).returning(),
+    tx
+      .insert(workUnits)
+      .values({ ...data, orgId })
+      .returning(),
   );
 }
 ```
@@ -34,7 +37,10 @@ Repositórios a criar: `work-units`, `ges`, `job-roles`, `categories`, `employee
 
 ```ts
 // Nº de expostos de UM GES (0 quando não há associações).
-export async function countExposedWorkersByGes(orgId: string, gesId: string): Promise<number> {
+export async function countExposedWorkersByGes(
+  orgId: string,
+  gesId: string,
+): Promise<number> {
   return withOrg(orgId, async (tx) => {
     const [row] = await tx
       .select({ total: sql<number>`coalesce(sum(${gesJobRoles.workerCount}), 0)::int` })
@@ -45,7 +51,9 @@ export async function countExposedWorkersByGes(orgId: string, gesId: string): Pr
 }
 
 // Mapa ges_id → nº de expostos para todos os GES do tenant (LEFT JOIN → 0 inclusive).
-export async function exposedWorkersByGesMap(orgId: string): Promise<Record<string, number>>;
+export async function exposedWorkersByGesMap(
+  orgId: string,
+): Promise<Record<string, number>>;
 ```
 
 - Fonte única `ges_job_roles`; sem coluna persistida nem trigger.
@@ -59,13 +67,19 @@ export async function exposedWorkersByGesMap(orgId: string): Promise<Record<stri
 domínios do banco — complementam, não substituem, as constraints:
 
 ```ts
-export const categoryTypeSchema   = z.enum(["epi", "machine"]);
-export const employeeSexSchema    = z.enum(["male", "female", "not_informed"]);
-export const maritalStatusSchema  = z.enum(["single", "married", "divorced", "widowed", "stable_union"]);
+export const categoryTypeSchema = z.enum(["epi", "machine"]);
+export const employeeSexSchema = z.enum(["male", "female", "not_informed"]);
+export const maritalStatusSchema = z.enum([
+  "single",
+  "married",
+  "divorced",
+  "widowed",
+  "stable_union",
+]);
 export const employeeStatusSchema = z.enum(["active", "on_leave", "dismissed"]);
 
-export const riskGradeSchema   = z.number().int().min(1).max(4);        // NR-04
-export const workerCountSchema = z.number().int().positive();           // > 0
+export const riskGradeSchema = z.number().int().min(1).max(4); // NR-04
+export const workerCountSchema = z.number().int().positive(); // > 0
 // cpf/cnpj: validação de FORMATO (não unicidade — unicidade é do banco)
 ```
 

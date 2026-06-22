@@ -26,6 +26,7 @@ const mockedLog = logTenantEvent as jest.MockedFunction<typeof logTenantEvent>;
 function membership(over: Partial<TenantMembershipRow>): TenantMembershipRow {
   return {
     orgId: "tenant_1",
+    name: null,
     role: "owner",
     scopedCompanyId: null,
     plan: "free",

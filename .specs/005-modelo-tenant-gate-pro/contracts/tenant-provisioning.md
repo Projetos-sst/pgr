@@ -17,6 +17,7 @@ export async function provisionPersonalTenant(
 ```
 
 **Comportamento**:
+
 1. Verifica se `userId` já possui um membership `owner` de um tenant pessoal
    (`clerk_org_id IS NULL`). Se sim → **no-op**, retorna `{ tenantId: existente, created:false }`.
 2. Senão, numa unidade lógica:
@@ -32,6 +33,7 @@ sistema (fora de RLS), como todo o sync da `002`. **Não** usa `withOrg` (não h
 ainda).
 
 **Repositórios** (estendidos em `src/shared/db/repositories/`):
+
 - `orgs.ts`: `createTenant({ id?, name?, plan?, clerkOrgId? })` → insert com `plan` default
   `free`; `toOrgColumns`/`mapOrg` passam a incluir `plan` e `clerk_org_id`.
 - `org-memberships.ts`: `ensureOwnerMembership({ orgId, userId })` → upsert role `owner`

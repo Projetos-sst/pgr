@@ -61,15 +61,22 @@ Integração (replica `companies-isolation.test.ts`, via `_helpers/db`):
 Exemplo (padrão `withOrgTx` do harness):
 
 ```ts
-const rows = await withOrgTx(runtime, "org_a", (tx) =>
-  tx`select org_id from public.work_units`);          // só linhas de org_a
+const rows = await withOrgTx(
+  runtime,
+  "org_a",
+  (tx) => tx`select org_id from public.work_units`,
+); // só linhas de org_a
 expect(rows.every((r) => r.org_id === "org_a")).toBe(true);
 
 await expect(
-  withOrgTx(runtime, "org_a", (tx) =>
-    tx`insert into public.employees (org_id, company_id, full_name, cpf)
-       values ('org_b', '<company_b>', 'X', '000')`),
-).rejects.toThrow();                                  // WITH CHECK cross-tenant
+  withOrgTx(
+    runtime,
+    "org_a",
+    (tx) =>
+      tx`insert into public.employees (org_id, company_id, full_name, cpf)
+       values ('org_b', '<company_b>', 'X', '000')`,
+  ),
+).rejects.toThrow(); // WITH CHECK cross-tenant
 ```
 
 ## 5. Definição de pronto

@@ -14,6 +14,7 @@ import { isTeamManagementAvailable } from "@/shared/tenant/plan";
 function membership(over: Partial<TenantMembershipRow>): TenantMembershipRow {
   return {
     orgId: "tenant_1",
+    name: null,
     role: "owner",
     scopedCompanyId: null,
     plan: "free",

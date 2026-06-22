@@ -29,6 +29,15 @@ export class NoTenantContextError extends AppError {
   }
 }
 
+export class ForbiddenError extends AppError {
+  readonly code = "FORBIDDEN" as const;
+  readonly status = 403;
+
+  constructor(message = "FORBIDDEN") {
+    super(message);
+  }
+}
+
 export class OrgQuotaExceededError extends AppError {
   readonly code = "ORG_QUOTA_EXCEEDED" as const;
   readonly status = 403;

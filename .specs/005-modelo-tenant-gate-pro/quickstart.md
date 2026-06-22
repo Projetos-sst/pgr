@@ -51,11 +51,11 @@ npm run test:integration   # integração: app-layer (SQLite) + RLS (Postgres ef
 
 ### O que cada nível prova
 
-| Nível | Substrato | Cobre |
-| --- | --- | --- |
-| Unit | mocks | idempotência de `provisionPersonalTenant`; papel `owner`; default `free`; resolução do tenant ativo (1→ele, 0→provisiona/bloqueia); `isSwitcherEligible`; `isTeamManagementAvailable`; resolução de plano/papel pelo tenant ativo |
-| Integração app-layer | SQLite em memória / `auth()` mockado | `user.created` provisiona tenant+owner (idempotente); validação de schema; bloqueio sem tenant ativo |
-| Integração RLS | **Postgres efêmero** (`INTEGRATION_*`) | `companies`: A só vê A; sem tenant, vazio; escrita cross-tenant rejeitada; escopo por transação |
+| Nível                | Substrato                              | Cobre                                                                                                                                                                                                                             |
+| -------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit                 | mocks                                  | idempotência de `provisionPersonalTenant`; papel `owner`; default `free`; resolução do tenant ativo (1→ele, 0→provisiona/bloqueia); `isSwitcherEligible`; `isTeamManagementAvailable`; resolução de plano/papel pelo tenant ativo |
+| Integração app-layer | SQLite em memória / `auth()` mockado   | `user.created` provisiona tenant+owner (idempotente); validação de schema; bloqueio sem tenant ativo                                                                                                                              |
+| Integração RLS       | **Postgres efêmero** (`INTEGRATION_*`) | `companies`: A só vê A; sem tenant, vazio; escrita cross-tenant rejeitada; escopo por transação                                                                                                                                   |
 
 > SQLite **não** tem RLS — o backstop de `companies` só é provável contra Postgres real
 > (constituição v1.2.0, §exceção). Espelhar `shared/db/tenant-isolation.test.ts`

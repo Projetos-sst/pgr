@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
-import { ClerkProvider, OrganizationSwitcher, Show, UserButton } from "@clerk/nextjs";
+import { ClerkProvider, Show, UserButton } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
 
 import "./globals.css";
+import { TenantSwitcher } from "./_components/tenant-switcher";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -63,11 +64,7 @@ export default function RootLayout({
                 >
                   Painel
                 </Link>
-                <OrganizationSwitcher
-                  hidePersonal
-                  afterSelectOrganizationUrl="/dashboard"
-                  afterCreateOrganizationUrl="/dashboard"
-                />
+                <TenantSwitcher />
                 <UserButton />
               </Show>
             </nav>
