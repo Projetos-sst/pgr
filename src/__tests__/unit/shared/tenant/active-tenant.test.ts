@@ -16,6 +16,7 @@ import {
   isSwitcherEligible,
   resolveActiveTenant,
   selectActiveTenant,
+  toDomainRole,
 } from "@/shared/tenant/active-tenant";
 
 const mockedList = listTenantMembershipsByUser as jest.MockedFunction<
@@ -52,6 +53,33 @@ describe("selectActiveTenant", () => {
 
   it("0 vínculos → null", () => {
     expect(selectActiveTenant([], null)).toBeNull();
+  });
+
+  it("normaliza papel do Clerk → domínio (org:admin de pro vira owner)", () => {
+    const active = selectActiveTenant(
+      [membership({ orgId: "pro_t", plan: "pro", role: "org:admin" })],
+      null,
+    );
+    expect(active?.role).toBe("owner");
+  });
+});
+
+describe("toDomainRole", () => {
+  it("mapeia papéis do Clerk para o vocabulário de domínio", () => {
+    expect(toDomainRole("org:admin")).toBe("owner");
+    expect(toDomainRole("org:member")).toBe("collaborator");
+    expect(toDomainRole("org:client")).toBe("client");
+  });
+
+  it("preserva papéis de domínio já normalizados", () => {
+    expect(toDomainRole("owner")).toBe("owner");
+    expect(toDomainRole("collaborator")).toBe("collaborator");
+    expect(toDomainRole("client")).toBe("client");
+  });
+
+  it("papel desconhecido cai em client (menor privilégio)", () => {
+    expect(toDomainRole("org:billing")).toBe("client");
+    expect(toDomainRole("")).toBe("client");
   });
 
   it("2+ vínculos: cookie aponta a um membership válido → esse; senão null (bloqueio determinístico)", () => {

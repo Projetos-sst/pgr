@@ -20,6 +20,25 @@ export function isSwitcherEligible(membershipCount: number): boolean {
   return membershipCount >= 2;
 }
 
+const DOMAIN_ROLES = new Set(["owner", "collaborator", "client"]);
+
+const CLERK_ROLE_TO_DOMAIN: Record<string, string> = {
+  "org:admin": "owner",
+  "org:member": "collaborator",
+  "org:client": "client",
+};
+
+/**
+ * Papéis do Clerk (`org:admin`/`org:member`) chegam crus pelo webhook; o tenant
+ * pessoal grava `owner` direto. Normaliza para o vocabulário de domínio
+ * (`owner`/`collaborator`/`client`) num único ponto de leitura — papel
+ * desconhecido cai em `client` (menor privilégio).
+ */
+export function toDomainRole(role: string): string {
+  if (DOMAIN_ROLES.has(role)) return role;
+  return CLERK_ROLE_TO_DOMAIN[role] ?? "client";
+}
+
 export function selectActiveTenant(
   memberships: TenantMembershipRow[],
   cookieTenantId: string | null,
@@ -36,7 +55,7 @@ export function selectActiveTenant(
   return {
     tenantId: chosen.orgId,
     plan: normalizePlan(chosen.plan),
-    role: chosen.role,
+    role: toDomainRole(chosen.role),
     membershipCount: memberships.length,
   };
 }

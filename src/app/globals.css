@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/*
+ * Esta fatia entrega um único tema claro: todas as telas fixam fundo claro
+ * (bg-white/bg-zinc-50). O `dark:` do Tailwind v4 segue prefers-color-scheme por
+ * padrão e, com o SO em modo escuro, ativava textos claros sobre fundo claro
+ * (baixo contraste). Tornar o `dark:` baseado em classe o mantém inerte até
+ * existir um ancestral `.dark` — que esta versão não adiciona.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

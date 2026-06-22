@@ -9,7 +9,7 @@ export default function Forbidden() {
       </p>
       <Link
         href="/dashboard"
-        className="rounded-full border border-black/8 px-5 py-2 text-sm font-medium transition-colors hover:bg-black/4"
+        className="rounded-full border border-black/15 px-5 py-2 text-sm font-medium transition-colors hover:bg-black/5"
       >
         Voltar ao painel
       </Link>
