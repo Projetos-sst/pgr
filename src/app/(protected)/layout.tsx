@@ -12,6 +12,7 @@ const PGR_NAV = [
   { href: "/job-roles", label: "Funções" },
   { href: "/ges", label: "GES" },
   { href: "/employees", label: "Funcionários" },
+  { href: "/categories", label: "Categorias" },
 ];
 
 export default async function ProtectedLayout({
