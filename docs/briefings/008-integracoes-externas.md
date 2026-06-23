@@ -9,15 +9,15 @@
 
 ## 0. Decisões desta curadoria (o que muda em relação ao texto da issue)
 
-| Tema | Texto da issue | Decisão da fatia | Porquê |
-| --- | --- | --- | --- |
-| Integrações | ViaCEP + CNPJ + **CAEPI/MTE** | **Só ViaCEP + CNPJ** | CAEPI valida CA de EPI; **não existe módulo/entidade de EPI** ainda → consumidor inexistente. CAEPI vira issue própria na Fase 02 (EPIs). |
-| Provedor de CNPJ | "receitaws.com.br ou similar" | **BrasilAPI** (`brasilapi.com.br/api/cnpj/v1`) | Gratuito, **sem API key**, sem cadastro, limite generoso. ReceitaWS grátis é ~3 req/min e costuma exigir token pago. |
-| Provedor de CEP | ViaCEP | **ViaCEP** (`viacep.com.br/ws`) | Padrão de mercado, sem key. |
-| Transporte | Route Handler **ou** Server Action | **Route Handler `GET`** + hooks `fetch` no `blur` | Casa com lookup-on-blur, é cacheável por HTTP/Next, esconde a URL externa. Segue o padrão dos `api/v1`. |
-| "Isolamento multi-tenant" | exigido | **N/A para armazenamento** — CEP/CNPJ são **dados públicos**, não dados do tenant. O que se aplica é **exigir sessão autenticada** (`requireAuth`) para o endpoint não virar proxy aberto, e **cache global** (não por org). | Não há dado de cliente trafegando; logo não há cruzamento de tenants a proteger. |
-| Localização | `features/integrations/` ou `lib/integrations/` | `src/shared/integrations/` + `src/app/api/integrations/` | Os caminhos da issue **não existem** no repo; a estrutura real é `src/shared/` + `src/app/`. |
-| Teste de integração | "SQLite em memória" | **`fetch` externo mockado, sem banco** | A fatia não persiste nada → não precisa de SQLite nem de Postgres efêmero. |
+| Tema                      | Texto da issue                                  | Decisão da fatia                                                                                                                                                                                                             | Porquê                                                                                                                                    |
+| ------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Integrações               | ViaCEP + CNPJ + **CAEPI/MTE**                   | **Só ViaCEP + CNPJ**                                                                                                                                                                                                         | CAEPI valida CA de EPI; **não existe módulo/entidade de EPI** ainda → consumidor inexistente. CAEPI vira issue própria na Fase 02 (EPIs). |
+| Provedor de CNPJ          | "receitaws.com.br ou similar"                   | **BrasilAPI** (`brasilapi.com.br/api/cnpj/v1`)                                                                                                                                                                               | Gratuito, **sem API key**, sem cadastro, limite generoso. ReceitaWS grátis é ~3 req/min e costuma exigir token pago.                      |
+| Provedor de CEP           | ViaCEP                                          | **ViaCEP** (`viacep.com.br/ws`)                                                                                                                                                                                              | Padrão de mercado, sem key.                                                                                                               |
+| Transporte                | Route Handler **ou** Server Action              | **Route Handler `GET`** + hooks `fetch` no `blur`                                                                                                                                                                            | Casa com lookup-on-blur, é cacheável por HTTP/Next, esconde a URL externa. Segue o padrão dos `api/v1`.                                   |
+| "Isolamento multi-tenant" | exigido                                         | **N/A para armazenamento** — CEP/CNPJ são **dados públicos**, não dados do tenant. O que se aplica é **exigir sessão autenticada** (`requireAuth`) para o endpoint não virar proxy aberto, e **cache global** (não por org). | Não há dado de cliente trafegando; logo não há cruzamento de tenants a proteger.                                                          |
+| Localização               | `features/integrations/` ou `lib/integrations/` | `src/shared/integrations/` + `src/app/api/integrations/`                                                                                                                                                                     | Os caminhos da issue **não existem** no repo; a estrutura real é `src/shared/` + `src/app/`.                                              |
+| Teste de integração       | "SQLite em memória"                             | **`fetch` externo mockado, sem banco**                                                                                                                                                                                       | A fatia não persiste nada → não precisa de SQLite nem de Postgres efêmero.                                                                |
 
 ---
 
@@ -129,14 +129,14 @@ type ProviderResult<T> =
 
 ## 5. Edge cases (cobrir nos testes e na UX)
 
-| Caso | Comportamento |
-| --- | --- |
-| CNPJ válido sem dados (MEI incompleto) | sucesso parcial — preenche o que veio, resto editável |
-| CEP válido sem logradouro (CEP de grande usuário) | preenche cidade/UF; street fica editável |
-| Timeout / sem rede | `status: error` silencioso; campo editável; sem throw |
-| Rate-limit do provider | tratado como `upstream_error` (502) → silencioso |
-| Formato inválido | nem chama o provider (422); hook não dispara |
-| Digitação rápida (vários blur) | aborta request anterior; cache dedup |
+| Caso                                              | Comportamento                                         |
+| ------------------------------------------------- | ----------------------------------------------------- |
+| CNPJ válido sem dados (MEI incompleto)            | sucesso parcial — preenche o que veio, resto editável |
+| CEP válido sem logradouro (CEP de grande usuário) | preenche cidade/UF; street fica editável              |
+| Timeout / sem rede                                | `status: error` silencioso; campo editável; sem throw |
+| Rate-limit do provider                            | tratado como `upstream_error` (502) → silencioso      |
+| Formato inválido                                  | nem chama o provider (422); hook não dispara          |
+| Digitação rápida (vários blur)                    | aborta request anterior; cache dedup                  |
 
 ---
 
