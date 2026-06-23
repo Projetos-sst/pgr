@@ -30,6 +30,11 @@ const PGR_MODULES = [
     title: "Funcionários",
     description: "Trabalhadores das empresas-cliente.",
   },
+  {
+    href: "/categories",
+    title: "Categorias",
+    description: "Catálogo de EPIs e máquinas do escritório.",
+  },
 ];
 
 export default async function DashboardPage() {

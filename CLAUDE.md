@@ -25,36 +25,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/pgr-base-cruds`**. Fatia atual (`007`) — **CRUD completo** (criar, listar
-paginado, detalhar, editar, excluir) das 5 entidades da cadeia do PGR (Empresa, Unidade de Obra,
-Função, GES + gestão de `ges_job_roles`, Funcionário) em UI (App Router) + Server Actions, sobre
-o modelo de dados da `006`. Consolida 5 cards (#69, #71, #12, #13, #14) numa fatia única.
+Branch: **`feature/category-crud`**. Fatia atual (`008`) — **CRUD completo** (criar, listar
+paginado/filtrado, carregar por id para edição, editar, excluir) da entidade **`categories`**
+(catálogo `epi|machine`) em UI (App Router) + Server Actions, sobre o modelo da `006` e reusando
+a infraestrutura de CRUD da `007`. Entidade simples (sem tela de detalhe; sem dependentes).
 
-Fatia atual (`007`) — `.specs/007-pgr-base-cruds/`:
+Fatia atual (`008`) — `.specs/008-category-crud/`:
 
-- Plan: `.specs/007-pgr-base-cruds/plan.md`
-- Spec (+ Clarifications 2026-06-20) / Research / Data model / Quickstart no mesmo diretório.
-- Contracts: `contracts/action-result.md`, `contracts/server-actions.md`, `contracts/repositories.md`.
-- Briefings (fonte): `docs/briefings/007-0{1..5}-*.md`.
+- Plan: `.specs/008-category-crud/plan.md`
+- Spec (+ revisão Tech Lead) / Research / Data model / Quickstart no mesmo diretório.
+- Contracts: `contracts/server-actions.md`, `contracts/repositories.md`.
 
-Notas chave (`007`):
+Notas chave (`008`):
 
-- **CRUD completo**: estende os repositórios da `006` (hoje só `list`/`create`) com
-  `getById`/`update`/`delete`/busca + **paginação offset** (`{rows,total}`, pageSize 20); `createCompany`
-  passa a persistir **todos** os campos da `006` (endereço/risk_grade/cnae/etc.).
-- **Contrato de retorno**: `ActionResult<T> = {ok:true;data} | {ok:false;error:{code,message,fields?}}`
-  em `src/shared/server/result.ts` (novo, FR-063) — segue a forma de `me.ts`; sem exceção crua na UI.
-- **Autorização por papel** (FR-065): `requireOfficeStaff()` (novo) sobre `requireTenantContext().role`;
-  `owner`/`collaborator` operam, papel `client` → `ForbiddenError`/403 (`app/forbidden.tsx`).
-- **Exclusão**: confirmar-com-aviso (sem bloqueio); cascade/SET NULL pelo banco (`006`); helpers de
-  contagem de dependentes p/ o aviso.
-- **Isolamento (intacto)**: tudo via `withOrg` + RLS backstop; tenant da sessão, nunca do cliente.
-  Nº de expostos derivado (reuso de `exposed-workers`). Server Actions em `server/actions/pgr/`,
-  schemas/DTO em `domains/pgr/`. **Sem migration nova.**
-- Testes: unit (zod/DTO/derivação/mapeamento de erro); integração de Server Actions + 404
-  cross-tenant + isolamento contra **Postgres efêmero** (`INTEGRATION_*`/`runIsolationSuite`), nunca SQLite.
+- **CRUD de `categories`**: estende o repositório (hoje só `list`/`create`) com
+  `getById`/`update`/`delete` + busca por nome + filtro por tipo + **paginação offset** (`{rows,total}`,
+  pageSize 20). `createCategory` é **refatorado** para receber `CategoryValues` validado (deixa de
+  fazer parse interno). **Sem migration nova** (tabela/constraint/RLS são da `006`).
+- **Reuso integral da 007**: `ActionResult<T>` (`src/shared/server/result.ts`), wrapper
+  `officeAction` (gate + mapeamento de erro + auditoria), `requireOfficeStaff()`, `_ui/list`+`_ui/form`.
+  Domínio em `domains/pgr/categories.ts` (`categoryInputSchema` reusa `categoryTypeSchema`).
+- **Erros como códigos do contrato** (não HTTP cru): duplicidade `(org,type,name)` → `DUPLICATE`
+  (constraint `uq_categories_org_type_name`, SQLSTATE 23505); id inexistente/cross-tenant →
+  `NOT_FOUND` (`NotFoundError`); tipo/nome inválidos → `VALIDATION`; papel `client` → `FORBIDDEN`.
+- **Detalhe = edição** (sem tela só-leitura); **exclusão** = confirmar-e-remover (catálogo sem FK
+  de entrada → sem aviso de cascata nem helper de dependentes).
+- **Isolamento**: `withOrg` + RLS backstop; tenant da sessão, nunca do cliente. Ausência de tenant
+  → bloqueada pelo gate (página/Server Action) e nunca devolve todos os registros (repo/RLS).
+- Testes: unit (`categoryInputSchema`); integração de Server Actions + `DUPLICATE` + `NOT_FOUND`
+  cross-tenant + `FORBIDDEN` contra **Postgres efêmero** (`INTEGRATION_*`; seed já tem
+  `categoryA`@`org_a`/`categoryB`@`org_b`), nunca SQLite.
 
-Fatia anterior (`006`) — `.specs/006-cadastros-base-pgr/` (modelo de dados; migration `0005`).
+Fatia anterior (`007`) — `.specs/007-pgr-base-cruds/` (CRUD das 5 entidades da cadeia do PGR;
+`ActionResult`/`officeAction`/`requireOfficeStaff`/`_ui`; sem migration). Briefings em
+`docs/briefings/007-0{1..5}-*.md`.
+
+Fatia base (`006`) — `.specs/006-cadastros-base-pgr/` (modelo de dados; migration `0005`).
 
 Notas chave (`006`):
 
