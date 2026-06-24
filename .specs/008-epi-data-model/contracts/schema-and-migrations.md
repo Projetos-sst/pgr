@@ -41,8 +41,8 @@ BEFORE UPDATE ON public.<t> FOR EACH ROW EXECUTE FUNCTION set_updated_at();` par
   algum; caso já tenha sido aplicada, criar `0008_epi_catalog_type_fk.sql` com:
   `CREATE UNIQUE INDEX uq_categories_id_type ON public.categories (id, type);` +
   `ALTER TABLE public.epi_catalog DROP CONSTRAINT epi_catalog_category_id_categories_id_fk,
- ADD CONSTRAINT epi_catalog_category_id_type_fk FOREIGN KEY (category_id, type)
- REFERENCES public.categories (id, type) ON DELETE RESTRICT;`
+ADD CONSTRAINT epi_catalog_category_id_type_fk FOREIGN KEY (category_id, type)
+REFERENCES public.categories (id, type) ON DELETE RESTRICT;`
 - Aplicar via conexão direta **unpooled** (owner).
 
 ## 3. Garantias verificáveis (contrato de aceite)
