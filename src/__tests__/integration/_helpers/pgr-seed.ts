@@ -15,13 +15,20 @@ export const PGR_IDS = {
   categoryB: "22222222-2222-2222-2222-2222222222b5",
   gesJobRoleA: "11111111-1111-1111-1111-1111111111a6",
   gesJobRoleB: "22222222-2222-2222-2222-2222222222b6",
+  epiCatalogA: "11111111-1111-1111-1111-1111111111a7",
+  epiCatalogB: "22222222-2222-2222-2222-2222222222b7",
+  epiStockA: "11111111-1111-1111-1111-1111111111a8",
+  epiStockB: "22222222-2222-2222-2222-2222222222b8",
+  epiDeliveryA: "11111111-1111-1111-1111-1111111111a9",
+  epiDeliveryB: "22222222-2222-2222-2222-2222222222b9",
 } as const;
 
 const I = PGR_IDS;
 
 /**
  * Truncates the whole org graph and seeds one full chain per tenant (org_a/org_b):
- * company → work_unit → ges, job_role, ges_job_roles, employee, category.
+ * company → work_unit → ges, job_role, ges_job_roles, employee, category, plus the
+ * EPI chain (catalog → stock → movement, delivery → item, epi_risk).
  * Inserts run as the admin/owner connection (bypasses RLS).
  */
 export async function seedPgrBase(admin: ReturnType<typeof postgres>): Promise<void> {
@@ -58,5 +65,29 @@ export async function seedPgrBase(admin: ReturnType<typeof postgres>): Promise<v
     insert into public.ges_job_roles (id, org_id, ges_id, job_role_id, worker_count) values
       ('${I.gesJobRoleA}','org_a','${I.gesA}','${I.jobRoleA}',3),
       ('${I.gesJobRoleB}','org_b','${I.gesB}','${I.jobRoleB}',7);
+
+    insert into public.epi_catalog (id, org_id, type, category_id, name) values
+      ('${I.epiCatalogA}','org_a','epi','${I.categoryA}','Capacete CA-123'),
+      ('${I.epiCatalogB}','org_b','machine','${I.categoryB}','Betoneira 400L');
+
+    insert into public.epi_stock (id, org_id, catalog_id, balance, min_quantity) values
+      ('${I.epiStockA}','org_a','${I.epiCatalogA}',10,2),
+      ('${I.epiStockB}','org_b','${I.epiCatalogB}',5,1);
+
+    insert into public.stock_movements (org_id, stock_id, type, quantity) values
+      ('org_a','${I.epiStockA}','purchase',10),
+      ('org_b','${I.epiStockB}','purchase',5);
+
+    insert into public.epi_deliveries (id, org_id, employee_id, signature_status) values
+      ('${I.epiDeliveryA}','org_a','${I.employeeA}','pending'),
+      ('${I.epiDeliveryB}','org_b','${I.employeeB}','signed_manual');
+
+    insert into public.epi_delivery_items (org_id, delivery_id, catalog_id, quantity) values
+      ('org_a','${I.epiDeliveryA}','${I.epiCatalogA}',1),
+      ('org_b','${I.epiDeliveryB}','${I.epiCatalogB}',1);
+
+    insert into public.epi_risk (org_id, catalog_id, ges_id, neutralizes) values
+      ('org_a','${I.epiCatalogA}','${I.gesA}',true),
+      ('org_b','${I.epiCatalogB}','${I.gesB}',false);
   `);
 }
