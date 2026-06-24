@@ -6,6 +6,7 @@ import {
   timestamp,
   index,
   uniqueIndex,
+  unique,
   pgPolicy,
 } from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
@@ -33,6 +34,10 @@ export const categories = pgTable(
   (table) => [
     index("idx_categories_org_id").on(table.orgId),
     uniqueIndex("uq_categories_org_type_name").on(table.orgId, table.type, table.name),
+    // UNIQUE constraint (não índice) sobre (id, type) — é o alvo da FK composta de
+    // `epi_catalog (category_id, type)`, que garante item.type == categoria.type (008/FR-002a).
+    // Postgres exige uma unique/primary key constraint como alvo de FK; um unique index não basta.
+    unique("uq_categories_id_type").on(table.id, table.type),
     pgPolicy("categories_isolation", {
       for: "all",
       to: appRuntimeRole,
