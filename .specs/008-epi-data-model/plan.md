@@ -48,13 +48,13 @@ texto livre; **(FR-008)** `auth_token` único **global** (índice parcial).
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-| Princípio | Avaliação | Status |
-| --------- | --------- | ------ |
-| I — Isolamento Multi-Tenant | Toda tabela tem `org_id NOT NULL → orgs.id` indexado + RLS `app_runtime` com `current_setting('app.current_org')` em USING/WITH CHECK; acesso via `withOrg`; tenant da sessão, nunca do cliente. `auth_token` único global **não** vaza dados entre tenants (RLS continua barrando leitura cross-tenant; o índice só impede colisão de token). | ✅ PASS |
-| II — Stack Fixa / YAGNI | Sem nova infra; só schema + migration. Nenhuma abstração especulativa. | ✅ PASS |
-| III — Fatias Verticais | Fatia de dados independente e testável isoladamente (espelha 006). | ✅ PASS |
-| IV — Operações Pesadas Assíncronas | N/A — não há operação pesada nesta fatia. | ✅ PASS |
-| V — Segurança e Integridade | Constraints no banco (FK, NOT NULL, UNIQUE, CHECK, enums) como fonte de verdade; validação zod complementar; TS strict. FR-002a **reforça** a integridade (consistência de tipo no banco). | ✅ PASS |
+| Princípio                          | Avaliação                                                                                                                                                                                                                                                                                                                                      | Status  |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| I — Isolamento Multi-Tenant        | Toda tabela tem `org_id NOT NULL → orgs.id` indexado + RLS `app_runtime` com `current_setting('app.current_org')` em USING/WITH CHECK; acesso via `withOrg`; tenant da sessão, nunca do cliente. `auth_token` único global **não** vaza dados entre tenants (RLS continua barrando leitura cross-tenant; o índice só impede colisão de token). | ✅ PASS |
+| II — Stack Fixa / YAGNI            | Sem nova infra; só schema + migration. Nenhuma abstração especulativa.                                                                                                                                                                                                                                                                         | ✅ PASS |
+| III — Fatias Verticais             | Fatia de dados independente e testável isoladamente (espelha 006).                                                                                                                                                                                                                                                                             | ✅ PASS |
+| IV — Operações Pesadas Assíncronas | N/A — não há operação pesada nesta fatia.                                                                                                                                                                                                                                                                                                      | ✅ PASS |
+| V — Segurança e Integridade        | Constraints no banco (FK, NOT NULL, UNIQUE, CHECK, enums) como fonte de verdade; validação zod complementar; TS strict. FR-002a **reforça** a integridade (consistência de tipo no banco).                                                                                                                                                     | ✅ PASS |
 
 **Resultado**: nenhuma violação. Complexity Tracking vazio.
 

@@ -53,16 +53,16 @@ INTEGRATION_APP_RUNTIME_URL="postgres://app_runtime:...@host:5432/db" \
 
 ## 4. Mapa de aceite (spec → verificação)
 
-| Critério (spec) | Onde se prova |
-| --------------- | ------------- |
-| SC-001 (6 tabelas, reuso de categories) | migration-shape |
-| SC-002 (isolamento 100%) | 6× isolation |
-| SC-003 (campos do ePGR) | data-model + constraints |
-| SC-004 (quantidade/saldo inválidos rejeitados) | constraints |
-| SC-005 (token único global) | constraints |
-| SC-006 (regras de exclusão) | constraints |
-| SC-007 (suítes + lint + tipos verdes) | passos 1 e 3 |
-| FR-002a (tipo item == categoria) | constraints (caso novo) |
+| Critério (spec)                                | Onde se prova            |
+| ---------------------------------------------- | ------------------------ |
+| SC-001 (6 tabelas, reuso de categories)        | migration-shape          |
+| SC-002 (isolamento 100%)                       | 6× isolation             |
+| SC-003 (campos do ePGR)                        | data-model + constraints |
+| SC-004 (quantidade/saldo inválidos rejeitados) | constraints              |
+| SC-005 (token único global)                    | constraints              |
+| SC-006 (regras de exclusão)                    | constraints              |
+| SC-007 (suítes + lint + tipos verdes)          | passos 1 e 3             |
+| FR-002a (tipo item == categoria)               | constraints (caso novo)  |
 
 > Sem Docker/Postgres no ambiente atual, as suítes de integração ficam em `describe.skip`. Para
 > aceite final, rodar o passo 3 contra um Postgres efêmero.

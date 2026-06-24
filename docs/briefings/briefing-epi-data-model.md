@@ -50,49 +50,49 @@ Replicar exatamente o padrão das tabelas de `006` (`src/shared/db/schema/*.ts`)
 
 > ⚠️ **Sobreposição crítica com `categories` (006)** — ver §7.1 antes de criar.
 
-| Coluna       | Tipo            | Constraint                                  |
-| ------------ | --------------- | ------------------------------------------- |
-| `id`         | `uuid`          | PK                                          |
-| `org_id`     | `text`          | NOT NULL → `orgs.id`, indexado              |
-| `type`       | enum `category_type` (`epi`/`machine`) | NOT NULL          |
-| `name`       | `text`          | NOT NULL                                    |
-| `note`       | `text`          | nullable (Observação)                       |
-| timestamps   | `timestamptz`   | NOT NULL DEFAULT now() + trigger            |
+| Coluna     | Tipo                                   | Constraint                       |
+| ---------- | -------------------------------------- | -------------------------------- |
+| `id`       | `uuid`                                 | PK                               |
+| `org_id`   | `text`                                 | NOT NULL → `orgs.id`, indexado   |
+| `type`     | enum `category_type` (`epi`/`machine`) | NOT NULL                         |
+| `name`     | `text`                                 | NOT NULL                         |
+| `note`     | `text`                                 | nullable (Observação)            |
+| timestamps | `timestamptz`                          | NOT NULL DEFAULT now() + trigger |
 
 - Unicidade sugerida: `UNIQUE(org_id, type, name)` (idêntica à de `categories`).
 
 ### 3.2 `epi_catalog` — catálogo de itens (EPI / Máquinas e Equipamentos)
 
-| Coluna         | Tipo          | Constraint                                            |
-| -------------- | ------------- | ---------------------------------------------------- |
-| `id`           | `uuid`        | PK                                                    |
-| `org_id`       | `text`        | NOT NULL → `orgs.id`, indexado                       |
-| `type`         | enum `category_type` (`epi`/`machine`) | NOT NULL — Tipo            |
-| `category_id`  | `uuid`        | NOT NULL → `epi_categories.id` (FK), indexado        |
-| `name`         | `text`        | NOT NULL — Nome                                       |
-| `ca`           | `text`        | nullable — nº do Certificado de Aprovação            |
-| `ca_valid_until` | `date`      | nullable — Validade do CA                             |
-| `manufacturer` | `text`        | nullable — Fabricante                                 |
-| `norm`         | `text`        | nullable — Norma                                      |
-| `size`         | `text`        | nullable — Tamanho                                    |
-| `unit_of_measure` | `text`     | nullable — Unidade de Medida                          |
-| `description`  | `text`        | nullable                                             |
-| `photo_path`   | `text`        | nullable (chave de Storage; upload deferido como em `logo_path`/`photo_path`) |
-| timestamps     | `timestamptz` | NOT NULL DEFAULT now() + trigger                      |
+| Coluna            | Tipo                                   | Constraint                                                                    |
+| ----------------- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| `id`              | `uuid`                                 | PK                                                                            |
+| `org_id`          | `text`                                 | NOT NULL → `orgs.id`, indexado                                                |
+| `type`            | enum `category_type` (`epi`/`machine`) | NOT NULL — Tipo                                                               |
+| `category_id`     | `uuid`                                 | NOT NULL → `epi_categories.id` (FK), indexado                                 |
+| `name`            | `text`                                 | NOT NULL — Nome                                                               |
+| `ca`              | `text`                                 | nullable — nº do Certificado de Aprovação                                     |
+| `ca_valid_until`  | `date`                                 | nullable — Validade do CA                                                     |
+| `manufacturer`    | `text`                                 | nullable — Fabricante                                                         |
+| `norm`            | `text`                                 | nullable — Norma                                                              |
+| `size`            | `text`                                 | nullable — Tamanho                                                            |
+| `unit_of_measure` | `text`                                 | nullable — Unidade de Medida                                                  |
+| `description`     | `text`                                 | nullable                                                                      |
+| `photo_path`      | `text`                                 | nullable (chave de Storage; upload deferido como em `logo_path`/`photo_path`) |
+| timestamps        | `timestamptz`                          | NOT NULL DEFAULT now() + trigger                                              |
 
 - Decisões em aberto: `unit_of_measure` como `text` livre vs enum; `ca`/`size`/`norm`
   obrigatórios para `type = epi` mas não para `machine` (ver §7.4).
 
 ### 3.3 `epi_stock` — estoque por item
 
-| Coluna         | Tipo          | Constraint                                            |
-| -------------- | ------------- | ---------------------------------------------------- |
-| `id`           | `uuid`        | PK                                                    |
-| `org_id`       | `text`        | NOT NULL → `orgs.id`, indexado                       |
-| `catalog_id`   | `uuid`        | NOT NULL → `epi_catalog.id` (FK), indexado          |
-| `balance`      | `integer`     | NOT NULL DEFAULT 0 — saldo atual                     |
-| `min_quantity` | `integer`     | NOT NULL DEFAULT 0 — quantidade mínima               |
-| timestamps     | `timestamptz` | NOT NULL DEFAULT now() + trigger                      |
+| Coluna         | Tipo          | Constraint                                 |
+| -------------- | ------------- | ------------------------------------------ |
+| `id`           | `uuid`        | PK                                         |
+| `org_id`       | `text`        | NOT NULL → `orgs.id`, indexado             |
+| `catalog_id`   | `uuid`        | NOT NULL → `epi_catalog.id` (FK), indexado |
+| `balance`      | `integer`     | NOT NULL DEFAULT 0 — saldo atual           |
+| `min_quantity` | `integer`     | NOT NULL DEFAULT 0 — quantidade mínima     |
+| timestamps     | `timestamptz` | NOT NULL DEFAULT now() + trigger           |
 
 - Sugerir `UNIQUE(org_id, catalog_id)` (um registro de estoque por item).
 - **Saldo derivado vs materializado**: ver §7.3. Recomendação: coluna `balance` materializada
@@ -101,17 +101,17 @@ Replicar exatamente o padrão das tabelas de `006` (`src/shared/db/schema/*.ts`)
 
 ### 3.4 `stock_movements` — movimentos tipados
 
-| Coluna         | Tipo          | Constraint                                            |
-| -------------- | ------------- | ---------------------------------------------------- |
-| `id`           | `uuid`        | PK                                                    |
-| `org_id`       | `text`        | NOT NULL → `orgs.id`, indexado                       |
-| `stock_id`     | `uuid`        | NOT NULL → `epi_stock.id` (FK), indexado            |
-| `delivery_id`  | `uuid`        | **nullable** → `epi_deliveries.id` (FK, `SET NULL`) |
-| `type`         | enum `stock_movement_type` | NOT NULL                                |
-| `quantity`     | `integer`     | NOT NULL, **`CHECK (quantity > 0)`**                 |
-| `movement_date`| `date`        | NOT NULL DEFAULT now()                                |
-| `invoice_number` | `text`      | nullable — nº da nota fiscal                          |
-| timestamps     | `timestamptz` | NOT NULL DEFAULT now() + trigger                      |
+| Coluna           | Tipo                       | Constraint                                          |
+| ---------------- | -------------------------- | --------------------------------------------------- |
+| `id`             | `uuid`                     | PK                                                  |
+| `org_id`         | `text`                     | NOT NULL → `orgs.id`, indexado                      |
+| `stock_id`       | `uuid`                     | NOT NULL → `epi_stock.id` (FK), indexado            |
+| `delivery_id`    | `uuid`                     | **nullable** → `epi_deliveries.id` (FK, `SET NULL`) |
+| `type`           | enum `stock_movement_type` | NOT NULL                                            |
+| `quantity`       | `integer`                  | NOT NULL, **`CHECK (quantity > 0)`**                |
+| `movement_date`  | `date`                     | NOT NULL DEFAULT now()                              |
+| `invoice_number` | `text`                     | nullable — nº da nota fiscal                        |
+| timestamps       | `timestamptz`              | NOT NULL DEFAULT now() + trigger                    |
 
 - **Enum `stock_movement_type`** (`pgEnum`): `purchase`, `employee_delivery`, `adjustment`,
   `discard` (mapeia compra / entrega_funcionario / ajuste / descarte). Sentido (entrada/saída)
@@ -121,15 +121,15 @@ Replicar exatamente o padrão das tabelas de `006` (`src/shared/db/schema/*.ts`)
 
 ### 3.5 `epi_deliveries` — entregas com assinatura
 
-| Coluna           | Tipo          | Constraint                                          |
-| ---------------- | ------------- | -------------------------------------------------- |
-| `id`             | `uuid`        | PK                                                  |
-| `org_id`         | `text`        | NOT NULL → `orgs.id`, indexado                     |
-| `employee_id`    | `uuid`        | NOT NULL → `employees.id` (FK), indexado          |
-| `delivery_date`  | `date`        | NOT NULL DEFAULT now()                              |
-| `signature_status` | enum `epi_signature_status` | NOT NULL DEFAULT `pending`           |
-| `auth_token`     | `text`        | nullable — token p/ assinatura via QR/link         |
-| timestamps       | `timestamptz` | NOT NULL DEFAULT now() + trigger                    |
+| Coluna             | Tipo                        | Constraint                                 |
+| ------------------ | --------------------------- | ------------------------------------------ |
+| `id`               | `uuid`                      | PK                                         |
+| `org_id`           | `text`                      | NOT NULL → `orgs.id`, indexado             |
+| `employee_id`      | `uuid`                      | NOT NULL → `employees.id` (FK), indexado   |
+| `delivery_date`    | `date`                      | NOT NULL DEFAULT now()                     |
+| `signature_status` | enum `epi_signature_status` | NOT NULL DEFAULT `pending`                 |
+| `auth_token`       | `text`                      | nullable — token p/ assinatura via QR/link |
+| timestamps         | `timestamptz`               | NOT NULL DEFAULT now() + trigger           |
 
 - **Enum `epi_signature_status`** (`pgEnum`): `pending`, `signed_qr`, `signed_link`,
   `signed_manual` (critério de aceite).
@@ -138,14 +138,14 @@ Replicar exatamente o padrão das tabelas de `006` (`src/shared/db/schema/*.ts`)
 
 ### 3.6 `epi_delivery_items` — itens de cada entrega
 
-| Coluna           | Tipo          | Constraint                                          |
-| ---------------- | ------------- | -------------------------------------------------- |
-| `id`             | `uuid`        | PK                                                  |
-| `org_id`         | `text`        | NOT NULL → `orgs.id`, indexado                     |
-| `delivery_id`    | `uuid`        | NOT NULL → `epi_deliveries.id` (FK, `CASCADE`), indexado |
-| `catalog_id`     | `uuid`        | NOT NULL → `epi_catalog.id` (FK), indexado        |
-| `quantity`       | `integer`     | NOT NULL, **`CHECK (quantity > 0)`**               |
-| timestamps       | `timestamptz` | NOT NULL DEFAULT now() + trigger                    |
+| Coluna        | Tipo          | Constraint                                               |
+| ------------- | ------------- | -------------------------------------------------------- |
+| `id`          | `uuid`        | PK                                                       |
+| `org_id`      | `text`        | NOT NULL → `orgs.id`, indexado                           |
+| `delivery_id` | `uuid`        | NOT NULL → `epi_deliveries.id` (FK, `CASCADE`), indexado |
+| `catalog_id`  | `uuid`        | NOT NULL → `epi_catalog.id` (FK), indexado               |
+| `quantity`    | `integer`     | NOT NULL, **`CHECK (quantity > 0)`**                     |
+| timestamps    | `timestamptz` | NOT NULL DEFAULT now() + trigger                         |
 
 - `ON DELETE CASCADE` de `epi_deliveries` (item não existe sem a entrega).
 
@@ -154,14 +154,14 @@ Replicar exatamente o padrão das tabelas de `006` (`src/shared/db/schema/*.ts`)
 > ⚠️ **Dependência aberta**: não existe tabela `risks` nem vínculo GES↔risco no schema atual.
 > Ver §7.2 — pode bloquear ou exigir co-modelagem.
 
-| Coluna           | Tipo          | Constraint                                          |
-| ---------------- | ------------- | -------------------------------------------------- |
-| `id`             | `uuid`        | PK                                                  |
-| `org_id`         | `text`        | NOT NULL → `orgs.id`, indexado                     |
-| `catalog_id`     | `uuid`        | NOT NULL → `epi_catalog.id` (FK), indexado        |
-| `risk_id` (?)    | `uuid`        | NOT NULL → **`risks.id`** (FK) — **alvo inexistente** |
-| `neutralizes`    | `boolean`     | NOT NULL DEFAULT false — "neutraliza os riscos?"   |
-| timestamps       | `timestamptz` | NOT NULL DEFAULT now() + trigger                    |
+| Coluna        | Tipo          | Constraint                                            |
+| ------------- | ------------- | ----------------------------------------------------- |
+| `id`          | `uuid`        | PK                                                    |
+| `org_id`      | `text`        | NOT NULL → `orgs.id`, indexado                        |
+| `catalog_id`  | `uuid`        | NOT NULL → `epi_catalog.id` (FK), indexado            |
+| `risk_id` (?) | `uuid`        | NOT NULL → **`risks.id`** (FK) — **alvo inexistente** |
+| `neutralizes` | `boolean`     | NOT NULL DEFAULT false — "neutraliza os riscos?"      |
+| timestamps    | `timestamptz` | NOT NULL DEFAULT now() + trigger                      |
 
 - Junção pura: sugerir `UNIQUE(org_id, catalog_id, risk_id)`.
 
@@ -193,7 +193,7 @@ Replicar exatamente o padrão das tabelas de `006` (`src/shared/db/schema/*.ts`)
 
 - **Unit**: validações/regras puras das definições (mapeamento de enums, formato de schema).
 - **Integração — criação via migration**: tabelas criadas, FKs/CHECK/enums aplicados; `CHECK
-  (quantity > 0)` rejeita 0/negativo em `stock_movements` e `epi_delivery_items`.
+(quantity > 0)` rejeita 0/negativo em `stock_movements` e `epi_delivery_items`.
 - **Isolamento multi-tenant em Postgres efêmero** (`INTEGRATION_*`/`runIsolationSuite`,
   **nunca SQLite**): para cada tabela, RLS `app_runtime`/GUC não deixa dados cruzarem tenants
   (leitura e escrita de outro `org_id` bloqueadas).
@@ -202,6 +202,7 @@ Replicar exatamente o padrão das tabelas de `006` (`src/shared/db/schema/*.ts`)
 ## 7. Decisões em aberto / riscos (resolver antes de codar)
 
 ### 7.1 `epi_categories` vs `categories` (006) — provável duplicação
+
 A tabela `categories` da `006` **já é** "taxonomia que filtra catálogo por tipo": colunas
 `type` (`category_type` = `epi`/`machine`), `name`, `note`, `UNIQUE(org_id, type, name)` —
 idêntica ao `epi_categories` pedido. **Decidir**: (a) **reusar `categories`** e apontar
@@ -210,6 +211,7 @@ idêntica ao `epi_categories` pedido. **Decidir**: (a) **reusar `categories`** e
 houver requisito de separar taxonomias de EPI das de outros módulos.
 
 ### 7.2 `epi_risk` depende de um modelo de risco do GES inexistente
+
 Não há tabela `risks` nem associação GES↔risco no schema (`006` modelou a cadeia até
 `ges_job_roles`, sem riscos). `epi_risk` não tem alvo de FK. **Opções**: (a) modelar `risks`/
 vínculo GES nesta fatia (aumenta escopo), (b) postergar `epi_risk` para quando o modelo de
@@ -217,21 +219,25 @@ risco existir, ou (c) FK para `ges` diretamente como aproximação temporária. 
 confirmar com o dono do produto.**
 
 ### 7.3 Saldo de estoque: materializado vs derivado
+
 `006` derivou nº de expostos por agregação (sem coluna/trigger). Aqui o ePGR exibe saldo e
 mínimo direto; o briefing propõe `balance` **materializado** mantido pela camada de fluxo
 (Fase 2), não por trigger nesta fatia de modelagem. Confirmar a abordagem para não repetir o
 debate da agregação.
 
 ### 7.4 Campos condicionais por tipo
+
 `ca`, `ca_valid_until`, `norm`, `size` fazem sentido para `type = epi`, menos para `machine`.
 Manter todos nullable no banco e validar condicionalmente na camada de aplicação (zod), como
 o repo já faz com campos opcionais.
 
 ### 7.5 `auth_token` de entrega
+
 Usado em assinatura via QR/link público — definir unicidade (índice único parcial onde
 `auth_token IS NOT NULL`) e que a **geração** do token fica na camada de fluxo (#19), não aqui.
 
 ### 7.6 Numeração da fatia/spec
+
 Esta é uma fatia de modelagem nova (paralela à `006`). Se for formalizada em `.specs/`, sugerir
 diretório próprio (ex.: `008-epi-data-model/`) e migration `0007_*`.
 
@@ -243,7 +249,7 @@ relatórios/histórico (#21). Tudo isso são cards da Fase 2 que **consomem** es
 
 ## 9. Critérios de aceite (do card)
 
-- [ ] `epi_catalog`, `epi_categories`*, `epi_stock`, `stock_movements`, `epi_deliveries`, `epi_delivery_items`, `epi_risk`* criadas via migration. (*sujeito a §7.1/§7.2)
+- [ ] `epi_catalog`, `epi_categories`_, `epi_stock`, `stock_movements`, `epi_deliveries`, `epi_delivery_items`, `epi_risk`_ criadas via migration. (\*sujeito a §7.1/§7.2)
 - [ ] Todos os campos do ePGR no catálogo: tipo, categoria, CA, fabricante, norma, validade, tamanho, und. medida, descrição, foto.
 - [ ] Enum de tipo de movimento: compra, entrega_funcionario, ajuste, descarte.
 - [ ] Enum de status de assinatura: pending, signed_qr, signed_link, signed_manual.
@@ -275,11 +281,12 @@ Implementado **da forma recomendada** descrita neste briefing. As duas decisões
   dedicado existir, migra-se a FK. Documentado no JSDoc da tabela.
 - **FR-002a (fatia `008`, clarify 2026-06-22) — consistência de tipo item↔categoria**: o banco
   passa a garantir `epi_catalog.type == categories.type` via **FK composta** `(category_id,
-  type) → categories(id, type)`, exigindo um `UNIQUE(id, type)` (constraint, não índice) em
+type) → categories(id, type)`, exigindo um `UNIQUE(id, type)` (constraint, não índice) em
   `categories`. Migration **`0008_epi_catalog_type_fk`** (UNIQUE primeiro, depois troca da FK
   simples pela composta — a ordem importa). Substitui a FK simples original sobre `category_id`.
 
 ### Decisões de `ON DELETE` (recomendadas)
+
 - `CASCADE` na cadeia de posse: `epi_catalog → epi_stock → stock_movements`,
   `epi_deliveries → epi_delivery_items`, `epi_risk` (junção).
 - `SET NULL` em `stock_movements.delivery_id` (preserva o movimento ao excluir a entrega).
@@ -293,10 +300,11 @@ Implementado **da forma recomendada** descrita neste briefing. As duas decisões
 - Saldo (`balance`) **materializado** (não derivado/trigger); manutenção fica para a Fase 2.
 
 ### Arquivos criados/alterados
+
 - **Schema**: `src/shared/db/schema/epis.ts` (6 tabelas + enums `stock_movement_type`,
   `epi_signature_status`; reuso de `category_type`); export em `src/shared/db/schema/index.ts`.
 - **Migration**: `src/shared/db/migrations/0007_epi_data_model.sql` (gerada via `drizzle-kit
-  generate` + GRANT a `app_runtime` e triggers `set_updated_at_*` adicionados à mão, padrão
+generate` + GRANT a `app_runtime` e triggers `set_updated_at_*` adicionados à mão, padrão
   `0005`); snapshot/journal em `migrations/meta/`.
 - **Validação**: `stockMovementTypeSchema`, `epiSignatureStatusSchema`, `epiQuantitySchema` em
   `src/shared/domains/pgr/validation.ts`.
@@ -309,6 +317,7 @@ Implementado **da forma recomendada** descrita neste briefing. As duas decisões
   - Forma da migration: `epi-migration-shape.test.ts` (RLS, policy, GRANT, trigger, enums, FK→categories).
 
 ### Estado da verificação
+
 - `npm run typecheck` ✅ · `npm run lint` ✅ · `npm run test` ✅ (178 testes unitários).
 - `npm run test:integration`: as suítes de EPI **pulam** sem `INTEGRATION_DATABASE_URL`/
   `INTEGRATION_APP_RUNTIME_URL` (precisam do Postgres efêmero). **Pendente**: rodar a integração
@@ -317,6 +326,7 @@ Implementado **da forma recomendada** descrita neste briefing. As duas decisões
   `NEXT_PUBLIC_SUPABASE_URL` no ambiente — **não relacionada** a esta fatia.
 
 ### Ainda fora desta fatia (Fase 2)
+
 Repositórios/Server Actions/UI; manutenção de saldo a partir dos movimentos; geração de
 QR/link e fluxo de assinatura; eventual modelo `risks` dedicado (e migração da FK de `epi_risk`).
 
