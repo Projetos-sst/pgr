@@ -52,3 +52,6 @@ next-env.d.ts
 
 # playwright mcp artifacts (snapshots, console logs, screenshots)
 /.playwright-mcp/
+
+# Spec Kit: ponteiro local da feature ativa (estado de sessão, por dev)
+.specify/feature.json

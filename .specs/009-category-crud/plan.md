@@ -2,7 +2,7 @@
 
 **Branch**: `feature/category-crud` | **Date**: 2026-06-23 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `.specs/008-category-crud/spec.md`
+**Input**: Feature specification from `.specs/009-category-crud/spec.md`
 
 ## Summary
 
@@ -83,7 +83,7 @@ checagem de tipos + `npm run test` + `npm run test:integration` MUST passar ante
 ### Documentation (this feature)
 
 ```text
-.specs/008-category-crud/
+.specs/009-category-crud/
 ├── plan.md              # Este arquivo
 ├── research.md          # Phase 0 — decisões técnicas (alinhamento ao padrão 007)
 ├── data-model.md        # Phase 1 — entidade `categories` (ref. 006) + novas operações/inputs

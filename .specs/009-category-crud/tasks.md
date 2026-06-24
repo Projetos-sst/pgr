@@ -4,7 +4,7 @@ description: "Task list — CRUD de Categorias (EPI / Máquina) (spec 008)"
 
 # Tasks: CRUD de Categorias (EPI / Máquina)
 
-**Input**: Design documents from `.specs/008-category-crud/`
+**Input**: Design documents from `.specs/009-category-crud/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 **Tests**: OBRIGATÓRIOS (constituição + CLAUDE.md + SC-006). Unit + integração; isolamento e
 unicidade contra **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite.

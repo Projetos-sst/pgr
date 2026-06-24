@@ -25,18 +25,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/category-crud`**. Fatia atual (`008`) — **CRUD completo** (criar, listar
+Branch: **`feature/category-crud`**. Fatia atual (`009`) — **CRUD completo** (criar, listar
 paginado/filtrado, carregar por id para edição, editar, excluir) da entidade **`categories`**
 (catálogo `epi|machine`) em UI (App Router) + Server Actions, sobre o modelo da `006` e reusando
 a infraestrutura de CRUD da `007`. Entidade simples (sem tela de detalhe; sem dependentes).
 
-Fatia atual (`008`) — `.specs/008-category-crud/`:
+Fatia atual (`009`) — `.specs/009-category-crud/`:
 
-- Plan: `.specs/008-category-crud/plan.md`
+- Plan: `.specs/009-category-crud/plan.md`
 - Spec (+ revisão Tech Lead) / Research / Data model / Quickstart no mesmo diretório.
 - Contracts: `contracts/server-actions.md`, `contracts/repositories.md`.
 
-Notas chave (`008`):
+Notas chave (`009`):
 
 - **CRUD de `categories`**: estende o repositório (hoje só `list`/`create`) com
   `getById`/`update`/`delete` + busca por nome + filtro por tipo + **paginação offset** (`{rows,total}`,
@@ -55,6 +55,15 @@ Notas chave (`008`):
 - Testes: unit (`categoryInputSchema`); integração de Server Actions + `DUPLICATE` + `NOT_FOUND`
   cross-tenant + `FORBIDDEN` contra **Postgres efêmero** (`INTEGRATION_*`; seed já tem
   `categoryA`@`org_a`/`categoryB`@`org_b`), nunca SQLite.
+
+Fatia paralela (`008`) — `.specs/008-epi-data-model/`: **modelo de dados do módulo de EPIs**
+(fundação da Fase 2 / paridade com o ePGR): 6 tabelas novas (`epi_catalog`, `epi_stock`,
+`stock_movements`, `epi_deliveries`, `epi_delivery_items`, `epi_risk`) + 2 enums
+(`stock_movement_type`, `epi_signature_status`), isoladas por tenant. Modelagem pura (schema +
+migration `0007_epi_data_model` + RLS + testes), análoga à `006` — sem UI/Server Actions/CRUD.
+`epi_catalog.category_id → categories` (FK composta `(category_id, type)` garantindo
+`epi_catalog.type == categories.type`); `epi_risk → ges` interino (sem tabela `risks` ainda).
+Mergeada via PR #116; **não** depende da `009` e vice-versa.
 
 Fatia anterior (`007`) — `.specs/007-pgr-base-cruds/` (CRUD das 5 entidades da cadeia do PGR;
 `ActionResult`/`officeAction`/`requireOfficeStaff`/`_ui`; sem migration). Briefings em
