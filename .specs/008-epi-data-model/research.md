@@ -65,7 +65,7 @@ Alternatives) e o estado "as-built" do que já existe na branch.
 - **Decision**: `CASCADE` na cadeia de posse (`epi_catalog → epi_stock → stock_movements`;
   `epi_deliveries → epi_delivery_items`; `employees → epi_deliveries`; `epi_risk` junção);
   `SET NULL` em `stock_movements.delivery_id`; `RESTRICT` em `epi_catalog.category_id →
-  categories` e `epi_delivery_items.catalog_id → epi_catalog`.
+categories` e `epi_delivery_items.catalog_id → epi_catalog`.
 - **Rationale**: cascata remove dependentes sem órfãos; SET NULL preserva o movimento ao excluir
   a entrega; RESTRICT protege taxonomia em uso e histórico de entregas (desvio consciente do
   "CASCADE em tudo" do card original).
@@ -74,22 +74,22 @@ Alternatives) e o estado "as-built" do que já existe na branch.
 ## D8 — Migration drizzle-kit + SQL custom
 
 - **Decision**: `0007_epi_data_model.sql` gerada por `drizzle-kit generate`; `GRANT … TO
-  app_runtime` e `CREATE TRIGGER set_updated_at_<t>` adicionados à mão (a função `set_updated_at`
+app_runtime` e `CREATE TRIGGER set_updated_at_<t>` adicionados à mão (a função `set_updated_at`
   existe desde a 0001), padrão idêntico ao da 0005. Aplicada via conexão direta unpooled (owner).
 - **Rationale**: o gerador não emite GRANT/trigger; replicar o padrão consolidado da 0005.
 - **Alternatives**: nenhuma — é o padrão do repo.
 
 ## As-built (já presente na branch)
 
-| Artefato | Estado |
-| -------- | ------ |
-| `src/shared/db/schema/epis.ts` (6 tabelas + 2 enums) | ✅ implementado |
-| Export em `src/shared/db/schema/index.ts` | ✅ |
-| `src/shared/db/migrations/0007_epi_data_model.sql` (+ meta) | ✅ |
-| `validation.ts` (3 schemas zod) | ✅ |
-| Testes unit + constraints + migration-shape + 6 isolamento + seed | ✅ |
-| **FK composta de consistência de tipo (FR-002a)** | ❌ **pendente (delta)** |
-| `npm run test:integration` executado contra Postgres efêmero | ⏳ pendente (ambiente sem Docker/Postgres) |
+| Artefato                                                          | Estado                                     |
+| ----------------------------------------------------------------- | ------------------------------------------ |
+| `src/shared/db/schema/epis.ts` (6 tabelas + 2 enums)              | ✅ implementado                            |
+| Export em `src/shared/db/schema/index.ts`                         | ✅                                         |
+| `src/shared/db/migrations/0007_epi_data_model.sql` (+ meta)       | ✅                                         |
+| `validation.ts` (3 schemas zod)                                   | ✅                                         |
+| Testes unit + constraints + migration-shape + 6 isolamento + seed | ✅                                         |
+| **FK composta de consistência de tipo (FR-002a)**                 | ❌ **pendente (delta)**                    |
+| `npm run test:integration` executado contra Postgres efêmero      | ⏳ pendente (ambiente sem Docker/Postgres) |
 
 > O `epi_catalog.category_id` hoje é FK simples `→ categories.id`. O delta é torná-la composta
 > `(category_id, type) → categories(id, type)` e adicionar `UNIQUE(id, type)` em `categories`,
