@@ -2,26 +2,40 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-@AGENTS.md
-
 ## Commands
 
-- `npm run dev` — start the dev server at http://localhost:3000
-- `npm run build` — production build
-- `npm run start` — serve the production build (run `build` first)
-- `npm run lint` — ESLint (flat config, `eslint-config-next` core-web-vitals + typescript)
+- `npm run dev` — dev server at http://localhost:3000 · `npm run build` / `npm run start` — production build / serve it.
+- `npm run lint` / `npm run lint:fix` — ESLint (flat config, `eslint-config-next` core-web-vitals + typescript).
+- `npm run typecheck` — `tsc --noEmit` · `npm run format` / `format:check` — Prettier (+ Tailwind class sorting).
+- `npm run fix` = lint:fix + format · `npm run check` = format:check + lint + typecheck + unit test (run before pushing).
+- `npm run test` — **unit only** (`jest --selectProjects unit`, jsdom). Single test: `npx jest --selectProjects unit -t "<name>"` or `npx jest <path>`.
+- `npm run test:integration` — integration (`--selectProjects integration`, node). Requires `INTEGRATION_DATABASE_URL` → an **ephemeral Postgres** (optionally `INTEGRATION_DATABASE_URL_ADMIN` for owner-level setup). There is no SQLite path despite older docs; the helper (`src/__tests__/integration/_helpers/db.ts`) applies migrations by splitting each `.sql` on `--> statement-breakpoint`.
+- Schema/migrations via drizzle-kit (uses `DATABASE_URL_UNPOOLED`, owner connection): `npm run db:generate` (emit migration from schema), `db:migrate`, `db:studio`.
 
-- `npm run test` — testes unitários (Jest + Testing Library)
-- `npm run test:integration` — testes de integração (SQLite em memória por padrão; Postgres efêmero para fatias com RLS/triggers)
-
-**Obrigatoriedade de testes**: toda feature MUST incluir testes unitários para lógica de negócio e testes de integração para Server Actions e Route Handlers. A integração usa SQLite em memória como banco substituto **por padrão**; fatias cujo comportamento depende de RLS/policies, triggers ou `current_setting`/`auth.jwt()` MUST usar um **Postgres efêmero** (ver constituição, seção "Fluxo de Desenvolvimento & Quality Gates").
+**Testing policy**: every feature MUST ship unit tests for business logic and integration tests for Server Actions / Route Handlers; multi-tenant isolation, authorization, and DB-constraint behavior are exercised against the ephemeral Postgres (see `.specify/memory/constitution.md`).
 
 ## Stack & conventions
 
-- **Next.js 16.2.6** with the App Router (`app/` directory) and React 19.2.4. As `AGENTS.md` warns, this is a major version with breaking changes vs. older Next.js — consult `node_modules/next/dist/docs/` before writing framework code.
-- **Tailwind CSS v4** — configured CSS-first. There is no `tailwind.config.*`; theme tokens live in the `@theme inline` block of `app/globals.css`, and PostCSS loads it via `@tailwindcss/postcss`.
-- **TypeScript** in `strict` mode. Import alias `@/*` maps to the repo root (see `tsconfig.json`).
-- Theming uses CSS custom properties (`--background`, `--foreground`) with a `prefers-color-scheme: dark` override; Tailwind `dark:` variants are used throughout components.
+- **Next.js 16.2.6** App Router (`src/app/`) + **React 19.2.4** — major version with breaking changes; consult `node_modules/next/dist/docs/` before writing framework code.
+- **TypeScript** strict; import alias `@/*` → `./src/*` (not the repo root).
+- **Tailwind CSS v4** CSS-first — no `tailwind.config.*`; tokens live in the `@theme inline` block of `app/globals.css`, loaded via `@tailwindcss/postcss`. Dark mode via `prefers-color-scheme` + `dark:` variants.
+- **Drizzle ORM** + `postgres` (postgres-js) on Supabase Postgres · **Clerk** auth · **Zod v4** validation. Code/identifiers in English; spec/docs may be in PT.
+
+## Architecture
+
+Multi-tenant SST (occupational health & safety) platform. **Tenant isolation is the central invariant** and shapes every layer — the active tenant always comes from the session, never from client input.
+
+**Tenant isolation — two enforced layers.** (1) App layer: every DB access goes through `withOrg(orgId, tx => …)` (`src/shared/db/with-org.ts`), which opens a transaction and `set_config('app.current_org', orgId, true)`. (2) DB backstop: every tenant table declares an RLS policy `org_id = current_setting('app.current_org', true)` for the `app_runtime` role, defined **in the Drizzle schema** via `pgPolicy(...).enableRLS()` (see `src/shared/db/schema/companies.ts` as the template). A query that forgets `withOrg` returns nothing rather than leaking across tenants.
+
+**Request → core → data flow (layered).** Page / Route Handler *orchestrates only* → Server Action / domain → repository → Drizzle. Concretely: `src/app/**` (pages & `app/api/v1/**` handlers) → `src/shared/server/actions/pgr/*` (Server Actions) → `src/shared/domains/pgr/*` (Zod schemas + pure rules) → `src/shared/db/repositories/*` (all queries, each wrapping `withOrg` and returning `{rows,total}` via `src/shared/pagination.ts`) → `src/shared/db/schema/*`. Repositories own SQL; actions/handlers never touch Drizzle directly. Writes go through `auditedTenantWrite` (`repositories/audited-write.ts`).
+
+**Two entry surfaces, one gate.** Server Actions are wrapped by `officeAction(operation, fn, {audit})` (`src/shared/server/office-action.ts`) → returns a discriminated `ActionResult<T>` (`{ok:true,data}` | `{ok:false,error}`, `server/result.ts`). REST `/api/v1/*` handlers are wrapped by `restHandler` (`src/shared/api/rest.ts`) → maps the same error codes to HTTP. Both call `requireOfficeStaff()` and share `toActionError` (`server/action-error.ts`). **Domain error codes** (not raw HTTP): `VALIDATION` (422), `DUPLICATE` (409, e.g. SQLSTATE 23505), `FK_NOT_FOUND`/`NOT_FOUND` (404/422), `FORBIDDEN`/`NO_TENANT_CONTEXT` (403), `UNAUTHORIZED` (401). REST has a **non-prod dev auth bypass** (`DEV_API_AUTH_BYPASS=true` + `x-dev-tenant`/`x-dev-role`/`x-dev-user` headers) — impossible in production.
+
+**Auth & tenant resolution.** Clerk `ClerkProvider` is in the root layout (`src/app/layout.tsx`); there is **no `middleware.ts`** — protection is enforced in Server Components via `requireTenantContext()` / `requireOfficeStaff()` and the `(protected)/layout.tsx` redirect. `resolveActiveTenant` (`src/shared/tenant/active-tenant.ts`) reads `org_memberships`, picks the active org by the `ACTIVE_ORG_COOKIE` (defaulting to the personal org), auto-provisions a personal tenant on first login, and normalizes Clerk roles (`org:admin`/`org:member`) into domain roles `owner`/`collaborator`/`client` (unknown → least privilege `client`). `requireOfficeStaff()` admits only `owner`/`collaborator`. Clerk webhooks sync into the DB via `src/shared/clerk-sync/*`.
+
+**Database ownership & connections.** Drizzle is the **code-first owner** of the schema (`drizzle.config.ts`, schema dir `src/shared/db/schema`). Two connections: runtime connects as the least-privileged `app_runtime` role through the Supabase transaction pooler (`DATABASE_URL`, port 6543, `prepare:false, max:1` — see `db/index.ts`); `drizzle-kit` uses a direct owner connection (`DATABASE_URL_UNPOOLED`). GRANTs and `set_updated_at` triggers live as **custom SQL inside the generated migrations** (not auto-emitted by drizzle-kit).
+
+**Specs / Spec Kit.** Work is sliced under `.specs/NNN-*/` (spec, plan, contracts, tasks); the constitution is `.specify/memory/constitution.md`. `.specify/feature.json` is per-dev local session state (gitignored); feature numbering is timestamp-based to avoid collisions across concurrent devs.
 
 <!-- SPECKIT START -->
 
