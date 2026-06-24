@@ -1,0 +1,33 @@
+import { notFound } from "next/navigation";
+
+import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { getEpiStockAction } from "@/shared/server/actions/pgr/epi-stock";
+
+import { PageHeader } from "../../../_ui/list";
+import { EpiStockForm } from "../../_components/epi-stock-form";
+import { DeleteEpiStock } from "../../_components/delete-epi-stock";
+
+export const dynamic = "force-dynamic";
+
+export default async function EditEpiStockPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  await requireOfficeStaffPage();
+  const { id } = await params;
+  const result = await getEpiStockAction(id);
+  if (!result.ok) notFound();
+  const stock = result.data;
+
+  return (
+    <div className="flex flex-col gap-6 px-6 py-8">
+      <PageHeader
+        title={stock.name}
+        description="Gerenciar dados do registro de estoque (quantidade mínima)."
+        action={<DeleteEpiStock id={stock.id} redirectTo="/epi-stock" />}
+      />
+      <EpiStockForm stock={stock} />
+    </div>
+  );
+}
