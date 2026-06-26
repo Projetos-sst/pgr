@@ -25,20 +25,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/epi-data-model`**. Fatia atual (`008`) — **modelo de dados do módulo de
-EPIs** (fundação da Fase 2 / paridade com o ePGR): 6 tabelas novas (`epi_catalog`, `epi_stock`,
-`stock_movements`, `epi_deliveries`, `epi_delivery_items`, `epi_risk`) + 2 enums novos
-(`stock_movement_type`, `epi_signature_status`), isoladas por tenant. Fatia de **modelagem
-pura** (schema + migration + RLS + testes), análoga à `006` — sem UI/Server Actions/CRUD.
+Branch: **`feature/stock-movements`**. Fatia atual (`010`) — **Movimentações de estoque e
+histórico** (`stock_movements`): registrar **entrada** (compra) e **saída manual** (ajuste/descarte)
+de itens de estoque de EPI, mantendo o saldo materializado **`epi_stock.balance`** por **transação
+atômica** (`SELECT … FOR UPDATE`), e exibir o **histórico por item** com **saldo resultante derivado**
+(window function, sem coluna). Camada de **fluxo** sobre o modelo da `008` (epi-data-model) e
+contrapartida da `009` (epi-stock-crud, que trata `balance` como read-only). **Zero migration.**
 
-Fatia atual (`008`) — `.specs/008-epi-data-model/`:
+Fatia atual (`010`) — `.specs/010-stock-movements/`:
 
-- Plan: `.specs/008-epi-data-model/plan.md`
-- Spec (+ Clarifications 2026-06-22) / Research / Data model / Quickstart no mesmo diretório.
-- Contracts: `contracts/schema-and-migrations.md`.
-- Briefing (fonte): `docs/briefings/briefing-epi-data-model.md`.
+- Plan: `.specs/010-stock-movements/plan.md`
+- Spec / Research / Data model / Quickstart no mesmo diretório.
+- Contracts: `contracts/server-actions.md`, `contracts/repositories.md`, `contracts/rest-endpoints.md`.
+- Briefing (fonte): `docs/briefings/briefing-stock-movements.md`.
 
-Notas chave (`008`):
+Notas chave (`010`):
+
+- **Escrita transacional do saldo** (1ª fatia que escreve `epi_stock.balance`): por movimento,
+  `SELECT … FOR UPDATE` → valida `novoSaldo >= 0` na app (`CHECK balance >= 0` como backstop) →
+  `INSERT` no movimento + `UPDATE` do saldo, tudo numa transação (`withOrg`). Falha → rollback total.
+- **`quantity` sempre > 0**; o sinal vem do `type` (`purchase` `+`; `adjustment`/`discard` `−`).
+  Saída manual só aceita `{adjustment, discard}` (sem ajuste bidirecional).
+- **Saldo resultante derivado** por window function + função pura `computeRunningBalance` (unit);
+  **sem coluna `balance_after`**. **"Usuário que registrou" omitido** (modelo 008 sem `created_by`).
+- **Novo erro `INSUFFICIENT_STOCK` → 422** em `src/shared/api/rest.ts`. REST em
+  `/api/v1/epi-stock/[id]/movements` (POST registra; GET histórico). Rota UI `/epi-stock/[id]/history`.
+- Testes: unit (`computeRunningBalance`, schemas); integração de Server Actions/REST +
+  rollback de saída insuficiente + histórico + `NOT_FOUND` cross-tenant + `FORBIDDEN` contra
+  **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite nem o banco de dev.
+
+Fatia anterior (`009` — epi-stock-crud, commit `a55d70b`): CRUD de `epi_stock` com `balance`
+**read-only**; reuso de `ActionResult`/`officeAction`/`requireOfficeStaff`/`_ui`. Sem migration.
+
+Fatia anterior (`008` — epi-data-model) — `.specs/008-epi-data-model/`. Notas chave (`008`):
 
 - **Reuso de `categories`** (006) como taxonomia EPI/máquina — **sem** `epi_categories`;
   `epi_catalog.category_id → categories`. **`epi_risk → ges`** de forma **interina** (não há
