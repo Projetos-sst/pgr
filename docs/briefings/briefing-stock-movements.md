@@ -388,3 +388,197 @@ REFERÊNCIAS:
 Conteúdo da spec em pt-BR; branch e commits em inglês.
 NÃO invente solução técnica não descrita aqui — descreva o "o quê" e o "porquê".
 ```
+
+---
+
+## 16. Prompt DETALHADO para `/speckit-specify` (todo o detalhamento)
+
+> Versão **completa e definitiva** — embute **todas** as 10 decisões travadas (§11), as **colunas
+> reais** do modelo `008`, os padrões herdados (`007`/`009`), os arquivos a ler, as assinaturas de
+> repositório/actions, o mapa de erros e a forma dos endpoints REST. Copie o bloco inteiro (começa em
+> `/speckit-specify`) e rode. Substitui o §15 quando você quiser o máximo de contexto.
+
+```text
+/speckit-specify
+
+GIT_BRANCH_NAME: feature/stock-movements
+
+Feature: Movimentações de estoque e histórico (stock_movements) — UI + Server Actions + REST
+
+CONTEXTO E OBJETIVO:
+Projeto SST Manager — SaaS B2B multiempresa de Segurança do Trabalho (ePGR). Fatia própria
+(1 issue = 1 branch = 1 spec). Entrega o registro de MOVIMENTAÇÕES de estoque (entradas e saídas
+manuais) e o HISTÓRICO de movimentações por item de estoque, equivalente a api/estoquemovimento/ e
+/estoque/historico/:id do ePGR. É a camada de FLUXO sobre a fundação de dados da 008 e a
+contrapartida da 009: na 009 o saldo (epi_stock.balance) é SOMENTE LEITURA ("só muda por #72");
+ESTA fatia É o #72 — aqui o saldo é escrito, e apenas por aqui (mais a entrega #19, fora do escopo).
+
+ANTES DE ESCREVER A SPEC, leia e liste estes arquivos:
+- src/shared/db/schema/epis.ts (tabelas stock_movements, epi_stock, epi_deliveries; enums)
+- src/shared/db/repositories/epi-stock.ts (padrão de repo, withOrg, listColumns, deriveStockStatus,
+  countEpiStockDependents)
+- src/shared/domains/pgr/epi-stock.ts (schemas zod, DTOs, mappers, deriveStockStatus)
+- src/shared/server/actions/pgr/epi-stock.ts (officeAction, ActionResult)
+- src/shared/server/result.ts (contrato ok/fail), src/shared/api/rest.ts (mapa de erros HTTP)
+- src/app/api/v1/epi-stock/* e src/app/(protected)/epi-stock/* (REST e UI da 009)
+- src/__tests__/integration/pgr/epi-stock.test.ts e _helpers/{db,pgr-seed}.ts (padrão de teste)
+- src/__tests__/integration/shared/db/stock-movements-isolation.test.ts (isolamento já existente)
+- .specs/008-epi-data-model/, .specs/009-* (ou docs/briefings/briefing-epi-stock-crud.md), .specs/007-*
+- docs/briefings/briefing-stock-movements.md (este briefing — fonte das decisões)
+
+MODELO JÁ EXISTENTE (NÃO criar/alterar — ZERO migration nesta fatia). Colunas REAIS:
+stock_movements (epis.ts, migration 0007):
+- id (uuid PK), org_id (text, tenant -> orgs ON DELETE CASCADE),
+- stock_id (uuid -> epi_stock ON DELETE CASCADE),
+- delivery_id (uuid -> epi_deliveries ON DELETE SET NULL, NULLABLE),
+- type (enum stock_movement_type: 'purchase' | 'employee_delivery' | 'adjustment' | 'discard'),
+- quantity (integer, CHECK quantity > 0  -> SEMPRE POSITIVO; o sinal vem do type),
+- movement_date (date, default now  -> é DATE, sem hora),
+- invoice_number (text, NULLABLE),
+- created_at, updated_at; indexes em org_id, stock_id, delivery_id; RLS isolation policy.
+epi_stock: balance (integer, CHECK balance >= 0) é o saldo MATERIALIZADO a manter; min_quantity
+(integer, CHECK >= 0); UNIQUE(org_id, catalog_id); catalog_id -> epi_catalog.
+GAPS de modelo (NÃO inventar coluna — resolver como abaixo):
+- NÃO existe "saldo resultante" (balance_after) -> derivar por soma acumulada (window function).
+- NÃO existe "usuário que registrou" (created_by) -> OMITIR desta fatia (item futuro).
+- "Funcionário" no histórico é INDIRETO: só para type='employee_delivery', via
+  delivery_id -> epi_deliveries -> employee_id -> employees (e employee_delivery vem de #19, fora).
+
+DECISÕES TRAVADAS (devem constar na spec — todas definitivas, zero migration):
+1. Saldo resultante: derivado por window function, sem coluna.
+2. "Usuário que registrou": OMITIDO (modelo não tem created_by).
+3. adjustment = SAÍDA (decremento). Sem ajuste bidirecional. Saída aceita só type in {adjustment, discard}.
+4. Rota do histórico: /epi-stock/[id]/history (padrão do projeto), não /estoque/historico/:id.
+5. Saldo insuficiente: novo erro INSUFFICIENT_STOCK -> 422 (mensagem "Saldo insuficiente:
+   disponível X, solicitado Y") em src/shared/api/rest.ts.
+6. REST incluído: /api/v1/epi-stock/[id]/movements (POST entrada/saída; GET histórico paginado).
+7. Ordenação do histórico: movement_date DESC, created_at DESC; UI exibe só a data.
+8. Atomicidade: escrita de saldo em transação (withOrg) com SELECT ... FOR UPDATE na linha de
+   epi_stock; validação >= 0 na app + CHECK balance >= 0 como backstop.
+9. Testes de integração: Postgres EFÊMERO (INTEGRATION_*), NUNCA SQLite, NUNCA o banco de dev.
+10. Vocabulário: type em inglês no banco; rótulos pt-BR só no DTO/UI
+    (purchase=compra, adjustment=ajuste, discard=descarte, employee_delivery=entrega).
+
+REGRAS NÃO-NEGOCIÁVEIS (constituição / Modelo B):
+- Tenant ativo = escritório = orgs.id via requireTenantContext() + withOrg(); NUNCA Clerk org,
+  organization_id nem input do cliente. RLS app_runtime (current_setting('app.current_org')) é backstop.
+- Autorização por papel: requireOfficeStaff() (owner/collaborator operam; client -> 403/FORBIDDEN),
+  inclusive em leituras.
+- Toda Server Action valida com zod ANTES da regra e retorna ActionResult<T> (ok/fail), sem lançar
+  exceção crua na UI. Escrita auditada via auditedTenantWrite + logTenantEvent (sem PII); evento
+  sugerido epi.stock_movement.write_rejected.
+- Banco é fonte de verdade (constraints); a validação na app dá mensagem amigável antes do CHECK.
+- Estrutura real do projeto (NÃO "features/epis/"): domínio src/shared/domains/pgr/, repositório
+  src/shared/db/repositories/, actions src/shared/server/actions/pgr/, UI src/app/(protected)/epi-stock/,
+  REST src/app/api/v1/.
+
+LÓGICA CENTRAL (transação atômica por movimento — o coração da fatia):
+- Tipos NESTA fatia: purchase (entrada, +quantity); adjustment e discard (saída manual, -quantity).
+  employee_delivery fica FORA (gerado por #19). quantity sempre > 0; o efeito no saldo vem do type.
+- Cada registro, numa ÚNICA transação:
+  1) SELECT ... FOR UPDATE da linha de epi_stock (trava o item no tenant; 404 se não existir/for de
+     outro escritório);
+  2) novoSaldo = balance + quantity (entrada) ou balance - quantity (saída);
+  3) VALIDA novoSaldo >= 0 na aplicação; se < 0 -> INSUFFICIENT_STOCK (422) e ROLLBACK (nada gravado);
+  4) INSERT em stock_movements (org_id do tenant, stock_id, type, quantity, movement_date,
+     invoice_number? só na entrada);
+  5) UPDATE epi_stock SET balance = novoSaldo (mesma transação).
+  Falha em qualquer passo -> rollback total. Nunca movimento sem ajuste de saldo, nem saldo sem
+  movimento. CHECK balance >= 0 do banco é o backstop.
+
+OPERAÇÕES (repositório src/shared/db/repositories/<...>.ts + Server Actions + REST):
+- registerStockEntry(orgId, {stockId, quantity, movementDate, invoiceNumber?}): transação com
+  type='purchase', +quantity; estoque inexistente/outro tenant -> 404; quantity <= 0 -> 422; retorna
+  {movement, newBalance}; auditado.
+- registerStockExit(orgId, {stockId, quantity, movementDate, type in {adjustment, discard}}):
+  transação com -quantity; saldo insuficiente -> INSUFFICIENT_STOCK (422) e nada gravado; 404
+  cross-tenant; retorna {movement, newBalance}; auditado.
+- listStockMovements(orgId, stockId, {page, pageSize}): movimentos do item no tenant; ordem
+  movement_date DESC, created_at DESC; SALDO RESULTANTE derivado por window function
+  (SUM(CASE WHEN type='purchase' THEN quantity ELSE -quantity END) OVER (ORDER BY movement_date,
+  created_at)); LEFT JOIN epi_deliveries+employees para nome do funcionário quando
+  type='employee_delivery'; Paginated<T>; sem tenant/outro tenant -> vazio/404.
+- (reuso) countEpiStockDependents (009): já conta movimentos; nada a fazer.
+- Função pura computeRunningBalance(movements) (espelho do window) para unit test.
+
+VALIDAÇÃO / ERROS:
+- zod: stockEntrySchema (stockId uuid; quantity int > 0; movementDate date; invoiceNumber opcional+trim);
+  stockExitSchema (stockId uuid; quantity int > 0; movementDate date; type in {adjustment, discard}).
+- Mapa de erros (src/shared/api/rest.ts): VALIDATION->422, NOT_FOUND->404, FORBIDDEN->403,
+  FK_NOT_FOUND->422, DUPLICATE->409, e NOVO INSUFFICIENT_STOCK->422.
+
+UI (App Router, src/app/(protected)/epi-stock/):
+- Modal "Registrar entrada": Data de entrada, Quantidade, Nº Nota Fiscal (opcional) -> "Confirmar entrada".
+- Modal "Registrar saída manual": Data, Quantidade, Tipo de saída (Ajuste / Descarte).
+- Tela de histórico /epi-stock/[id]/history (Server Component): tabela Data · Tipo (rótulo pt-BR) ·
+  Quantidade · Saldo Resultante · Nº NF · Funcionário (quando entrega). SEM coluna "Usuário".
+  Estado vazio orientando o usuário. Paginação. Após registrar, refletir novo saldo e novo status
+  derivado na listagem da 009.
+
+REST (src/app/api/v1/epi-stock/[id]/movements):
+- POST (body discrimina entrada vs saída por type/ação) -> registra movimento; respostas 201/422/404/403.
+- GET (paginado) -> histórico do item com saldo resultante; 200/404/403. Testável no Postman.
+
+User stories (P1 = mais crítica):
+- (P1) Como gestor de SST, quero registrar entradas de estoque (compra) para que o saldo do item seja
+  atualizado automaticamente e de forma confiável.
+- (P2) Como gestor de SST, quero registrar saídas manuais (ajuste/descarte) e consultar o histórico
+  completo de movimentações de um item, vendo o saldo resultante de cada movimento.
+
+Success criteria mensuráveis (tecnologia-agnósticos):
+- O saldo do item é atualizado imediatamente após registrar uma entrada ou saída.
+- O saldo NUNCA fica negativo: uma saída maior que o saldo é recusada com mensagem clara e NADA é
+  gravado (nem movimento, nem alteração de saldo).
+- O histórico exibe todos os movimentos do item em ordem cronológica, com o saldo resultante de cada um.
+- Movimentações de outro escritório nunca aparecem nem são acessíveis (404 cross-tenant).
+
+Edge cases:
+- Saída com quantidade maior que o saldo disponível (recusar; rollback total).
+- Entrada/saída com quantidade zero ou negativa (422).
+- Item de estoque de outra organização (404 ao registrar/consultar).
+- Histórico com muitas movimentações (paginação) e histórico vazio (estado vazio).
+- movement_date é DATE (sem hora): empate intra-dia desempatado por created_at.
+- Saída manual NÃO aceita type='purchase' nem 'employee_delivery' (422/validação).
+- Concorrência: duas saídas simultâneas do mesmo item não podem furar o saldo (FOR UPDATE serializa).
+
+TESTES OBRIGATÓRIOS (quality gate — a fatia não fecha sem eles):
+- Unit: computeRunningBalance (saldo resultante por linha, incl. mix de tipos); sinal por tipo
+  (purchase + ; adjustment/discard -); schemas zod (quantity > 0; type restrito na saída; NF opcional).
+- Integração (Postgres EFÊMERO, INTEGRATION_*, runIsolationSuite/seed; NUNCA SQLite; suítes fazem
+  TRUNCATE -> jamais no banco de dev): entrada incrementa saldo e cria 'purchase'; saída decrementa e
+  cria 'adjustment'/'discard'; saída > saldo -> INSUFFICIENT_STOCK e NADA gravado (rollback comprovado:
+  saldo e contagem de movimentos inalterados); histórico ordenado com saldo resultante correto; estado
+  vazio; 404 cross-tenant ao registrar/consultar; FORBIDDEN para papel client.
+- Isolamento multi-tenant em Postgres efêmero (dados não cruzam organizações).
+- npm run test e npm run test:integration verdes; npm run lint + tipos (tsc --noEmit) verdes.
+
+CRITÉRIOS DE ACEITE:
+- Entrada cria 'purchase' e incrementa o saldo corretamente (transação).
+- Saída manual cria 'adjustment'/'discard' e decrementa o saldo (transação).
+- Saldo nunca negativo: saída > saldo retorna erro claro e não grava nada; CHECK balance >= 0 backstop.
+- Histórico lista todos os movimentos com data, tipo, quantidade e saldo resultante (derivado),
+  ordenado cronologicamente; estado vazio tratado.
+- Nº Nota Fiscal opcional na entrada, exibido quando preenchido.
+- Funcionário exibido quando o movimento vem de entrega (employee_delivery via delivery_id).
+- Tudo escopado pela organização ativa; movimento/histórico de outro escritório nunca aparece (404).
+- Testes (unit + integração incl. isolamento em Postgres efêmero) verdes.
+
+FORA DE ESCOPO:
+- Movimento employee_delivery e baixa por entrega (#19); devolução/reposição (#20); CRUD do catálogo
+  (#18) e do registro de estoque (009, já feito); qualquer alteração do modelo 008 (created_by,
+  balance_after, ON DELETE); ajuste de inventário bidirecional; coluna "Usuário" no histórico.
+
+REFERÊNCIAS:
+- Modelo-base: .specs/008-epi-data-model/ (src/shared/db/schema/epis.ts; migrations 0007/0008).
+- Fatia anterior (saldo read-only): 009 (docs/briefings/briefing-epi-stock-crud.md;
+  src/shared/db/repositories/epi-stock.ts).
+- Padrão de CRUD/fluxo: .specs/007-pgr-base-cruds/; src/shared/server/result.ts;
+  src/shared/db/repositories/{companies,ges}.ts; src/app/api/v1/*.
+- Isolamento: .specs/004-multi-tenant-isolation/contracts/withorg-and-rls.md.
+- Paridade ePGR: .specs/004-epgr-feature-parity/03-epi-estoque.md (seção 2).
+- Constituição v1.2.1 — Princípios I (Modelo B) e V (integridade no banco).
+
+Conteúdo da spec em pt-BR; branch e commits em inglês.
+NÃO invente solução técnica não descrita aqui — descreva o "o quê" e o "porquê". Não altere o modelo
+008; esta fatia é zero-migration.
+```
