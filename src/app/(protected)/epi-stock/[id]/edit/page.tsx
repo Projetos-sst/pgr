@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
@@ -6,6 +7,8 @@ import { getEpiStockAction } from "@/shared/server/actions/pgr/epi-stock";
 import { PageHeader } from "../../../_ui/list";
 import { EpiStockForm } from "../../_components/epi-stock-form";
 import { DeleteEpiStock } from "../../_components/delete-epi-stock";
+import { RegisterEntry } from "../../_components/register-entry";
+import { RegisterExit } from "../../_components/register-exit";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +30,19 @@ export default async function EditEpiStockPage({
         description="Gerenciar dados do registro de estoque (quantidade mínima)."
         action={<DeleteEpiStock id={stock.id} redirectTo="/epi-stock" />}
       />
+
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-black/10 px-4 py-3 dark:border-white/10">
+        <span className="text-sm font-medium">Movimentações:</span>
+        <RegisterEntry stockId={stock.id} />
+        <RegisterExit stockId={stock.id} />
+        <Link
+          href={`/epi-stock/${stock.id}/history`}
+          className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+        >
+          Ver histórico
+        </Link>
+      </div>
+
       <EpiStockForm stock={stock} />
     </div>
   );
