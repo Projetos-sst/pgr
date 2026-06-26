@@ -39,18 +39,39 @@ Multi-tenant SST (occupational health & safety) platform. **Tenant isolation is 
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/category-crud`**. Fatia atual (`009`) — **CRUD completo** (criar, listar
-paginado/filtrado, carregar por id para edição, editar, excluir) da entidade **`categories`**
-(catálogo `epi|machine`) em UI (App Router) + Server Actions, sobre o modelo da `006` e reusando
-a infraestrutura de CRUD da `007`. Entidade simples (sem tela de detalhe; sem dependentes).
+Branch: **`feature/stock-movements`**. Fatia atual (`010`) — **Movimentações de estoque e
+histórico** (`stock_movements`): registrar **entrada** (compra) e **saída manual** (ajuste/descarte)
+de itens de estoque de EPI, mantendo o saldo materializado **`epi_stock.balance`** por **transação
+atômica** (`SELECT … FOR UPDATE`), e exibir o **histórico por item** com **saldo resultante derivado**
+(window function, sem coluna). Camada de **fluxo** sobre o modelo da `008` (epi-data-model) e
+contrapartida da `009` (epi-stock-crud, que trata `balance` como read-only). **Zero migration.**
 
-Fatia atual (`009`) — `.specs/009-category-crud/`:
+Fatia atual (`010`) — `.specs/010-stock-movements/`:
 
-- Plan: `.specs/009-category-crud/plan.md`
-- Spec (+ revisão Tech Lead) / Research / Data model / Quickstart no mesmo diretório.
-- Contracts: `contracts/server-actions.md`, `contracts/repositories.md`.
+- Plan: `.specs/010-stock-movements/plan.md`
+- Spec / Research / Data model / Quickstart no mesmo diretório.
+- Contracts: `contracts/server-actions.md`, `contracts/repositories.md`, `contracts/rest-endpoints.md`.
+- Briefing (fonte): `docs/briefings/briefing-stock-movements.md`.
 
-Notas chave (`009`):
+Notas chave (`010`):
+
+- **Escrita transacional do saldo** (1ª fatia que escreve `epi_stock.balance`): por movimento,
+  `SELECT … FOR UPDATE` → valida `novoSaldo >= 0` na app (`CHECK balance >= 0` como backstop) →
+  `INSERT` no movimento + `UPDATE` do saldo, tudo numa transação (`withOrg`). Falha → rollback total.
+- **`quantity` sempre > 0**; o sinal vem do `type` (`purchase` `+`; `adjustment`/`discard` `−`).
+  Saída manual só aceita `{adjustment, discard}` (sem ajuste bidirecional).
+- **Saldo resultante derivado** por window function + função pura `computeRunningBalance` (unit);
+  **sem coluna `balance_after`**. **"Usuário que registrou" omitido** (modelo 008 sem `created_by`).
+- **Novo erro `INSUFFICIENT_STOCK` → 422** em `src/shared/api/rest.ts`. REST em
+  `/api/v1/epi-stock/[id]/movements` (POST registra; GET histórico). Rota UI `/epi-stock/[id]/history`.
+- Testes: unit (`computeRunningBalance`, schemas); integração de Server Actions/REST +
+  rollback de saída insuficiente + histórico + `NOT_FOUND` cross-tenant + `FORBIDDEN` contra
+  **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite nem o banco de dev.
+
+Fatia anterior (`009` — epi-stock-crud, commit `a55d70b`): CRUD de `epi_stock` com `balance`
+**read-only**; reuso de `ActionResult`/`officeAction`/`requireOfficeStaff`/`_ui`. Sem migration.
+
+Fatia anterior (`009` — category-crud) — `.specs/009-category-crud/`. Notas chave:
 
 - **CRUD de `categories`**: estende o repositório (hoje só `list`/`create`) com
   `getById`/`update`/`delete` + busca por nome + filtro por tipo + **paginação offset** (`{rows,total}`,
