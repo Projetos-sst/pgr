@@ -3,6 +3,7 @@ import { z } from "zod";
 import { toActionError } from "@/shared/server/action-error";
 import { ok, fail } from "@/shared/server/result";
 import { ForbiddenError } from "@/shared/auth/errors";
+import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 
 describe("ok/fail (ActionResult)", () => {
   it("ok envelopa os dados", () => {
@@ -63,6 +64,20 @@ describe("toActionError", () => {
       }),
     });
     expect(toActionError(drizzleError)?.code).toBe("FK_NOT_FOUND");
+  });
+
+  it("EntityInUseError → IN_USE (≈409), sem vazar exceção crua (010)", () => {
+    const mapped = toActionError(new EntityInUseError());
+    expect(mapped?.code).toBe("IN_USE");
+    expect(typeof mapped?.message).toBe("string");
+    expect(mapped?.message.length).toBeGreaterThan(0);
+  });
+
+  it("EntityInUseError preserva mensagem customizada", () => {
+    expect(toActionError(new EntityInUseError("Em uso por entrega"))).toEqual({
+      code: "IN_USE",
+      message: "Em uso por entrega",
+    });
   });
 
   it("erro inesperado → null (caller relança)", () => {

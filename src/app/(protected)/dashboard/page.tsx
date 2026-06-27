@@ -35,6 +35,11 @@ const PGR_MODULES = [
     title: "Categorias",
     description: "Catálogo de EPIs e máquinas do escritório.",
   },
+  {
+    href: "/epi-catalog",
+    title: "Catálogo de EPI",
+    description: "Itens de EPI e de máquinas/equipamentos, com CA e validade.",
+  },
 ];
 
 export default async function DashboardPage() {
