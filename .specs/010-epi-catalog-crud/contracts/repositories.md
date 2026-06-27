@@ -63,7 +63,7 @@ assertCategoryInTenant(tx, orgId, categoryId, type): Promise<void>   // privada
   (`FK_NOT_FOUND`). A FK composta `(category_id, type)` é o **backstop** de banco (ela ignora RLS,
   por isso o assert é necessário, não opcional).
 - **Join escopado por tenant (FR-020/021, Research D3)**: `listEpiCatalog` filtra `categories.org_id
-  = orgId` **e** `categories.type = epi_catalog.type` na própria condição do join, além de
+= orgId` **e** `categories.type = epi_catalog.type` na própria condição do join, além de
   `epi_catalog.org_id = orgId` no `where` — defesa em profundidade mesmo com `withOrg`/RLS. A
   junção nunca casa (nem expõe na busca) categoria de outro tenant ou de tipo divergente.
 - **Exclusão defensiva sem corrida (FR-015/016, Research D2)**: o `delete` roda numa **única
@@ -76,7 +76,7 @@ assertCategoryInTenant(tx, orgId, categoryId, type): Promise<void>   // privada
 - **Sem unicidade (FR-017, Research D6)**: o repositório **não** pré-checa nem trata `23505` para
   `epi_catalog` (não há UNIQUE). Homônimos são inseridos normalmente.
 - **Tipagem**: `EpiCatalogValues = z.output<typeof epiCatalogInputSchema>`; `EpiCatalog =
-  InferSelectModel` do schema (008); `EpiCatalogListItem = EpiCatalog & { categoryName: string }`.
+InferSelectModel` do schema (008); `EpiCatalogListItem = EpiCatalog & { categoryName: string }`.
   Sem `any` (Princípio V).
 - **Auditoria de escrita (FR-024)**: `auditedTenantWrite` envolve create/update/delete (sem PII);
   `list`/`getById`/`countDependents` não auditam.

@@ -31,7 +31,7 @@ linha** para eliminar a corrida entre "contar dependentes" e "deletar". A sequê
 mesma transação**:
 
 1. **Carregar e travar** a linha do catálogo do tenant: `SELECT id FROM epi_catalog WHERE org_id =
-   orgId AND id = id FOR UPDATE`. Se não houver linha (inexistente/cross-tenant) → retorna `false`
+orgId AND id = id FOR UPDATE`. Se não houver linha (inexistente/cross-tenant) → retorna `false`
    (a action converte em `NOT_FOUND`); nada mais roda.
 2. **Contar dependentes depois do lock**: `epi_stock`, `epi_risk`, `epi_delivery_items` que
    referenciam o item (todos escopados por `org_id = orgId`).
@@ -161,12 +161,12 @@ orgId, userId).
 
 ## Resumo das decisões
 
-| # | Decisão | Arquivo-chave |
-| --- | --- | --- |
-| D1 | Assert de categoria no tenant + tipo (FK composta é só backstop) | `repositories/epi-catalog.ts` |
-| D2 | Exclusão bloqueia se houver qualquer dependente; `23503`→`IN_USE` local ao delete | `repositories/epi-catalog.ts`, `errors/entity-in-use-error.ts` |
-| D3 | Join com `categories` para nome/busca/coluna | `repositories/epi-catalog.ts` |
-| D4 | Select de categoria reusa `listCategoriesAction({type})` | `_components/epi-catalog-form.tsx` |
-| D5 | zod para obrigatórios + data ISO opcional + opcionais | `domains/pgr/epi-catalog.ts` |
-| D6 | Sem unicidade; sem `DUPLICATE` | `domains`/`repositories` |
-| D7 | Auditoria só na escrita; gate office-staff | `actions/pgr/epi-catalog.ts` |
+| #   | Decisão                                                                           | Arquivo-chave                                                  |
+| --- | --------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| D1  | Assert de categoria no tenant + tipo (FK composta é só backstop)                  | `repositories/epi-catalog.ts`                                  |
+| D2  | Exclusão bloqueia se houver qualquer dependente; `23503`→`IN_USE` local ao delete | `repositories/epi-catalog.ts`, `errors/entity-in-use-error.ts` |
+| D3  | Join com `categories` para nome/busca/coluna                                      | `repositories/epi-catalog.ts`                                  |
+| D4  | Select de categoria reusa `listCategoriesAction({type})`                          | `_components/epi-catalog-form.tsx`                             |
+| D5  | zod para obrigatórios + data ISO opcional + opcionais                             | `domains/pgr/epi-catalog.ts`                                   |
+| D6  | Sem unicidade; sem `DUPLICATE`                                                    | `domains`/`repositories`                                       |
+| D7  | Auditoria só na escrita; gate office-staff                                        | `actions/pgr/epi-catalog.ts`                                   |

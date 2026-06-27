@@ -219,7 +219,7 @@ nada.
 
 > Convenção: **MUST** = implementado e testado nesta fatia. Identificadores de código em inglês;
 > os valores de tipo do domínio são `epi`/`machine`, exibidos como `EPI`/`Máquinas e
-> Equipamentos`. Os nomes de atributo seguem o schema real da 008
+Equipamentos`. Os nomes de atributo seguem o schema real da 008
 > (`src/shared/db/schema/epis.ts`): `norm` é exibido como **Norma** (o input chamou de
 > "standard"); `caValidUntil` é a **Validade do CA**.
 

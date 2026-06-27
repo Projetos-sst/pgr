@@ -19,7 +19,7 @@ SQLite.
 **Convenções herdadas (não reinventar — já mergeadas da 006/007/008/009):**
 
 - Contrato `ActionResult<T>` (`src/shared/server/result.ts`) + wrapper `officeAction(operation, fn,
-  {audit?})` (`src/shared/server/office-action.ts`) que aplica gate + mapeamento de erro
+{audit?})` (`src/shared/server/office-action.ts`) que aplica gate + mapeamento de erro
   (`toActionError`, `src/shared/server/action-error.ts`) + auditoria sem PII só na escrita.
 - Gate de papel `requireOfficeStaff()` (`src/shared/auth/require-office-staff.ts`) e guard de página
   `requireOfficeStaffPage()`; papel `client` → `FORBIDDEN`.
@@ -31,7 +31,7 @@ SQLite.
   (`FK_NOT_FOUND`). `toActionError` mapeia `AppError` genérico para `ActionResult` e PG `23503` →
   `FK_NOT_FOUND`.
 - Tabela `epi_catalog`, FK composta `(category_id, type) → categories(id, type)` `ON DELETE
-  RESTRICT`, dependentes (`epi_stock`/`epi_risk` `CASCADE`; `epi_delivery_items` `RESTRICT`) e RLS
+RESTRICT`, dependentes (`epi_stock`/`epi_risk` `CASCADE`; `epi_delivery_items` `RESTRICT`) e RLS
   `epi_catalog_isolation` **já existem** (migrations `0007`/`0008`). **Sem migration nova; sem
   alterar schema.**
 - Catálogo `categories` (009) reusado como taxonomia; `listCategoriesAction` reusada no select
@@ -53,7 +53,7 @@ SQLite.
 
 ## Phase 1: Setup (estrutura compartilhada)
 
-- [X] T001 Criar a estrutura de pastas da fatia: `src/app/(protected)/epi-catalog/`,
+- [x] T001 Criar a estrutura de pastas da fatia: `src/app/(protected)/epi-catalog/`,
       `src/app/(protected)/epi-catalog/new/`, `src/app/(protected)/epi-catalog/[id]/edit/` e
       `src/app/(protected)/epi-catalog/_components/` (os diretórios de teste
       `src/__tests__/unit/domains/pgr/` e `src/__tests__/integration/pgr/` já existem).
@@ -65,12 +65,12 @@ SQLite.
 **Bloqueia o repositório/actions (delete defensivo).** Único item novo de infraestrutura: o erro
 `EntityInUseError` e a garantia de que ele vira contrato `IN_USE`.
 
-- [X] T002 Criar `EntityInUseError` em `src/shared/errors/entity-in-use-error.ts`: `class
-      EntityInUseError extends AppError` com `code = "IN_USE"` (status `409`) e mensagem padrão
+- [x] T002 Criar `EntityInUseError` em `src/shared/errors/entity-in-use-error.ts`: `class
+EntityInUseError extends AppError` com `code = "IN_USE"` (status `409`) e mensagem padrão
       pt-BR (ex.: "Item em uso e não pode ser excluído."). Segue o padrão de `not-found-error.ts`/
       `reference-not-found-error.ts`; **não** altera `action-error.ts` (o ramo genérico de
       `AppError` já o mapeia).
-- [X] T003 [P] Unit: garantir que `toActionError(new EntityInUseError())` retorna
+- [x] T003 [P] Unit: garantir que `toActionError(new EntityInUseError())` retorna
       `{ code: "IN_USE", message }` (≈409) — isto é, o erro vira `ActionResult` e **nunca** vaza como
       exceção crua — em `src/__tests__/unit/shared/server/action-error.test.ts` (criar o arquivo se
       não existir). Depende de T002.
@@ -93,12 +93,12 @@ ausente → rejeitado sem persistir; dois itens homônimos → ambos aceitos (se
 
 ### Tests for User Story 1 ⚠️ (escrever antes da implementação)
 
-- [X] T004 [P] [US1] Unit: `epiCatalogInputSchema` em
+- [x] T004 [P] [US1] Unit: `epiCatalogInputSchema` em
       `src/__tests__/unit/domains/pgr/epi-catalog.test.ts` — aceita entrada mínima válida
       (`type`+`categoryId`+`name`); rejeita tipo fora de `epi|machine`, `name` vazio/só-espaços,
       `categoryId` não-uuid/ausente e `caValidUntil` malformada; normaliza opcionais vazios para
       `undefined`; aceita `caValidUntil` ISO (`YYYY-MM-DD`) válida.
-- [X] T005 [P] [US1] Integração: CRUD feliz + busca/filtro + homônimos + validação das Server
+- [x] T005 [P] [US1] Integração: CRUD feliz + busca/filtro + homônimos + validação das Server
       Actions em `src/__tests__/integration/pgr/epi-catalog.test.ts` (mock de `requireOfficeStaff`
       como `owner` de `org_a`, seed `pgr-seed.ts`, Postgres efêmero):
       criar item `epi` em `org_a` com `categoryA` → aparece no `list` (com `categoryName`); `get`
@@ -109,39 +109,34 @@ ausente → rejeitado sem persistir; dois itens homônimos → ambos aceitos (se
 
 ### Implementation for User Story 1
 
-- [X] T006 [P] [US1] Domínio em `src/shared/domains/pgr/epi-catalog.ts`: `epiCatalogInputSchema`
+- [x] T006 [P] [US1] Domínio em `src/shared/domains/pgr/epi-catalog.ts`: `epiCatalogInputSchema`
       (zod — `type: categoryTypeSchema`, `categoryId: z.string().uuid()`, `name: requiredString`,
       opcionais `ca`/`manufacturer`/`norm`/`size`/`unitOfMeasure`/`description`/`photoPath` via
       `optionalString`, `caValidUntil` via `optionalIsoDate`); tipos `EpiCatalogInput` =
       `z.input<…>` e `EpiCatalogValues` = `z.output<…>`; DTO `EpiCatalogListItem = EpiCatalog & {
-      categoryName: string }`. Reusa `categoryTypeSchema` (`validation.ts`) e
+categoryName: string }`. Reusa `categoryTypeSchema` (`validation.ts`) e
       `requiredString`/`optionalString` (`form-fields.ts`). Se `optionalIsoDate` ainda não existir,
       adicioná-lo em `src/shared/domains/pgr/form-fields.ts` (vazio→`undefined`; senão data ISO
       válida) — **sem** reescrever validadores existentes.
-- [X] T007 [P] [US1] Repositório novo `src/shared/db/repositories/epi-catalog.ts` (Repository
+- [x] T007 [P] [US1] Repositório novo `src/shared/db/repositories/epi-catalog.ts` (Repository
       pattern; só ele toca o ORM; todas as ops via `withOrg` + filtro explícito por `org_id`;
       escritas via `auditedTenantWrite("pgr.epi_catalog.write_rejected")`), conforme
-      `contracts/repositories.md`:
-      - `listEpiCatalog(orgId, {search,type,page,pageSize})→Paginated<EpiCatalogListItem>` —
-        `innerJoin(categories)` **escopado por tenant**: `and(eq(epiCatalog.categoryId,
-        categories.id), eq(categories.orgId, orgId), eq(categories.type, epiCatalog.type))`; `where
-        eq(epiCatalog.orgId, orgId)` + busca `or(ilike(epiCatalog.name), ilike(epiCatalog.ca),
-        ilike(categories.name))` + filtro `eq(epiCatalog.type)`; ordenação `name` asc; offset;
-        `{rows,total}` com o mesmo join/where.
-      - `getEpiCatalogById(orgId, id)→EpiCatalog|null`.
-      - `createEpiCatalog(orgId, input)` e `updateEpiCatalog(orgId, id, input)` — chamam
-        `assertCategoryInTenant(tx, orgId, input.categoryId, input.type)` (privada; select
-        `categories` por `(org_id,id,type)`; `ReferenceNotFoundError("category")` se ausente) antes
-        de gravar.
-      - `deleteEpiCatalog(orgId, id)→boolean` — **transação única `withOrg`**: `SELECT id … WHERE
-        org_id AND id FOR UPDATE` (trava; `false` se ausente/cross-tenant) → conta dependentes
-        **após o lock** → `throw new EntityInUseError()` se soma>0 → senão `DELETE … RETURNING {id}`;
-        `try/catch` SQLSTATE `23503` (backstop `epi_delivery_items`) → `throw new EntityInUseError()`
-        (captura **local ao delete**).
-      - `countEpiCatalogDependents(orgId, id)→{stock,risk,deliveryItems}` — 3× `count(*)::int`
-        (escopo `org_id`) sob `withOrg`, **sem** lock (leitura informativa p/ a UI).
+      `contracts/repositories.md`: - `listEpiCatalog(orgId, {search,type,page,pageSize})→Paginated<EpiCatalogListItem>` —
+      `innerJoin(categories)` **escopado por tenant**: `and(eq(epiCatalog.categoryId,
+categories.id), eq(categories.orgId, orgId), eq(categories.type, epiCatalog.type))`; `where
+eq(epiCatalog.orgId, orgId)` + busca `or(ilike(epiCatalog.name), ilike(epiCatalog.ca),
+ilike(categories.name))` + filtro `eq(epiCatalog.type)`; ordenação `name` asc; offset;
+      `{rows,total}` com o mesmo join/where. - `getEpiCatalogById(orgId, id)→EpiCatalog|null`. - `createEpiCatalog(orgId, input)` e `updateEpiCatalog(orgId, id, input)` — chamam
+      `assertCategoryInTenant(tx, orgId, input.categoryId, input.type)` (privada; select
+      `categories` por `(org_id,id,type)`; `ReferenceNotFoundError("category")` se ausente) antes
+      de gravar. - `deleteEpiCatalog(orgId, id)→boolean` — **transação única `withOrg`**: `SELECT id … WHERE
+org_id AND id FOR UPDATE` (trava; `false` se ausente/cross-tenant) → conta dependentes
+      **após o lock** → `throw new EntityInUseError()` se soma>0 → senão `DELETE … RETURNING {id}`;
+      `try/catch` SQLSTATE `23503` (backstop `epi_delivery_items`) → `throw new EntityInUseError()`
+      (captura **local ao delete**). - `countEpiCatalogDependents(orgId, id)→{stock,risk,deliveryItems}` — 3× `count(*)::int`
+      (escopo `org_id`) sob `withOrg`, **sem** lock (leitura informativa p/ a UI).
       Depende de T002 (`EntityInUseError`) e T006 (`EpiCatalogValues`/DTO).
-- [X] T008 [US1] Server Actions em `src/shared/server/actions/pgr/epi-catalog.ts` conforme
+- [x] T008 [US1] Server Actions em `src/shared/server/actions/pgr/epi-catalog.ts` conforme
       `contracts/server-actions.md`: `listEpiCatalogAction`/`getEpiCatalogAction`/
       `createEpiCatalogAction`/`updateEpiCatalogAction`/`deleteEpiCatalogAction`/
       `getEpiCatalogDependentsAction` via `officeAction`; `epiCatalogInputSchema.parse(input)`
@@ -149,18 +144,18 @@ ausente → rejeitado sem persistir; dois itens homônimos → ambos aceitos (se
       `delete`→`false`; `EntityInUseError`→`IN_USE` flui do repo; `revalidatePath("/epi-catalog")` e
       `/epi-catalog/[id]/edit`; `{audit:true}` só em create/update/delete; `list`/`get`/`dependents`
       sem audit. Depende de T006, T007.
-- [X] T009 [P] [US1] Página de lista em `src/app/(protected)/epi-catalog/page.tsx`: Server Component
+- [x] T009 [P] [US1] Página de lista em `src/app/(protected)/epi-catalog/page.tsx`: Server Component
       com `requireOfficeStaffPage()`, busca por nome/CA/categoria (`SearchForm`) + filtro por tipo
       (select com `hidden` de `search`) + paginação (`Pagination`/`EmptyState`/`Table`/`PageHeader`/
       `PrimaryLink`) consumindo `listEpiCatalogAction`. **Colunas**: CA, Nome, Tamanho, Fabricante,
       Tipo, Categoria (`categoryName`), Unidade de Medida, Validade (do CA), Opções (editar +
       excluir). Tipo exibido com rótulo formatado na UI (`epi → EPI`, `machine → Máquinas e
-      Equipamentos`); validade via `toLocaleDateString('pt-BR')`. **Estado vazio** orientando o
+Equipamentos`); validade via `toLocaleDateString('pt-BR')`. **Estado vazio** orientando o
       primeiro cadastro (distinto de "busca sem resultado"). **Paginação preserva filtro/busca
       (FR-003)**: passar os `searchParams` atuais (`search` e `type`) como `params` do componente
       `Pagination` (que os reaplica via `buildQuery`), de modo que navegar entre páginas mantém a
       busca e o filtro por tipo e nunca cruza escritórios. Depende de T008.
-- [X] T010 [P] [US1] Formulário Client Component em
+- [x] T010 [P] [US1] Formulário Client Component em
       `src/app/(protected)/epi-catalog/_components/epi-catalog-form.tsx`: **controlado** para `type`
       e `categoryId`; **Tipo → Categoria em cascata** — ao montar e a cada troca de `type`, chama
       `listCategoriesAction({ type, pageSize: 100 })` (009) e popula o `SelectField` de categoria
@@ -169,19 +164,19 @@ ausente → rejeitado sem persistir; dois itens homônimos → ambos aceitos (se
       `photoPath` (texto — **sem upload**); exibe `error.fields`/`error.message`; chama
       create/update. **E** a página de criação `src/app/(protected)/epi-catalog/new/page.tsx`
       (`requireOfficeStaffPage()`). Depende de T008.
-- [X] T011 [US1] Página de edição (= "detalhe") em
+- [x] T011 [US1] Página de edição (= "detalhe") em
       `src/app/(protected)/epi-catalog/[id]/edit/page.tsx`: `requireOfficeStaffPage()`, carrega via
       `getEpiCatalogAction(id)` e chama `notFound()` quando `NOT_FOUND`; reusa `EpiCatalogForm`.
       Depende de T008, T010.
-- [X] T012 [US1] Componente de exclusão em
+- [x] T012 [US1] Componente de exclusão em
       `src/app/(protected)/epi-catalog/_components/delete-epi-catalog.tsx`: reusa
       `_ui/confirm-delete-button.tsx` passando `deleteAction = deleteEpiCatalogAction`,
       `loadDependentsAction = getEpiCatalogDependentsAction` e `dependentLabels` ({ stock: "Estoque",
       risk: "Vínculos de risco", deliveryItems: "Itens de entrega" }), com `description` deixando
       claro que **a exclusão é bloqueada se houver dependentes** (o `error.message` `IN_USE` aparece
       ao confirmar). Depende de T008.
-- [X] T013 [US1] Registrar o módulo na navegação: adicionar `{ href: "/epi-catalog", label:
-      "Catálogo de EPI" }` em `PGR_NAV` de `src/app/(protected)/layout.tsx` e um card em
+- [x] T013 [US1] Registrar o módulo na navegação: adicionar `{ href: "/epi-catalog", label:
+"Catálogo de EPI" }` em `PGR_NAV` de `src/app/(protected)/layout.tsx` e um card em
       `PGR_MODULES` de `src/app/(protected)/dashboard/page.tsx`.
 
 **Checkpoint**: CRUD de `epi_catalog` completo, isolado e testável — MVP entregável.
@@ -202,7 +197,7 @@ nunca todos os registros.
 
 ### Tests for User Story 2 ⚠️
 
-- [X] T014 [P] [US2] Integração de isolamento em
+- [x] T014 [P] [US2] Integração de isolamento em
       `src/__tests__/integration/pgr/epi-catalog-isolation.test.ts` (nível Server Action):
       como `org_a`, `getEpiCatalogAction(epiCatalogB)` / `updateEpiCatalogAction(epiCatalogB, …)` /
       `deleteEpiCatalogAction(epiCatalogB)` → `NOT_FOUND`; `listEpiCatalogAction` como `org_a` não
@@ -231,7 +226,7 @@ inválida; apontar para categoria de outro escritório (`categoryB`) ou para `ca
 
 ### Tests for User Story 3 ⚠️
 
-- [X] T015 [P] [US3] Integração em
+- [x] T015 [P] [US3] Integração em
       `src/__tests__/integration/pgr/epi-catalog-category-coherence.test.ts` (como `org_a`, seed,
       Postgres efêmero): `createEpiCatalogAction` com `type:"machine"` + `categoryId = categoryA`
       (que é `epi`) → `FK_NOT_FOUND`; com `categoryId = categoryB` (de `org_b`) → `FK_NOT_FOUND`; com
@@ -254,29 +249,20 @@ estoque+risco+item-de-entrega no seed) → `IN_USE`, nada removido nem cascatead
 `FK_NOT_FOUND`.
 
 > **Sem nova implementação**: a lógica está em `deleteEpiCatalog` (T007, transação única + `FOR
-> UPDATE` + contagem + `IN_USE` + backstop). Esta fase **prova** o comportamento e o contrato.
+UPDATE` + contagem + `IN_USE` + backstop). Esta fase **prova** o comportamento e o contrato.
 
 ### Tests for User Story 4 ⚠️
 
-- [X] T016 [P] [US4] Integração em
+- [x] T016 [P] [US4] Integração em
       `src/__tests__/integration/pgr/epi-catalog-delete.test.ts` (como `org_a`, seed, Postgres
-      efêmero):
-      - **Sem dependentes**: criar item novo sem dependentes → `deleteEpiCatalogAction` →
-        `{ ok:true }`; some do `list`.
-      - **Com dependentes (bloqueio + sem cascade)**: `deleteEpiCatalogAction(epiCatalogA)` →
-        `{ ok:false, error:{ code:"IN_USE" } }` (≈409), **sem** exceção crua; o item **e** os
-        dependentes (`epi_stock`/`epi_risk`/`epi_delivery_items`) **continuam** no banco (nada
-        cascateado). `getEpiCatalogDependentsAction(epiCatalogA)` retorna contagens > 0.
-      - **Delivery item only (via pré-checagem)**: removendo `epi_stock` + `epi_risk` de
-        `epiCatalogA` e mantendo **só** `epi_delivery_items`, `deleteEpiCatalogAction(epiCatalogA)`
-        → `IN_USE` **pela pré-checagem** (que conta `deliveryItems`), retornado **antes** do
-        `DELETE`; o item **e** o `epi_delivery_items` continuam no banco (não `FK_NOT_FOUND`).
-      > **Nota (M1)**: o `try/catch` de SQLSTATE `23503` em `deleteEpiCatalog` é
-      > **cinto-e-suspensório** para corrida/estado inesperado e **não** precisa de teste
-      > determinístico — a pré-checagem já conta `epi_delivery_items` e o `SELECT … FOR UPDATE`
-      > serializa inserts concorrentes de dependentes, tornando o caminho `23503` praticamente
-      > inalcançável de forma determinística. A cobertura determinística desta US é a **pré-checagem
-      > + preservação dos dependentes** (casos acima), não o `catch 23503`.
+      efêmero): - **Sem dependentes**: criar item novo sem dependentes → `deleteEpiCatalogAction` →
+      `{ ok:true }`; some do `list`. - **Com dependentes (bloqueio + sem cascade)**: `deleteEpiCatalogAction(epiCatalogA)` →
+      `{ ok:false, error:{ code:"IN_USE" } }` (≈409), **sem** exceção crua; o item **e** os
+      dependentes (`epi_stock`/`epi_risk`/`epi_delivery_items`) **continuam** no banco (nada
+      cascateado). `getEpiCatalogDependentsAction(epiCatalogA)` retorna contagens > 0. - **Delivery item only (via pré-checagem)**: removendo `epi_stock` + `epi_risk` de
+      `epiCatalogA` e mantendo **só** `epi_delivery_items`, `deleteEpiCatalogAction(epiCatalogA)`
+      → `IN_USE` **pela pré-checagem** (que conta `deliveryItems`), retornado **antes** do
+      `DELETE`; o item **e** o `epi_delivery_items` continuam no banco (não `FK_NOT_FOUND`). > **Nota (M1)**: o `try/catch` de SQLSTATE `23503` em `deleteEpiCatalog` é > **cinto-e-suspensório** para corrida/estado inesperado e **não** precisa de teste > determinístico — a pré-checagem já conta `epi_delivery_items` e o `SELECT … FOR UPDATE` > serializa inserts concorrentes de dependentes, tornando o caminho `23503` praticamente > inalcançável de forma determinística. A cobertura determinística desta US é a **pré-checagem > + preservação dos dependentes** (casos acima), não o `catch 23503`.
       Depende de T008.
 
 **Checkpoint**: exclusão segura provada — bloqueio defensivo (pré-checagem) + dependentes
@@ -286,27 +272,27 @@ preservados, via contrato `IN_USE`; o `catch 23503` permanece como backstop não
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [X] T017 [P] Revisar consistência de `revalidatePath` + auditoria sem PII
+- [x] T017 [P] Revisar consistência de `revalidatePath` + auditoria sem PII
       (`officeAction(..., {audit:true})` só em create/update/delete; list/get/dependents sem audit)
       e ausência de `any` em `src/shared/server/actions/pgr/epi-catalog.ts` e
       `src/shared/db/repositories/epi-catalog.ts`.
-- [X] T018 Quality gate estático: `npx prettier --write` nos arquivos tocados (ou `npm run format` /
+- [x] T018 Quality gate estático: `npx prettier --write` nos arquivos tocados (ou `npm run format` /
       `npm run format:check` — scripts reais `prettier --write .` / `prettier --check .`),
       `npm run lint` e `npm run typecheck` verdes (TS `strict`, sem `any` injustificado).
 - [~] T019 Quality gate de testes: `npm run test` (unit — `epi-catalog.test.ts` e
-      `action-error.test.ts` verdes) e `npm run test:integration` (Postgres efêmero — CRUD,
-      isolamento, coerência Tipo×Categoria e exclusão bloqueada verdes). Opcionalmente `npm run
-      check` como agregador (`format:check && lint && typecheck && test`; **não** inclui integração).
-      Sem `INTEGRATION_*`, as suítes de integração entram em `describe.skip` — a validação real
-      precisa rodar no CI/ambiente com Postgres efêmero (não marcar a fatia concluída só com unit).
-      **STATUS PARCIAL `[~]`**: `npm run test` (unit) **VERDE** (31 suites / 192 testes, inclui
-      `unit/domains/pgr/epi-catalog.test.ts` e o caso `EntityInUseError → IN_USE` em
-      `action-error.test.ts`). `npm run test:integration` **NÃO validado neste ambiente**: as 4
-      suítes de `epi-catalog` são coletadas mas entram em `describe.skip` por falta de
-      `INTEGRATION_DATABASE_URL`/`INTEGRATION_APP_RUNTIME_URL`. 1 falha **pré-existente e não
-      relacionada** (`webhooks/clerk-membership.test.ts` exige `NEXT_PUBLIC_SUPABASE_URL`). A
-      validação real de RLS/FK composta/exclusão **precisa rodar no CI** com Postgres efêmero —
-      **não marcar `[X]`** até a integração de `epi-catalog` rodar verde de verdade.
+  `action-error.test.ts` verdes) e `npm run test:integration` (Postgres efêmero — CRUD,
+  isolamento, coerência Tipo×Categoria e exclusão bloqueada verdes). Opcionalmente `npm run
+check` como agregador (`format:check && lint && typecheck && test`; **não** inclui integração).
+  Sem `INTEGRATION_*`, as suítes de integração entram em `describe.skip` — a validação real
+  precisa rodar no CI/ambiente com Postgres efêmero (não marcar a fatia concluída só com unit).
+  **STATUS PARCIAL `[~]`**: `npm run test` (unit) **VERDE** (31 suites / 192 testes, inclui
+  `unit/domains/pgr/epi-catalog.test.ts` e o caso `EntityInUseError → IN_USE` em
+  `action-error.test.ts`). `npm run test:integration` **NÃO validado neste ambiente**: as 4
+  suítes de `epi-catalog` são coletadas mas entram em `describe.skip` por falta de
+  `INTEGRATION_DATABASE_URL`/`INTEGRATION_APP_RUNTIME_URL`. 1 falha **pré-existente e não
+  relacionada** (`webhooks/clerk-membership.test.ts` exige `NEXT_PUBLIC_SUPABASE_URL`). A
+  validação real de RLS/FK composta/exclusão **precisa rodar no CI** com Postgres efêmero —
+  **não marcar `[X]`** até a integração de `epi-catalog` rodar verde de verdade.
 
 ---
 
@@ -366,8 +352,7 @@ Task: "T010 Form (Tipo→Categoria em cascata) + página de criação"
 
 ### MVP First (US1)
 
-1. Phase 1 Setup → 2. Phase 2 Foundational (`EntityInUseError`) → 3. Phase 3 US1 (T004–T013) →
-   4. **VALIDAR** US1 isolada (criar/listar/editar/excluir) → 5. demo.
+1. Phase 1 Setup → 2. Phase 2 Foundational (`EntityInUseError`) → 3. Phase 3 US1 (T004–T013) → 4. **VALIDAR** US1 isolada (criar/listar/editar/excluir) → 5. demo.
 
 ### Incremental Delivery
 
