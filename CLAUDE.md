@@ -69,9 +69,9 @@ Notas chave (`010`):
   Migration nova `0009_digital_signature_infra` (GRANT + triggers + policy de capability como SQL custom).
 - **Rota pública sem login** (`app/(public)/assinar/[token]`): isolamento vem **do token**, não do
   cliente. `signature_requests` tem 2 policies RLS PERMISSIVE: tenant (`FOR ALL`, `app.current_org`)
-  + **capability** (`FOR SELECT`, `token_hash = current_setting('app.signature_token', true)`).
-  Helper novo `withSignatureToken(rawToken, fn)` (espelha `withOrg`); grava via `withOrg(orgId)` após
-  derivar o tenant do token.
+  - **capability** (`FOR SELECT`, `token_hash = current_setting('app.signature_token', true)`).
+    Helper novo `withSignatureToken(rawToken, fn)` (espelha `withOrg`); grava via `withOrg(orgId)` após
+    derivar o tenant do token.
 - **Token**: ≥256 bits, persistido só **hasheado** (sha-256, `token_hash` UNIQUE); cru só vive na
   URL/QR; TTL configurável (default 72h); **uso único** (`used_at`; UPDATE atômico `WHERE used_at IS NULL`).
 - **Tempo real por polling ~3s** (não SSE); **imagem base64 no Postgres** (não storage externo);

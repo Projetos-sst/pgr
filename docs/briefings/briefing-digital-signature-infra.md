@@ -24,18 +24,18 @@ painel interno **em tempo real**. Tudo **isolado por tenant** e respeitando o **
 
 ## 2. Decisões do brainstorming (travadas)
 
-| # | Tema | Decisão | Motivo |
-|---|------|---------|--------|
-| 1 | **Localização** | `src/shared/{db/schema,db/repositories,domains,server/actions}` + `src/app/(public)` + `src/shared/ui` | Seguir a convenção real do repo (camadas), **não** `features/` como sugeria a issue. |
-| 2 | **Modelagem** | Tabela **genérica polimórfica** (`signature_requests` + `signature_captures`), discriminada por `target_type` | DRY pedido pela issue; nesta branch não há código de EPI para refatorar → caminho mais simples e escalável (novo módulo = +1 `target_type`, zero mudança de schema). |
-| 3 | **Colunas dormentes de EPI** | `epi_deliveries.auth_token` / `signature_status` ficam **intocadas** nesta fatia | YAGNI; sem sincronização nem migração. Futuro: a integração de EPI lê status de `signature_requests` (fonte única). |
-| 4 | **Tempo real** | **Polling ~3s** (não SSE) | Simples, robusto, sem conexão persistente, atende o critério `<5s`; bom em serverless. |
-| 5 | **Lib de QR** | `qrcode` no **servidor** (gera data-URL) | Sem componente React → sem risco de peer-dependency com React 19. |
-| 6 | **Lib de canvas** | `signature_pad` (vanilla) embrulhada em client component | Sem peer-dependency de React (imune ao React 19); leve; exporta PNG/data-URL pronto. |
-| 7 | **Consumidor #1** | **Demo auto-contido** (`target_type: 'demo'`) | Entrega de EPI vive na branch irmã `ppe-delivery-with-signature` (não mergeada); demo prova o contrato ponta-a-ponta sem conflito/retrabalho. |
-| 8 | **Token** | Aleatório forte (≥256 bits), armazenado **hasheado** (sha-256); TTL curto configurável; **uso único** (`used_at`) | Se o banco vazar, links não são reutilizáveis. |
-| 9 | **Storage da imagem** | **base64 (data-URL) no Postgres**, em tabela separada `signature_captures` | Sob RLS por tenant (mais seguro que bucket/ACL); sem infra de storage nova; assinatura PNG é pequena (~5–50 KB). |
-| 10 | **Plano (free/pro)** | PRO **ilimitado**; free = **10 pedidos criados/mês**; gate na **criação** | Conformidade com spec 005 (ver §7). |
+| #   | Tema                         | Decisão                                                                                                           | Motivo                                                                                                                                                               |
+| --- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Localização**              | `src/shared/{db/schema,db/repositories,domains,server/actions}` + `src/app/(public)` + `src/shared/ui`            | Seguir a convenção real do repo (camadas), **não** `features/` como sugeria a issue.                                                                                 |
+| 2   | **Modelagem**                | Tabela **genérica polimórfica** (`signature_requests` + `signature_captures`), discriminada por `target_type`     | DRY pedido pela issue; nesta branch não há código de EPI para refatorar → caminho mais simples e escalável (novo módulo = +1 `target_type`, zero mudança de schema). |
+| 3   | **Colunas dormentes de EPI** | `epi_deliveries.auth_token` / `signature_status` ficam **intocadas** nesta fatia                                  | YAGNI; sem sincronização nem migração. Futuro: a integração de EPI lê status de `signature_requests` (fonte única).                                                  |
+| 4   | **Tempo real**               | **Polling ~3s** (não SSE)                                                                                         | Simples, robusto, sem conexão persistente, atende o critério `<5s`; bom em serverless.                                                                               |
+| 5   | **Lib de QR**                | `qrcode` no **servidor** (gera data-URL)                                                                          | Sem componente React → sem risco de peer-dependency com React 19.                                                                                                    |
+| 6   | **Lib de canvas**            | `signature_pad` (vanilla) embrulhada em client component                                                          | Sem peer-dependency de React (imune ao React 19); leve; exporta PNG/data-URL pronto.                                                                                 |
+| 7   | **Consumidor #1**            | **Demo auto-contido** (`target_type: 'demo'`)                                                                     | Entrega de EPI vive na branch irmã `ppe-delivery-with-signature` (não mergeada); demo prova o contrato ponta-a-ponta sem conflito/retrabalho.                        |
+| 8   | **Token**                    | Aleatório forte (≥256 bits), armazenado **hasheado** (sha-256); TTL curto configurável; **uso único** (`used_at`) | Se o banco vazar, links não são reutilizáveis.                                                                                                                       |
+| 9   | **Storage da imagem**        | **base64 (data-URL) no Postgres**, em tabela separada `signature_captures`                                        | Sob RLS por tenant (mais seguro que bucket/ACL); sem infra de storage nova; assinatura PNG é pequena (~5–50 KB).                                                     |
+| 10  | **Plano (free/pro)**         | PRO **ilimitado**; free = **10 pedidos criados/mês**; gate na **criação**                                         | Conformidade com spec 005 (ver §7).                                                                                                                                  |
 
 ---
 
@@ -75,34 +75,34 @@ painel interno **em tempo real**. Tudo **isolado por tenant** e respeitando o **
 
 ### `signature_requests` — pedido de assinatura de qualquer módulo
 
-| Coluna | Tipo | Notas |
-|--------|------|-------|
-| `id` | `uuid` PK | `defaultRandom()` |
-| `org_id` | `text` NOT NULL → `orgs.id` (cascade) | índice; **RLS** |
-| `target_type` | `text` NOT NULL | `'demo'`, futuro `'epi_delivery'`, `'work_order'`, … |
-| `target_id` | `uuid` NULL | registro de origem (null no demo) |
-| `token_hash` | `text` NOT NULL **UNIQUE** | sha-256 do token cru; token cru nunca persiste |
-| `payload` | `jsonb` NOT NULL | dados que o formulário renderiza/mostra ao signatário |
-| `status` | enum `signature_request_status` | `pending \| signed \| cancelled` |
-| `expires_at` | `timestamptz` NOT NULL | "expirado" é **derivado na leitura** (`expires_at < now()` e `pending`) |
-| `used_at` | `timestamptz` NULL | marca uso único |
-| `created_at` / `updated_at` | `timestamptz` | trigger `set_updated_at` |
+| Coluna                      | Tipo                                  | Notas                                                                   |
+| --------------------------- | ------------------------------------- | ----------------------------------------------------------------------- |
+| `id`                        | `uuid` PK                             | `defaultRandom()`                                                       |
+| `org_id`                    | `text` NOT NULL → `orgs.id` (cascade) | índice; **RLS**                                                         |
+| `target_type`               | `text` NOT NULL                       | `'demo'`, futuro `'epi_delivery'`, `'work_order'`, …                    |
+| `target_id`                 | `uuid` NULL                           | registro de origem (null no demo)                                       |
+| `token_hash`                | `text` NOT NULL **UNIQUE**            | sha-256 do token cru; token cru nunca persiste                          |
+| `payload`                   | `jsonb` NOT NULL                      | dados que o formulário renderiza/mostra ao signatário                   |
+| `status`                    | enum `signature_request_status`       | `pending \| signed \| cancelled`                                        |
+| `expires_at`                | `timestamptz` NOT NULL                | "expirado" é **derivado na leitura** (`expires_at < now()` e `pending`) |
+| `used_at`                   | `timestamptz` NULL                    | marca uso único                                                         |
+| `created_at` / `updated_at` | `timestamptz`                         | trigger `set_updated_at`                                                |
 
 Índices: `idx_signature_requests_org_id`, `idx_signature_requests_org_id_created_at` (para a
 contagem de quota), `uq_signature_requests_token_hash`, `idx_signature_requests_target` (`target_type`,`target_id`).
 
 ### `signature_captures` — resultado (1:1 com o request)
 
-| Coluna | Tipo | Notas |
-|--------|------|-------|
-| `id` | `uuid` PK | |
-| `org_id` | `text` NOT NULL → `orgs.id` (cascade) | índice; **RLS** |
-| `request_id` | `uuid` NOT NULL **UNIQUE** → `signature_requests.id` (cascade) | 1 captura por request |
-| `image_data` | `text` NOT NULL | data-URL base64 (PNG) |
-| `signer_name` | `text` NOT NULL | |
-| `method` | enum `signature_method` | `qr \| link \| manual` |
-| `signed_at` | `timestamptz` NOT NULL | default `now()` |
-| `created_at` / `updated_at` | `timestamptz` | |
+| Coluna                      | Tipo                                                           | Notas                  |
+| --------------------------- | -------------------------------------------------------------- | ---------------------- |
+| `id`                        | `uuid` PK                                                      |                        |
+| `org_id`                    | `text` NOT NULL → `orgs.id` (cascade)                          | índice; **RLS**        |
+| `request_id`                | `uuid` NOT NULL **UNIQUE** → `signature_requests.id` (cascade) | 1 captura por request  |
+| `image_data`                | `text` NOT NULL                                                | data-URL base64 (PNG)  |
+| `signer_name`               | `text` NOT NULL                                                |                        |
+| `method`                    | enum `signature_method`                                        | `qr \| link \| manual` |
+| `signed_at`                 | `timestamptz` NOT NULL                                         | default `now()`        |
+| `created_at` / `updated_at` | `timestamptz`                                                  |                        |
 
 ### Enums e migration
 
@@ -210,13 +210,13 @@ Fonte: `.specs/005-modelo-tenant-gate-pro/spec.md` (FR-011/012/013, Inv-1) e
 
 `ActionResult<T>` (`{ok:true,data}` | `{ok:false,error}`) + códigos de domínio (não HTTP cru):
 
-| Código | Quando | REST (via `restHandler`) |
-|--------|--------|--------------------------|
-| `VALIDATION` | input/payload Zod inválido | 422 |
-| `NOT_FOUND` | token inexistente / request não encontrado | 404 |
-| `FORBIDDEN` | papel `client` no lado interno | 403 |
-| `QUOTA_EXCEEDED` | free atingiu 10/mês na criação | 402 (Payment Required) |
-| (estado público) | token **expirado** / **já utilizado** | página amigável, não erro cru |
+| Código           | Quando                                     | REST (via `restHandler`)      |
+| ---------------- | ------------------------------------------ | ----------------------------- |
+| `VALIDATION`     | input/payload Zod inválido                 | 422                           |
+| `NOT_FOUND`      | token inexistente / request não encontrado | 404                           |
+| `FORBIDDEN`      | papel `client` no lado interno             | 403                           |
+| `QUOTA_EXCEEDED` | free atingiu 10/mês na criação             | 402 (Payment Required)        |
+| (estado público) | token **expirado** / **já utilizado**      | página amigável, não erro cru |
 
 ---
 

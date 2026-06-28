@@ -5,7 +5,7 @@
 - **Sem autenticação** (fora do `(protected)` layout; não há `middleware.ts` no repo — proteção é por layout/gate, então `(public)` fica naturalmente aberto).
 - **Fluxo de render**:
   1. Recebe `token` do path. Calcula `sha256(token)` no servidor.
-  2. `withSignatureToken(token, …)` → `getRequestByTokenCapability`. 
+  2. `withSignatureToken(token, …)` → `getRequestByTokenCapability`.
   3. Decide o estado:
      - `null` → página "link inválido" (sem expor dados; FR-010).
      - `status='signed'` ou `used_at != null` → página "já utilizado" (FR-012).
@@ -24,11 +24,11 @@
 Ponto de extensão DRY (FR-015/016, SC-004). Cada tipo registra seu schema de payload e seu renderizador de formulário:
 
 ```ts
-export type SignatureTargetType = 'demo'; // união cresce ao registrar novos tipos
+export type SignatureTargetType = "demo"; // união cresce ao registrar novos tipos
 
 type TargetRegistryEntry = {
-  payloadSchema: ZodType<unknown>;          // valida o payload na criação e na exibição pública
-  FormRenderer: (props: { payload: unknown }) => ReactNode;  // client component do formulário público
+  payloadSchema: ZodType<unknown>; // valida o payload na criação e na exibição pública
+  FormRenderer: (props: { payload: unknown }) => ReactNode; // client component do formulário público
 };
 
 export const signatureTargetRegistry: Record<SignatureTargetType, TargetRegistryEntry> = {
@@ -39,6 +39,7 @@ export const signatureTargetRegistry: Record<SignatureTargetType, TargetRegistry
 ### Caminho de plug-in para um novo consumidor (documentado — SC-004)
 
 Adicionar, p. ex., entrega de EPI **sem mudar o schema**:
+
 1. Estender a união `SignatureTargetType` com `'epi_delivery'`.
 2. Adicionar entrada no `signatureTargetRegistry` (`payloadSchema` + `FormRenderer`).
 3. O módulo de EPI chama `createSignatureRequest({ targetType:'epi_delivery', targetId, payload })`.
