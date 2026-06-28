@@ -1,15 +1,20 @@
 name: Changelog
 
+# develop / release/* -> rebuild the open section of the CHANGELOG.
+# create release/x.y.z -> promote Unreleased into that version on both develop and the release.
+# main is intentionally absent: the release merge only publishes the file already built.
 on:
   push:
-    branches: [develop, main]
+    branches: [develop, "release/**"]
+  create:
 
 concurrency:
   group: changelog-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  changelog:
+  update:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       # Token de um GitHub App que é bypass_actor do ruleset de develop/main,
@@ -30,8 +35,8 @@ jobs:
         with:
           node-version: 24
 
-      - name: Generate CHANGELOG.md
-        run: node scripts/generate-changelog.mjs
+      - name: Rebuild open section
+        run: node scripts/generate-changelog.js
 
       - name: Commit and push if changed
         run: |
@@ -44,3 +49,48 @@ jobs:
           git add CHANGELOG.md
           git commit -m "docs(changelog): atualiza CHANGELOG.md [skip ci]"
           git push origin HEAD:${{ github.ref_name }}
+
+  promote:
+    if: github.event_name == 'create' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CHANGELOG_APP_ID }}
+          private-key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Promote on the release branch
+        run: |
+          VERSION="${GITHUB_REF_NAME#release/}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node scripts/generate-changelog.js promote "$VERSION"
+          if ! git diff --quiet -- CHANGELOG.md; then
+            git add CHANGELOG.md
+            git commit -m "docs(changelog): abre versão $VERSION [skip ci]"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+
+      # Abre um Unreleased vazio na develop para o próximo ciclo começar imediatamente.
+      - name: Open next cycle on develop
+        run: |
+          VERSION="${GITHUB_REF_NAME#release/}"
+          git fetch origin develop
+          git checkout develop
+          node scripts/generate-changelog.js promote "$VERSION"
+          if ! git diff --quiet -- CHANGELOG.md; then
+            git add CHANGELOG.md
+            git commit -m "docs(changelog): inicia próximo ciclo após $VERSION [skip ci]"
+            git push origin develop
+          fi
