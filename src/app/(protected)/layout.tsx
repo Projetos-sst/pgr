@@ -13,6 +13,7 @@ const PGR_NAV = [
   { href: "/ges", label: "GES" },
   { href: "/employees", label: "Funcionários" },
   { href: "/categories", label: "Categorias" },
+  { href: "/epi-catalog", label: "Catálogo de EPI" },
 ];
 
 export default async function ProtectedLayout({
