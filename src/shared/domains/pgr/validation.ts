@@ -29,6 +29,8 @@ export const epiSignatureStatusSchema = z.enum([
 ]);
 // quantity em movimentos/itens de entrega: inteiro > 0 (espelha o CHECK do banco).
 export const epiQuantitySchema = z.number().int().positive();
+// quantidade mínima do estoque: inteiro >= 0 (espelha o CHECK min_quantity >= 0).
+export const epiMinQuantitySchema = z.number().int().min(0);
 
 function onlyDigits(value: string): string {
   return value.replace(/\D/g, "");
