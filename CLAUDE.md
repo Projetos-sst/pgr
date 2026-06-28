@@ -48,60 +48,83 @@ Reference implementation to copy from: **companies** (`actions/pgr/companies.ts`
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/external-integrations-layer`**. Fatia atual (`011`) — **Validação/consulta de
-CA no CAEPI/MTE** (issues `#115` + `#75` duplicada): tabela **GLOBAL** `caepi_certificates`
-(espelho da base pública do MTE, **sem `org_id`/RLS de tenant/`withOrg`** — exceção justificada ao
-Princípio I; RLS ligado com policy única de leitura global `USING (true)` porque o banco de
-produção força RLS em tabela nova via event trigger `ensure_rls`; `app_runtime` = **SELECT-only**,
-escrita só pelo job via conexão owner), alimentada
-por `scripts/caepi-sync.ts` (Playwright/Chromium **headed** — headless é barrado pelo Cloudflare,
-fato do spike T018 — + postback ASP.NET → `.csv.gz` (com HTML ASPX anexado após o gzip; o parse
-trunca no marcador) → `csv-parse` streaming → upsert idempotente por `ca`; fallback `--file`), e
-consulta **100% local**
-`lookupCa` (Server Action `requireAuth()` + REST `GET /api/integrations/caepi/[ca]`) → contrato
-`CaLookupResult` (`valid`/`expired`/`not_found` como **payload 200**) + hook `use-caepi-validation`
+Branch: **`feature/digital-signature-infra`**. Fatia atual (`010`) — **infraestrutura de
+assinatura digital** (issue #67): camada de plataforma transversal e reutilizável (DRY) para
+coleta de assinatura por **link público com token + QR + captura canvas→PNG**, consumida por
+múltiplos módulos via **registry de `target_type`** (consumidor #1 = `demo`).
 
-- `ca-field.tsx` (autofill fabricante/norma/validade; **nunca bloqueia** o cadastro). **1 migration
-  (`0009`)**. Convive na branch com a camada CEP/CNPJ já commitada (`ea86029`).
+Fatia atual (`010`) — `.specs/010-digital-signature-infra/`:
 
-Fatia atual (`011`) — `.specs/011-caepi-ca-validation/`:
+- Plan: `.specs/010-digital-signature-infra/plan.md`
+- Spec / Research / Data model / Quickstart no mesmo diretório; briefing fonte da verdade em
+  `docs/briefings/briefing-digital-signature-infra.md`.
+- Contracts: `contracts/server-actions.md`, `contracts/repositories.md`, `contracts/public-route.md`.
 
-- Plan: `.specs/011-caepi-ca-validation/plan.md`
-- Spec / Research / Data model / Quickstart no mesmo diretório.
-- Contracts: `contracts/ingestion-pipeline.md`, `contracts/repositories.md`,
-  `contracts/lookup-surfaces.md`.
-- Briefings (fonte): `docs/briefings/caepi-cron-brainstorming.md` (**Spike 0 — prevalece**),
-  `115-caepi-validacao-ca.md`, `caepi-logica-de-negocio.md`, `epi-fluxos-panorama.md`.
+Notas chave (`010`):
 
-Notas chave (`011`):
+- **Modelagem genérica polimórfica**: `signature_requests` (pedido) + `signature_captures`
+  (resultado 1:1), discriminadas por `target_type`. Novo módulo consumidor = +1 entrada no
+  registry, **zero mudança de schema**. 2 `pgEnum` (`signature_request_status` `pending|signed|cancelled`;
+  `signature_method` `qr|link|manual`). "expired" é **derivado na leitura**, não persistido.
+  Migration nova `0009_digital_signature_infra` (GRANT + triggers + policy de capability como SQL custom).
+- **Rota pública sem login** (`app/(public)/assinar/[token]`): isolamento vem **do token**, não do
+  cliente. `signature_requests` tem 2 policies RLS PERMISSIVE: tenant (`FOR ALL`, `app.current_org`)
+  + **capability** (`FOR SELECT`, `token_hash = current_setting('app.signature_token', true)`).
+  Helper novo `withSignatureToken(rawToken, fn)` (espelha `withOrg`); grava via `withOrg(orgId)` após
+  derivar o tenant do token.
+- **Token**: ≥256 bits, persistido só **hasheado** (sha-256, `token_hash` UNIQUE); cru só vive na
+  URL/QR; TTL configurável (default 72h); **uso único** (`used_at`; UPDATE atômico `WHERE used_at IS NULL`).
+- **Tempo real por polling ~3s** (não SSE); **imagem base64 no Postgres** (não storage externo);
+  **quota derivada** por mês corrente (não contador/cron).
+- **Plano (spec 005, Inv-1)**: gate na **criação** (`createSignatureRequest`, lê `ctx.plan`);
+  `pro` ilimitado, `free` = 10 pedidos/mês → `QUOTA_EXCEEDED` (REST 402). Rota pública **nunca**
+  checa plano. Helpers em `src/shared/tenant/plan.ts` (`FREE_SIGNATURE_MONTHLY_QUOTA=10`).
+- **Reuso**: `ActionResult`/`officeAction` (interno) + ação pública dedicada sem gate;
+  `requireOfficeStaff`/`requireTenantContext`; libs novas `qrcode` (server) + `signature_pad` (vanilla).
+- Testes: unit (token/expiração/quota/Zod) + integração (create, submitPublic, expirado, reuso,
+  quota, signManually, **cross-tenant**) contra **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite.
 
-- **Fonte real (Spike 0, fato)**: `caepi.trabalho.gov.br` atrás de Cloudflare (403 p/ não-browser);
-  download = postback ASP.NET → CSV `;` com aspas/escape `""`, **UTF-8 BOM**, 19 colunas; NÃO é
-  TXT `|` nem baixável por `fetch`; **sem** Route Handler `/api/cron` nem `CRON_SECRET`.
-- **Repositório dividido por contexto**: `repositories/caepi.ts` (leitura runtime, singleton `db`)
-  vs `repositories/caepi-upsert.ts` (escrita do job, handle owner **injetado** — script tsx não
-  pode importar `server-only`). Upsert em chunks de 1.000, `onConflictDoUpdate` por `ca` (PK
-  natural), mesmo `synced_at` por run, **sem** truncate/delete/transação global.
-- **Regra de vigência** (`validate-ca`, pura): `valid` ⇔ situação normalizada `VALIDO` **e**
-  `valid_until >= hoje` (inclusivo; "hoje" no fuso `America/Sao_Paulo`); senão `expired`; situação
-  desconhecida → `expired` (conservador). Base vazia → `not_found` + aviso "base não sincronizada".
-- **Gate = só sessão** (`requireAuth()`, decisão de Clarifications — não `officeAction`); hook
-  reusa `useLookup` (fetch + AbortController) contra o REST; falha externa/estado nunca bloqueia o
-  salvamento do EPI. Modelo `epis.ts` **intacto**.
-- **Libs novas (devDeps, só do job)**: `playwright` + `csv-parse`; runner `tsx` (já existia).
-  Cadência semanal; agendador (GitHub Actions cron recomendado) é decisão de infra fora do escopo.
-  Spike inicial da implementação: headless × Cloudflare em runner de CI (fallback semi-manual
-  pronto via `--file`).
-- Testes: unit (`parse` com amostra real gzip, `validate-ca` limite `== hoje`, `normalize`,
-  mapeamento 3 estados); integração contra **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite:
-  upsert idempotente 2×, `getByCa` 3 estados + base vazia, **GRANT por papel** (`app_runtime` lê e
-  não escreve), coleta falha → base preservada, guarda de sessão (401). Exceção de tenant e GRANT
-  validados à mão.
+Fatia paralela (`010` em `develop`) — **Movimentações de estoque e histórico**
+(`.specs/010-stock-movements/`, `stock_movements`): registrar **entrada** (compra) e **saída
+manual** (ajuste/descarte) de itens de estoque de EPI, mantendo o saldo materializado
+**`epi_stock.balance`** por **transação atômica** (`SELECT … FOR UPDATE`), e exibir o
+**histórico por item** com **saldo resultante derivado** (window function, sem coluna). Camada de
+**fluxo** sobre o modelo da `008` e contrapartida da `009` (epi-stock-crud). **Zero migration.**
 
-Fatia paralela (`010` — stock-movements, branch `feature/stock-movements`) —
-`.specs/010-stock-movements/`: entrada/saída manual de estoque com saldo materializado por
-transação atômica (`SELECT … FOR UPDATE`), histórico com saldo resultante derivado (window
-function), erro `INSUFFICIENT_STOCK` → 422. Zero migration.
+Notas chave (stock-movements):
+
+- **Escrita transacional do saldo** (1ª fatia que escreve `epi_stock.balance`): por movimento,
+  `SELECT … FOR UPDATE` → valida `novoSaldo >= 0` na app (`CHECK balance >= 0` como backstop) →
+  `INSERT` no movimento + `UPDATE` do saldo, tudo numa transação (`withOrg`). Falha → rollback total.
+- **`quantity` sempre > 0**; o sinal vem do `type` (`purchase` `+`; `adjustment`/`discard` `−`).
+  Saída manual só aceita `{adjustment, discard}` (sem ajuste bidirecional).
+- **Saldo resultante derivado** por window function + função pura `computeRunningBalance` (unit);
+  **sem coluna `balance_after`**. **"Usuário que registrou" omitido** (modelo 008 sem `created_by`).
+- **Novo erro `INSUFFICIENT_STOCK` → 422** em `src/shared/api/rest.ts`. REST em
+  `/api/v1/epi-stock/[id]/movements` (POST registra; GET histórico). Rota UI `/epi-stock/[id]/history`.
+- Testes: unit (`computeRunningBalance`, schemas); integração de Server Actions/REST +
+  rollback de saída insuficiente + histórico + `NOT_FOUND` cross-tenant + `FORBIDDEN` contra
+  **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite nem o banco de dev.
+
+Fatia anterior (`011` — caepi-ca-validation, mergeada em `develop` via PR #132) —
+`.specs/011-caepi-ca-validation/`: **Validação/consulta de CA no CAEPI/MTE** (issues `#115` +
+`#75` duplicada). Tabela **GLOBAL** `caepi_certificates` (espelho da base pública do MTE, **sem
+`org_id`/RLS de tenant/`withOrg`** — exceção justificada ao Princípio I; RLS ligado com policy
+única de leitura global `USING (true)` por causa do event trigger `ensure_rls` de produção;
+`app_runtime` = SELECT-only, escrita só pelo job via conexão owner), alimentada por
+`scripts/caepi-sync.ts` (Playwright/Chromium **headed** — headless barrado pelo Cloudflare —
+postback ASP.NET → `.csv.gz` com HTML ASPX anexado após o gzip → `csv-parse` streaming → upsert
+idempotente por `ca`; fallback `--file`). Consulta **100% local** `lookupCa` (Server Action
+`requireAuth()` + REST `GET /api/integrations/caepi/[ca]`) → contrato `CaLookupResult`
+(`valid`/`expired`/`not_found` como payload 200) + hook `use-caepi-validation` + `ca-field.tsx`
+(autofill fabricante/norma/validade; **nunca bloqueia** o cadastro). Regra de vigência
+(`validate-ca`, pura): `valid` ⇔ situação normalizada `VALIDO` **e** `valid_until >= hoje`
+(inclusivo, fuso `America/Sao_Paulo`); senão `expired`; situação desconhecida → `expired`; base
+vazia → `not_found`. Repositório dividido: `repositories/caepi.ts` (leitura runtime) vs
+`repositories/caepi-upsert.ts` (escrita do job, handle owner injetado). Migrations
+`0008_epi_catalog_type_fk` + `0009_caepi_certificates` (⚠️ `0009` já está ocupada — a migration
+da assinatura digital precisa ser renumerada para `0010` no rebase); devDeps do job:
+`playwright` + `csv-parse`. Convive com a camada CEP/CNPJ da mesma branch.
 
 Fatia anterior (`009` — epi-stock-crud, commit `a55d70b`): CRUD de `epi_stock` com `balance`
 **read-only**; reuso de `ActionResult`/`officeAction`/`requireOfficeStaff`/`_ui`. Sem migration.
