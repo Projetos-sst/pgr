@@ -2,10 +2,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { restHandler, pageParamsFrom } from "@/shared/api/rest";
-import {
-  stockEntrySchema,
-  stockExitSchema,
-} from "@/shared/domains/pgr/stock-movements";
+import { stockEntrySchema, stockExitSchema } from "@/shared/domains/pgr/stock-movements";
 import * as repo from "@/shared/db/repositories/stock-movements";
 
 export const runtime = "nodejs";

@@ -31,12 +31,12 @@ spec define a "Definição de pronto" com unit + integração em Postgres efême
 ## Phase 1: Setup
 
 - [x] T001 Resolver a pré-condição de branch: rebasear `feature/stock-movements` sobre
-  `feature/epi-stock-crud` (008+009) **ou** sobre `develop` após o merge da 009; confirmar que
-  existem `src/shared/db/schema/epis.ts`, `src/shared/db/repositories/epi-stock.ts` e
-  `src/app/(protected)/epi-stock/`.
+      `feature/epi-stock-crud` (008+009) **ou** sobre `develop` após o merge da 009; confirmar que
+      existem `src/shared/db/schema/epis.ts`, `src/shared/db/repositories/epi-stock.ts` e
+      `src/app/(protected)/epi-stock/`.
 - [x] T002 Verificar o ambiente de testes de integração: `INTEGRATION_DATABASE_URL` e
-  `INTEGRATION_APP_RUNTIME_URL` apontando para **Postgres efêmero** (nunca o banco de dev); rodar
-  `npm run lint` e `npm run test` na base já existente para garantir verde antes de começar.
+      `INTEGRATION_APP_RUNTIME_URL` apontando para **Postgres efêmero** (nunca o banco de dev); rodar
+      `npm run lint` e `npm run test` na base já existente para garantir verde antes de começar.
 
 ---
 
@@ -46,24 +46,24 @@ spec define a "Definição de pronto" com unit + integração em Postgres efême
 esqueleto do repositório) sobre a qual US1–US4 são construídas.
 
 - [x] T003 [P] Criar a classe de erro `InsufficientStockError` em
-  `src/shared/errors/insufficient-stock-error.ts`, estendendo `AppError` com
-  `readonly code = "INSUFFICIENT_STOCK"` e `readonly status = 422`, **idêntico ao padrão de**
-  `src/shared/errors/not-found-error.ts` (uma classe por arquivo, `import "server-only"`).
+      `src/shared/errors/insufficient-stock-error.ts`, estendendo `AppError` com
+      `readonly code = "INSUFFICIENT_STOCK"` e `readonly status = 422`, **idêntico ao padrão de**
+      `src/shared/errors/not-found-error.ts` (uma classe por arquivo, `import "server-only"`).
 - [x] T004 Adicionar `INSUFFICIENT_STOCK: 422` ao `HTTP_BY_CODE` em `src/shared/api/rest.ts`.
-  **NÃO** editar `src/shared/server/action-error.ts`: o `toActionError` já mapeia qualquer `AppError`
-  via `{ code: error.code, message: error.message }`, então `InsufficientStockError` vira o código do
-  contrato automaticamente.
+      **NÃO** editar `src/shared/server/action-error.ts`: o `toActionError` já mapeia qualquer `AppError`
+      via `{ code: error.code, message: error.message }`, então `InsufficientStockError` vira o código do
+      contrato automaticamente.
 - [x] T005 [P] Criar o módulo de domínio `src/shared/domains/pgr/stock-movements.ts` com os schemas
-  zod `stockEntrySchema` ({stockId uuid, quantity int>0, movementDate date, invoiceNumber? trim}) e
-  `stockExitSchema` ({stockId uuid, quantity int>0, movementDate date, type ∈ {adjustment,discard}}).
+      zod `stockEntrySchema` ({stockId uuid, quantity int>0, movementDate date, invoiceNumber? trim}) e
+      `stockExitSchema` ({stockId uuid, quantity int>0, movementDate date, type ∈ {adjustment,discard}}).
 - [x] T006 [P] No mesmo módulo de domínio, adicionar `signedQuantity(type, quantity)`,
-  `stockMovementTypeLabel(type)` (rótulos pt-BR) e os tipos DTO `StockMovementRow` /
-  `{ movement, newBalance }`.
+      `stockMovementTypeLabel(type)` (rótulos pt-BR) e os tipos DTO `StockMovementRow` /
+      `{ movement, newBalance }`.
 - [x] T007 [P] No mesmo módulo de domínio, implementar a função pura
-  `computeRunningBalance(movements)` (saldo acumulado por linha; espelho da window function de D3).
+      `computeRunningBalance(movements)` (saldo acumulado por linha; espelho da window function de D3).
 - [x] T008 Criar o esqueleto do repositório `src/shared/db/repositories/stock-movements.ts` com as
-  assinaturas `registerStockEntry`/`registerStockExit`/`listStockMovements` usando `withOrg(orgId, …)`
-  e imports do schema 008 (`stockMovements`, `epiStock`), sem corpo de regra ainda.
+      assinaturas `registerStockEntry`/`registerStockExit`/`listStockMovements` usando `withOrg(orgId, …)`
+      e imports do schema 008 (`stockMovements`, `epiStock`), sem corpo de regra ainda.
 
 **Checkpoint**: domínio, erro e esqueleto prontos — US1 pode começar.
 
@@ -79,25 +79,25 @@ esqueleto do repositório) sobre a qual US1–US4 são construídas.
 ### Tests (US1)
 
 - [x] T009 [P] [US1] Unit do `stockEntrySchema` (quantity>0, NF opcional/trim, campos obrigatórios)
-  em `src/__tests__/unit/domains/pgr/stock-movements.test.ts`.
+      em `src/__tests__/unit/domains/pgr/stock-movements.test.ts`.
 - [x] T010 [P] [US1] Integração (Postgres efêmero) da entrada em
-  `src/__tests__/integration/pgr/stock-movements.test.ts`: entrada incrementa `balance` e cria
-  movimento `purchase`; quantidade ≤ 0 → `VALIDATION`; `stockId` inexistente → `NOT_FOUND`.
+      `src/__tests__/integration/pgr/stock-movements.test.ts`: entrada incrementa `balance` e cria
+      movimento `purchase`; quantidade ≤ 0 → `VALIDATION`; `stockId` inexistente → `NOT_FOUND`.
 
 ### Implementation (US1)
 
 - [x] T011 [US1] Implementar `registerStockEntry(orgId, {stockId, quantity, movementDate,
-  invoiceNumber?})` em `src/shared/db/repositories/stock-movements.ts`: transação com
-  `SELECT … FOR UPDATE` no `epiStock`, `INSERT` `purchase`, `UPDATE balance += quantity`, retorno
-  `{movement, newBalance}`; `NotFoundError` se item ausente/cross-tenant.
+invoiceNumber?})` em `src/shared/db/repositories/stock-movements.ts`: transação com
+      `SELECT … FOR UPDATE` no `epiStock`, `INSERT` `purchase`, `UPDATE balance += quantity`, retorno
+      `{movement, newBalance}`; `NotFoundError` se item ausente/cross-tenant.
 - [x] T012 [US1] Criar `registerStockEntryAction` em
-  `src/shared/server/actions/pgr/stock-movements.ts` via `officeAction` (zod `stockEntrySchema` →
-  `requireOfficeStaff()` → repo; auditoria de escrita sem PII).
+      `src/shared/server/actions/pgr/stock-movements.ts` via `officeAction` (zod `stockEntrySchema` →
+      `requireOfficeStaff()` → repo; auditoria de escrita sem PII).
 - [x] T013 [US1] Criar o Route Handler POST (ramo `kind:"entry"`) em
-  `src/app/api/v1/epi-stock/[id]/movements/route.ts` via `restHandler` (201 / 422 / 404 / 403).
+      `src/app/api/v1/epi-stock/[id]/movements/route.ts` via `restHandler` (201 / 422 / 404 / 403).
 - [x] T014 [US1] Criar o Client Component modal de entrada
-  `src/app/(protected)/epi-stock/_components/register-entry.tsx` (Data, Quantidade, Nº NF opcional →
-  `registerStockEntryAction`) e plugá-lo na tela de estoque da 009, refletindo o novo saldo/status.
+      `src/app/(protected)/epi-stock/_components/register-entry.tsx` (Data, Quantidade, Nº NF opcional →
+      `registerStockEntryAction`) e plugá-lo na tela de estoque da 009, refletindo o novo saldo/status.
 
 **Checkpoint**: US1 funcional e demonstrável (MVP).
 
@@ -112,25 +112,25 @@ esqueleto do repositório) sobre a qual US1–US4 são construídas.
 ### Tests (US2)
 
 - [x] T015 [P] [US2] Unit do `stockExitSchema` (type restrito a {adjustment,discard}; quantity>0) e
-  de `signedQuantity` (purchase +, adjustment/discard −) em
-  `src/__tests__/unit/domains/pgr/stock-movements.test.ts`.
+      de `signedQuantity` (purchase +, adjustment/discard −) em
+      `src/__tests__/unit/domains/pgr/stock-movements.test.ts`.
 - [x] T016 [P] [US2] Integração (Postgres efêmero) da saída em
-  `src/__tests__/integration/pgr/stock-movements.test.ts`: saída decrementa e cria
-  `adjustment`/`discard`; **saída > saldo → `INSUFFICIENT_STOCK` e NADA gravado** (saldo e contagem
-  de movimentos inalterados); type fora de {adjustment,discard} → `VALIDATION`.
+      `src/__tests__/integration/pgr/stock-movements.test.ts`: saída decrementa e cria
+      `adjustment`/`discard`; **saída > saldo → `INSUFFICIENT_STOCK` e NADA gravado** (saldo e contagem
+      de movimentos inalterados); type fora de {adjustment,discard} → `VALIDATION`.
 
 ### Implementation (US2)
 
 - [x] T017 [US2] Implementar `registerStockExit(orgId, {stockId, quantity, movementDate, type})` em
-  `src/shared/db/repositories/stock-movements.ts`: transação com `SELECT … FOR UPDATE`, validação
-  `novoSaldo >= 0` (senão `InsufficientStockError` + rollback), `INSERT` + `UPDATE balance -= quantity`.
+      `src/shared/db/repositories/stock-movements.ts`: transação com `SELECT … FOR UPDATE`, validação
+      `novoSaldo >= 0` (senão `InsufficientStockError` + rollback), `INSERT` + `UPDATE balance -= quantity`.
 - [x] T018 [US2] Criar `registerStockExitAction` em `src/shared/server/actions/pgr/stock-movements.ts`
-  via `officeAction` (zod `stockExitSchema`; mapeia `InsufficientStockError` → `INSUFFICIENT_STOCK`).
+      via `officeAction` (zod `stockExitSchema`; mapeia `InsufficientStockError` → `INSUFFICIENT_STOCK`).
 - [x] T019 [US2] Estender o Route Handler POST (ramo `kind:"exit"`) em
-  `src/app/api/v1/epi-stock/[id]/movements/route.ts` (422 com `INSUFFICIENT_STOCK` quando aplicável).
+      `src/app/api/v1/epi-stock/[id]/movements/route.ts` (422 com `INSUFFICIENT_STOCK` quando aplicável).
 - [x] T020 [US2] Criar o Client Component modal de saída
-  `src/app/(protected)/epi-stock/_components/register-exit.tsx` (Data, Quantidade, Tipo:
-  Ajuste/Descarte → `registerStockExitAction`); exibir mensagem "Saldo insuficiente…" ao falhar.
+      `src/app/(protected)/epi-stock/_components/register-exit.tsx` (Data, Quantidade, Tipo:
+      Ajuste/Descarte → `registerStockExitAction`); exibir mensagem "Saldo insuficiente…" ao falhar.
 
 **Checkpoint**: US1 + US2 — entrada e saída seguras com saldo consistente.
 
@@ -146,25 +146,25 @@ o saldo atual; item sem movimentos → estado vazio.
 ### Tests (US3)
 
 - [x] T021 [P] [US3] Unit de `computeRunningBalance` (mix de tipos; acumulado por linha) em
-  `src/__tests__/unit/domains/pgr/stock-movements.test.ts`.
+      `src/__tests__/unit/domains/pgr/stock-movements.test.ts`.
 - [x] T022 [P] [US3] Integração (Postgres efêmero) do histórico em
-  `src/__tests__/integration/pgr/stock-movements.test.ts`: ordem `movement_date DESC, created_at DESC`;
-  saldo resultante correto; paginação; estado vazio.
+      `src/__tests__/integration/pgr/stock-movements.test.ts`: ordem `movement_date DESC, created_at DESC`;
+      saldo resultante correto; paginação; estado vazio.
 
 ### Implementation (US3)
 
 - [x] T023 [US3] Implementar `listStockMovements(orgId, stockId, {page, pageSize})` em
-  `src/shared/db/repositories/stock-movements.ts`: valida item no tenant (senão `NOT_FOUND`); window
-  function para saldo resultante; `LEFT JOIN` `epi_deliveries`/`employees` por `delivery_id`;
-  `Paginated<StockMovementRow>` (offset, pageSize 20).
+      `src/shared/db/repositories/stock-movements.ts`: valida item no tenant (senão `NOT_FOUND`); window
+      function para saldo resultante; `LEFT JOIN` `epi_deliveries`/`employees` por `delivery_id`;
+      `Paginated<StockMovementRow>` (offset, pageSize 20).
 - [x] T024 [US3] Criar `listStockMovementsAction(stockId, {page?, pageSize?})` em
-  `src/shared/server/actions/pgr/stock-movements.ts` (leitura: `requireOfficeStaff()`, sem auditoria).
+      `src/shared/server/actions/pgr/stock-movements.ts` (leitura: `requireOfficeStaff()`, sem auditoria).
 - [x] T025 [US3] Implementar o Route Handler GET em
-  `src/app/api/v1/epi-stock/[id]/movements/route.ts` (200 com `{rows,total}`; 404; 403).
+      `src/app/api/v1/epi-stock/[id]/movements/route.ts` (200 com `{rows,total}`; 404; 403).
 - [x] T026 [US3] Criar a tela de histórico Server Component
-  `src/app/(protected)/epi-stock/[id]/history/page.tsx`: tabela Data · Tipo (pt-BR) · Quantidade ·
-  Saldo Resultante · Nº NF · Funcionário (quando entrega); **sem** coluna "Usuário"; estado vazio;
-  paginação. Reusar `status-badge` da 009.
+      `src/app/(protected)/epi-stock/[id]/history/page.tsx`: tabela Data · Tipo (pt-BR) · Quantidade ·
+      Saldo Resultante · Nº NF · Funcionário (quando entrega); **sem** coluna "Usuário"; estado vazio;
+      paginação. Reusar `status-badge` da 009.
 
 **Checkpoint**: US1 + US2 + US3 — fluxo completo + auditoria visual.
 
@@ -180,11 +180,11 @@ histórico só de A; sem tenant → bloqueado; papel `client` → `FORBIDDEN`.
 ### Tests (US4)
 
 - [x] T027 [P] [US4] Integração (Postgres efêmero) de isolamento/autorização em
-  `src/__tests__/integration/pgr/stock-movements.test.ts`: registrar/consultar item de outro tenant
-  → `NOT_FOUND` (404); histórico cross-tenant → vazio; papel `client` → `FORBIDDEN`; sem escritório
-  ativo → bloqueado pelo gate (não vira histórico vazio).
+      `src/__tests__/integration/pgr/stock-movements.test.ts`: registrar/consultar item de outro tenant
+      → `NOT_FOUND` (404); histórico cross-tenant → vazio; papel `client` → `FORBIDDEN`; sem escritório
+      ativo → bloqueado pelo gate (não vira histórico vazio).
 - [x] T028 [P] [US4] Estender/garantir o seed `src/__tests__/integration/_helpers/pgr-seed.ts` com
-  itens de `epi_stock` em `org_a` e `org_b` para os cenários cross-tenant.
+      itens de `epi_stock` em `org_a` e `org_b` para os cenários cross-tenant.
 
 **Checkpoint**: isolamento provado em todos os caminhos.
 
@@ -193,13 +193,13 @@ histórico só de A; sem tenant → bloqueado; papel `client` → `FORBIDDEN`.
 ## Phase 7: Polish & Cross-Cutting
 
 - [x] T029 [P] Garantir mensagens de erro pt-BR consistentes ("Saldo insuficiente: disponível X,
-  solicitado Y") e rótulos de tipo na UI/DTO.
+      solicitado Y") e rótulos de tipo na UI/DTO.
 - [~] T030 Rodar o quality gate: `npm run lint` ✅, `tsc --noEmit` ✅ e `npm run test` (unit) ✅
   (215/215). **`npm run test:integration` NÃO executado**: requer Postgres efêmero (`INTEGRATION_*`)
   e as suítes fazem `TRUNCATE` — proibido apontar para o banco de dev. Rodar quando houver PG
   descartável configurado.
 - [ ] T031 [P] Atualizar o briefing/registro (`docs/briefings/briefing-stock-movements.md`) com o
-  resultado da implementação (arquivos criados, verificação) se desejado.
+      resultado da implementação (arquivos criados, verificação) se desejado.
 
 ---
 

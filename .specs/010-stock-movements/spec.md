@@ -215,7 +215,7 @@ fixado no repositório/RLS, uma leitura nunca devolve todos os registros.
 - **FR-022**: A validação de não-negatividade MUST ocorrer **na aplicação** (mensagem amigável) e o
   `CHECK balance >= 0` do Postgres MUST permanecer como **backstop** (defesa em profundidade).
 - **FR-023**: Operações concorrentes sobre o mesmo item MUST ser **serializadas** (`SELECT … FOR
-  UPDATE`) de modo que duas saídas simultâneas não furem o saldo.
+UPDATE`) de modo que duas saídas simultâneas não furem o saldo.
 - **FR-024**: Saldo insuficiente MUST ser expresso como o **código de erro padronizado**
   `INSUFFICIENT_STOCK` (equivalente a 422), com mensagem clara ("Saldo insuficiente: disponível X,
   solicitado Y") — não como erro de constraint cru.

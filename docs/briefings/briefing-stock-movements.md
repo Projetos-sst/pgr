@@ -53,13 +53,13 @@ Paralelo de padrão: replica a stack da `007`/`009` (contrato `ActionResult`, au
 O card foi escrito com vocabulário/arquitetura genéricos que **não batem** com o repo. Mesma classe
 de divergência da `009`. Resolver na spec para nascer alinhado.
 
-| O que o card diz | O que existe de fato | Ação |
-| ---------------- | -------------------- | ---- |
-| `features/epis/` (actions/schema/queries/components) | `src/shared/domains/pgr/`, `src/shared/db/repositories/`, `src/shared/server/actions/pgr/`, `src/app/(protected)/epi-stock/`, `src/app/api/v1/epi-stock/` | Usar a estrutura real do projeto |
-| `organization_id` (Clerk) como escopo | tenant = `orgs.id` via `requireTenantContext()` + `withOrg`; RLS backstop | **Nunca** usar Clerk org / input; sempre tenant da sessão |
-| rota `/estoque/historico/:id` | app usa `/epi-stock`; rota seria `/epi-stock/[id]/history` (ou `/movimentacoes`) | Reconciliar a rota; manter padrão `epi-stock` |
-| Integração em **SQLite em memória** | a `009` testa Server Actions contra **Postgres efêmero** (`INTEGRATION_*`), pois depende de CHECK/RLS/transação | Esta fatia depende de `CHECK balance >= 0` + transação → **Postgres efêmero**, não SQLite (ver §10) |
-| validação → genérico | padrão do projeto: zod → **422** | Seguir 422 |
+| O que o card diz                                     | O que existe de fato                                                                                                                                      | Ação                                                                                                |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `features/epis/` (actions/schema/queries/components) | `src/shared/domains/pgr/`, `src/shared/db/repositories/`, `src/shared/server/actions/pgr/`, `src/app/(protected)/epi-stock/`, `src/app/api/v1/epi-stock/` | Usar a estrutura real do projeto                                                                    |
+| `organization_id` (Clerk) como escopo                | tenant = `orgs.id` via `requireTenantContext()` + `withOrg`; RLS backstop                                                                                 | **Nunca** usar Clerk org / input; sempre tenant da sessão                                           |
+| rota `/estoque/historico/:id`                        | app usa `/epi-stock`; rota seria `/epi-stock/[id]/history` (ou `/movimentacoes`)                                                                          | Reconciliar a rota; manter padrão `epi-stock`                                                       |
+| Integração em **SQLite em memória**                  | a `009` testa Server Actions contra **Postgres efêmero** (`INTEGRATION_*`), pois depende de CHECK/RLS/transação                                           | Esta fatia depende de `CHECK balance >= 0` + transação → **Postgres efêmero**, não SQLite (ver §10) |
+| validação → genérico                                 | padrão do projeto: zod → **422**                                                                                                                          | Seguir 422                                                                                          |
 
 ## 4. ⚠️ Reconciliação card × modelo real (008) — **GAPS de modelo** (decisões críticas)
 
@@ -78,15 +78,15 @@ stock_movements:
   indexes: org_id, stock_id, delivery_id ; RLS isolation
 ```
 
-| Coluna pedida no histórico | Existe? | Realidade / ação |
-| -------------------------- | ------- | ---------------- |
-| Data | ✅ `movement_date` (**`date`**, não timestamp) | Ordenar por `movement_date DESC, created_at DESC` (desempate intra-dia, pois `date` perde a hora) |
-| Tipo | ✅ `type` (enum em **inglês**) | Mapear rótulo pt-BR no DTO (compra/entrega/ajuste/descarte) |
-| Quantidade | ✅ `quantity` (**sempre > 0**) | O **sinal/efeito é dado pelo `type`**, não pelo valor (ver §5) |
-| Nº Nota Fiscal | ✅ `invoice_number` | Opcional; só na entrada (compra) |
-| Funcionário (se entrega) | ⚠️ **indireto** | Não há `employee_id` no movimento; vem por `delivery_id → epi_deliveries → employee_id → employees`. Movimentos `employee_delivery` são gerados por `#19` (fora do escopo) |
-| **Saldo Resultante** | ❌ **NÃO EXISTE** | Não há coluna `balance_after`. **Resolvido (§11.1)**: derivar por soma acumulada (window function), **sem coluna** |
-| **Usuário que registrou** | ❌ **NÃO EXISTE** | Não há `created_by`/`user_id`. **Resolvido (§11.2)**: **omitir** desta fatia (sem migration); item futuro |
+| Coluna pedida no histórico | Existe?                                        | Realidade / ação                                                                                                                                                           |
+| -------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data                       | ✅ `movement_date` (**`date`**, não timestamp) | Ordenar por `movement_date DESC, created_at DESC` (desempate intra-dia, pois `date` perde a hora)                                                                          |
+| Tipo                       | ✅ `type` (enum em **inglês**)                 | Mapear rótulo pt-BR no DTO (compra/entrega/ajuste/descarte)                                                                                                                |
+| Quantidade                 | ✅ `quantity` (**sempre > 0**)                 | O **sinal/efeito é dado pelo `type`**, não pelo valor (ver §5)                                                                                                             |
+| Nº Nota Fiscal             | ✅ `invoice_number`                            | Opcional; só na entrada (compra)                                                                                                                                           |
+| Funcionário (se entrega)   | ⚠️ **indireto**                                | Não há `employee_id` no movimento; vem por `delivery_id → epi_deliveries → employee_id → employees`. Movimentos `employee_delivery` são gerados por `#19` (fora do escopo) |
+| **Saldo Resultante**       | ❌ **NÃO EXISTE**                              | Não há coluna `balance_after`. **Resolvido (§11.1)**: derivar por soma acumulada (window function), **sem coluna**                                                         |
+| **Usuário que registrou**  | ❌ **NÃO EXISTE**                              | Não há `created_by`/`user_id`. **Resolvido (§11.2)**: **omitir** desta fatia (sem migration); item futuro                                                                  |
 
 > **Resumo dos gaps**: o modelo `008` cobre tipo/quantidade/data/NF/entrega, mas **não** tem "saldo
 > resultante" nem "usuário que registrou". A spec precisa decidir explicitamente cada um. Sem isso,
@@ -96,12 +96,12 @@ stock_movements:
 
 `quantity` é **sempre positivo** (`CHECK quantity > 0`). O efeito no saldo é determinado pelo `type`:
 
-| `type` | Direção | Nesta fatia? | Origem |
-| ------ | ------- | ------------ | ------ |
-| `purchase` (compra) | **+** entrada | ✅ "Registrar entrada" | manual (modal) |
-| `adjustment` (ajuste) | **−** saída¹ | ✅ "Registrar saída manual" | manual (modal) |
-| `discard` (descarte) | **−** saída | ✅ "Registrar saída manual" | manual (modal) |
-| `employee_delivery` (entrega) | **−** saída | ❌ **fora** | gerado por `#19` (entrega de EPI) |
+| `type`                        | Direção       | Nesta fatia?                | Origem                            |
+| ----------------------------- | ------------- | --------------------------- | --------------------------------- |
+| `purchase` (compra)           | **+** entrada | ✅ "Registrar entrada"      | manual (modal)                    |
+| `adjustment` (ajuste)         | **−** saída¹  | ✅ "Registrar saída manual" | manual (modal)                    |
+| `discard` (descarte)          | **−** saída   | ✅ "Registrar saída manual" | manual (modal)                    |
+| `employee_delivery` (entrega) | **−** saída   | ❌ **fora**                 | gerado por `#19` (entrega de EPI) |
 
 > ¹ **Decisão travada (§11.3)**: `adjustment` = **saída (decremento)** nesta fatia. Em sistemas de
 > inventário "ajuste" costuma ser bidirecional (+/−), mas aqui fica **só decremento** (como o card).
@@ -124,12 +124,12 @@ valida antes para devolver uma mensagem amigável em vez de erro de constraint.
 Todas org-scopadas (`requireTenantContext()` → `requireOfficeStaff()` → `withOrg`). Sugestão de
 assinaturas (espelhando `epi-stock.ts`):
 
-| Operação | Assinatura (repo) | Comportamento |
-| -------- | ----------------- | ------------- |
-| **Registrar entrada** | `registerStockEntry(orgId, {stockId, quantity, movementDate, invoiceNumber?})` | Transação §5 com `type='purchase'`, `+quantity`; valida estoque existe e é do tenant (senão 404); `quantity > 0` (zod); auditado |
-| **Registrar saída** | `registerStockExit(orgId, {stockId, quantity, movementDate, type})` onde `type ∈ {adjustment, discard}` | Transação §5 com `−quantity`; **valida saldo suficiente** → saldo negativo retorna erro (`INSUFFICIENT_STOCK`/422); 404 cross-tenant; auditado |
-| **Histórico** | `listStockMovements(orgId, stockId, {page,pageSize})` | Movimentos do item no tenant, ordenados `movement_date DESC, created_at DESC`; **saldo resultante derivado** (§8); join opcional em funcionário via `delivery_id`; `Paginated<T>`; estoque de outro tenant → vazio/404 |
-| *(já existe)* | `countEpiStockDependents` (009) | Conta movimentos — reusável; nada a fazer |
+| Operação              | Assinatura (repo)                                                                                       | Comportamento                                                                                                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Registrar entrada** | `registerStockEntry(orgId, {stockId, quantity, movementDate, invoiceNumber?})`                          | Transação §5 com `type='purchase'`, `+quantity`; valida estoque existe e é do tenant (senão 404); `quantity > 0` (zod); auditado                                                                                       |
+| **Registrar saída**   | `registerStockExit(orgId, {stockId, quantity, movementDate, type})` onde `type ∈ {adjustment, discard}` | Transação §5 com `−quantity`; **valida saldo suficiente** → saldo negativo retorna erro (`INSUFFICIENT_STOCK`/422); 404 cross-tenant; auditado                                                                         |
+| **Histórico**         | `listStockMovements(orgId, stockId, {page,pageSize})`                                                   | Movimentos do item no tenant, ordenados `movement_date DESC, created_at DESC`; **saldo resultante derivado** (§8); join opcional em funcionário via `delivery_id`; `Paginated<T>`; estoque de outro tenant → vazio/404 |
+| _(já existe)_         | `countEpiStockDependents` (009)                                                                         | Conta movimentos — reusável; nada a fazer                                                                                                                                                                              |
 
 **Tipo de retorno do registro**: devolver o saldo resultante (`{movement, newBalance}`) para a UI
 atualizar sem refetch.
@@ -152,8 +152,8 @@ Como não há `balance_after` (§4), o "saldo resultante" de cada linha é a **s
 efeitos (compra `+`, demais `−`) em ordem cronológica:
 
 - **Recomendado**: calcular por **window function** (`SUM(signed_quantity) OVER (ORDER BY
-  movement_date, created_at)`) na query do histórico, onde `signed_quantity = CASE WHEN type =
-  'purchase' THEN quantity ELSE -quantity END`. Casa com o `balance` atual de `epi_stock` desde que
+movement_date, created_at)`) na query do histórico, onde `signed_quantity = CASE WHEN type =
+'purchase' THEN quantity ELSE -quantity END`. Casa com o `balance` atual de `epi_stock` desde que
   todos os movimentos passem por esta camada.
 - **Cuidado de consistência**: o acumulado só bate com `epi_stock.balance` se **nenhum** saldo for
   escrito fora desta fatia. Como a `009` garante `balance` read-only e o seed inicia coerente, isso
@@ -202,7 +202,7 @@ Todas as decisões abaixo estão **fechadas**. A spec e a implementação devem 
 
 1. **"Saldo Resultante"** → **derivado por window function** na query do histórico
    (`SUM(CASE WHEN type='purchase' THEN quantity ELSE -quantity END) OVER (ORDER BY movement_date,
-   created_at)`). **Sem coluna `balance_after`, sem migration.** (§8)
+created_at)`). **Sem coluna `balance_after`, sem migration.** (§8)
 2. **"Usuário que registrou"** → **OMITIDO** desta fatia (o modelo `008` não tem `created_by` e não
    será alterado aqui). A coluna do histórico do card **não é implementada**; fica registrada como
    item futuro (migration própria). (§4)
@@ -238,13 +238,13 @@ Todas as decisões abaixo estão **fechadas**. A spec e a implementação devem 
 - [ ] **Entrada** cria movimento `purchase` e **incrementa** `balance` corretamente (transação).
 - [ ] **Saída manual** cria `adjustment`/`discard` e **decrementa** `balance` (transação).
 - [ ] **Saldo nunca negativo**: saída > saldo retorna erro claro e **não grava nada** (rollback);
-  `CHECK balance >= 0` como backstop.
+      `CHECK balance >= 0` como backstop.
 - [ ] **Histórico** exibe todos os movimentos do item com data, tipo, quantidade e **saldo resultante**
-  (derivado), ordenado cronologicamente; **estado vazio** tratado.
+      (derivado), ordenado cronologicamente; **estado vazio** tratado.
 - [ ] **Nº Nota Fiscal** opcional na entrada, exibido quando preenchido.
 - [ ] **Funcionário** exibido quando o movimento veio de entrega (`employee_delivery` via `delivery_id`).
 - [ ] Tudo **escopado pela organização ativa**; movimento/histórico de outro escritório nunca aparece
-  nem é acessível (RLS backstop / 404).
+      nem é acessível (RLS backstop / 404).
 - [ ] `npm run test` e `npm run test:integration` (incl. isolamento em Postgres efêmero) verdes.
 
 ## 14. Referências

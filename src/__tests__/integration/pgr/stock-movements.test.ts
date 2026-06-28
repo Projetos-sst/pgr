@@ -157,7 +157,11 @@ async function freshStockNoMovements(
 
   // ---- US3: histórico com saldo resultante ----
   it("histórico ordenado (desc) com saldo resultante batendo o saldo atual", async () => {
-    await registerStockEntryAction({ stockId: I.epiStockA, quantity: "5", movementDate: DATE });
+    await registerStockEntryAction({
+      stockId: I.epiStockA,
+      quantity: "5",
+      movementDate: DATE,
+    });
     await registerStockExitAction({
       stockId: I.epiStockA,
       quantity: "3",

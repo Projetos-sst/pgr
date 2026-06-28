@@ -35,11 +35,11 @@ ponto técnico central e o maior risco da fatia.
 > `/speckit-implement`.** Esta fatia depende **integralmente** da 008 (modelo `epis.ts`) e da 009
 > (repo/domínio/actions/UI/REST de `epi-stock`). No estado atual do repositório:
 
-| Item | 008 (`epis.ts`, `stock_movements`/`epi_stock`) | 009 (`epi-stock.ts` repo/actions/UI) |
-| ---- | ---------------------------------------------- | ------------------------------------ |
-| `develop` | ❌ ausente | ❌ ausente |
-| `feature/stock-movements` (esta branch) | ❌ ausente | ❌ ausente |
-| `feature/epi-stock-crud` | ✅ presente (008+009 empilhadas) | ✅ presente |
+| Item                                    | 008 (`epis.ts`, `stock_movements`/`epi_stock`) | 009 (`epi-stock.ts` repo/actions/UI) |
+| --------------------------------------- | ---------------------------------------------- | ------------------------------------ |
+| `develop`                               | ❌ ausente                                     | ❌ ausente                           |
+| `feature/stock-movements` (esta branch) | ❌ ausente                                     | ❌ ausente                           |
+| `feature/epi-stock-crud`                | ✅ presente (008+009 empilhadas)               | ✅ presente                          |
 
 - Esta branch foi criada a partir de `develop` (merge-base `daaab18`), que **não** contém 008/009.
   Logo, `src/shared/db/schema/epis.ts`, `src/shared/db/repositories/epi-stock.ts` e os arquivos do
@@ -93,13 +93,13 @@ milhares ao longo do tempo) — paginação offset é suficiente.
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-| Princípio | Status | Como o plano atende |
-| --------- | ------ | ------------------- |
+| Princípio                                    | Status  | Como o plano atende                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | I — Isolamento Multi-Tenant (NÃO-NEGOCIÁVEL) | ✅ PASS | Todo acesso via `withOrg(tenantId, …)`; `tenantId` de `requireOfficeStaff()`/`requireTenantContext()` (sessão), nunca de input do cliente; RLS `stock_movements_isolation`/`epi_stock_isolation` (008) como backstop. Cross-tenant por id → `NOT_FOUND`/404; histórico cross-tenant → vazio; ausência de tenant bloqueada pelo gate. Testes de isolamento + transacionais em Postgres efêmero. |
-| II — Stack Fixa & Simplicidade (YAGNI) | ✅ PASS | Sem nova infra; sem lib nova; paginação offset simples; reuso de `officeAction`/`ActionResult`/`requireOfficeStaff`/`restHandler` (007/009) e das tabelas/CHECK/RLS da 008. Saldo resultante derivado (sem coluna `balance_after`). **Sem migration nova.** |
-| III — Entrega em Fatias Verticais | ✅ PASS | Fatia vertical independente: US1 (entrada) é o MVP; US2 (saída + saldo não-negativo) e US3 (histórico) são incrementos testáveis; US4 (isolamento) é transversal testável. |
-| IV — Operações Pesadas Assíncronas | ✅ PASS | Registro é uma transação curta e síncrona; histórico é leitura paginada. Sem lote/PDF/upload. |
-| V — Segurança e Integridade de Dados | ✅ PASS | TS `strict`, sem `any`; `stockEntrySchema`/`stockExitSchema` (zod) antes do banco; o Postgres é a fonte de verdade — `CHECK quantity > 0` e `CHECK balance >= 0` (008) são backstop; atomicidade (movimento+saldo) e serialização (`FOR UPDATE`); segredos só em env. |
+| II — Stack Fixa & Simplicidade (YAGNI)       | ✅ PASS | Sem nova infra; sem lib nova; paginação offset simples; reuso de `officeAction`/`ActionResult`/`requireOfficeStaff`/`restHandler` (007/009) e das tabelas/CHECK/RLS da 008. Saldo resultante derivado (sem coluna `balance_after`). **Sem migration nova.**                                                                                                                                    |
+| III — Entrega em Fatias Verticais            | ✅ PASS | Fatia vertical independente: US1 (entrada) é o MVP; US2 (saída + saldo não-negativo) e US3 (histórico) são incrementos testáveis; US4 (isolamento) é transversal testável.                                                                                                                                                                                                                     |
+| IV — Operações Pesadas Assíncronas           | ✅ PASS | Registro é uma transação curta e síncrona; histórico é leitura paginada. Sem lote/PDF/upload.                                                                                                                                                                                                                                                                                                  |
+| V — Segurança e Integridade de Dados         | ✅ PASS | TS `strict`, sem `any`; `stockEntrySchema`/`stockExitSchema` (zod) antes do banco; o Postgres é a fonte de verdade — `CHECK quantity > 0` e `CHECK balance >= 0` (008) são backstop; atomicidade (movimento+saldo) e serialização (`FOR UPDATE`); segredos só em env.                                                                                                                          |
 
 **Gate de testes (Princípio "Fluxo/Quality Gates")**: a fatia depende de RLS/`CHECK`/transação/
 `FOR UPDATE` ⇒ os testes de Server Action/REST/transação usam **Postgres efêmero** (exceção explícita
@@ -164,9 +164,10 @@ src/
 **Structure Decision**: Mesma convenção dos verticais do PGR (007/009). O repositório de movimentos é
 **novo** (`src/shared/db/repositories/stock-movements.ts`) e concentra a transação atômica e a query do
 histórico (Repository pattern — actions não tocam o ORM direto). Domínio (zod + DTO + `computeRunningBalance`
-+ rótulos) em `src/shared/domains/pgr/stock-movements.ts`. Server Actions via `officeAction`; REST via
-`restHandler` no padrão `epi-stock`. A UI **estende** o vertical `epi-stock` da 009 (modais na tela
-existente + nova rota `[id]/history`). `src/shared/api/rest.ts` ganha o código `INSUFFICIENT_STOCK`.
+
+- rótulos) em `src/shared/domains/pgr/stock-movements.ts`. Server Actions via `officeAction`; REST via
+  `restHandler` no padrão `epi-stock`. A UI **estende** o vertical `epi-stock` da 009 (modais na tela
+  existente + nova rota `[id]/history`). `src/shared/api/rest.ts` ganha o código `INSUFFICIENT_STOCK`.
 
 ## Complexity Tracking
 

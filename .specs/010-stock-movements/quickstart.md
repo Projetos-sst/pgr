@@ -19,6 +19,7 @@ npm run dev        # http://localhost:3000
 ```
 
 Fluxo manual (UI):
+
 1. Abrir `/epi-stock` (lista da 009) e escolher um item.
 2. **Registrar entrada**: abrir o modal, informar data + quantidade (+ NF opcional) → confirmar.
    Esperado: saldo do item aumenta na lista; status derivado recalculado.
@@ -59,6 +60,7 @@ npm run test:integration   # Postgres efêmero: entrada/saída/rollback/históri
 ```
 
 Cenários de integração que MUST passar (ver `spec.md` §"Definição de pronto"):
+
 - entrada incrementa o saldo e cria `purchase`;
 - saída decrementa e cria `adjustment`/`discard`;
 - **saída > saldo → `INSUFFICIENT_STOCK` e nada gravado** (saldo + contagem de movimentos inalterados);

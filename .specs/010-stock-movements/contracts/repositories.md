@@ -9,6 +9,7 @@ abre transação + fixa `app.current_org` para a RLS). `orgId` vem **sempre** da
 `input`: `{ stockId, quantity, movementDate, invoiceNumber? }` (já validado por `stockEntrySchema`).
 
 Comportamento (transação atômica):
+
 1. `SELECT … FOR UPDATE` em `epi_stock WHERE id = stockId` (RLS garante tenant). Não encontrado →
    lança `NotFoundError` (→ `NOT_FOUND`/404). Cobre id inexistente e cross-tenant.
 2. `novoSaldo = balance + quantity`.
@@ -26,6 +27,7 @@ Auditoria: envolto por `auditedTenantWrite(orgId, "epi.stock_movement.write_reje
 `stockExitSchema`).
 
 Comportamento (transação atômica):
+
 1. `SELECT … FOR UPDATE` em `epi_stock` (como acima); não encontrado → `NotFoundError`.
 2. `novoSaldo = balance - quantity`.
 3. **Se `novoSaldo < 0`** → lança `InsufficientStockError` (→ `INSUFFICIENT_STOCK`/422, mensagem
@@ -50,11 +52,11 @@ Backstop: `CHECK balance >= 0` (008) aborta a transação caso a validação da 
 
 ## Erros (lançados; mapeados pela action/REST para o contrato)
 
-| Situação | Erro lançado | Código contrato | HTTP |
-| -------- | ------------ | --------------- | ---- |
-| `stockId` inexistente / outro tenant | `NotFoundError` | `NOT_FOUND` | 404 |
-| Saída > saldo | `InsufficientStockError` (novo) | `INSUFFICIENT_STOCK` | 422 |
-| (entrada inválida — antes do repo) | — | `VALIDATION` | 422 |
+| Situação                             | Erro lançado                    | Código contrato      | HTTP |
+| ------------------------------------ | ------------------------------- | -------------------- | ---- |
+| `stockId` inexistente / outro tenant | `NotFoundError`                 | `NOT_FOUND`          | 404  |
+| Saída > saldo                        | `InsufficientStockError` (novo) | `INSUFFICIENT_STOCK` | 422  |
+| (entrada inválida — antes do repo)   | —                               | `VALIDATION`         | 422  |
 
 > **`InsufficientStockError`** é novo: criar em `src/shared/errors/insufficient-stock-error.ts`
 > estendendo `AppError` (`code = "INSUFFICIENT_STOCK"`, `status = 422`), no padrão de

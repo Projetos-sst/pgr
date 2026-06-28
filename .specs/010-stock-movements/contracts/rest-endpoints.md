@@ -14,23 +14,23 @@ Registra um movimento. O corpo discrimina entrada × saída:
 
 `{id}` (path) é o `stockId`. Internamente chama `registerStockEntry`/`registerStockExit`.
 
-| Resultado | Status | Corpo |
-| --------- | ------ | ----- |
-| Criado | **201** | `{ movement, newBalance }` |
-| Validação (quantity ≤ 0, type/kind inválido) | 422 | `{ error: { code: "VALIDATION", … } }` |
-| Saldo insuficiente | 422 | `{ error: { code: "INSUFFICIENT_STOCK", message: "Saldo insuficiente: disponível X, solicitado Y" } }` |
-| Item inexistente / cross-tenant | 404 | `{ error: { code: "NOT_FOUND", … } }` |
-| Papel `client` / sem tenant | 403 | `{ error: { code: "FORBIDDEN" \| "NO_TENANT_CONTEXT", … } }` |
+| Resultado                                    | Status  | Corpo                                                                                                  |
+| -------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| Criado                                       | **201** | `{ movement, newBalance }`                                                                             |
+| Validação (quantity ≤ 0, type/kind inválido) | 422     | `{ error: { code: "VALIDATION", … } }`                                                                 |
+| Saldo insuficiente                           | 422     | `{ error: { code: "INSUFFICIENT_STOCK", message: "Saldo insuficiente: disponível X, solicitado Y" } }` |
+| Item inexistente / cross-tenant              | 404     | `{ error: { code: "NOT_FOUND", … } }`                                                                  |
+| Papel `client` / sem tenant                  | 403     | `{ error: { code: "FORBIDDEN" \| "NO_TENANT_CONTEXT", … } }`                                           |
 
 ## `GET /api/v1/epi-stock/{id}/movements?page=&pageSize=`
 
 Histórico paginado do item.
 
-| Resultado | Status | Corpo |
-| --------- | ------ | ----- |
-| OK | **200** | `{ rows: StockMovementRow[], total }` (ordem `movement_date DESC, created_at DESC`; cada linha com `runningBalance`) |
-| Item inexistente / cross-tenant | 404 | `{ error: { code: "NOT_FOUND", … } }` |
-| Papel `client` / sem tenant | 403 | `{ error: … }` |
+| Resultado                       | Status  | Corpo                                                                                                                |
+| ------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| OK                              | **200** | `{ rows: StockMovementRow[], total }` (ordem `movement_date DESC, created_at DESC`; cada linha com `runningBalance`) |
+| Item inexistente / cross-tenant | 404     | `{ error: { code: "NOT_FOUND", … } }`                                                                                |
+| Papel `client` / sem tenant     | 403     | `{ error: … }`                                                                                                       |
 
 ## Pré-requisito de implementação
 

@@ -32,13 +32,13 @@ message, fields? } }` (`src/shared/server/result.ts`).
 
 ## Mapa de códigos de erro (contrato → HTTP)
 
-| Código | HTTP | Quando |
-| ------ | ---- | ------ |
-| `VALIDATION` | 422 | zod falhou (quantity ≤ 0, type inválido, etc.) |
-| `NOT_FOUND` | 404 | `stockId` inexistente / cross-tenant |
-| `FORBIDDEN` | 403 | papel `client` (ou sem office staff) |
-| `INSUFFICIENT_STOCK` | 422 | saída maior que o saldo (novo código) |
-| `NO_TENANT_CONTEXT` | 403 | sem escritório ativo resolvido |
+| Código               | HTTP | Quando                                         |
+| -------------------- | ---- | ---------------------------------------------- |
+| `VALIDATION`         | 422  | zod falhou (quantity ≤ 0, type inválido, etc.) |
+| `NOT_FOUND`          | 404  | `stockId` inexistente / cross-tenant           |
+| `FORBIDDEN`          | 403  | papel `client` (ou sem office staff)           |
+| `INSUFFICIENT_STOCK` | 422  | saída maior que o saldo (novo código)          |
+| `NO_TENANT_CONTEXT`  | 403  | sem escritório ativo resolvido                 |
 
 > Regra: actions **nunca** lançam exceção crua para a UI; todo erro vira `ActionResult.error` com um
 > **código do contrato** (não status HTTP cru).
