@@ -49,22 +49,22 @@ só muda por **movimentações (#72)**. Aqui o CRUD escreve apenas o **vínculo 
 
 ## 3. ⚠️ Reconciliação card × modelo real (008) — RESOLVER ANTES DE CODAR
 
-O card foi escrito assumindo um modelo a ser criado por "#17". **Esse modelo já existe (fatia
-008)** e tem **nomes diferentes** dos citados no card. É o ponto mais importante deste briefing.
+O card foi escrito assumindo um modelo a ser criado por "#17". **Esse modelo já existe (fatia 008)** e tem **nomes diferentes** dos citados no card. É o ponto mais importante deste briefing.
 
-| O que o card diz | O que existe de fato (`epis.ts`, migration `0007`) | Ação |
-| ---------------- | -------------------------------------------------- | ---- |
-| `current_balance` | **`balance`** (`integer NOT NULL DEFAULT 0`) | Usar `balance`; expor como `currentBalance` no DTO se quiser manter o vocabulário do ePGR |
-| `minimum_quantity` | **`min_quantity`** (`integer NOT NULL DEFAULT 0`) | Usar `min_quantity`; DTO `minimumQuantity` |
-| join em `epi_categories` | **não existe `epi_categories`**; reuso de **`categories`** (decisão da 008) | Join em `epi_catalog → categories` |
-| FK/UNIQUE/ON DELETE "conforme #17" | **`UNIQUE(org_id, catalog_id)`** (`uq_epi_stock_org_catalog`); `catalog_id → epi_catalog ON DELETE CASCADE`; `CHECK balance ≥ 0` e `min_quantity ≥ 0` | Já definidos — usar como estão |
-| issue de modelo **#17** | corresponde à **fatia `008`** (já implementada e migrada) | Tratar `008` como o modelo-base |
+| O que o card diz                   | O que existe de fato (`epis.ts`, migration `0007`)                                                                                                    | Ação                                                                                      |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `current_balance`                  | **`balance`** (`integer NOT NULL DEFAULT 0`)                                                                                                          | Usar `balance`; expor como `currentBalance` no DTO se quiser manter o vocabulário do ePGR |
+| `minimum_quantity`                 | **`min_quantity`** (`integer NOT NULL DEFAULT 0`)                                                                                                     | Usar `min_quantity`; DTO `minimumQuantity`                                                |
+| join em `epi_categories`           | **não existe `epi_categories`**; reuso de **`categories`** (decisão da 008)                                                                           | Join em `epi_catalog → categories`                                                        |
+| FK/UNIQUE/ON DELETE "conforme #17" | **`UNIQUE(org_id, catalog_id)`** (`uq_epi_stock_org_catalog`); `catalog_id → epi_catalog ON DELETE CASCADE`; `CHECK balance ≥ 0` e `min_quantity ≥ 0` | Já definidos — usar como estão                                                            |
+| issue de modelo **#17**            | corresponde à **fatia `008`** (já implementada e migrada)                                                                                             | Tratar `008` como o modelo-base                                                           |
 
 **Decisão recomendada de vocabulário**: manter os **nomes do banco** (`balance`, `min_quantity`)
 no schema/SQL e, **se** o produto exigir o rótulo ePGR, mapear nos **DTOs** (`currentBalance`,
 `minimumQuantity`) — sem renomear colunas (evita migration desnecessária). Confirmar com o dono.
 
 ### 3.1 Coluna "Empresa" da listagem — **gap de modelo**
+
 O card pede a coluna **Empresa** no list. Mas `epi_catalog` **não tem vínculo com empresa**
 (`company_id`): a cadeia é `epi_catalog → categories` (taxonomia), e `categories` também não tem
 empresa. **Não há origem para "Empresa" no modelo atual.** Opções: (a) **remover** a coluna
@@ -76,16 +76,16 @@ do list nesta fatia e registrar como item futuro. **Bloqueador a confirmar.**
 
 Calculado em leitura por comparação `balance` × `min_quantity`:
 
-| Status | Regra |
-| ------ | ----- |
-| `sem_saldo` | `balance = 0` |
-| `abaixo_minima` | `balance > 0 AND balance < min_quantity` |
-| `acima_minima` | `balance >= min_quantity AND balance > 0` |
+| Status          | Regra                                     |
+| --------------- | ----------------------------------------- |
+| `sem_saldo`     | `balance = 0`                             |
+| `abaixo_minima` | `balance > 0 AND balance < min_quantity`  |
+| `acima_minima`  | `balance >= min_quantity AND balance > 0` |
 
 - **Edge mínima = 0**: nunca gera `abaixo_minima` (pois `balance ≥ 0 = min`); com `balance = 0`
   vira `sem_saldo`. Ou seja, mínima 0 ⇒ **sem alerta**.
 - **No SQL** (list): `CASE WHEN balance = 0 THEN 'sem_saldo' WHEN balance < min_quantity THEN
-  'abaixo_minima' ELSE 'acima_minima' END`.
+'abaixo_minima' ELSE 'acima_minima' END`.
 - **Em unit test**: extrair uma função pura `deriveStockStatus(balance, min)` (testável sem
   banco) e reusá-la no DTO; o `CASE` no SQL é o espelho dela para filtro/ordenação.
 - **Alerta visual** (UI): badge quando `abaixo_minima` (e opcionalmente `sem_saldo`).
@@ -95,14 +95,14 @@ Calculado em leitura por comparação `balance` × `min_quantity`:
 Todas org-scopadas (`requireTenantContext()` → `requireOfficeStaff()` → `withOrg`). Padrão
 idêntico a `companies.ts`/`ges.ts`.
 
-| Operação | Assinatura (repo) | Comportamento |
-| -------- | ----------------- | ------------- |
-| **Listar** | `listEpiStock(orgId, {search, withBalanceOnly, status, page, pageSize})` | `SELECT` com `join epi_catalog` (+ `categories`); status derivado por `CASE`; filtros "apenas com saldo" (`balance > 0`) e status; busca `ilike` por nome/CA; `Paginated<T>`; sem tenant → vazio. |
-| **Detalhar** | `getEpiStockById(orgId, id)` | 1 registro do tenant (join catálogo + status); inexistente/outro tenant → `null` → **404** na action. |
-| **Criar** | `createEpiStock(orgId, input)` | zod (`catalog_id` uuid, `minQuantity ≥ 0`); insere `{orgId, catalogId, minQuantity}`; **não escreve `balance`** (default 0); `UNIQUE(org, catalog)` violado → **409**; `catalog_id` inexistente (FK) → **422**; `auditedTenantWrite`. |
-| **Atualizar** | `updateEpiStock(orgId, id, patch)` | zod parcial; **edita só `min_quantity`**; **`balance` nunca no `set`**; `updated_at` via trigger; inexistente/outro tenant → **404**; auditado. |
-| **Excluir** | `deleteEpiStock(orgId, id)` | remove no tenant; **`stock_movements` descem em CASCADE** (ver §6) — UI confirma e avisa que o histórico de movimentações some; 404 cross-tenant; auditado. |
-| *(aux)* | `countEpiStockDependents(orgId, id)` | conta `stock_movements` para o aviso de exclusão (padrão `countCompanyDependents`). |
+| Operação      | Assinatura (repo)                                                        | Comportamento                                                                                                                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Listar**    | `listEpiStock(orgId, {search, withBalanceOnly, status, page, pageSize})` | `SELECT` com `join epi_catalog` (+ `categories`); status derivado por `CASE`; filtros "apenas com saldo" (`balance > 0`) e status; busca `ilike` por nome/CA; `Paginated<T>`; sem tenant → vazio.                                     |
+| **Detalhar**  | `getEpiStockById(orgId, id)`                                             | 1 registro do tenant (join catálogo + status); inexistente/outro tenant → `null` → **404** na action.                                                                                                                                 |
+| **Criar**     | `createEpiStock(orgId, input)`                                           | zod (`catalog_id` uuid, `minQuantity ≥ 0`); insere `{orgId, catalogId, minQuantity}`; **não escreve `balance`** (default 0); `UNIQUE(org, catalog)` violado → **409**; `catalog_id` inexistente (FK) → **422**; `auditedTenantWrite`. |
+| **Atualizar** | `updateEpiStock(orgId, id, patch)`                                       | zod parcial; **edita só `min_quantity`**; **`balance` nunca no `set`**; `updated_at` via trigger; inexistente/outro tenant → **404**; auditado.                                                                                       |
+| **Excluir**   | `deleteEpiStock(orgId, id)`                                              | remove no tenant; **`stock_movements` descem em CASCADE** (ver §6) — UI confirma e avisa que o histórico de movimentações some; 404 cross-tenant; auditado.                                                                           |
+| _(aux)_       | `countEpiStockDependents(orgId, id)`                                     | conta `stock_movements` para o aviso de exclusão (padrão `countCompanyDependents`).                                                                                                                                                   |
 
 ## 6. Exclusão — atenção ao `ON DELETE` real (008)
 
@@ -161,10 +161,10 @@ entrega referenciam `epi_catalog`, **não** `epi_stock`, então não bloqueiam a
 ## 11. Critérios de aceite (do card)
 
 - [ ] **5 operações** implementadas e testadas: `list` (paginada/filtros/busca), `getById` (404
-  cross-tenant), `create` (associar item), `update` (404 cross-tenant; só mínima), `delete`
-  (confirmação).
+      cross-tenant), `create` (associar item), `update` (404 cross-tenant; só mínima), `delete`
+      (confirmação).
 - [ ] **Status derivado** (Sem Saldo / Abaixo da Mínima / Acima da Mínima) do saldo vs. mínima,
-  sem coluna.
+      sem coluna.
 - [ ] Filtro "Apenas com saldo" e filtro de status funcionam.
 - [ ] Busca por nome / CA (e Empresa **somente se** resolvido o §3.1).
 - [ ] Alerta visual quando `balance < min_quantity`.
@@ -293,6 +293,7 @@ resolvidas assim:
   `FK_NOT_FOUND → 422`, `NOT_FOUND → 404`, `FORBIDDEN → 403` (via `toActionError`/`rest.ts`).
 
 ### Regras-chave aplicadas
+
 - **`balance` somente leitura**: `create` insere sem `balance` (default 0); `update` faz `set`
   **apenas** de `min_quantity`. Nunca há escrita de saldo neste CRUD.
 - **Status derivado**: função pura `deriveStockStatus(balance, min)` + **espelho `CASE` no SQL**
@@ -304,6 +305,7 @@ resolvidas assim:
   (`listAvailableCatalogOptions`, padrão "available" do GES); `UNIQUE(org, catalog)` → 409.
 
 ### Arquivos criados/alterados
+
 - **Domínio/validação**: `src/shared/domains/pgr/epi-stock.ts` (schemas zod, `deriveStockStatus`,
   DTOs, mappers); `+epiMinQuantitySchema` em `src/shared/domains/pgr/validation.ts`.
 - **Repositório**: `src/shared/db/repositories/epi-stock.ts`
@@ -318,6 +320,7 @@ resolvidas assim:
   UNIQUE, FK_NOT_FOUND, VALIDATION, `balance` read-only, filtros/status, FORBIDDEN).
 
 ### Estado da verificação
+
 - `npx tsc --noEmit` ✅ · `npm run lint` ✅ · `npm run test` ✅ (**192** unit, +14 da fatia).
 - Integração (`epi-stock.test.ts`) **carrega e pula** sem Postgres descartável (`INTEGRATION_*`)
   — **não executada contra o Supabase de dev** (a suíte faz `TRUNCATE`; rodar lá apagaria dados).
@@ -326,6 +329,7 @@ resolvidas assim:
   (`{rows:[],total:0}`); filtro `?status=sem_saldo` → **200**. Endpoint no ar.
 
 ### Fora desta fatia (inalterado)
+
 Movimentações que alteram o saldo (#72); entrega (#19); devolução (#20); CRUD do catálogo (#18);
 qualquer mudança do modelo `008`.
 

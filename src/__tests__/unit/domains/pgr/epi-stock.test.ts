@@ -27,22 +27,33 @@ describe("epiStockCreateSchema", () => {
   });
 
   it("aceita mínima zero", () => {
-    expect(epiStockCreateSchema.parse({ catalogId: UUID, minimumQuantity: "0" }).minimumQuantity).toBe(0);
+    expect(
+      epiStockCreateSchema.parse({ catalogId: UUID, minimumQuantity: "0" })
+        .minimumQuantity,
+    ).toBe(0);
   });
 
   it.each([-1, 2.5])("rejeita mínima inválida %p", (qty) => {
-    expect(() => epiStockCreateSchema.parse({ catalogId: UUID, minimumQuantity: qty })).toThrow();
+    expect(() =>
+      epiStockCreateSchema.parse({ catalogId: UUID, minimumQuantity: qty }),
+    ).toThrow();
   });
 
   it("rejeita catalogId ausente/!uuid", () => {
-    expect(() => epiStockCreateSchema.parse({ catalogId: "", minimumQuantity: 1 })).toThrow();
-    expect(() => epiStockCreateSchema.parse({ catalogId: "x", minimumQuantity: 1 })).toThrow();
+    expect(() =>
+      epiStockCreateSchema.parse({ catalogId: "", minimumQuantity: 1 }),
+    ).toThrow();
+    expect(() =>
+      epiStockCreateSchema.parse({ catalogId: "x", minimumQuantity: 1 }),
+    ).toThrow();
   });
 });
 
 describe("epiStockUpdateSchema", () => {
   it("aceita só a mínima", () => {
-    expect(epiStockUpdateSchema.parse({ minimumQuantity: "3" })).toEqual({ minimumQuantity: 3 });
+    expect(epiStockUpdateSchema.parse({ minimumQuantity: "3" })).toEqual({
+      minimumQuantity: 3,
+    });
   });
   it("rejeita mínima negativa", () => {
     expect(() => epiStockUpdateSchema.parse({ minimumQuantity: -2 })).toThrow();

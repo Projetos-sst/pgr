@@ -57,6 +57,7 @@ const noStoreHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  serverExternalPackages: ["zod"],
   experimental: {
     authInterrupts: true,
     serverActions: {

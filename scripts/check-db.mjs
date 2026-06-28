@@ -20,5 +20,8 @@ console.log("Tabelas de EPI (fatia 008):", epi.length ? epi.join(", ") : "NENHUM
 const fk = await sql`
   select constraint_name from information_schema.table_constraints
   where table_name = 'epi_catalog' and constraint_type = 'FOREIGN KEY'`;
-console.log("FKs de epi_catalog:", fk.map((r) => r.constraint_name).join(", ") || "nenhuma");
+console.log(
+  "FKs de epi_catalog:",
+  fk.map((r) => r.constraint_name).join(", ") || "nenhuma",
+);
 await sql.end({ timeout: 5 });

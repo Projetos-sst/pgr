@@ -102,16 +102,7 @@ export default async function EpiStockPage({
         <EmptyState message="Nenhum item no estoque. Comece adicionando um item do catálogo." />
       ) : (
         <Table
-          headers={[
-            "CA",
-            "Nome",
-            "Tam.",
-            "Und. Medida",
-            "Mínima",
-            "Saldo",
-            "Status",
-            "",
-          ]}
+          headers={["CA", "Nome", "Tam.", "Und. Medida", "Mínima", "Saldo", "Status", ""]}
         >
           {rows.map((row) => (
             <tr key={row.id} className="border-t border-black/5 dark:border-white/5">

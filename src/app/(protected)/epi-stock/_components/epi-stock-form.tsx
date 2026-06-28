@@ -7,10 +7,7 @@ import {
   createEpiStockAction,
   updateEpiStockAction,
 } from "@/shared/server/actions/pgr/epi-stock";
-import type {
-  EpiCatalogOption,
-  EpiStockDetail,
-} from "@/shared/domains/pgr/epi-stock";
+import type { EpiCatalogOption, EpiStockDetail } from "@/shared/domains/pgr/epi-stock";
 
 import {
   FieldError,

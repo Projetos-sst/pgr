@@ -84,7 +84,10 @@ async function freshCatalog(admin: ReturnType<typeof postgres>): Promise<string>
   });
 
   it("create de item já no estoque → DUPLICATE (UNIQUE org,catalog)", async () => {
-    const dup = await createEpiStockAction({ catalogId: I.epiCatalogA, minimumQuantity: "1" });
+    const dup = await createEpiStockAction({
+      catalogId: I.epiCatalogA,
+      minimumQuantity: "1",
+    });
     expect(dup.ok).toBe(false);
     if (!dup.ok) expect(dup.error.code).toBe("DUPLICATE");
   });
