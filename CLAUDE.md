@@ -25,34 +25,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/stock-movements`**. Fatia atual (`010`) — **Movimentações de estoque e
-histórico** (`stock_movements`): registrar **entrada** (compra) e **saída manual** (ajuste/descarte)
-de itens de estoque de EPI, mantendo o saldo materializado **`epi_stock.balance`** por **transação
-atômica** (`SELECT … FOR UPDATE`), e exibir o **histórico por item** com **saldo resultante derivado**
-(window function, sem coluna). Camada de **fluxo** sobre o modelo da `008` (epi-data-model) e
-contrapartida da `009` (epi-stock-crud, que trata `balance` como read-only). **Zero migration.**
+Branch: **`feature/ppe-delivery-with-signature`**. Fatia atual (`011`) — **Entrega de EPI com
+assinatura digital** (`ppe-delivery-with-signature`): fluxo de entrega de EPI a um funcionário com
+comprovação por **assinatura** (QR Code / link remoto / manual) e **baixa transacional de estoque** na
+confirmação. É o **`#19`** que a `010` deixou fora de escopo: gera o movimento **`employee_delivery`**
+e decrementa **`epi_stock.balance`**. Camada de **fluxo** sobre o modelo da `008`, reusando o
+transacional da `010` (`SELECT … FOR UPDATE` + `InsufficientStockError`). **Zero migration.**
 
-Fatia atual (`010`) — `.specs/010-stock-movements/`:
+Fatia atual (`011`) — `.specs/011-ppe-delivery-with-signature/`:
 
-- Plan: `.specs/010-stock-movements/plan.md`
-- Spec / Research / Data model / Quickstart no mesmo diretório.
-- Contracts: `contracts/server-actions.md`, `contracts/repositories.md`, `contracts/rest-endpoints.md`.
-- Briefing (fonte): `docs/briefings/briefing-stock-movements.md`.
+- Plan: `.specs/011-ppe-delivery-with-signature/plan.md`
+- Spec (+ Clarifications) / Research / Data model / Quickstart no mesmo diretório.
+- Contracts: `contracts/repositories.md`, `contracts/server-actions.md`, `contracts/rest-endpoints.md`.
+- Briefing (fonte): `docs/briefings/briefing-ppe-delivery-with-signature.md`.
 
-Notas chave (`010`):
+Notas chave (`011`):
 
-- **Escrita transacional do saldo** (1ª fatia que escreve `epi_stock.balance`): por movimento,
-  `SELECT … FOR UPDATE` → valida `novoSaldo >= 0` na app (`CHECK balance >= 0` como backstop) →
-  `INSERT` no movimento + `UPDATE` do saldo, tudo numa transação (`withOrg`). Falha → rollback total.
-- **`quantity` sempre > 0**; o sinal vem do `type` (`purchase` `+`; `adjustment`/`discard` `−`).
-  Saída manual só aceita `{adjustment, discard}` (sem ajuste bidirecional).
-- **Saldo resultante derivado** por window function + função pura `computeRunningBalance` (unit);
-  **sem coluna `balance_after`**. **"Usuário que registrou" omitido** (modelo 008 sem `created_by`).
-- **Novo erro `INSUFFICIENT_STOCK` → 422** em `src/shared/api/rest.ts`. REST em
-  `/api/v1/epi-stock/[id]/movements` (POST registra; GET histórico). Rota UI `/epi-stock/[id]/history`.
-- Testes: unit (`computeRunningBalance`, schemas); integração de Server Actions/REST +
-  rollback de saída insuficiente + histórico + `NOT_FOUND` cross-tenant + `FORBIDDEN` contra
-  **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite nem o banco de dev.
+- **Decisões clarificadas**: baixa **na confirmação** (entrega nasce `pending`, sem mexer no saldo);
+  token expira por **`created_at` + 72h derivado** (zero migration); "Enviar Link" **só gera/exibe**
+  (sem provider de e-mail/SMS); tempo real por **polling** (~5s).
+- **Baixa atômica multi-item** na confirmação: por item `SELECT … FOR UPDATE epi_stock` → revalida
+  `balance - quantity >= 0` (senão `INSUFFICIENT_STOCK`/422 + **rollback total**) → `INSERT
+  stock_movements(employee_delivery, delivery_id)` → `UPDATE balance`; + `signature_status → signed_*`.
+  Refatorar a `010` para extrair helper de baixa reutilizável.
+- **`epi_delivery_items` guarda `catalog_id`** (= `epi_stock.catalog_id`), não `stock_id`; a seleção é
+  sobre `epi_stock` (itens com `balance > 0`).
+- **Rota PÚBLICA sem Clerk** (`/epi-deliveries/sign/[token]` + `/api/public/epi-deliveries/*`): 1º
+  caminho de escrita não autenticado — tenant **derivado do token** server-side, nunca da sessão/input;
+  liberar no **`src/proxy.ts`** (sem o bypass dev). Testes de isolamento dedicados (interno **e** público).
+- **Novos erros**: `ALREADY_SIGNED → 409`, `TOKEN_EXPIRED → 410` em `src/shared/api/rest.ts`
+  (`INSUFFICIENT_STOCK → 422` já existe da 010). Domínio/repo/actions novos em `pgr/epi-deliveries`.
+- Testes: unit (schemas, helper de baixa, máquina de estados, token/expiração); integração de actions
+  + rota pública + isolamento contra **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite nem dev.
+
+Fatia anterior (`010` — stock-movements, commit `ea0c3e8`): movimentações (entrada/saída) que
+**escrevem** `epi_stock.balance` em transação `FOR UPDATE`; histórico com saldo derivado (window
+function); erro `INSUFFICIENT_STOCK → 422`. Sem migration.
 
 Fatia anterior (`009` — epi-stock-crud, commit `a55d70b`): CRUD de `epi_stock` com `balance`
 **read-only**; reuso de `ActionResult`/`officeAction`/`requireOfficeStaff`/`_ui`. Sem migration.

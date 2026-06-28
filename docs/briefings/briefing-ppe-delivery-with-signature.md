@@ -705,3 +705,133 @@ Conteúdo da spec em pt-BR; branch e commits em inglês. NÃO invente solução 
 o "porquê". Não altere o modelo 008 (zero migration, salvo a coluna de expiração se essa decisão for tomada). Marque
 claramente as DECISÕES A CLARIFICAR para o /speckit-clarify.
 ```
+
+---
+
+## 20. Prompt no FORMATO DO EXEMPLO (GIT_BRANCH_NAME + Feature + CONTEXTO + User stories P1/P2/P3 + Success criteria + Edge cases)
+
+> Mesmo conteúdo das §18/§19, **remontado no esqueleto exato do exemplo** do card: cabeçalhos
+> `GIT_BRANCH_NAME`, `Feature`, `CONTEXTO`, `User stories` (P1/P2/P3), `Success criteria`, `Edge cases`
+> — com o briefing e todo o detalhamento embutidos no bloco `CONTEXTO`. Copie do `/speckit-specify`
+> até o fim. Conteúdo da spec em pt-BR; branch e commits em inglês.
+
+```text
+/speckit-specify
+
+GIT_BRANCH_NAME: feature/ppe-delivery-with-signature
+
+Feature: PPE delivery with digital signature (entrega de EPI ao funcionário com assinatura digital)
+
+CONTEXTO:
+Projeto SST Manager — SaaS B2B multiempresa de Segurança do Trabalho (ePGR). Fatia própria
+(1 issue = 1 branch = 1 spec). Entrega o FLUXO de entrega de EPI a um funcionário com comprovação por
+assinatura digital, equivalente a /funcionarios/entregarepi/:id do ePGR: o gestor seleciona os EPIs com
+saldo, revisa, escolhe um método de assinatura (QR Code, link remoto ou manual) e, na CONFIRMAÇÃO, o
+sistema registra a entrega e DÁ BAIXA no estoque. É o "#19" que a fatia 010 deixou EXPLICITAMENTE fora de
+escopo: aqui o movimento employee_delivery é gerado e o saldo decrementa. Reutiliza o coração transacional
+da 010 (SELECT ... FOR UPDATE + validação de saldo + InsufficientStockError -> 422). Camada de FLUXO sobre
+a fundação 008.
+ATENÇÃO: NÃO existe "infra de assinatura da Fase 0" no repo — só as COLUNAS da 008 (auth_token,
+signature_status, delivery_id, type employee_delivery). Token, assinatura e rota pública são construídos do zero.
+
+ANTES DE ESCREVER A SPEC, leia e liste (dizendo o que extraiu de cada):
+- src/shared/db/schema/epis.ts (epi_deliveries, epi_delivery_items, stock_movements, epi_stock, epi_catalog; enums stock_movement_type, epi_signature_status)
+- src/shared/db/schema/employees.ts (full_name, email, phone, company_id, org_id)
+- src/shared/db/repositories/stock-movements.ts (baixa transacional: FOR UPDATE, validação >= 0, InsufficientStockError)
+- src/shared/db/repositories/epi-stock.ts (listEpiStock withBalanceOnly/search; deriveStockStatus; countEpiStockDependents)
+- src/shared/domains/pgr/stock-movements.ts e epi-stock.ts (schemas zod, DTOs, funções puras, mappers)
+- src/shared/server/office-action.ts, result.ts, action-error.ts (officeAction, ActionResult, toActionError)
+- src/shared/api/rest.ts (restHandler, HTTP_BY_CODE, pageParamsFrom, isDevAuthBypassEnabled)
+- src/proxy.ts (clerkMiddleware + createRouteMatcher — onde liberar a rota pública)
+- src/shared/db/with-org.ts (transação + set_config app.current_org)
+- src/app/(protected)/employees/* e src/app/(protected)/_ui/{form,list}.tsx
+- src/app/(protected)/epi-stock/_components/register-entry.tsx (padrão de client component/modal da 010)
+- src/__tests__/integration/pgr/stock-movements.test.ts e _helpers/{db,pgr-seed}.ts (padrão de teste + seed)
+- docs/briefings/briefing-stock-movements.md e briefing-ppe-delivery-with-signature.md; .specs/008-epi-data-model/
+
+MODELO JÁ EXISTENTE (NÃO criar/alterar — alvo ZERO migration, salvo a decisão de expiração com coluna). Colunas REAIS:
+- epi_deliveries: id, org_id (->orgs CASCADE), employee_id (->employees CASCADE), delivery_date (DATE, sem hora),
+  signature_status (enum: pending|signed_qr|signed_link|signed_manual, default pending),
+  auth_token (text NULLABLE; UNIQUE PARCIAL WHERE not null), timestamps; indexes org_id/employee_id; RLS.
+- epi_delivery_items: id, org_id, delivery_id (->epi_deliveries CASCADE), catalog_id (->epi_catalog RESTRICT)  <- GUARDA CATALOG_ID, não stock_id, quantity (int, CHECK > 0); RLS.
+- stock_movements: já tem type 'employee_delivery' e delivery_id (->epi_deliveries SET NULL); quantity CHECK > 0; movement_date DATE.
+- epi_stock: balance (CHECK >= 0) saldo MATERIALIZADO; min_quantity (CHECK >= 0); UNIQUE(org_id, catalog_id); catalog_id -> epi_catalog.
+- employees: full_name, email (nullable), phone (nullable), company_id, org_id.
+GAPS (não inventar coluna): sem EXPIRAÇÃO de token (derivar de created_at+janela OU coluna nova); sem created_by (omitir);
+sem provider de e-mail/SMS ("Enviar Link" só gera/exibe); sem realtime (usar polling).
+
+REGRAS NÃO-NEGOCIÁVEIS (constituição v1.2.1 / Modelo B):
+- Caminho INTERNO (gestor): tenant = orgs.id via requireTenantContext() + withOrg(); requireOfficeStaff() (owner/collaborator;
+  client -> 403). NUNCA Clerk org / organization_id / input do cliente. RLS app_runtime é backstop. Zod antes da regra;
+  ActionResult<T>; escrita auditada (auditedTenantWrite + logTenantEvent, sem PII; eventos epi.delivery.write_rejected/sign_rejected).
+- Caminho PÚBLICO (funcionário, SEM Clerk): acesso por CAPACIDADE (auth_token na URL). org_id DERIVADO da própria entrega
+  (server-side), nunca de sessão/header/input. NÃO expor organization_id nem dados de outras orgs; mostrar só o mínimo
+  (funcionário, itens/quantidades, data). Liberar a rota no src/proxy.ts (createRouteMatcher), SEM o bypass dev de /api/v1.
+- Estrutura real (NÃO "features/epis/"): domínio src/shared/domains/pgr/, repo src/shared/db/repositories/, actions
+  src/shared/server/actions/pgr/, UI src/app/(protected)/..., REST src/app/api/v1/..., página pública FORA de (protected).
+
+LÓGICA CENTRAL (transação atômica multi-item):
+- Entrega = 1 cabeçalho (1 funcionário, 1 data) + N itens. Cada item é uma SAÍDA employee_delivery (-quantity); quantity > 0; o efeito vem do type.
+- MAPA: seleção sobre epi_stock (itens com saldo), mas epi_delivery_items guarda catalog_id (= epi_stock.catalog_id); a baixa é na mesma linha de epi_stock.
+- Recomendado: CRIAR entrega PENDENTE (auth_token + itens), validando disponibilidade SEM mexer no saldo; a BAIXA ocorre na
+  CONFIRMAÇÃO (QR/link/manual), numa transação: por item SELECT...FOR UPDATE epi_stock, revalida balance - quantity >= 0
+  (senão INSUFFICIENT_STOCK 422 + ROLLBACK TOTAL), INSERT stock_movements (employee_delivery, stock_id, delivery_id,
+  movement_date=delivery_date), UPDATE balance -= quantity; e signature_status -> signed_*. Falha em qualquer item -> rollback total. CHECK balance >= 0 é backstop.
+- Após a baixa, alertar se balance < min_quantity (deriveStockStatus) sem bloquear. Invariante: balance só muda por movimentações; SUM(signed_quantity) bate com balance.
+
+ASSINATURA (3 métodos) e ESTADO:
+- pending -> signed_qr|signed_link (confirmados na rota pública por token) | signed_manual (gestor). Transição ÚNICA e idempotente
+  (já assinada -> conflito/409). Token de alta entropia (crypto), de uso único (inválido após signed_*); manual pode ter token nulo.
+
+ROTA PÚBLICA:
+- Página /epi-deliveries/sign/[token] (sem sidebar, fora de (protected)) + endpoint público de confirmação. Liberar no src/proxy.ts.
+- Leitura por auth_token SEM tenant (não depende de current_setting), retorna UMA entrega; servidor deriva org_id e baixa via
+  withOrg(org_id). Documentar e TESTAR que só acessa a linha do token. Painel do gestor "Aguardando confirmação..." por POLLING (~5s).
+
+OPERAÇÕES (repo + actions + REST, espelhando stock-movements.ts/epi-stock.ts):
+- listEpiStock(orgId,{withBalanceOnly:true,search}) (reuso); createDelivery(orgId,{employeeId,deliveryDate,items:[{stockId,quantity}]})
+  (cria pendente, sem baixa); signDeliveryManual(orgId,deliveryId) (signed_manual + baixa); getDeliveryStatus/getDelivery (interno);
+  getDeliveryByToken(token)/confirmDeliveryByToken(token,method) (público). Extrair helper de baixa compartilhado com a 010.
+- zod deliveryCreateSchema (employeeId uuid; deliveryDate YYYY-MM-DD; items não-vazio de {stockId uuid, quantity int>0}; sem stockId duplicado).
+- Erros: reusar mapa (INSUFFICIENT_STOCK->422 já existe); token usado -> 409; token expirado -> 410/422 (conforme decisão).
+- UI: Passo 1 Seleção (/employees/[id]/epi-delivery) -> Passo 2 Revisão (modal) -> Passo 3 Autenticação (abas QR/Link/Manual);
+  tela pública de confirmação. Estado com useState/useReducer (sem Zustand).
+
+DECISÕES TRAVADAS: estrutura/Modelo B/erros acima; reutilizar transacional da 010; baixa = 1 employee_delivery por item com delivery_id;
+rota pública /epi-deliveries/sign/[token] liberada no proxy.ts; enums em inglês, rótulos pt-BR só no DTO/UI; integração em Postgres EFÊMERO.
+DECISÕES A CLARIFICAR (/speckit-clarify): momento da baixa (criar pendente+baixar na confirmação [recomendado] vs reservar);
+expiração do token (derivar de created_at+janela [recomendado] vs coluna nova/migration); tempo real (polling [recomendado] vs Realtime);
+"Enviar Link" (há provider? se não, só gera/exibe); ficha de impressão (agora ou fora do MVP); fatiamento (MVP manual -> QR/pública -> link/realtime).
+FORA DE ESCOPO: disparo real de e-mail/SMS; devolução/estorno (#20); alteração do 008 (salvo coluna de expiração se decidida);
+PDF rico; catálogo (#18) e CRUDs já feitos (009/010).
+TESTES (quality gate; Postgres EFÊMERO via INTEGRATION_*, NUNCA SQLite nem banco de dev): unit (schemas, helper de baixa, máquina de
+estados); integração interna (criar pendente; manual baixa+employee_delivery 1/item; saldo insuficiente -> rollback total; só itens com
+saldo; alerta de mínima); integração pública (token baixa na org certa; token de outra org não vaza; inexistente/usado/expirado);
+isolamento interno E público. npm run test, npm run test:integration, lint e tsc --noEmit verdes.
+
+User stories (P1 = mais crítica):
+- (P1) Como gestor de SST, quero registrar a entrega de EPIs com assinatura digital do funcionário (QR Code, link ou manual)
+  para comprovar legalmente o fornecimento, dando baixa no estoque automaticamente.
+- (P2) Como funcionário, quero confirmar o recebimento dos EPIs pelo meu celular (QR Code ou link), sem precisar de login.
+- (P3) Como gestor, quando o funcionário não tem celular/e-mail, quero registrar a assinatura manual (após assinatura física)
+  para concluir a entrega e dar baixa no estoque.
+
+Success criteria (mensuráveis, tecnologia-agnósticos):
+- O fluxo completo (seleção -> revisão -> autenticação QR) é concluído em menos de 2 minutos.
+- O saldo em estoque diminui automaticamente ao confirmar a entrega (qualquer método) e NUNCA fica negativo.
+- A rota pública de autenticação não expõe dados de outras organizações e só afeta a entrega do token.
+- Toda entrega confirmada tem exatamente 1 movimento employee_delivery por item entregue (consistência total).
+
+Edge cases:
+- EPI sem saldo (balance = 0) não aparece na seleção.
+- Saldo insuficiente no momento da confirmação (alguém consumiu antes) -> recusa + rollback total da entrega.
+- Funcionário sem e-mail/telefone -> método "Enviar Link" indisponível (orientar cadastro).
+- Token inexistente (404), já utilizado / entrega já assinada (409), expirado (410/422 conforme decisão).
+- Saldo fica abaixo da quantidade mínima após a baixa -> exibir alerta (não bloquear).
+- Concorrência: duas confirmações da mesma entrega (idempotência); duas entregas concorrentes do mesmo item (FOR UPDATE serializa).
+- Itens com stockId duplicado no payload (rejeitar na validação). delivery_date é DATE (sem hora).
+
+Conteúdo da spec em pt-BR; branch e commits em inglês. NÃO invente solução técnica não descrita aqui — descreva o "o quê" e
+o "porquê". Não altere o modelo 008 (zero migration, salvo a coluna de expiração se essa decisão for tomada). Marque
+claramente as DECISÕES A CLARIFICAR para o /speckit-clarify.
+```
