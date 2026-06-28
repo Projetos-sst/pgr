@@ -64,6 +64,12 @@ export default async function EmployeeDetailPage({
         action={
           <div className="flex gap-2">
             <Link
+              href={`/employees/${employee.id}/epi-delivery`}
+              className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 dark:bg-white dark:text-black"
+            >
+              Entregar EPI
+            </Link>
+            <Link
               href={`/employees/${employee.id}/edit`}
               className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
             >

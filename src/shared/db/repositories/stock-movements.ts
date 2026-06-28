@@ -10,16 +10,74 @@ import {
   type StockMovementResult,
   type StockMovementRow,
 } from "@/shared/domains/pgr/stock-movements";
+import type { StockMovementType } from "@/shared/domains/pgr/validation";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { InsufficientStockError } from "@/shared/errors/insufficient-stock-error";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
-import { withOrg } from "../with-org";
+import { withOrg, type TenantTransaction } from "../with-org";
 import { epiStock, stockMovements, epiDeliveries } from "../schema/epis";
 import { employees } from "../schema/employees";
 import { auditedTenantWrite } from "./audited-write";
 
 const WRITE_EVENT = "epi.stock_movement.write_rejected";
+
+/** Parâmetros de uma baixa de estoque (saída) por linha, dentro de uma transação `withOrg`. */
+export type StockExitParams = {
+  orgId: string;
+  stockId: string;
+  quantity: number;
+  type: StockMovementType;
+  /** `YYYY-MM-DD`; quando omitido usa o default `now()` da coluna. */
+  movementDate?: string;
+  /** Liga o movimento à entrega que o originou (`employee_delivery`). */
+  deliveryId?: string;
+};
+
+/**
+ * Helper transacional de BAIXA por linha, reutilizável (extraído de `registerStockExit`):
+ * trava a linha (`SELECT … FOR UPDATE`), valida `novoSaldo >= 0` na app (senão
+ * `InsufficientStockError`, que aborta a transação → rollback total), insere o movimento
+ * e decrementa o saldo materializado. Roda **dentro** de uma transação `withOrg` já
+ * aberta — o chamador é o dono do `auditedTenantWrite`/`withOrg`. Usado pela saída manual
+ * (010, ajuste/descarte) e pela baixa por entrega (011, `employee_delivery` + `delivery_id`).
+ * O `CHECK balance >= 0` (008) é o backstop contra corridas que escapem da validação.
+ */
+export async function applyStockExit(
+  tx: TenantTransaction,
+  params: StockExitParams,
+): Promise<StockMovementResult> {
+  const { orgId, stockId, quantity } = params;
+  const [stock] = await tx
+    .select({ id: epiStock.id, balance: epiStock.balance })
+    .from(epiStock)
+    .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, stockId)))
+    .for("update")
+    .limit(1);
+  if (!stock) throw new NotFoundError();
+
+  const newBalance = stock.balance - quantity;
+  if (newBalance < 0) throw new InsufficientStockError(stock.balance, quantity);
+
+  const [movement] = await tx
+    .insert(stockMovements)
+    .values({
+      orgId,
+      stockId,
+      deliveryId: params.deliveryId ?? null,
+      type: params.type,
+      quantity,
+      ...(params.movementDate ? { movementDate: params.movementDate } : {}),
+    })
+    .returning();
+
+  await tx
+    .update(epiStock)
+    .set({ balance: newBalance, updatedAt: new Date() })
+    .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, stockId)));
+
+  return { movement, newBalance };
+}
 
 /**
  * Registra uma ENTRADA (compra) numa transação atômica: trava a linha do estoque
@@ -75,36 +133,15 @@ export async function registerStockExit(
   input: StockExitValues,
 ): Promise<StockMovementResult> {
   return auditedTenantWrite(orgId, WRITE_EVENT, () =>
-    withOrg(orgId, async (tx) => {
-      const [stock] = await tx
-        .select({ id: epiStock.id, balance: epiStock.balance })
-        .from(epiStock)
-        .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, input.stockId)))
-        .for("update")
-        .limit(1);
-      if (!stock) throw new NotFoundError();
-
-      const newBalance = stock.balance - input.quantity;
-      if (newBalance < 0) throw new InsufficientStockError(stock.balance, input.quantity);
-
-      const [movement] = await tx
-        .insert(stockMovements)
-        .values({
-          orgId,
-          stockId: input.stockId,
-          type: input.type,
-          quantity: input.quantity,
-          movementDate: input.movementDate,
-        })
-        .returning();
-
-      await tx
-        .update(epiStock)
-        .set({ balance: newBalance, updatedAt: new Date() })
-        .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, input.stockId)));
-
-      return { movement, newBalance };
-    }),
+    withOrg(orgId, (tx) =>
+      applyStockExit(tx, {
+        orgId,
+        stockId: input.stockId,
+        quantity: input.quantity,
+        type: input.type,
+        movementDate: input.movementDate,
+      }),
+    ),
   );
 }
 
