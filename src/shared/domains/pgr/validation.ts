@@ -18,6 +18,7 @@ export const workerCountSchema = z.number().int().positive();
 export const stockMovementTypeSchema = z.enum([
   "purchase",
   "employee_delivery",
+  "employee_return",
   "adjustment",
   "discard",
   "employee_return",
