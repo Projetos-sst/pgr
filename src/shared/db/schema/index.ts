@@ -57,3 +57,31 @@ export {
   type SignatureCapture,
   type NewSignatureCapture,
 } from "./signatures";
+export {
+  risks,
+  riskAssessments,
+  controlMeasures,
+  riskAgentType,
+  exposureTime,
+  measurementUnit,
+  assessmentCriterion,
+  controlLevel,
+  type Risk,
+  type NewRisk,
+  type RiskAssessment,
+  type NewRiskAssessment,
+  type ControlMeasure,
+  type NewControlMeasure,
+} from "./risks";
+export {
+  pgr,
+  pgrGes,
+  pgrRevisions,
+  pgrRegistrationType,
+  type Pgr,
+  type NewPgr,
+  type PgrGes,
+  type NewPgrGes,
+  type PgrRevision,
+  type NewPgrRevision,
+} from "./pgr";

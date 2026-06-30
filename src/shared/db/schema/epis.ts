@@ -234,9 +234,10 @@ export const epiDeliveryItems = pgTable(
 
 /**
  * Vínculo EPI × risco do GES (junção) com a flag "neutraliza os riscos?".
- * Não existe ainda uma tabela `risks` dedicada; o risco é representado, de forma
- * interina, pelo `ges` (entidade portadora de risco na cadeia atual). Quando um
- * modelo de risco dedicado existir, migra-se a FK.
+ * Liga, de forma **interina**, o EPI ao `ges` (entidade portadora de risco na cadeia
+ * 008). Com o inventário dedicado (`risks`, fatia de Riscos & PGR) já disponível, a
+ * reescrita da FK para `risk_id` está planejada como follow-up dedicado — ver
+ * `docs/briefings/implementacao-pgr-risks-data-model.md` (decisão D6).
  */
 export const epiRisk = pgTable(
   "epi_risk",
