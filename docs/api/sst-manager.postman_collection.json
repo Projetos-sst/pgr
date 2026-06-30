@@ -14,7 +14,8 @@
     { "key": "jobRoleId", "value": "" },
     { "key": "gesId", "value": "" },
     { "key": "linkId", "value": "" },
-    { "key": "employeeId", "value": "" }
+    { "key": "employeeId", "value": "" },
+    { "key": "categoryId", "value": "" }
   ],
   "item": [
     {
@@ -632,6 +633,102 @@
               "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "employees", "{{employeeId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categoria",
+      "item": [
+        {
+          "name": "GET /categories (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/categories?search=&type=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "categories"],
+              "query": [
+                { "key": "search", "value": "" },
+                { "key": "type", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /categories (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "categories"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"epi\",\n  \"name\": \"Luva de raspa\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /categories/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "categories", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /categories/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "categories", "{{categoryId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"epi\",\n  \"name\": \"Luva de raspa\",\n  \"note\": \"atualizada\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /categories/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "categories", "{{categoryId}}"]
             }
           }
         }

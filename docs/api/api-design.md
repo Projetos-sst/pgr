@@ -74,9 +74,12 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                      | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET  |
 | `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`             | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE |
 | `/employees` · `/employees/{id}`                                   | GET, POST · GET, PUT, DELETE                                  |
+| `/categories` · `/categories/{id}`                                 | GET, POST · GET, PUT, DELETE                                  |
 
 - **Filtros (query)**: list de cada recurso aceita `search`, `page`, `pageSize` + os filtros do
-  recurso (`companyId`, `workUnitId`, `status`). Body de create/update = o mesmo `*Input` das actions.
+  recurso (`companyId`, `workUnitId`, `status`, `type`). Body de create/update = o mesmo `*Input`
+  das actions. **`/categories`** filtra por `search` + `type` (`epi`|`machine`); **PUT exige corpo
+  completo `CategoryInput`** (espelho de companies, sem `.partial()`); **não há `/dependents`**.
 - **Respostas**: recurso no corpo (`200`), `201` no create, `204` no delete. Erros:
   `{ error: { code, message, fields? } }` com HTTP `422 VALIDATION` · `409 DUPLICATE` ·
   `422 FK_NOT_FOUND` · `404 NOT_FOUND` · `403 FORBIDDEN`/`NO_TENANT_CONTEXT` · `401 UNAUTHORIZED`.
@@ -122,6 +125,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                             |
 | GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles` |
 | Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                      |
+| Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)              |
 
 ---
 
@@ -271,6 +275,23 @@ dismissalDate? badgeValidUntil?` (datas), `phone? email? rg? badgeNumber? regist
 bloodType? photoPath?`, endereço (`zipCode?…state?`).
 **`EmployeeListItem`**: `{ id, fullName, status, companyName, gesName }`.
 
+## Categoria — `actions/pgr/categories.ts`
+
+Catálogo de categorias de `epi`/`machine` (fatia 009). Sem `/dependents` (catálogo sem FK de
+entrada). REST espelho em `/api/v1/categories` (GET, POST) · `/api/v1/categories/{id}` (GET, PUT, DELETE).
+
+| Action                 | Entrada                                | Retorno (`data`)                            |
+| ---------------------- | -------------------------------------- | ------------------------------------------- |
+| `listCategoriesAction` | `{ search?, type?, page?, pageSize? }` | `{ rows: Category[]; total }`               |
+| `getCategoryAction`    | `id`                                   | `Category` (null → `NOT_FOUND`)             |
+| `createCategoryAction` | `CategoryInput`                        | `Category` (nome dup no tipo → `DUPLICATE`) |
+| `updateCategoryAction` | `id, CategoryInput`                    | `Category`                                  |
+| `deleteCategoryAction` | `id`                                   | `{ id }`                                    |
+
+**`CategoryInput`**: `type*` (`epi`|`machine`), `name*`, `note?`. Unicidade por
+`UNIQUE(org_id, type, name)` → duplicidade no mesmo escritório+tipo vira `DUPLICATE`; o mesmo nome
+é aceito entre tipos distintos. **PUT (REST) exige corpo completo** (sem `.partial()`).
+
 ---
 
 ## Rotas de UI (superfície HTTP navegável)
@@ -287,6 +308,7 @@ inexistente ou de outro escritório → `notFound()`.
 | `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                          |
 | `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos) |
 | `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)          |
+| `/categories` · `/categories/new` · `/categories/[id]/edit`                  | Categoria (catálogo `epi`/`machine`; detalhe=edição)            |
 
 ## Invariantes de isolamento (multi-tenant)
 
