@@ -56,9 +56,9 @@ de TODAS as stories
       exportar em `src/shared/db/schema/index.ts`
 - [ ] T004 Gerar a migration `npm run db:generate` → `src/shared/db/migrations/0009_*.sql` e
       acrescentar o SQL custom (padrão 0001/0005): `GRANT SELECT ON public.caepi_certificates TO
-    app_runtime;` (**somente SELECT — sem INSERT/UPDATE/DELETE**) + trigger
-      `set_updated_at_caepi_certificates`; aplicar com `npm run db:migrate` e conferir à mão que
-      `app_runtime` lê e não escreve (quickstart §1)
+  app_runtime;` (**somente SELECT — sem INSERT/UPDATE/DELETE**) + trigger
+      `set_updated_at_caepi_certificates`; aplicar com `npm run db:migrate` (a verificação manual
+      canônica do GRANT é a T026 — não duplicar aqui)
 - [ ] T005 [P] Criar `src/shared/integrations/caepi/types.ts` com `CaepiParsedRow` e
       `CaLookupResult` (união fechada de 3 estados + `baseUnsynced?` — data-model §3)
 - [ ] T006 [P] Criar `src/shared/integrations/caepi/normalize.ts` (`normalizeCa` reusando
@@ -86,7 +86,7 @@ formato inválido → `VALIDATION` sem tocar a base. **Não depende da US2** (jo
       `validateCa(record, today)` (research R6: `valid` ⇔ situação normalizada NFD/uppercase =
       `VALIDO` **e** `valid_until >= today` inclusivo; senão `expired`; situação desconhecida →
       `expired`) + helper `todayInSaoPaulo()` (`Intl.DateTimeFormat("en-CA", { timeZone:
-    "America/Sao_Paulo" })`)
+  "America/Sao_Paulo" })`)
 - [ ] T009 [P] [US1] Unit test `src/__tests__/unit/integrations/caepi/validate-ca.test.ts`
       (vigente; vencido por data; **limite `== hoje` → valid**; `VENCIDO`/`CANCELADO`/situação
       desconhecida → expired; normalização de acento/caixa da situação)
@@ -100,17 +100,21 @@ formato inválido → `VALIDATION` sem tocar a base. **Não depende da US2** (jo
 - [ ] T012 [P] [US1] Unit test `src/__tests__/unit/integrations/caepi/lookup.test.ts` — mapeamento
       → `CaLookupResult` nos 3 estados + `baseUnsynced` (repositório mockado)
 - [ ] T013 [US1] Criar a Server Action `src/shared/server/actions/epi/lookup-ca.ts` — `"use
-    server"`; guarda inline `requireAuth()` (research R8 — **não** `officeAction`); formato
+  server"`; guarda inline `requireAuth()` (research R8 — **não** `officeAction`); formato
       inválido → `fail("VALIDATION")` sem tocar a base; erros conhecidos via `toActionError`;
       inesperados relançados (contracts/lookup-surfaces.md)
 - [ ] T014 [US1] Criar o Route Handler `src/app/api/integrations/caepi/[ca]/route.ts` (molde
       `cep/[cep]`): `ensureSession()` + `invalidFormat()` de `_lib/respond.ts`; **3 estados como
       payload 200** `ok(CaLookupResult)` (não usar `respondWithProviderResult`); `Cache-Control:
-    no-store` (resposta depende de "hoje"); 422/401 conforme contrato
+  no-store` (resposta depende de "hoje"); 422/401 conforme contrato
 - [ ] T015 [US1] Criar o hook `src/shared/integrations/caepi/client/use-caepi-validation.ts` —
       wrapper do `useLookup` (`isValid: isValidCa`, `buildUrl` → `/api/integrations/caepi/[ca]`
       normalizado); deriva `idle|loading|valid|expired|not_found|error` do payload; `onFound`
-      chamado em `valid` **e** `expired`, nunca em `not_found`; herda AbortController/nunca-lançar
+      chamado em `valid` **e** `expired`, nunca em `not_found`; herda AbortController/nunca-lançar.
+      Incluir unit test `src/__tests__/unit/integrations/caepi/use-caepi-validation.test.tsx`
+      (fetch mockado): derivação dos estados do payload; erro/timeout → `error` silencioso;
+      dois `lookup` em sequência → o primeiro é abortado (edge cases US1-7/US1-8 — o `useLookup`
+      não tem teste próprio no repo)
 - [ ] T016 [US1] Criar o campo `src/shared/integrations/caepi/client/ca-field.tsx` — input CA com
       lookup no blur; badge verde (`valid`), aviso "CA vencido" distinto (`expired`, ainda
       autopreenche), "CA não encontrado" / "base CAEPI ainda não sincronizada" (`not_found`/
@@ -121,7 +125,9 @@ formato inválido → `VALIDATION` sem tocar a base. **Não depende da US2** (jo
       client admin (`_helpers/db.ts#adminClient`; a tabela global fica fora do `truncateAll` — a
       suíte limpa `caepi_certificates` no setup); `getByCa`/`lookupCaRecord` → `valid`/`expired`/
       `not_found`; limite `== hoje`; base vazia → `baseUnsynced`; REST: 200 nos 3 estados, 422
-      formato inválido (sem tocar a base), 401 sem sessão
+      formato inválido (sem tocar a base), 401 sem sessão; Server Action `lookupCa`: sem sessão →
+      `fail("UNAUTHORIZED")` (guarda nas DUAS superfícies — SC-008) e caso positivo: sessão com
+      papel `client` consegue consultar (gate é só sessão, edge case da spec)
 
 **Checkpoint**: US1 completa — consulta + autofill demonstráveis com base semeada (MVP)
 
@@ -145,7 +151,7 @@ base preservada.
       em `.specs/011-caepi-ca-validation/research.md` (R2); se headless não passar de forma
       estável, o caminho oficial passa a ser o fallback `--file` (sem retrabalho)
 - [ ] T019 [P] [US2] Criar `src/shared/integrations/caepi/parse.ts` — `parseCaepiCsv(gzipStream,
-    onBatch, opts)` em streaming (`zlib.createGunzip()` → `csv-parse` com `delimiter: ";"`,
+  onBatch, opts)` em streaming (`zlib.createGunzip()` → `csv-parse` com `delimiter: ";"`,
       `bom: true`, aspas/escape RFC 4180, `relax_column_count: true` → Zod por linha →
       `CaepiParsedRow`); descarte com log/contador por linha corrompida/colunas faltando/data
       inválida/`ca` inválido; `dd/mm/aaaa` → `YYYY-MM-DD`; `batchSize` default 1.000
@@ -156,7 +162,7 @@ base preservada.
       aborta); datas convertidas; **validar os asserts à mão contra a amostra** (spec, IA não
       aprova sozinha)
 - [ ] T021 [US2] Criar `src/shared/db/repositories/caepi-upsert.ts` — `upsertMany(dbHandle, rows,
-    syncedAt)` com handle Drizzle **injetado** (SEM importar `server-only`/singleton `db`);
+  syncedAt)` com handle Drizzle **injetado** (SEM importar `server-only`/singleton `db`);
       chunks de 1.000; `onConflictDoUpdate` por `ca` atualizando todas as colunas de dado +
       `synced_at`; sem delete/truncate (contracts/repositories.md)
 - [ ] T022 [US2] Criar `scripts/caepi-sync.ts` — orquestração collect → parse → upsertMany;
@@ -172,7 +178,8 @@ base preservada.
       in-place (mudar `situation`/`valid_until` na 2ª carga); **fail-safe**: fixture truncada →
       erro antes de escrever, base semeada intocada
 - [ ] T024 [US2] **Bootstrap real** (validação manual): rodar `npx tsx scripts/caepi-sync.ts`
-      (coleta real, fora de CI se o spike T018 indicar) e registrar no PR: contadores
+      com coleta real — localmente; em CI somente se o spike T018 tiver aprovado o headless
+      (caso contrário, bootstrap local via `--file`) — e registrar no PR: contadores
       (`parsed/discarded/upserted`), duração e 2ª execução idempotente. Rodar uma consulta real de
       CA conhecido (ex.: 31469) nas duas surfaces
 

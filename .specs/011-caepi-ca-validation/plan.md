@@ -121,7 +121,7 @@ src/
 ├── app/api/integrations/
 │   └── caepi/[ca]/route.ts                 # NOVO — GET session-guarded (molde cep/cnpj); 3 estados como payload 200
 ├── shared/integrations/caepi/
-│   ├── types.ts                            # NOVO — CaLookupResult, CaepiRecord (DTO), CaepiParsedRow
+│   ├── types.ts                            # NOVO — CaLookupResult, CaepiParsedRow
 │   ├── normalize.ts                        # NOVO — normalizeCa/isValidCa (reusa onlyDigits de ../validation.ts)
 │   ├── validate-ca.ts                      # NOVO — puro: (record, today) → "valid" | "expired"
 │   ├── lookup.ts                           # NOVO — lookupCaRecord(ca): getByCa + validate → CaLookupResult (serviço único p/ SA e REST)
@@ -142,7 +142,8 @@ src/
 │   │   ├── parse.test.ts                   # NOVO — amostra real: aspas c/ ";" e \n, BOM, acentos, linha corrompida, data inválida
 │   │   ├── validate-ca.test.ts             # NOVO — limite == hoje → valid; situação vencida/cancelada → expired
 │   │   ├── normalize.test.ts               # NOVO — máscara/espaços → dígitos; formatos inválidos
-│   │   └── lookup.test.ts                  # NOVO — mapeamento → CaLookupResult nos 3 estados (repo mockado)
+│   │   ├── lookup.test.ts                  # NOVO — mapeamento → CaLookupResult nos 3 estados (repo mockado)
+│   │   └── use-caepi-validation.test.tsx   # NOVO — derivação de estados do payload; abort/erro silencioso herdados (fetch mockado)
 │   └── integration/
 │       ├── _fixtures/caepi-sample.csv.gz   # NOVO — amostra real reduzida (também usada no unit de parse)
 │       └── integrations/caepi.test.ts      # NOVO — upsert idempotente (2×); getByCa 3 estados; GRANT (app_runtime SELECT ok, escrita negada); coleta falha → base preservada
