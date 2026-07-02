@@ -37,14 +37,14 @@ Infosimples) existem, mas são **não-oficiais e/ou pagos, sem SLA garantido**.
 
 ### Decisão: **ingestão periódica do dataset oficial + validação local** ✅
 
-| Critério | Ingestão da base oficial (escolhida) | API de terceiros | Scraping do portal |
-| --- | --- | --- | --- |
-| Oficialidade | ✅ fonte é o próprio MTE | ❌ intermediário | ✅/⚠️ oficial mas frágil |
-| Confiabilidade | ✅ não depende de uptime externo no request | ❌ sem SLA | ❌ quebra fácil |
-| Custo | ✅ zero por consulta | ⚠️/❌ pago ou rate-limit | ✅ zero |
-| Latência da consulta | ✅ query local (ms) | ⚠️ rede externa | ❌ lento |
-| Esforço | ⚠️ maior (tabela + job + parser) | ✅ baixo | ⚠️ médio e instável |
-| Multi-tenant | ✅ tabela **global/compartilhada** (dado público, sem `org_id`) | n/a | n/a |
+| Critério             | Ingestão da base oficial (escolhida)                            | API de terceiros         | Scraping do portal       |
+| -------------------- | --------------------------------------------------------------- | ------------------------ | ------------------------ |
+| Oficialidade         | ✅ fonte é o próprio MTE                                        | ❌ intermediário         | ✅/⚠️ oficial mas frágil |
+| Confiabilidade       | ✅ não depende de uptime externo no request                     | ❌ sem SLA               | ❌ quebra fácil          |
+| Custo                | ✅ zero por consulta                                            | ⚠️/❌ pago ou rate-limit | ✅ zero                  |
+| Latência da consulta | ✅ query local (ms)                                             | ⚠️ rede externa          | ❌ lento                 |
+| Esforço              | ⚠️ maior (tabela + job + parser)                                | ✅ baixo                 | ⚠️ médio e instável      |
+| Multi-tenant         | ✅ tabela **global/compartilhada** (dado público, sem `org_id`) | n/a                      | n/a                      |
 
 A consulta de CA passa a ser **local** (contra a tabela ingerida), não um fetch externo no `blur`.
 O fetch externo acontece **só no job de ingestão**, fora do caminho do usuário.
@@ -108,8 +108,22 @@ src/app/(protected)/epis/_components/ca-field.tsx  # campo CA + feedback (valid/
 
 ```ts
 type CaLookupResult =
-  | { status: "valid";     ca: string; manufacturer: string; norm: string; validUntil: string; equipmentName?: string }
-  | { status: "expired";   ca: string; manufacturer: string; norm: string; validUntil: string; equipmentName?: string }
+  | {
+      status: "valid";
+      ca: string;
+      manufacturer: string;
+      norm: string;
+      validUntil: string;
+      equipmentName?: string;
+    }
+  | {
+      status: "expired";
+      ca: string;
+      manufacturer: string;
+      norm: string;
+      validUntil: string;
+      equipmentName?: string;
+    }
   | { status: "not_found"; ca: string };
 ```
 
@@ -140,15 +154,15 @@ type CaLookupResult =
 
 ## 4. Edge cases
 
-| Caso | Comportamento |
-| --- | --- |
-| CA não existe na base | `not_found` → erro inline; cadastro segue manual |
-| CA vencido | `expired` → badge + aviso; preenche dados mesmo assim |
+| Caso                                       | Comportamento                                                         |
+| ------------------------------------------ | --------------------------------------------------------------------- |
+| CA não existe na base                      | `not_found` → erro inline; cadastro segue manual                      |
+| CA vencido                                 | `expired` → badge + aviso; preenche dados mesmo assim                 |
 | Base ainda não sincronizada (tabela vazia) | trata como `not_found` + aviso de base não sincronizada; não bloqueia |
-| Download do MTE falhou no cron | mantém base anterior; loga; não derruba dados |
-| Formato de CA inválido | 422 sem consultar; hook não dispara |
-| Digitação rápida (vários blur) | aborta request anterior |
-| Linha corrompida no TXT | descartada com log; não aborta a carga toda |
+| Download do MTE falhou no cron             | mantém base anterior; loga; não derruba dados                         |
+| Formato de CA inválido                     | 422 sem consultar; hook não dispara                                   |
+| Digitação rápida (vários blur)             | aborta request anterior                                               |
+| Linha corrompida no TXT                    | descartada com log; não aborta a carga toda                           |
 
 ---
 
