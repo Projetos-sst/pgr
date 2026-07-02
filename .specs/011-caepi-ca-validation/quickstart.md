@@ -11,7 +11,9 @@ chromium` (só onde o job roda; a app na Vercel não usa nenhuma das duas).
 
 ```bash
 npm run db:generate   # emite 0009_caepi_certificates a partir do schema
-# adicionar o SQL custom na migration gerada (padrão 0001/0005):
+# o drizzle-kit já emite ENABLE RLS + a policy global de leitura (pgPolicy/enableRLS no schema —
+# o banco de produção força RLS em tabela nova via event trigger ensure_rls; sem a policy o
+# app_runtime leria vazio). Adicionar o SQL custom na migration gerada (padrão 0001/0005):
 #   GRANT SELECT ON public.caepi_certificates TO app_runtime;   ← SELECT-only, sem escrita
 #   CREATE TRIGGER set_updated_at_caepi_certificates …
 npm run db:migrate

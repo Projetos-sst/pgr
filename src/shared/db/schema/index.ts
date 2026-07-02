@@ -21,6 +21,11 @@ export {
 } from "./employees";
 export { gesJobRoles, type GesJobRole, type NewGesJobRole } from "./ges-job-roles";
 export {
+  caepiCertificates,
+  type CaepiCertificate,
+  type NewCaepiCertificate,
+} from "./caepi-certificates";
+export {
   epiCatalog,
   epiStock,
   stockMovements,

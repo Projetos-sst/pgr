@@ -39,6 +39,21 @@ e #75). Este research fecha as decisões **técnicas** que a spec deixou para o 
 - **Alternatives considered**: **fetch/undici/curl** (provadamente bloqueados); **puppeteer**
   (equivalente, sem vantagem); **replicar `cf_clearance` por engenharia reversa** (frágil,
   descartado por decisão travada); **API paga de terceiros** (Plano B registrado, não implementado).
+- **RESULTADO DO SPIKE (T018, 2026-07-02, execução real)**:
+  - **Headless NÃO passa** o desafio Cloudflare em nenhuma variante testada (headless shell,
+    headless novo do Chromium completo via `channel: "chromium"`, Chrome real headless) — a página
+    fica presa em "Um momento…". **Headed passa** (Chromium e Chrome), mesmo automatizado.
+    Consequência: `collect.ts` roda **headed por default** (`headless: false`); em runner de CI
+    exigiria display virtual (xvfb) e ainda assim IP de datacenter é risco — o caminho recomendado
+    para agendamento é rodar com display (ou usar o fallback `--file`, zero retrabalho).
+  - **Id real do link** no DOM: `#PlaceHolderConteudo_LinkButton1` (o ASP.NET emite o anchor SEM o
+    prefixo `ctl00_` do UniqueID usado no `__doPostBack`).
+  - **Fatos novos do arquivo real** (`RelatorioCA_20260702_100356.csv.gz`, 22,4 MB → 149,8 MB
+    descomprimido, 124.317 registros): (a) o corpo da resposta traz o **HTML da página ASPX
+    (~885 KB) anexado DEPOIS do stream gzip** — o zlib do Node descarta o output do chunk final ao
+    tocar nesse lixo; `parse.ts` trunca o stream bruto no marcador `\r\n\r\n<!DOCTYPE html` antes
+    do gunzip (backstop: CRC do gzip falha alto se o corte sair errado); (b) o CSV começa com
+    **BOM DUPLO** (`efbbbf` 2×); (c) parse real completo: 124.316 linhas válidas, 0 descartes.
 
 ## R3 · Runner do script: `tsx` + `dotenv` (já no repo)
 
@@ -168,6 +183,16 @@ today` (comparação lexicográfica de `YYYY-MM-DD`; limite **inclusivo** — `=
 - **Alternatives considered**: `id uuid` PK + `ca` unique (padrão das tabelas tenant — aqui é
   índice redundante sem FK de entrada); RLS habilitado com policy permissiva de leitura (teatro de
   segurança — o GRANT SELECT-only por papel é a tranca real e testável).
+- **REVISÃO (T024, 2026-07-02 — fato descoberto no bootstrap real)**: o banco de produção tem um
+  **event trigger `ensure_rls`** (config do projeto Supabase, fora das migrations) que habilita
+  RLS em TODA tabela nova de `public`. Com RLS ligado e zero policies, o `app_runtime` lia
+  **vazio** em produção (bug pego na validação manual), enquanto o Postgres efêmero dos testes —
+  sem o trigger — se comportaria diferente. Decisão revisada: a migration `0009` fixa o estado
+  **explicitamente** em todos os ambientes — RLS **habilitado** + uma única policy
+  `caepi_certificates_global_read` (`FOR SELECT TO app_runtime USING (true)`), declarada no schema
+  Drizzle (`pgPolicy` + `enableRLS`). Não é RLS de tenant nem teatro: é a configuração mínima para
+  coexistir com a postura RLS-by-default do projeto; a escrita segue **dupla-trancada** (sem GRANT
+  de escrita E sem policy de escrita).
 
 ## R11 · Fallback semi-manual e testabilidade da coleta
 

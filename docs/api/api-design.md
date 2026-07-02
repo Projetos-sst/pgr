@@ -61,12 +61,22 @@ no mesmo envelope `ActionResult<T>`. Falha externa **nunca** bloqueia o form (o 
 | ------ | ------------------------------- | ------------ | ------------------------------------------------------------------------------------------------ |
 | `GET`  | `/api/integrations/cep/{cep}`   | sessão Clerk | `200 ok(endereço)` · `404 NOT_FOUND` · `422 VALIDATION` (formato) · `502 UPSTREAM_ERROR` · `401` |
 | `GET`  | `/api/integrations/cnpj/{cnpj}` | sessão Clerk | `200 ok(empresa+endereço)` · `404` · `422` · `502` · `401`                                       |
+| `GET`  | `/api/integrations/caepi/{ca}`  | sessão Clerk | `200 ok(CaLookupResult)` — 3 estados como payload · `422 VALIDATION` (formato) · `401`           |
 
 - Provedores: **ViaCEP** (`viacep.com.br/ws`) e **BrasilAPI** (`brasilapi.com.br/api/cnpj/v1`), sem API
   key. `src/shared/integrations/**` valida formato antes de chamar (evita request inútil), aplica
   timeout (`AbortController`) e cacheia só o sucesso.
 - ⚠️ **Gotcha**: a BrasilAPI responde **403** ao User-Agent padrão do runtime — o cliente HTTP interno
   manda um `User-Agent` identificável (`providers/http.ts`). Ao testar via cURL, o UA do curl já passa.
+- **CAEPI é 100% local** (fatia 011): a consulta lê a tabela global `caepi_certificates` (espelho da
+  base pública do MTE, alimentada pelo job `scripts/caepi-sync.ts`) — **nenhum fetch externo por
+  request**. Contrato `CaLookupResult`: `{ status: "valid" | "expired", ca, manufacturer, norm,
+validUntil, equipmentName? }` ou `{ status: "not_found", ca, baseUnsynced? }`.
+  **Divergência consciente do 404 de CEP/CNPJ**: os 3 estados voltam como **payload 200** —
+  `not_found`/`expired` são resultado informativo de negócio (aviso na UI, nunca bloqueia o
+  cadastro), não falha de transporte; é o que permite ao hook `use-caepi-validation` reusar o
+  `useLookup` (que só entrega dado em `response.ok && body.ok`). Sem cache (`Cache-Control:
+no-store`): a resposta depende de "hoje" (um CA que vence hoje muda de estado amanhã).
 
 ## REST API (`/api/v1`) — CRUD por HTTP
 
@@ -131,18 +141,19 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 
 ## Sumário das actions/endpoints existentes
 
-| Domínio                   | Arquivo                           | Superfície                                                                |
-| ------------------------- | --------------------------------- | ------------------------------------------------------------------------- |
-| REST API (Route Handlers) | `app/api/v1/**`                   | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees      |
-| Auth (Route Handler)      | `app/api/me/route.ts`             | `GET /api/me`                                                             |
-| Webhook (Route Handler)   | `app/api/webhooks/clerk/route.ts` | `POST /api/webhooks/clerk` (provisiona tenant/sync)                       |
-| Sessão / Identidade       | `actions/me.ts`                   | `meAction` (Server Action)                                                |
-| Empresa                   | `actions/pgr/companies.ts`        | list, options, get, create, update, delete, dependents                    |
-| Unidade de Obra           | `actions/pgr/work-units.ts`       | list, get, create, update, delete, dependents                             |
-| Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                             |
-| GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles` |
-| Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                      |
-| Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)              |
+| Domínio                   | Arquivo                           | Superfície                                                                 |
+| ------------------------- | --------------------------------- | -------------------------------------------------------------------------- |
+| REST API (Route Handlers) | `app/api/v1/**`                   | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees       |
+| Auth (Route Handler)      | `app/api/me/route.ts`             | `GET /api/me`                                                              |
+| Webhook (Route Handler)   | `app/api/webhooks/clerk/route.ts` | `POST /api/webhooks/clerk` (provisiona tenant/sync)                        |
+| Sessão / Identidade       | `actions/me.ts`                   | `meAction` (Server Action)                                                 |
+| Empresa                   | `actions/pgr/companies.ts`        | list, options, get, create, update, delete, dependents                     |
+| Unidade de Obra           | `actions/pgr/work-units.ts`       | list, get, create, update, delete, dependents                              |
+| Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                              |
+| GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles`  |
+| Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                       |
+| Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)               |
+| CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`        | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}` |
 
 ---
 

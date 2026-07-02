@@ -64,6 +64,13 @@
       "when": 1782158650494,
       "tag": "0008_epi_catalog_type_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782999441246,
+      "tag": "0009_caepi_certificates",
+      "breakpoints": true
     }
   ]
 }

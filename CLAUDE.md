@@ -51,9 +51,13 @@ Reference implementation to copy from: **companies** (`actions/pgr/companies.ts`
 Branch: **`feature/external-integrations-layer`**. Fatia atual (`011`) — **Validação/consulta de
 CA no CAEPI/MTE** (issues `#115` + `#75` duplicada): tabela **GLOBAL** `caepi_certificates`
 (espelho da base pública do MTE, **sem `org_id`/RLS de tenant/`withOrg`** — exceção justificada ao
-Princípio I; `app_runtime` = **SELECT-only**, escrita só pelo job via conexão owner), alimentada
-por `scripts/caepi-sync.ts` (Playwright/Chromium passa Cloudflare + postback ASP.NET → `.csv.gz` →
-`csv-parse` streaming → upsert idempotente por `ca`; fallback `--file`), e consulta **100% local**
+Princípio I; RLS ligado com policy única de leitura global `USING (true)` porque o banco de
+produção força RLS em tabela nova via event trigger `ensure_rls`; `app_runtime` = **SELECT-only**,
+escrita só pelo job via conexão owner), alimentada
+por `scripts/caepi-sync.ts` (Playwright/Chromium **headed** — headless é barrado pelo Cloudflare,
+fato do spike T018 — + postback ASP.NET → `.csv.gz` (com HTML ASPX anexado após o gzip; o parse
+trunca no marcador) → `csv-parse` streaming → upsert idempotente por `ca`; fallback `--file`), e
+consulta **100% local**
 `lookupCa` (Server Action `requireAuth()` + REST `GET /api/integrations/caepi/[ca]`) → contrato
 `CaLookupResult` (`valid`/`expired`/`not_found` como **payload 200**) + hook `use-caepi-validation`
 

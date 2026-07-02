@@ -34,9 +34,13 @@ Migration: `src/shared/db/migrations/0009_caepi_certificates.sql` (drizzle-kit +
   o backstop da exceção é o próprio Postgres.
 - `CREATE TRIGGER set_updated_at_caepi_certificates BEFORE UPDATE … EXECUTE FUNCTION
 public.set_updated_at();`
-- **Sem** `pgPolicy`/`enableRLS` no schema Drizzle (decisão R10: a tranca real é o GRANT por
-  papel; policy permissiva seria teatro). **Sem** revoke extra de `anon`/`authenticated` — a
-  `0006` já revogou os privilégios default para tabelas futuras.
+- **RLS habilitado com policy única de leitura global** `caepi_certificates_global_read`
+  (`FOR SELECT TO app_runtime USING (true)`), declarada no schema Drizzle (`pgPolicy` +
+  `enableRLS`) — revisão da R10 após o bootstrap real: o banco de produção força RLS em toda
+  tabela nova (event trigger `ensure_rls` do projeto) e, sem a policy, o `app_runtime` lia vazio.
+  **Não é policy de tenant**; a escrita segue dupla-trancada (sem GRANT e sem policy de escrita).
+  **Sem** revoke extra de `anon`/`authenticated` — a `0006` já revogou os privilégios default
+  para tabelas futuras.
 
 **Índices**: apenas o da PK (`ca`). Nenhuma outra query de leitura existe nesta fatia (YAGNI).
 

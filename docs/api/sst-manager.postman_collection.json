@@ -57,6 +57,14 @@
     {
       "key": "cnpj",
       "value": "00000000000191"
+    },
+    {
+      "key": "ca",
+      "value": "31469"
+    },
+    {
+      "key": "caExpired",
+      "value": "13"
     }
   ],
   "item": [
@@ -1162,6 +1170,84 @@
             },
             "description": "200 ok(empresa+endereco) | 404 | 422 (digito verificador) | 502 | 401/307 sem sessao."
           }
+        },
+        {
+          "name": "CAEPI",
+          "description": "Consulta LOCAL de CA (espelho da base publica do MTE em caepi_certificates, alimentado por scripts/caepi-sync.ts). Sem fetch externo por request. DIVERGENCIA do molde CEP/CNPJ: os 3 estados de negocio (valid | expired | not_found) voltam como payload 200 ok(CaLookupResult) — not_found e aviso de UI, nao falha. 422 so para formato invalido; 401/307 sem sessao. Cache-Control: no-store (resposta depende de 'hoje').",
+          "item": [
+            {
+              "name": "GET /integrations/caepi/:ca (valido)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Cookie",
+                    "value": "__session={{sessionCookie}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/integrations/caepi/{{ca}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "integrations", "caepi", "{{ca}}"]
+                },
+                "description": "200 ok({ status: 'valid', ca, manufacturer, norm, validUntil, equipmentName? }) — CA vigente; autofill no form de EPI."
+              }
+            },
+            {
+              "name": "GET /integrations/caepi/:ca (vencido)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Cookie",
+                    "value": "__session={{sessionCookie}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/integrations/caepi/{{caExpired}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "integrations", "caepi", "{{caExpired}}"]
+                },
+                "description": "200 ok({ status: 'expired', ... }) — situacao VENCIDO/CANCELADO ou validade passada; a UI avisa mas AINDA autopreenche."
+              }
+            },
+            {
+              "name": "GET /integrations/caepi/:ca (inexistente)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Cookie",
+                    "value": "__session={{sessionCookie}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/integrations/caepi/999999999",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "integrations", "caepi", "999999999"]
+                },
+                "description": "200 ok({ status: 'not_found', ca, baseUnsynced? }) — baseUnsynced=true quando a tabela nunca foi sincronizada."
+              }
+            },
+            {
+              "name": "GET /integrations/caepi/:ca (formato invalido)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Cookie",
+                    "value": "__session={{sessionCookie}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/integrations/caepi/abc123",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "integrations", "caepi", "abc123"]
+                },
+                "description": "422 fail(VALIDATION, 'CA invalido.') — contem letras; nao toca a base."
+              }
+            }
+          ]
         }
       ]
     }
