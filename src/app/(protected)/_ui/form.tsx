@@ -28,6 +28,7 @@ export function TextField({
   defaultValue,
   value,
   onChange,
+  onBlur,
   type = "text",
   required,
   error,
@@ -37,6 +38,7 @@ export function TextField({
   defaultValue?: string | null;
   value?: string;
   onChange?: (value: string) => void;
+  onBlur?: () => void;
   type?: string;
   required?: boolean;
   error?: string;
@@ -52,6 +54,7 @@ export function TextField({
         name={name}
         type={type}
         className={inputClass}
+        onBlur={onBlur}
         {...(controlled
           ? { value, onChange: (e) => onChange?.(e.target.value) }
           : { defaultValue: defaultValue ?? "" })}
