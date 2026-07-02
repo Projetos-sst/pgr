@@ -31,6 +31,10 @@ ANEXO OBRIGATÓRIO (fonte da verdade — leia INTEIRO antes de escrever a spec):
 - docs/briefings/caepi-logica-de-negocio.md
   Guia de negócio (as "duas histórias de dados", o papel do CA como atributo validado). Contexto de
   domínio — não é contrato técnico, mas fixa o "porquê".
+- docs/briefings/epi-fluxos-panorama.md (contexto complementar)
+  Panorama de TODOS os fluxos do módulo de EPI (catálogo #18, estoque #70, movimentações #72,
+  entrega #19, devolução #20, ficha #21) e onde a validação de CA (#115) se encaixa. Use para
+  situar fronteiras: esta fatia entrega SÓ o campo CA + hook + base CAEPI; a UI do catálogo é da #18.
 
 CONTEXTO:
 Projeto SST Manager — SaaS B2B multiempresa de Segurança do Trabalho (inspirado no ePGR). Antes de
