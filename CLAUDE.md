@@ -48,34 +48,56 @@ Reference implementation to copy from: **companies** (`actions/pgr/companies.ts`
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/stock-movements`**. Fatia atual (`010`) — **Movimentações de estoque e
-histórico** (`stock_movements`): registrar **entrada** (compra) e **saída manual** (ajuste/descarte)
-de itens de estoque de EPI, mantendo o saldo materializado **`epi_stock.balance`** por **transação
-atômica** (`SELECT … FOR UPDATE`), e exibir o **histórico por item** com **saldo resultante derivado**
-(window function, sem coluna). Camada de **fluxo** sobre o modelo da `008` (epi-data-model) e
-contrapartida da `009` (epi-stock-crud, que trata `balance` como read-only). **Zero migration.**
+Branch: **`feature/external-integrations-layer`**. Fatia atual (`011`) — **Validação/consulta de
+CA no CAEPI/MTE** (issues `#115` + `#75` duplicada): tabela **GLOBAL** `caepi_certificates`
+(espelho da base pública do MTE, **sem `org_id`/RLS de tenant/`withOrg`** — exceção justificada ao
+Princípio I; `app_runtime` = **SELECT-only**, escrita só pelo job via conexão owner), alimentada
+por `scripts/caepi-sync.ts` (Playwright/Chromium passa Cloudflare + postback ASP.NET → `.csv.gz` →
+`csv-parse` streaming → upsert idempotente por `ca`; fallback `--file`), e consulta **100% local**
+`lookupCa` (Server Action `requireAuth()` + REST `GET /api/integrations/caepi/[ca]`) → contrato
+`CaLookupResult` (`valid`/`expired`/`not_found` como **payload 200**) + hook `use-caepi-validation`
 
-Fatia atual (`010`) — `.specs/010-stock-movements/`:
+- `ca-field.tsx` (autofill fabricante/norma/validade; **nunca bloqueia** o cadastro). **1 migration
+  (`0009`)**. Convive na branch com a camada CEP/CNPJ já commitada (`ea86029`).
 
-- Plan: `.specs/010-stock-movements/plan.md`
+Fatia atual (`011`) — `.specs/011-caepi-ca-validation/`:
+
+- Plan: `.specs/011-caepi-ca-validation/plan.md`
 - Spec / Research / Data model / Quickstart no mesmo diretório.
-- Contracts: `contracts/server-actions.md`, `contracts/repositories.md`, `contracts/rest-endpoints.md`.
-- Briefing (fonte): `docs/briefings/briefing-stock-movements.md`.
+- Contracts: `contracts/ingestion-pipeline.md`, `contracts/repositories.md`,
+  `contracts/lookup-surfaces.md`.
+- Briefings (fonte): `docs/briefings/caepi-cron-brainstorming.md` (**Spike 0 — prevalece**),
+  `115-caepi-validacao-ca.md`, `caepi-logica-de-negocio.md`, `epi-fluxos-panorama.md`.
 
-Notas chave (`010`):
+Notas chave (`011`):
 
-- **Escrita transacional do saldo** (1ª fatia que escreve `epi_stock.balance`): por movimento,
-  `SELECT … FOR UPDATE` → valida `novoSaldo >= 0` na app (`CHECK balance >= 0` como backstop) →
-  `INSERT` no movimento + `UPDATE` do saldo, tudo numa transação (`withOrg`). Falha → rollback total.
-- **`quantity` sempre > 0**; o sinal vem do `type` (`purchase` `+`; `adjustment`/`discard` `−`).
-  Saída manual só aceita `{adjustment, discard}` (sem ajuste bidirecional).
-- **Saldo resultante derivado** por window function + função pura `computeRunningBalance` (unit);
-  **sem coluna `balance_after`**. **"Usuário que registrou" omitido** (modelo 008 sem `created_by`).
-- **Novo erro `INSUFFICIENT_STOCK` → 422** em `src/shared/api/rest.ts`. REST em
-  `/api/v1/epi-stock/[id]/movements` (POST registra; GET histórico). Rota UI `/epi-stock/[id]/history`.
-- Testes: unit (`computeRunningBalance`, schemas); integração de Server Actions/REST +
-  rollback de saída insuficiente + histórico + `NOT_FOUND` cross-tenant + `FORBIDDEN` contra
-  **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite nem o banco de dev.
+- **Fonte real (Spike 0, fato)**: `caepi.trabalho.gov.br` atrás de Cloudflare (403 p/ não-browser);
+  download = postback ASP.NET → CSV `;` com aspas/escape `""`, **UTF-8 BOM**, 19 colunas; NÃO é
+  TXT `|` nem baixável por `fetch`; **sem** Route Handler `/api/cron` nem `CRON_SECRET`.
+- **Repositório dividido por contexto**: `repositories/caepi.ts` (leitura runtime, singleton `db`)
+  vs `repositories/caepi-upsert.ts` (escrita do job, handle owner **injetado** — script tsx não
+  pode importar `server-only`). Upsert em chunks de 1.000, `onConflictDoUpdate` por `ca` (PK
+  natural), mesmo `synced_at` por run, **sem** truncate/delete/transação global.
+- **Regra de vigência** (`validate-ca`, pura): `valid` ⇔ situação normalizada `VALIDO` **e**
+  `valid_until >= hoje` (inclusivo; "hoje" no fuso `America/Sao_Paulo`); senão `expired`; situação
+  desconhecida → `expired` (conservador). Base vazia → `not_found` + aviso "base não sincronizada".
+- **Gate = só sessão** (`requireAuth()`, decisão de Clarifications — não `officeAction`); hook
+  reusa `useLookup` (fetch + AbortController) contra o REST; falha externa/estado nunca bloqueia o
+  salvamento do EPI. Modelo `epis.ts` **intacto**.
+- **Libs novas (devDeps, só do job)**: `playwright` + `csv-parse`; runner `tsx` (já existia).
+  Cadência semanal; agendador (GitHub Actions cron recomendado) é decisão de infra fora do escopo.
+  Spike inicial da implementação: headless × Cloudflare em runner de CI (fallback semi-manual
+  pronto via `--file`).
+- Testes: unit (`parse` com amostra real gzip, `validate-ca` limite `== hoje`, `normalize`,
+  mapeamento 3 estados); integração contra **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite:
+  upsert idempotente 2×, `getByCa` 3 estados + base vazia, **GRANT por papel** (`app_runtime` lê e
+  não escreve), coleta falha → base preservada, guarda de sessão (401). Exceção de tenant e GRANT
+  validados à mão.
+
+Fatia paralela (`010` — stock-movements, branch `feature/stock-movements`) —
+`.specs/010-stock-movements/`: entrada/saída manual de estoque com saldo materializado por
+transação atômica (`SELECT … FOR UPDATE`), histórico com saldo resultante derivado (window
+function), erro `INSUFFICIENT_STOCK` → 422. Zero migration.
 
 Fatia anterior (`009` — epi-stock-crud, commit `a55d70b`): CRUD de `epi_stock` com `balance`
 **read-only**; reuso de `ActionResult`/`officeAction`/`requireOfficeStaff`/`_ui`. Sem migration.
