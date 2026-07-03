@@ -21,6 +21,19 @@ import {
   SubmitButton,
   TextField,
 } from "../../_ui/form";
+import { AddressFields, type AddressValue } from "../../_ui/address-fields";
+
+function addressFrom(source?: Employee | null): AddressValue {
+  return {
+    zipCode: source?.zipCode ?? "",
+    street: source?.street ?? "",
+    number: source?.number ?? "",
+    complement: source?.complement ?? "",
+    district: source?.district ?? "",
+    city: source?.city ?? "",
+    state: source?.state ?? "",
+  };
+}
 
 const SEX_OPTIONS = [
   { value: "male", label: "Masculino" },
@@ -59,6 +72,7 @@ export function EmployeeForm({
   const [jobRoleId, setJobRoleId] = useState(employee?.jobRoleId ?? "");
   const [gesOptions, setGesOptions] = useState<Option[]>([]);
   const [functionOptions, setFunctionOptions] = useState<JobRoleOption[]>([]);
+  const [address, setAddress] = useState<AddressValue>(addressFrom(employee));
 
   useEffect(() => {
     if (!companyId) return;
@@ -125,13 +139,7 @@ export function EmployeeForm({
       bloodType: value("bloodType"),
       admissionDate: value("admissionDate"),
       dismissalDate: value("dismissalDate"),
-      zipCode: value("zipCode"),
-      street: value("street"),
-      number: value("number"),
-      complement: value("complement"),
-      district: value("district"),
-      city: value("city"),
-      state: value("state"),
+      ...address,
       photoPath: value("photoPath"),
     };
 
@@ -253,7 +261,7 @@ export function EmployeeForm({
       </fieldset>
 
       <fieldset className="grid gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
-        <legend className="px-1 text-sm font-medium">Endereço e contato</legend>
+        <legend className="px-1 text-sm font-medium">Contato</legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Telefone" name="phone" defaultValue={employee?.phone} />
           <TextField label="E-mail" name="email" defaultValue={employee?.email} />
@@ -272,34 +280,21 @@ export function EmployeeForm({
             defaultValue={employee?.badgeValidUntil}
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <TextField
             label="Tipo sanguíneo"
             name="bloodType"
             defaultValue={employee?.bloodType}
           />
-          <TextField label="CEP" name="zipCode" defaultValue={employee?.zipCode} />
-          <TextField label="Logradouro" name="street" defaultValue={employee?.street} />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TextField label="Número" name="number" defaultValue={employee?.number} />
           <TextField
-            label="Complemento"
-            name="complement"
-            defaultValue={employee?.complement}
+            label="Foto (caminho)"
+            name="photoPath"
+            defaultValue={employee?.photoPath}
           />
-          <TextField label="Bairro" name="district" defaultValue={employee?.district} />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Cidade" name="city" defaultValue={employee?.city} />
-          <TextField label="UF" name="state" defaultValue={employee?.state} />
-        </div>
-        <TextField
-          label="Foto (caminho)"
-          name="photoPath"
-          defaultValue={employee?.photoPath}
-        />
       </fieldset>
+
+      <AddressFields value={address} onChange={setAddress} errors={errors} />
 
       <FieldError message={errors._} />
       <FormActions>

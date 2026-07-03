@@ -18,18 +18,9 @@ import {
   SubmitButton,
   TextField,
 } from "../../_ui/form";
+import { AddressFields, type AddressValue } from "../../_ui/address-fields";
 
-type AddressState = {
-  zipCode: string;
-  street: string;
-  number: string;
-  complement: string;
-  district: string;
-  city: string;
-  state: string;
-};
-
-function emptyAddress(source?: WorkUnit | null): AddressState {
+function addressFrom(source?: WorkUnit | null): AddressValue {
   return {
     zipCode: source?.zipCode ?? "",
     street: source?.street ?? "",
@@ -65,7 +56,7 @@ export function WorkUnitForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [companyId, setCompanyId] = useState(workUnit?.companyId ?? "");
-  const [address, setAddress] = useState<AddressState>(emptyAddress(workUnit));
+  const [address, setAddress] = useState<AddressValue>(addressFrom(workUnit));
 
   const selectedCompany = useMemo(
     () => companies.find((c) => c.id === companyId),
@@ -84,10 +75,6 @@ export function WorkUnitForm({
       city: selectedCompany.city ?? "",
       state: selectedCompany.state ?? "",
     });
-  }
-
-  function setAddressField(key: keyof AddressState) {
-    return (value: string) => setAddress((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -149,63 +136,21 @@ export function WorkUnitForm({
         error={errors.contractNumber}
       />
 
-      <fieldset className="grid gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
-        <legend className="px-1 text-sm font-medium">Endereço</legend>
-        <button
-          type="button"
-          onClick={copyCompanyAddress}
-          disabled={!canCopyAddress}
-          className="self-start rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 disabled:opacity-40 dark:border-white/15"
-        >
-          Preencher com endereço da empresa
-        </button>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TextField
-            label="CEP"
-            name="zipCode"
-            value={address.zipCode}
-            onChange={setAddressField("zipCode")}
-          />
-          <TextField
-            label="Logradouro"
-            name="street"
-            value={address.street}
-            onChange={setAddressField("street")}
-          />
-          <TextField
-            label="Número"
-            name="number"
-            value={address.number}
-            onChange={setAddressField("number")}
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TextField
-            label="Complemento"
-            name="complement"
-            value={address.complement}
-            onChange={setAddressField("complement")}
-          />
-          <TextField
-            label="Bairro"
-            name="district"
-            value={address.district}
-            onChange={setAddressField("district")}
-          />
-          <TextField
-            label="Cidade"
-            name="city"
-            value={address.city}
-            onChange={setAddressField("city")}
-          />
-        </div>
-        <TextField
-          label="UF"
-          name="state"
-          value={address.state}
-          onChange={setAddressField("state")}
-        />
-      </fieldset>
+      <AddressFields
+        value={address}
+        onChange={setAddress}
+        errors={errors}
+        headerSlot={
+          <button
+            type="button"
+            onClick={copyCompanyAddress}
+            disabled={!canCopyAddress}
+            className="self-start rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 disabled:opacity-40 dark:border-white/15"
+          >
+            Preencher com endereço da empresa
+          </button>
+        }
+      />
 
       <FieldError message={errors._} />
       <FormActions>

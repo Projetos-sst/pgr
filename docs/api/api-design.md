@@ -51,6 +51,33 @@ Estes **são** HTTP estável e chamáveis por Postman/cURL (ao contrário das Se
 > `GET /api/me` é o equivalente REST da Server Action `meAction`. O webhook **rejeita** payloads
 > sem assinatura Svix válida (`verifyWebhook`), então só dispara com o signing secret do Clerk.
 
+### Integrações externas (`/api/integrations`) — Route Handlers de consulta
+
+Camada de plataforma reutilizável (autofill de formulários). **Só sessão** (`requireAuth()`) — CEP e
+CNPJ são **dados públicos**, não do tenant; logo **sem** tenant/papel e **sem** bypass dev. Resposta
+no mesmo envelope `ActionResult<T>`. Falha externa **nunca** bloqueia o form (o hook trata em silêncio).
+
+| Método | Rota                            | Auth         | Retorno                                                                                          |
+| ------ | ------------------------------- | ------------ | ------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/integrations/cep/{cep}`   | sessão Clerk | `200 ok(endereço)` · `404 NOT_FOUND` · `422 VALIDATION` (formato) · `502 UPSTREAM_ERROR` · `401` |
+| `GET`  | `/api/integrations/cnpj/{cnpj}` | sessão Clerk | `200 ok(empresa+endereço)` · `404` · `422` · `502` · `401`                                       |
+| `GET`  | `/api/integrations/caepi/{ca}`  | sessão Clerk | `200 ok(CaLookupResult)` — 3 estados como payload · `422 VALIDATION` (formato) · `401`           |
+
+- Provedores: **ViaCEP** (`viacep.com.br/ws`) e **BrasilAPI** (`brasilapi.com.br/api/cnpj/v1`), sem API
+  key. `src/shared/integrations/**` valida formato antes de chamar (evita request inútil), aplica
+  timeout (`AbortController`) e cacheia só o sucesso.
+- ⚠️ **Gotcha**: a BrasilAPI responde **403** ao User-Agent padrão do runtime — o cliente HTTP interno
+  manda um `User-Agent` identificável (`providers/http.ts`). Ao testar via cURL, o UA do curl já passa.
+- **CAEPI é 100% local** (fatia 011): a consulta lê a tabela global `caepi_certificates` (espelho da
+  base pública do MTE, alimentada pelo job `scripts/caepi-sync.ts`) — **nenhum fetch externo por
+  request**. Contrato `CaLookupResult`: `{ status: "valid" | "expired", ca, manufacturer, norm,
+validUntil, equipmentName? }` ou `{ status: "not_found", ca, baseUnsynced? }`.
+  **Divergência consciente do 404 de CEP/CNPJ**: os 3 estados voltam como **payload 200** —
+  `not_found`/`expired` são resultado informativo de negócio (aviso na UI, nunca bloqueia o
+  cadastro), não falha de transporte; é o que permite ao hook `use-caepi-validation` reusar o
+  `useLookup` (que só entrega dado em `response.ok && body.ok`). Sem cache (`Cache-Control:
+no-store`): a resposta depende de "hoje" (um CA que vence hoje muda de estado amanhã).
+
 ## REST API (`/api/v1`) — CRUD por HTTP
 
 Camada **RESTful** sobre Route Handlers (`src/app/api/v1/...`), com **verbos de verdade**
@@ -114,18 +141,19 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 
 ## Sumário das actions/endpoints existentes
 
-| Domínio                   | Arquivo                           | Superfície                                                                |
-| ------------------------- | --------------------------------- | ------------------------------------------------------------------------- |
-| REST API (Route Handlers) | `app/api/v1/**`                   | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees      |
-| Auth (Route Handler)      | `app/api/me/route.ts`             | `GET /api/me`                                                             |
-| Webhook (Route Handler)   | `app/api/webhooks/clerk/route.ts` | `POST /api/webhooks/clerk` (provisiona tenant/sync)                       |
-| Sessão / Identidade       | `actions/me.ts`                   | `meAction` (Server Action)                                                |
-| Empresa                   | `actions/pgr/companies.ts`        | list, options, get, create, update, delete, dependents                    |
-| Unidade de Obra           | `actions/pgr/work-units.ts`       | list, get, create, update, delete, dependents                             |
-| Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                             |
-| GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles` |
-| Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                      |
-| Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)              |
+| Domínio                   | Arquivo                           | Superfície                                                                 |
+| ------------------------- | --------------------------------- | -------------------------------------------------------------------------- |
+| REST API (Route Handlers) | `app/api/v1/**`                   | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees       |
+| Auth (Route Handler)      | `app/api/me/route.ts`             | `GET /api/me`                                                              |
+| Webhook (Route Handler)   | `app/api/webhooks/clerk/route.ts` | `POST /api/webhooks/clerk` (provisiona tenant/sync)                        |
+| Sessão / Identidade       | `actions/me.ts`                   | `meAction` (Server Action)                                                 |
+| Empresa                   | `actions/pgr/companies.ts`        | list, options, get, create, update, delete, dependents                     |
+| Unidade de Obra           | `actions/pgr/work-units.ts`       | list, get, create, update, delete, dependents                              |
+| Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                              |
+| GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles`  |
+| Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                       |
+| Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)               |
+| CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`        | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}` |
 
 ---
 
@@ -319,9 +347,83 @@ inexistente ou de outro escritório → `notFound()`.
   mesmo escritório.
 - Nº de expostos do GES é derivado e somente leitura.
 
-## Nota sobre teste HTTP "cru"
+## Protocolo de testes com cURL (para o time)
 
-Se for necessário um endpoint HTTP de fato testável (Postman/cURL sem o framework), seria
-preciso adicionar Route Handlers (`app/api/.../route.ts`) que reusem os mesmos repositórios e o
-contrato `ActionResult`. Hoje isso não existe (decisão de arquitetura: Server Actions, sem API
-separada).
+Roteiro reproduzível para validar endpoints **sem** UI. Regra: teste sempre o **status HTTP** e o
+**corpo** (`ActionResult`). Server Actions **não** são testáveis por cURL (POST-only + header
+`Next-Action`); teste sempre pelo **espelho REST** `/api/v1`.
+
+### 0. Pré-requisitos
+
+```bash
+npm run dev                 # sobe em http://localhost:3000 (lê .env.local)
+# jq opcional, só p/ ler o corpo bonito. Em .env.local (local/homolog):
+#   APP_ENV=local
+#   DEV_API_AUTH_BYPASS=true      # libera /api/v1 sem sessão Clerk
+#   DEV_TENANT_ID=<orgId de teste>
+export BASE=http://localhost:3000
+```
+
+### 1. `/api/v1` (CRUD) — via **bypass DEV** (sem login)
+
+O tenant/papel vêm dos headers `x-dev-*`. Padronize um helper:
+
+```bash
+api() { curl -s -w '\n[HTTP %{http_code}]\n' \
+  -H 'content-type: application/json' \
+  -H 'x-dev-tenant: org_a' -H 'x-dev-role: owner' "$@"; }
+
+# Fluxo CRUD completo (esperado ao lado):
+api "$BASE/api/v1/companies"                                   # 200 { rows, total }
+api -X POST "$BASE/api/v1/companies" \
+  -d '{"razaoSocial":"Teste Ltda","riskGrade":3}'             # 201 (recurso)
+api "$BASE/api/v1/companies/<id>"                              # 200
+api -X PUT "$BASE/api/v1/companies/<id>" \
+  -d '{"razaoSocial":"Teste 2","riskGrade":2}'                # 200
+api -X DELETE "$BASE/api/v1/companies/<id>"                    # 204 (sem corpo)
+```
+
+**Casos obrigatórios** (todo CRUD): valide os 4xx canônicos, não só o caminho feliz:
+
+```bash
+# 422 VALIDATION (zod)      — campo fora do domínio
+api -X POST "$BASE/api/v1/companies" -d '{"razaoSocial":"X","riskGrade":9}'
+# 409 DUPLICATE             — repete valor único no mesmo tenant (ex.: cnpj)
+# 404 NOT_FOUND cross-tenant — id de OUTRO escritório:
+api -H 'x-dev-tenant: org_a' "$BASE/api/v1/companies/<id_do_org_b>"   # 404
+# 403 FORBIDDEN             — papel client:
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -H 'x-dev-tenant: org_a' -H 'x-dev-role: client' "$BASE/api/v1/companies"  # 403
+```
+
+> **Isolamento** é o caso crítico: trocar `x-dev-tenant` NUNCA pode devolver dado de outro escritório
+> (id alheio → 404, list → só o tenant do header).
+
+### 2. `/api/integrations/*` — exige **sessão Clerk real**
+
+Não há bypass aqui (o `proxy.ts` protege e não há dado de tenant). Sem sessão → **307/redirect** para
+o sign-in (nunca é proxy aberto). Para testar o caminho feliz, copie o cookie `__session` do navegador
+logado (DevTools → Application → Cookies) e mande no header:
+
+```bash
+SESSION='<valor do cookie __session>'
+curl -s -w '\n[HTTP %{http_code}]\n' -H "cookie: __session=$SESSION" \
+  "$BASE/api/integrations/cep/01001000"      # 200 ok(endereço)
+curl -s -o /dev/null -w '%{http_code}\n' "$BASE/api/integrations/cep/99999999"  # 404 (autenticado) / 307 (sem sessão)
+curl -s -o /dev/null -w '%{http_code}\n' "$BASE/api/integrations/cep/123"       # 422 formato / 307 sem sessão
+```
+
+### 3. Provedores externos direto (isola "é a API deles ou o nosso código?")
+
+```bash
+curl -s "https://viacep.com.br/ws/01001000/json/" | jq .
+# BrasilAPI 403 sem User-Agent → sempre mande um:
+curl -s -A 'sst-manager/1.0' "https://brasilapi.com.br/api/cnpj/v1/00000000000191" | jq '.razao_social'
+```
+
+### 4. Checklist antes de abrir PR de CRUD
+
+- [ ] `/api/v1/<resource>` responde GET/POST e `/[id]` responde GET/PUT/DELETE (201/204 corretos).
+- [ ] 422 / 409 / 404 cross-tenant / 403 (papel client) reproduzidos por cURL.
+- [ ] Recurso documentado neste arquivo (tabelas "Recursos" + "Sumário").
+- [ ] Requests adicionados ao `sst-manager.postman_collection.json` (pasta do recurso).

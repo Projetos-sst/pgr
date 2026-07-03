@@ -31,7 +31,16 @@ Multi-tenant SST (occupational health & safety) platform. **Tenant isolation is 
 
 **Two entry surfaces, one gate.** Server Actions are wrapped by `officeAction(operation, fn, {audit})` (`src/shared/server/office-action.ts`) → returns a discriminated `ActionResult<T>` (`{ok:true,data}` | `{ok:false,error}`, `server/result.ts`). REST `/api/v1/*` handlers are wrapped by `restHandler` (`src/shared/api/rest.ts`) → maps the same error codes to HTTP. Both call `requireOfficeStaff()` and share `toActionError` (`server/action-error.ts`). **Domain error codes** (not raw HTTP): `VALIDATION` (422), `DUPLICATE` (409, e.g. SQLSTATE 23505), `FK_NOT_FOUND`/`NOT_FOUND` (404/422), `FORBIDDEN`/`NO_TENANT_CONTEXT` (403), `UNAUTHORIZED` (401). REST has a **non-prod dev auth bypass** (`DEV_API_AUTH_BYPASS=true` + `x-dev-tenant`/`x-dev-role`/`x-dev-user` headers) — impossible in production.
 
-**Auth & tenant resolution.** Clerk `ClerkProvider` is in the root layout (`src/app/layout.tsx`); there is **no `middleware.ts`** — protection is enforced in Server Components via `requireTenantContext()` / `requireOfficeStaff()` and the `(protected)/layout.tsx` redirect. `resolveActiveTenant` (`src/shared/tenant/active-tenant.ts`) reads `org_memberships`, picks the active org by the `ACTIVE_ORG_COOKIE` (defaulting to the personal org), auto-provisions a personal tenant on first login, and normalizes Clerk roles (`org:admin`/`org:member`) into domain roles `owner`/`collaborator`/`client` (unknown → least privilege `client`). `requireOfficeStaff()` admits only `owner`/`collaborator`. Clerk webhooks sync into the DB via `src/shared/clerk-sync/*`.
+**API surface — MANDATORY for every CRUD / HTTP-exposed feature.** Do not consider a CRUD "done" until **all four** ship together in the same PR — reviewers block a CRUD PR that is missing any of them (this is the checklist devs keep forgetting):
+
+1. **Server Action** wrapped by `officeAction(...)` returning `ActionResult<T>` — the UI entry (POST-only by Next design, not RESTful, not Postman-testable).
+2. **RESTful Route Handler mirror** under `src/app/api/v1/<resource>/**` wrapped by `restHandler(...)`, with **real verbs**: `GET` (list) + `POST` (create) on `/<resource>`; `GET`/`PUT`/`DELETE` on `/<resource>/[id]`; add `/[id]/dependents` when the entity has inbound FKs. Reuse the **same** repository, zod schema and `toActionError` — never re-implement the rule. `201` on create, `204` on delete. This is the only Postman/cURL-testable surface.
+3. **Docs** — register the resource, verbs and filters in `docs/api/api-design.md` (the "Recursos" and "Sumário" tables).
+4. **Postman** — add the requests to the single collection `docs/api/sst-manager.postman_collection.json` (one folder per resource, mirroring the existing ones; reuse the collection Variables `baseUrl`/`devTenant`/`devRole`/ids). Keep it to **one** file on purpose.
+
+Reference implementation to copy from: **companies** (`actions/pgr/companies.ts` + `app/api/v1/companies/**` + its api-design section + Postman folder). External/utility integrations (ViaCEP/CNPJ, later CAEPI) are the exception to the tenant rule and live under `src/app/api/integrations/**` — session-guarded via `requireAuth()` (no tenant/role, public data), but still documented in api-design.md + Postman the same way.
+
+**Auth & tenant resolution.** Clerk `ClerkProvider` is in the root layout (`src/app/layout.tsx`); there is **no `middleware.ts`**, but `src/proxy.ts` (Next 16's renamed middleware) runs `clerkMiddleware` → `auth.protect()` on every non-public route (public: `/`, `/sign-in`, `/sign-up`, `/api/webhooks/*`, and `/api/v1/*` only when the dev bypass flag is on) — so unauthenticated `/api/**` calls get a 307/redirect before reaching the handler. Protection is **also** enforced in Server Components via `requireTenantContext()` / `requireOfficeStaff()` and the `(protected)/layout.tsx` redirect (defense in depth). `resolveActiveTenant` (`src/shared/tenant/active-tenant.ts`) reads `org_memberships`, picks the active org by the `ACTIVE_ORG_COOKIE` (defaulting to the personal org), auto-provisions a personal tenant on first login, and normalizes Clerk roles (`org:admin`/`org:member`) into domain roles `owner`/`collaborator`/`client` (unknown → least privilege `client`). `requireOfficeStaff()` admits only `owner`/`collaborator`. Clerk webhooks sync into the DB via `src/shared/clerk-sync/*`.
 
 **Database ownership & connections.** Drizzle is the **code-first owner** of the schema (`drizzle.config.ts`, schema dir `src/shared/db/schema`). Two connections: runtime connects as the least-privileged `app_runtime` role through the Supabase transaction pooler (`DATABASE_URL`, port 6543, `prepare:false, max:1` — see `db/index.ts`); `drizzle-kit` uses a direct owner connection (`DATABASE_URL_UNPOOLED`). GRANTs and `set_updated_at` triggers live as **custom SQL inside the generated migrations** (not auto-emitted by drizzle-kit).
 
@@ -39,34 +48,60 @@ Multi-tenant SST (occupational health & safety) platform. **Tenant isolation is 
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/stock-movements`**. Fatia atual (`010`) — **Movimentações de estoque e
-histórico** (`stock_movements`): registrar **entrada** (compra) e **saída manual** (ajuste/descarte)
-de itens de estoque de EPI, mantendo o saldo materializado **`epi_stock.balance`** por **transação
-atômica** (`SELECT … FOR UPDATE`), e exibir o **histórico por item** com **saldo resultante derivado**
-(window function, sem coluna). Camada de **fluxo** sobre o modelo da `008` (epi-data-model) e
-contrapartida da `009` (epi-stock-crud, que trata `balance` como read-only). **Zero migration.**
+Branch: **`feature/external-integrations-layer`**. Fatia atual (`011`) — **Validação/consulta de
+CA no CAEPI/MTE** (issues `#115` + `#75` duplicada): tabela **GLOBAL** `caepi_certificates`
+(espelho da base pública do MTE, **sem `org_id`/RLS de tenant/`withOrg`** — exceção justificada ao
+Princípio I; RLS ligado com policy única de leitura global `USING (true)` porque o banco de
+produção força RLS em tabela nova via event trigger `ensure_rls`; `app_runtime` = **SELECT-only**,
+escrita só pelo job via conexão owner), alimentada
+por `scripts/caepi-sync.ts` (Playwright/Chromium **headed** — headless é barrado pelo Cloudflare,
+fato do spike T018 — + postback ASP.NET → `.csv.gz` (com HTML ASPX anexado após o gzip; o parse
+trunca no marcador) → `csv-parse` streaming → upsert idempotente por `ca`; fallback `--file`), e
+consulta **100% local**
+`lookupCa` (Server Action `requireAuth()` + REST `GET /api/integrations/caepi/[ca]`) → contrato
+`CaLookupResult` (`valid`/`expired`/`not_found` como **payload 200**) + hook `use-caepi-validation`
 
-Fatia atual (`010`) — `.specs/010-stock-movements/`:
+- `ca-field.tsx` (autofill fabricante/norma/validade; **nunca bloqueia** o cadastro). **1 migration
+  (`0009`)**. Convive na branch com a camada CEP/CNPJ já commitada (`ea86029`).
 
-- Plan: `.specs/010-stock-movements/plan.md`
+Fatia atual (`011`) — `.specs/011-caepi-ca-validation/`:
+
+- Plan: `.specs/011-caepi-ca-validation/plan.md`
 - Spec / Research / Data model / Quickstart no mesmo diretório.
-- Contracts: `contracts/server-actions.md`, `contracts/repositories.md`, `contracts/rest-endpoints.md`.
-- Briefing (fonte): `docs/briefings/briefing-stock-movements.md`.
+- Contracts: `contracts/ingestion-pipeline.md`, `contracts/repositories.md`,
+  `contracts/lookup-surfaces.md`.
+- Briefings (fonte): `docs/briefings/caepi-cron-brainstorming.md` (**Spike 0 — prevalece**),
+  `115-caepi-validacao-ca.md`, `caepi-logica-de-negocio.md`, `epi-fluxos-panorama.md`.
 
-Notas chave (`010`):
+Notas chave (`011`):
 
-- **Escrita transacional do saldo** (1ª fatia que escreve `epi_stock.balance`): por movimento,
-  `SELECT … FOR UPDATE` → valida `novoSaldo >= 0` na app (`CHECK balance >= 0` como backstop) →
-  `INSERT` no movimento + `UPDATE` do saldo, tudo numa transação (`withOrg`). Falha → rollback total.
-- **`quantity` sempre > 0**; o sinal vem do `type` (`purchase` `+`; `adjustment`/`discard` `−`).
-  Saída manual só aceita `{adjustment, discard}` (sem ajuste bidirecional).
-- **Saldo resultante derivado** por window function + função pura `computeRunningBalance` (unit);
-  **sem coluna `balance_after`**. **"Usuário que registrou" omitido** (modelo 008 sem `created_by`).
-- **Novo erro `INSUFFICIENT_STOCK` → 422** em `src/shared/api/rest.ts`. REST em
-  `/api/v1/epi-stock/[id]/movements` (POST registra; GET histórico). Rota UI `/epi-stock/[id]/history`.
-- Testes: unit (`computeRunningBalance`, schemas); integração de Server Actions/REST +
-  rollback de saída insuficiente + histórico + `NOT_FOUND` cross-tenant + `FORBIDDEN` contra
-  **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite nem o banco de dev.
+- **Fonte real (Spike 0, fato)**: `caepi.trabalho.gov.br` atrás de Cloudflare (403 p/ não-browser);
+  download = postback ASP.NET → CSV `;` com aspas/escape `""`, **UTF-8 BOM**, 19 colunas; NÃO é
+  TXT `|` nem baixável por `fetch`; **sem** Route Handler `/api/cron` nem `CRON_SECRET`.
+- **Repositório dividido por contexto**: `repositories/caepi.ts` (leitura runtime, singleton `db`)
+  vs `repositories/caepi-upsert.ts` (escrita do job, handle owner **injetado** — script tsx não
+  pode importar `server-only`). Upsert em chunks de 1.000, `onConflictDoUpdate` por `ca` (PK
+  natural), mesmo `synced_at` por run, **sem** truncate/delete/transação global.
+- **Regra de vigência** (`validate-ca`, pura): `valid` ⇔ situação normalizada `VALIDO` **e**
+  `valid_until >= hoje` (inclusivo; "hoje" no fuso `America/Sao_Paulo`); senão `expired`; situação
+  desconhecida → `expired` (conservador). Base vazia → `not_found` + aviso "base não sincronizada".
+- **Gate = só sessão** (`requireAuth()`, decisão de Clarifications — não `officeAction`); hook
+  reusa `useLookup` (fetch + AbortController) contra o REST; falha externa/estado nunca bloqueia o
+  salvamento do EPI. Modelo `epis.ts` **intacto**.
+- **Libs novas (devDeps, só do job)**: `playwright` + `csv-parse`; runner `tsx` (já existia).
+  Cadência semanal; agendador (GitHub Actions cron recomendado) é decisão de infra fora do escopo.
+  Spike inicial da implementação: headless × Cloudflare em runner de CI (fallback semi-manual
+  pronto via `--file`).
+- Testes: unit (`parse` com amostra real gzip, `validate-ca` limite `== hoje`, `normalize`,
+  mapeamento 3 estados); integração contra **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite:
+  upsert idempotente 2×, `getByCa` 3 estados + base vazia, **GRANT por papel** (`app_runtime` lê e
+  não escreve), coleta falha → base preservada, guarda de sessão (401). Exceção de tenant e GRANT
+  validados à mão.
+
+Fatia paralela (`010` — stock-movements, branch `feature/stock-movements`) —
+`.specs/010-stock-movements/`: entrada/saída manual de estoque com saldo materializado por
+transação atômica (`SELECT … FOR UPDATE`), histórico com saldo resultante derivado (window
+function), erro `INSUFFICIENT_STOCK` → 422. Zero migration.
 
 Fatia anterior (`009` — epi-stock-crud, commit `a55d70b`): CRUD de `epi_stock` com `balance`
 **read-only**; reuso de `ActionResult`/`officeAction`/`requireOfficeStaff`/`_ui`. Sem migration.

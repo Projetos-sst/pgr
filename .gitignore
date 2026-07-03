@@ -55,3 +55,6 @@ next-env.d.ts
 
 # Spec Kit: ponteiro local da feature ativa (estado de sessão, por dev)
 .specify/feature.json
+
+# Referências locais (prints/screenshots do ePGR e afins — não versionar)
+/docs/_local-refs/
