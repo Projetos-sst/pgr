@@ -183,10 +183,10 @@ imprimir.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [X] T056 Rodar `npm run check` (format + lint + typecheck + unit) e corrigir pendências
-- [X] T057 Rodar `npm run test:integration` (Postgres efêmero) e garantir verde em toda a fatia
+- [x] T056 Rodar `npm run check` (format + lint + typecheck + unit) e corrigir pendências
+- [x] T057 Rodar `npm run test:integration` (Postgres efêmero) e garantir verde em toda a fatia
 - [ ] T058 Validar o `quickstart.md` ponta a ponta (US1–US5 manuais + migration `0010` aplicada/reversível)
-- [X] T059 Conferir a superfície de API completa por recurso (Server Action + REST + `api-design.md` + Postman) — checklist do CLAUDE.md
+- [x] T059 Conferir a superfície de API completa por recurso (Server Action + REST + `api-design.md` + Postman) — checklist do CLAUDE.md
 - [ ] T060 Housekeeping (via `gh`, não é código): fechar #70 e #72 (já mergeadas); marcar #18 e #115 concluídas e **#75 como duplicada de #115**
 
 ---
