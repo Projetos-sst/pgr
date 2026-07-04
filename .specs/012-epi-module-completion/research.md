@@ -26,6 +26,7 @@ backstop. Zero privilégio novo no banco (não precisa de role owner nem `SECURI
 `withOrg` sem exceção de infra.
 
 **Alternativas rejeitadas**:
+
 - _Função `SECURITY DEFINER` `resolve_org_by_token`_: adiciona superfície de SQL privilegiado e uma
   migration só para isso; mais risco de isolamento do que ganho. Rejeitada por YAGNI/segurança.
 - _Conexão owner na rota pública_: violaria "runtime = least-privilege `app_runtime`"; expõe leitura
@@ -41,7 +42,9 @@ backstop. Zero privilégio novo no banco (não precisa de role owner nem `SECURI
 emissão. Um TTL de 72h precisa de um instante de referência. Adicionar coluna violaria "US3 é zero
 migration".
 
-**Decisão**: **token stateless HMAC-assinado** que embute `{orgId, deliveryId, iat}` (issued-at). O
+**Decisão**: **token stateless HMAC-assinado** que embute `{orgId, deliveryId, method, iat}`
+(issued-at; `method` = `qr|link` escolhido na geração — a rota pública nunca confia no método vindo do
+cliente, o payload assinado é a fonte). O
 valor é `base64url(payload) + "." + base64url(HMAC-SHA256(payload, EPI_SIGN_TOKEN_SECRET))`. A validade
 (72h) é verificada **na aplicação** comparando `now - iat`. O mesmo valor é gravado em
 `epi_deliveries.auth_token` para: (a) garantir **um token ativo por entrega** (índice único parcial já
@@ -49,11 +52,12 @@ existente), e (b) permitir invalidar o token (a entrega assinada tem `signature_
 que já barra reassinatura; opcionalmente `auth_token = NULL` na assinatura).
 
 **Justificativa**: mantém US3 **zero migration** (D1); o segredo mora em env (`EPI_SIGN_TOKEN_SECRET`),
-conforme Princípio V; o token é curto, imprevisível (HMAC) e à prova de adulteração (mudar `iat`/`orgId`
+conforme Princípio V; o token é compacto (cabe em QR/link), imprevisível (HMAC) e à prova de adulteração (mudar `iat`/`orgId`
 quebra a assinatura). Alinha-se à referência da branch `digital-signature-infra` (token 72h) sem herdar
 a tabela genérica.
 
 **Alternativas rejeitadas**:
+
 - _Coluna `auth_token_expires_at`_: transformaria US3 em "com migration", contrariando o fatiamento e
   D1. Rejeitada.
 - _JWT com lib nova_: dependência extra para um caso de uso trivial (um HMAC). Rejeitada por YAGNI —
@@ -61,9 +65,11 @@ a tabela genérica.
 - _Token puramente aleatório com expiração em store externo (Redis)_: nova infra proibida pela
   constituição (Princípio II). Rejeitada.
 
-**Notas de segurança**: rate-limit por IP na rota pública (contagem em memória do handler / cabeçalho de
-borda Cloudflare); resposta uniforme para token inválido vs. inexistente (sem enumeração); nunca 500 em
-token expirado/entrega assinada — sempre mensagem de negócio.
+**Notas de segurança**: resistência a enumeração = espaço de chave do HMAC-SHA256 (forjar/adivinhar um
+token válido é computacionalmente inviável) + resposta uniforme para token inválido vs. inexistente;
+rate-limit por IP é controle **complementar na borda** (Cloudflare/WAF — infraestrutura, fora do app e
+do escopo de teste automatizado; contagem em memória no handler foi descartada por ser por-instância no
+serverless da Vercel). Nunca 500 em token expirado/entrega assinada — sempre mensagem de negócio.
 
 ---
 
@@ -75,21 +81,28 @@ precisam da mesma mecânica (com `deliveryId`), sem duplicar e sem quebrar os te
 **Decisão**: extrair dois helpers **transacionais internos** (recebem o `tx` já aberto por `withOrg`):
 
 ```ts
-async function applyStockExit(tx, { orgId, stockId, quantity, deliveryId, type }): Promise<number>
-async function applyStockEntry(tx, { orgId, stockId, quantity, deliveryId, type }): Promise<number>
+async function applyStockExit(
+  tx,
+  { orgId, stockId, quantity, deliveryId, type },
+): Promise<number>;
+async function applyStockEntry(
+  tx,
+  { orgId, stockId, quantity, deliveryId, type },
+): Promise<number>;
 ```
 
 Ambos: `SELECT … FOR UPDATE` da linha do estoque (filtro `orgId` + `id`); exit valida `saldo -
 quantity >= 0` (`InsufficientStockError`), entry soma; INSERT do movimento (agora com `deliveryId`
 opcional); UPDATE do saldo; retornam o novo saldo. `registerStockExit`/`registerStockEntry` passam a ser
 finos: abrem `withOrg` + `auditedTenantWrite` e chamam o helper (sem `deliveryId`, `type` atual). O
-`createDelivery`/`returnItem` chamam os helpers **dentro da mesma transação** da entrega/devolução.
+`createDelivery`/`returnDeliveryItem` chamam os helpers **dentro da mesma transação** da entrega/devolução.
 
 **Justificativa**: DRY sem mudança de contrato público — a assinatura e o comportamento de
 `registerStockExit`/`Entry` ficam idênticos, então os testes da #72 continuam válidos (refactor puro).
 Uma saída, uma entrada, ambas com `FOR UPDATE` na mesma transação.
 
 **Alternativas rejeitadas**:
+
 - _Duplicar a lógica no `createDelivery`_: viola DRY e diverge das regras de saldo. Rejeitada.
 - _Helper que abre a própria transação_: quebraria a atomicidade multi-item da entrega (cada item em
   transação separada → rollback parcial). Rejeitada — o helper **deve** receber o `tx` da transação-mãe.
@@ -111,6 +124,7 @@ para Storage (particionado por tenant) numa evolução; **não** persistir image
 é atendido pelo `signature_status` + timestamp já modelados. Signature-pad por `<canvas>` não exige lib.
 
 **Alternativas rejeitadas**:
+
 - _Coluna `signature_image`_: migration extra em US3 (rejeitada por D1/fatiamento). Imagem vai a Storage
   no futuro.
 - _Lib pesada de signature-pad_: desnecessária; `<canvas>` nativo cobre o caso. Rejeitada por YAGNI.
@@ -142,6 +156,7 @@ isoladamente. Reversão: `DROP COLUMN returned_at`; o valor de enum é **forward
 remove valor de enum) — documentado no cabeçalho da migration.
 
 **Alternativas rejeitadas**:
+
 - _Recriar o enum (`CREATE TYPE novo` + swap de colunas)_: destrutivo e arriscado num enum já em uso.
   Rejeitada.
 - _Usar `text` + `CHECK` em vez de enum_: mudaria o modelo 008 além do necessário. Rejeitada.
@@ -161,6 +176,7 @@ padrão de domínio "código de negócio, não HTTP cru". `410 Gone` para token 
 `404` (o recurso existiu e caducou); ambos são aceitáveis pela spec — escolhido `410`.
 
 **Alternativas rejeitadas**:
+
 - _Reusar `FORBIDDEN`/`VALIDATION` genéricos_: perde a semântica verificável dos edge cases (a spec pede
   códigos distintos). Rejeitada.
 
@@ -179,6 +195,7 @@ o `handleSubmit` passa a ler do estado (não do `FormData`) para esses campos. N
 campos-alvo sejam controlados para refletir o `onFound`. Mudança mínima e localizada no componente.
 
 **Alternativas rejeitadas**:
+
 - _Manipular o DOM via refs para autofdill mantendo `defaultValue`_: frágil e fora do idioma React do
   repo. Rejeitada.
 - _Persistir o resultado do CAEPI numa tabela do tenant_: proibido por D6/YAGNI (a base global é a
@@ -201,6 +218,7 @@ catálogo sem ambiguidade; derivar `catalogId` do estoque travado garante coerê
 redundante do cliente. Atomicidade multi-item via transação-mãe (R3).
 
 **Alternativas rejeitadas**:
+
 - _Input por `catalogId` e resolver o `stockId` depois_: exigiria uma busca extra e não travaria a linha
   certa cedo; `stockId` direto é mais simples e é o que a UI já tem. Rejeitada.
 
@@ -208,13 +226,13 @@ redundante do cliente. Atomicidade multi-item via transação-mãe (R3).
 
 ## Resumo das decisões
 
-| # | Decisão |
-| --- | --- |
-| R1 | Token embute `orgId`+`deliveryId`; rota pública roda sob `withOrg(orgId)`; RLS valida posse. |
-| R2 | Token stateless HMAC (`orgId,deliveryId,iat`), TTL 72h em app; segredo em env; **zero migration**. |
-| R3 | Extrair `applyStockExit`/`applyStockEntry` recebendo o `tx`; `registerStock*` viram finos (preserva #72). |
-| R4 | QR = SVG; assinatura = `<canvas>` nativo; imagem **não** persistida nesta fatia (status+timestamp é a prova). |
-| R5 | `0010` = `ADD VALUE IF NOT EXISTS` + `ADD COLUMN returned_at`, statements separados; enum forward-only. |
-| R6 | +`ALREADY_SIGNED`(409), `ALREADY_RETURNED`(409), `TOKEN_INVALID`(404), `TOKEN_EXPIRED`(410). |
-| R7 | US1: campos de CA controlados; troca só o componente; modelo intacto. |
-| R8 | `createDelivery` recebe `items:[{stockId,quantity}]`; deriva `catalogId` da linha travada; baixa por item. |
+| #   | Decisão                                                                                                       |
+| --- | ------------------------------------------------------------------------------------------------------------- |
+| R1  | Token embute `orgId`+`deliveryId`; rota pública roda sob `withOrg(orgId)`; RLS valida posse.                  |
+| R2  | Token stateless HMAC (`orgId,deliveryId,iat`), TTL 72h em app; segredo em env; **zero migration**.            |
+| R3  | Extrair `applyStockExit`/`applyStockEntry` recebendo o `tx`; `registerStock*` viram finos (preserva #72).     |
+| R4  | QR = SVG; assinatura = `<canvas>` nativo; imagem **não** persistida nesta fatia (status+timestamp é a prova). |
+| R5  | `0010` = `ADD VALUE IF NOT EXISTS` + `ADD COLUMN returned_at`, statements separados; enum forward-only.       |
+| R6  | +`ALREADY_SIGNED`(409), `ALREADY_RETURNED`(409), `TOKEN_INVALID`(404), `TOKEN_EXPIRED`(410).                  |
+| R7  | US1: campos de CA controlados; troca só o componente; modelo intacto.                                         |
+| R8  | `createDelivery` recebe `items:[{stockId,quantity}]`; deriva `catalogId` da linha travada; baixa por item.    |

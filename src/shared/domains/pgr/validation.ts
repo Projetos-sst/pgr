@@ -20,6 +20,7 @@ export const stockMovementTypeSchema = z.enum([
   "employee_delivery",
   "adjustment",
   "discard",
+  "employee_return",
 ]);
 export const epiSignatureStatusSchema = z.enum([
   "pending",

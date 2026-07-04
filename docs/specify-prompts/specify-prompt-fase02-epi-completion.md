@@ -54,8 +54,8 @@ CONTEXTO (leia os padrões vigentes e LISTE os arquivos que vai ler)
 - src/shared/domains/pgr/stock-movements.ts — `computeRunningBalance` (window function) para saldo
   resultante no histórico; reusar na ficha se precisar.
 - src/shared/integrations/caepi/** — `CaField`, `useCaepiValidation`, `lookupCa` (Server Action),
-  `GET /api/integrations/caepi/[ca]` — TUDO PRONTO. US1 só **pluga** o `CaField` no form do catálogo.
-- src/app/(protected)/epi-catalog/_components/epi-catalog-form.tsx — o form onde o `CaField` entra
+  `GET /api/integrations/caepi/[ca]` — TUDO PRONTO. US1 só **pluga\*\* o `CaField` no form do catálogo.
+- src/app/(protected)/epi-catalog/\_components/epi-catalog-form.tsx — o form onde o `CaField` entra
   (troca os `TextField` de `ca`/`caValidUntil`/`manufacturer`/`norm`).
 - src/app/(protected)/employees/[id]/page.tsx — ponto de entrada da entrega (US2/US3) e da ficha (US5).
 - src/proxy.ts — `createRouteMatcher`/`isPublicRoute`. **US3 adiciona `/sign/(.*)`** à lista pública
@@ -69,7 +69,7 @@ CONTEXTO (leia os padrões vigentes e LISTE os arquivos que vai ler)
   backstop. **Exceção**: a rota pública `/sign/[token]` NÃO tem tenant de sessão — resolve o tenant da
   entrega **a partir do token** e opera só naquela entrega (ver EDGE CASES).
 - src/shared/db/schema/companies.ts — template de tabela/RLS (referência; não há tabela nova nesta leva).
-- src/app/(protected)/_ui/{list,form}.tsx e as páginas de `epi-stock`/`epi-catalog` — molde de UI CRUD.
+- src/app/(protected)/\_ui/{list,form}.tsx e as páginas de `epi-stock`/`epi-catalog` — molde de UI CRUD.
 - docs/api/api-design.md e docs/api/sst-manager.postman_collection.json — registrar TODOS os recursos
   novos (obrigatório pelo checklist de API surface do CLAUDE.md).
 
@@ -138,6 +138,7 @@ EDGE CASES que a spec MUST cobrir como regra verificável
 ═══════════════════════════════════════════════════════════════════════════════════════
 
 Entrega / estoque:
+
 - Saldo insuficiente em QUALQUER item da entrega → rollback TOTAL, nada gravado, `INSUFFICIENT_STOCK`
   (422). Saldo permanece intacto.
 - Duas entregas/saídas concorrentes do mesmo estoque → serializadas por `FOR UPDATE`; saldo nunca fura.
@@ -147,26 +148,31 @@ Entrega / estoque:
   `NOT_FOUND`.
 
 Assinatura (inline):
+
 - `pending` → `signed_manual/qr/link` uma única vez; reassinar → `ALREADY_SIGNED` (409).
 - Rota pública `/sign/[token]`: token inexistente → `TOKEN_INVALID` (404); expirado (>72h) →
   `TOKEN_EXPIRED`; entrega já assinada → mensagem clara, sem 500. O token resolve a entrega e o tenant
   dela; a rota NÃO enxerga nenhuma outra entrega/tenant. Sem enumeração; rate-limit.
 
 Devolução:
+
 - Item já devolvido (`returned_at` preenchido) → `ALREADY_RETURNED` (409); saldo intacto.
 - Devolução repõe saldo exatamente (`+ quantity` do item) atômico; item de outro tenant → `NOT_FOUND`.
 - Devolver independe de a entrega estar assinada.
 
 Ficha:
+
 - Só entregas do próprio tenant e do funcionário pedido; funcionário de outro tenant → `NOT_FOUND`.
 - Filtro `pendente` = `returned_at IS NULL`; `devolvido` = preenchido; funcionário sem entregas → vazio.
 
 CA (US1):
+
 - válido/vigente → autofill + badge verde; vencido → aviso distinto + AINDA autofill; não encontrado →
   aviso inline; base CAEPI vazia → "não sincronizada" (não erro); formato inválido → não dispara; digitação
   rápida → aborta anterior; QUALQUER desfecho NUNCA bloqueia o salvar.
 
 Isolamento (todas as US com escrita):
+
 - `app_runtime` só enxerga o próprio tenant; query sem `withOrg` → 0 linhas (RLS backstop).
 - `client` (papel sem office) → `FORBIDDEN` em todas as ações de escrita.
 
@@ -175,9 +181,10 @@ MIGRATION 0010 (única da leva — US4)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
 drizzle-kit + SQL custom (padrão `0005`): `ALTER TYPE stock_movement_type ADD VALUE 'employee_return'`
-+ `ALTER TABLE epi_delivery_items ADD COLUMN returned_at timestamptz` (nullable). Sem GRANT/RLS novos
-(herdados da tabela). Aplicada via conexão direta unpooled (owner). Documentar como forward-only no
-ponto do enum (não remover valor no rollback).
+
+- `ALTER TABLE epi_delivery_items ADD COLUMN returned_at timestamptz` (nullable). Sem GRANT/RLS novos
+  (herdados da tabela). Aplicada via conexão direta unpooled (owner). Documentar como forward-only no
+  ponto do enum (não remover valor no rollback).
 
 ═══════════════════════════════════════════════════════════════════════════════════════
 TESTES (constituição — obrigatório; a fatia não fecha sem eles)
@@ -198,6 +205,7 @@ ESCOPO
 ═══════════════════════════════════════════════════════════════════════════════════════
 
 DENTRO:
+
 - US1 wiring CAEPI no catálogo (#18/#115; fecha #75 como duplicada).
 - US2 entrega + baixa transacional + assinatura manual (#19 core) — inclui extrair `applyStockExit`.
 - US3 assinatura pública QR/link (#19 assinatura) — rota pública `/sign/[token]`, token 72h inline.
@@ -207,6 +215,7 @@ DENTRO:
 - Fechar #70 e #72 (já mergeadas) no housekeeping.
 
 FORA (YAGNI / dependências):
+
 - #78 EPI×risco (Fase 03 — sem módulo de Riscos; `epi_risk` referencia `ges` interino).
 - Infra de assinatura genérica `signature_requests`/`captures` (adiada para 2º consumidor — PGR).
 - Job/tabela de ingestão CAEPI (já entregue; não reabrir), agendador do job.

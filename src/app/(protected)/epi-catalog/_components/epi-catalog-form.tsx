@@ -9,6 +9,8 @@ import {
   updateEpiCatalogAction,
 } from "@/shared/server/actions/pgr/epi-catalog";
 import type { EpiCatalog, EpiCatalogInput } from "@/shared/domains/pgr/epi-catalog";
+import { CaField } from "@/shared/integrations/caepi/client/ca-field";
+import type { CaFound } from "@/shared/integrations/caepi/client/use-caepi-validation";
 
 import {
   FieldError,
@@ -30,6 +32,12 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
   const router = useRouter();
   const [type, setType] = useState<string>(item?.type ?? "");
   const [categoryId, setCategoryId] = useState<string>(item?.categoryId ?? "");
+  // Controlados por causa do autofill do CAEPI (US1/012): `onFound` escreve
+  // fabricante/norma/validade no estado; os quatro campos seguem editáveis.
+  const [ca, setCa] = useState<string>(item?.ca ?? "");
+  const [caValidUntil, setCaValidUntil] = useState<string>(item?.caValidUntil ?? "");
+  const [manufacturer, setManufacturer] = useState<string>(item?.manufacturer ?? "");
+  const [norm, setNorm] = useState<string>(item?.norm ?? "");
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -60,6 +68,13 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
     else setCategoryId(item?.categoryId ?? "");
   }
 
+  function handleCaFound(data: CaFound) {
+    // Cópia por valor: o formulário é dono dos campos; o CAEPI só sugere.
+    setManufacturer(data.manufacturer);
+    setNorm(data.norm);
+    setCaValidUntil(data.validUntil);
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
@@ -68,10 +83,10 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
       type: type as EpiCatalogInput["type"],
       categoryId,
       name: value("name"),
-      ca: value("ca"),
-      caValidUntil: value("caValidUntil"),
-      manufacturer: value("manufacturer"),
-      norm: value("norm"),
+      ca,
+      caValidUntil,
+      manufacturer,
+      norm,
       size: value("size"),
       unitOfMeasure: value("unitOfMeasure"),
       description: value("description"),
@@ -124,24 +139,33 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
         defaultValue={item?.name}
         error={errors.name}
       />
-      <TextField label="CA" name="ca" defaultValue={item?.ca} error={errors.ca} />
+      <CaField
+        label="CA"
+        value={ca}
+        onChange={setCa}
+        onFound={handleCaFound}
+        error={errors.ca}
+      />
       <TextField
         label="Validade do CA"
         name="caValidUntil"
         type="date"
-        defaultValue={item?.caValidUntil ?? ""}
+        value={caValidUntil}
+        onChange={setCaValidUntil}
         error={errors.caValidUntil}
       />
       <TextField
         label="Fabricante"
         name="manufacturer"
-        defaultValue={item?.manufacturer}
+        value={manufacturer}
+        onChange={setManufacturer}
         error={errors.manufacturer}
       />
       <TextField
         label="Norma"
         name="norm"
-        defaultValue={item?.norm}
+        value={norm}
+        onChange={setNorm}
         error={errors.norm}
       />
       <TextField

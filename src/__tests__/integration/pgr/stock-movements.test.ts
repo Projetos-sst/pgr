@@ -23,7 +23,10 @@ const APP_RUNTIME_URL = process.env.INTEGRATION_APP_RUNTIME_URL;
 const ADMIN_URL = process.env.INTEGRATION_DATABASE_URL;
 const shouldRun = !!APP_RUNTIME_URL && !!ADMIN_URL;
 
-const DATE = "2026-06-26";
+// Sempre APÓS o movimento do seed (movement_date default = hoje): a asserção de
+// ordenação do histórico depende de os movimentos do teste serem os mais recentes —
+// uma data fixa quebrava quando o relógio passava dela.
+const DATE = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
 const MISSING_ID = "99999999-9999-9999-9999-999999999999";
 
 const mockedGate = requireOfficeStaff as jest.MockedFunction<typeof requireOfficeStaff>;

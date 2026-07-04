@@ -28,7 +28,7 @@ documentar como forward-only nesse ponto, padrão do repo).
 - Devolução é **por item** e **total** (a quantidade inteira do item volta ao estoque). Devolução
   **parcial** de quantidade é YAGNI nesta fatia.
 - Atualiza a ficha (US5): item passa a ter data de devolução; listagem de **pendentes** = `returned_at
-  IS NULL`.
+IS NULL`.
 
 ## Regras verificáveis
 

@@ -14,7 +14,7 @@ import { NotFoundError } from "@/shared/errors/not-found-error";
 import { InsufficientStockError } from "@/shared/errors/insufficient-stock-error";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
-import { withOrg } from "../with-org";
+import { withOrg, type TenantTransaction } from "../with-org";
 import { epiStock, stockMovements, epiDeliveries } from "../schema/epis";
 import { employees } from "../schema/employees";
 import { auditedTenantWrite } from "./audited-write";
@@ -22,89 +22,123 @@ import { auditedTenantWrite } from "./audited-write";
 const WRITE_EVENT = "epi.stock_movement.write_rejected";
 
 /**
- * Registra uma ENTRADA (compra) numa transação atômica: trava a linha do estoque
- * (`SELECT … FOR UPDATE`), insere o movimento `purchase` e incrementa o saldo
- * materializado. Item ausente/cross-tenant → `NotFoundError` (RLS + filtro por org).
+ * Aplicação de movimento DENTRO de uma transação-mãe já aberta por `withOrg` (R3):
+ * o helper recebe o `tx` para preservar a atomicidade multi-item de entregas e
+ * devoluções — abrir transação própria aqui quebraria o rollback total.
  */
+export type ApplyStockMovementParams = {
+  orgId: string;
+  stockId: string;
+  quantity: number;
+  type: StockMovementRow["type"];
+  deliveryId?: string;
+  movementDate?: string;
+  invoiceNumber?: string | null;
+};
+
+async function lockStockRow(
+  tx: TenantTransaction,
+  orgId: string,
+  stockId: string,
+): Promise<{ id: string; balance: number }> {
+  const [stock] = await tx
+    .select({ id: epiStock.id, balance: epiStock.balance })
+    .from(epiStock)
+    .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, stockId)))
+    .for("update")
+    .limit(1);
+  if (!stock) throw new NotFoundError();
+  return stock;
+}
+
+async function persistMovement(
+  tx: TenantTransaction,
+  params: ApplyStockMovementParams,
+  newBalance: number,
+): Promise<StockMovementResult> {
+  const [movement] = await tx
+    .insert(stockMovements)
+    .values({
+      orgId: params.orgId,
+      stockId: params.stockId,
+      deliveryId: params.deliveryId ?? null,
+      type: params.type,
+      quantity: params.quantity,
+      ...(params.movementDate ? { movementDate: params.movementDate } : {}),
+      invoiceNumber: params.invoiceNumber ?? null,
+    })
+    .returning();
+
+  await tx
+    .update(epiStock)
+    .set({ balance: newBalance, updatedAt: new Date() })
+    .where(and(eq(epiStock.orgId, params.orgId), eq(epiStock.id, params.stockId)));
+
+  return { movement, newBalance };
+}
+
+/**
+ * ENTRADA: trava a linha do estoque (`SELECT … FOR UPDATE`), insere o movimento e
+ * incrementa o saldo materializado. Item ausente/cross-tenant → `NotFoundError`
+ * (RLS + filtro por org).
+ */
+export async function applyStockEntry(
+  tx: TenantTransaction,
+  params: ApplyStockMovementParams,
+): Promise<StockMovementResult> {
+  const stock = await lockStockRow(tx, params.orgId, params.stockId);
+  return persistMovement(tx, params, stock.balance + params.quantity);
+}
+
+/**
+ * SAÍDA: trava a linha, valida `novoSaldo >= 0` na app (senão `InsufficientStockError`
+ * + rollback total), insere o movimento e decrementa o saldo. `CHECK balance >= 0`
+ * (008) é o backstop contra corridas que escapem da validação.
+ */
+export async function applyStockExit(
+  tx: TenantTransaction,
+  params: ApplyStockMovementParams,
+): Promise<StockMovementResult> {
+  const stock = await lockStockRow(tx, params.orgId, params.stockId);
+  const newBalance = stock.balance - params.quantity;
+  if (newBalance < 0) throw new InsufficientStockError(stock.balance, params.quantity);
+  return persistMovement(tx, params, newBalance);
+}
+
+/** Registra uma ENTRADA manual (compra) numa transação atômica própria. */
 export async function registerStockEntry(
   orgId: string,
   input: StockEntryValues,
 ): Promise<StockMovementResult> {
   return auditedTenantWrite(orgId, WRITE_EVENT, () =>
-    withOrg(orgId, async (tx) => {
-      const [stock] = await tx
-        .select({ id: epiStock.id, balance: epiStock.balance })
-        .from(epiStock)
-        .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, input.stockId)))
-        .for("update")
-        .limit(1);
-      if (!stock) throw new NotFoundError();
-
-      const newBalance = stock.balance + input.quantity;
-
-      const [movement] = await tx
-        .insert(stockMovements)
-        .values({
-          orgId,
-          stockId: input.stockId,
-          type: "purchase",
-          quantity: input.quantity,
-          movementDate: input.movementDate,
-          invoiceNumber: input.invoiceNumber ?? null,
-        })
-        .returning();
-
-      await tx
-        .update(epiStock)
-        .set({ balance: newBalance, updatedAt: new Date() })
-        .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, input.stockId)));
-
-      return { movement, newBalance };
-    }),
+    withOrg(orgId, (tx) =>
+      applyStockEntry(tx, {
+        orgId,
+        stockId: input.stockId,
+        quantity: input.quantity,
+        type: "purchase",
+        movementDate: input.movementDate,
+        invoiceNumber: input.invoiceNumber ?? null,
+      }),
+    ),
   );
 }
 
-/**
- * Registra uma SAÍDA manual (ajuste/descarte) numa transação atômica: trava a linha,
- * valida `novoSaldo >= 0` na app (senão `InsufficientStockError` + rollback total),
- * insere o movimento e decrementa o saldo. `CHECK balance >= 0` (008) é o backstop
- * contra corridas que escapem da validação.
- */
+/** Registra uma SAÍDA manual (ajuste/descarte) numa transação atômica própria. */
 export async function registerStockExit(
   orgId: string,
   input: StockExitValues,
 ): Promise<StockMovementResult> {
   return auditedTenantWrite(orgId, WRITE_EVENT, () =>
-    withOrg(orgId, async (tx) => {
-      const [stock] = await tx
-        .select({ id: epiStock.id, balance: epiStock.balance })
-        .from(epiStock)
-        .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, input.stockId)))
-        .for("update")
-        .limit(1);
-      if (!stock) throw new NotFoundError();
-
-      const newBalance = stock.balance - input.quantity;
-      if (newBalance < 0) throw new InsufficientStockError(stock.balance, input.quantity);
-
-      const [movement] = await tx
-        .insert(stockMovements)
-        .values({
-          orgId,
-          stockId: input.stockId,
-          type: input.type,
-          quantity: input.quantity,
-          movementDate: input.movementDate,
-        })
-        .returning();
-
-      await tx
-        .update(epiStock)
-        .set({ balance: newBalance, updatedAt: new Date() })
-        .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, input.stockId)));
-
-      return { movement, newBalance };
-    }),
+    withOrg(orgId, (tx) =>
+      applyStockExit(tx, {
+        orgId,
+        stockId: input.stockId,
+        quantity: input.quantity,
+        type: input.type,
+        movementDate: input.movementDate,
+      }),
+    ),
   );
 }
 
@@ -159,8 +193,9 @@ export async function listStockMovements(
       .limit(1);
     if (!stock) throw new NotFoundError();
 
+    // espelha `signedQuantity` do domínio: purchase/employee_return somam.
     const runningBalance = sql<number>`(sum(
-      case when ${stockMovements.type} = 'purchase'
+      case when ${stockMovements.type} in ('purchase', 'employee_return')
         then ${stockMovements.quantity}
         else -${stockMovements.quantity}
       end

@@ -14,18 +14,18 @@ Data: 2026-07-03 · Branch base: `develop` · Constituição: `.specify/memory/c
 
 Fase 02 = módulo de EPI ponta a ponta. As issues (label `Fase 02 — EPIs`):
 
-| # | Fatia | Estado real (em `develop`) |
-| --- | --- | --- |
-| #17 | Modelo de dados EPI (008) | ✅ mergeado / issue CLOSED |
-| #73 | CRUD de Categorias | ✅ mergeado / issue CLOSED |
-| #18 | CRUD de Catálogo de EPI | ✅ código mergeado — **falta plugar o CA/CAEPI no form** |
-| #70 | CRUD de Estoque | ✅ mergeado — só fechar issue |
-| #72 | Movimentações de estoque | ✅ mergeado — só fechar issue |
-| #75 / #115 | Validação/consulta de CA (CAEPI) | ✅ backend mergeado — **não plugado ao form do #18** |
-| #19 | Entrega de EPI + assinatura digital | ⏳ implementar |
-| #20 | Devolução de EPI | ⏳ implementar (**1 migration**) |
-| #21 | Ficha/histórico de EPI por funcionário | ⏳ implementar |
-| #78 | EPI × risco (neutralização) | ⛔ **Fase 03** — fora (sem módulo de Riscos) |
+| #          | Fatia                                  | Estado real (em `develop`)                               |
+| ---------- | -------------------------------------- | -------------------------------------------------------- |
+| #17        | Modelo de dados EPI (008)              | ✅ mergeado / issue CLOSED                               |
+| #73        | CRUD de Categorias                     | ✅ mergeado / issue CLOSED                               |
+| #18        | CRUD de Catálogo de EPI                | ✅ código mergeado — **falta plugar o CA/CAEPI no form** |
+| #70        | CRUD de Estoque                        | ✅ mergeado — só fechar issue                            |
+| #72        | Movimentações de estoque               | ✅ mergeado — só fechar issue                            |
+| #75 / #115 | Validação/consulta de CA (CAEPI)       | ✅ backend mergeado — **não plugado ao form do #18**     |
+| #19        | Entrega de EPI + assinatura digital    | ⏳ implementar                                           |
+| #20        | Devolução de EPI                       | ⏳ implementar (**1 migration**)                         |
+| #21        | Ficha/histórico de EPI por funcionário | ⏳ implementar                                           |
+| #78        | EPI × risco (neutralização)            | ⛔ **Fase 03** — fora (sem módulo de Riscos)             |
 
 **Descoberta que enxuga o escopo**: a fatia 008 (mergeada) já criou `epi_deliveries`
 (com `signature_status` + `auth_token`), `epi_delivery_items` e o enum `epi_signature_status`
@@ -56,7 +56,7 @@ que já existe** em `develop`: `epi_deliveries.auth_token` (único) + `epi_deliv
 (enum com `signed_qr/link/manual`). Razões:
 
 - **Já está no develop e zero migration** — a 008 modelou exatamente para isto.
-- **`CODE_STANDARDS.md`**: *"abstraia quando houver 2+ consumidores reais, não antes"*. Hoje **só** a
+- **`CODE_STANDARDS.md`**: _"abstraia quando houver 2+ consumidores reais, não antes"_. Hoje **só** a
   entrega de EPI assina. Quando o PGR (Fase 03+) precisar assinar, aí sim extrai-se a infra genérica —
   com 2 consumidores reais. Construir a tabela polimórfica agora, para 1 consumidor, fere YAGNI.
 - Salvamos as **ideias** da branch `feature/digital-signature-infra` (token 72h, QR, rota pública,
@@ -110,13 +110,13 @@ e o schema `epis.ts` ficam **intactos**. Estado `expired`/`not_found`/erro **nun
 Uma spec, uma branch limpa a partir de `develop`, implementada de uma vez — mas internamente em
 histórias priorizadas e independentemente testáveis:
 
-| US | Título | Issues | Prioridade | Migration | Depende |
-| --- | --- | --- | --- | --- | --- |
-| **US1** | Plugar CAEPI no catálogo (autofill CA) | #18, #75, #115 | P1 | — | base CAEPI + #18 (prontos) |
-| **US2** | Entrega + baixa de estoque + assinatura manual | #19 (core) | P1 | — | `applyStockExit` (D2) |
-| **US3** | Assinatura pública por QR/link da entrega | #19 (assinatura) | P1 | — | US2 + rota pública |
-| **US4** | Devolução + reposição de saldo | #20 | P2 | **0010** | US2 |
-| **US5** | Ficha/histórico de EPI por funcionário | #21 | P2 | — | US2 (US4 enriquece) |
+| US      | Título                                         | Issues           | Prioridade | Migration | Depende                    |
+| ------- | ---------------------------------------------- | ---------------- | ---------- | --------- | -------------------------- |
+| **US1** | Plugar CAEPI no catálogo (autofill CA)         | #18, #75, #115   | P1         | —         | base CAEPI + #18 (prontos) |
+| **US2** | Entrega + baixa de estoque + assinatura manual | #19 (core)       | P1         | —         | `applyStockExit` (D2)      |
+| **US3** | Assinatura pública por QR/link da entrega      | #19 (assinatura) | P1         | —         | US2 + rota pública         |
+| **US4** | Devolução + reposição de saldo                 | #20              | P2         | **0010**  | US2                        |
+| **US5** | Ficha/histórico de EPI por funcionário         | #21              | P2         | —         | US2 (US4 enriquece)        |
 
 Housekeeping (não é código): fechar #70, #72 (já mergeadas) e #75 como duplicada de #115.
 
@@ -126,18 +126,18 @@ Ordem de dependência (panorama §8): US1 é ortogonal; US2 destrava US3/US4/US5
 
 ## 5. Mapa de reuso (nada reinventado)
 
-| Precisa | Reusa (já em `develop`) | Onde |
-| --- | --- | --- |
-| Gate + `ActionResult` + erro→HTTP | `officeAction`, `restHandler`, `toActionError`, `result.ts` | `src/shared/server/*`, `src/shared/api/rest.ts` |
-| Tenant | `withOrg` + RLS `app_runtime` | `src/shared/db/with-org.ts`, schema `epis.ts` |
-| Baixa/reposição de saldo | `registerStockExit`/`Entry` → **extrair** `applyStockExit`/`Entry` | `repositories/stock-movements.ts` |
-| Saldo resultante (histórico) | window function + `computeRunningBalance` | `domains/pgr/stock-movements.ts` |
-| Erro de saldo | `InsufficientStockError` → `INSUFFICIENT_STOCK` (422) | `api/rest.ts` |
-| Autofill de CA | `CaField` + `useCaepiValidation` + `lookupCa` + REST CAEPI | `src/shared/integrations/caepi/**` |
-| Rota pública | `createRouteMatcher`/`isPublicRoute` (add `/sign/(.*)`) | `src/proxy.ts` |
-| Paginação | `{rows,total}` via `pagination.ts` | `src/shared/pagination.ts` |
-| UI CRUD | `_ui/list`, `_ui/form`, páginas do catálogo/estoque | `src/app/(protected)/_ui/*` |
-| QR/token/signature-pad | **referência** da branch `feature/digital-signature-infra` | (não mergear) |
+| Precisa                           | Reusa (já em `develop`)                                            | Onde                                            |
+| --------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------- |
+| Gate + `ActionResult` + erro→HTTP | `officeAction`, `restHandler`, `toActionError`, `result.ts`        | `src/shared/server/*`, `src/shared/api/rest.ts` |
+| Tenant                            | `withOrg` + RLS `app_runtime`                                      | `src/shared/db/with-org.ts`, schema `epis.ts`   |
+| Baixa/reposição de saldo          | `registerStockExit`/`Entry` → **extrair** `applyStockExit`/`Entry` | `repositories/stock-movements.ts`               |
+| Saldo resultante (histórico)      | window function + `computeRunningBalance`                          | `domains/pgr/stock-movements.ts`                |
+| Erro de saldo                     | `InsufficientStockError` → `INSUFFICIENT_STOCK` (422)              | `api/rest.ts`                                   |
+| Autofill de CA                    | `CaField` + `useCaepiValidation` + `lookupCa` + REST CAEPI         | `src/shared/integrations/caepi/**`              |
+| Rota pública                      | `createRouteMatcher`/`isPublicRoute` (add `/sign/(.*)`)            | `src/proxy.ts`                                  |
+| Paginação                         | `{rows,total}` via `pagination.ts`                                 | `src/shared/pagination.ts`                      |
+| UI CRUD                           | `_ui/list`, `_ui/form`, páginas do catálogo/estoque                | `src/app/(protected)/_ui/*`                     |
+| QR/token/signature-pad            | **referência** da branch `feature/digital-signature-infra`         | (não mergear)                                   |
 
 ---
 

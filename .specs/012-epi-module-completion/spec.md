@@ -107,8 +107,8 @@ autenticada, assinar, e confirmar que o painel interno da entrega reflete o novo
 **Acceptance Scenarios**:
 
 1. **Given** uma entrega pendente, **When** o técnico escolhe assinatura por QR ou link, **Then** um
-   token curto, imprevisível e com validade de 72h é gerado e associado à entrega (um token por
-   entrega).
+   token imprevisível, à prova de adulteração e com validade de 72h é gerado e associado à entrega
+   (um token por entrega, com o método escolhido embutido).
 2. **Given** o link público de assinatura, **When** o funcionário o acessa sem estar autenticado,
    **Then** a rota pública abre (sem tenant, sem Clerk), mostra os itens da entrega e a área de
    assinatura.
@@ -123,7 +123,7 @@ autenticada, assinar, e confirmar que o painel interno da entrega reflete o novo
    que já foi assinada, sem 500 e sem permitir reassinar.
 7. **Given** a rota pública, **When** acessada com um token de uma entrega, **Then** ela só enxerga
    aquela entrega e o tenant dela; nenhuma outra entrega ou tenant é acessível, e a rota resiste a
-   enumeração (rate-limit).
+   enumeração (espaço de chave HMAC + resposta uniforme; rate-limit complementar na borda).
 
 ---
 
@@ -162,7 +162,8 @@ entregues, com data de entrega, data de devolução e status de assinatura — c
 status, e poder imprimi-la.
 
 **Why this priority**: Fecha #21 e é a visão de auditoria/comprovação. Somente leitura; depende de US2
-para haver o que listar (US4 enriquece a coluna de devolução).
+para haver o que listar e da mudança de esquema da US4 (migration `0010`, coluna `returned_at`) para a
+coluna "Data de Devolução".
 
 **Independent Test**: Abrir a ficha de um funcionário do próprio tenant, ver a lista de entregas com
 suas colunas, aplicar filtro por status "pendente"/"devolvido" e por período, e acionar a impressão.
@@ -195,7 +196,8 @@ suas colunas, aplicar filtro por status "pendente"/"devolvido" e por período, e
   impede a baixa. O EPI sai do estoque no ato, a assinatura é a prova posterior.
 - **Exclusão de entrega assinada**: proibida; o único caminho de retorno de saldo é a devolução.
 - **Token de assinatura**: inexistente → inválido; >72h → expirado; entrega já assinada → mensagem
-  clara; sempre sem erro de servidor e sem vazar dados de outro tenant; resiste a enumeração.
+  clara; sempre sem erro de servidor e sem vazar dados de outro tenant; resiste a enumeração pelo
+  espaço de chave HMAC e por resposta uniforme (rate-limit complementar na borda).
 - **Devolução dupla**: um item só pode ser devolvido uma vez; a segunda tentativa é barrada e o saldo
   não muda.
 - **CA sem base sincronizada / formato inválido / digitação rápida**: base vazia gera aviso informativo
@@ -246,13 +248,18 @@ suas colunas, aplicar filtro por status "pendente"/"devolvido" e por período, e
   com data/hora.
 - **FR-012**: Uma entrega MUST poder ser assinada apenas uma vez; tentativas de reassinar MUST retornar
   `ALREADY_SIGNED`.
-- **FR-013**: Para QR/link, o sistema MUST gerar um token por entrega, curto, imprevisível e com
-  validade de 72 horas.
+- **FR-013**: Para QR/link, o sistema MUST gerar um token por entrega — imprevisível, à prova de
+  adulteração e compacto o bastante para uso em QR/link — com validade de 72 horas e com o método de
+  assinatura (QR ou link) embutido no próprio token.
 - **FR-014**: O sistema MUST expor uma rota pública de assinatura, acessível sem autenticação e sem
   contexto de tenant, que resolve a entrega e seu tenant exclusivamente a partir do token.
 - **FR-015**: A rota pública MUST tratar token inexistente como `TOKEN_INVALID`, token expirado como
   `TOKEN_EXPIRED` e entrega já assinada com mensagem clara, sempre sem erro de servidor e sem expor
-  qualquer entrega/tenant além da referenciada pelo token; MUST resistir a enumeração (rate-limit).
+  qualquer entrega/tenant além da referenciada pelo token; MUST resistir a enumeração pelo espaço de
+  chave do token HMAC (forjar/adivinhar um token válido é computacionalmente inviável) e por resposta
+  uniforme que não distingue token inexistente de adulterado; limitação de taxa por IP é controle
+  complementar aplicado na borda (Cloudflare/WAF — infraestrutura, fora do escopo de teste
+  automatizado da aplicação).
 - **FR-016**: O painel interno da entrega MUST refletir a conclusão da assinatura pública por polling.
 - **FR-017**: O sistema MUST proibir a exclusão de uma entrega já assinada (`FORBIDDEN`).
 
@@ -288,10 +295,12 @@ suas colunas, aplicar filtro por status "pendente"/"devolvido" e por período, e
   Action, Route Handler REST espelho com verbos reais, registro em `docs/api/api-design.md` e requests
   na coleção Postman única, reutilizando a mesma regra de negócio (repositório/schema/mapeamento de
   erro) entre Server Action e REST, sem reimplementá-la.
-- **FR-027**: Os recursos REST MUST cobrir: listar/criar entregas; obter/atualizar/excluir entrega
-  (exclusão barrada se assinada); assinar (manual); devolver item(ns); ficha de EPI do funcionário
-  (somente leitura, com filtros de status/período/página); e a rota pública de assinatura, fora do
-  namespace de API versionada e sem tenant. Criações retornam `201`; exclusões retornam `204`.
+- **FR-027**: Os recursos REST MUST cobrir: listar/criar entregas; obter/excluir entrega (exclusão
+  barrada se assinada; **sem** edição de entrega — fora de escopo por YAGNI, entregas são imutáveis
+  após a criação exceto pelas transições de assinatura/devolução); assinar (manual); devolver
+  item(ns); ficha de EPI do funcionário (somente leitura, com filtros de status/período/página); e a
+  rota pública de assinatura, fora do namespace de API versionada e sem tenant. Criações retornam
+  `201`; exclusões retornam `204`.
 
 ### Key Entities _(include if feature involves data)_
 

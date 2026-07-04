@@ -28,8 +28,8 @@ presente (índice `uq_epi_deliveries_auth_token`).
    valida `balance - quantity >= 0` (senão `InsufficientStockError`) → INSERT movimento + UPDATE saldo.
    `registerStockExit` (#72) passa a chamá-lo. **Comportamento e testes da #72 preservados.**
 2. **`createDelivery`** (repository, dentro de `withOrg` + transação): cria `epi_deliveries` (`pending`)
-   + N `epi_delivery_items` + para cada item `applyStockExit(..., type='employee_delivery')`. Falha em
-   qualquer item → **rollback total**. Alerta (não erro) se o saldo cair abaixo da mínima.
+   - N `epi_delivery_items` + para cada item `applyStockExit(..., type='employee_delivery')`. Falha em
+     qualquer item → **rollback total**. Alerta (não erro) se o saldo cair abaixo da mínima.
 3. **`signDeliveryManual`**: seta `signature_status = signed_manual` + timestamp. Só a partir de
    `pending`; reassinar → erro `ALREADY_SIGNED` (409).
 4. **UI** (entrada na página do funcionário `employees/[id]`): seleção de itens **com saldo disponível**

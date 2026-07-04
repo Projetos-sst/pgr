@@ -14,8 +14,9 @@ de dados da fatia 008 já cobre entregas/itens/assinatura — **toda a leva é z
 devolução (migration `0010`)**. A abordagem reusa integralmente os motores existentes (`withOrg` + RLS,
 `officeAction`/`restHandler`, `toActionError`, `auditedTenantWrite`, paginação, `_ui`) e **extrai**
 `applyStockExit`/`applyStockEntry` de `stock-movements.ts` (D2), preservando o comportamento e os testes
-da #72. A assinatura é **inline** (D1): token stateless HMAC-assinado com validade de 72h embutida,
-sem coluna nova e sem infra polimórfica.
+da #72. A assinatura é **inline** (D1): token HMAC-assinado com validade de 72h e método (QR/link) embutidos
+— stateless para o TTL, ancorado no `auth_token` armazenado para unicidade/revogação —, sem coluna
+nova e sem infra polimórfica.
 
 ## Technical Context
 
@@ -54,13 +55,13 @@ estoque).
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-| Princípio | Conformidade |
-| --- | --- |
+| Princípio                                       | Conformidade                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **I. Isolamento Multi-Tenant (não-negociável)** | ✅ Toda leitura/escrita de EPI via `withOrg` + RLS `app_runtime`; tenant da sessão. **Ponto de atenção**: rota pública `/sign/[token]` opera sem sessão — mitigado resolvendo o `orgId` a partir do token assinado e executando o acesso sob `withOrg(orgId)`, de modo que o RLS ainda valida a posse da entrega; a rota nunca enxerga outra entrega/tenant (ver research R1). Não é violação: o tenant não vem de input livre do cliente, e sim de um token HMAC-assinado emitido pelo próprio tenant. |
-| **II. Stack Fixa & YAGNI** | ✅ Zero nova infraestrutura. Assinatura inline (D1) em vez de infra genérica; QR/signature-pad sem lib nova quando possível (research R4). Sem features especulativas (#78 fora). |
-| **III. Fatias Verticais** | ✅ 5 US independentemente testáveis; US1 ortogonal, US2 destrava US3/US4/US5; MVP = US1+US2 (P1). |
-| **IV. Operações Pesadas Assíncronas** | ✅ Todas as operações são CRUD/regra rápida e síncrona. Nenhuma geração de PDF em lote (impressão é CSS no cliente). Painel por polling, não bloqueante. |
-| **V. Segurança & Integridade** | ✅ TS strict, sem `any`; toda Server Action/Route Handler valida entrada com Zod antes do banco; constraints no banco (`CHECK balance >= 0`, `quantity > 0`, FKs, unique de token) como fonte de verdade; migration `0010` reversível (enum forward-only documentado). Segredo do token em env. |
+| **II. Stack Fixa & YAGNI**                      | ✅ Zero nova infraestrutura. Assinatura inline (D1) em vez de infra genérica; QR/signature-pad sem lib nova quando possível (research R4). Sem features especulativas (#78 fora).                                                                                                                                                                                                                                                                                                                       |
+| **III. Fatias Verticais**                       | ✅ 5 US independentemente testáveis; US1 ortogonal, US2 destrava US3/US4/US5; MVP = US1+US2 (P1).                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **IV. Operações Pesadas Assíncronas**           | ✅ Todas as operações são CRUD/regra rápida e síncrona. Nenhuma geração de PDF em lote (impressão é CSS no cliente). Painel por polling, não bloqueante.                                                                                                                                                                                                                                                                                                                                                |
+| **V. Segurança & Integridade**                  | ✅ TS strict, sem `any`; toda Server Action/Route Handler valida entrada com Zod antes do banco; constraints no banco (`CHECK balance >= 0`, `quantity > 0`, FKs, unique de token) como fonte de verdade; migration `0010` reversível (enum forward-only documentado). Segredo do token em env.                                                                                                                                                                                                         |
 
 **Verificação de teste (exceção de Postgres efêmero)**: esta fatia depende de RLS/policy/`current_setting`
 — usa Postgres efêmero em integração, exatamente a exceção prevista na constituição. Sem violação.
@@ -96,10 +97,10 @@ src/
 │   │   ├── schema/
 │   │   │   └── epis.ts                     # US4: +returnedAt em epiDeliveryItems; +'employee_return' no enum
 │   │   ├── migrations/
-│   │   │   └── 0010_epi_delivery_return.sql # US4: ALTER TYPE ADD VALUE + ADD COLUMN (SQL custom, padrão 0005)
+│   │   │   └── 0011_epi_delivery_return.sql # US4: ALTER TYPE ADD VALUE + ADD COLUMN (SQL custom, padrão 0005)
 │   │   └── repositories/
 │   │       ├── stock-movements.ts          # D2: extrair applyStockExit/applyStockEntry; registerStock* passam a chamá-los
-│   │       ├── epi-deliveries.ts           # NOVO: createDelivery, getDelivery, listDeliveries, deleteDelivery(guard), signManual, signByToken, returnItem
+│   │       ├── epi-deliveries.ts           # NOVO: createDelivery, getDelivery, listDeliveries, deleteDelivery(guard), signManual, signByToken, returnDeliveryItem
 │   │       └── employee-epi-record.ts      # NOVO (US5): getEmployeeEpiRecord (join escopado + filtros + paginação)
 │   ├── domains/pgr/
 │   │   ├── stock-movements.ts              # tipos StockExit/EntryValues reusados
@@ -111,7 +112,7 @@ src/
 │   │   └── token-error.ts                  # NOVO (TokenInvalidError/TokenExpiredError)
 │   ├── integrations/
 │   │   └── epi-signature/
-│   │       └── token.ts                     # NOVO: sign/verify token HMAC stateless (orgId+deliveryId+iat, TTL 72h)
+│   │       └── token.ts                     # NOVO: sign/verify token HMAC stateless (orgId+deliveryId+method+iat, TTL 72h)
 │   ├── server/
 │   │   └── actions/pgr/
 │   │       └── epi-deliveries.ts            # NOVO: Server Actions (officeAction) espelho do repo
@@ -137,7 +138,7 @@ src/
         │   ├── epi-deliveries/
         │   │   ├── route.ts                  # GET (list) + POST (create) → restHandler
         │   │   └── [id]/
-        │   │       ├── route.ts              # GET + PUT + DELETE(guard assinada)
+        │   │       ├── route.ts              # GET + DELETE(guard assinada; sem PUT — edição fora de escopo)
         │   │       ├── sign/route.ts         # POST (assinatura manual)
         │   │       └── return/route.ts       # POST (devolver item)
         │   └── employees/[id]/epi-record/
