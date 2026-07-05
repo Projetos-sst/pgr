@@ -47,3 +47,13 @@ export {
   type EpiRisk,
   type NewEpiRisk,
 } from "./epis";
+export {
+  signatureRequests,
+  signatureCaptures,
+  signatureRequestStatus,
+  signatureMethod,
+  type SignatureRequest,
+  type NewSignatureRequest,
+  type SignatureCapture,
+  type NewSignatureCapture,
+} from "./signatures";

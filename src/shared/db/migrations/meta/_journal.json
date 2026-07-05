@@ -71,6 +71,13 @@
       "when": 1782999441246,
       "tag": "0009_caepi_certificates",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783271172593,
+      "tag": "0010_digital_signature_infra",
+      "breakpoints": true
     }
   ]
 }
