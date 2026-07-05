@@ -66,7 +66,8 @@ Notas chave (`010`):
   (resultado 1:1), discriminadas por `target_type`. Novo módulo consumidor = +1 entrada no
   registry, **zero mudança de schema**. 2 `pgEnum` (`signature_request_status` `pending|signed|cancelled`;
   `signature_method` `qr|link|manual`). "expired" é **derivado na leitura**, não persistido.
-  Migration nova `0009_digital_signature_infra` (GRANT + triggers + policy de capability como SQL custom).
+  Migration nova `0010_digital_signature_infra` (GRANT + triggers + policy de capability como SQL
+  custom; renumerada de `0009` no rebase — a `0009` é a `caepi_certificates` do `develop`).
 - **Rota pública sem login** (`app/(public)/assinar/[token]`): isolamento vem **do token**, não do
   cliente. `signature_requests` tem 2 policies RLS PERMISSIVE: tenant (`FOR ALL`, `app.current_org`)
   - **capability** (`FOR SELECT`, `token_hash = current_setting('app.signature_token', true)`).

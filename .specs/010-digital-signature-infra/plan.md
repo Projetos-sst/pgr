@@ -77,7 +77,7 @@ src/
 │   │   │   ├── signatures.ts                 # signature_requests + signature_captures + 2 enums + RLS (tenant + capability)
 │   │   │   └── index.ts                       # re-export (ALTER)
 │   │   ├── migrations/
-│   │   │   └── 0009_digital_signature_infra.sql   # drizzle-kit + GRANT + triggers set_updated_at + policy de capability (SQL custom)
+│   │   │   └── 0010_digital_signature_infra.sql   # drizzle-kit + GRANT + triggers set_updated_at + policy de capability (SQL custom)
 │   │   └── repositories/
 │   │       └── signature-requests.ts          # queries (withOrg + withSignatureToken), {rows,total} p/ quota
 │   ├── db/with-signature-token.ts             # helper: set_config('app.signature_token', sha256, true) por transação

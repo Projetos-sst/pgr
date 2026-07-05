@@ -6,7 +6,7 @@ Como exercitar a fatia ponta a ponta (consumidor `demo`) e rodar os testes.
 
 - `.env.local` com `DATABASE_URL` (pooler 6543), `DATABASE_URL_UNPOOLED` (owner) e Clerk.
 - Novas libs instaladas: `qrcode`, `signature_pad` (verificar compat. React 19/Next 16 — research D6).
-- Migration aplicada: `npm run db:generate` (emite `0009_digital_signature_infra`) → `npm run db:migrate`.
+- Migration aplicada: `npm run db:generate` (emite `0010_digital_signature_infra`) → `npm run db:migrate`.
 
 ## Fluxo manual (demo)
 

@@ -65,7 +65,7 @@ Esta fatia entra no `/speckit-plan` **sem NEEDS CLARIFICATION**: o briefing (fon
 
 ## D10 — Migration `0009` (drizzle-kit + SQL custom)
 
-- **Decisão**: `0009_digital_signature_infra.sql` gerada por drizzle-kit, complementada com **SQL custom** (padrão `0001`/`0005`): `GRANT SELECT,INSERT,UPDATE,DELETE` ao `app_runtime` nas 2 tabelas; triggers `set_updated_at`; e a **policy de capability** (`FOR SELECT TO app_runtime USING (token_hash = current_setting('app.signature_token', true))`), já que drizzle-kit emite a policy de tenant a partir do schema mas a de capability é adicional. Aplicada via conexão direta unpooled (owner).
+- **Decisão**: `0010_digital_signature_infra.sql` gerada por drizzle-kit, complementada com **SQL custom** (padrão `0001`/`0005`): `GRANT SELECT,INSERT,UPDATE,DELETE` ao `app_runtime` nas 2 tabelas; triggers `set_updated_at`; e a **policy de capability** (`FOR SELECT TO app_runtime USING (token_hash = current_setting('app.signature_token', true))`), já que drizzle-kit emite a policy de tenant a partir do schema mas a de capability é adicional. Aplicada via conexão direta unpooled (owner).
 - **Racional**: drizzle é dono code-first; GRANT/trigger/policy-extra não são auto-emitidos e seguem o precedente das migrations anteriores.
 - **A verificar**: `pgPolicy(...).enableRLS()` no schema cobre a policy de tenant; confirmar se a de capability entra melhor como segundo `pgPolicy` no schema (drizzle a emitiria) ou como SQL custom — preferir declarar **ambas** no schema se o drizzle-kit suportar `for: "select"` com `using` por `current_setting('app.signature_token')`; caso contrário, SQL custom.
 

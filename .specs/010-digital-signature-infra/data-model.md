@@ -1,6 +1,6 @@
 # Phase 1 — Data Model: Infraestrutura de assinatura digital
 
-Migration: `0009_digital_signature_infra` (drizzle-kit + SQL custom). Schema: `src/shared/db/schema/signatures.ts`. Padrão de tabela/RLS herdado de `companies.ts`/`epis.ts`.
+Migration: `0010_digital_signature_infra` (drizzle-kit + SQL custom). Schema: `src/shared/db/schema/signatures.ts`. Padrão de tabela/RLS herdado de `companies.ts`/`epis.ts`.
 
 ## Enums
 

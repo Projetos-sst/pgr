@@ -40,7 +40,7 @@ Web app Next.js em camadas (plan.md §Project Structure): `src/shared/{db,domain
 
 - [x] T003 Criar schema `src/shared/db/schema/signatures.ts`: tabelas `signature_requests` e `signature_captures` + enums `signature_request_status` (`pending|signed|cancelled`) e `signature_method` (`qr|link|manual`), colunas/constraints/índices conforme data-model.md, com RLS — policy de tenant (`FOR ALL`) em ambas e **policy de capability** (`FOR SELECT`, `token_hash = current_setting('app.signature_token', true)`) em `signature_requests` — via `pgPolicy(...).enableRLS()` (template `companies.ts`/`epis.ts`).
 - [x] T004 Re-exportar tabelas, enums e tipos `Signature*` em `src/shared/db/schema/index.ts` (depende de T003).
-- [x] T005 Gerar migration `npm run db:generate` → `src/shared/db/migrations/0009_digital_signature_infra.sql` (depende de T003/T004).
+- [x] T005 Gerar migration `npm run db:generate` → `src/shared/db/migrations/0010_digital_signature_infra.sql` (depende de T003/T004).
 - [x] T006 Complementar a migration `0009` com SQL custom (padrão `0001`/`0005`): `GRANT SELECT,INSERT,UPDATE,DELETE` ao `app_runtime` nas 2 tabelas; triggers `set_updated_at`; e a **policy de capability** caso o drizzle-kit não a emita (research D10) — separados por `--> statement-breakpoint` (depende de T005).
 - [ ] T007 Aplicar a migration `npm run db:migrate` (conexão owner unpooled) e validar criação de tabelas/policies/triggers (depende de T006).
 - [x] T008 [P] Implementar `src/shared/domains/signatures/token.ts` (puro): geração de token ≥256 bits (`crypto.randomBytes` → base64url), `hashToken` (sha-256), `isExpired(expiresAt, status, now)` — sem I/O.

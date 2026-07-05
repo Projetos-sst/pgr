@@ -107,7 +107,7 @@ contagem de quota), `uq_signature_requests_token_hash`, `idx_signature_requests_
 ### Enums e migration
 
 - 2 `pgEnum`: `signature_request_status`, `signature_method`.
-- Migration `0009_digital_signature_infra.sql` (drizzle-kit) com **GRANT** ao `app_runtime` e
+- Migration `0010_digital_signature_infra.sql` (drizzle-kit) com **GRANT** ao `app_runtime` e
   triggers `set_updated_at` como **SQL custom** (padrão `0001`/`0005`), aplicada via conexão
   direta unpooled (owner).
 
@@ -151,7 +151,7 @@ submitPublicSignature(token: string, input: { signerName: string; imageDataUrl: 
 
 ```
 src/shared/db/schema/signatures.ts                 → tabelas + enums + RLS
-src/shared/db/migrations/0009_digital_signature_infra.sql
+src/shared/db/migrations/0010_digital_signature_infra.sql
 src/shared/domains/signatures/
   ├── contract.ts     → tipos + registry de target_type
   ├── schemas.ts      → Zod (input do request, payload por tipo, captura)

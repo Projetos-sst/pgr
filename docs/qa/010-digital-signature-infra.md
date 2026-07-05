@@ -46,7 +46,7 @@ Interno (com sessão)                         Público (sem sessão)
 | Camada            | Arquivo                                                                                                      |
 | ----------------- | ------------------------------------------------------------------------------------------------------------ |
 | Schema + RLS      | `src/shared/db/schema/signatures.ts`                                                                         |
-| Migration         | `src/shared/db/migrations/0009_digital_signature_infra.sql`                                                  |
+| Migration         | `src/shared/db/migrations/0010_digital_signature_infra.sql`                                                  |
 | Domínio           | `src/shared/domains/signatures/{token,schemas,contract,types,public-url}.ts`, `targets/demo.ts`              |
 | Helper capability | `src/shared/db/with-signature-token.ts`                                                                      |
 | Repositório       | `src/shared/db/repositories/signature-requests.ts`                                                           |
