@@ -65,6 +65,22 @@
     {
       "key": "caExpired",
       "value": "13"
+    },
+    {
+      "key": "stockId",
+      "value": ""
+    },
+    {
+      "key": "deliveryId",
+      "value": ""
+    },
+    {
+      "key": "signToken",
+      "value": "<token gerado na UI da entrega>"
+    },
+    {
+      "key": "deliveryItemId",
+      "value": ""
     }
   ],
   "item": [
@@ -1127,6 +1143,276 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "categories", "{{categoryId}}"]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entrega de EPI",
+      "item": [
+        {
+          "name": "GET /epi-deliveries (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-deliveries?employeeId={{employeeId}}&search=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-deliveries"],
+              "query": [
+                {
+                  "key": "employeeId",
+                  "value": "{{employeeId}}"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /epi-deliveries (create + baixa transacional)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-deliveries",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-deliveries"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"deliveryDate\": \"2026-07-03\",\n  \"items\": [{ \"stockId\": \"{{stockId}}\", \"quantity\": 1 }]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /epi-deliveries/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-deliveries/{{deliveryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-deliveries", "{{deliveryId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /epi-deliveries/:id (403 se assinada)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-deliveries/{{deliveryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-deliveries", "{{deliveryId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /epi-deliveries/:id/sign (assinatura manual)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-deliveries/{{deliveryId}}/sign",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-deliveries", "{{deliveryId}}", "sign"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /epi-deliveries/:id/return (devolucao de item)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{deliveryItemId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-deliveries/{{deliveryId}}/return",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-deliveries", "{{deliveryId}}", "return"]
+            },
+            "description": "Devolve UM item da entrega (US4): seta returned_at (one-shot; repetida -> 409 ALREADY_RETURNED) e repoe o saldo via movimento employee_return. Independe do status de assinatura."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ficha de EPI (epi-record)",
+      "item": [
+        {
+          "name": "GET /employees/:id/epi-record (ficha read-only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}/epi-record?status=todos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}", "epi-record"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "todos",
+                  "description": "pendente | devolvido | todos"
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "YYYY-MM-DD"
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "YYYY-MM-DD"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Ficha de EPI do funcionario (US5, read-only): join entregas x itens x catalogo. status mapeia para returned_at (pendente -> NULL, devolvido -> NOT NULL); from/to filtram delivery_date. Cross-tenant -> 404."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assinatura publica (sign)",
+      "item": [
+        {
+          "name": "GET /sign/:token (pagina publica)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sign/{{signToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["sign", "{{signToken}}"]
+            },
+            "description": "Rota PUBLICA: sem sessao Clerk, sem bypass dev — a credencial e o proprio token HMAC (72h), gerado na UI da entrega (generateSignTokenAction). Token invalido/expirado/entrega ja assinada viram paginas de negocio (nunca 500)."
+          }
+        },
+        {
+          "name": "POST /sign/:token (confirmar assinatura — via UI)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sign/{{signToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["sign", "{{signToken}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "description": "A confirmacao real e uma Server Action (submitSignatureAction) disparada pela pagina — Server Actions sao POST-only com header Next-Action (hash de build), entao este request documenta a superficie mas o fluxo testavel de ponta a ponta e abrir o GET no navegador e confirmar na pagina."
           }
         }
       ]

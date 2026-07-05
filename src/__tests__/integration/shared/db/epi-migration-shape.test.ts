@@ -16,7 +16,14 @@ const EPI_TABLES = [
 ] as const;
 
 const ENUMS: Record<string, string[]> = {
-  stock_movement_type: ["purchase", "employee_delivery", "adjustment", "discard"],
+  // 'employee_return' entrou pela 0010 (fatia 012) — enum é forward-only.
+  stock_movement_type: [
+    "purchase",
+    "employee_delivery",
+    "adjustment",
+    "discard",
+    "employee_return",
+  ],
   epi_signature_status: ["pending", "signed_qr", "signed_link", "signed_manual"],
 };
 

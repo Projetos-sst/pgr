@@ -48,12 +48,28 @@ Reference implementation to copy from: **companies** (`actions/pgr/companies.ts`
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/digital-signature-infra`**. Fatia atual (`010`) — **infraestrutura de
-assinatura digital** (issue #67): camada de plataforma transversal e reutilizável (DRY) para
-coleta de assinatura por **link público com token + QR + captura canvas→PNG**, consumida por
-múltiplos módulos via **registry de `target_type`** (consumidor #1 = `demo`).
+Branch atual: **`feature/epi-module-completion`**. Fatia atual (`012`) — **Conclusão da Fase 02 /
+módulo operacional de EPI** (issues `#18`/`#115`/`#75`, `#19`, `#20`, `#21`; `#78` fica p/ Fase 03).
+Plan: `.specs/012-epi-module-completion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
+diretório). 5 user stories: US1 plugar `CaField`/CAEPI no `epi-catalog-form.tsx` (wiring, zero migration);
+US2 entrega + baixa transacional (extrai `applyStockExit`/`applyStockEntry` de `stock-movements.ts`, D2) +
+assinatura manual inline (D1); US3 assinatura pública `/sign/[token]` (token HMAC stateless 72h, orgId
+embutido → `withOrg`, +`"/sign/(.*)"` no `proxy.ts`); US4 devolução + reposição (**migration `0011`**,
+renumerada de `0010` no rebase: `employee_return` no enum `stock_movement_type` + `returned_at` em
+`epi_delivery_items`); US5 ficha read-only por funcionário. Assinatura é **inline**
+(`epi_deliveries.auth_token`+`signature_status` da 008), NÃO a infra genérica da `010` (que já está
+mergeada em `develop` via PR #127 — decisão da fatia mantida). Novos códigos de erro:
+`ALREADY_SIGNED`/`ALREADY_RETURNED` (409), `TOKEN_INVALID` (404), `TOKEN_EXPIRED` (410). Base:
+`develop` pós-#127 (última migration `0010_digital_signature_infra`); branches antigas
+`feature/ppe-*` são só referência.
 
-Fatia atual (`010`) — `.specs/010-digital-signature-infra/`:
+Fatia anterior (`010` — digital-signature-infra, mergeada em `develop` via PR #127) —
+`.specs/010-digital-signature-infra/`: **infraestrutura de assinatura digital** (issue #67):
+camada de plataforma transversal e reutilizável (DRY) para coleta de assinatura por **link
+público com token + QR + captura canvas→PNG**, consumida por múltiplos módulos via **registry de
+`target_type`** (consumidor #1 = `demo`).
+
+- Plan: `.specs/010-digital-signature-infra/plan.md`
 
 - Plan: `.specs/010-digital-signature-infra/plan.md`
 - Spec / Research / Data model / Quickstart no mesmo diretório; briefing fonte da verdade em
@@ -123,8 +139,7 @@ idempotente por `ca`; fallback `--file`). Consulta **100% local** `lookupCa` (Se
 (inclusivo, fuso `America/Sao_Paulo`); senão `expired`; situação desconhecida → `expired`; base
 vazia → `not_found`. Repositório dividido: `repositories/caepi.ts` (leitura runtime) vs
 `repositories/caepi-upsert.ts` (escrita do job, handle owner injetado). Migrations
-`0008_epi_catalog_type_fk` + `0009_caepi_certificates` (⚠️ `0009` já está ocupada — a migration
-da assinatura digital precisa ser renumerada para `0010` no rebase); devDeps do job:
+`0008_epi_catalog_type_fk` + `0009_caepi_certificates`; devDeps do job:
 `playwright` + `csv-parse`. Convive com a camada CEP/CNPJ da mesma branch.
 
 Fatia anterior (`009` — epi-stock-crud, commit `a55d70b`): CRUD de `epi_stock` com `balance`

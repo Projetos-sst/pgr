@@ -23,12 +23,15 @@ import { ges } from "./ges";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
-// Tipo de movimento de estoque (compra / entrega ao funcionário / ajuste / descarte).
+// Tipo de movimento de estoque (compra / entrega ao funcionário / ajuste /
+// descarte / devolução pelo funcionário). Enum Postgres é forward-only (R5):
+// valores só entram via ALTER TYPE ... ADD VALUE, nunca saem.
 export const stockMovementType = pgEnum("stock_movement_type", [
   "purchase",
   "employee_delivery",
   "adjustment",
   "discard",
+  "employee_return",
 ]);
 
 // Status de assinatura da entrega (pendente / assinada via QR / link / manual).
@@ -209,6 +212,9 @@ export const epiDeliveryItems = pgTable(
       .notNull()
       .references(() => epiCatalog.id, { onDelete: "restrict" }),
     quantity: integer("quantity").notNull(),
+    // Devolução (US4): NULL = em uso; preenchido = devolvido (one-shot, guard
+    // na aplicação). A devolução repõe o saldo via movimento `employee_return`.
+    returnedAt: timestamp("returned_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

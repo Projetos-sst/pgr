@@ -51,6 +51,23 @@ Estes **são** HTTP estável e chamáveis por Postman/cURL (ao contrário das Se
 > `GET /api/me` é o equivalente REST da Server Action `meAction`. O webhook **rejeita** payloads
 > sem assinatura Svix válida (`verifyWebhook`), então só dispara com o signing secret do Clerk.
 
+### Rota pública de assinatura — `/sign/{token}` (fatia 012)
+
+Página pública (fora de `/api/v1`, **sem Clerk, sem tenant de sessão, sem bypass dev**): a
+credencial é o **token HMAC** de 72h gerado por `generateSignTokenAction` (Server Action interna,
+office staff — a geração NÃO tem espelho REST de propósito: o token é credencial de escrita e a
+superfície pública testável é a própria rota). O token embute `{ orgId, deliveryId, method, iat }`
+assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS backstop).
+
+| Ação   | Rota            | Auth       | Desfecho                                                                                                                                                                              |
+| ------ | --------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/sign/{token}` | só o token | página com itens + assinatura · "link inválido" (`TOKEN_INVALID`, uniforme p/ adulterado/inexistente) · "link expirado" (`TOKEN_EXPIRED`, >72h) · "já confirmado" (negócio, não erro) |
+| `POST` | `/sign/{token}` | só o token | Server Action `submitSignatureAction`: `pending → signed_qr\|signed_link` (o `method` vem do payload assinado, nunca do cliente) · repetida → `ALREADY_SIGNED` (mensagem, nunca 500)  |
+
+- Anti-enumeração: espaço de chave HMAC-SHA256 + resposta uniforme; rate-limit por IP é controle
+  complementar na **borda** (Cloudflare/WAF — infra, fora do app). `Cache-Control: no-store`.
+- O painel interno da entrega reflete a assinatura por **polling** do `signature_status`.
+
 ### Integrações externas (`/api/integrations`) — Route Handlers de consulta
 
 Camada de plataforma reutilizável (autofill de formulários). **Só sessão** (`requireAuth()`) — CEP e
@@ -93,20 +110,34 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 
 **Recursos** (todos sob `/api/v1`, escopados ao tenant ativo):
 
-| Recurso                                                            | Verbos                                                        |
-| ------------------------------------------------------------------ | ------------------------------------------------------------- |
-| `/companies` · `/companies/{id}` · `/companies/{id}/dependents`    | GET, POST · GET, PUT, DELETE · GET                            |
-| `/work-units` · `/work-units/{id}` · `/work-units/{id}/dependents` | GET, POST · GET, PUT, DELETE · GET                            |
-| `/job-roles` · `/job-roles/{id}` · `/job-roles/{id}/dependents`    | GET, POST · GET, PUT, DELETE · GET                            |
-| `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                      | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET  |
-| `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`             | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE |
-| `/employees` · `/employees/{id}`                                   | GET, POST · GET, PUT, DELETE                                  |
-| `/categories` · `/categories/{id}`                                 | GET, POST · GET, PUT, DELETE                                  |
+| Recurso                                                                                                  | Verbos                                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/companies` · `/companies/{id}` · `/companies/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
+| `/work-units` · `/work-units/{id}` · `/work-units/{id}/dependents`                                       | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
+| `/job-roles` · `/job-roles/{id}` · `/job-roles/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
+| `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                                                            | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET                                                                                      |
+| `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`                                                   | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE                                                                                     |
+| `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                      |
+| `/categories` · `/categories/{id}`                                                                       | GET, POST · GET, PUT, DELETE                                                                                                                      |
+| `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return` | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item) |
 
 - **Filtros (query)**: list de cada recurso aceita `search`, `page`, `pageSize` + os filtros do
   recurso (`companyId`, `workUnitId`, `status`, `type`). Body de create/update = o mesmo `*Input`
   das actions. **`/categories`** filtra por `search` + `type` (`epi`|`machine`); **PUT exige corpo
   completo `CategoryInput`** (espelho de companies, sem `.partial()`); **não há `/dependents`**.
+- **`/epi-deliveries`** (fatia 012): list filtra por `employeeId` + `search` (nome do funcionário).
+  Create: `{ employeeId, deliveryDate, items: [{ stockId, quantity }] }` → `201` com a baixa
+  aplicada por item; qualquer item sem saldo → `422 INSUFFICIENT_STOCK` com **rollback total**.
+  `DELETE` de entrega assinada → `403 FORBIDDEN` (não estorna saldo). `POST /{id}/sign` (body `{}`)
+  transiciona `pending → signed_manual`; repetida → `409 ALREADY_SIGNED`. Sem `PUT`: entregas são
+  imutáveis após a criação (é o que torna o `updated_at` da assinatura um timestamp legal).
+  `POST /{id}/return` (body `{ itemId }`) devolve UM item: seta `returned_at` (one-shot; repetida →
+  `409 ALREADY_RETURNED`) e repõe o saldo via movimento `employee_return`; independe do status de
+  assinatura.
+- **`/employees/{id}/epi-record`** (fatia 012): ficha de EPI do funcionário, **read-only** (GET).
+  Query `?status=pendente|devolvido|todos&from=&to=&page=&pageSize=` — `status` mapeia para
+  `returned_at` (`pendente` ⇒ NULL, `devolvido` ⇒ NOT NULL); período filtra `delivery_date`.
+  Funcionário cross-tenant → `404 NOT_FOUND`; sem entregas → `{ rows: [], total: 0 }`.
 - **Respostas**: recurso no corpo (`200`), `201` no create, `204` no delete. Erros:
   `{ error: { code, message, fields? } }` com HTTP `422 VALIDATION` · `409 DUPLICATE` ·
   `422 FK_NOT_FOUND` · `404 NOT_FOUND` · `403 FORBIDDEN`/`NO_TENANT_CONTEXT` · `401 UNAUTHORIZED`.
@@ -141,19 +172,21 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 
 ## Sumário das actions/endpoints existentes
 
-| Domínio                   | Arquivo                           | Superfície                                                                 |
-| ------------------------- | --------------------------------- | -------------------------------------------------------------------------- |
-| REST API (Route Handlers) | `app/api/v1/**`                   | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees       |
-| Auth (Route Handler)      | `app/api/me/route.ts`             | `GET /api/me`                                                              |
-| Webhook (Route Handler)   | `app/api/webhooks/clerk/route.ts` | `POST /api/webhooks/clerk` (provisiona tenant/sync)                        |
-| Sessão / Identidade       | `actions/me.ts`                   | `meAction` (Server Action)                                                 |
-| Empresa                   | `actions/pgr/companies.ts`        | list, options, get, create, update, delete, dependents                     |
-| Unidade de Obra           | `actions/pgr/work-units.ts`       | list, get, create, update, delete, dependents                              |
-| Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                              |
-| GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles`  |
-| Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                       |
-| Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)               |
-| CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`        | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}` |
+| Domínio                   | Arquivo                           | Superfície                                                                                                        |
+| ------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| REST API (Route Handlers) | `app/api/v1/**`                   | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees                                              |
+| Auth (Route Handler)      | `app/api/me/route.ts`             | `GET /api/me`                                                                                                     |
+| Webhook (Route Handler)   | `app/api/webhooks/clerk/route.ts` | `POST /api/webhooks/clerk` (provisiona tenant/sync)                                                               |
+| Sessão / Identidade       | `actions/me.ts`                   | `meAction` (Server Action)                                                                                        |
+| Empresa                   | `actions/pgr/companies.ts`        | list, options, get, create, update, delete, dependents                                                            |
+| Unidade de Obra           | `actions/pgr/work-units.ts`       | list, get, create, update, delete, dependents                                                                     |
+| Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                                                                     |
+| GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles`                                         |
+| Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                                                              |
+| Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)                                                      |
+| CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`        | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                        |
+| Entrega de EPI            | `actions/pgr/epi-deliveries.ts`   | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**` |
+| Ficha de EPI              | `actions/pgr/epi-record.ts`       | `getEmployeeEpiRecordAction` (read-only) + REST `GET /api/v1/employees/{id}/epi-record`                           |
 
 ---
 
@@ -179,14 +212,19 @@ type ActionResult<T> = { ok: true; data: T } | { ok: false; error: ActionError }
 Mapeados por `toActionError` (`src/shared/server/action-error.ts`). Erro inesperado é
 **relançado** (nunca silenciado), caindo no error boundary do Next.
 
-| code                | Origem                                   | HTTP equiv. | Quando                                                   |
-| ------------------- | ---------------------------------------- | ----------- | -------------------------------------------------------- |
-| `VALIDATION`        | `ZodError` (com `fields`); CHECK `23514` | 422         | Entrada inválida                                         |
-| `DUPLICATE`         | UNIQUE `23505`                           | 409         | CNPJ/CPF/título/vínculo duplicado no escritório          |
-| `FK_NOT_FOUND`      | FK `23503`; referência fora do tenant    | 422         | Empresa/obra/GES/função inexistente no escritório        |
-| `FORBIDDEN`         | papel `client`                           | 403         | Membro não-equipe tentou operar                          |
-| `NOT_FOUND`         | `getById` → `null`                       | 404         | Registro inexistente no escritório (inclui cross-tenant) |
-| `NO_TENANT_CONTEXT` | sem escritório ativo                     | 403         | Sessão sem tenant resolvido                              |
+| code                 | Origem                                   | HTTP equiv. | Quando                                                      |
+| -------------------- | ---------------------------------------- | ----------- | ----------------------------------------------------------- |
+| `VALIDATION`         | `ZodError` (com `fields`); CHECK `23514` | 422         | Entrada inválida                                            |
+| `DUPLICATE`          | UNIQUE `23505`                           | 409         | CNPJ/CPF/título/vínculo duplicado no escritório             |
+| `FK_NOT_FOUND`       | FK `23503`; referência fora do tenant    | 422         | Empresa/obra/GES/função inexistente no escritório           |
+| `FORBIDDEN`          | papel `client`                           | 403         | Membro não-equipe tentou operar                             |
+| `NOT_FOUND`          | `getById` → `null`                       | 404         | Registro inexistente no escritório (inclui cross-tenant)    |
+| `NO_TENANT_CONTEXT`  | sem escritório ativo                     | 403         | Sessão sem tenant resolvido                                 |
+| `INSUFFICIENT_STOCK` | `InsufficientStockError` (repositório)   | 422         | Saída/entrega maior que o saldo disponível (rollback total) |
+| `ALREADY_SIGNED`     | `AlreadySignedError` (repositório)       | 409         | Assinar entrega que já saiu de `pending` (one-shot)         |
+| `ALREADY_RETURNED`   | `AlreadyReturnedError` (repositório)     | 409         | Devolver item de entrega já devolvido (saldo intacto)       |
+| `TOKEN_INVALID`      | `TokenInvalidError` (rota pública)       | 404         | Token de assinatura ausente/adulterado/inexistente          |
+| `TOKEN_EXPIRED`      | `TokenExpiredError` (rota pública)       | 410         | Token com HMAC válido porém além do TTL de 72h              |
 
 ## Pré-condições comuns (toda action de CRUD)
 

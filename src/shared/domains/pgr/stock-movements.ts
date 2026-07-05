@@ -58,18 +58,25 @@ const TYPE_LABELS: Record<StockMovementType, string> = {
   employee_delivery: "Entrega a funcionário",
   adjustment: "Ajuste",
   discard: "Descarte",
+  employee_return: "Devolução de funcionário",
 };
 
 export function stockMovementTypeLabel(type: StockMovementType): string {
   return TYPE_LABELS[type];
 }
 
+// Tipos que SOMAM ao saldo; os demais (entrega/ajuste/descarte) subtraem.
+const ENTRY_TYPES: ReadonlySet<StockMovementType> = new Set([
+  "purchase",
+  "employee_return",
+]);
+
 /**
- * Efeito do movimento no saldo: `purchase` soma; os demais (entrega/ajuste/descarte)
- * subtraem. `quantity` é sempre positivo — o sinal vem exclusivamente do `type`.
+ * Efeito do movimento no saldo. `quantity` é sempre positivo — o sinal vem
+ * exclusivamente do `type`.
  */
 export function signedQuantity(type: StockMovementType, quantity: number): number {
-  return type === "purchase" ? quantity : -quantity;
+  return ENTRY_TYPES.has(type) ? quantity : -quantity;
 }
 
 /** Movimento mínimo para o cálculo do saldo acumulado (ordem cronológica ascendente). */

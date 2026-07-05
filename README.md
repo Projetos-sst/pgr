@@ -10,6 +10,10 @@ cp .env.example .env.local   # preencher chaves do Clerk
 npm run dev                  # http://localhost:3000
 ```
 
+Além das chaves do Clerk/Supabase, o `.env.local` precisa de `EPI_SIGN_TOKEN_SECRET`
+(segredo do token HMAC da assinatura pública de entrega de EPI — qualquer string longa
+aleatória, ex.: `openssl rand -hex 32`).
+
 Comandos úteis: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:integration`.
 
 ## Documentação da fatia atual
