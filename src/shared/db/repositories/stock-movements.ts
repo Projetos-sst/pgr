@@ -77,6 +77,58 @@ async function persistMovement(
   return { movement, newBalance };
 }
 
+/** Parâmetros de uma REPOSIÇÃO de estoque (entrada por devolução) por linha. */
+export type StockReturnParams = {
+  orgId: string;
+  stockId: string;
+  quantity: number;
+  /** `YYYY-MM-DD`; quando omitido usa o default `now()` da coluna. */
+  movementDate?: string;
+  /** Liga o movimento à entrega devolvida (`employee_return`). */
+  deliveryId?: string;
+};
+
+/**
+ * Helper transacional de REPOSIÇÃO por linha (inverso de `applyStockExit`): trava a linha
+ * (`SELECT … FOR UPDATE`), **incrementa** o saldo e insere um movimento `employee_return`.
+ * Não há limite superior nem `InsufficientStockError` (só soma). Roda **dentro** de uma
+ * transação `withOrg` já aberta. Usado pela devolução de EPI (012).
+ */
+export async function applyStockReturn(
+  tx: TenantTransaction,
+  params: StockReturnParams,
+): Promise<StockMovementResult> {
+  const { orgId, stockId, quantity } = params;
+  const [stock] = await tx
+    .select({ id: epiStock.id, balance: epiStock.balance })
+    .from(epiStock)
+    .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, stockId)))
+    .for("update")
+    .limit(1);
+  if (!stock) throw new NotFoundError();
+
+  const newBalance = stock.balance + quantity;
+
+  const [movement] = await tx
+    .insert(stockMovements)
+    .values({
+      orgId,
+      stockId,
+      deliveryId: params.deliveryId ?? null,
+      type: "employee_return",
+      quantity,
+      ...(params.movementDate ? { movementDate: params.movementDate } : {}),
+    })
+    .returning();
+
+  await tx
+    .update(epiStock)
+    .set({ balance: newBalance, updatedAt: new Date() })
+    .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, stockId)));
+
+  return { movement, newBalance };
+}
+
 /**
  * ENTRADA: trava a linha do estoque (`SELECT … FOR UPDATE`), insere o movimento e
  * incrementa o saldo materializado. Item ausente/cross-tenant → `NotFoundError`

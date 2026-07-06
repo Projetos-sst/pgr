@@ -16,6 +16,7 @@ const PGR_NAV = [
   { href: "/epi-catalog", label: "Catálogo de EPI" },
   { href: "/epi-stock", label: "Estoque de EPI" },
   { href: "/signatures", label: "Assinaturas" },
+  { href: "/epi-returns", label: "Devoluções de EPI" },
 ];
 
 export default async function ProtectedLayout({
