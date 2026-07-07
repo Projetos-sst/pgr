@@ -11,7 +11,10 @@ jest.mock("@/shared/db/env", () => ({
 }));
 // O bypass dev nunca chama requireOfficeStaff; mockamos so para evitar a cadeia
 // Supabase no import (auth real continua coberta pelos testes de Server Actions).
+// OFFICE_STAFF_ROLES precisa existir no mock: o restHandler usa o Set no gate de
+// papel do bypass (fatia 012) — replicado inline para nao puxar o modulo real.
 jest.mock("@/shared/auth/require-office-staff", () => ({
+  OFFICE_STAFF_ROLES: new Set(["owner", "collaborator"]),
   requireOfficeStaff: jest.fn(),
 }));
 
