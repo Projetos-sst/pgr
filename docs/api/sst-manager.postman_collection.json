@@ -47,6 +47,10 @@
       "value": ""
     },
     {
+      "key": "pgrId",
+      "value": ""
+    },
+    {
       "key": "sessionCookie",
       "value": "<cookie __session do navegador logado>"
     },
@@ -998,6 +1002,102 @@
               "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "employees", "{{employeeId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "PGR",
+      "item": [
+        {
+          "name": "GET /pgr (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr?companyId=&workUnitId=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr"],
+              "query": [
+                { "key": "companyId", "value": "" },
+                { "key": "workUnitId", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /pgr (create, exige declarationAccepted)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"responsible\": \"Eng. Fulano\",\n  \"registrationType\": \"crea\",\n  \"registrationNumber\": \"SP-123456\",\n  \"issuedAt\": \"2026-01-10\",\n  \"validUntil\": \"2027-01-10\",\n  \"declarationAccepted\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /pgr/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /pgr/:id (corpo completo, sem aceite)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"responsible\": \"Eng. Fulano (atualizado)\",\n  \"registrationType\": \"not_applicable\",\n  \"registrationNumber\": \"\",\n  \"issuedAt\": \"2026-01-10\",\n  \"validUntil\": \"2027-06-10\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /pgr/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}"]
             }
           }
         }
