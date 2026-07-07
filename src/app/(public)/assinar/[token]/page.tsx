@@ -1,6 +1,6 @@
 import { resolvePublicSignature } from "@/shared/server/actions/public-signatures";
 import { isSignatureTargetType } from "@/shared/domains/signatures/contract";
-import { signatureFormRegistry } from "@/shared/ui/signature/form-registry";
+import { PublicSignatureForm } from "@/shared/ui/signature/form-registry";
 
 export const dynamic = "force-dynamic";
 
@@ -43,10 +43,11 @@ export default async function PublicSignaturePage({
         {view.state !== "signable" ? (
           <StatusCard state={view.state} />
         ) : view.targetType && isSignatureTargetType(view.targetType) ? (
-          (() => {
-            const Form = signatureFormRegistry[view.targetType];
-            return <Form token={token} payload={view.payload} />;
-          })()
+          <PublicSignatureForm
+            targetType={view.targetType}
+            token={token}
+            payload={view.payload}
+          />
         ) : (
           <StatusCard state="invalid" />
         )}
