@@ -131,7 +131,11 @@ export function AddressFields({
   );
 }
 
-function CepStatus({ status }: { status: "idle" | "loading" | "success" | "error" }) {
+function CepStatus({
+  status,
+}: {
+  status: "idle" | "loading" | "success" | "error" | "invalid";
+}) {
   if (status === "loading") {
     return <span className="text-xs text-black/50 dark:text-white/50">Buscando…</span>;
   }
@@ -139,6 +143,13 @@ function CepStatus({ status }: { status: "idle" | "loading" | "success" | "error
     return (
       <span className="text-xs text-amber-600 dark:text-amber-400">
         CEP não encontrado. Preencha manualmente.
+      </span>
+    );
+  }
+  if (status === "invalid") {
+    return (
+      <span className="text-xs text-amber-600 dark:text-amber-400">
+        CEP inválido — use 8 dígitos.
       </span>
     );
   }

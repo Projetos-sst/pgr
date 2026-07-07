@@ -17,6 +17,7 @@ export function CaField({
   value,
   onChange,
   onFound,
+  onNotFound,
   name = "ca",
   label = "CA (Certificado de Aprovação)",
   error,
@@ -24,11 +25,12 @@ export function CaField({
   value: string;
   onChange: (value: string) => void;
   onFound: (data: CaFound) => void;
+  onNotFound?: () => void;
   name?: string;
   label?: string;
   error?: string;
 }) {
-  const caepi = useCaepiValidation(onFound);
+  const caepi = useCaepiValidation(onFound, onNotFound);
 
   return (
     <label className="flex flex-col gap-1">
@@ -83,6 +85,13 @@ function CaStatus({
         {baseUnsynced
           ? "Base CAEPI ainda não sincronizada. Preencha manualmente."
           : "CA não encontrado na base CAEPI. Preencha manualmente."}
+      </span>
+    );
+  }
+  if (status === "invalid") {
+    return (
+      <span className="text-xs text-amber-600 dark:text-amber-400">
+        CA inválido — use apenas números.
       </span>
     );
   }

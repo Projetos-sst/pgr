@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 
 import { listCategoriesAction } from "@/shared/server/actions/pgr/categories";
 import {
@@ -68,11 +68,26 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
     else setCategoryId(item?.categoryId ?? "");
   }
 
+  // Última sugestão aplicada pelo CAEPI: permite descartá-la quando o CA muda
+  // para um não encontrado, sem apagar o que o usuário digitou por conta própria.
+  const lastCaAutofill = useRef<CaFound | null>(null);
+
   function handleCaFound(data: CaFound) {
     // Cópia por valor: o formulário é dono dos campos; o CAEPI só sugere.
+    lastCaAutofill.current = data;
     setManufacturer(data.manufacturer);
     setNorm(data.norm);
     setCaValidUntil(data.validUntil);
+  }
+
+  function handleCaNotFound() {
+    const previous = lastCaAutofill.current;
+    if (!previous) return;
+    lastCaAutofill.current = null;
+    // Limpa apenas os campos que ainda carregam a sugestão anterior.
+    setManufacturer((current) => (current === previous.manufacturer ? "" : current));
+    setNorm((current) => (current === previous.norm ? "" : current));
+    setCaValidUntil((current) => (current === previous.validUntil ? "" : current));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -144,6 +159,7 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
         value={ca}
         onChange={setCa}
         onFound={handleCaFound}
+        onNotFound={handleCaNotFound}
         error={errors.ca}
       />
       <TextField

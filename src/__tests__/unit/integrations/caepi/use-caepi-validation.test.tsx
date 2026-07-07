@@ -62,6 +62,28 @@ describe("useCaepiValidation", () => {
     expect(onFound).not.toHaveBeenCalled();
   });
 
+  it("payload not_found → chama onNotFound (form descarta autofill anterior)", async () => {
+    mockFetchPayload({ status: "not_found", ca: "99999" });
+    const onFound = jest.fn();
+    const onNotFound = jest.fn();
+    const { result } = renderHook(() => useCaepiValidation(onFound, onNotFound));
+
+    act(() => result.current.lookup("99999"));
+    await waitFor(() => expect(result.current.status).toBe("not_found"));
+    expect(onNotFound).toHaveBeenCalledTimes(1);
+    expect(onFound).not.toHaveBeenCalled();
+  });
+
+  it("payload valid NÃO chama onNotFound", async () => {
+    mockFetchPayload(VALID_RESULT);
+    const onNotFound = jest.fn();
+    const { result } = renderHook(() => useCaepiValidation(jest.fn(), onNotFound));
+
+    act(() => result.current.lookup("31469"));
+    await waitFor(() => expect(result.current.status).toBe("valid"));
+    expect(onNotFound).not.toHaveBeenCalled();
+  });
+
   it("expõe baseUnsynced no data quando a base nunca foi sincronizada", async () => {
     mockFetchPayload({ status: "not_found", ca: "31469", baseUnsynced: true });
     const { result } = renderHook(() => useCaepiValidation(jest.fn()));
@@ -75,11 +97,20 @@ describe("useCaepiValidation", () => {
     });
   });
 
-  it("formato inválido não dispara fetch (herdado do useLookup)", () => {
+  it("formato inválido não dispara fetch e sinaliza invalid (herdado do useLookup)", () => {
     (global as { fetch: unknown }).fetch = jest.fn();
     const { result } = renderHook(() => useCaepiValidation(jest.fn()));
 
     act(() => result.current.lookup("abc"));
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(result.current.status).toBe("invalid");
+  });
+
+  it("campo vazio permanece idle (sem aviso para campo opcional em branco)", () => {
+    (global as { fetch: unknown }).fetch = jest.fn();
+    const { result } = renderHook(() => useCaepiValidation(jest.fn()));
+
+    act(() => result.current.lookup("  "));
     expect(global.fetch).not.toHaveBeenCalled();
     expect(result.current.status).toBe("idle");
   });

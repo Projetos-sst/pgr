@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { ActionResult } from "@/shared/server/result";
 
-export type LookupStatus = "idle" | "loading" | "success" | "error";
+export type LookupStatus = "idle" | "loading" | "success" | "error" | "invalid";
 
 export type LookupApi<T> = {
   status: LookupStatus;
@@ -37,7 +37,13 @@ export function useLookup<T>({ isValid, buildUrl, onFound }: Options<T>): Lookup
 
   const lookup = useCallback(
     (value: string) => {
-      if (!isValid(value)) return;
+      if (!isValid(value)) {
+        // Formato inválido não dispara fetch, mas o usuário merece o feedback:
+        // campo vazio segue neutro (idle); preenchido errado vira "invalid".
+        controllerRef.current?.abort();
+        setStatus(value.trim() === "" ? "idle" : "invalid");
+        return;
+      }
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
