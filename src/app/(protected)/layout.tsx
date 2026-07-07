@@ -12,6 +12,7 @@ const PGR_NAV = [
   { href: "/job-roles", label: "Funções" },
   { href: "/ges", label: "GES" },
   { href: "/employees", label: "Funcionários" },
+  { href: "/pgr", label: "PGR" },
   { href: "/categories", label: "Categorias" },
   { href: "/epi-catalog", label: "Catálogo de EPI" },
   { href: "/epi-stock", label: "Estoque de EPI" },

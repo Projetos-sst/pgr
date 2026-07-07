@@ -118,6 +118,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                                                            | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET                                                                                      |
 | `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`                                                   | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE                                                                                     |
 | `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                      |
+| `/pgr` · `/pgr/{id}`                                                                                     | GET, POST · GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                          |
 | `/categories` · `/categories/{id}`                                                                       | GET, POST · GET, PUT, DELETE                                                                                                                      |
 | `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return` | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item) |
 
@@ -183,6 +184,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                                                                     |
 | GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles`                                         |
 | Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                                                              |
+| PGR (documento)           | `actions/pgr/pgr.ts`              | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 não persistido; sem 409)                  |
 | Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)                                                      |
 | CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`        | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                        |
 | Entrega de EPI            | `actions/pgr/epi-deliveries.ts`   | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**` |
@@ -360,21 +362,48 @@ entrada). REST espelho em `/api/v1/categories` (GET, POST) · `/api/v1/categorie
 
 ---
 
+## PGR — `actions/pgr/pgr.ts`
+
+Documento PGR (NR-01/GRO) vinculado a Empresa (obrigatória) e Obra/Contrato (opcional). Fatia 013,
+**zero-migration** (tabela `pgr` da migration `0012`). REST espelho em `/api/v1/pgr` (GET, POST) ·
+`/api/v1/pgr/{id}` (GET, PUT, DELETE). **Sem `/dependents` e sem 409** (a tabela não tem unique).
+
+| Action            | Entrada                                                  | Retorno (`data`)                               |
+| ----------------- | -------------------------------------------------------- | ---------------------------------------------- |
+| `listPgrAction`   | `{ companyId?, workUnitId?, search?, page?, pageSize? }` | `{ rows: PgrListItem[]; total }`               |
+| `getPgrAction`    | `id`                                                     | `Pgr` (inexistente/cross-tenant → `NOT_FOUND`) |
+| `createPgrAction` | `PgrCreateInput`                                         | `Pgr` (empresa/obra inválida → `FK_NOT_FOUND`) |
+| `updatePgrAction` | `id, PgrInput`                                           | `Pgr` (corpo completo, sem aceite)             |
+| `deletePgrAction` | `id`                                                     | `{ id }`                                       |
+
+**`PgrCreateInput`**: `companyId*` (uuid), `workUnitId?` (uuid da obra da empresa), `responsible?`,
+`registrationType*` (`crm`|`crea`|`mte`|`not_applicable`), `registrationNumber?` (obrigatório p/
+CRM/CREA/MTE, proibido p/ "não aplicável"), `issuedAt*` (AAAA-MM-DD), `validUntil*` (≥ `issuedAt`),
+`declarationAccepted*` (`true`) — **aceite validado no servidor e NÃO persistido** (a tabela `pgr`
+não tem coluna de aceite; persistência legal é #79). **`PgrInput`** (update / PUT REST): igual,
+**sem** `declarationAccepted` (corpo completo). **`PgrListItem`**: `{ id, companyId, companyName,
+workUnitId, workUnitName, responsible, registrationType, registrationNumber, issuedAt, validUntil }`.
+**Erros REST**: 422 (validação/aceite ausente/FK), 404 (cross-tenant/inexistente), 403 (`client`);
+**nunca 409**. "Usuário autor" fora de escopo (modelo sem `created_by`).
+
+---
+
 ## Rotas de UI (superfície HTTP navegável)
 
 Área autenticada `(protected)` — layout aplica `requireTenantContext`; cada página de CRUD
 aplica `requireOfficeStaffPage()` (papel `client` → `forbidden()`); detalhe/edição por id
 inexistente ou de outro escritório → `notFound()`.
 
-| Rota                                                                         | Descrição                                                       |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `/dashboard`                                                                 | Painel (área autenticada)                                       |
-| `/companies` · `/companies/new` · `/companies/[id]/edit`                     | Empresa (lista paginada / criar / detalhe=edição)               |
-| `/work-units` · `/work-units/new` · `/work-units/[id]/edit`                  | Unidade de obra (+ copiar endereço da empresa)                  |
-| `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                          |
-| `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos) |
-| `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)          |
-| `/categories` · `/categories/new` · `/categories/[id]/edit`                  | Categoria (catálogo `epi`/`machine`; detalhe=edição)            |
+| Rota                                                                         | Descrição                                                                     |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `/dashboard`                                                                 | Painel (área autenticada)                                                     |
+| `/companies` · `/companies/new` · `/companies/[id]/edit`                     | Empresa (lista paginada / criar / detalhe=edição)                             |
+| `/work-units` · `/work-units/new` · `/work-units/[id]/edit`                  | Unidade de obra (+ copiar endereço da empresa)                                |
+| `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                                        |
+| `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos)               |
+| `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)                        |
+| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / detalhe / editar) |
+| `/categories` · `/categories/new` · `/categories/[id]/edit`                  | Categoria (catálogo `epi`/`machine`; detalhe=edição)                          |
 
 ## Invariantes de isolamento (multi-tenant)
 
