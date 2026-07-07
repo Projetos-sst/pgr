@@ -6,22 +6,22 @@ Zod, tipos, projeções) que a fatia adiciona — nenhuma coluna/constraint nova
 
 ## Entidade `risks` (colunas existentes usadas)
 
-| Coluna (DB)                                        | Campo (app)              | Tipo                          | Regra na fatia                                                       |
-| -------------------------------------------------- | ------------------------ | ----------------------------- | ------------------------------------------------------------------- |
-| `id` uuid PK                                       | `id`                     | string                        | gerado pelo banco                                                   |
-| `org_id` text NOT NULL → orgs (cascade)            | —                        | —                             | preenchido pelo repo a partir do tenant da sessão; nunca do cliente |
-| `ges_id` uuid NOT NULL → ges (**cascade**)         | `gesId`                  | uuid                          | **obrigatório**; guard `assertGesInTenant`                          |
-| `agent_type` enum NOT NULL                         | `agentType`              | `risk_agent_type` (7)         | **obrigatório**; reusa `riskAgentTypeSchema`                        |
-| `hazard` text                                      | `hazard`                 | string?                       | opcional (texto livre)                                              |
-| `description` text NOT NULL                        | `description`            | string                        | **obrigatório** (min 1)                                             |
-| `sources` text                                     | `sources`                | string?                       | opcional                                                            |
-| `propagation` text                                 | `propagation`            | string?                       | opcional                                                            |
-| `exposure_time` enum                               | `exposureTime`           | `exposure_time` (8)?          | opcional; `""` → `undefined`                                        |
-| `possible_injuries` text                           | `possibleInjuries`       | string?                       | opcional                                                            |
-| `noxious_agent_code` text                          | `noxiousAgentCode`       | string?                       | opcional (S-2240, texto livre)                                      |
-| `measurement_unit` enum                            | `measurementUnit`        | `measurement_unit` (10)?      | opcional; `""` → `undefined`                                        |
-| `concentration_intensity` numeric                  | `concentrationIntensity` | string decimal?               | opcional; **regra `qualitative_na`** (só com unidade quantitativa)  |
-| `created_at` / `updated_at` timestamptz            | `createdAt`/`updatedAt`  | Date                          | geridos por default/trigger `set_updated_at_risks`                  |
+| Coluna (DB)                                | Campo (app)              | Tipo                     | Regra na fatia                                                      |
+| ------------------------------------------ | ------------------------ | ------------------------ | ------------------------------------------------------------------- |
+| `id` uuid PK                               | `id`                     | string                   | gerado pelo banco                                                   |
+| `org_id` text NOT NULL → orgs (cascade)    | —                        | —                        | preenchido pelo repo a partir do tenant da sessão; nunca do cliente |
+| `ges_id` uuid NOT NULL → ges (**cascade**) | `gesId`                  | uuid                     | **obrigatório**; guard `assertGesInTenant`                          |
+| `agent_type` enum NOT NULL                 | `agentType`              | `risk_agent_type` (7)    | **obrigatório**; reusa `riskAgentTypeSchema`                        |
+| `hazard` text                              | `hazard`                 | string?                  | opcional (texto livre)                                              |
+| `description` text NOT NULL                | `description`            | string                   | **obrigatório** (min 1)                                             |
+| `sources` text                             | `sources`                | string?                  | opcional                                                            |
+| `propagation` text                         | `propagation`            | string?                  | opcional                                                            |
+| `exposure_time` enum                       | `exposureTime`           | `exposure_time` (8)?     | opcional; `""` → `undefined`                                        |
+| `possible_injuries` text                   | `possibleInjuries`       | string?                  | opcional                                                            |
+| `noxious_agent_code` text                  | `noxiousAgentCode`       | string?                  | opcional (S-2240, texto livre)                                      |
+| `measurement_unit` enum                    | `measurementUnit`        | `measurement_unit` (10)? | opcional; `""` → `undefined`                                        |
+| `concentration_intensity` numeric          | `concentrationIntensity` | string decimal?          | opcional; **regra `qualitative_na`** (só com unidade quantitativa)  |
+| `created_at` / `updated_at` timestamptz    | `createdAt`/`updatedAt`  | Date                     | geridos por default/trigger `set_updated_at_risks`                  |
 
 **Fora da fatia** (não editados/lidos): `risk_assessments`, `control_measures`, `epi_risk`. Não há
 coluna de autor (`created_by`). A exclusão de um risco cascateia para `risk_assessments`/
@@ -94,7 +94,8 @@ function refineRisk(data: z.infer<typeof riskBaseObject>, ctx: z.RefinementCtx):
     ctx.addIssue({
       path: ["concentrationIntensity"],
       code: "custom",
-      message: "Concentração/intensidade só é permitida com unidade de medida quantitativa",
+      message:
+        "Concentração/intensidade só é permitida com unidade de medida quantitativa",
     });
   }
 }
@@ -130,17 +131,17 @@ a `risks.ts` — decisão de UI, sem alterar schema). "Usuário autor" **não** 
 
 ## Regras de validação (resumo → requisitos)
 
-| Regra                                                     | Origem | Erro                                        |
-| --------------------------------------------------------- | ------ | ------------------------------------------- |
-| `gesId` UUID obrigatório (formato)                        | FR-008 | `VALIDATION` (campo `gesId`)                |
-| `agentType` ∈ enum (obrigatório)                          | FR-009 | `VALIDATION` (campo `agentType`)            |
-| `description` obrigatória (min 1)                         | FR-009 | `VALIDATION` (campo `description`)          |
-| `exposureTime`/`measurementUnit` ∈ enum se presentes      | FR-001 | `VALIDATION`                                |
-| `concentrationIntensity` decimal se presente              | FR-001 | `VALIDATION` (campo `concentrationIntensity`) |
-| concentração exige unidade quantitativa (`qualitative_na`)| FR-010 | `VALIDATION` (campo `concentrationIntensity`) |
-| `gesId` inexistente/cross-tenant                          | FR-014 | `FK_NOT_FOUND` (422)                        |
-| risco inexistente/cross-tenant (get/update/delete)        | FR-013 | `NOT_FOUND` (404)                           |
-| (sem unique)                                              | FR-019 | — (nunca `DUPLICATE`)                       |
+| Regra                                                      | Origem | Erro                                          |
+| ---------------------------------------------------------- | ------ | --------------------------------------------- |
+| `gesId` UUID obrigatório (formato)                         | FR-008 | `VALIDATION` (campo `gesId`)                  |
+| `agentType` ∈ enum (obrigatório)                           | FR-009 | `VALIDATION` (campo `agentType`)              |
+| `description` obrigatória (min 1)                          | FR-009 | `VALIDATION` (campo `description`)            |
+| `exposureTime`/`measurementUnit` ∈ enum se presentes       | FR-001 | `VALIDATION`                                  |
+| `concentrationIntensity` decimal se presente               | FR-001 | `VALIDATION` (campo `concentrationIntensity`) |
+| concentração exige unidade quantitativa (`qualitative_na`) | FR-010 | `VALIDATION` (campo `concentrationIntensity`) |
+| `gesId` inexistente/cross-tenant                           | FR-014 | `FK_NOT_FOUND` (422)                          |
+| risco inexistente/cross-tenant (get/update/delete)         | FR-013 | `NOT_FOUND` (404)                             |
+| (sem unique)                                               | FR-019 | — (nunca `DUPLICATE`)                         |
 
 ## State transitions
 

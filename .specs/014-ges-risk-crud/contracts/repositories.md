@@ -115,21 +115,21 @@ function toRiskColumns(input: RiskValues) {
 
 - Igual ao create quanto ao guard (`gesId` pode mudar) dentro do `withOrg`/`auditedTenantWrite`.
 - `tx.update(risks).set({ ...toRiskColumns(input), updatedAt: new Date() })
-  .where(and(eq(orgId), eq(id))).returning()` → `row ?? null` (null → a action converte em
+.where(and(eq(orgId), eq(id))).returning()` → `row ?? null` (null → a action converte em
   `NotFoundError`).
 
 ### `deleteRisk`
 
 - `auditedTenantWrite` + `withOrg` → `tx.delete(risks).where(and(eq(orgId), eq(id)))
-  .returning({ id: risks.id })` → `rows.length > 0`. A cascata de
+.returning({ id: risks.id })` → `rows.length > 0`. A cascata de
   `risk_assessments`/`control_measures` é do banco (`0012`).
 
 ## Erros
 
-| Situação                                          | Mecanismo                                      | Código resultante           |
-| ------------------------------------------------- | ---------------------------------------------- | --------------------------- |
-| `gesId` inexistente/malformado/cross-tenant       | `assertGesInTenant` → `ReferenceNotFoundError` | `FK_NOT_FOUND` (422)        |
-| risco inexistente/cross-tenant (get/update/delete)| retorno `null`/`false`                         | `NOT_FOUND` (404) na action |
-| — (sem unique)                                    | —                                              | nunca `DUPLICATE`           |
+| Situação                                           | Mecanismo                                      | Código resultante           |
+| -------------------------------------------------- | ---------------------------------------------- | --------------------------- |
+| `gesId` inexistente/malformado/cross-tenant        | `assertGesInTenant` → `ReferenceNotFoundError` | `FK_NOT_FOUND` (422)        |
+| risco inexistente/cross-tenant (get/update/delete) | retorno `null`/`false`                         | `NOT_FOUND` (404) na action |
+| — (sem unique)                                     | —                                              | nunca `DUPLICATE`           |
 
 Nenhum SQL fora deste repositório; nenhuma importação de Drizzle em actions/handlers.

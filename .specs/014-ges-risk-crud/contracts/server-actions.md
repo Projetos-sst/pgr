@@ -32,7 +32,9 @@ const BASE_PATH = "/risks";
 export async function listRisksAction(
   params: repo.ListRisksParams = {},
 ): Promise<ActionResult<Paginated<RiskListItem>>> {
-  return officeAction("pgr.risks.list", ({ tenantId }) => repo.listRisks(tenantId, params));
+  return officeAction("pgr.risks.list", ({ tenantId }) =>
+    repo.listRisks(tenantId, params),
+  );
 }
 
 // GET — sem audit; null → NOT_FOUND. Nome getRiskAction (não getRiskByIdAction).
@@ -79,7 +81,9 @@ export async function updateRiskAction(
 }
 
 // DELETE — audit; false → NOT_FOUND
-export async function deleteRiskAction(id: string): Promise<ActionResult<{ id: string }>> {
+export async function deleteRiskAction(
+  id: string,
+): Promise<ActionResult<{ id: string }>> {
   return officeAction(
     "pgr.risks.delete",
     async ({ tenantId }) => {
@@ -100,7 +104,7 @@ export async function deleteRiskAction(id: string): Promise<ActionResult<{ id: s
 - **Obras por empresa** (nível 2, dependente): `listWorkUnitsAction({ companyId, pageSize: 100 })`
   de `@/shared/server/actions/pgr/work-units`.
 - **GES por obra** (nível 3, dependente + seletor obrigatório do form): `listGesAction({ workUnitId,
-  pageSize: 100 })` de `@/shared/server/actions/pgr/ges` (`GesListResult`; usar `rows` → `{id,name}`).
+pageSize: 100 })` de `@/shared/server/actions/pgr/ges` (`GesListResult`; usar `rows` → `{id,name}`).
 - **Nome do GES no detalhe**: `getGesAction(gesId)` de `@/shared/server/actions/pgr/ges`.
 - **Reutilização por prefill**: `getRiskAction(fromId)` na página `/risks/new?from=<id>` para
   pré-preencher o form; o submit usa `createRiskAction`. **Nenhuma** action de clone.

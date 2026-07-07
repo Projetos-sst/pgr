@@ -6,13 +6,13 @@ Cada handler declara `export const runtime = "nodejs";` e `export const dynamic 
 
 ## Endpoints
 
-| Método · Rota               | Ação                                                                                | Sucesso               |
-| --------------------------- | ----------------------------------------------------------------------------------- | --------------------- |
-| `GET /api/v1/risks`         | list (paginado, filtros `companyId`/`workUnitId`/`gesId`/`search`/`page`/`pageSize`)| 200 `{ rows, total }` |
-| `POST /api/v1/risks`        | create (corpo completo)                                                             | 201 `Risk`            |
-| `GET /api/v1/risks/{id}`    | getById                                                                             | 200 `Risk`            |
-| `PUT /api/v1/risks/{id}`    | update (corpo completo)                                                             | 200 `Risk`            |
-| `DELETE /api/v1/risks/{id}` | delete                                                                              | 204 (sem corpo)       |
+| Método · Rota               | Ação                                                                                 | Sucesso               |
+| --------------------------- | ------------------------------------------------------------------------------------ | --------------------- |
+| `GET /api/v1/risks`         | list (paginado, filtros `companyId`/`workUnitId`/`gesId`/`search`/`page`/`pageSize`) | 200 `{ rows, total }` |
+| `POST /api/v1/risks`        | create (corpo completo)                                                              | 201 `Risk`            |
+| `GET /api/v1/risks/{id}`    | getById                                                                              | 200 `Risk`            |
+| `PUT /api/v1/risks/{id}`    | update (corpo completo)                                                              | 200 `Risk`            |
+| `DELETE /api/v1/risks/{id}` | delete                                                                               | 204 (sem corpo)       |
 
 **Sem** `GET /api/v1/risks/{id}/dependents` (fora de escopo). **Sem** 409.
 
@@ -134,14 +134,14 @@ export function DELETE(req: NextRequest, { params }: Ctx) {
 
 ## Mapeamento código → HTTP (via `HTTP_BY_CODE` em `src/shared/api/rest.ts`)
 
-| Situação                                                          | Código              | HTTP                |
-| ---------------------------------------------------------------- | ------------------- | ------------------- |
+| Situação                                                                                              | Código              | HTTP                |
+| ----------------------------------------------------------------------------------------------------- | ------------------- | ------------------- |
 | gesId/agentType/description ausentes; enum inválido; regra `qualitative_na`; concentração não-decimal | `VALIDATION`        | **422**             |
-| `gesId` inexistente / cross-tenant                               | `FK_NOT_FOUND`      | **422**             |
-| risco inexistente / cross-tenant (get/put/delete)                | `NOT_FOUND`         | **404**             |
-| papel `client`                                                   | `FORBIDDEN`         | **403**             |
-| sem tenant                                                       | `NO_TENANT_CONTEXT` | **403**             |
-| (não aplicável)                                                  | `DUPLICATE`         | ~~409~~ — **nunca** |
+| `gesId` inexistente / cross-tenant                                                                    | `FK_NOT_FOUND`      | **422**             |
+| risco inexistente / cross-tenant (get/put/delete)                                                     | `NOT_FOUND`         | **404**             |
+| papel `client`                                                                                        | `FORBIDDEN`         | **403**             |
+| sem tenant                                                                                            | `NO_TENANT_CONTEXT` | **403**             |
+| (não aplicável)                                                                                       | `DUPLICATE`         | ~~409~~ — **nunca** |
 
 > Nota: `VALIDATION` mapeia para **422** neste projeto (não 400), coerente com os demais recursos.
 > Os testes asseveram 422.

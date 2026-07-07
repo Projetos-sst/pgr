@@ -29,10 +29,10 @@ Casos:
 - **`agentType` ausente/enum inválido** → throw (campo `agentType`).
 - **`description` ausente/vazia** → throw (campo `description`).
 - **`qualitative_na` com concentração** → `measurementUnit:"qualitative_na",
-  concentrationIntensity:"5"` → throw (campo `concentrationIntensity`).
+concentrationIntensity:"5"` → throw (campo `concentrationIntensity`).
 - **unidade ausente com concentração** → `concentrationIntensity:"5"` sem `measurementUnit` → throw.
 - **unidade quantitativa com concentração** → `measurementUnit:"db_a",
-  concentrationIntensity:"87.5"` → resolve.
+concentrationIntensity:"87.5"` → resolve.
 - **concentração ausente** → sem `concentrationIntensity` (mesmo com `qualitative_na`) → resolve.
 - **concentração não-decimal** → `concentrationIntensity:"abc"` (com unidade quantitativa) → throw.
 - **enum de tempo/unidade vazio** → `exposureTime:""`/`measurementUnit:""` → `undefined` (opcional).
@@ -48,7 +48,9 @@ jest.mock("@/shared/db/env", () => ({
   getDatabaseUrl: () => process.env.INTEGRATION_APP_RUNTIME_URL,
 }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
-jest.mock("@/shared/auth/require-office-staff", () => ({ requireOfficeStaff: jest.fn() }));
+jest.mock("@/shared/auth/require-office-staff", () => ({
+  requireOfficeStaff: jest.fn(),
+}));
 ```
 
 `shouldRun`, `asOwner(tenantId)`, `beforeAll: applyMigrations(admin)`, `beforeEach: seedPgrBase(admin)`.
