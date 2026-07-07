@@ -21,6 +21,7 @@ org_a/org_b com `pgr` já presente (`PGR_IDS.pgrA/pgrB`).
 Modelo: `unit/domains/pgr/companies.test.ts` (usa `.parse()` + `.toThrow()`).
 
 Casos:
+
 - **create válido** → `pgrCreateSchema.parse({...,declarationAccepted:true})` resolve; valores coeridos.
 - **create sem aceite** → `declarationAccepted` ausente/`false` → `.toThrow()` (VALIDATION).
 - **validade < emissão** → `validUntil:"2025-01-01", issuedAt:"2026-01-01"` → throw (campo `validUntil`).
@@ -35,14 +36,21 @@ Rodar: `npm run test` (ou `npx jest --selectProjects unit -t "pgr"`).
 ## 2. Integração — Server Actions — `src/__tests__/integration/pgr/pgr.test.ts` (NOVO)
 
 Modelo: `integration/pgr/companies.test.ts`. Mocks no topo:
+
 ```ts
-jest.mock("@/shared/db/env", () => ({ getDatabaseUrl: () => process.env.INTEGRATION_APP_RUNTIME_URL }));
+jest.mock("@/shared/db/env", () => ({
+  getDatabaseUrl: () => process.env.INTEGRATION_APP_RUNTIME_URL,
+}));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
-jest.mock("@/shared/auth/require-office-staff", () => ({ requireOfficeStaff: jest.fn() }));
+jest.mock("@/shared/auth/require-office-staff", () => ({
+  requireOfficeStaff: jest.fn(),
+}));
 ```
+
 `shouldRun`, `asOwner(tenantId)`, `beforeAll: applyMigrations(admin)`, `beforeEach: seedPgrBase(admin)`.
 
 Casos (agindo como `org_a`, salvo indicação):
+
 - **list** → só PGRs do tenant; `total === 1` (linha seed `pgrA`); linha inclui `companyName`.
 - **getById** (`PGR_IDS.pgrA`) → ok, `companyId === PGR_IDS.companyA`.
 - **create** válido (empresa `companyA`, obra `workUnitA`, `declarationAccepted:true`) → ok; aparece na lista.
@@ -66,6 +74,7 @@ Modelo: `integration/pgr/rest-companies.test.ts`. `beforeAll`: `APP_ENV="local"`
 `x-dev-tenant`/`x-dev-role`. Handlers de rota dinâmica recebem `{ params: Promise.resolve({ id }) }`.
 
 Casos (asserção de `res.status` e `body.error.code`):
+
 - `GET` list → 200; `body.total === 1`.
 - `POST` create válido (com `declarationAccepted:true`) → 201.
 - `POST` sem aceite → 422 `VALIDATION`.
@@ -91,6 +100,7 @@ runIsolationSuite({
     `('11111111-1111-1111-1111-1111111111f9','org_b','${PGR_IDS.companyB}','${PGR_IDS.workUnitB}')`,
 });
 ```
+
 Prova: tenant A vê só A; B só B; query bare → 0; tenant inexistente → 0; INSERT cross-tenant rejeitado
 pelo `WITH CHECK`; escopo não vaza após `withOrg`.
 
@@ -104,7 +114,7 @@ estritamente necessário — mantendo `PGR_IDS.pgrA/pgrB` e apenas acrescentando
 ## 6. Docs/API + Postman (antes da PR)
 
 - `docs/api/api-design.md`: adicionar linha na tabela de recursos REST
-  (`| `/pgr` · `/pgr/{id}` | GET, POST · GET, PUT, DELETE |`), linha no sumário de actions
+  (`| `/pgr`·`/pgr/{id}` | GET, POST · GET, PUT, DELETE |`), linha no sumário de actions
   (`| PGR | actions/pgr/pgr.ts | list, get, create, update, delete |`), seção
   `## PGR — actions/pgr/pgr.ts` (tabela de actions + bloco `PgrInput`/`PgrCreateInput`/`PgrListItem`),
   e linha nas Rotas de UI (`/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`).
@@ -116,8 +126,10 @@ estritamente necessário — mantendo `PGR_IDS.pgrA/pgrB` e apenas acrescentando
 ## 7. Teste manual obrigatório (antes da PR)
 
 ### 7a. UI — Playwright MCP
+
 Servidor: `npm run dev` (com `.env.local` de dev; `DEV_API_AUTH_BYPASS` NÃO é necessário p/ UI, que
 usa sessão). Passos:
+
 1. Abrir `/pgr` → validar **estado vazio** (orientação + botão "Novo") quando não há registros.
 2. Clicar "Novo" → preencher empresa (obrigatória), obra (opcional, filtrada pela empresa),
    responsável, tipo/número de registro, emissão e validade.
@@ -133,6 +145,7 @@ usa sessão). Passos:
    (Novo/voltar/nav "PGR").
 
 ### 7b. REST — cURL (bypass dev)
+
 Servidor com `APP_ENV != production` e `DEV_API_AUTH_BYPASS=true`. Use `-d @arquivo.json` (evita
 corrupção de aspas no PowerShell). Substituir `<tenant>` por um `orgs.id` real de teste.
 
@@ -151,6 +164,7 @@ curl -s -X PUT "${H[@]}" -H "Content-Type: application/json" -d @update.json "$B
 # delete -> 204
 curl -s -o /dev/null -w "%{http_code}\n" -X DELETE "${H[@]}" "$BASE/<id>"
 ```
+
 Validar: 200/201/204 no caminho feliz; **422** (sem aceite / validade<emissão / número-por-tipo /
 empresa-obra inválida); **404** (id inexistente/cross-tenant); **403** (`x-dev-role: client`);
 **nunca 409**.

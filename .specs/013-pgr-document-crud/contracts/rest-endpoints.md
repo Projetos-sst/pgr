@@ -6,13 +6,13 @@ Cada handler declara `export const runtime = "nodejs";` e `export const dynamic 
 
 ## Endpoints
 
-| Método · Rota | Ação | Sucesso |
-|---|---|---|
-| `GET /api/v1/pgr` | list (paginado, filtros `companyId`/`workUnitId`/`search`/`page`/`pageSize`) | 200 `{ rows, total }` |
-| `POST /api/v1/pgr` | create (exige `declarationAccepted: true`) | 201 `Pgr` |
-| `GET /api/v1/pgr/{id}` | getById | 200 `Pgr` |
-| `PUT /api/v1/pgr/{id}` | update (corpo completo, sem aceite) | 200 `Pgr` |
-| `DELETE /api/v1/pgr/{id}` | delete | 204 (sem corpo) |
+| Método · Rota             | Ação                                                                         | Sucesso               |
+| ------------------------- | ---------------------------------------------------------------------------- | --------------------- |
+| `GET /api/v1/pgr`         | list (paginado, filtros `companyId`/`workUnitId`/`search`/`page`/`pageSize`) | 200 `{ rows, total }` |
+| `POST /api/v1/pgr`        | create (exige `declarationAccepted: true`)                                   | 201 `Pgr`             |
+| `GET /api/v1/pgr/{id}`    | getById                                                                      | 200 `Pgr`             |
+| `PUT /api/v1/pgr/{id}`    | update (corpo completo, sem aceite)                                          | 200 `Pgr`             |
+| `DELETE /api/v1/pgr/{id}` | delete                                                                       | 204 (sem corpo)       |
 
 **Sem** `GET /api/v1/pgr/{id}/dependents` (fora de escopo). **Sem** 409.
 
@@ -99,10 +99,12 @@ export function DELETE(req: NextRequest, { params }: Ctx) {
 ## Contratos de payload
 
 ### Query params (`GET /api/v1/pgr`)
+
 `search?` (string), `page?` (int ≥1), `pageSize?` (int, default 20, máx 100), `companyId?` (uuid),
 `workUnitId?` (uuid). Params desconhecidos ignorados.
 
 ### Body create (`POST`) — `PgrCreateInput`
+
 ```json
 {
   "companyId": "<uuid da empresa do tenant>",
@@ -115,9 +117,11 @@ export function DELETE(req: NextRequest, { params }: Ctx) {
   "declarationAccepted": true
 }
 ```
+
 `declarationAccepted` DEVE ser `true` (senão 422 `VALIDATION`); **não é persistido**.
 
 ### Body update (`PUT`) — `PgrInput` (corpo completo, sem `declarationAccepted`)
+
 ```json
 {
   "companyId": "<uuid>",
@@ -131,24 +135,26 @@ export function DELETE(req: NextRequest, { params }: Ctx) {
 ```
 
 ### Respostas
+
 - 200 (list/get/update), 201 (create) → JSON. 204 (delete) → sem corpo.
 - Erro → `{ "error": { "code": "...", "message": "...", "fields"?: {...} } }`.
 
 ## Mapeamento código → HTTP (via `HTTP_BY_CODE` em `src/shared/api/rest.ts`)
 
-| Situação | Código | HTTP |
-|---|---|---|
-| aceite ausente / validade < emissão / tipo↔número / uuid inválido | `VALIDATION` | **422** |
-| empresa/obra inválida, obra de outra empresa, empresa/obra cross-tenant | `FK_NOT_FOUND` | **422** |
-| pgr inexistente / cross-tenant (get/put/delete) | `NOT_FOUND` | **404** |
-| papel `client` | `FORBIDDEN` | **403** |
-| sem tenant | `NO_TENANT_CONTEXT` | **403** |
-| (não aplicável) | `DUPLICATE` | ~~409~~ — **nunca** |
+| Situação                                                                | Código              | HTTP                |
+| ----------------------------------------------------------------------- | ------------------- | ------------------- |
+| aceite ausente / validade < emissão / tipo↔número / uuid inválido       | `VALIDATION`        | **422**             |
+| empresa/obra inválida, obra de outra empresa, empresa/obra cross-tenant | `FK_NOT_FOUND`      | **422**             |
+| pgr inexistente / cross-tenant (get/put/delete)                         | `NOT_FOUND`         | **404**             |
+| papel `client`                                                          | `FORBIDDEN`         | **403**             |
+| sem tenant                                                              | `NO_TENANT_CONTEXT` | **403**             |
+| (não aplicável)                                                         | `DUPLICATE`         | ~~409~~ — **nunca** |
 
 > Nota: `VALIDATION` mapeia para **422** neste projeto (não 400). O prompt cita "400" como faixa de
 > validação; o comportamento real e coerente com os demais recursos é **422**. Os testes asseveram 422.
 
 ## Auth (herdada de `restHandler`)
+
 - Produção: `requireOfficeStaff()` (sessão Clerk).
 - Dev/homolog: bypass com `APP_ENV != "production"` + `DEV_API_AUTH_BYPASS=true` e headers
   `x-dev-tenant`/`x-dev-role`/`x-dev-user`. Usado nos testes REST e no cURL manual.

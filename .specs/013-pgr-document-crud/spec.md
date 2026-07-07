@@ -25,7 +25,7 @@
 > `pgr_revisions`, `risks`, `risk_assessments` nem `control_measures` (pertencem às fatias
 > futuras #27/#79 e às tasks 04/05/06).
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 — CRUD do Documento PGR (Priority: P1)
 
@@ -135,7 +135,7 @@ lista restrita aos PGRs correspondentes do escritório ativo.
 - **Ausência de contexto de tenant**: qualquer operação é bloqueada; a listagem nunca devolve
   todos os registros.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -193,12 +193,12 @@ lista restrita aos PGRs correspondentes do escritório ativo.
   (`docs/api/sst-manager.postman_collection.json`) DEVEM ser atualizadas com o recurso PGR antes da
   entrega (PR), seguindo o padrão de fechamento já usado para os demais recursos.
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **Documento PGR (`pgr`)**: documento de Gerenciamento de Riscos Ocupacionais do escritório.
   Atributos relevantes ao CRUD: vínculo à Empresa (obrigatório), vínculo à Obra/Contrato
   (opcional), Responsável pela elaboração, Tipo de Registro (`CRM` | `CREA` | `MTE` | `Não
-  aplicável`), Número de Registro (condicionado ao tipo), Data de Emissão, Data de Validade.
+aplicável`), Número de Registro (condicionado ao tipo), Data de Emissão, Data de Validade.
   Pertence a um escritório (tenant). **Não é editado nesta fatia**: aceite da declaração
   (não-persistido), autoria/usuário, status/ciclo de vida, revisões e vínculos com GES.
 - **Empresa-cliente (`companies`)**: entidade da cadeia da empresa, já existente; fonte do vínculo
@@ -206,7 +206,7 @@ lista restrita aos PGRs correspondentes do escritório ativo.
 - **Obra/Contrato (`work_units`)**: unidade de obra/contrato de uma empresa, já existente; fonte do
   vínculo opcional do PGR e do filtro dependente. Somente leitura nesta fatia.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

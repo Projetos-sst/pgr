@@ -24,6 +24,7 @@ derivam da leitura do código real das fatias análogas.
 ## Decisões
 
 ### D1 — Reuso do enum de registro (DRY)
+
 **Decisão**: importar `pgrRegistrationTypeSchema` (e o helper de rótulo `pgrRegistrationTypeLabel`)
 de `@/shared/domains/pgr/risks.ts`, em vez de redefinir o enum no novo domínio.
 **Rationale**: `risks.ts` (fatia do modelo `0012`) já espelha o `pgEnum pgr_registration_type`
@@ -31,6 +32,7 @@ de `@/shared/domains/pgr/risks.ts`, em vez de redefinir o enum no novo domínio.
 **Alternativas**: redefinir enum local — rejeitada (duplicação, risco de drift).
 
 ### D2 — Datas: string ISO obrigatória com validação de calendário
+
 **Decisão**: `issuedAt`/`validUntil` como `z.iso.date(msg)` (obrigatórias), e a regra
 `validUntil >= issuedAt` por comparação lexicográfica de strings `AAAA-MM-DD` num `superRefine`.
 `form-fields.ts` já tem `optionalIsoDate` (opcional); crio um `requiredIsoDate` inline análogo.
@@ -40,6 +42,7 @@ suficiente (sem timezone). Drizzle mapeia `date` para `string`, então persistim
 **Alternativas**: `Date` objects — rejeitada (introduz timezone e coerção desnecessária para coluna `date`).
 
 ### D3 — Aceite da declaração: dois schemas (gate não-persistido)
+
 **Decisão**: um objeto base `pgrBaseObject` (campos persistidos) refinado em `pgrInputSchema`
 (update/persist) e estendido em `pgrCreateSchema = pgrBaseObject.extend({ declarationAccepted:
 z.literal(true, {error}) }).superRefine(...)`. A action/handler de **create** faz
@@ -51,6 +54,7 @@ coluna) sem migration. `z.literal(true)` rejeita ausência/`false` com `VALIDATI
 (b) persistir num campo — rejeitada (exigiria migration, fora de escopo #79).
 
 ### D4 — Coerência tipo↔número de registro
+
 **Decisão**: `superRefine` — se `registrationType !== "not_applicable"` então `registrationNumber`
 é obrigatório (issue em `registrationNumber`); se `== "not_applicable"` e `registrationNumber`
 preenchido → issue (não se aplica). `registrationNumber` base = `optionalString`.
@@ -58,6 +62,7 @@ preenchido → issue (não se aplica). `registrationNumber` base = `optionalStri
 **Alternativas**: aceitar número livre — rejeitada (contraria a regra normativa da issue).
 
 ### D5 — Guards de integridade referencial (copiar, não abstrair)
+
 **Decisão**: no repo `pgr.ts`, replicar `assertCompanyInTenant(tx, orgId, companyId)` e
 `assertWorkUnitInCompany(tx, orgId, companyId, workUnitId)` (de `work-units.ts`/`ges.ts`), chamados
 dentro do `withOrg` de create/update, ANTES do insert/update. `workUnitId` só é checado quando
@@ -69,11 +74,13 @@ guards são tenant-scopados (`eq(orgId)`), então empresa/obra de outro tenant n
 mas não cobre "obra pertence à empresa X", que precisa do guard explícito).
 
 ### D6 — Sem 409/DUPLICATE
-**Decisão**: não há caminho de duplicidade; nenhum tratamento de `23505`. 
+
+**Decisão**: não há caminho de duplicidade; nenhum tratamento de `23505`.
 **Rationale**: FR-019 — a tabela `pgr` não tem unique. `toActionError` continua mapeando `23505`
 genericamente, mas nenhuma operação de `pgr` o produz.
 
 ### D7 — REST create também exige aceite
+
 **Decisão**: `POST /api/v1/pgr` faz `pgrCreateSchema.parse(await req.json())` (exige
 `declarationAccepted:true`), depois descarta o campo e chama `repo.createPgr`. `PUT` usa
 `pgrInputSchema` (corpo completo, sem aceite).
@@ -82,6 +89,7 @@ a Server Action de create.
 **Alternativas**: pular o gate no REST — rejeitada (abriria bypass do requisito de conformidade).
 
 ### D8 — getById devolve linha crua; detalhe resolve nomes à parte
+
 **Decisão**: `getPgrById` retorna `Pgr | null` (sem join). A **página de detalhe** resolve nomes de
 empresa/obra via `getCompanyAction`/`getWorkUnitAction` em paralelo (padrão de `employees/[id]`).
 A **listagem** usa join (D9), pois precisa dos nomes em massa.
@@ -89,6 +97,7 @@ A **listagem** usa join (D9), pois precisa dos nomes em massa.
 **Alternativas**: getById com join — desnecessário para a edição (que precisa dos IDs, não dos nomes).
 
 ### D9 — Listagem com join para nomes + filtros dependentes
+
 **Decisão**: `listPgr` faz `innerJoin(companies)` (razão social) e `leftJoin(workUnits)` (nome da
 obra; left porque `work_unit_id` é nullable). Filtros: `companyId?` e `workUnitId?` (cada um
 `eq(...)` quando presente); `search?` opcional em responsável. Paginação offset (`resolvePageParams`)
@@ -97,15 +106,17 @@ e `{ rows, total }`. Ordena por `desc(pgr.createdAt)`.
 **Alternativas**: N+1 resolvendo nomes por linha — rejeitada (performance).
 
 ### D10 — Filtro dependente na UI (client) + modal da declaração sem primitivo novo
+
 **Decisão**: `pgr-filters.tsx` (client) replica a cascata de `employee-form` (company select →
 carrega work units via `listWorkUnitsAction({ companyId })` → reseta obra ao trocar empresa) e
 navega por query params (`router.push`). O modal da declaração (`declaration-modal.tsx`) reusa o
 **overlay inline** de `confirm-delete-button.tsx` (não há primitivo de Modal genérico).
 **Rationale**: reuso máximo do `_ui` existente (FR-011, FR-007); YAGNI (não introduz biblioteca de
-modal). 
+modal).
 **Alternativas**: criar primitivo `<Modal>` genérico — rejeitada nesta fatia (YAGNI; um consumidor só).
 
 ### D11 — Exclusão sem `/dependents`
+
 **Decisão**: `delete-pgr.tsx` usa `ConfirmDeleteButton` **sem** `loadDependentsAction`, com uma
 `description` estática avisando que vínculos futuros (GES/revisões) são removidos em cascata
 (comportamento do `0012`). Sem endpoint `/api/v1/pgr/[id]/dependents`.
@@ -114,6 +125,7 @@ pré-visualizar nesta fatia.
 **Alternativas**: endpoint de dependentes — rejeitada (gerenciar esses vínculos está fora de escopo).
 
 ### D12 — Testes em Postgres efêmero; seed já tem `pgr`
+
 **Decisão**: integração mocka `@/shared/db/env` (`getDatabaseUrl → INTEGRATION_APP_RUNTIME_URL`),
 `next/cache`, e `requireOfficeStaff`; `shouldRun = !!APP_RUNTIME_URL && !!ADMIN_URL`; `applyMigrations`
 no `beforeAll`, `seedPgrBase` no `beforeEach`. A seed **já cria** `pgr` para org_a/org_b
@@ -130,7 +142,7 @@ exigir valores específicos.
 
 - **R1 — Comparação de datas como string**: só vale para o formato `AAAA-MM-DD` de `z.iso.date`.
   Mitigação: `requiredIsoDate` garante o formato antes do `superRefine`.
-- **R2 — Estender a seed compartilhada** (`pgr-seed.ts`) pode afetar outras suítes (pgr-risk-*).
+- **R2 — Estender a seed compartilhada** (`pgr-seed.ts`) pode afetar outras suítes (pgr-risk-\*).
   Mitigação: preferir criar linhas via action nos testes desta fatia; se estender, manter
   `PGR_IDS.pgrA/pgrB` e apenas adicionar colunas (não novos IDs), revalidando as suítes vizinhas.
 - **R3 — Modal via overlay inline**: acessibilidade/foco limitados (herdado do padrão atual).

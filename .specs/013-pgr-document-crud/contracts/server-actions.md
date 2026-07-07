@@ -15,8 +15,11 @@ import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
 import type { Paginated } from "@/shared/pagination";
 import {
-  pgrInputSchema, pgrCreateSchema,
-  type PgrInput, type PgrCreateInput, type PgrListItem,
+  pgrInputSchema,
+  pgrCreateSchema,
+  type PgrInput,
+  type PgrCreateInput,
+  type PgrListItem,
 } from "@/shared/domains/pgr/pgr";
 import * as repo from "@/shared/db/repositories/pgr";
 import type { Pgr } from "@/shared/db/schema/pgr";
@@ -57,7 +60,10 @@ export async function createPgrAction(input: PgrCreateInput): Promise<ActionResu
 }
 
 // UPDATE — audit; parse pgrInputSchema (sem aceite); null → NOT_FOUND
-export async function updatePgrAction(id: string, input: PgrInput): Promise<ActionResult<Pgr>> {
+export async function updatePgrAction(
+  id: string,
+  input: PgrInput,
+): Promise<ActionResult<Pgr>> {
   return officeAction(
     "pgr.pgr.update",
     async ({ tenantId }) => {
@@ -99,13 +105,13 @@ Nenhuma action de "options" ou "dependents" nova é criada para `pgr`.
 
 ## Mapeamento de erros (via `officeAction` → `toActionError`)
 
-| Erro lançado | `ActionResult.error.code` |
-|---|---|
-| `ZodError` (aceite ausente, datas, tipo↔número, uuid) | `VALIDATION` (+ `fields`) |
-| `NotFoundError` (get/update/delete cross-tenant/inexistente) | `NOT_FOUND` |
-| `ReferenceNotFoundError` (empresa/obra inválida) | `FK_NOT_FOUND` |
-| `ForbiddenError` (papel `client`, via `requireOfficeStaff`) | `FORBIDDEN` |
-| `NoTenantContextError` | `NO_TENANT_CONTEXT` |
+| Erro lançado                                                 | `ActionResult.error.code` |
+| ------------------------------------------------------------ | ------------------------- |
+| `ZodError` (aceite ausente, datas, tipo↔número, uuid)        | `VALIDATION` (+ `fields`) |
+| `NotFoundError` (get/update/delete cross-tenant/inexistente) | `NOT_FOUND`               |
+| `ReferenceNotFoundError` (empresa/obra inválida)             | `FK_NOT_FOUND`            |
+| `ForbiddenError` (papel `client`, via `requireOfficeStaff`)  | `FORBIDDEN`               |
+| `NoTenantContextError`                                       | `NO_TENANT_CONTEXT`       |
 
 Operation strings: `pgr.pgr.{list,get,create,update,delete}`; label de escrita no repo:
 `pgr.write_rejected`.

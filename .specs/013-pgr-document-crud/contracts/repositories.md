@@ -26,34 +26,59 @@ import { auditedTenantWrite } from "./audited-write";
 export type ListPgrParams = PageParams & {
   companyId?: string;
   workUnitId?: string;
-  search?: string;      // opcional, aplica em responsible
+  search?: string; // opcional, aplica em responsible
 };
 ```
 
 ## Assinaturas
 
 ```ts
-export async function listPgr(orgId: string, params?: ListPgrParams): Promise<Paginated<PgrListItem>>;
+export async function listPgr(
+  orgId: string,
+  params?: ListPgrParams,
+): Promise<Paginated<PgrListItem>>;
 export async function getPgrById(orgId: string, id: string): Promise<Pgr | null>;
 export async function createPgr(orgId: string, input: PgrValues): Promise<Pgr>;
-export async function updatePgr(orgId: string, id: string, input: PgrValues): Promise<Pgr | null>;
+export async function updatePgr(
+  orgId: string,
+  id: string,
+  input: PgrValues,
+): Promise<Pgr | null>;
 export async function deletePgr(orgId: string, id: string): Promise<boolean>;
 ```
 
 ## Guards privados (copiar de work-units.ts / ges.ts)
 
 ```ts
-async function assertCompanyInTenant(tx: TenantTransaction, orgId: string, companyId: string): Promise<void> {
-  const [row] = await tx.select({ id: companies.id }).from(companies)
-    .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId))).limit(1);
+async function assertCompanyInTenant(
+  tx: TenantTransaction,
+  orgId: string,
+  companyId: string,
+): Promise<void> {
+  const [row] = await tx
+    .select({ id: companies.id })
+    .from(companies)
+    .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId)))
+    .limit(1);
   if (!row) throw new ReferenceNotFoundError("company");
 }
 
 async function assertWorkUnitInCompany(
-  tx: TenantTransaction, orgId: string, companyId: string, workUnitId: string,
+  tx: TenantTransaction,
+  orgId: string,
+  companyId: string,
+  workUnitId: string,
 ): Promise<void> {
-  const [row] = await tx.select({ id: workUnits.id }).from(workUnits)
-    .where(and(eq(workUnits.orgId, orgId), eq(workUnits.id, workUnitId), eq(workUnits.companyId, companyId)))
+  const [row] = await tx
+    .select({ id: workUnits.id })
+    .from(workUnits)
+    .where(
+      and(
+        eq(workUnits.orgId, orgId),
+        eq(workUnits.id, workUnitId),
+        eq(workUnits.companyId, companyId),
+      ),
+    )
     .limit(1);
   if (!row) throw new ReferenceNotFoundError("work_unit");
 }
@@ -62,6 +87,7 @@ async function assertWorkUnitInCompany(
 ## Comportamento por operação
 
 ### `listPgr`
+
 - `resolvePageParams(params)` → `{ limit, offset }`.
 - `filters: SQL[] = [eq(pgr.orgId, orgId)]`; push `eq(pgr.companyId, params.companyId)` e
   `eq(pgr.workUnitId, params.workUnitId)` quando presentes; `ilike(pgr.responsible, %search%)` se `search`.
@@ -73,9 +99,11 @@ async function assertWorkUnitInCompany(
 - Retorna `{ rows, total }`. Tudo dentro de um único `withOrg`.
 
 ### `getPgrById`
+
 - `withOrg` → `select().from(pgr).where(and(eq(orgId), eq(id))).limit(1)` → `row ?? null` (sem join).
 
 ### `createPgr`
+
 - `auditedTenantWrite(orgId, "pgr.write_rejected", () => withOrg(orgId, async (tx) => { … }))`.
 - Dentro do tx, ANTES do insert: `await assertCompanyInTenant(tx, orgId, input.companyId)`; se
   `input.workUnitId` presente: `await assertWorkUnitInCompany(tx, orgId, input.companyId, input.workUnitId)`.
@@ -84,21 +112,23 @@ async function assertWorkUnitInCompany(
   `registrationNumber`); `issuedAt`/`validUntil` são strings ISO; `registrationType` direto.
 
 ### `updatePgr`
+
 - Igual ao create quanto aos guards (empresa/obra podem mudar) dentro do `withOrg`/`auditedTenantWrite`.
 - `tx.update(pgr).set({ ...toPgrColumns(input), updatedAt: new Date() }).where(and(eq(orgId), eq(id)))
-  .returning()` → `row ?? null` (null → a action converte em `NotFoundError`).
+.returning()` → `row ?? null` (null → a action converte em `NotFoundError`).
 
 ### `deletePgr`
+
 - `auditedTenantWrite` + `withOrg` → `tx.delete(pgr).where(and(eq(orgId), eq(id))).returning({ id: pgr.id })`
   → `rows.length > 0`. A cascata de `pgr_ges`/`pgr_revisions` é do banco (`0012`).
 
 ## Erros
 
-| Situação | Mecanismo | Código resultante |
-|---|---|---|
-| empresa inexistente/cross-tenant | `assertCompanyInTenant` → `ReferenceNotFoundError` | `FK_NOT_FOUND` (422) |
-| obra inexistente/cross-tenant/de outra empresa | `assertWorkUnitInCompany` → `ReferenceNotFoundError` | `FK_NOT_FOUND` (422) |
-| pgr inexistente/cross-tenant (get/update/delete) | retorno `null`/`false` | `NOT_FOUND` (404) na action |
-| — (sem unique) | — | nunca `DUPLICATE` |
+| Situação                                         | Mecanismo                                            | Código resultante           |
+| ------------------------------------------------ | ---------------------------------------------------- | --------------------------- |
+| empresa inexistente/cross-tenant                 | `assertCompanyInTenant` → `ReferenceNotFoundError`   | `FK_NOT_FOUND` (422)        |
+| obra inexistente/cross-tenant/de outra empresa   | `assertWorkUnitInCompany` → `ReferenceNotFoundError` | `FK_NOT_FOUND` (422)        |
+| pgr inexistente/cross-tenant (get/update/delete) | retorno `null`/`false`                               | `NOT_FOUND` (404) na action |
+| — (sem unique)                                   | —                                                    | nunca `DUPLICATE`           |
 
 Nenhum SQL fora deste repositório; nenhuma importação de Drizzle em actions/handlers.

@@ -54,7 +54,7 @@ sem justificativa; aceite da declaração não-persistido.
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 Constituição v1.2.1 — conformidade por princípio:
 
@@ -148,5 +148,5 @@ diretórios novos além de `app/(protected)/pgr/**`, `app/api/v1/pgr/**` e os 3 
 > Sem violações da constituição — seção vazia.
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| — | — | — |
+| --------- | ---------- | ------------------------------------ |
+| —         | —          | —                                    |
