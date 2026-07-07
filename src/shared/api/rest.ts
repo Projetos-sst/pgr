@@ -107,6 +107,7 @@ export async function restHandler<T>(
       outcome: "rejected",
       orgId: ctx?.tenantId ?? null,
       userId: ctx?.userId ?? null,
+      error: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json(
       { error: { code: "UNKNOWN", message: "Erro inesperado." } },
