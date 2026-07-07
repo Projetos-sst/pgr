@@ -42,83 +42,83 @@ efêmero (`INTEGRATION_*`, nunca SQLite) + validação manual (Playwright MCP + 
 
 ## Phase 1: Setup & Guardrails
 
-- [ ] T001 Confirmar branch `feature/ges-risk-crud` e árvore limpa; reafirmar zero-migration (nenhuma edição em `src/shared/db/schema/**` ou `src/shared/db/migrations/**` em toda a fatia)
-- [ ] T002 [P] Confirmar (read-only) que `src/__tests__/integration/_helpers/pgr-seed.ts` já semeia `risks` por tenant (`PGR_IDS.riskA`/`riskB`, cols `id,org_id,ges_id,agent_type,description`); estender o insert **somente** se um teste exigir campos opcionais (preferir criar via `createRiskAction`). Reler os padrões reais `repositories/pgr.ts`, `actions/pgr/pgr.ts`, `repositories/ges.ts` como referência
+- [x] T001 Confirmar branch `feature/ges-risk-crud` e árvore limpa; reafirmar zero-migration (nenhuma edição em `src/shared/db/schema/**` ou `src/shared/db/migrations/**` em toda a fatia)
+- [x] T002 [P] Confirmar (read-only) que `src/__tests__/integration/_helpers/pgr-seed.ts` já semeia `risks` por tenant (`PGR_IDS.riskA`/`riskB`, cols `id,org_id,ges_id,agent_type,description`); estender o insert **somente** se um teste exigir campos opcionais (preferir criar via `createRiskAction`). Reler os padrões reais `repositories/pgr.ts`, `actions/pgr/pgr.ts`, `repositories/ges.ts` como referência
 
 ---
 
 ## Phase 2: Domínio / Zod (Foundational) — bloqueia todas as stories
 
-- [ ] T003 [US1] Criar `src/shared/domains/pgr/risk.ts`: imports (`riskAgentTypeSchema`, `exposureTimeSchema`, `measurementUnitSchema` + labels/tipos de `./risks`; `optionalString`, `requiredString`, `requiredUuid` de `./form-fields`; `z`); re-export `type Risk` de `@/shared/db/schema/risks`; helper `optionalEnum(schema)` (`""`→`undefined`, espelha `optionalUuid`); `optionalDecimal` (`optionalString` + refine `^\d+(\.\d+)?$`); `riskBaseObject` (gesId, agentType, hazard?, description, sources?, propagation?, exposureTime?, possibleInjuries?, noxiousAgentCode?, measurementUnit?, concentrationIntensity?)
-- [ ] T004 [US1] Em `src/shared/domains/pgr/risk.ts`: função `refineRisk` (**regra `qualitative_na`**: se `concentrationIntensity != null` e `measurementUnit` é `qualitative_na` **ou** ausente → issue em `concentrationIntensity`); `export const riskInputSchema = riskBaseObject.superRefine(refineRisk)` (**único** p/ create e update); tipos `RiskInput`/`RiskValues` (sem `any`)
-- [ ] T005 [US1] Em `src/shared/domains/pgr/risk.ts`: tipo `RiskListItem` (id, gesId, gesName, agentType, description, exposureTime, measurementUnit)
-- [ ] T006 [P] [US2] **Somente se a UI exibir a unidade com rótulo pt-BR**: adicionar `measurementUnitLabel(value)` como export **aditivo** em `src/shared/domains/pgr/risks.ts` (não é schema de banco; não redefinir enums; não tocar `db/schema/**`). Caso a UI use o value do enum, pular esta task
+- [x] T003 [US1] Criar `src/shared/domains/pgr/risk.ts`: imports (`riskAgentTypeSchema`, `exposureTimeSchema`, `measurementUnitSchema` + labels/tipos de `./risks`; `optionalString`, `requiredString`, `requiredUuid` de `./form-fields`; `z`); re-export `type Risk` de `@/shared/db/schema/risks`; helper `optionalEnum(schema)` (`""`→`undefined`, espelha `optionalUuid`); `optionalDecimal` (`optionalString` + refine `^\d+(\.\d+)?$`); `riskBaseObject` (gesId, agentType, hazard?, description, sources?, propagation?, exposureTime?, possibleInjuries?, noxiousAgentCode?, measurementUnit?, concentrationIntensity?)
+- [x] T004 [US1] Em `src/shared/domains/pgr/risk.ts`: função `refineRisk` (**regra `qualitative_na`**: se `concentrationIntensity != null` e `measurementUnit` é `qualitative_na` **ou** ausente → issue em `concentrationIntensity`); `export const riskInputSchema = riskBaseObject.superRefine(refineRisk)` (**único** p/ create e update); tipos `RiskInput`/`RiskValues` (sem `any`)
+- [x] T005 [US1] Em `src/shared/domains/pgr/risk.ts`: tipo `RiskListItem` (id, gesId, gesName, agentType, description, exposureTime, measurementUnit)
+- [x] T006 [P] [US2] **Somente se a UI exibir a unidade com rótulo pt-BR**: adicionar `measurementUnitLabel(value)` como export **aditivo** em `src/shared/domains/pgr/risks.ts` (não é schema de banco; não redefinir enums; não tocar `db/schema/**`). Caso a UI use o value do enum, pular esta task
 
 ---
 
 ## Phase 3: Testes unitários do domínio (arquivo único — sequenciais) [US1]
 
-- [ ] T007 [US1] Criar `src/__tests__/unit/domains/pgr/risk.test.ts` + casos **create válido** e **update corpo completo** (`riskInputSchema.parse({gesId, agentType:"physical", description:"…"})` resolve; opcionais omitidos → `undefined`)
-- [ ] T008 [US1] Caso **`gesId` inválido** (`gesId:"x"` → throw, campo `gesId`) em `risk.test.ts`
-- [ ] T009 [US1] Casos **campos obrigatórios** (`agentType` ausente → throw; `description:""` → throw) em `risk.test.ts`
-- [ ] T010 [US1] Caso **enum inválido** (`agentType`/`exposureTime`/`measurementUnit` fora do conjunto → throw) em `risk.test.ts`
-- [ ] T011 [US1] Casos **`qualitative_na` com concentração** (`measurementUnit:"qualitative_na", concentrationIntensity:"5"` → throw) e **concentração sem unidade** (concentração sem `measurementUnit` → throw), campo `concentrationIntensity`, em `risk.test.ts`
-- [ ] T012 [US1] Caso **unidade quantitativa com concentração** (`measurementUnit:"db_a", concentrationIntensity:"87.5"` → resolve) em `risk.test.ts`
-- [ ] T013 [US1] Casos **concentração ausente válida** (sem `concentrationIntensity`, mesmo com `qualitative_na` → resolve) e **enum vazio** (`exposureTime:""`/`measurementUnit:""` → `undefined`) em `risk.test.ts`
-- [ ] T014 [US1] Caso **decimal inválido** (`measurementUnit:"db_a", concentrationIntensity:"abc"` → throw, campo `concentrationIntensity`) em `risk.test.ts`
+- [x] T007 [US1] Criar `src/__tests__/unit/domains/pgr/risk.test.ts` + casos **create válido** e **update corpo completo** (`riskInputSchema.parse({gesId, agentType:"physical", description:"…"})` resolve; opcionais omitidos → `undefined`)
+- [x] T008 [US1] Caso **`gesId` inválido** (`gesId:"x"` → throw, campo `gesId`) em `risk.test.ts`
+- [x] T009 [US1] Casos **campos obrigatórios** (`agentType` ausente → throw; `description:""` → throw) em `risk.test.ts`
+- [x] T010 [US1] Caso **enum inválido** (`agentType`/`exposureTime`/`measurementUnit` fora do conjunto → throw) em `risk.test.ts`
+- [x] T011 [US1] Casos **`qualitative_na` com concentração** (`measurementUnit:"qualitative_na", concentrationIntensity:"5"` → throw) e **concentração sem unidade** (concentração sem `measurementUnit` → throw), campo `concentrationIntensity`, em `risk.test.ts`
+- [x] T012 [US1] Caso **unidade quantitativa com concentração** (`measurementUnit:"db_a", concentrationIntensity:"87.5"` → resolve) em `risk.test.ts`
+- [x] T013 [US1] Casos **concentração ausente válida** (sem `concentrationIntensity`, mesmo com `qualitative_na` → resolve) e **enum vazio** (`exposureTime:""`/`measurementUnit:""` → `undefined`) em `risk.test.ts`
+- [x] T014 [US1] Caso **decimal inválido** (`measurementUnit:"db_a", concentrationIntensity:"abc"` → throw, campo `concentrationIntensity`) em `risk.test.ts`
 
 ---
 
 ## Phase 4: Repository (Drizzle + withOrg) [US1]
 
-- [ ] T015 [US1] Criar `src/shared/db/repositories/risks.ts`: `"server-only"` + imports (drizzle `and`/`desc`/`eq`/`ilike`/`sql`/`SQL`, `RiskValues`/`RiskListItem` de `@/shared/domains/pgr/risk`, pagination, `ReferenceNotFoundError`, `withOrg`/`TenantTransaction`, schemas `risks`/`ges`, `auditedTenantWrite`); tipo `ListRisksParams` (companyId?/workUnitId?/gesId?/search?); mapper `toRiskColumns` (`?? null` nos opcionais; `concentrationIntensity` string|null); guard privado `assertGesInTenant(tx, orgId, gesId)` → `ReferenceNotFoundError("ges")`
-- [ ] T016 [US1] Implementar `listRisks` em `repositories/risks.ts`: `withOrg`; filtros `eq(risks.orgId)` + `eq(risks.gesId, gesId?)` + `eq(ges.companyId, companyId?)`/`eq(ges.workUnitId, workUnitId?)` (via join) + `ilike(risks.description, %search%)`; `innerJoin(ges, and(eq(ges.id, risks.gesId), eq(ges.orgId, orgId)))`; projeção `RiskListItem` (`gesName: ges.name`); `orderBy(desc(risks.createdAt))`; `count(*)::int` com o **mesmo** `where` e o **mesmo** `innerJoin(ges)`; retorna `{rows,total}`
-- [ ] T017 [US1] Implementar `getRiskById` em `repositories/risks.ts` (`withOrg`, `and(eq(orgId),eq(id))`, `row ?? null`, sem join)
-- [ ] T018 [US1] Implementar `createRisk` em `repositories/risks.ts` (`auditedTenantWrite("risks.write_rejected")`+`withOrg`; `await assertGesInTenant(tx,orgId,input.gesId)` ANTES; `insert(risks).values({orgId, ...toRiskColumns})…returning()`)
-- [ ] T019 [US1] Implementar `updateRisk` em `repositories/risks.ts` (mesmo guard `assertGesInTenant`; `update set {...toRiskColumns, updatedAt:new Date()} where org+id returning`; `row ?? null`)
-- [ ] T020 [US1] Implementar `deleteRisk` em `repositories/risks.ts` (`delete…returning({id}) → rows.length>0`; cascata de `risk_assessments`/`control_measures` é do banco, **não tocar**)
+- [x] T015 [US1] Criar `src/shared/db/repositories/risks.ts`: `"server-only"` + imports (drizzle `and`/`desc`/`eq`/`ilike`/`sql`/`SQL`, `RiskValues`/`RiskListItem` de `@/shared/domains/pgr/risk`, pagination, `ReferenceNotFoundError`, `withOrg`/`TenantTransaction`, schemas `risks`/`ges`, `auditedTenantWrite`); tipo `ListRisksParams` (companyId?/workUnitId?/gesId?/search?); mapper `toRiskColumns` (`?? null` nos opcionais; `concentrationIntensity` string|null); guard privado `assertGesInTenant(tx, orgId, gesId)` → `ReferenceNotFoundError("ges")`
+- [x] T016 [US1] Implementar `listRisks` em `repositories/risks.ts`: `withOrg`; filtros `eq(risks.orgId)` + `eq(risks.gesId, gesId?)` + `eq(ges.companyId, companyId?)`/`eq(ges.workUnitId, workUnitId?)` (via join) + `ilike(risks.description, %search%)`; `innerJoin(ges, and(eq(ges.id, risks.gesId), eq(ges.orgId, orgId)))`; projeção `RiskListItem` (`gesName: ges.name`); `orderBy(desc(risks.createdAt))`; `count(*)::int` com o **mesmo** `where` e o **mesmo** `innerJoin(ges)`; retorna `{rows,total}`
+- [x] T017 [US1] Implementar `getRiskById` em `repositories/risks.ts` (`withOrg`, `and(eq(orgId),eq(id))`, `row ?? null`, sem join)
+- [x] T018 [US1] Implementar `createRisk` em `repositories/risks.ts` (`auditedTenantWrite("risks.write_rejected")`+`withOrg`; `await assertGesInTenant(tx,orgId,input.gesId)` ANTES; `insert(risks).values({orgId, ...toRiskColumns})…returning()`)
+- [x] T019 [US1] Implementar `updateRisk` em `repositories/risks.ts` (mesmo guard `assertGesInTenant`; `update set {...toRiskColumns, updatedAt:new Date()} where org+id returning`; `row ?? null`)
+- [x] T020 [US1] Implementar `deleteRisk` em `repositories/risks.ts` (`delete…returning({id}) → rows.length>0`; cascata de `risk_assessments`/`control_measures` é do banco, **não tocar**)
 
 ---
 
 ## Phase 5: Server Actions (sem Drizzle) [US1]
 
-- [ ] T021 [US1] Criar `src/shared/server/actions/pgr/risks.ts` (`"use server"`): imports, `BASE_PATH="/risks"`, `listRisksAction` (`pgr.risks.list`, sem audit), `getRiskAction` (`pgr.risks.get`, null→`NotFoundError`) — **nome `getRiskAction`** (não `getRiskByIdAction`)
-- [ ] T022 [US1] `createRiskAction` em `actions/pgr/risks.ts`: `riskInputSchema.parse(input)` → `repo.createRisk` → `revalidatePath(BASE_PATH)` → `{audit:true}`
-- [ ] T023 [US1] `updateRiskAction` em `actions/pgr/risks.ts`: `riskInputSchema.parse(input)` (corpo completo) → `repo.updateRisk` → null→`NotFoundError` → revalida `BASE_PATH` + `/${id}` + `/${id}/edit` → `{audit:true}`
-- [ ] T024 [US1] `deleteRiskAction` em `actions/pgr/risks.ts`: `repo.deleteRisk` → false→`NotFoundError` → `revalidatePath(BASE_PATH)` → `{audit:true}` → retorna `{id}`
+- [x] T021 [US1] Criar `src/shared/server/actions/pgr/risks.ts` (`"use server"`): imports, `BASE_PATH="/risks"`, `listRisksAction` (`pgr.risks.list`, sem audit), `getRiskAction` (`pgr.risks.get`, null→`NotFoundError`) — **nome `getRiskAction`** (não `getRiskByIdAction`)
+- [x] T022 [US1] `createRiskAction` em `actions/pgr/risks.ts`: `riskInputSchema.parse(input)` → `repo.createRisk` → `revalidatePath(BASE_PATH)` → `{audit:true}`
+- [x] T023 [US1] `updateRiskAction` em `actions/pgr/risks.ts`: `riskInputSchema.parse(input)` (corpo completo) → `repo.updateRisk` → null→`NotFoundError` → revalida `BASE_PATH` + `/${id}` + `/${id}/edit` → `{audit:true}`
+- [x] T024 [US1] `deleteRiskAction` em `actions/pgr/risks.ts`: `repo.deleteRisk` → false→`NotFoundError` → `revalidatePath(BASE_PATH)` → `{audit:true}` → retorna `{id}`
 
 ---
 
 ## Phase 6: Integração — Server Actions (Postgres efêmero) [US1]
 
-- [ ] T025 [US1] Criar harness `src/__tests__/integration/risks/risks.test.ts`: mocks `@/shared/db/env` (`getDatabaseUrl→INTEGRATION_APP_RUNTIME_URL`), `next/cache`, `requireOfficeStaff`; `shouldRun`; `asOwner`; `beforeAll: applyMigrations`; `beforeEach: seedPgrBase`. Rodar com `--runInBand` (suítes compartilham a DB)
-- [ ] T026 [US1] Casos **list** (só tenant, `total===1`, `gesName==="GES A"`) e **getById** (`PGR_IDS.riskA`, `gesId===PGR_IDS.gesA`) em `risks.test.ts`
-- [ ] T027 [US1] Casos **create válido** (ok, aparece na lista) e **create com unidade quantitativa + concentração** (ok) em `risks.test.ts`
-- [ ] T028 [US1] Casos **create `qualitative_na` + concentração** → `VALIDATION` (`fields.concentrationIntensity`) e **create sem `agentType`/`description`** → `VALIDATION` em `risks.test.ts`
-- [ ] T029 [US1] Casos **update** (`riskA`, corpo completo) e **delete** (`riskA`, depois `getById`→`NOT_FOUND`) em `risks.test.ts`
-- [ ] T030 [US1] Caso **cross-tenant get/update/delete** (`PGR_IDS.riskB` agindo como `org_a`) → `NOT_FOUND` (3 casos) em `risks.test.ts`
-- [ ] T031 [US1] Caso **outro tenant não aparece na lista** (org_a não vê `riskB`) em `risks.test.ts`
-- [ ] T032 [US1] Casos **FK_NOT_FOUND**: `gesId` inválido (uuid aleatório) e `gesId` cross-tenant (`gesB` agindo como `org_a`) no create/update em `risks.test.ts`
-- [ ] T033 [US1] Caso **role client → FORBIDDEN** (`mockedGate.mockRejectedValue(new ForbiddenError())`) em `risks.test.ts`
-- [ ] T034 [P] [US1] Criar `src/__tests__/integration/risks/risks-isolation.test.ts` — `runIsolationSuite({ table:"risks", seededCountA:1, crossTenantInsertSql:"insert into public.risks (id,org_id,ges_id,agent_type,description) values ('…f8','org_b', PGR_IDS.gesB, 'physical','x')" })` (RLS backstop)
+- [x] T025 [US1] Criar harness `src/__tests__/integration/risks/risks.test.ts`: mocks `@/shared/db/env` (`getDatabaseUrl→INTEGRATION_APP_RUNTIME_URL`), `next/cache`, `requireOfficeStaff`; `shouldRun`; `asOwner`; `beforeAll: applyMigrations`; `beforeEach: seedPgrBase`. Rodar com `--runInBand` (suítes compartilham a DB)
+- [x] T026 [US1] Casos **list** (só tenant, `total===1`, `gesName==="GES A"`) e **getById** (`PGR_IDS.riskA`, `gesId===PGR_IDS.gesA`) em `risks.test.ts`
+- [x] T027 [US1] Casos **create válido** (ok, aparece na lista) e **create com unidade quantitativa + concentração** (ok) em `risks.test.ts`
+- [x] T028 [US1] Casos **create `qualitative_na` + concentração** → `VALIDATION` (`fields.concentrationIntensity`) e **create sem `agentType`/`description`** → `VALIDATION` em `risks.test.ts`
+- [x] T029 [US1] Casos **update** (`riskA`, corpo completo) e **delete** (`riskA`, depois `getById`→`NOT_FOUND`) em `risks.test.ts`
+- [x] T030 [US1] Caso **cross-tenant get/update/delete** (`PGR_IDS.riskB` agindo como `org_a`) → `NOT_FOUND` (3 casos) em `risks.test.ts`
+- [x] T031 [US1] Caso **outro tenant não aparece na lista** (org_a não vê `riskB`) em `risks.test.ts`
+- [x] T032 [US1] Casos **FK_NOT_FOUND**: `gesId` inválido (uuid aleatório) e `gesId` cross-tenant (`gesB` agindo como `org_a`) no create/update em `risks.test.ts`
+- [x] T033 [US1] Caso **role client → FORBIDDEN** (`mockedGate.mockRejectedValue(new ForbiddenError())`) em `risks.test.ts`
+- [x] T034 [P] [US1] Criar `src/__tests__/integration/risks/risks-isolation.test.ts` — `runIsolationSuite({ table:"risks", seededCountA:1, crossTenantInsertSql:"insert into public.risks (id,org_id,ges_id,agent_type,description) values ('…f8','org_b', PGR_IDS.gesB, 'physical','x')" })` (RLS backstop)
 
 ---
 
 ## Phase 7: REST Route Handlers [US1]
 
-- [ ] T035 [US1] Criar `src/app/api/v1/risks/route.ts` (`runtime="nodejs"`, `dynamic="force-dynamic"`): `GET` (list via `pageParamsFrom` + `companyId`/`workUnitId`/`gesId`/`search` da query); `POST` (`riskInputSchema.parse(await req.json())` → `repo.createRisk`, `{status:201}`)
-- [ ] T036 [US1] Criar `src/app/api/v1/risks/[id]/route.ts` (`params: Promise<{id}>`): `GET` (null→`NotFoundError`); `PUT` (`riskInputSchema.parse`, corpo completo; null→`NotFoundError`); `DELETE` (`{status:204}`)
+- [x] T035 [US1] Criar `src/app/api/v1/risks/route.ts` (`runtime="nodejs"`, `dynamic="force-dynamic"`): `GET` (list via `pageParamsFrom` + `companyId`/`workUnitId`/`gesId`/`search` da query); `POST` (`riskInputSchema.parse(await req.json())` → `repo.createRisk`, `{status:201}`)
+- [x] T036 [US1] Criar `src/app/api/v1/risks/[id]/route.ts` (`params: Promise<{id}>`): `GET` (null→`NotFoundError`); `PUT` (`riskInputSchema.parse`, corpo completo; null→`NotFoundError`); `DELETE` (`{status:204}`)
 
 ---
 
 ## Phase 8: Integração — REST (bypass dev) [US1]
 
-- [ ] T037 [US1] Criar harness `src/__tests__/integration/risks/rest-risks.test.ts`: `beforeAll` `APP_ENV="local"`+`DEV_API_AUTH_BYPASS="true"`; helper `req({method,body,role,tenant,query})` com headers `x-dev-tenant`/`x-dev-role`; importar handlers de `risks/route` e `risks/[id]/route` (`{ params: Promise.resolve({ id }) }`)
-- [ ] T038 [US1] Casos **GET list 200** (`body.total===1`), **POST create 201**, **GET/{id} 200** em `rest-risks.test.ts`
-- [ ] T039 [US1] Casos **POST sem `description`/`agentType` → 422** `VALIDATION` e **POST `qualitative_na`+concentração → 422** `VALIDATION` em `rest-risks.test.ts`
-- [ ] T040 [US1] Caso **POST `gesId` inválido/cross-tenant → 422** `FK_NOT_FOUND` em `rest-risks.test.ts`
-- [ ] T041 [US1] Casos **PUT 200**, **DELETE 204**, e **GET/PUT/DELETE de `riskB` (tenant org_a) → 404** em `rest-risks.test.ts`
-- [ ] T042 [US1] Casos **role `client` → 403** e **assert nunca 409** em `rest-risks.test.ts`
+- [x] T037 [US1] Criar harness `src/__tests__/integration/risks/rest-risks.test.ts`: `beforeAll` `APP_ENV="local"`+`DEV_API_AUTH_BYPASS="true"`; helper `req({method,body,role,tenant,query})` com headers `x-dev-tenant`/`x-dev-role`; importar handlers de `risks/route` e `risks/[id]/route` (`{ params: Promise.resolve({ id }) }`)
+- [x] T038 [US1] Casos **GET list 200** (`body.total===1`), **POST create 201**, **GET/{id} 200** em `rest-risks.test.ts`
+- [x] T039 [US1] Casos **POST sem `description`/`agentType` → 422** `VALIDATION` e **POST `qualitative_na`+concentração → 422** `VALIDATION` em `rest-risks.test.ts`
+- [x] T040 [US1] Caso **POST `gesId` inválido/cross-tenant → 422** `FK_NOT_FOUND` em `rest-risks.test.ts`
+- [x] T041 [US1] Casos **PUT 200**, **DELETE 204**, e **GET/PUT/DELETE de `riskB` (tenant org_a) → 404** em `rest-risks.test.ts`
+- [x] T042 [US1] Casos **role `client` → 403** e **assert nunca 409** em `rest-risks.test.ts`
 
 > Nota (herdada da 013): se o harness REST-via-jest tiver limitação de ambiente pré-existente,
 > validar o REST por cURL contra o dev server (Phase 11) e registrar — não é bug da fatia.
@@ -127,21 +127,21 @@ efêmero (`INTEGRATION_*`, nunca SQLite) + validação manual (Playwright MCP + 
 
 ## Phase 9: UI — `/risks` (reuso de `_ui`) [US1/US2/US3]
 
-- [ ] T043 [US1] Criar `src/app/(protected)/risks/page.tsx` (server, `force-dynamic`): `requireOfficeStaffPage()`, `listRisksAction`, `Table` cols **Grupo do agente·Descrição·Tempo de exposição·GES·Opções** (labels via `riskAgentTypeLabel`/`exposureTimeLabel`), `EmptyState` orientando 1º risco, `PrimaryLink` "Novo", `Pagination`
-- [ ] T044 [US2] Criar `src/app/(protected)/risks/_components/risk-filters.tsx` (client): cascata **Empresa→Obra→GES** (obras via `listWorkUnitsAction({companyId,pageSize:100})`; GES via `listGesAction({workUnitId,pageSize:100})`; **trocar Empresa reseta Obra e GES**; **trocar Obra reseta GES** — resetar no handler, não em `useEffect`, p/ evitar `set-state-in-effect`) navegando por query params; integrar em `page.tsx`
-- [ ] T045 [US1] Criar `src/app/(protected)/risks/_components/risk-form.tsx` (client): cascata **Empresa→Obra→GES** com **`gesId` obrigatório** no create; `SelectField` de `agentType` (obrigatório), `description` (obrigatório), `exposureTime`/`measurementUnit` (opcionais, com opção vazia), `hazard`/`sources`/`propagation`/`possibleInjuries`/`noxiousAgentCode` (texto), `concentrationIntensity` (texto `inputMode="decimal"`); chama `create`/`update`; mapeia `result.error.fields` (inclui `concentrationIntensity` da regra `qualitative_na`); `router.push("/risks")`+`refresh` no sucesso
-- [ ] T046 [US3] Criar `src/app/(protected)/risks/new/page.tsx`: `requireOfficeStaffPage()`, `listCompanyOptionsAction()`; **se `searchParams.from`** → `getRiskAction(from)` e passar valores como `defaultValues` ao `<RiskForm>` (prefill de reutilização; `gesId` de origem preenchido e **editável**); submit usa `createRiskAction` (novo `id`, **sem** clone server-side, **sem** checagem de duplicidade)
-- [ ] T047 [US1] Criar `src/app/(protected)/risks/[id]/page.tsx` (detalhe read-only): `getRiskAction` (notFound), resolve nome do GES via `getGesAction(gesId)`, `Field`s com labels pt-BR dos enums, ações **Editar** + **Reutilizar** (link `/risks/new?from=<id>`, US3) + `<DeleteRisk redirectTo="/risks">`
-- [ ] T048 [US1] Criar `src/app/(protected)/risks/[id]/edit/page.tsx`: `getRiskAction` (notFound), `listCompanyOptionsAction()` → `<RiskForm risk={…} companies={…} />` (corpo completo)
-- [ ] T049 [US1] Criar `src/app/(protected)/risks/_components/delete-risk.tsx`: wrapper de `ConfirmDeleteButton` (`deleteRiskAction`, `entityName="Risco"`, `description` estática sobre cascata de avaliações/medidas futuras; **sem** `loadDependentsAction`)
-- [ ] T050 [US1] Editar `src/app/(protected)/layout.tsx`: adicionar `{ href: "/risks", label: "Riscos" }` ao array `PGR_NAV`
+- [x] T043 [US1] Criar `src/app/(protected)/risks/page.tsx` (server, `force-dynamic`): `requireOfficeStaffPage()`, `listRisksAction`, `Table` cols **Grupo do agente·Descrição·Tempo de exposição·GES·Opções** (labels via `riskAgentTypeLabel`/`exposureTimeLabel`), `EmptyState` orientando 1º risco, `PrimaryLink` "Novo", `Pagination`
+- [x] T044 [US2] Criar `src/app/(protected)/risks/_components/risk-filters.tsx` (client): cascata **Empresa→Obra→GES** (obras via `listWorkUnitsAction({companyId,pageSize:100})`; GES via `listGesAction({workUnitId,pageSize:100})`; **trocar Empresa reseta Obra e GES**; **trocar Obra reseta GES** — resetar no handler, não em `useEffect`, p/ evitar `set-state-in-effect`) navegando por query params; integrar em `page.tsx`
+- [x] T045 [US1] Criar `src/app/(protected)/risks/_components/risk-form.tsx` (client): cascata **Empresa→Obra→GES** com **`gesId` obrigatório** no create; `SelectField` de `agentType` (obrigatório), `description` (obrigatório), `exposureTime`/`measurementUnit` (opcionais, com opção vazia), `hazard`/`sources`/`propagation`/`possibleInjuries`/`noxiousAgentCode` (texto), `concentrationIntensity` (texto `inputMode="decimal"`); chama `create`/`update`; mapeia `result.error.fields` (inclui `concentrationIntensity` da regra `qualitative_na`); `router.push("/risks")`+`refresh` no sucesso
+- [x] T046 [US3] Criar `src/app/(protected)/risks/new/page.tsx`: `requireOfficeStaffPage()`, `listCompanyOptionsAction()`; **se `searchParams.from`** → `getRiskAction(from)` e passar valores como `defaultValues` ao `<RiskForm>` (prefill de reutilização; `gesId` de origem preenchido e **editável**); submit usa `createRiskAction` (novo `id`, **sem** clone server-side, **sem** checagem de duplicidade)
+- [x] T047 [US1] Criar `src/app/(protected)/risks/[id]/page.tsx` (detalhe read-only): `getRiskAction` (notFound), resolve nome do GES via `getGesAction(gesId)`, `Field`s com labels pt-BR dos enums, ações **Editar** + **Reutilizar** (link `/risks/new?from=<id>`, US3) + `<DeleteRisk redirectTo="/risks">`
+- [x] T048 [US1] Criar `src/app/(protected)/risks/[id]/edit/page.tsx`: `getRiskAction` (notFound), `listCompanyOptionsAction()` → `<RiskForm risk={…} companies={…} />` (corpo completo)
+- [x] T049 [US1] Criar `src/app/(protected)/risks/_components/delete-risk.tsx`: wrapper de `ConfirmDeleteButton` (`deleteRiskAction`, `entityName="Risco"`, `description` estática sobre cascata de avaliações/medidas futuras; **sem** `loadDependentsAction`)
+- [x] T050 [US1] Editar `src/app/(protected)/layout.tsx`: adicionar `{ href: "/risks", label: "Riscos" }` ao array `PGR_NAV`
 
 ---
 
 ## Phase 10: Docs & Postman
 
-- [ ] T051 [P] Atualizar `docs/api/api-design.md`: linha na tabela de recursos REST (`/risks` · `/risks/{id}` → GET,POST · GET,PUT,DELETE), linha no sumário de actions (`Riscos | actions/pgr/risks.ts | list,get,create,update,delete`), seção `## Riscos — actions/pgr/risks.ts` (tabela de actions + blocos `RiskInput`/`RiskListItem`), linha nas Rotas de UI (`/risks`·`/risks/new`·`/risks/[id]`·`/risks/[id]/edit`); documentar erros **403/404/422** e **ausência de 409**
-- [ ] T052 [P] Atualizar `docs/api/sst-manager.postman_collection.json`: variável `{ "key":"riskId","value":"" }` + pasta **"Riscos"** (GET list `?companyId=&workUnitId=&gesId=&page=1&pageSize=20`; POST create body completo; GET `/{{riskId}}`; PUT `/{{riskId}}` corpo completo; DELETE `/{{riskId}}`) com headers `x-dev-tenant`/`x-dev-role` (+ `Content-Type` nas escritas); incluir exemplos 403/404/422; **sem** 409
+- [x] T051 [P] Atualizar `docs/api/api-design.md`: linha na tabela de recursos REST (`/risks` · `/risks/{id}` → GET,POST · GET,PUT,DELETE), linha no sumário de actions (`Riscos | actions/pgr/risks.ts | list,get,create,update,delete`), seção `## Riscos — actions/pgr/risks.ts` (tabela de actions + blocos `RiskInput`/`RiskListItem`), linha nas Rotas de UI (`/risks`·`/risks/new`·`/risks/[id]`·`/risks/[id]/edit`); documentar erros **403/404/422** e **ausência de 409**
+- [x] T052 [P] Atualizar `docs/api/sst-manager.postman_collection.json`: variável `{ "key":"riskId","value":"" }` + pasta **"Riscos"** (GET list `?companyId=&workUnitId=&gesId=&page=1&pageSize=20`; POST create body completo; GET `/{{riskId}}`; PUT `/{{riskId}}` corpo completo; DELETE `/{{riskId}}`) com headers `x-dev-tenant`/`x-dev-role` (+ `Content-Type` nas escritas); incluir exemplos 403/404/422; **sem** 409
 
 ---
 
@@ -156,13 +156,13 @@ efêmero (`INTEGRATION_*`, nunca SQLite) + validação manual (Playwright MCP + 
 
 ## Phase 12: Quality Gates & Polish
 
-- [ ] T057 Rodar `npm run format` nos arquivos tocados e `npm run format:check`
-- [ ] T058 Rodar `npm run lint`
-- [ ] T059 Rodar `npm run typecheck` (`npx tsc --noEmit`)
-- [ ] T060 Rodar `npm run test` (unit — inclui `risk.test.ts`)
+- [x] T057 Rodar `npm run format` nos arquivos tocados e `npm run format:check`
+- [x] T058 Rodar `npm run lint`
+- [x] T059 Rodar `npm run typecheck` (`npx tsc --noEmit`)
+- [x] T060 Rodar `npm run test` (unit — inclui `risk.test.ts`)
 - [ ] T061 Rodar `npm run test:integration` (Postgres efêmero `INTEGRATION_*` — `risks.test.ts`, `rest-risks.test.ts`, `risks-isolation.test.ts`; usar `--runInBand`)
-- [ ] T062 [P] Rodar `npm run build` (sanity de build Next)
-- [ ] T063 Validar `git status --short`, `git diff --name-status` e `git diff -- src/shared/db/schema src/shared/db/migrations`: apenas arquivos esperados; **nada** em `src/shared/db/schema/**` ou `src/shared/db/migrations/**` (verificação final de zero-migration)
+- [x] T062 [P] Rodar `npm run build` (sanity de build Next)
+- [x] T063 Validar `git status --short`, `git diff --name-status` e `git diff -- src/shared/db/schema src/shared/db/migrations`: apenas arquivos esperados; **nada** em `src/shared/db/schema/**` ou `src/shared/db/migrations/**` (verificação final de zero-migration)
 
 ---
 

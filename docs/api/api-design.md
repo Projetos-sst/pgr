@@ -119,6 +119,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`                                                   | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE                                                                                     |
 | `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                      |
 | `/pgr` · `/pgr/{id}`                                                                                     | GET, POST · GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                          |
+| `/risks` · `/risks/{id}`                                                                                 | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                   |
 | `/categories` · `/categories/{id}`                                                                       | GET, POST · GET, PUT, DELETE                                                                                                                      |
 | `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return` | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item) |
 
@@ -185,6 +186,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles`                                         |
 | Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                                                              |
 | PGR (documento)           | `actions/pgr/pgr.ts`              | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 não persistido; sem 409)                  |
+| Riscos (GES)              | `actions/pgr/risks.ts`            | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)  |
 | Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)                                                      |
 | CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`        | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                        |
 | Entrega de EPI            | `actions/pgr/epi-deliveries.ts`   | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**` |
@@ -388,22 +390,52 @@ workUnitId, workUnitName, responsible, registrationType, registrationNumber, iss
 
 ---
 
+## Riscos (GES) — `actions/pgr/risks.ts`
+
+Inventário de risco por Grupo de Exposição Similar (NR-01/GRO + eSocial S-2240). Fatia 014,
+**zero-migration** (tabela `risks` da migration `0012`; escopo restrito às suas colunas — **não**
+toca `risk_assessments`/`control_measures`). REST espelho em `/api/v1/risks` (GET, POST) ·
+`/api/v1/risks/{id}` (GET, PUT, DELETE). **Sem `/dependents` e sem 409** (a tabela não tem unique).
+
+| Action             | Entrada                                                          | Retorno (`data`)                                |
+| ------------------ | ---------------------------------------------------------------- | ----------------------------------------------- |
+| `listRisksAction`  | `{ companyId?, workUnitId?, gesId?, search?, page?, pageSize? }` | `{ rows: RiskListItem[]; total }`               |
+| `getRiskAction`    | `id`                                                             | `Risk` (inexistente/cross-tenant → `NOT_FOUND`) |
+| `createRiskAction` | `RiskInput`                                                      | `Risk` (`gesId` inválido → `FK_NOT_FOUND`)      |
+| `updateRiskAction` | `id, RiskInput`                                                  | `Risk` (corpo completo)                         |
+| `deleteRiskAction` | `id`                                                             | `{ id }`                                        |
+
+**`RiskInput`** (mesmo corpo para create e PUT): `gesId*` (uuid do GES do tenant), `agentType*`
+(`physical`|`chemical`|`biological`|`ergonomic`|`mechanical`|`accident`|`psychosocial`),
+`description*`, `hazard?`, `sources?`, `propagation?`, `exposureTime?` (8 faixas), `possibleInjuries?`,
+`noxiousAgentCode?` (S-2240, texto), `measurementUnit?` (10 unidades, incl. `qualitative_na`),
+`concentrationIntensity?` (string decimal). **Regra `qualitative_na`**: concentração só é aceita com
+unidade **quantitativa** (com `qualitative_na` ou sem unidade → 422 `VALIDATION`). **`RiskListItem`**:
+`{ id, gesId, gesName, agentType, description, exposureTime, measurementUnit }`. **Reutilização** é por
+**prefill de UI** (`/risks/new?from=<id>` → `getRiskAction` → `createRiskAction`; novo `id`), **sem**
+action de clone. **Erros REST**: 422 (validação/`qualitative_na`/FK `gesId`), 404
+(cross-tenant/inexistente), 403 (`client`); **nunca 409**. "Usuário autor" fora de escopo (modelo sem
+`created_by`).
+
+---
+
 ## Rotas de UI (superfície HTTP navegável)
 
 Área autenticada `(protected)` — layout aplica `requireTenantContext`; cada página de CRUD
 aplica `requireOfficeStaffPage()` (papel `client` → `forbidden()`); detalhe/edição por id
 inexistente ou de outro escritório → `notFound()`.
 
-| Rota                                                                         | Descrição                                                                     |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `/dashboard`                                                                 | Painel (área autenticada)                                                     |
-| `/companies` · `/companies/new` · `/companies/[id]/edit`                     | Empresa (lista paginada / criar / detalhe=edição)                             |
-| `/work-units` · `/work-units/new` · `/work-units/[id]/edit`                  | Unidade de obra (+ copiar endereço da empresa)                                |
-| `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                                        |
-| `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos)               |
-| `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)                        |
-| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / detalhe / editar) |
-| `/categories` · `/categories/new` · `/categories/[id]/edit`                  | Categoria (catálogo `epi`/`machine`; detalhe=edição)                          |
+| Rota                                                                         | Descrição                                                                                           |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `/dashboard`                                                                 | Painel (área autenticada)                                                                           |
+| `/companies` · `/companies/new` · `/companies/[id]/edit`                     | Empresa (lista paginada / criar / detalhe=edição)                                                   |
+| `/work-units` · `/work-units/new` · `/work-units/[id]/edit`                  | Unidade de obra (+ copiar endereço da empresa)                                                      |
+| `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                                                              |
+| `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos)                                     |
+| `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)                                              |
+| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / detalhe / editar)                       |
+| `/risks` · `/risks/new` · `/risks/[id]` · `/risks/[id]/edit`                 | Riscos do GES (lista + filtro Empresa→Obra→GES / criar / detalhe / editar / reutilizar por prefill) |
+| `/categories` · `/categories/new` · `/categories/[id]/edit`                  | Categoria (catálogo `epi`/`machine`; detalhe=edição)                                                |
 
 ## Invariantes de isolamento (multi-tenant)
 

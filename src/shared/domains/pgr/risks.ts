@@ -110,6 +110,19 @@ const EXPOSURE_TIME_LABELS: Record<ExposureTime, string> = {
   habitual: "Habitual",
 };
 
+const MEASUREMENT_UNIT_LABELS: Record<MeasurementUnit, string> = {
+  qualitative_na: "Qualitativo / Não aplicável",
+  db_a: "dB(A)",
+  db_c: "dB(C)",
+  m_s2: "m/s²",
+  ppm: "ppm",
+  mg_m3: "mg/m³",
+  f_cm3: "f/cm³",
+  celsius: "°C",
+  percent: "%",
+  lux: "lux",
+};
+
 const CONTROL_LEVEL_LABELS: Record<ControlLevel, string> = {
   elimination: "I — Eliminação",
   collective_protection: "II — Proteção Coletiva",
@@ -140,6 +153,9 @@ export function riskAgentTypeLabel(value: RiskAgentType): string {
 }
 export function exposureTimeLabel(value: ExposureTime): string {
   return EXPOSURE_TIME_LABELS[value];
+}
+export function measurementUnitLabel(value: MeasurementUnit): string {
+  return MEASUREMENT_UNIT_LABELS[value];
 }
 export function controlLevelLabel(value: ControlLevel): string {
   return CONTROL_LEVEL_LABELS[value];
