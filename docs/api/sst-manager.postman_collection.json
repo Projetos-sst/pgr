@@ -51,6 +51,10 @@
       "value": ""
     },
     {
+      "key": "riskId",
+      "value": ""
+    },
+    {
       "key": "sessionCookie",
       "value": "<cookie __session do navegador logado>"
     },
@@ -1098,6 +1102,153 @@
               "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "pgr", "{{pgrId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Riscos",
+      "item": [
+        {
+          "name": "GET /risks (list, filtros companyId/workUnitId/gesId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks?companyId=&workUnitId=&gesId=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks"],
+              "query": [
+                { "key": "companyId", "value": "" },
+                { "key": "workUnitId", "value": "" },
+                { "key": "gesId", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risks (create, corpo completo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"physical\",\n  \"hazard\": \"Ruído\",\n  \"description\": \"Ruído contínuo acima de 85 dB(A)\",\n  \"sources\": \"Compressores e britadeiras\",\n  \"propagation\": \"Ar\",\n  \"exposureTime\": \"gt_7h\",\n  \"possibleInjuries\": \"PAIR\",\n  \"noxiousAgentCode\": \"01.01.001\",\n  \"measurementUnit\": \"db_a\",\n  \"concentrationIntensity\": \"87.5\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks (422 qualitative_na com concentração)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"physical\",\n  \"description\": \"Concentração inválida p/ unidade qualitativa\",\n  \"measurementUnit\": \"qualitative_na\",\n  \"concentrationIntensity\": \"5\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /risks/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /risks/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"chemical\",\n  \"description\": \"Poeira de sílica (atualizado)\",\n  \"exposureTime\": \"4_7h\",\n  \"measurementUnit\": \"mg_m3\",\n  \"concentrationIntensity\": \"0.5\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /risks/:id (403 com x-dev-role client)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "client" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /risks/:id (404 id inexistente/cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/99999999-9999-9999-9999-999999999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "99999999-9999-9999-9999-999999999999"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /risks/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{devTenant}}" },
+              { "key": "x-dev-role", "value": "{{devRole}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}"]
             }
           }
         }
