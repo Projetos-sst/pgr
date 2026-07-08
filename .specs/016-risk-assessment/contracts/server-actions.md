@@ -29,14 +29,14 @@ import type { RiskAssessment } from "@/shared/db/schema/risks";
 
 ## Assinaturas
 
-| Action                                                     | Operação                       | Audit | Retorno                                       |
-| ---------------------------------------------------------- | ------------------------------ | ----- | --------------------------------------------- |
-| `listRiskAssessmentsAction(riskId, params?)`               | `pgr.risk_assessments.list`    | não   | `ActionResult<Paginated<RiskAssessmentListItem>>` |
-| `getRiskAssessmentAction(id)`                              | `pgr.risk_assessments.get`     | não   | `ActionResult<RiskAssessment>` (null → 404)   |
-| `getCurrentRiskAssessmentAction(riskId)`                   | `pgr.risk_assessments.current` | não   | `ActionResult<RiskAssessment \| null>`        |
-| `createRiskAssessmentAction(riskId, input)`                | `pgr.risk_assessments.create`  | sim   | `ActionResult<RiskAssessment>`                |
-| `updateRiskAssessmentAction(riskId, id, input)`            | `pgr.risk_assessments.update`  | sim   | `ActionResult<RiskAssessment>` (null → 404)   |
-| `deleteRiskAssessmentAction(riskId, id)`                   | `pgr.risk_assessments.delete`  | sim   | `ActionResult<{ id: string }>`                |
+| Action                                          | Operação                       | Audit | Retorno                                           |
+| ----------------------------------------------- | ------------------------------ | ----- | ------------------------------------------------- |
+| `listRiskAssessmentsAction(riskId, params?)`    | `pgr.risk_assessments.list`    | não   | `ActionResult<Paginated<RiskAssessmentListItem>>` |
+| `getRiskAssessmentAction(id)`                   | `pgr.risk_assessments.get`     | não   | `ActionResult<RiskAssessment>` (null → 404)       |
+| `getCurrentRiskAssessmentAction(riskId)`        | `pgr.risk_assessments.current` | não   | `ActionResult<RiskAssessment \| null>`            |
+| `createRiskAssessmentAction(riskId, input)`     | `pgr.risk_assessments.create`  | sim   | `ActionResult<RiskAssessment>`                    |
+| `updateRiskAssessmentAction(riskId, id, input)` | `pgr.risk_assessments.update`  | sim   | `ActionResult<RiskAssessment>` (null → 404)       |
+| `deleteRiskAssessmentAction(riskId, id)`        | `pgr.risk_assessments.delete`  | sim   | `ActionResult<{ id: string }>`                    |
 
 > `updateRiskAssessmentAction`/`deleteRiskAssessmentAction` recebem `riskId` **apenas** para
 > `revalidatePath` das rotas aninhadas (a escrita/exclusão em si é por `id` da avaliação).
@@ -66,7 +66,9 @@ export async function listRiskAssessmentsAction(
   );
 }
 
-export async function getRiskAssessmentAction(id: string): Promise<ActionResult<RiskAssessment>> {
+export async function getRiskAssessmentAction(
+  id: string,
+): Promise<ActionResult<RiskAssessment>> {
   return officeAction("pgr.risk_assessments.get", async ({ tenantId }) => {
     const row = await repo.getRiskAssessmentById(tenantId, id);
     if (!row) throw new NotFoundError();
@@ -92,7 +94,10 @@ export async function createRiskAssessmentAction(
       const values = riskAssessmentInputSchema.parse(input);
       const { classificationBands } = await getRiskMethodologyView(tenantId);
       const derived = deriveAssessmentResult(values, classificationBands);
-      const row = await repo.createRiskAssessment(tenantId, riskId, { ...values, ...derived });
+      const row = await repo.createRiskAssessment(tenantId, riskId, {
+        ...values,
+        ...derived,
+      });
       revalidateAssessment(riskId);
       return row;
     },
@@ -111,7 +116,10 @@ export async function updateRiskAssessmentAction(
       const values = riskAssessmentInputSchema.parse(input);
       const { classificationBands } = await getRiskMethodologyView(tenantId);
       const derived = deriveAssessmentResult(values, classificationBands);
-      const row = await repo.updateRiskAssessment(tenantId, id, { ...values, ...derived });
+      const row = await repo.updateRiskAssessment(tenantId, id, {
+        ...values,
+        ...derived,
+      });
       if (!row) throw new NotFoundError();
       revalidateAssessment(riskId, id);
       return row;
@@ -139,11 +147,11 @@ export async function deleteRiskAssessmentAction(
 
 ## Erros (via `toActionError` / `officeAction`)
 
-| Situação                                                   | Código              | HTTP (na superfície REST) |
-| ---------------------------------------------------------- | ------------------- | ------------------------- |
-| ranges (prob/sev/uncertainty), criterion, assessedAt      | `VALIDATION`        | 422                       |
-| `riskId` inexistente/cross-tenant (create/list/current)   | `FK_NOT_FOUND`      | 422                       |
-| avaliação inexistente/cross-tenant (get/update/delete)    | `NOT_FOUND`         | 404                       |
-| papel `client`                                             | `FORBIDDEN`         | 403                       |
-| sem tenant                                                 | `NO_TENANT_CONTEXT` | 403                       |
-| (nunca)                                                    | `DUPLICATE`         | ~~409~~                   |
+| Situação                                                | Código              | HTTP (na superfície REST) |
+| ------------------------------------------------------- | ------------------- | ------------------------- |
+| ranges (prob/sev/uncertainty), criterion, assessedAt    | `VALIDATION`        | 422                       |
+| `riskId` inexistente/cross-tenant (create/list/current) | `FK_NOT_FOUND`      | 422                       |
+| avaliação inexistente/cross-tenant (get/update/delete)  | `NOT_FOUND`         | 404                       |
+| papel `client`                                          | `FORBIDDEN`         | 403                       |
+| sem tenant                                              | `NO_TENANT_CONTEXT` | 403                       |
+| (nunca)                                                 | `DUPLICATE`         | ~~409~~                   |

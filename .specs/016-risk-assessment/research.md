@@ -29,7 +29,7 @@ Fase 0 do plano. Cada decisão: **Decision / Rationale / Alternatives considered
 ## D3 — Campos numéricos com **coerção** string→número
 
 - **Decision**: No `riskAssessmentInputSchema`, `probability`/`severity` = `z.coerce.number().int()
-  .min(1).max(5)`; `uncertaintyDegree` = `z.coerce.number().int().min(0).max(2)` com default `0`.
+.min(1).max(5)`; `uncertaintyDegree` = `z.coerce.number().int().min(0).max(2)` com default `0`.
 - **Rationale**: O corpo REST-JSON envia números, mas os `<select>` da UI enviam strings; a coerção
   serve ambos com **um** schema. Os limites espelham `probabilitySchema`/`severitySchema`/
   `uncertaintyDegreeSchema` de `risks.ts` (mesma faixa dos CHECKs do banco).
@@ -97,8 +97,8 @@ Fase 0 do plano. Cada decisão: **Decision / Rationale / Alternatives considered
 ## D9 — `assertRiskInTenant` (guard tenant-scopado) → `FK_NOT_FOUND`
 
 - **Decision**: Copiar o padrão `assertGesInTenant` (repo `risks`) para `assertRiskInTenant(tx, orgId,
-  riskId)` no novo repo, consultando `risks` por `(orgId, riskId)`; ausente → `ReferenceNotFoundError
-  ("risk")` (código `FK_NOT_FOUND`/422). Aplicado em `create`, `list` e `getCurrent` (operações
+riskId)` no novo repo, consultando `risks` por `(orgId, riskId)`; ausente → `ReferenceNotFoundError
+("risk")` (código `FK_NOT_FOUND`/422). Aplicado em `create`, `list` e `getCurrent` (operações
   ancoradas por `riskId`).
 - **Rationale**: `risk_id` inválido/cross-tenant deve dar 422, não vazar. Espelha a fatia `014`.
 - **Alternatives considered**: Confiar só na FK do banco → **rejeitado** (a FK dá erro genérico e não

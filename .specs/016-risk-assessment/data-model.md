@@ -8,21 +8,21 @@ schemas Zod** da fatia — **não** há DDL nova. Nenhuma alteração em `src/sh
 
 Schema Drizzle: `src/shared/db/schema/risks.ts` (export `riskAssessments`).
 
-| Coluna                | Tipo (pg)                    | Notas                                                              |
-| --------------------- | ---------------------------- | ----------------------------------------------------------------- |
-| `id`                  | uuid PK `defaultRandom()`    | —                                                                 |
-| `org_id`              | text NOT NULL                | FK → `orgs.id` **ON DELETE CASCADE**; tenant da sessão            |
-| `risk_id`             | uuid NOT NULL                | FK → `risks.id` **ON DELETE CASCADE**                             |
-| `criterion`           | enum `assessment_criterion`  | `qualitative` \| `quantitative` — **NOT NULL**                    |
-| `probability`         | integer NOT NULL             | CHECK `between 1 and 5`                                            |
-| `severity`            | integer NOT NULL             | CHECK `between 1 and 5`                                            |
-| `risk_level`          | integer NOT NULL             | CHECK `between 1 and 25` **e** `= probability * severity`         |
-| `uncertainty_degree` | smallint NOT NULL default 0  | CHECK `between 0 and 2` (0 Certa / 1 Incerta / 2 Alt. Incerta)   |
-| `tolerance_limit`     | text (nullable)              | texto livre                                                       |
-| `result`              | text (nullable)              | **snapshot** da classificação (`trivial`…`intolerable`)          |
-| `assessed_at`         | date NOT NULL default now    | data da avaliação (**app exige**; permite histórico 1:N)         |
-| `created_at`          | timestamptz NOT NULL         | —                                                                 |
-| `updated_at`          | timestamptz NOT NULL         | trigger `set_updated_at_risk_assessments`                        |
+| Coluna               | Tipo (pg)                   | Notas                                                          |
+| -------------------- | --------------------------- | -------------------------------------------------------------- |
+| `id`                 | uuid PK `defaultRandom()`   | —                                                              |
+| `org_id`             | text NOT NULL               | FK → `orgs.id` **ON DELETE CASCADE**; tenant da sessão         |
+| `risk_id`            | uuid NOT NULL               | FK → `risks.id` **ON DELETE CASCADE**                          |
+| `criterion`          | enum `assessment_criterion` | `qualitative` \| `quantitative` — **NOT NULL**                 |
+| `probability`        | integer NOT NULL            | CHECK `between 1 and 5`                                        |
+| `severity`           | integer NOT NULL            | CHECK `between 1 and 5`                                        |
+| `risk_level`         | integer NOT NULL            | CHECK `between 1 and 25` **e** `= probability * severity`      |
+| `uncertainty_degree` | smallint NOT NULL default 0 | CHECK `between 0 and 2` (0 Certa / 1 Incerta / 2 Alt. Incerta) |
+| `tolerance_limit`    | text (nullable)             | texto livre                                                    |
+| `result`             | text (nullable)             | **snapshot** da classificação (`trivial`…`intolerable`)        |
+| `assessed_at`        | date NOT NULL default now   | data da avaliação (**app exige**; permite histórico 1:N)       |
+| `created_at`         | timestamptz NOT NULL        | —                                                              |
+| `updated_at`         | timestamptz NOT NULL        | trigger `set_updated_at_risk_assessments`                      |
 
 **Índices**: `idx_risk_assessments_org_id`, `idx_risk_assessments_risk_id`.
 **RLS**: `risk_assessments_isolation` PERMISSIVE FOR ALL TO `app_runtime`
@@ -137,17 +137,17 @@ export type RiskAssessmentListItem = {
 
 ## Regras de validação (resumo)
 
-| Campo               | Regra                                                              | Violação → |
-| ------------------- | ----------------------------------------------------------------- | ---------- |
-| `criterion`         | ∈ {`qualitative`,`quantitative`}                                  | 422        |
-| `probability`       | inteiro 1–5 (coerção string→número)                               | 422        |
-| `severity`          | inteiro 1–5 (coerção string→número)                               | 422        |
-| `uncertaintyDegree` | inteiro 0–2 (default 0)                                            | 422        |
-| `toleranceLimit`    | texto opcional                                                    | —          |
-| `assessedAt`        | ISO `AAAA-MM-DD` obrigatória, calendário válido                  | 422        |
-| `riskId` (rota)     | existe DENTRO do tenant (`assertRiskInTenant`)                    | `FK_NOT_FOUND`/422 |
-| `riskLevel`         | derivado no servidor; **não** aceito do cliente; CHECK coerência | (backstop) |
-| `result`            | derivado no servidor (`classify`); snapshot                       | —          |
+| Campo               | Regra                                                            | Violação →         |
+| ------------------- | ---------------------------------------------------------------- | ------------------ |
+| `criterion`         | ∈ {`qualitative`,`quantitative`}                                 | 422                |
+| `probability`       | inteiro 1–5 (coerção string→número)                              | 422                |
+| `severity`          | inteiro 1–5 (coerção string→número)                              | 422                |
+| `uncertaintyDegree` | inteiro 0–2 (default 0)                                          | 422                |
+| `toleranceLimit`    | texto opcional                                                   | —                  |
+| `assessedAt`        | ISO `AAAA-MM-DD` obrigatória, calendário válido                  | 422                |
+| `riskId` (rota)     | existe DENTRO do tenant (`assertRiskInTenant`)                   | `FK_NOT_FOUND`/422 |
+| `riskLevel`         | derivado no servidor; **não** aceito do cliente; CHECK coerência | (backstop)         |
+| `result`            | derivado no servidor (`classify`); snapshot                      | —                  |
 
 ## Fora do modelo desta fatia
 

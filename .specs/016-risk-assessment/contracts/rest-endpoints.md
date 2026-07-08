@@ -9,13 +9,13 @@ persistir (mesma regra, sem re-implementar). REST handlers **não** chamam `reva
 
 ## Endpoints
 
-| Método · Rota                             | Ação                                                    | Sucesso               |
-| ----------------------------------------- | ------------------------------------------------------- | --------------------- |
-| `GET /api/v1/risks/{id}/assessments`      | list do risco (paginado: `page`/`pageSize`)             | 200 `{ rows, total }` |
-| `POST /api/v1/risks/{id}/assessments`     | create (corpo completo; calcula riskLevel+result)       | 201 `RiskAssessment`  |
-| `GET /api/v1/risk-assessments/{id}`       | getById                                                 | 200 `RiskAssessment`  |
-| `PUT /api/v1/risk-assessments/{id}`       | update (corpo completo; recalcula riskLevel+result)     | 200 `RiskAssessment`  |
-| `DELETE /api/v1/risk-assessments/{id}`    | delete físico                                           | 204 (sem corpo)       |
+| Método · Rota                          | Ação                                                | Sucesso               |
+| -------------------------------------- | --------------------------------------------------- | --------------------- |
+| `GET /api/v1/risks/{id}/assessments`   | list do risco (paginado: `page`/`pageSize`)         | 200 `{ rows, total }` |
+| `POST /api/v1/risks/{id}/assessments`  | create (corpo completo; calcula riskLevel+result)   | 201 `RiskAssessment`  |
+| `GET /api/v1/risk-assessments/{id}`    | getById                                             | 200 `RiskAssessment`  |
+| `PUT /api/v1/risk-assessments/{id}`    | update (corpo completo; recalcula riskLevel+result) | 200 `RiskAssessment`  |
+| `DELETE /api/v1/risk-assessments/{id}` | delete físico                                       | 204 (sem corpo)       |
 
 **Sem** endpoint de dependentes. **Sem** 409. `{id}` na rota aninhada = **riskId**; na flat =
 **assessmentId**.
@@ -145,14 +145,14 @@ avaliações do `riskId` da rota.
 
 ## Mapeamento código → HTTP (via `HTTP_BY_CODE` em `src/shared/api/rest.ts`)
 
-| Situação                                                                     | Código              | HTTP                |
-| ---------------------------------------------------------------------------- | ------------------- | ------------------- |
-| criterion/prob/sev/uncertainty/assessedAt inválidos                          | `VALIDATION`        | **422**             |
-| `riskId` inexistente / cross-tenant (list/create)                            | `FK_NOT_FOUND`      | **422**             |
-| avaliação inexistente / cross-tenant (get/put/delete)                        | `NOT_FOUND`         | **404**             |
-| papel `client`                                                               | `FORBIDDEN`         | **403**             |
-| sem tenant                                                                   | `NO_TENANT_CONTEXT` | **403**             |
-| (não aplicável — sem UNIQUE)                                                  | `DUPLICATE`         | ~~409~~ — **nunca** |
+| Situação                                              | Código              | HTTP                |
+| ----------------------------------------------------- | ------------------- | ------------------- |
+| criterion/prob/sev/uncertainty/assessedAt inválidos   | `VALIDATION`        | **422**             |
+| `riskId` inexistente / cross-tenant (list/create)     | `FK_NOT_FOUND`      | **422**             |
+| avaliação inexistente / cross-tenant (get/put/delete) | `NOT_FOUND`         | **404**             |
+| papel `client`                                        | `FORBIDDEN`         | **403**             |
+| sem tenant                                            | `NO_TENANT_CONTEXT` | **403**             |
+| (não aplicável — sem UNIQUE)                          | `DUPLICATE`         | ~~409~~ — **nunca** |
 
 > `VALIDATION` mapeia para **422** neste projeto (não 400), coerente com os demais recursos. Os
 > testes asseveram 422.

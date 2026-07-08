@@ -43,14 +43,14 @@ async function assertRiskInTenant(
 
 ## Assinaturas
 
-| Função                                                                                   | Retorno                              | Erros/Notas                                    |
-| ---------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------- |
-| `listRiskAssessments(orgId, riskId, params?)`                                            | `Paginated<RiskAssessmentListItem>`  | `assertRiskInTenant` → `FK_NOT_FOUND`; ordena `assessedAt desc`, `createdAt desc` |
-| `getRiskAssessmentById(orgId, id)`                                                       | `RiskAssessment \| null`             | por `id` (sem join); `null` → 404 na Action   |
-| `getCurrentRiskAssessment(orgId, riskId)`                                                | `RiskAssessment \| null`             | `assertRiskInTenant`; última por ordenação; `null` se risco sem avaliações (não é erro) |
-| `createRiskAssessment(orgId, riskId, values: RiskAssessmentWriteValues)`                 | `RiskAssessment`                     | `auditedTenantWrite` + `assertRiskInTenant` + INSERT |
-| `updateRiskAssessment(orgId, id, values: RiskAssessmentWriteValues)`                     | `RiskAssessment \| null`             | `auditedTenantWrite`; UPDATE por `(org,id)`; **não** toca `risk_id`; `null` → 404 |
-| `deleteRiskAssessment(orgId, id)`                                                        | `boolean`                            | `auditedTenantWrite`; DELETE físico RETURNING |
+| Função                                                                   | Retorno                             | Erros/Notas                                                                             |
+| ------------------------------------------------------------------------ | ----------------------------------- | --------------------------------------------------------------------------------------- |
+| `listRiskAssessments(orgId, riskId, params?)`                            | `Paginated<RiskAssessmentListItem>` | `assertRiskInTenant` → `FK_NOT_FOUND`; ordena `assessedAt desc`, `createdAt desc`       |
+| `getRiskAssessmentById(orgId, id)`                                       | `RiskAssessment \| null`            | por `id` (sem join); `null` → 404 na Action                                             |
+| `getCurrentRiskAssessment(orgId, riskId)`                                | `RiskAssessment \| null`            | `assertRiskInTenant`; última por ordenação; `null` se risco sem avaliações (não é erro) |
+| `createRiskAssessment(orgId, riskId, values: RiskAssessmentWriteValues)` | `RiskAssessment`                    | `auditedTenantWrite` + `assertRiskInTenant` + INSERT                                    |
+| `updateRiskAssessment(orgId, id, values: RiskAssessmentWriteValues)`     | `RiskAssessment \| null`            | `auditedTenantWrite`; UPDATE por `(org,id)`; **não** toca `risk_id`; `null` → 404       |
+| `deleteRiskAssessment(orgId, id)`                                        | `boolean`                           | `auditedTenantWrite`; DELETE físico RETURNING                                           |
 
 ## Esboços
 
@@ -68,7 +68,10 @@ function toColumns(values: RiskAssessmentWriteValues) {
   };
 }
 
-const ORDER = [desc(riskAssessments.assessedAt), desc(riskAssessments.createdAt)] as const;
+const ORDER = [
+  desc(riskAssessments.assessedAt),
+  desc(riskAssessments.createdAt),
+] as const;
 
 export async function listRiskAssessments(
   orgId: string,
@@ -78,7 +81,10 @@ export async function listRiskAssessments(
   const { limit, offset } = resolvePageParams(params);
   return withOrg(orgId, async (tx) => {
     await assertRiskInTenant(tx, orgId, riskId);
-    const where = and(eq(riskAssessments.orgId, orgId), eq(riskAssessments.riskId, riskId));
+    const where = and(
+      eq(riskAssessments.orgId, orgId),
+      eq(riskAssessments.riskId, riskId),
+    );
     const rows = await tx
       .select({
         id: riskAssessments.id,

@@ -25,7 +25,7 @@ fatia de modelo de dados); as histórias e requisitos funcionais permanecem foca
 - **ZERO migration.** A tabela real **`risk_assessments`** já existe na migration `0012`
   (`0012_pgr_risk_data_model.sql`) com RLS, GRANT, trigger `set_updated_at_risk_assessments`, os
   CHECKs (probability 1–5, severity 1–5, risk_level 1–25, coerência `risk_level = probability *
-  severity`, uncertainty_degree 0–2) e as FKs `org_id → orgs` / `risk_id → risks` (ambas CASCADE).
+severity`, uncertainty_degree 0–2) e as FKs `org_id → orgs` / `risk_id → risks` (ambas CASCADE).
   **NÃO** criar/alterar migration; **NÃO** tocar em `src/shared/db/schema/**` nem em `migrations/**`.
 - **Metodologia 5×5 já existe** (migration `0013`, issue #76): tabela `risk_methodology` (singleton
   por org), domínio `domains/pgr/methodology.ts` (`classify`, `buildMatrix`, `riskClassificationLabel`),
@@ -62,7 +62,7 @@ fatia de modelo de dados); as histórias e requisitos funcionais permanecem foca
 
 ---
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Avaliar um risco pela matriz 5×5 (Priority: P1)
 
@@ -163,7 +163,7 @@ sem afetar as demais.
 - **Ausência de tenant na sessão** → bloqueado pelo gate; a leitura nunca devolve todos os registros
   (RLS backstop).
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -208,7 +208,7 @@ sem afetar as demais.
   (`docs/api/sst-manager.postman_collection.json`) MUST ser atualizadas com o recurso, verbos,
   filtros e exemplos de 403/404/422 (sem 409).
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **Avaliação de Risco (`risk_assessments`)**: uma avaliação histórica de um risco pela matriz 5×5.
   Atributos: risco vinculado (`risk_id`), critério (`qualitative`/`quantitative`), probabilidade
@@ -216,12 +216,12 @@ sem afetar as demais.
   (0–2, default 0), limite de tolerância (texto livre, opcional), resultado/classificação (`result`,
   snapshot), data da avaliação (`assessed_at`, obrigatória). Pertence a um tenant (`org_id` da
   sessão) e a um único risco; relação 1:N com `risks` (um risco tem muitas avaliações).
-- **Risco (`risks`)** *(existente, não alterado)*: item do inventário do GES ao qual a avaliação se
+- **Risco (`risks`)** _(existente, não alterado)_: item do inventário do GES ao qual a avaliação se
   vincula; usado para validar o vínculo dentro do tenant.
-- **Metodologia de Risco (`risk_methodology`)** *(existente, não alterado)*: configuração 5×5 por
+- **Metodologia de Risco (`risk_methodology`)** _(existente, não alterado)_: configuração 5×5 por
   organização (faixas de classificação); consumida para derivar `result`, com fallback padrão.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 
