@@ -49,13 +49,13 @@ não passa pela RLS.
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-| Princípio                          | Avaliação                                                                                                                                                                                                             | Status  |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Princípio                          | Avaliação                                                                                                                                                                                                                                        | Status  |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
 | I — Isolamento Multi-Tenant        | Toda leitura/escrita via `withOrg`; RLS `epi_risk_isolation` preservada; tenant da sessão. `createRiskEpi` **asserta** risco+EPI no tenant antes do insert (barreira real, pois FK não passa pela RLS). Testes cross-tenant cobrem os 3 vetores. | ✅ PASS |
-| II — Stack Fixa / YAGNI            | Sem nova infra; reusa `ges_job_roles` como gabarito e os wrappers existentes. Exclusão física (sem soft delete especulativo — OS não existe).                                                                        | ✅ PASS |
-| III — Fatias Verticais             | Fatia vertical completa (dados→UI) e testável isoladamente; entrega valor autônomo (vínculo utilizável no PGR).                                                                                                       | ✅ PASS |
-| IV — Operações Pesadas Assíncronas | N/A — CRUD leve, sem operação pesada.                                                                                                                                                                                 | ✅ PASS |
-| V — Segurança e Integridade        | Banco como fonte de verdade (FK `risks`/`epi_catalog`, NOT NULL, UNIQUE do par, enum fechado); Zod complementar; erros como códigos de contrato; regra das 4 partes cumprida (Action+REST+docs+Postman).             | ✅ PASS |
+| II — Stack Fixa / YAGNI            | Sem nova infra; reusa `ges_job_roles` como gabarito e os wrappers existentes. Exclusão física (sem soft delete especulativo — OS não existe).                                                                                                    | ✅ PASS |
+| III — Fatias Verticais             | Fatia vertical completa (dados→UI) e testável isoladamente; entrega valor autônomo (vínculo utilizável no PGR).                                                                                                                                  | ✅ PASS |
+| IV — Operações Pesadas Assíncronas | N/A — CRUD leve, sem operação pesada.                                                                                                                                                                                                            | ✅ PASS |
+| V — Segurança e Integridade        | Banco como fonte de verdade (FK `risks`/`epi_catalog`, NOT NULL, UNIQUE do par, enum fechado); Zod complementar; erros como códigos de contrato; regra das 4 partes cumprida (Action+REST+docs+Postman).                                         | ✅ PASS |
 
 **Resultado**: nenhuma violação. Complexity Tracking vazio.
 
