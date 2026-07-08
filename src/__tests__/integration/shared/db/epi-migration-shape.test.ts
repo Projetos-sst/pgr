@@ -25,6 +25,8 @@ const ENUMS: Record<string, string[]> = {
     "employee_return",
   ],
   epi_signature_status: ["pending", "signed_qr", "signed_link", "signed_manual"],
+  // Neutralização do vínculo EPI × risco (fatia epi-risk-link).
+  epi_neutralization: ["neutralizes", "does_not_neutralize", "not_applicable"],
 };
 
 (shouldRun ? describe : describe.skip)(

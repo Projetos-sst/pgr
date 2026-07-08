@@ -120,6 +120,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                      |
 | `/pgr` · `/pgr/{id}`                                                                                     | GET, POST · GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                          |
 | `/risks` · `/risks/{id}`                                                                                 | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                   |
+| `/risks/{id}/epis` · `/risks/{id}/epis/{linkId}`                                                         | GET (`?available=true&search=` p/ EPIs não vinculados), POST · PUT (neutralização), DELETE (vínculo EPI × risco)                                  |
 | `/categories` · `/categories/{id}`                                                                       | GET, POST · GET, PUT, DELETE                                                                                                                      |
 | `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return` | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item) |
 
@@ -187,6 +188,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                                                              |
 | PGR (documento)           | `actions/pgr/pgr.ts`              | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 não persistido; sem 409)                  |
 | Riscos (GES)              | `actions/pgr/risks.ts`            | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)  |
+| EPI × risco (vínculo)     | `actions/pgr/epi-risk.ts`         | list, available (busca nome/CA), add, update (neutralização), remove + REST `/api/v1/risks/{id}/epis/**`          |
 | Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)                                                      |
 | CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`        | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                        |
 | Entrega de EPI            | `actions/pgr/epi-deliveries.ts`   | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**` |

@@ -58,10 +58,10 @@ const shouldRun = !!ADMIN_URL;
       ).rejects.toThrow();
     });
 
-    it("UNIQUE(org_id, catalog_id, ges_id) em epi_risk: vínculo não duplica", async () => {
+    it("UNIQUE(org_id, catalog_id, risk_id) em epi_risk: vínculo não duplica", async () => {
       await expect(
-        admin`insert into public.epi_risk (org_id, catalog_id, ges_id)
-              values ('org_a', ${I.epiCatalogA}, ${I.gesA})`,
+        admin`insert into public.epi_risk (org_id, catalog_id, risk_id, neutralization)
+              values ('org_a', ${I.epiCatalogA}, ${I.riskA}, 'neutralizes')`,
       ).rejects.toThrow();
     });
 
