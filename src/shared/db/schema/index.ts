@@ -34,6 +34,7 @@ export {
   epiRisk,
   stockMovementType,
   epiSignatureStatus,
+  epiNeutralization,
   type EpiCatalog,
   type NewEpiCatalog,
   type EpiStock,

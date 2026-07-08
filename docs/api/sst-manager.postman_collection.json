@@ -89,6 +89,10 @@
     {
       "key": "deliveryItemId",
       "value": ""
+    },
+    {
+      "key": "epiCatalogId",
+      "value": ""
     }
   ],
   "item": [
@@ -1369,6 +1373,142 @@
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "risks", "{{riskId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "EPI x risco (vinculo)",
+      "item": [
+        {
+          "name": "GET /risks/:id/epis (vinculados)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epis"]
+            }
+          }
+        },
+        {
+          "name": "GET /risks/:id/epis?available=true (disponiveis, busca nome/CA)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis?available=true&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epis"],
+              "query": [
+                {
+                  "key": "available",
+                  "value": "true"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:id/epis (vincular EPI)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epis"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"catalogId\": \"{{epiCatalogId}}\",\n  \"neutralization\": \"neutralizes\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /risks/:id/epis/:linkId (neutralizacao)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis/{{linkId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epis", "{{linkId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"neutralization\": \"not_applicable\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /risks/:id/epis/:linkId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis/{{linkId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epis", "{{linkId}}"]
             }
           }
         }

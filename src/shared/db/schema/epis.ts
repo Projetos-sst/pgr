@@ -5,7 +5,6 @@ import {
   uuid,
   integer,
   date,
-  boolean,
   timestamp,
   index,
   uniqueIndex,
@@ -19,9 +18,19 @@ import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { categories, categoryType } from "./categories";
 import { employees } from "./employees";
-import { ges } from "./ges";
+import { risks } from "./risks";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
+
+// Indicação de neutralização do risco por um EPI vinculado. Enum de 3 estados
+// (o card exige "Sim / Não / Não Aplicável"): `not_applicable` cobre riscos em
+// que o EPI é listado mas não neutraliza (ex.: ergonômico controlado por medida
+// administrativa). Enum Postgres é forward-only.
+export const epiNeutralization = pgEnum("epi_neutralization", [
+  "neutralizes",
+  "does_not_neutralize",
+  "not_applicable",
+]);
 
 // Tipo de movimento de estoque (compra / entrega ao funcionário / ajuste /
 // descarte / devolução pelo funcionário). Enum Postgres é forward-only (R5):
@@ -233,11 +242,12 @@ export const epiDeliveryItems = pgTable(
 ).enableRLS();
 
 /**
- * Vínculo EPI × risco do GES (junção) com a flag "neutraliza os riscos?".
- * Liga, de forma **interina**, o EPI ao `ges` (entidade portadora de risco na cadeia
- * 008). Com o inventário dedicado (`risks`, fatia de Riscos & PGR) já disponível, a
- * reescrita da FK para `risk_id` está planejada como follow-up dedicado — ver
- * `docs/briefings/implementacao-pgr-risks-data-model.md` (decisão D6).
+ * Vínculo EPI × risco (junção) com a indicação "neutraliza os riscos?".
+ * Liga um item do catálogo (`catalog_id`) a um risco do inventário (`risk_id`,
+ * fatia de Riscos & PGR) com o enum `neutralization` (Sim / Não / Não Aplicável).
+ * Realiza a decisão D6 de `docs/briefings/implementacao-pgr-risks-data-model.md`:
+ * o vínculo interino EPI × GES (fatia 008) passa a ser EPI × risco. Alimenta o PGR
+ * (adequação de EPI por exposição). Único por par (org, item, risco).
  */
 export const epiRisk = pgTable(
   "epi_risk",
@@ -249,21 +259,21 @@ export const epiRisk = pgTable(
     catalogId: uuid("catalog_id")
       .notNull()
       .references(() => epiCatalog.id, { onDelete: "cascade" }),
-    gesId: uuid("ges_id")
+    riskId: uuid("risk_id")
       .notNull()
-      .references(() => ges.id, { onDelete: "cascade" }),
-    neutralizes: boolean("neutralizes").notNull().default(false),
+      .references(() => risks.id, { onDelete: "cascade" }),
+    neutralization: epiNeutralization("neutralization").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("idx_epi_risk_org_id").on(table.orgId),
     index("idx_epi_risk_catalog_id").on(table.catalogId),
-    index("idx_epi_risk_ges_id").on(table.gesId),
-    uniqueIndex("uq_epi_risk_org_catalog_ges").on(
+    index("idx_epi_risk_risk_id").on(table.riskId),
+    uniqueIndex("uq_epi_risk_org_catalog_risk").on(
       table.orgId,
       table.catalogId,
-      table.gesId,
+      table.riskId,
     ),
     pgPolicy("epi_risk_isolation", {
       for: "all",
