@@ -52,11 +52,13 @@
 
 ### D6 — Numeração da migration
 
-- **Decisão as-built**: **`0013_epi_risk_link`** (base = `develop` na última migration `0012`).
+- **Decisão as-built**: nasceu como `0013_epi_risk_link`, **renumerada para `0014_epi_risk_link`** ao
+  integrar `develop` (ver abaixo).
 - **Rationale**: próxima livre a partir de `develop`.
-- **Atenção (registrada)**: o PR de metodologia de risco (#136) também introduz uma `0013`. Se a #136
-  mesclar primeiro, esta migration deve ser **renumerada para `0014`** no rebase (renomear `.sql`,
-  ajustar `tag` no `_journal.json` e `prevId` do snapshot). O código não quebra — é só a ordem/lineage.
+- **Resolvido no merge**: o PR de metodologia de risco (#136) mesclou primeiro em `develop`, ocupando a
+  `0013` (`0013_risk_methodology`). Esta migration foi **renumerada `0013 → 0014`** ao integrar `develop`
+  (renomeado `.sql`, `tag` no `_journal.json` idx 14 e `prevId` do snapshot apontando para o `id` da `0013`).
+  Validado com `npm run db:generate` → "No schema changes". O código não quebrou — só a ordem/lineage.
 
 ## Padrão de referência (a replicar integralmente)
 
@@ -81,7 +83,7 @@ Wrappers compartilhados (reuso obrigatório, **não** reimplementar regra): `off
 - **Schema**: `epis.ts` ganhou `pgEnum epiNeutralization`; `epiRisk` reescrita (`gesId → riskId` FK
   `risks` cascade; `neutralizes boolean → neutralization epiNeutralization` NOT NULL; índice
   `idx_epi_risk_risk_id`; unique `uq_epi_risk_org_catalog_risk`). `index.ts` exporta o enum.
-- **Migration**: `0013_epi_risk_link.sql` + snapshot/journal. O `drizzle-kit generate` interativo pede
+- **Migration**: `0014_epi_risk_link.sql` + snapshot/journal. O `drizzle-kit generate` interativo pede
   resolução de rename (`ges_id`↔`risk_id`) e **não roda sem TTY**; por isso o par SQL + snapshot foi
   escrito à mão de forma determinística e **validado por `db:generate` → "No schema changes"**.
 - **Domínio**: `domains/pgr/epi-risk.ts` (`epiNeutralizationSchema`, rótulos pt-BR,

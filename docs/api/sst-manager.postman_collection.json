@@ -1659,6 +1659,61 @@
       ]
     },
     {
+      "name": "Metodologia de Risco",
+      "item": [
+        {
+          "name": "GET /risk-methodology (config ou padrao)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-methodology",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-methodology"]
+            }
+          }
+        },
+        {
+          "name": "PUT /risk-methodology (upsert, corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-methodology",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-methodology"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"base\": \"fundacentro\",\n  \"probabilityGrades\": [\n    {\n      \"level\": 1,\n      \"label\": \"Rara\",\n      \"description\": \"Improvavel durante a vida do trabalhador.\"\n    },\n    {\n      \"level\": 2,\n      \"label\": \"Pouco Provavel\",\n      \"description\": \"Pode ocorrer, mas e raro.\"\n    },\n    {\n      \"level\": 3,\n      \"label\": \"Possivel\",\n      \"description\": \"Pode ocorrer ocasionalmente.\"\n    },\n    {\n      \"level\": 4,\n      \"label\": \"Provavel\",\n      \"description\": \"Ocorre com frequencia.\"\n    },\n    {\n      \"level\": 5,\n      \"label\": \"Muito Provavel\",\n      \"description\": \"Esperado; ocorre rotineiramente.\"\n    }\n  ],\n  \"severityGrades\": [\n    {\n      \"level\": 1,\n      \"label\": \"Leve\",\n      \"description\": \"Sem necessidade de atencao medica.\"\n    },\n    {\n      \"level\": 2,\n      \"label\": \"Seria\",\n      \"description\": \"Lesao reversivel com atencao medica.\"\n    },\n    {\n      \"level\": 3,\n      \"label\": \"Critica\",\n      \"description\": \"Lesao irreversivel / incapacidade parcial.\"\n    },\n    {\n      \"level\": 4,\n      \"label\": \"Incapacitante\",\n      \"description\": \"Incapacidade permanente ou morte.\"\n    },\n    {\n      \"level\": 5,\n      \"label\": \"Catastrofica\",\n      \"description\": \"Mortes ou incapacidades multiplas (> 10).\"\n    }\n  ],\n  \"classificationBands\": [\n    {\n      \"classification\": \"trivial\",\n      \"maxLevel\": 2\n    },\n    {\n      \"classification\": \"tolerable\",\n      \"maxLevel\": 6\n    },\n    {\n      \"classification\": \"moderate\",\n      \"maxLevel\": 12\n    },\n    {\n      \"classification\": \"substantial\",\n      \"maxLevel\": 20\n    },\n    {\n      \"classification\": \"intolerable\",\n      \"maxLevel\": 25\n    }\n  ]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Entrega de EPI",
       "item": [
         {

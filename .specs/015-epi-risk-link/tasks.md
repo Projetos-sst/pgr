@@ -41,8 +41,8 @@ branch (as-built — commit `ce884a9`); itens `[ ]` são validação em ambiente
 - [x] T004 Adicionar `pgEnum epiNeutralization` (`neutralizes`/`does_not_neutralize`/`not_applicable`) em `src/shared/db/schema/epis.ts`
 - [x] T005 Repontar `epiRisk`: `gesId → riskId` (FK `risks.id` cascade, indexado) e `neutralizes boolean → neutralization epiNeutralization` (NOT NULL) + unique `uq_epi_risk_org_catalog_risk` em `src/shared/db/schema/epis.ts`
 - [x] T006 [P] Exportar `epiNeutralization` em `src/shared/db/schema/index.ts`
-- [x] T007 Escrever à mão `src/shared/db/migrations/0013_epi_risk_link.sql` (CREATE TYPE + drop FK/índices antigos + add colunas/FK/índices + drop colunas antigas); conferir nomes contra `0007_epi_data_model.sql`
-- [x] T008 Derivar `meta/0013_snapshot.json` + entrada no `_journal.json` de forma determinística e validar com `npm run db:generate` → "No schema changes"
+- [x] T007 Escrever à mão `src/shared/db/migrations/0014_epi_risk_link.sql` (CREATE TYPE + drop FK/índices antigos + add colunas/FK/índices + drop colunas antigas); conferir nomes contra `0007_epi_data_model.sql`
+- [x] T008 Derivar `meta/0014_snapshot.json` + entrada no `_journal.json` de forma determinística e validar com `npm run db:generate` → "No schema changes"
 - [x] T009 [P] Criar domínio Zod em `src/shared/domains/pgr/epi-risk.ts` (`epiNeutralizationSchema` obrigatório, `epiRiskLinkInputSchema`/`epiRiskLinkUpdateSchema`, rótulos pt-BR, view types)
 - [x] T010 [P] Atualizar seed `src/__tests__/integration/_helpers/pgr-seed.ts`: insert de `epi_risk` migrado para `risk_id`/`neutralization` e **reordenado para depois de `risks`** (FK)
 - [x] T011 [P] Ajustar testes dependentes da 008 à nova forma: `src/__tests__/integration/shared/db/epi-constraints.test.ts`, `epi-risk-isolation.test.ts`, `epi-migration-shape.test.ts`
@@ -110,7 +110,7 @@ branch (as-built — commit `ce884a9`); itens `[ ]` são validação em ambiente
 - [x] T031 Rodar `npm run build` → compila as duas rotas REST
 - [ ] T032 Rodar `npm run test:integration` contra **Postgres efêmero** (`INTEGRATION_DATABASE_URL` + `INTEGRATION_APP_RUNTIME_URL`) e confirmar as suítes de `epi-risk` verdes (não `skip`)
 - [ ] T033 Rodar o `quickstart.md` (§3 REST + §4 UI) ponta a ponta e marcar o mapa de aceite
-- [ ] T034 **No rebase**: se o PR #136 (`0013_risk_methodology`) mesclar primeiro, renumerar esta migration para `0014` (renomear `.sql`, ajustar `tag` no `_journal.json` e `prevId` do snapshot)
+- [x] T034 **Feito no merge de `develop`**: o PR #136 (`0013_risk_methodology`) mesclou primeiro, então esta migration foi renumerada `0013 → 0014` (`.sql` renomeado, `_journal.json` idx 14, `prevId` do snapshot = `id` da `0013`); validado com `npm run db:generate` → "No schema changes"
 
 ---
 

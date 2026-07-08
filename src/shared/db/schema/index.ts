@@ -86,3 +86,10 @@ export {
   type PgrRevision,
   type NewPgrRevision,
 } from "./pgr";
+export {
+  riskMethodology,
+  methodologyBase,
+  riskClassification,
+  type RiskMethodology,
+  type NewRiskMethodology,
+} from "./risk-methodology";

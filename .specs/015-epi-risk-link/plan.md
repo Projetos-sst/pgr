@@ -12,7 +12,7 @@ toda a camada de fluxo que ainda não existia: domínio Zod, repositório, Serve
 UI na tela de edição do risco, docs e testes. É uma fatia de **fluxo completo** (não modelagem pura),
 espelhando integralmente a junção de referência **`ges_job_roles`** (GES ↔ funções).
 
-**Abordagem técnica**: 1 migration de evolução (`0013_epi_risk_link`) sobre a tabela `epi_risk` vazia
+**Abordagem técnica**: 1 migration de evolução (`0014_epi_risk_link`) sobre a tabela `epi_risk` vazia
 e sem consumidores (baixo risco) — repontar `ges_id → risk_id` (FK `risks` cascade), trocar
 `neutralizes boolean → neutralization epi_neutralization` (enum novo), recriar unique
 `(org_id, catalog_id, risk_id)` + índice. Sobre isso, replicar o padrão `ges_job_roles` camada a
@@ -84,8 +84,8 @@ src/shared/db/
 │   ├── epis.ts                     # + pgEnum epiNeutralization; epiRisk repontada (D1/D2)
 │   └── index.ts                    # exporta epiNeutralization
 └── migrations/
-    ├── 0013_epi_risk_link.sql      # CREATE TYPE + ALTER (drop/add FK, índices, colunas)
-    └── meta/                       # 0013_snapshot.json + _journal.json (à mão, validados)
+    ├── 0014_epi_risk_link.sql      # CREATE TYPE + ALTER (drop/add FK, índices, colunas)
+    └── meta/                       # 0014_snapshot.json + _journal.json (à mão, validados)
 
 src/shared/domains/pgr/
 └── epi-risk.ts                     # epiNeutralizationSchema + input/update schemas + view types + rótulos

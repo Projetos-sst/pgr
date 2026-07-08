@@ -11,6 +11,7 @@ const PGR_NAV = [
   { href: "/work-units", label: "Unidades de obra" },
   { href: "/job-roles", label: "Funções" },
   { href: "/ges", label: "GES" },
+  { href: "/risk-methodology", label: "Metodologia de Risco" },
   { href: "/employees", label: "Funcionários" },
   { href: "/pgr", label: "PGR" },
   { href: "/risks", label: "Riscos" },

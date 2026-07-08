@@ -5,7 +5,7 @@ Guia de validação ponta a ponta. Detalhes de schema/contratos em [data-model.m
 
 ## Pré-requisitos
 
-- Migration `0013_epi_risk_link` aplicada (ver [data-model.md](./data-model.md) §Migration).
+- Migration `0014_epi_risk_link` aplicada (ver [data-model.md](./data-model.md) §Migration).
 - Para integração: `INTEGRATION_DATABASE_URL` + `INTEGRATION_APP_RUNTIME_URL` → **Postgres efêmero**
   (nunca SQLite, nunca o banco de dev). Sem as envs, as suítes de integração fazem self-skip.
 

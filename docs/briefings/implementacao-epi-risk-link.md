@@ -29,7 +29,7 @@ repontar o vínculo para `risks` e trocar a neutralização por um enum de 3 est
 | D3 | Exclusão do vínculo    | **Física** (espelha `ges_job_roles`; sem soft delete — OS ainda não existe).                  |
 | D4 | Origem do EPI          | **`epi_catalog`** (itens `type = 'epi'`); reusa a busca por nome/CA.                           |
 | D5 | Onde aparece           | Seção **`EpiRiscoSection`** na tela de **edição** do risco (precisa de `risk_id` persistido).  |
-| D6 | Nº da migration        | **`0013_epi_risk_link`** (ver §6 sobre colisão de numeração).                                  |
+| D6 | Nº da migration        | **`0014_epi_risk_link`** (ver §6 sobre colisão de numeração).                                  |
 
 **Distinção modelada:** "risco sem EPI" = **nenhum vínculo** (zero linhas). "Não Aplicável" = valor do enum
 para um EPI que **está** vinculado mas não neutraliza (ex.: ergonômico controlado por medida administrativa).
@@ -44,7 +44,7 @@ para um EPI que **está** vinculado mas não neutraliza (ex.: ergonômico contro
   (FK `risks`, cascade), `neutralizes: boolean → neutralization: epiNeutralization` (NOT NULL, sem default),
   índice `idx_epi_risk_risk_id`, unique `uq_epi_risk_org_catalog_risk`. RLS/GRANT/trigger da `008` preservados.
 - `src/shared/db/schema/index.ts` — export do enum `epiNeutralization`.
-- `src/shared/db/migrations/0013_epi_risk_link.sql` + `meta/0013_snapshot.json` + entrada no `_journal.json`.
+- `src/shared/db/migrations/0014_epi_risk_link.sql` + `meta/0014_snapshot.json` + entrada no `_journal.json`.
 
 **Domínio (puro)**
 
@@ -86,7 +86,7 @@ para um EPI que **está** vinculado mas não neutraliza (ex.: ergonômico contro
 
 ---
 
-## 4. Migration `0013_epi_risk_link` (tabela vazia → seguro)
+## 4. Migration `0014_epi_risk_link` (tabela vazia → seguro)
 
 `CREATE TYPE epi_neutralization` → dropar FK `epi_risk_ges_id_ges_id_fk` + índices `idx_epi_risk_ges_id`/
 `uq_epi_risk_org_catalog_ges` → `ADD COLUMN risk_id`/`neutralization` (NOT NULL) → FK `risk_id → risks` +
@@ -114,11 +114,12 @@ para um EPI que **está** vinculado mas não neutraliza (ex.: ergonômico contro
 
 ## 6. Numeração da migration (atenção no merge)
 
-Base = `develop` (última migration `0012`), então esta fatia usa **`0013_epi_risk_link`**. O PR de
-metodologia de risco (#136) também introduz uma **`0013`** (`0013_risk_methodology`). **Se a #136 mesclar
-primeiro**, esta migration deve ser **renumerada para `0014`** no rebase (renomear `.sql`, ajustar o `tag` no
-`_journal.json` e o `prevId` do snapshot para o da `0013` já mesclada). É o procedimento padrão do repo para
-migrations paralelas; o código em si não quebra — é só a ordem/lineage.
+O PR de metodologia de risco (#136) mesclou **primeiro** em `develop`, ocupando a **`0013`**
+(`0013_risk_methodology`). Ao integrar `develop` nesta branch, a migration foi **renumerada de `0013` para
+`0014`** (`0014_epi_risk_link.sql`): renomeado o `.sql`, `tag` no `_journal.json` no idx 14 e `prevId` do
+snapshot apontando para o `id` da `0013` já mesclada. Validado com `npm run db:generate` → "No schema
+changes". É o procedimento padrão do repo para migrations paralelas; o código em si não quebra — é só a
+ordem/lineage.
 
 ---
 

@@ -40,7 +40,7 @@ risks ──< epi_risk >── epi_catalog        (era: ges ──< epi_risk >�
 `ges_id uuid NOT NULL → ges.id (cascade)`; `neutralizes boolean NOT NULL DEFAULT false`;
 `UNIQUE(org_id, catalog_id, ges_id)` = `uq_epi_risk_org_catalog_ges`; `idx_epi_risk_ges_id`.
 
-## Migration `0013_epi_risk_link` (tabela vazia → seguro)
+## Migration `0014_epi_risk_link` (tabela vazia → seguro)
 
 Ordem das operações (ALTER, não recria a tabela → GRANT/trigger/RLS da 008 persistem):
 

@@ -1,5 +1,5 @@
 {
-  "id": "c364a5d2-ddef-4fe4-bac3-fa4fed3e8888",
+  "id": "46caa24d-d7f8-40bf-93e8-80d86bb47090",
   "prevId": "17f1b861-3a97-4944-b69a-a015a1d5b451",
   "version": "7",
   "dialect": "postgresql",
@@ -1305,18 +1305,18 @@
           "primaryKey": false,
           "notNull": true
         },
-        "risk_id": {
-          "name": "risk_id",
+        "ges_id": {
+          "name": "ges_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "neutralization": {
-          "name": "neutralization",
-          "type": "epi_neutralization",
-          "typeSchema": "public",
+        "neutralizes": {
+          "name": "neutralizes",
+          "type": "boolean",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": false
         },
         "created_at": {
           "name": "created_at",
@@ -1364,11 +1364,11 @@
           "method": "btree",
           "with": {}
         },
-        "idx_epi_risk_risk_id": {
-          "name": "idx_epi_risk_risk_id",
+        "idx_epi_risk_ges_id": {
+          "name": "idx_epi_risk_ges_id",
           "columns": [
             {
-              "expression": "risk_id",
+              "expression": "ges_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1379,8 +1379,8 @@
           "method": "btree",
           "with": {}
         },
-        "uq_epi_risk_org_catalog_risk": {
-          "name": "uq_epi_risk_org_catalog_risk",
+        "uq_epi_risk_org_catalog_ges": {
+          "name": "uq_epi_risk_org_catalog_ges",
           "columns": [
             {
               "expression": "org_id",
@@ -1395,7 +1395,7 @@
               "nulls": "last"
             },
             {
-              "expression": "risk_id",
+              "expression": "ges_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1434,12 +1434,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "epi_risk_risk_id_risks_id_fk": {
-          "name": "epi_risk_risk_id_risks_id_fk",
+        "epi_risk_ges_id_ges_id_fk": {
+          "name": "epi_risk_ges_id_ges_id_fk",
           "tableFrom": "epi_risk",
-          "tableTo": "risks",
+          "tableTo": "ges",
           "columnsFrom": [
-            "risk_id"
+            "ges_id"
           ],
           "columnsTo": [
             "id"
@@ -3429,6 +3429,104 @@
       },
       "isRLSEnabled": true
     },
+    "public.risk_methodology": {
+      "name": "risk_methodology",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base": {
+          "name": "base",
+          "type": "methodology_base",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "probability_grades": {
+          "name": "probability_grades",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "severity_grades": {
+          "name": "severity_grades",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "classification_bands": {
+          "name": "classification_bands",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "risk_methodology_org_id_orgs_id_fk": {
+          "name": "risk_methodology_org_id_orgs_id_fk",
+          "tableFrom": "risk_methodology",
+          "tableTo": "orgs",
+          "columnsFrom": [
+            "org_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_risk_methodology_org": {
+          "name": "uq_risk_methodology_org",
+          "nullsNotDistinct": false,
+          "columns": [
+            "org_id"
+          ]
+        }
+      },
+      "policies": {
+        "risk_methodology_isolation": {
+          "name": "risk_methodology_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "app_runtime"
+          ],
+          "using": "org_id = current_setting('app.current_org', true)",
+          "withCheck": "org_id = current_setting('app.current_org', true)"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
     "public.risks": {
       "name": "risks",
       "schema": "",
@@ -4355,6 +4453,16 @@
         "lux"
       ]
     },
+    "public.methodology_base": {
+      "name": "methodology_base",
+      "schema": "public",
+      "values": [
+        "aiha",
+        "as_nzs_4360",
+        "fundacentro",
+        "custom"
+      ]
+    },
     "public.pgr_registration_type": {
       "name": "pgr_registration_type",
       "schema": "public",
@@ -4378,6 +4486,17 @@
         "psychosocial"
       ]
     },
+    "public.risk_classification": {
+      "name": "risk_classification",
+      "schema": "public",
+      "values": [
+        "trivial",
+        "tolerable",
+        "moderate",
+        "substantial",
+        "intolerable"
+      ]
+    },
     "public.signature_method": {
       "name": "signature_method",
       "schema": "public",
@@ -4394,15 +4513,6 @@
         "pending",
         "signed",
         "cancelled"
-      ]
-    },
-    "public.epi_neutralization": {
-      "name": "epi_neutralization",
-      "schema": "public",
-      "values": [
-        "neutralizes",
-        "does_not_neutralize",
-        "not_applicable"
       ]
     }
   },
