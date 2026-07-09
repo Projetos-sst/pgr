@@ -13,7 +13,7 @@ Modified sections:
   continuam exigindo emenda formal. Linha da stack em "Restrições Técnicas & Stack"
   atualizada para citar o provedor de LLM.
 
-Rationale: a fatia 016 (.specs/016-ai-risk-suggestion — sugestão de riscos assistida por
+Rationale: a fatia 017 (.specs/017-ai-risk-suggestion — sugestão de riscos assistida por
 IA) é a primeira feature que consome um LLM externo. O Princípio II exige emenda formal
 antes de introduzir serviço externo pago; esta emenda autoriza explicitamente provedores
 de LLM sob salvaguardas, sem relaxar as regras não-negociáveis (isolamento multi-tenant do
