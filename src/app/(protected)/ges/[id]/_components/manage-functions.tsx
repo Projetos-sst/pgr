@@ -10,6 +10,9 @@ import {
   updateGesJobRoleAction,
 } from "@/shared/server/actions/pgr/ges";
 import type { GesJobRoleItem, JobRoleOption } from "@/shared/domains/pgr/ges";
+import { GES_FIELD_HINTS } from "@/shared/domains/pgr/field-hints";
+
+import { FieldHint } from "../../../_ui/field-hint";
 
 export function ManageFunctions({ gesId }: { gesId: string }) {
   const [linked, setLinked] = useState<GesJobRoleItem[]>([]);
@@ -87,6 +90,8 @@ export function ManageFunctions({ gesId }: { gesId: string }) {
           Expostos (soma): <strong>{exposedWorkers}</strong>
         </span>
       </header>
+
+      <FieldHint>{GES_FIELD_HINTS.functions}</FieldHint>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 

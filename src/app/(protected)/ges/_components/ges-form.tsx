@@ -8,6 +8,8 @@ import { listWorkUnitsAction } from "@/shared/server/actions/pgr/work-units";
 import type { GesInput, Ges } from "@/shared/domains/pgr/ges";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 
+import { GES_FIELD_HINTS } from "@/shared/domains/pgr/field-hints";
+
 import {
   FieldError,
   FormActions,
@@ -16,6 +18,7 @@ import {
   SubmitButton,
   TextField,
 } from "../../_ui/form";
+import { FieldHint } from "../../_ui/field-hint";
 
 type WorkUnitOption = { id: string; name: string };
 
@@ -157,6 +160,8 @@ export function GesForm({
 
       <fieldset className="grid gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
         <legend className="px-1 text-sm font-medium">Caracterização do ambiente</legend>
+        <FieldHint>{GES_FIELD_HINTS.processDescription}</FieldHint>
+        <FieldHint>{GES_FIELD_HINTS.environment}</FieldHint>
         <div className="grid gap-4 sm:grid-cols-2">
           {ENV_FIELDS.map((field) => (
             <TextField
