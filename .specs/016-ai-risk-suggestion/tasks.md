@@ -99,7 +99,7 @@ description: "Task list — Sugestão de riscos assistida por IA"
 - [ ] T033 Rodar `npm run test:integration` contra Postgres efêmero real (`INTEGRATION_*`) — suíte fica `skip` sem env
 - [ ] T034 Validar happy path do LLM ponta a ponta com `ANTHROPIC_API_KEY` real (rede coberta por mock nos testes)
 - [x] T035 **Emenda da constituição (Princípio II)**: emenda **1.3.0** (2026-07-08) autoriza provedores de LLM como infra permitida sob salvaguardas — `.specify/memory/constitution.md` (Princípio II + stack + footer + sync report). Pendente apenas de commit.
-- [ ] T036 **Renumerar migration `0014` → próximo livre** no rebase se colidir com fatia paralela (renomear `.sql`, `tag` em `_journal.json`, `prevId` no snapshot; validar `db:generate`)
+- [x] T036 **Renumerar migration `0014` → `0015`** — colidiu com `0014_epi_risk_link` do develop; regenerada como `0015_ai_usage_events` via `db:generate` sobre o schema atualizado (GRANT customizado preservado; `_journal.json`/snapshot reencadeados), `db:generate` "No schema changes" ✅
 
 ---
 
@@ -127,8 +127,9 @@ description: "Task list — Sugestão de riscos assistida por IA"
 
 ## Notes
 
-- 33 de 36 tarefas concluídas; 3 follow-ups abertos (T033, T034, T036).
+- 34 de 36 tarefas concluídas; 2 follow-ups abertos (T033, T034).
 - Contagem por história: Setup 2 · Foundational 7 · US1 16 · US2 5 · Polish 6.
 - T035 (emenda da constituição 1.3.0) **resolvido** — gate CRÍTICO do `/speckit-analyze` (D1) fechado.
-  Restam apenas: T033 (integração em Postgres efêmero real), T034 (validação com chave real do LLM),
-  T036 (renumerar migration no rebase).
+- T036 (renumeração de migration) **resolvido** no merge com o develop: `0014` → `0015_ai_usage_events`.
+  Restam apenas: T033 (integração em Postgres efêmero real) e T034 (validação com chave real do LLM),
+  ambos dependentes de ambiente/segredo externos.
