@@ -1,35 +1,34 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.2.0 → 1.2.1 (PATCH — clarificação/correção de Princípio I)
-Last amended: 2026-06-19
+Version change: 1.2.1 → 1.3.0 (MINOR — Princípio II: provedores de LLM autorizados como infra permitida)
+Last amended: 2026-07-08
 
 Modified sections:
-- Princípio I (Isolamento Multi-Tenant): corrigido o identificador de tenant — de
-  "organização do Clerk" para "o tenant = escritório/workspace (`orgs.id` no nosso
-  banco), resolvido da sessão autenticada via vínculos (`org_memberships`)". Adicionada
-  a distinção empresa-cliente (`company_id`, dimensão de dados DENTRO do tenant) vs.
-  tenant (`org_id`, fronteira de isolamento). A organização do Clerk passa a ser apenas
-  a camada de UI B2B do plano PRO (`orgs.clerk_org_id`), opcional; contas free têm
-  tenant isolado sem organização no Clerk.
-- "Restrições Técnicas & Stack" → linha Auth/Multi-tenant ajustada à mesma premissa.
+- Princípio II (Stack Fixa e Simplicidade): adicionada cláusula que AUTORIZA o uso de um
+  provedor de IA/LLM gerenciado (ex.: Anthropic) como infraestrutura permitida para
+  features de assistência por IA, condicionada a salvaguardas (chave server-only;
+  zero-PII além do contexto necessário; rate limiting/cota por tenant conforme o plano;
+  falha do provedor não bloqueia o fluxo principal). Demais serviços externos pagos
+  continuam exigindo emenda formal. Linha da stack em "Restrições Técnicas & Stack"
+  atualizada para citar o provedor de LLM.
 
-Rationale: a fatia 005 (.specs/005-modelo-tenant-gate-pro) adota o Modelo B — o tenant
-é o escritório do profissional de SST, e contas free têm tenant isolado SEM organização
-no Clerk. Logo, o identificador de tenant não pode ser a org do Clerk. A redação anterior
-assumia "org do Clerk = tenant" (premissa da 004), incompatível com o free. A emenda
-corrige o descritor SEM relaxar a regra não-negociável: o tenant continua vindo sempre da
-sessão autenticada e NUNCA de input do cliente.
+Rationale: a fatia 016 (.specs/016-ai-risk-suggestion — sugestão de riscos assistida por
+IA) é a primeira feature que consome um LLM externo. O Princípio II exige emenda formal
+antes de introduzir serviço externo pago; esta emenda autoriza explicitamente provedores
+de LLM sob salvaguardas, sem relaxar as regras não-negociáveis (isolamento multi-tenant do
+Princípio I e integridade/segredos do Princípio V permanecem intactos). A IA é auxiliar e
+sua indisponibilidade nunca pode bloquear o cadastro.
 
-Classificação PATCH: nenhum princípio adicionado, removido ou redefinido de forma
-incompatível; a regra não-negociável (isolamento + tenant da sessão) é preservada — apenas
-o identificador é descrito com precisão e estendido ao caminho free.
+Classificação MINOR: nova permissão materialmente expandida a um princípio existente
+(Princípio II), sem remover nem redefinir princípios de forma incompatível. Nenhuma regra
+não-negociável é enfraquecida.
 
-Principles modified: I (clarificado, não redefinido em incompatibilidade).
+Principles modified: II (expandido — nova cláusula de autorização condicionada).
 Added sections: none. Removed sections: none.
 
 Templates reviewed for consistency:
-- .specify/templates/plan-template.md ........ ✅ ok (Constitution Check preenchido pelo /speckit-plan; sem referência hardcoded ao identificador de tenant)
+- .specify/templates/plan-template.md ........ ✅ ok (Constitution Check cobre o novo gate via Complexity Tracking)
 - .specify/templates/spec-template.md ......... ✅ ok (sem conflito)
 - .specify/templates/tasks-template.md ........ ✅ ok (sem conflito)
 - .specify/templates/checklist-template.md .... ✅ ok (sem conflito)
@@ -39,6 +38,7 @@ Histórico:
 - 1.1.0: ajustes anteriores de governança/seções.
 - 1.2.0: exceção de Postgres efêmero para RLS/policies/triggers na cláusula de Integração.
 - 1.2.1: correção do identificador de tenant no Princípio I (Modelo B — tenant = escritório/`orgs.id`).
+- 1.3.0: Princípio II autoriza provedores de LLM como infra permitida sob salvaguardas (fatia 016).
 
 Follow-up TODOs: none
 -->
@@ -87,6 +87,14 @@ Storage), Clerk (autenticação e organizações) e Cloudflare na borda.
 - Introduzir nova infraestrutura (AWS completa, microserviços, filas dedicadas,
   serviços externos pagos, novo banco) MUST exigir emenda formal a esta
   constituição antes da implementação.
+- **Provedores de LLM (AUTORIZADO — emenda 1.3.0)**: usar um provedor de IA/LLM
+  gerenciado (ex.: Anthropic) é infraestrutura PERMITIDA para features de
+  assistência por IA, desde que TODAS as salvaguardas sejam atendidas: (a) a
+  chave/segredo reside SÓ no servidor; (b) NENHUM dado sensível/PII (ex.:
+  funcionários/CPF) é enviado além do contexto estritamente necessário; (c) há
+  rate limiting/cota por tenant conforme o plano; (d) a falha do provedor NÃO
+  bloqueia o fluxo principal (degradação graciosa). Outros serviços externos
+  pagos continuam exigindo emenda formal.
 - Aplicar YAGNI: implementar apenas o requisito atual da fatia em andamento;
   sem features ou abstrações especulativas.
 - Preferir a solução mais simples que atende o requisito.
@@ -155,6 +163,9 @@ de dados que, neste domínio, pode ter consequências regulatórias.
   é o `orgs.id` do nosso banco, resolvido pela sessão via `org_memberships` (não a org do
   Clerk). Organizações do Clerk, quando existirem, são a camada de UI B2B do plano PRO
   (`orgs.clerk_org_id`).
+- **IA/LLM**: provedor gerenciado (ex.: Anthropic) para features de assistência por
+  IA, sob as salvaguardas do Princípio II (chave server-only, zero-PII, cota por
+  tenant, degradação não-bloqueante).
 - **Borda**: Cloudflare — DNS, cache, WAF e mitigação.
 - Backend e frontend são unificados no Next.js (Server Actions e Route
   Handlers); NÃO há API separada tradicional.
@@ -196,4 +207,4 @@ test` e `npm run test:integration`).
   "Constitution Check"; violações justificadas vão em "Complexity Tracking".
 - Orientação de runtime para agentes: `CLAUDE.md` e `AGENTS.md`.
 
-**Version**: 1.2.1 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-06-19
+**Version**: 1.3.0 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-07-08
