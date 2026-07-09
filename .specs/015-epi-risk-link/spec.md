@@ -153,7 +153,7 @@ disponíveis e aparece na de vinculados.
 
 - **Vínculo EPI × risco (`epi_risk`, evoluída da 008)**: associação entre um item de catálogo (EPI) e
   um risco, com a indicação de neutralização (enum 3 estados). Único por par `(org, catalog_id,
-  risk_id)`. Antes ligava-se ao `ges` com `neutralizes` boolean — esta fatia troca `ges_id → risk_id`
+risk_id)`. Antes ligava-se ao `ges` com `neutralizes` boolean — esta fatia troca `ges_id → risk_id`
   e `neutralizes boolean → neutralization enum`.
 - **Risco (`risks`, referenciada)**: linha do inventário de riscos do GES; alvo do vínculo. Não é
   criada nesta fatia. Excluir o risco remove os vínculos em cadeia.
