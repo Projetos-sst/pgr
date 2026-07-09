@@ -22,14 +22,14 @@ risks ──< epi_risk >── epi_catalog        (era: ges ──< epi_risk >�
 
 ### Depois (as-built)
 
-| Campo          | Tipo               | Regras                                                            |
-| -------------- | ------------------ | ---------------------------------------------------------------- |
-| id             | uuid               | PK                                                               |
-| org_id         | text               | NOT NULL → orgs.id (cascade), indexado                           |
-| catalog_id     | uuid               | NOT NULL → epi_catalog.id `ON DELETE CASCADE`, indexado          |
-| **risk_id**    | uuid               | **NOT NULL → risks.id `ON DELETE CASCADE`, indexado** (era ges_id) |
-| **neutralization** | epi_neutralization | **NOT NULL** (era `neutralizes boolean NOT NULL DEFAULT false`) |
-| timestamps     | timestamptz        | NOT NULL DEFAULT now() + trigger `set_updated_at_epi_risk`       |
+| Campo              | Tipo               | Regras                                                             |
+| ------------------ | ------------------ | ------------------------------------------------------------------ |
+| id                 | uuid               | PK                                                                 |
+| org_id             | text               | NOT NULL → orgs.id (cascade), indexado                             |
+| catalog_id         | uuid               | NOT NULL → epi_catalog.id `ON DELETE CASCADE`, indexado            |
+| **risk_id**        | uuid               | **NOT NULL → risks.id `ON DELETE CASCADE`, indexado** (era ges_id) |
+| **neutralization** | epi_neutralization | **NOT NULL** (era `neutralizes boolean NOT NULL DEFAULT false`)    |
+| timestamps         | timestamptz        | NOT NULL DEFAULT now() + trigger `set_updated_at_epi_risk`         |
 
 - `UNIQUE(org_id, catalog_id, risk_id)` → `uq_epi_risk_org_catalog_risk` (era `..._ges`).
 - Índices: `idx_epi_risk_org_id` (herdado), `idx_epi_risk_catalog_id` (herdado), `idx_epi_risk_risk_id` (novo).

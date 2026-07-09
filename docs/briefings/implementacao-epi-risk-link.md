@@ -22,14 +22,14 @@ repontar o vínculo para `risks` e trocar a neutralização por um enum de 3 est
 
 ## 2. Decisões travadas (D1–D6 do briefing)
 
-| #  | Decisão                | Como ficou                                                                                     |
-| -- | ---------------------- | --------------------------------------------------------------------------------------------- |
-| D1 | Alvo do vínculo        | **`risk_id → risks.id`** (era `ges_id`). Unique `(org_id, catalog_id, risk_id)`.               |
-| D2 | Campo neutralização    | **`pgEnum epi_neutralization`** = `neutralizes` / `does_not_neutralize` / `not_applicable`.    |
-| D3 | Exclusão do vínculo    | **Física** (espelha `ges_job_roles`; sem soft delete — OS ainda não existe).                  |
-| D4 | Origem do EPI          | **`epi_catalog`** (itens `type = 'epi'`); reusa a busca por nome/CA.                           |
-| D5 | Onde aparece           | Seção **`EpiRiscoSection`** na tela de **edição** do risco (precisa de `risk_id` persistido).  |
-| D6 | Nº da migration        | **`0014_epi_risk_link`** (ver §6 sobre colisão de numeração).                                  |
+| #   | Decisão             | Como ficou                                                                                    |
+| --- | ------------------- | --------------------------------------------------------------------------------------------- |
+| D1  | Alvo do vínculo     | **`risk_id → risks.id`** (era `ges_id`). Unique `(org_id, catalog_id, risk_id)`.              |
+| D2  | Campo neutralização | **`pgEnum epi_neutralization`** = `neutralizes` / `does_not_neutralize` / `not_applicable`.   |
+| D3  | Exclusão do vínculo | **Física** (espelha `ges_job_roles`; sem soft delete — OS ainda não existe).                  |
+| D4  | Origem do EPI       | **`epi_catalog`** (itens `type = 'epi'`); reusa a busca por nome/CA.                          |
+| D5  | Onde aparece        | Seção **`EpiRiscoSection`** na tela de **edição** do risco (precisa de `risk_id` persistido). |
+| D6  | Nº da migration     | **`0014_epi_risk_link`** (ver §6 sobre colisão de numeração).                                 |
 
 **Distinção modelada:** "risco sem EPI" = **nenhum vínculo** (zero linhas). "Não Aplicável" = valor do enum
 para um EPI que **está** vinculado mas não neutraliza (ex.: ergonômico controlado por medida administrativa).
@@ -72,7 +72,7 @@ para um EPI que **está** vinculado mas não neutraliza (ex.: ergonômico contro
 
 - `docs/api/api-design.md` — recurso `/risks/{id}/epis` nas tabelas "Recursos" e "Sumário".
 - `docs/api/sst-manager.postman_collection.json` — pasta "EPI x risco (vinculo)" (GET/GET available/POST/PUT/DELETE)
-  + variável `epiCatalogId`.
+  - variável `epiCatalogId`.
 - `src/__tests__/unit/domains/pgr/epi-risk.test.ts` — schemas/rótulos/obrigatoriedade.
 - `src/__tests__/integration/pgr/epi-risk.test.ts` — list, available+busca, add, DUPLICATE, FK_NOT_FOUND
   (risco/EPI cross-tenant), update, remove+disponível, **isolamento cross-tenant**, NOT_FOUND, FORBIDDEN.
@@ -95,7 +95,7 @@ para um EPI que **está** vinculado mas não neutraliza (ex.: ergonômico contro
 - **Sem SQL custom**: como é um `ALTER` (não recria a tabela), o `GRANT app_runtime`, o trigger
   `set_updated_at_epi_risk` e a policy `epi_risk_isolation` da `008` **persistem**.
 - A tabela nunca teve consumidores (nenhum repo/action antes desta fatia) → sem migração de dados; `ADD
-  COLUMN … NOT NULL` numa tabela vazia é seguro.
+COLUMN … NOT NULL` numa tabela vazia é seguro.
 - **Snapshot** foi derivado do `0012` de forma determinística e conferido: `db:generate` → **"No schema
   changes"** (schema ⇄ snapshot consistentes; `prevId` encadeia no `0012`).
   Nota: a `drizzle-kit generate` interativa pede resolução de rename (`ges_id`↔`risk_id`) e não roda sem TTY;

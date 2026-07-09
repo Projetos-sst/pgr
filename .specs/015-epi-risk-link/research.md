@@ -64,13 +64,13 @@
 
 A junção **`ges_job_roles`** (GES ↔ job_roles com atributo por vínculo) é o gabarito camada a camada:
 
-| Camada         | Referência (`ges_job_roles`)                          | Novo (`epi_risk`)                                 |
-| -------------- | ----------------------------------------------------- | ------------------------------------------------- |
-| Schema         | `src/shared/db/schema/ges-job-roles.ts`               | evoluir `src/shared/db/schema/epis.ts` (D1/D2)    |
-| Repositório    | `src/shared/db/repositories/ges-job-roles.ts`         | novo `src/shared/db/repositories/epi-risk.ts`     |
-| Server Actions | `src/shared/server/actions/pgr/ges.ts`                | novo `src/shared/server/actions/pgr/epi-risk.ts`  |
-| REST           | `src/app/api/v1/ges/[id]/job-roles/**`                | `src/app/api/v1/risks/[id]/epis/**`               |
-| Zod            | `src/shared/domains/pgr/ges.ts`                       | novo `src/shared/domains/pgr/epi-risk.ts`         |
+| Camada         | Referência (`ges_job_roles`)                                    | Novo (`epi_risk`)                                   |
+| -------------- | --------------------------------------------------------------- | --------------------------------------------------- |
+| Schema         | `src/shared/db/schema/ges-job-roles.ts`                         | evoluir `src/shared/db/schema/epis.ts` (D1/D2)      |
+| Repositório    | `src/shared/db/repositories/ges-job-roles.ts`                   | novo `src/shared/db/repositories/epi-risk.ts`       |
+| Server Actions | `src/shared/server/actions/pgr/ges.ts`                          | novo `src/shared/server/actions/pgr/epi-risk.ts`    |
+| REST           | `src/app/api/v1/ges/[id]/job-roles/**`                          | `src/app/api/v1/risks/[id]/epis/**`                 |
+| Zod            | `src/shared/domains/pgr/ges.ts`                                 | novo `src/shared/domains/pgr/epi-risk.ts`           |
 | UI seção       | `src/app/(protected)/ges/[id]/_components/manage-functions.tsx` | novo `risks/[id]/_components/epi-risco-section.tsx` |
 
 Wrappers compartilhados (reuso obrigatório, **não** reimplementar regra): `officeAction`,
