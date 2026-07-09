@@ -92,3 +92,8 @@ export {
   type RiskMethodology,
   type NewRiskMethodology,
 } from "./risk-methodology";
+export {
+  aiUsageEvents,
+  type AiUsageEvent,
+  type NewAiUsageEvent,
+} from "./ai-usage-events";

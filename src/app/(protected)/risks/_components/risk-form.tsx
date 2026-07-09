@@ -18,6 +18,8 @@ import type { RiskInput } from "@/shared/domains/pgr/risk";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 import type { ActionError } from "@/shared/server/result";
 
+import { RISK_FIELD_HINTS } from "@/shared/domains/pgr/field-hints";
+
 import {
   FieldError,
   FormActions,
@@ -26,6 +28,7 @@ import {
   SubmitButton,
   TextField,
 } from "../../_ui/form";
+import { FieldHint } from "../../_ui/field-hint";
 
 const AGENT_TYPE_OPTIONS = riskAgentTypeSchema.options.map((v) => ({
   value: v,
@@ -232,24 +235,33 @@ export function RiskForm({
         defaultValue={initial?.description ?? ""}
         error={errors.description}
       />
-      <TextField
-        label="Fontes geradoras"
-        name="sources"
-        defaultValue={initial?.sources ?? ""}
-        error={errors.sources}
-      />
-      <TextField
-        label="Meios de propagação"
-        name="propagation"
-        defaultValue={initial?.propagation ?? ""}
-        error={errors.propagation}
-      />
-      <TextField
-        label="Possíveis lesões"
-        name="possibleInjuries"
-        defaultValue={initial?.possibleInjuries ?? ""}
-        error={errors.possibleInjuries}
-      />
+      <div>
+        <TextField
+          label="Fontes geradoras"
+          name="sources"
+          defaultValue={initial?.sources ?? ""}
+          error={errors.sources}
+        />
+        <FieldHint>{RISK_FIELD_HINTS.sources}</FieldHint>
+      </div>
+      <div>
+        <TextField
+          label="Meios de propagação"
+          name="propagation"
+          defaultValue={initial?.propagation ?? ""}
+          error={errors.propagation}
+        />
+        <FieldHint>{RISK_FIELD_HINTS.propagation}</FieldHint>
+      </div>
+      <div>
+        <TextField
+          label="Possíveis lesões"
+          name="possibleInjuries"
+          defaultValue={initial?.possibleInjuries ?? ""}
+          error={errors.possibleInjuries}
+        />
+        <FieldHint>{RISK_FIELD_HINTS.possibleInjuries}</FieldHint>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <TextField

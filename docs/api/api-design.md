@@ -117,6 +117,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/job-roles` · `/job-roles/{id}` · `/job-roles/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
 | `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                                                            | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET                                                                                      |
 | `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`                                                   | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE                                                                                     |
+| `/ges/{id}/risk-suggestions` · `/ges/{id}/risk-suggestions/accept`                                       | POST (sugere riscos por IA — não persiste) · POST (persiste selecionados como rascunho, `201`)                                                    |
 | `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                      |
 | `/pgr` · `/pgr/{id}`                                                                                     | GET, POST · GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                          |
 | `/risks` · `/risks/{id}`                                                                                 | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                   |
@@ -132,6 +133,13 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
   ativa **ou** o padrão derivado (`configured:false`) quando nenhuma foi salva; `PUT` faz **upsert** do
   corpo completo `RiskMethodologyInput` (gradações 1–5 + faixas que particionam 1–25). Sem `list`,
   `{id}` nem `dependents`.
+- **`/ges/{id}/risk-suggestions`** (sugestão de riscos por IA): `POST` monta o contexto **não-PII** do
+  GES (processo, ambiente, títulos de função) e consulta o LLM (Anthropic/Claude, chave só no servidor),
+  devolvendo uma lista de riscos sugeridos (`{ suggestions: [{ agentType, hazard?, description, sources? }] }`)
+  — **nada é persistido**. GES de outra org → `422 FK_NOT_FOUND`; cota mensal do plano free estourada →
+  `402 QUOTA_EXCEEDED`; falha/timeout do LLM → `502 AI_UNAVAILABLE` (nunca bloqueia o cadastro). `POST
+  /accept` recebe os riscos selecionados/revisados e os grava como **rascunho** em `risks` (reusa a regra
+  de `createRisk`), `201` com `{ created }`.
 - **`/epi-deliveries`** (fatia 012): list filtra por `employeeId` + `search` (nome do funcionário).
   Create: `{ employeeId, deliveryDate, items: [{ stockId, quantity }] }` → `201` com a baixa
   aplicada por item; qualquer item sem saldo → `422 INSUFFICIENT_STOCK` com **rollback total**.
@@ -194,6 +202,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Riscos (GES)              | `actions/pgr/risks.ts`            | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)  |
 | Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)                                                      |
 | Metodologia de Risco      | `actions/pgr/risk-methodology.ts` | get (config ou padrão), save (upsert) + `GET`/`PUT /api/v1/risk-methodology`                                      |
+| Sugestão de riscos (IA)   | `actions/pgr/ai-risk-suggestion.ts` | suggest (LLM, não persiste), accept (grava rascunhos) + REST `POST /api/v1/ges/{id}/risk-suggestions(/accept)` |
 | CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`        | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                        |
 | Entrega de EPI            | `actions/pgr/epi-deliveries.ts`   | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**` |
 | Ficha de EPI              | `actions/pgr/epi-record.ts`       | `getEmployeeEpiRecordAction` (read-only) + REST `GET /api/v1/employees/{id}/epi-record`                           |

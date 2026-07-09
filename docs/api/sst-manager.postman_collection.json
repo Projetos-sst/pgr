@@ -1574,6 +1574,83 @@
       ]
     },
     {
+      "name": "Sugestao de riscos (IA)",
+      "item": [
+        {
+          "name": "POST /ges/{id}/risk-suggestions (sugere por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-suggestions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}",
+                "risk-suggestions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /ges/{id}/risk-suggestions/accept (grava rascunhos)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suggestions\": [\n    {\n      \"agentType\": \"physical\",\n      \"description\": \"Ruido continuo\",\n      \"hazard\": \"Nivel acima de 85 dB(A)\",\n      \"sources\": \"Esmerilhadeira\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-suggestions/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}",
+                "risk-suggestions",
+                "accept"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Entrega de EPI",
       "item": [
         {

@@ -48,7 +48,24 @@ Reference implementation to copy from: **companies** (`actions/pgr/companies.ts`
 
 <!-- SPECKIT START -->
 
-Branch atual: **`feature/epi-module-completion`**. Fatia atual (`012`) — **Conclusão da Fase 02 /
+Branch atual: **`feature/ai-risk-suggestion`**. Fatia atual (`016`) — **Sugestão de riscos assistida
+por IA** (primeira feature que chama um LLM externo). Plan:
+`.specs/016-ai-risk-suggestion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
+diretório). 2 user stories: US1 (P1) botão "Sugerir Riscos com IA" no GES → contexto **não-PII** do GES
+(processo/ambiente/**títulos** de função, nunca `employees`) → LLM Anthropic (`@anthropic-ai/sdk`,
+saída estruturada por tool use validada por Zod, chave **server-only**) → modal de revisão/aceite →
+aceitos viram **rascunho** em `risks` via `createRisk` (zero migration de risco); US2 (P2) dicas
+estáticas NR-01 nos campos de GES/risco. Rate limiting por org: **migration nova
+`0014_ai_usage_events`** (append-only + RLS; cota = contagem do mês corrente; free 20/mês, pro
+ilimitado — espelha a cota de assinatura). Núcleo compartilhado
+`server/pgr/ai-risk-suggestion-core.ts` consumido por Server Action (`officeAction`) + REST mirror
+(`/api/v1/ges/[id]/risk-suggestions(/accept)`). Novo erro `AI_UNAVAILABLE` (502). Isolamento/cota
+verificados **antes** do LLM (cross-tenant → `FK_NOT_FOUND` sem chamar o LLM). **Constitution Check**:
+Princípio II (serviço externo pago) exige **emenda formal** — registrado em Complexity Tracking.
+Testes: unit + integração (Postgres efêmero `INTEGRATION_*`, **LLM mockado**). Base: `develop`
+(`cf0fdcc`); **migration `0014` renumerar no rebase** se colidir com fatia paralela.
+
+Fatia anterior (`012`) — **Conclusão da Fase 02 / **Conclusão da Fase 02 /
 módulo operacional de EPI** (issues `#18`/`#115`/`#75`, `#19`, `#20`, `#21`; `#78` fica p/ Fase 03).
 Plan: `.specs/012-epi-module-completion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
 diretório). 5 user stories: US1 plugar `CaField`/CAEPI no `epi-catalog-form.tsx` (wiring, zero migration);
