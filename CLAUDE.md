@@ -65,7 +65,7 @@ Princípio II (serviço externo pago) exige **emenda formal** — registrado em 
 Testes: unit + integração (Postgres efêmero `INTEGRATION_*`, **LLM mockado**). Base: `develop`
 (`cf0fdcc`); **migration `0014` renumerar no rebase** se colidir com fatia paralela.
 
-Fatia anterior (`012`) — **Conclusão da Fase 02 / **Conclusão da Fase 02 /
+Fatia anterior (`012`) — **Conclusão da Fase 02 /
 módulo operacional de EPI** (issues `#18`/`#115`/`#75`, `#19`, `#20`, `#21`; `#78` fica p/ Fase 03).
 Plan: `.specs/012-epi-module-completion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
 diretório). 5 user stories: US1 plugar `CaField`/CAEPI no `epi-catalog-form.tsx` (wiring, zero migration);
