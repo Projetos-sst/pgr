@@ -100,13 +100,13 @@ export async function seedPgrBase(admin: ReturnType<typeof postgres>): Promise<v
       ('org_a','${I.epiDeliveryA}','${I.epiCatalogA}',1),
       ('org_b','${I.epiDeliveryB}','${I.epiCatalogB}',1);
 
-    insert into public.epi_risk (org_id, catalog_id, ges_id, neutralizes) values
-      ('org_a','${I.epiCatalogA}','${I.gesA}',true),
-      ('org_b','${I.epiCatalogB}','${I.gesB}',false);
-
     insert into public.risks (id, org_id, ges_id, agent_type, description) values
       ('${I.riskA}','org_a','${I.gesA}','physical','Ruído contínuo'),
       ('${I.riskB}','org_b','${I.gesB}','chemical','Poeira de sílica');
+
+    insert into public.epi_risk (org_id, catalog_id, risk_id, neutralization) values
+      ('org_a','${I.epiCatalogA}','${I.riskA}','neutralizes'),
+      ('org_b','${I.epiCatalogB}','${I.riskB}','does_not_neutralize');
 
     insert into public.risk_assessments
       (id, org_id, risk_id, criterion, probability, severity, risk_level) values

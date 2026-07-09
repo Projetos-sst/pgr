@@ -121,6 +121,8 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                      |
 | `/pgr` · `/pgr/{id}`                                                                                     | GET, POST · GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                          |
 | `/risks` · `/risks/{id}`                                                                                 | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                   |
+| `/risks/{id}/epis` · `/risks/{id}/epis/{linkId}`                                                         | GET (`?available=true&search=` p/ EPIs não vinculados), POST · PUT (neutralização), DELETE (vínculo EPI × risco)                                  |
+| `/risks/{id}/assessments` · `/risk-assessments/{id}`                                                     | GET, POST (avaliação 5×5 do risco; 201) · GET, PUT, DELETE (histórico 1:N; `riskLevel`/`result` calculados; sem `/dependents`, sem 409)           |
 | `/categories` · `/categories/{id}`                                                                       | GET, POST · GET, PUT, DELETE                                                                                                                      |
 | `/risk-methodology`                                                                                      | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                     |
 | `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return` | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item) |
@@ -187,25 +189,27 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 
 ## Sumário das actions/endpoints existentes
 
-| Domínio                   | Arquivo                           | Superfície                                                                                                        |
-| ------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| REST API (Route Handlers) | `app/api/v1/**`                   | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees                                              |
-| Auth (Route Handler)      | `app/api/me/route.ts`             | `GET /api/me`                                                                                                     |
-| Webhook (Route Handler)   | `app/api/webhooks/clerk/route.ts` | `POST /api/webhooks/clerk` (provisiona tenant/sync)                                                               |
-| Sessão / Identidade       | `actions/me.ts`                   | `meAction` (Server Action)                                                                                        |
-| Empresa                   | `actions/pgr/companies.ts`        | list, options, get, create, update, delete, dependents                                                            |
-| Unidade de Obra           | `actions/pgr/work-units.ts`       | list, get, create, update, delete, dependents                                                                     |
-| Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                                                                     |
-| GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles`                                         |
-| Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                                                              |
-| PGR (documento)           | `actions/pgr/pgr.ts`              | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 não persistido; sem 409)                  |
-| Riscos (GES)              | `actions/pgr/risks.ts`            | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)  |
-| Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)                                                      |
-| Metodologia de Risco      | `actions/pgr/risk-methodology.ts` | get (config ou padrão), save (upsert) + `GET`/`PUT /api/v1/risk-methodology`                                      |
-| Sugestão de riscos (IA)   | `actions/pgr/ai-risk-suggestion.ts` | suggest (LLM, não persiste), accept (grava rascunhos) + REST `POST /api/v1/ges/{id}/risk-suggestions(/accept)` |
-| CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`        | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                        |
-| Entrega de EPI            | `actions/pgr/epi-deliveries.ts`   | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**` |
-| Ficha de EPI              | `actions/pgr/epi-record.ts`       | `getEmployeeEpiRecordAction` (read-only) + REST `GET /api/v1/employees/{id}/epi-record`                           |
+| Domínio                   | Arquivo                             | Superfície                                                                                                                                                      |
+| ------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| REST API (Route Handlers) | `app/api/v1/**`                     | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees                                                                                            |
+| Auth (Route Handler)      | `app/api/me/route.ts`               | `GET /api/me`                                                                                                                                                   |
+| Webhook (Route Handler)   | `app/api/webhooks/clerk/route.ts`   | `POST /api/webhooks/clerk` (provisiona tenant/sync)                                                                                                             |
+| Sessão / Identidade       | `actions/me.ts`                     | `meAction` (Server Action)                                                                                                                                      |
+| Empresa                   | `actions/pgr/companies.ts`          | list, options, get, create, update, delete, dependents                                                                                                          |
+| Unidade de Obra           | `actions/pgr/work-units.ts`         | list, get, create, update, delete, dependents                                                                                                                   |
+| Função (Cargo)            | `actions/pgr/job-roles.ts`          | list, get, create, update, delete, dependents                                                                                                                   |
+| GES + vínculos            | `actions/pgr/ges.ts`                | list, get, create, update, delete, dependents + gestão de `ges_job_roles`                                                                                       |
+| Funcionário               | `actions/pgr/employees.ts`          | list, get, create, update, delete + picker de função                                                                                                            |
+| PGR (documento)           | `actions/pgr/pgr.ts`                | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 não persistido; sem 409)                                                                |
+| Riscos (GES)              | `actions/pgr/risks.ts`              | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)                                                |
+| EPI × risco (vínculo)     | `actions/pgr/epi-risk.ts`           | list, available (busca nome/CA), add, update (neutralização), remove + REST `/api/v1/risks/{id}/epis/**`                                                        |
+| Avaliação de risco (5×5)  | `actions/pgr/risk-assessments.ts`   | list, get, getCurrent, create, update, delete + REST `/api/v1/risks/{id}/assessments` · `/risk-assessments/{id}` (histórico 1:N; snapshot de `result`; sem 409) |
+| Categoria                 | `actions/pgr/categories.ts`         | list, get, create, update, delete (catálogo `epi`/`machine`)                                                                                                    |
+| Metodologia de Risco      | `actions/pgr/risk-methodology.ts`   | get (config ou padrão), save (upsert) + `GET`/`PUT /api/v1/risk-methodology`                                                                                    |
+| Sugestão de riscos (IA)   | `actions/pgr/ai-risk-suggestion.ts` | suggest (LLM, não persiste), accept (grava rascunhos) + REST `POST /api/v1/ges/{id}/risk-suggestions(/accept)`                                                  |
+| CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`          | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                                                                      |
+| Entrega de EPI            | `actions/pgr/epi-deliveries.ts`     | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**`                                               |
+| Ficha de EPI              | `actions/pgr/epi-record.ts`         | `getEmployeeEpiRecordAction` (read-only) + REST `GET /api/v1/employees/{id}/epi-record`                                                                         |
 
 ---
 
@@ -434,23 +438,52 @@ action de clone. **Erros REST**: 422 (validação/`qualitative_na`/FK `gesId`), 
 
 ---
 
+## Avaliação de risco (5×5) — `actions/pgr/risk-assessments.ts`
+
+Avaliação de risco pela matriz 5×5 (probabilidade × severidade). Fatia 016, **zero-migration**
+(tabela `risk_assessments` da migration `0012`; escopo restrito às suas colunas — **não** toca
+`control_measures`/`risk_methodology`, que é apenas **lida**). **Histórico 1:N** por risco (sem
+unique → **sem 409**; avaliação vigente = última por `assessedAt desc`, `createdAt desc`).
+`riskLevel = probability × severity` é **calculado e persistido**; `result` é a **classificação
+snapshot** pela metodologia da org (`getRiskMethodologyView` + `classify`, com fallback padrão). REST
+espelho: `/api/v1/risks/{id}/assessments` (GET, POST 201) · `/api/v1/risk-assessments/{id}` (GET, PUT,
+DELETE 204).
+
+| Action                           | Entrada                           | Retorno (`data`)                                                                 |
+| -------------------------------- | --------------------------------- | -------------------------------------------------------------------------------- |
+| `listRiskAssessmentsAction`      | `riskId, { page?, pageSize? }`    | `{ rows: RiskAssessmentListItem[]; total }` (`riskId` inválido → `FK_NOT_FOUND`) |
+| `getRiskAssessmentAction`        | `id`                              | `RiskAssessment` (inexistente/cross-tenant → `NOT_FOUND`)                        |
+| `getCurrentRiskAssessmentAction` | `riskId`                          | `RiskAssessment \| null` (null se risco sem avaliações)                          |
+| `createRiskAssessmentAction`     | `riskId, RiskAssessmentInput`     | `RiskAssessment` (201; `riskId` inválido → `FK_NOT_FOUND`)                       |
+| `updateRiskAssessmentAction`     | `riskId, id, RiskAssessmentInput` | `RiskAssessment` (corpo completo; recalcula `riskLevel`/`result`)                |
+| `deleteRiskAssessmentAction`     | `riskId, id`                      | `{ id }` (delete físico)                                                         |
+
+**`RiskAssessmentInput`** (mesmo corpo para create e PUT): `criterion*` (`qualitative`|`quantitative`),
+`probability*` (1–5), `severity*` (1–5), `uncertaintyDegree` (0–2, default 0), `assessedAt*`
+(`AAAA-MM-DD`), `toleranceLimit?`. **Não** aceita `riskLevel`/`result` (calculados no servidor),
+`riskId` (vem da rota) nem `orgId` (sessão). **Erros REST**: 422 (validação/FK `riskId`), 404
+(cross-tenant/inexistente), 403 (`client`); **nunca 409**.
+
+---
+
 ## Rotas de UI (superfície HTTP navegável)
 
 Área autenticada `(protected)` — layout aplica `requireTenantContext`; cada página de CRUD
 aplica `requireOfficeStaffPage()` (papel `client` → `forbidden()`); detalhe/edição por id
 inexistente ou de outro escritório → `notFound()`.
 
-| Rota                                                                         | Descrição                                                                                           |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/dashboard`                                                                 | Painel (área autenticada)                                                                           |
-| `/companies` · `/companies/new` · `/companies/[id]/edit`                     | Empresa (lista paginada / criar / detalhe=edição)                                                   |
-| `/work-units` · `/work-units/new` · `/work-units/[id]/edit`                  | Unidade de obra (+ copiar endereço da empresa)                                                      |
-| `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                                                              |
-| `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos)                                     |
-| `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)                                              |
-| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / detalhe / editar)                       |
-| `/risks` · `/risks/new` · `/risks/[id]` · `/risks/[id]/edit`                 | Riscos do GES (lista + filtro Empresa→Obra→GES / criar / detalhe / editar / reutilizar por prefill) |
-| `/categories` · `/categories/new` · `/categories/[id]/edit`                  | Categoria (catálogo `epi`/`machine`; detalhe=edição)                                                |
+| Rota                                                                         | Descrição                                                                                               |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/dashboard`                                                                 | Painel (área autenticada)                                                                               |
+| `/companies` · `/companies/new` · `/companies/[id]/edit`                     | Empresa (lista paginada / criar / detalhe=edição)                                                       |
+| `/work-units` · `/work-units/new` · `/work-units/[id]/edit`                  | Unidade de obra (+ copiar endereço da empresa)                                                          |
+| `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                                                                  |
+| `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos)                                         |
+| `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)                                                  |
+| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / detalhe / editar)                           |
+| `/risks` · `/risks/new` · `/risks/[id]` · `/risks/[id]/edit`                 | Riscos do GES (lista + filtro Empresa→Obra→GES / criar / detalhe / editar / reutilizar por prefill)     |
+| `/risks/[id]/assessments` · `.../new` · `.../[assessmentId]/edit`            | Avaliações 5×5 do risco (histórico + vigente / criar com preview / editar) — atalho no detalhe do risco |
+| `/categories` · `/categories/new` · `/categories/[id]/edit`                  | Categoria (catálogo `epi`/`machine`; detalhe=edição)                                                    |
 
 ## Invariantes de isolamento (multi-tenant)
 

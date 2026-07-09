@@ -55,6 +55,10 @@
       "value": ""
     },
     {
+      "key": "riskAssessmentId",
+      "value": ""
+    },
+    {
       "key": "sessionCookie",
       "value": "<cookie __session do navegador logado>"
     },
@@ -88,6 +92,10 @@
     },
     {
       "key": "deliveryItemId",
+      "value": ""
+    },
+    {
+      "key": "epiCatalogId",
       "value": ""
     }
   ],
@@ -1369,6 +1377,389 @@
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "risks", "{{riskId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Avaliações de Risco",
+      "item": [
+        {
+          "name": "GET /risks/:riskId/assessments (histórico)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/assessments (create, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"uncertaintyDegree\": 0,\n  \"toleranceLimit\": \"85 dB(A) / NEN 8h\",\n  \"assessedAt\": \"2026-07-08\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/assessments (422 validação)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 9,\n  \"severity\": 3,\n  \"assessedAt\": \"2026-07-08\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/assessments (422 FK riskId inválido)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/99999999-9999-9999-9999-999999999999/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "99999999-9999-9999-9999-999999999999",
+                "assessments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"assessedAt\": \"2026-07-08\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /risk-assessments/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /risk-assessments/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 5,\n  \"severity\": 5,\n  \"uncertaintyDegree\": 1,\n  \"assessedAt\": \"2026-07-08\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /risk-assessments/:id (403 com x-dev-role client)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /risk-assessments/:id (404 inexistente/cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-assessments/99999999-9999-9999-9999-999999999999",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "risk-assessments",
+                "99999999-9999-9999-9999-999999999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /risk-assessments/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "EPI x risco (vinculo)",
+      "item": [
+        {
+          "name": "GET /risks/:id/epis (vinculados)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epis"]
+            }
+          }
+        },
+        {
+          "name": "GET /risks/:id/epis?available=true (disponiveis, busca nome/CA)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis?available=true&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epis"],
+              "query": [
+                {
+                  "key": "available",
+                  "value": "true"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:id/epis (vincular EPI)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epis"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"catalogId\": \"{{epiCatalogId}}\",\n  \"neutralization\": \"neutralizes\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /risks/:id/epis/:linkId (neutralizacao)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis/{{linkId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epis", "{{linkId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"neutralization\": \"not_applicable\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /risks/:id/epis/:linkId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis/{{linkId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epis", "{{linkId}}"]
             }
           }
         }

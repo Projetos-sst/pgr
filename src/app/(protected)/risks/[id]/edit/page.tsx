@@ -8,6 +8,7 @@ import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies"
 import { PageHeader } from "../../../_ui/list";
 import { RiskForm, type RiskFormInitial } from "../../_components/risk-form";
 import { DeleteRisk } from "../../_components/delete-risk";
+import { EpiRiscoSection } from "../_components/epi-risco-section";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,7 @@ export default async function EditRiskPage({
         action={<DeleteRisk id={risk.id} redirectTo="/risks" />}
       />
       <RiskForm companies={companies} riskId={risk.id} initial={initial} />
+      <EpiRiscoSection riskId={risk.id} />
     </div>
   );
 }
