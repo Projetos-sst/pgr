@@ -40,7 +40,11 @@ const shouldRun = !!APP_RUNTIME_URL && !!ADMIN_URL;
     expect(roleRows[0].rolbypassrls).toBe(false);
   });
 
-  it("blocks INSERT/UPDATE/DELETE on org_memberships from app_runtime", async () => {
+  // Modelo pós-0006 (Data API fechada): org_memberships não tem policy para
+  // app_runtime — RLS default-deny. INSERT quebra no WITH CHECK; UPDATE/DELETE
+  // não enxergam linha alguma (0 afetadas) e o dado permanece intacto; a leitura
+  // de memberships é exclusiva do provisionamento (service_role/PostgREST).
+  it("blocks INSERT and hides rows from UPDATE/DELETE on org_memberships (RLS default-deny)", async () => {
     await admin.unsafe(`insert into public.users (id) values ('user_x')`);
     await admin.unsafe(`insert into public.orgs (id) values ('org_x')`);
     await admin.unsafe(
@@ -50,15 +54,22 @@ const shouldRun = !!APP_RUNTIME_URL && !!ADMIN_URL;
     await expect(
       runtime`insert into public.org_memberships (org_id, user_id, role) values ('org_x','user_x','org:admin')`,
     ).rejects.toThrow();
-    await expect(
-      runtime`update public.org_memberships set role = 'org:admin' where org_id = 'org_x' and user_id = 'user_x'`,
-    ).rejects.toThrow();
-    await expect(
-      runtime`delete from public.org_memberships where org_id = 'org_x' and user_id = 'user_x'`,
-    ).rejects.toThrow();
+
+    const updated =
+      await runtime`update public.org_memberships set role = 'org:admin' where org_id = 'org_x' and user_id = 'user_x'`;
+    expect(updated.count).toBe(0);
+    const deleted =
+      await runtime`delete from public.org_memberships where org_id = 'org_x' and user_id = 'user_x'`;
+    expect(deleted.count).toBe(0);
+
+    const intact = await admin<{ role: string }[]>`
+      select role from public.org_memberships where org_id = 'org_x' and user_id = 'user_x'
+    `;
+    expect(intact).toHaveLength(1);
+    expect(intact[0].role).toBe("org:member");
   });
 
-  it("isolates SELECT by claim org_id; no claim → 0 rows", async () => {
+  it("SELECT em org_memberships por app_runtime → 0 linhas, com ou sem claim", async () => {
     await admin.unsafe(`insert into public.users (id) values ('user_a'),('user_b')`);
     await admin.unsafe(`insert into public.orgs (id) values ('org_a'),('org_b')`);
     await admin.unsafe(`
@@ -67,15 +78,11 @@ const shouldRun = !!APP_RUNTIME_URL && !!ADMIN_URL;
         ('org_b','user_b','org:member')
     `);
 
+    // A policy remanescente é TO authenticated (Data API, fechada na 0006) e não
+    // alcança o app_runtime — mesmo com claim de org o backstop nega tudo.
     await setJwtClaims(runtime, { org_id: "org_a" });
     const rowsA = await runtime`select org_id from public.org_memberships`;
-    expect(rowsA).toHaveLength(1);
-    expect(rowsA[0].org_id).toBe("org_a");
-
-    await setJwtClaims(runtime, { org_id: "org_b" });
-    const rowsB = await runtime`select org_id from public.org_memberships`;
-    expect(rowsB).toHaveLength(1);
-    expect(rowsB[0].org_id).toBe("org_b");
+    expect(rowsA).toHaveLength(0);
 
     await setJwtClaims(runtime, null);
     const rowsNone = await runtime`select org_id from public.org_memberships`;

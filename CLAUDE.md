@@ -31,7 +31,16 @@ Multi-tenant SST (occupational health & safety) platform. **Tenant isolation is 
 
 **Two entry surfaces, one gate.** Server Actions are wrapped by `officeAction(operation, fn, {audit})` (`src/shared/server/office-action.ts`) → returns a discriminated `ActionResult<T>` (`{ok:true,data}` | `{ok:false,error}`, `server/result.ts`). REST `/api/v1/*` handlers are wrapped by `restHandler` (`src/shared/api/rest.ts`) → maps the same error codes to HTTP. Both call `requireOfficeStaff()` and share `toActionError` (`server/action-error.ts`). **Domain error codes** (not raw HTTP): `VALIDATION` (422), `DUPLICATE` (409, e.g. SQLSTATE 23505), `FK_NOT_FOUND`/`NOT_FOUND` (404/422), `FORBIDDEN`/`NO_TENANT_CONTEXT` (403), `UNAUTHORIZED` (401). REST has a **non-prod dev auth bypass** (`DEV_API_AUTH_BYPASS=true` + `x-dev-tenant`/`x-dev-role`/`x-dev-user` headers) — impossible in production.
 
-**Auth & tenant resolution.** Clerk `ClerkProvider` is in the root layout (`src/app/layout.tsx`); there is **no `middleware.ts`** — protection is enforced in Server Components via `requireTenantContext()` / `requireOfficeStaff()` and the `(protected)/layout.tsx` redirect. `resolveActiveTenant` (`src/shared/tenant/active-tenant.ts`) reads `org_memberships`, picks the active org by the `ACTIVE_ORG_COOKIE` (defaulting to the personal org), auto-provisions a personal tenant on first login, and normalizes Clerk roles (`org:admin`/`org:member`) into domain roles `owner`/`collaborator`/`client` (unknown → least privilege `client`). `requireOfficeStaff()` admits only `owner`/`collaborator`. Clerk webhooks sync into the DB via `src/shared/clerk-sync/*`.
+**API surface — MANDATORY for every CRUD / HTTP-exposed feature.** Do not consider a CRUD "done" until **all four** ship together in the same PR — reviewers block a CRUD PR that is missing any of them (this is the checklist devs keep forgetting):
+
+1. **Server Action** wrapped by `officeAction(...)` returning `ActionResult<T>` — the UI entry (POST-only by Next design, not RESTful, not Postman-testable).
+2. **RESTful Route Handler mirror** under `src/app/api/v1/<resource>/**` wrapped by `restHandler(...)`, with **real verbs**: `GET` (list) + `POST` (create) on `/<resource>`; `GET`/`PUT`/`DELETE` on `/<resource>/[id]`; add `/[id]/dependents` when the entity has inbound FKs. Reuse the **same** repository, zod schema and `toActionError` — never re-implement the rule. `201` on create, `204` on delete. This is the only Postman/cURL-testable surface.
+3. **Docs** — register the resource, verbs and filters in `docs/api/api-design.md` (the "Recursos" and "Sumário" tables).
+4. **Postman** — add the requests to the single collection `docs/api/sst-manager.postman_collection.json` (one folder per resource, mirroring the existing ones; reuse the collection Variables `baseUrl`/`devTenant`/`devRole`/ids). Keep it to **one** file on purpose.
+
+Reference implementation to copy from: **companies** (`actions/pgr/companies.ts` + `app/api/v1/companies/**` + its api-design section + Postman folder). External/utility integrations (ViaCEP/CNPJ, later CAEPI) are the exception to the tenant rule and live under `src/app/api/integrations/**` — session-guarded via `requireAuth()` (no tenant/role, public data), but still documented in api-design.md + Postman the same way.
+
+**Auth & tenant resolution.** Clerk `ClerkProvider` is in the root layout (`src/app/layout.tsx`); there is **no `middleware.ts`**, but `src/proxy.ts` (Next 16's renamed middleware) runs `clerkMiddleware` → `auth.protect()` on every non-public route (public: `/`, `/sign-in`, `/sign-up`, `/api/webhooks/*`, and `/api/v1/*` only when the dev bypass flag is on) — so unauthenticated `/api/**` calls get a 307/redirect before reaching the handler. Protection is **also** enforced in Server Components via `requireTenantContext()` / `requireOfficeStaff()` and the `(protected)/layout.tsx` redirect (defense in depth). `resolveActiveTenant` (`src/shared/tenant/active-tenant.ts`) reads `org_memberships`, picks the active org by the `ACTIVE_ORG_COOKIE` (defaulting to the personal org), auto-provisions a personal tenant on first login, and normalizes Clerk roles (`org:admin`/`org:member`) into domain roles `owner`/`collaborator`/`client` (unknown → least privilege `client`). `requireOfficeStaff()` admits only `owner`/`collaborator`. Clerk webhooks sync into the DB via `src/shared/clerk-sync/*`.
 
 **Database ownership & connections.** Drizzle is the **code-first owner** of the schema (`drizzle.config.ts`, schema dir `src/shared/db/schema`). Two connections: runtime connects as the least-privileged `app_runtime` role through the Supabase transaction pooler (`DATABASE_URL`, port 6543, `prepare:false, max:1` — see `db/index.ts`); `drizzle-kit` uses a direct owner connection (`DATABASE_URL_UNPOOLED`). GRANTs and `set_updated_at` triggers live as **custom SQL inside the generated migrations** (not auto-emitted by drizzle-kit).
 
@@ -39,18 +48,104 @@ Multi-tenant SST (occupational health & safety) platform. **Tenant isolation is 
 
 <!-- SPECKIT START -->
 
-Branch: **`feature/category-crud`**. Fatia atual (`009`) — **CRUD completo** (criar, listar
-paginado/filtrado, carregar por id para edição, editar, excluir) da entidade **`categories`**
-(catálogo `epi|machine`) em UI (App Router) + Server Actions, sobre o modelo da `006` e reusando
-a infraestrutura de CRUD da `007`. Entidade simples (sem tela de detalhe; sem dependentes).
+Branch atual: **`feature/epi-module-completion`**. Fatia atual (`012`) — **Conclusão da Fase 02 /
+módulo operacional de EPI** (issues `#18`/`#115`/`#75`, `#19`, `#20`, `#21`; `#78` fica p/ Fase 03).
+Plan: `.specs/012-epi-module-completion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
+diretório). 5 user stories: US1 plugar `CaField`/CAEPI no `epi-catalog-form.tsx` (wiring, zero migration);
+US2 entrega + baixa transacional (extrai `applyStockExit`/`applyStockEntry` de `stock-movements.ts`, D2) +
+assinatura manual inline (D1); US3 assinatura pública `/sign/[token]` (token HMAC stateless 72h, orgId
+embutido → `withOrg`, +`"/sign/(.*)"` no `proxy.ts`); US4 devolução + reposição (**migration `0011`**,
+renumerada de `0010` no rebase: `employee_return` no enum `stock_movement_type` + `returned_at` em
+`epi_delivery_items`); US5 ficha read-only por funcionário. Assinatura é **inline**
+(`epi_deliveries.auth_token`+`signature_status` da 008), NÃO a infra genérica da `010` (que já está
+mergeada em `develop` via PR #127 — decisão da fatia mantida). Novos códigos de erro:
+`ALREADY_SIGNED`/`ALREADY_RETURNED` (409), `TOKEN_INVALID` (404), `TOKEN_EXPIRED` (410). Base:
+`develop` pós-#127 (última migration `0010_digital_signature_infra`); branches antigas
+`feature/ppe-*` são só referência.
 
-Fatia atual (`009`) — `.specs/009-category-crud/`:
+Fatia anterior (`010` — digital-signature-infra, mergeada em `develop` via PR #127) —
+`.specs/010-digital-signature-infra/`: **infraestrutura de assinatura digital** (issue #67):
+camada de plataforma transversal e reutilizável (DRY) para coleta de assinatura por **link
+público com token + QR + captura canvas→PNG**, consumida por múltiplos módulos via **registry de
+`target_type`** (consumidor #1 = `demo`).
 
-- Plan: `.specs/009-category-crud/plan.md`
-- Spec (+ revisão Tech Lead) / Research / Data model / Quickstart no mesmo diretório.
-- Contracts: `contracts/server-actions.md`, `contracts/repositories.md`.
+- Plan: `.specs/010-digital-signature-infra/plan.md`
 
-Notas chave (`009`):
+- Plan: `.specs/010-digital-signature-infra/plan.md`
+- Spec / Research / Data model / Quickstart no mesmo diretório; briefing fonte da verdade em
+  `docs/briefings/briefing-digital-signature-infra.md`.
+- Contracts: `contracts/server-actions.md`, `contracts/repositories.md`, `contracts/public-route.md`.
+
+Notas chave (`010`):
+
+- **Modelagem genérica polimórfica**: `signature_requests` (pedido) + `signature_captures`
+  (resultado 1:1), discriminadas por `target_type`. Novo módulo consumidor = +1 entrada no
+  registry, **zero mudança de schema**. 2 `pgEnum` (`signature_request_status` `pending|signed|cancelled`;
+  `signature_method` `qr|link|manual`). "expired" é **derivado na leitura**, não persistido.
+  Migration nova `0010_digital_signature_infra` (GRANT + triggers + policy de capability como SQL
+  custom; renumerada de `0009` no rebase — a `0009` é a `caepi_certificates` do `develop`).
+- **Rota pública sem login** (`app/(public)/assinar/[token]`): isolamento vem **do token**, não do
+  cliente. `signature_requests` tem 2 policies RLS PERMISSIVE: tenant (`FOR ALL`, `app.current_org`)
+  - **capability** (`FOR SELECT`, `token_hash = current_setting('app.signature_token', true)`).
+    Helper novo `withSignatureToken(rawToken, fn)` (espelha `withOrg`); grava via `withOrg(orgId)` após
+    derivar o tenant do token.
+- **Token**: ≥256 bits, persistido só **hasheado** (sha-256, `token_hash` UNIQUE); cru só vive na
+  URL/QR; TTL configurável (default 72h); **uso único** (`used_at`; UPDATE atômico `WHERE used_at IS NULL`).
+- **Tempo real por polling ~3s** (não SSE); **imagem base64 no Postgres** (não storage externo);
+  **quota derivada** por mês corrente (não contador/cron).
+- **Plano (spec 005, Inv-1)**: gate na **criação** (`createSignatureRequest`, lê `ctx.plan`);
+  `pro` ilimitado, `free` = 10 pedidos/mês → `QUOTA_EXCEEDED` (REST 402). Rota pública **nunca**
+  checa plano. Helpers em `src/shared/tenant/plan.ts` (`FREE_SIGNATURE_MONTHLY_QUOTA=10`).
+- **Reuso**: `ActionResult`/`officeAction` (interno) + ação pública dedicada sem gate;
+  `requireOfficeStaff`/`requireTenantContext`; libs novas `qrcode` (server) + `signature_pad` (vanilla).
+- Testes: unit (token/expiração/quota/Zod) + integração (create, submitPublic, expirado, reuso,
+  quota, signManually, **cross-tenant**) contra **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite.
+
+Fatia paralela (`010` em `develop`) — **Movimentações de estoque e histórico**
+(`.specs/010-stock-movements/`, `stock_movements`): registrar **entrada** (compra) e **saída
+manual** (ajuste/descarte) de itens de estoque de EPI, mantendo o saldo materializado
+**`epi_stock.balance`** por **transação atômica** (`SELECT … FOR UPDATE`), e exibir o
+**histórico por item** com **saldo resultante derivado** (window function, sem coluna). Camada de
+**fluxo** sobre o modelo da `008` e contrapartida da `009` (epi-stock-crud). **Zero migration.**
+
+Notas chave (stock-movements):
+
+- **Escrita transacional do saldo** (1ª fatia que escreve `epi_stock.balance`): por movimento,
+  `SELECT … FOR UPDATE` → valida `novoSaldo >= 0` na app (`CHECK balance >= 0` como backstop) →
+  `INSERT` no movimento + `UPDATE` do saldo, tudo numa transação (`withOrg`). Falha → rollback total.
+- **`quantity` sempre > 0**; o sinal vem do `type` (`purchase` `+`; `adjustment`/`discard` `−`).
+  Saída manual só aceita `{adjustment, discard}` (sem ajuste bidirecional).
+- **Saldo resultante derivado** por window function + função pura `computeRunningBalance` (unit);
+  **sem coluna `balance_after`**. **"Usuário que registrou" omitido** (modelo 008 sem `created_by`).
+- **Novo erro `INSUFFICIENT_STOCK` → 422** em `src/shared/api/rest.ts`. REST em
+  `/api/v1/epi-stock/[id]/movements` (POST registra; GET histórico). Rota UI `/epi-stock/[id]/history`.
+- Testes: unit (`computeRunningBalance`, schemas); integração de Server Actions/REST +
+  rollback de saída insuficiente + histórico + `NOT_FOUND` cross-tenant + `FORBIDDEN` contra
+  **Postgres efêmero** (`INTEGRATION_*`), nunca SQLite nem o banco de dev.
+
+Fatia anterior (`011` — caepi-ca-validation, mergeada em `develop` via PR #132) —
+`.specs/011-caepi-ca-validation/`: **Validação/consulta de CA no CAEPI/MTE** (issues `#115` +
+`#75` duplicada). Tabela **GLOBAL** `caepi_certificates` (espelho da base pública do MTE, **sem
+`org_id`/RLS de tenant/`withOrg`** — exceção justificada ao Princípio I; RLS ligado com policy
+única de leitura global `USING (true)` por causa do event trigger `ensure_rls` de produção;
+`app_runtime` = SELECT-only, escrita só pelo job via conexão owner), alimentada por
+`scripts/caepi-sync.ts` (Playwright/Chromium **headed** — headless barrado pelo Cloudflare —
+postback ASP.NET → `.csv.gz` com HTML ASPX anexado após o gzip → `csv-parse` streaming → upsert
+idempotente por `ca`; fallback `--file`). Consulta **100% local** `lookupCa` (Server Action
+`requireAuth()` + REST `GET /api/integrations/caepi/[ca]`) → contrato `CaLookupResult`
+(`valid`/`expired`/`not_found` como payload 200) + hook `use-caepi-validation` + `ca-field.tsx`
+(autofill fabricante/norma/validade; **nunca bloqueia** o cadastro). Regra de vigência
+(`validate-ca`, pura): `valid` ⇔ situação normalizada `VALIDO` **e** `valid_until >= hoje`
+(inclusivo, fuso `America/Sao_Paulo`); senão `expired`; situação desconhecida → `expired`; base
+vazia → `not_found`. Repositório dividido: `repositories/caepi.ts` (leitura runtime) vs
+`repositories/caepi-upsert.ts` (escrita do job, handle owner injetado). Migrations
+`0008_epi_catalog_type_fk` + `0009_caepi_certificates`; devDeps do job:
+`playwright` + `csv-parse`. Convive com a camada CEP/CNPJ da mesma branch.
+
+Fatia anterior (`009` — epi-stock-crud, commit `a55d70b`): CRUD de `epi_stock` com `balance`
+**read-only**; reuso de `ActionResult`/`officeAction`/`requireOfficeStaff`/`_ui`. Sem migration.
+
+Fatia anterior (`009` — category-crud) — `.specs/009-category-crud/`. Notas chave:
 
 - **CRUD de `categories`**: estende o repositório (hoje só `list`/`create`) com
   `getById`/`update`/`delete` + busca por nome + filtro por tipo + **paginação offset** (`{rows,total}`,

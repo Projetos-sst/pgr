@@ -21,6 +21,11 @@ export {
 } from "./employees";
 export { gesJobRoles, type GesJobRole, type NewGesJobRole } from "./ges-job-roles";
 export {
+  caepiCertificates,
+  type CaepiCertificate,
+  type NewCaepiCertificate,
+} from "./caepi-certificates";
+export {
   epiCatalog,
   epiStock,
   stockMovements,
@@ -29,6 +34,7 @@ export {
   epiRisk,
   stockMovementType,
   epiSignatureStatus,
+  epiNeutralization,
   type EpiCatalog,
   type NewEpiCatalog,
   type EpiStock,
@@ -42,3 +48,48 @@ export {
   type EpiRisk,
   type NewEpiRisk,
 } from "./epis";
+export {
+  signatureRequests,
+  signatureCaptures,
+  signatureRequestStatus,
+  signatureMethod,
+  type SignatureRequest,
+  type NewSignatureRequest,
+  type SignatureCapture,
+  type NewSignatureCapture,
+} from "./signatures";
+export {
+  risks,
+  riskAssessments,
+  controlMeasures,
+  riskAgentType,
+  exposureTime,
+  measurementUnit,
+  assessmentCriterion,
+  controlLevel,
+  type Risk,
+  type NewRisk,
+  type RiskAssessment,
+  type NewRiskAssessment,
+  type ControlMeasure,
+  type NewControlMeasure,
+} from "./risks";
+export {
+  pgr,
+  pgrGes,
+  pgrRevisions,
+  pgrRegistrationType,
+  type Pgr,
+  type NewPgr,
+  type PgrGes,
+  type NewPgrGes,
+  type PgrRevision,
+  type NewPgrRevision,
+} from "./pgr";
+export {
+  riskMethodology,
+  methodologyBase,
+  riskClassification,
+  type RiskMethodology,
+  type NewRiskMethodology,
+} from "./risk-methodology";

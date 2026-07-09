@@ -64,6 +64,48 @@
       "when": 1782158650494,
       "tag": "0008_epi_catalog_type_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782999441246,
+      "tag": "0009_caepi_certificates",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783271172593,
+      "tag": "0010_digital_signature_infra",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1783271698852,
+      "tag": "0011_epi_delivery_return",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1783293221440,
+      "tag": "0012_pgr_risk_data_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1783480147463,
+      "tag": "0013_risk_methodology",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1783489340701,
+      "tag": "0014_epi_risk_link",
+      "breakpoints": true
     }
   ]
 }

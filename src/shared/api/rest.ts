@@ -15,10 +15,17 @@ const HTTP_BY_CODE: Record<string, number> = {
   VALIDATION: 422,
   DUPLICATE: 409,
   FK_NOT_FOUND: 422,
+  INSUFFICIENT_STOCK: 422,
+  ALREADY_SIGNED: 409,
+  ALREADY_RETURNED: 409,
+  IN_USE: 409,
+  TOKEN_INVALID: 404,
+  TOKEN_EXPIRED: 410,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   NO_TENANT_CONTEXT: 403,
   UNAUTHORIZED: 401,
+  QUOTA_EXCEEDED: 402,
 };
 
 const BLOCKED_CODES = new Set(["FORBIDDEN", "NO_TENANT_CONTEXT", "UNAUTHORIZED"]);
@@ -101,6 +108,7 @@ export async function restHandler<T>(
       outcome: "rejected",
       orgId: ctx?.tenantId ?? null,
       userId: ctx?.userId ?? null,
+      error: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json(
       { error: { code: "UNKNOWN", message: "Erro inesperado." } },

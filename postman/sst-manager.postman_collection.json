@@ -1,0 +1,183 @@
+{
+  "info": {
+    "name": "SST Manager — API v1 (local)",
+    "description": "Coleção para testar a REST API /api/v1 localmente.\n\nPré-requisitos:\n1) .env.local com DEV_API_AUTH_BYPASS=true, DATABASE_URL e DEV_TENANT_ID preenchidos.\n2) Servidor rodando: npm run dev (http://localhost:3000).\n3) Edite as variáveis da coleção: baseUrl e tenant (id do escritório).\n\nAutenticação: NÃO usa login. Cada request manda o header x-dev-tenant = {{tenant}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "tenant", "value": "" },
+    { "key": "companyId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Empresas",
+      "item": [
+        {
+          "name": "Listar empresas",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-dev-tenant", "value": "{{tenant}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" },
+                { "key": "search", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Lista paginada. Resposta: { rows, total }."
+          }
+        },
+        {
+          "name": "Criar empresa",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{tenant}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razaoSocial\": \"Empresa Teste Ltda\",\n  \"riskGrade\": 3,\n  \"nomeFantasia\": \"Teste\",\n  \"email\": \"contato@teste.com\",\n  \"city\": \"São Paulo\",\n  \"state\": \"SP\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
+            },
+            "description": "Obrigatórios: razaoSocial e riskGrade (1 a 4). cnpj é opcional (se enviar, 14 dígitos válidos). Resposta: 201 com a empresa (copie o id para {{companyId}})."
+          }
+        },
+        {
+          "name": "Detalhar empresa",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-dev-tenant", "value": "{{tenant}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}"]
+            }
+          }
+        },
+        {
+          "name": "Editar empresa",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "x-dev-tenant", "value": "{{tenant}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razaoSocial\": \"Empresa Teste Ltda (editada)\",\n  \"riskGrade\": 2,\n  \"city\": \"Campinas\",\n  \"state\": \"SP\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}"]
+            }
+          }
+        },
+        {
+          "name": "Excluir empresa",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "x-dev-tenant", "value": "{{tenant}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}"]
+            },
+            "description": "Resposta esperada: 204 (sem conteúdo)."
+          }
+        },
+        {
+          "name": "Dependentes da empresa",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-dev-tenant", "value": "{{tenant}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/dependents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "dependents"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Outros recursos (listar)",
+      "description": "Mesmo padrão das empresas. Use x-dev-tenant em todos.",
+      "item": [
+        {
+          "name": "Listar unidades de obra",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-dev-tenant", "value": "{{tenant}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-units?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-units"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar GES",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-dev-tenant", "value": "{{tenant}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar funções (job-roles)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-dev-tenant", "value": "{{tenant}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-roles"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar funcionários",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-dev-tenant", "value": "{{tenant}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

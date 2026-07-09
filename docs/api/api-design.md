@@ -51,6 +51,50 @@ Estes **são** HTTP estável e chamáveis por Postman/cURL (ao contrário das Se
 > `GET /api/me` é o equivalente REST da Server Action `meAction`. O webhook **rejeita** payloads
 > sem assinatura Svix válida (`verifyWebhook`), então só dispara com o signing secret do Clerk.
 
+### Rota pública de assinatura — `/sign/{token}` (fatia 012)
+
+Página pública (fora de `/api/v1`, **sem Clerk, sem tenant de sessão, sem bypass dev**): a
+credencial é o **token HMAC** de 72h gerado por `generateSignTokenAction` (Server Action interna,
+office staff — a geração NÃO tem espelho REST de propósito: o token é credencial de escrita e a
+superfície pública testável é a própria rota). O token embute `{ orgId, deliveryId, method, iat }`
+assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS backstop).
+
+| Ação   | Rota            | Auth       | Desfecho                                                                                                                                                                              |
+| ------ | --------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/sign/{token}` | só o token | página com itens + assinatura · "link inválido" (`TOKEN_INVALID`, uniforme p/ adulterado/inexistente) · "link expirado" (`TOKEN_EXPIRED`, >72h) · "já confirmado" (negócio, não erro) |
+| `POST` | `/sign/{token}` | só o token | Server Action `submitSignatureAction`: `pending → signed_qr\|signed_link` (o `method` vem do payload assinado, nunca do cliente) · repetida → `ALREADY_SIGNED` (mensagem, nunca 500)  |
+
+- Anti-enumeração: espaço de chave HMAC-SHA256 + resposta uniforme; rate-limit por IP é controle
+  complementar na **borda** (Cloudflare/WAF — infra, fora do app). `Cache-Control: no-store`.
+- O painel interno da entrega reflete a assinatura por **polling** do `signature_status`.
+
+### Integrações externas (`/api/integrations`) — Route Handlers de consulta
+
+Camada de plataforma reutilizável (autofill de formulários). **Só sessão** (`requireAuth()`) — CEP e
+CNPJ são **dados públicos**, não do tenant; logo **sem** tenant/papel e **sem** bypass dev. Resposta
+no mesmo envelope `ActionResult<T>`. Falha externa **nunca** bloqueia o form (o hook trata em silêncio).
+
+| Método | Rota                            | Auth         | Retorno                                                                                          |
+| ------ | ------------------------------- | ------------ | ------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/integrations/cep/{cep}`   | sessão Clerk | `200 ok(endereço)` · `404 NOT_FOUND` · `422 VALIDATION` (formato) · `502 UPSTREAM_ERROR` · `401` |
+| `GET`  | `/api/integrations/cnpj/{cnpj}` | sessão Clerk | `200 ok(empresa+endereço)` · `404` · `422` · `502` · `401`                                       |
+| `GET`  | `/api/integrations/caepi/{ca}`  | sessão Clerk | `200 ok(CaLookupResult)` — 3 estados como payload · `422 VALIDATION` (formato) · `401`           |
+
+- Provedores: **ViaCEP** (`viacep.com.br/ws`) e **BrasilAPI** (`brasilapi.com.br/api/cnpj/v1`), sem API
+  key. `src/shared/integrations/**` valida formato antes de chamar (evita request inútil), aplica
+  timeout (`AbortController`) e cacheia só o sucesso.
+- ⚠️ **Gotcha**: a BrasilAPI responde **403** ao User-Agent padrão do runtime — o cliente HTTP interno
+  manda um `User-Agent` identificável (`providers/http.ts`). Ao testar via cURL, o UA do curl já passa.
+- **CAEPI é 100% local** (fatia 011): a consulta lê a tabela global `caepi_certificates` (espelho da
+  base pública do MTE, alimentada pelo job `scripts/caepi-sync.ts`) — **nenhum fetch externo por
+  request**. Contrato `CaLookupResult`: `{ status: "valid" | "expired", ca, manufacturer, norm,
+validUntil, equipmentName? }` ou `{ status: "not_found", ca, baseUnsynced? }`.
+  **Divergência consciente do 404 de CEP/CNPJ**: os 3 estados voltam como **payload 200** —
+  `not_found`/`expired` são resultado informativo de negócio (aviso na UI, nunca bloqueia o
+  cadastro), não falha de transporte; é o que permite ao hook `use-caepi-validation` reusar o
+  `useLookup` (que só entrega dado em `response.ok && body.ok`). Sem cache (`Cache-Control:
+no-store`): a resposta depende de "hoje" (um CA que vence hoje muda de estado amanhã).
+
 ## REST API (`/api/v1`) — CRUD por HTTP
 
 Camada **RESTful** sobre Route Handlers (`src/app/api/v1/...`), com **verbos de verdade**
@@ -66,17 +110,47 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 
 **Recursos** (todos sob `/api/v1`, escopados ao tenant ativo):
 
-| Recurso                                                            | Verbos                                                        |
-| ------------------------------------------------------------------ | ------------------------------------------------------------- |
-| `/companies` · `/companies/{id}` · `/companies/{id}/dependents`    | GET, POST · GET, PUT, DELETE · GET                            |
-| `/work-units` · `/work-units/{id}` · `/work-units/{id}/dependents` | GET, POST · GET, PUT, DELETE · GET                            |
-| `/job-roles` · `/job-roles/{id}` · `/job-roles/{id}/dependents`    | GET, POST · GET, PUT, DELETE · GET                            |
-| `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                      | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET  |
-| `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`             | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE |
-| `/employees` · `/employees/{id}`                                   | GET, POST · GET, PUT, DELETE                                  |
+| Recurso                                                                                                  | Verbos                                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/companies` · `/companies/{id}` · `/companies/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
+| `/work-units` · `/work-units/{id}` · `/work-units/{id}/dependents`                                       | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
+| `/job-roles` · `/job-roles/{id}` · `/job-roles/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
+| `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                                                            | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET                                                                                      |
+| `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`                                                   | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE                                                                                     |
+| `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                      |
+| `/pgr` · `/pgr/{id}`                                                                                     | GET, POST · GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                          |
+| `/risks` · `/risks/{id}`                                                                                 | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                   |
+| `/risks/{id}/epis` · `/risks/{id}/epis/{linkId}`                                                         | GET (`?available=true&search=` p/ EPIs não vinculados), POST · PUT (neutralização), DELETE (vínculo EPI × risco)                                  |
+| `/categories` · `/categories/{id}`                                                                       | GET, POST · GET, PUT, DELETE                                                                                                                      |
+| `/risk-methodology`                                                                                      | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                     |
+| `/epi-catalog` · `/epi-catalog/{id}` · `/epi-catalog/{id}/dependents`                                    | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
+| `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return` | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item) |
 
 - **Filtros (query)**: list de cada recurso aceita `search`, `page`, `pageSize` + os filtros do
-  recurso (`companyId`, `workUnitId`, `status`). Body de create/update = o mesmo `*Input` das actions.
+  recurso (`companyId`, `workUnitId`, `status`, `type`). Body de create/update = o mesmo `*Input`
+  das actions. **`/categories`** filtra por `search` + `type` (`epi`|`machine`); **PUT exige corpo
+  completo `CategoryInput`** (espelho de companies, sem `.partial()`); **não há `/dependents`**.
+- **`/risk-methodology`** é um **singleton por organização** (issue #76): `GET` devolve a metodologia
+  ativa **ou** o padrão derivado (`configured:false`) quando nenhuma foi salva; `PUT` faz **upsert** do
+  corpo completo `RiskMethodologyInput` (gradações 1–5 + faixas que particionam 1–25). Sem `list`,
+  `{id}` nem `dependents`.
+- **`/epi-catalog`** (fatia 012): list filtra por `search` (nome, CA ou categoria) + `type`
+  (`epi`|`machine`); body = `EpiCatalogInput` (a coerência tenant+tipo da categoria é do
+  repositório). `DELETE` de item com estoque/risco/itens de entrega → `409 IN_USE`;
+  `/dependents` devolve `{ stock, risk, deliveryItems }` para o aviso de exclusão.
+- **`/epi-deliveries`** (fatia 012): list filtra por `employeeId` + `search` (nome do funcionário).
+  Create: `{ employeeId, deliveryDate, items: [{ stockId, quantity }] }` → `201` com a baixa
+  aplicada por item; qualquer item sem saldo → `422 INSUFFICIENT_STOCK` com **rollback total**.
+  `DELETE` de entrega assinada → `403 FORBIDDEN` (não estorna saldo). `POST /{id}/sign` (body `{}`)
+  transiciona `pending → signed_manual`; repetida → `409 ALREADY_SIGNED`. Sem `PUT`: entregas são
+  imutáveis após a criação (é o que torna o `updated_at` da assinatura um timestamp legal).
+  `POST /{id}/return` (body `{ itemId }`) devolve UM item: seta `returned_at` (one-shot; repetida →
+  `409 ALREADY_RETURNED`) e repõe o saldo via movimento `employee_return`; independe do status de
+  assinatura.
+- **`/employees/{id}/epi-record`** (fatia 012): ficha de EPI do funcionário, **read-only** (GET).
+  Query `?status=pendente|devolvido|todos&from=&to=&page=&pageSize=` — `status` mapeia para
+  `returned_at` (`pendente` ⇒ NULL, `devolvido` ⇒ NOT NULL); período filtra `delivery_date`.
+  Funcionário cross-tenant → `404 NOT_FOUND`; sem entregas → `{ rows: [], total: 0 }`.
 - **Respostas**: recurso no corpo (`200`), `201` no create, `204` no delete. Erros:
   `{ error: { code, message, fields? } }` com HTTP `422 VALIDATION` · `409 DUPLICATE` ·
   `422 FK_NOT_FOUND` · `404 NOT_FOUND` · `403 FORBIDDEN`/`NO_TENANT_CONTEXT` · `401 UNAUTHORIZED`.
@@ -111,17 +185,26 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 
 ## Sumário das actions/endpoints existentes
 
-| Domínio                   | Arquivo                           | Superfície                                                                |
-| ------------------------- | --------------------------------- | ------------------------------------------------------------------------- |
-| REST API (Route Handlers) | `app/api/v1/**`                   | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees      |
-| Auth (Route Handler)      | `app/api/me/route.ts`             | `GET /api/me`                                                             |
-| Webhook (Route Handler)   | `app/api/webhooks/clerk/route.ts` | `POST /api/webhooks/clerk` (provisiona tenant/sync)                       |
-| Sessão / Identidade       | `actions/me.ts`                   | `meAction` (Server Action)                                                |
-| Empresa                   | `actions/pgr/companies.ts`        | list, options, get, create, update, delete, dependents                    |
-| Unidade de Obra           | `actions/pgr/work-units.ts`       | list, get, create, update, delete, dependents                             |
-| Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                             |
-| GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles` |
-| Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                      |
+| Domínio                   | Arquivo                           | Superfície                                                                                                        |
+| ------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| REST API (Route Handlers) | `app/api/v1/**`                   | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees                                              |
+| Auth (Route Handler)      | `app/api/me/route.ts`             | `GET /api/me`                                                                                                     |
+| Webhook (Route Handler)   | `app/api/webhooks/clerk/route.ts` | `POST /api/webhooks/clerk` (provisiona tenant/sync)                                                               |
+| Sessão / Identidade       | `actions/me.ts`                   | `meAction` (Server Action)                                                                                        |
+| Empresa                   | `actions/pgr/companies.ts`        | list, options, get, create, update, delete, dependents                                                            |
+| Unidade de Obra           | `actions/pgr/work-units.ts`       | list, get, create, update, delete, dependents                                                                     |
+| Função (Cargo)            | `actions/pgr/job-roles.ts`        | list, get, create, update, delete, dependents                                                                     |
+| GES + vínculos            | `actions/pgr/ges.ts`              | list, get, create, update, delete, dependents + gestão de `ges_job_roles`                                         |
+| Funcionário               | `actions/pgr/employees.ts`        | list, get, create, update, delete + picker de função                                                              |
+| PGR (documento)           | `actions/pgr/pgr.ts`              | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 não persistido; sem 409)                  |
+| Riscos (GES)              | `actions/pgr/risks.ts`            | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)  |
+| EPI × risco (vínculo)     | `actions/pgr/epi-risk.ts`         | list, available (busca nome/CA), add, update (neutralização), remove + REST `/api/v1/risks/{id}/epis/**`          |
+| Categoria                 | `actions/pgr/categories.ts`       | list, get, create, update, delete (catálogo `epi`/`machine`)                                                      |
+| Metodologia de Risco      | `actions/pgr/risk-methodology.ts` | get (config ou padrão), save (upsert) + `GET`/`PUT /api/v1/risk-methodology`                                      |
+| Catálogo de EPI           | `actions/pgr/epi-catalog.ts`      | list, get, create, update, delete, dependents + REST `/api/v1/epi-catalog/**`                                     |
+| CAEPI (consulta de CA)    | `actions/epi/lookup-ca.ts`        | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                        |
+| Entrega de EPI            | `actions/pgr/epi-deliveries.ts`   | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**` |
+| Ficha de EPI              | `actions/pgr/epi-record.ts`       | `getEmployeeEpiRecordAction` (read-only) + REST `GET /api/v1/employees/{id}/epi-record`                           |
 
 ---
 
@@ -147,14 +230,19 @@ type ActionResult<T> = { ok: true; data: T } | { ok: false; error: ActionError }
 Mapeados por `toActionError` (`src/shared/server/action-error.ts`). Erro inesperado é
 **relançado** (nunca silenciado), caindo no error boundary do Next.
 
-| code                | Origem                                   | HTTP equiv. | Quando                                                   |
-| ------------------- | ---------------------------------------- | ----------- | -------------------------------------------------------- |
-| `VALIDATION`        | `ZodError` (com `fields`); CHECK `23514` | 422         | Entrada inválida                                         |
-| `DUPLICATE`         | UNIQUE `23505`                           | 409         | CNPJ/CPF/título/vínculo duplicado no escritório          |
-| `FK_NOT_FOUND`      | FK `23503`; referência fora do tenant    | 422         | Empresa/obra/GES/função inexistente no escritório        |
-| `FORBIDDEN`         | papel `client`                           | 403         | Membro não-equipe tentou operar                          |
-| `NOT_FOUND`         | `getById` → `null`                       | 404         | Registro inexistente no escritório (inclui cross-tenant) |
-| `NO_TENANT_CONTEXT` | sem escritório ativo                     | 403         | Sessão sem tenant resolvido                              |
+| code                 | Origem                                   | HTTP equiv. | Quando                                                      |
+| -------------------- | ---------------------------------------- | ----------- | ----------------------------------------------------------- |
+| `VALIDATION`         | `ZodError` (com `fields`); CHECK `23514` | 422         | Entrada inválida                                            |
+| `DUPLICATE`          | UNIQUE `23505`                           | 409         | CNPJ/CPF/título/vínculo duplicado no escritório             |
+| `FK_NOT_FOUND`       | FK `23503`; referência fora do tenant    | 422         | Empresa/obra/GES/função inexistente no escritório           |
+| `FORBIDDEN`          | papel `client`                           | 403         | Membro não-equipe tentou operar                             |
+| `NOT_FOUND`          | `getById` → `null`                       | 404         | Registro inexistente no escritório (inclui cross-tenant)    |
+| `NO_TENANT_CONTEXT`  | sem escritório ativo                     | 403         | Sessão sem tenant resolvido                                 |
+| `INSUFFICIENT_STOCK` | `InsufficientStockError` (repositório)   | 422         | Saída/entrega maior que o saldo disponível (rollback total) |
+| `ALREADY_SIGNED`     | `AlreadySignedError` (repositório)       | 409         | Assinar entrega que já saiu de `pending` (one-shot)         |
+| `ALREADY_RETURNED`   | `AlreadyReturnedError` (repositório)     | 409         | Devolver item de entrega já devolvido (saldo intacto)       |
+| `TOKEN_INVALID`      | `TokenInvalidError` (rota pública)       | 404         | Token de assinatura ausente/adulterado/inexistente          |
+| `TOKEN_EXPIRED`      | `TokenExpiredError` (rota pública)       | 410         | Token com HMAC válido porém além do TTL de 72h              |
 
 ## Pré-condições comuns (toda action de CRUD)
 
@@ -271,6 +359,78 @@ dismissalDate? badgeValidUntil?` (datas), `phone? email? rg? badgeNumber? regist
 bloodType? photoPath?`, endereço (`zipCode?…state?`).
 **`EmployeeListItem`**: `{ id, fullName, status, companyName, gesName }`.
 
+## Categoria — `actions/pgr/categories.ts`
+
+Catálogo de categorias de `epi`/`machine` (fatia 009). Sem `/dependents` (catálogo sem FK de
+entrada). REST espelho em `/api/v1/categories` (GET, POST) · `/api/v1/categories/{id}` (GET, PUT, DELETE).
+
+| Action                 | Entrada                                | Retorno (`data`)                            |
+| ---------------------- | -------------------------------------- | ------------------------------------------- |
+| `listCategoriesAction` | `{ search?, type?, page?, pageSize? }` | `{ rows: Category[]; total }`               |
+| `getCategoryAction`    | `id`                                   | `Category` (null → `NOT_FOUND`)             |
+| `createCategoryAction` | `CategoryInput`                        | `Category` (nome dup no tipo → `DUPLICATE`) |
+| `updateCategoryAction` | `id, CategoryInput`                    | `Category`                                  |
+| `deleteCategoryAction` | `id`                                   | `{ id }`                                    |
+
+**`CategoryInput`**: `type*` (`epi`|`machine`), `name*`, `note?`. Unicidade por
+`UNIQUE(org_id, type, name)` → duplicidade no mesmo escritório+tipo vira `DUPLICATE`; o mesmo nome
+é aceito entre tipos distintos. **PUT (REST) exige corpo completo** (sem `.partial()`).
+
+---
+
+## PGR — `actions/pgr/pgr.ts`
+
+Documento PGR (NR-01/GRO) vinculado a Empresa (obrigatória) e Obra/Contrato (opcional). Fatia 013,
+**zero-migration** (tabela `pgr` da migration `0012`). REST espelho em `/api/v1/pgr` (GET, POST) ·
+`/api/v1/pgr/{id}` (GET, PUT, DELETE). **Sem `/dependents` e sem 409** (a tabela não tem unique).
+
+| Action            | Entrada                                                  | Retorno (`data`)                               |
+| ----------------- | -------------------------------------------------------- | ---------------------------------------------- |
+| `listPgrAction`   | `{ companyId?, workUnitId?, search?, page?, pageSize? }` | `{ rows: PgrListItem[]; total }`               |
+| `getPgrAction`    | `id`                                                     | `Pgr` (inexistente/cross-tenant → `NOT_FOUND`) |
+| `createPgrAction` | `PgrCreateInput`                                         | `Pgr` (empresa/obra inválida → `FK_NOT_FOUND`) |
+| `updatePgrAction` | `id, PgrInput`                                           | `Pgr` (corpo completo, sem aceite)             |
+| `deletePgrAction` | `id`                                                     | `{ id }`                                       |
+
+**`PgrCreateInput`**: `companyId*` (uuid), `workUnitId?` (uuid da obra da empresa), `responsible?`,
+`registrationType*` (`crm`|`crea`|`mte`|`not_applicable`), `registrationNumber?` (obrigatório p/
+CRM/CREA/MTE, proibido p/ "não aplicável"), `issuedAt*` (AAAA-MM-DD), `validUntil*` (≥ `issuedAt`),
+`declarationAccepted*` (`true`) — **aceite validado no servidor e NÃO persistido** (a tabela `pgr`
+não tem coluna de aceite; persistência legal é #79). **`PgrInput`** (update / PUT REST): igual,
+**sem** `declarationAccepted` (corpo completo). **`PgrListItem`**: `{ id, companyId, companyName,
+workUnitId, workUnitName, responsible, registrationType, registrationNumber, issuedAt, validUntil }`.
+**Erros REST**: 422 (validação/aceite ausente/FK), 404 (cross-tenant/inexistente), 403 (`client`);
+**nunca 409**. "Usuário autor" fora de escopo (modelo sem `created_by`).
+
+---
+
+## Riscos (GES) — `actions/pgr/risks.ts`
+
+Inventário de risco por Grupo de Exposição Similar (NR-01/GRO + eSocial S-2240). Fatia 014,
+**zero-migration** (tabela `risks` da migration `0012`; escopo restrito às suas colunas — **não**
+toca `risk_assessments`/`control_measures`). REST espelho em `/api/v1/risks` (GET, POST) ·
+`/api/v1/risks/{id}` (GET, PUT, DELETE). **Sem `/dependents` e sem 409** (a tabela não tem unique).
+
+| Action             | Entrada                                                          | Retorno (`data`)                                |
+| ------------------ | ---------------------------------------------------------------- | ----------------------------------------------- |
+| `listRisksAction`  | `{ companyId?, workUnitId?, gesId?, search?, page?, pageSize? }` | `{ rows: RiskListItem[]; total }`               |
+| `getRiskAction`    | `id`                                                             | `Risk` (inexistente/cross-tenant → `NOT_FOUND`) |
+| `createRiskAction` | `RiskInput`                                                      | `Risk` (`gesId` inválido → `FK_NOT_FOUND`)      |
+| `updateRiskAction` | `id, RiskInput`                                                  | `Risk` (corpo completo)                         |
+| `deleteRiskAction` | `id`                                                             | `{ id }`                                        |
+
+**`RiskInput`** (mesmo corpo para create e PUT): `gesId*` (uuid do GES do tenant), `agentType*`
+(`physical`|`chemical`|`biological`|`ergonomic`|`mechanical`|`accident`|`psychosocial`),
+`description*`, `hazard?`, `sources?`, `propagation?`, `exposureTime?` (8 faixas), `possibleInjuries?`,
+`noxiousAgentCode?` (S-2240, texto), `measurementUnit?` (10 unidades, incl. `qualitative_na`),
+`concentrationIntensity?` (string decimal). **Regra `qualitative_na`**: concentração só é aceita com
+unidade **quantitativa** (com `qualitative_na` ou sem unidade → 422 `VALIDATION`). **`RiskListItem`**:
+`{ id, gesId, gesName, agentType, description, exposureTime, measurementUnit }`. **Reutilização** é por
+**prefill de UI** (`/risks/new?from=<id>` → `getRiskAction` → `createRiskAction`; novo `id`), **sem**
+action de clone. **Erros REST**: 422 (validação/`qualitative_na`/FK `gesId`), 404
+(cross-tenant/inexistente), 403 (`client`); **nunca 409**. "Usuário autor" fora de escopo (modelo sem
+`created_by`).
+
 ---
 
 ## Rotas de UI (superfície HTTP navegável)
@@ -279,14 +439,17 @@ bloodType? photoPath?`, endereço (`zipCode?…state?`).
 aplica `requireOfficeStaffPage()` (papel `client` → `forbidden()`); detalhe/edição por id
 inexistente ou de outro escritório → `notFound()`.
 
-| Rota                                                                         | Descrição                                                       |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `/dashboard`                                                                 | Painel (área autenticada)                                       |
-| `/companies` · `/companies/new` · `/companies/[id]/edit`                     | Empresa (lista paginada / criar / detalhe=edição)               |
-| `/work-units` · `/work-units/new` · `/work-units/[id]/edit`                  | Unidade de obra (+ copiar endereço da empresa)                  |
-| `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                          |
-| `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos) |
-| `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)          |
+| Rota                                                                         | Descrição                                                                                           |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `/dashboard`                                                                 | Painel (área autenticada)                                                                           |
+| `/companies` · `/companies/new` · `/companies/[id]/edit`                     | Empresa (lista paginada / criar / detalhe=edição)                                                   |
+| `/work-units` · `/work-units/new` · `/work-units/[id]/edit`                  | Unidade de obra (+ copiar endereço da empresa)                                                      |
+| `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                                                              |
+| `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos)                                     |
+| `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)                                              |
+| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / detalhe / editar)                       |
+| `/risks` · `/risks/new` · `/risks/[id]` · `/risks/[id]/edit`                 | Riscos do GES (lista + filtro Empresa→Obra→GES / criar / detalhe / editar / reutilizar por prefill) |
+| `/categories` · `/categories/new` · `/categories/[id]/edit`                  | Categoria (catálogo `epi`/`machine`; detalhe=edição)                                                |
 
 ## Invariantes de isolamento (multi-tenant)
 
@@ -297,9 +460,83 @@ inexistente ou de outro escritório → `notFound()`.
   mesmo escritório.
 - Nº de expostos do GES é derivado e somente leitura.
 
-## Nota sobre teste HTTP "cru"
+## Protocolo de testes com cURL (para o time)
 
-Se for necessário um endpoint HTTP de fato testável (Postman/cURL sem o framework), seria
-preciso adicionar Route Handlers (`app/api/.../route.ts`) que reusem os mesmos repositórios e o
-contrato `ActionResult`. Hoje isso não existe (decisão de arquitetura: Server Actions, sem API
-separada).
+Roteiro reproduzível para validar endpoints **sem** UI. Regra: teste sempre o **status HTTP** e o
+**corpo** (`ActionResult`). Server Actions **não** são testáveis por cURL (POST-only + header
+`Next-Action`); teste sempre pelo **espelho REST** `/api/v1`.
+
+### 0. Pré-requisitos
+
+```bash
+npm run dev                 # sobe em http://localhost:3000 (lê .env.local)
+# jq opcional, só p/ ler o corpo bonito. Em .env.local (local/homolog):
+#   APP_ENV=local
+#   DEV_API_AUTH_BYPASS=true      # libera /api/v1 sem sessão Clerk
+#   DEV_TENANT_ID=<orgId de teste>
+export BASE=http://localhost:3000
+```
+
+### 1. `/api/v1` (CRUD) — via **bypass DEV** (sem login)
+
+O tenant/papel vêm dos headers `x-dev-*`. Padronize um helper:
+
+```bash
+api() { curl -s -w '\n[HTTP %{http_code}]\n' \
+  -H 'content-type: application/json' \
+  -H 'x-dev-tenant: org_a' -H 'x-dev-role: owner' "$@"; }
+
+# Fluxo CRUD completo (esperado ao lado):
+api "$BASE/api/v1/companies"                                   # 200 { rows, total }
+api -X POST "$BASE/api/v1/companies" \
+  -d '{"razaoSocial":"Teste Ltda","riskGrade":3}'             # 201 (recurso)
+api "$BASE/api/v1/companies/<id>"                              # 200
+api -X PUT "$BASE/api/v1/companies/<id>" \
+  -d '{"razaoSocial":"Teste 2","riskGrade":2}'                # 200
+api -X DELETE "$BASE/api/v1/companies/<id>"                    # 204 (sem corpo)
+```
+
+**Casos obrigatórios** (todo CRUD): valide os 4xx canônicos, não só o caminho feliz:
+
+```bash
+# 422 VALIDATION (zod)      — campo fora do domínio
+api -X POST "$BASE/api/v1/companies" -d '{"razaoSocial":"X","riskGrade":9}'
+# 409 DUPLICATE             — repete valor único no mesmo tenant (ex.: cnpj)
+# 404 NOT_FOUND cross-tenant — id de OUTRO escritório:
+api -H 'x-dev-tenant: org_a' "$BASE/api/v1/companies/<id_do_org_b>"   # 404
+# 403 FORBIDDEN             — papel client:
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -H 'x-dev-tenant: org_a' -H 'x-dev-role: client' "$BASE/api/v1/companies"  # 403
+```
+
+> **Isolamento** é o caso crítico: trocar `x-dev-tenant` NUNCA pode devolver dado de outro escritório
+> (id alheio → 404, list → só o tenant do header).
+
+### 2. `/api/integrations/*` — exige **sessão Clerk real**
+
+Não há bypass aqui (o `proxy.ts` protege e não há dado de tenant). Sem sessão → **307/redirect** para
+o sign-in (nunca é proxy aberto). Para testar o caminho feliz, copie o cookie `__session` do navegador
+logado (DevTools → Application → Cookies) e mande no header:
+
+```bash
+SESSION='<valor do cookie __session>'
+curl -s -w '\n[HTTP %{http_code}]\n' -H "cookie: __session=$SESSION" \
+  "$BASE/api/integrations/cep/01001000"      # 200 ok(endereço)
+curl -s -o /dev/null -w '%{http_code}\n' "$BASE/api/integrations/cep/99999999"  # 404 (autenticado) / 307 (sem sessão)
+curl -s -o /dev/null -w '%{http_code}\n' "$BASE/api/integrations/cep/123"       # 422 formato / 307 sem sessão
+```
+
+### 3. Provedores externos direto (isola "é a API deles ou o nosso código?")
+
+```bash
+curl -s "https://viacep.com.br/ws/01001000/json/" | jq .
+# BrasilAPI 403 sem User-Agent → sempre mande um:
+curl -s -A 'sst-manager/1.0' "https://brasilapi.com.br/api/cnpj/v1/00000000000191" | jq '.razao_social'
+```
+
+### 4. Checklist antes de abrir PR de CRUD
+
+- [ ] `/api/v1/<resource>` responde GET/POST e `/[id]` responde GET/PUT/DELETE (201/204 corretos).
+- [ ] 422 / 409 / 404 cross-tenant / 403 (papel client) reproduzidos por cURL.
+- [ ] Recurso documentado neste arquivo (tabelas "Recursos" + "Sumário").
+- [ ] Requests adicionados ao `sst-manager.postman_collection.json` (pasta do recurso).

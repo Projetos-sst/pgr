@@ -6,6 +6,8 @@ export type TenantAuditFields = {
   requestId?: string;
   orgId?: string | null;
   userId?: string | null;
+  /** Mensagem do erro inesperado (sem stack/PII) — sem isso o 500 é indiagnosticável. */
+  error?: string;
 };
 
 export function logTenantEvent(level: "info" | "error", fields: TenantAuditFields): void {

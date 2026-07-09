@@ -43,18 +43,42 @@ export async function withOrgTx<T>(
   }) as Promise<T>;
 }
 
+const MIGRATIONS_ADVISORY_LOCK = 987_654;
+
+/**
+ * Idempotente e serializada: cada suíte chama applyMigrations no MESMO banco
+ * efêmero, então arquivos já aplicados são pulados (marker table) e o advisory
+ * lock impede corrida entre workers do Jest — sem isso, a 2ª suíte morria em
+ * "relation already exists" e `npm run test:integration` nunca rodava inteiro.
+ */
 export async function applyMigrations(sql: ReturnType<typeof postgres>): Promise<void> {
   const folder = path.resolve(process.cwd(), "src/shared/db/migrations");
   const files = fs
     .readdirSync(folder)
     .filter((f) => f.endsWith(".sql"))
     .sort();
-  for (const file of files) {
-    const content = fs.readFileSync(path.join(folder, file), "utf8");
-    const statements = content
-      .split(/--> statement-breakpoint/g)
-      .map((s) => s.trim())
-      .filter(Boolean);
-    for (const stmt of statements) await sql.unsafe(stmt);
+
+  await sql`select pg_advisory_lock(${MIGRATIONS_ADVISORY_LOCK})`;
+  try {
+    await sql.unsafe(
+      `create table if not exists public._test_applied_migrations (file text primary key)`,
+    );
+    const appliedRows = await sql<
+      { file: string }[]
+    >`select file from public._test_applied_migrations`;
+    const applied = new Set(appliedRows.map((r) => r.file));
+
+    for (const file of files) {
+      if (applied.has(file)) continue;
+      const content = fs.readFileSync(path.join(folder, file), "utf8");
+      const statements = content
+        .split(/--> statement-breakpoint/g)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      for (const stmt of statements) await sql.unsafe(stmt);
+      await sql`insert into public._test_applied_migrations (file) values (${file})`;
+    }
+  } finally {
+    await sql`select pg_advisory_unlock(${MIGRATIONS_ADVISORY_LOCK})`;
   }
 }

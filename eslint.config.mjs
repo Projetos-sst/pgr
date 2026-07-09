@@ -35,6 +35,26 @@ const eslintConfig = defineConfig([
       "no-restricted-imports": "off",
     },
   },
+  // CommonJS build scripts (and their unit test) legitimately use require().
+  {
+    files: ["scripts/**/*.js", "src/__tests__/unit/scripts/**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  // Prefixo `_` marca parâmetro/variável intencionalmente não usado.
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;
