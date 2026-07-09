@@ -1983,16 +1983,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-suggestions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "ges",
-                "{{gesId}}",
-                "risk-suggestions"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "risk-suggestions"]
             }
           }
         },
@@ -2025,17 +2017,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-suggestions/accept",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "ges",
-                "{{gesId}}",
-                "risk-suggestions",
-                "accept"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "risk-suggestions", "accept"]
             }
           }
         }

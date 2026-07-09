@@ -140,7 +140,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
   devolvendo uma lista de riscos sugeridos (`{ suggestions: [{ agentType, hazard?, description, sources? }] }`)
   — **nada é persistido**. GES de outra org → `422 FK_NOT_FOUND`; cota mensal do plano free estourada →
   `402 QUOTA_EXCEEDED`; falha/timeout do LLM → `502 AI_UNAVAILABLE` (nunca bloqueia o cadastro). `POST
-  /accept` recebe os riscos selecionados/revisados e os grava como **rascunho** em `risks` (reusa a regra
+/accept` recebe os riscos selecionados/revisados e os grava como **rascunho** em `risks` (reusa a regra
   de `createRisk`), `201` com `{ created }`.
 - **`/epi-deliveries`** (fatia 012): list filtra por `employeeId` + `search` (nome do funcionário).
   Create: `{ employeeId, deliveryDate, items: [{ stockId, quantity }] }` → `201` com a baixa
