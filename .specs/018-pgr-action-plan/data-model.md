@@ -6,23 +6,23 @@ de leitura da fatia. Nada aqui altera schema.
 
 ## Tabela `control_measures` (existente — 0012)
 
-| Coluna | Tipo | Notas |
-| --- | --- | --- |
-| `id` | uuid PK default `gen_random_uuid()` | |
-| `org_id` | text NOT NULL → `orgs.id` **ON DELETE cascade** | tenant; indexado |
-| `risk_id` | uuid NOT NULL → `risks.id` **ON DELETE cascade** | indexado |
-| `control_level` | enum `control_level` NOT NULL | `elimination`/`collective_protection`/`administrative`/`ppe` |
-| `applicable` | boolean NOT NULL **default false** | marca se o nível se aplica |
-| `justification` | text (nullable) | |
-| `monitoring` | text (nullable) | |
-| `action_what` | text (nullable) | 5W2H — o quê |
-| `action_how` | text (nullable) | 5W2H — como |
-| `action_tracking` | text (nullable) | 5W2H — formas de acompanhamento |
-| `action_measurement` | text (nullable) | 5W2H — aferição de resultados |
-| `action_responsible` | **text** (nullable) | responsável (texto; **sem FK**) |
-| `action_deadline` | **date** (nullable) | prazo; Drizzle → string `"AAAA-MM-DD"` |
-| `created_at` | timestamptz NOT NULL default now() | Drizzle → `Date` |
-| `updated_at` | timestamptz NOT NULL default now() | trigger `set_updated_at_control_measures` |
+| Coluna               | Tipo                                             | Notas                                                        |
+| -------------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| `id`                 | uuid PK default `gen_random_uuid()`              |                                                              |
+| `org_id`             | text NOT NULL → `orgs.id` **ON DELETE cascade**  | tenant; indexado                                             |
+| `risk_id`            | uuid NOT NULL → `risks.id` **ON DELETE cascade** | indexado                                                     |
+| `control_level`      | enum `control_level` NOT NULL                    | `elimination`/`collective_protection`/`administrative`/`ppe` |
+| `applicable`         | boolean NOT NULL **default false**               | marca se o nível se aplica                                   |
+| `justification`      | text (nullable)                                  |                                                              |
+| `monitoring`         | text (nullable)                                  |                                                              |
+| `action_what`        | text (nullable)                                  | 5W2H — o quê                                                 |
+| `action_how`         | text (nullable)                                  | 5W2H — como                                                  |
+| `action_tracking`    | text (nullable)                                  | 5W2H — formas de acompanhamento                              |
+| `action_measurement` | text (nullable)                                  | 5W2H — aferição de resultados                                |
+| `action_responsible` | **text** (nullable)                              | responsável (texto; **sem FK**)                              |
+| `action_deadline`    | **date** (nullable)                              | prazo; Drizzle → string `"AAAA-MM-DD"`                       |
+| `created_at`         | timestamptz NOT NULL default now()               | Drizzle → `Date`                                             |
+| `updated_at`         | timestamptz NOT NULL default now()               | trigger `set_updated_at_control_measures`                    |
 
 **Constraints/infra existentes**: `UNIQUE (org_id, risk_id, control_level)`
 (`uq_control_measures_org_risk_level`); RLS `control_measures_isolation` PERMISSIVE FOR ALL TO
@@ -41,18 +41,18 @@ SELECT/INSERT/UPDATE/DELETE a `app_runtime`; índices `idx_control_measures_org_
 
 Validado por `controlMeasureInputSchema` (Zod) **antes** do repositório:
 
-| Campo | Regra |
-| --- | --- |
-| `controlLevel` | enum NR-01 obrigatório (create); **ignorado na escrita de update** (imutável, FR-006) |
-| `applicable` | boolean (preprocess form/JSON; default `false`) |
-| `justification` | opcional (texto) |
-| `monitoring` | opcional (texto) |
-| `actionWhat` | **obrigatório se `applicable=true`**; senão opcional |
-| `actionHow` | **obrigatório se `applicable=true`**; senão opcional |
-| `actionTracking` | opcional (texto) |
-| `actionMeasurement` | opcional (texto) |
-| `actionResponsible` | opcional (texto; combobox grava `fullName`) |
-| `actionDeadline` | opcional (`optionalIsoDate`, `AAAA-MM-DD`) |
+| Campo               | Regra                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| `controlLevel`      | enum NR-01 obrigatório (create); **ignorado na escrita de update** (imutável, FR-006) |
+| `applicable`        | boolean (preprocess form/JSON; default `false`)                                       |
+| `justification`     | opcional (texto)                                                                      |
+| `monitoring`        | opcional (texto)                                                                      |
+| `actionWhat`        | **obrigatório se `applicable=true`**; senão opcional                                  |
+| `actionHow`         | **obrigatório se `applicable=true`**; senão opcional                                  |
+| `actionTracking`    | opcional (texto)                                                                      |
+| `actionMeasurement` | opcional (texto)                                                                      |
+| `actionResponsible` | opcional (texto; combobox grava `fullName`)                                           |
+| `actionDeadline`    | opcional (`optionalIsoDate`, `AAAA-MM-DD`)                                            |
 
 **Não** entram no input: `id`, `orgId` (sessão), `riskId` (rota), `createdAt`/`updatedAt`.
 Campos vazios de texto → `undefined` → gravados como `NULL` (via `?? null` no `toColumns`).
@@ -61,11 +61,11 @@ Campos vazios de texto → `undefined` → gravados como `NULL` (via `?? null` n
 
 Função pura `deriveMeasureState(measure, today)`:
 
-| Estado | Condição | Rótulo pt-BR |
-| --- | --- | --- |
-| `without_plan` | `applicable === false` | "Sem plano" |
-| `planned` | `applicable === true` **e** não vencida | "Planejada" |
-| `overdue` | `applicable === true` **e** `actionDeadline != null` **e** `actionDeadline < today` | "Vencida" |
+| Estado         | Condição                                                                            | Rótulo pt-BR |
+| -------------- | ----------------------------------------------------------------------------------- | ------------ |
+| `without_plan` | `applicable === false`                                                              | "Sem plano"  |
+| `planned`      | `applicable === true` **e** não vencida                                             | "Planejada"  |
+| `overdue`      | `applicable === true` **e** `actionDeadline != null` **e** `actionDeadline < today` | "Vencida"    |
 
 `isOverdue(applicable, actionDeadline, today) = applicable && !!actionDeadline && actionDeadline < today`.
 `today` = data local `America/Sao_Paulo` em `AAAA-MM-DD`, passada pelo caller. Sem prazo ⇒ nunca
@@ -88,7 +88,7 @@ type ControlMeasureListItem = {
   actionMeasurement: string | null;
   actionResponsible: string | null;
   actionDeadline: string | null; // coluna date → "AAAA-MM-DD"
-  createdAt: Date;               // coluna timestamptz → Date
+  createdAt: Date; // coluna timestamptz → Date
 };
 ```
 

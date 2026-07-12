@@ -72,13 +72,13 @@ function toWriteColumns(values: ControlMeasureWriteValues) {
 
 ## Assinaturas
 
-| Função | Retorno | Notas |
-| --- | --- | --- |
-| `listControlMeasures(orgId, riskId, params?)` | `Paginated<ControlMeasureListItem>` | `assertRiskInTenant` → FK_NOT_FOUND; ordena por NR-01; filtra `orgId`+`riskId` |
-| `getControlMeasureById(orgId, id)` | `ControlMeasure \| null` | por `id` (sem join); `null` → 404 na Action |
-| `createControlMeasure(orgId, riskId, values)` | `ControlMeasure` | `auditedTenantWrite` + `assertRiskInTenant` + INSERT (`controlLevel` vem de `values`); UNIQUE → 23505 → DUPLICATE |
-| `updateControlMeasure(orgId, id, values)` | `ControlMeasure \| null` | `auditedTenantWrite`; UPDATE por `(org,id)`; **não** toca `control_level`/`risk_id`; `null` → 404 |
-| `deleteControlMeasure(orgId, id)` | `boolean` | `auditedTenantWrite`; DELETE físico RETURNING |
+| Função                                        | Retorno                             | Notas                                                                                                             |
+| --------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `listControlMeasures(orgId, riskId, params?)` | `Paginated<ControlMeasureListItem>` | `assertRiskInTenant` → FK_NOT_FOUND; ordena por NR-01; filtra `orgId`+`riskId`                                    |
+| `getControlMeasureById(orgId, id)`            | `ControlMeasure \| null`            | por `id` (sem join); `null` → 404 na Action                                                                       |
+| `createControlMeasure(orgId, riskId, values)` | `ControlMeasure`                    | `auditedTenantWrite` + `assertRiskInTenant` + INSERT (`controlLevel` vem de `values`); UNIQUE → 23505 → DUPLICATE |
+| `updateControlMeasure(orgId, id, values)`     | `ControlMeasure \| null`            | `auditedTenantWrite`; UPDATE por `(org,id)`; **não** toca `control_level`/`risk_id`; `null` → 404                 |
+| `deleteControlMeasure(orgId, id)`             | `boolean`                           | `auditedTenantWrite`; DELETE físico RETURNING                                                                     |
 
 > `createControlMeasure` recebe `values` **com** `controlLevel`; `updateControlMeasure` recebe
 > `values` cujo `controlLevel` é **ignorado** na escrita.

@@ -37,13 +37,13 @@ function revalidateMeasure(riskId: string, measureId?: string) {
 
 ## Assinaturas
 
-| Action | Operação | Audit | Retorno |
-| --- | --- | --- | --- |
-| `listControlMeasuresAction(riskId, params?)` | `pgr.control_measures.list` | não | `ActionResult<Paginated<ControlMeasureListItem>>` |
-| `getControlMeasureAction(id)` | `pgr.control_measures.get` | não | `ActionResult<ControlMeasure>` (null → 404) |
-| `createControlMeasureAction(riskId, input)` | `pgr.control_measures.create` | sim | `ActionResult<ControlMeasure>` (DUPLICATE se nível repetido) |
-| `updateControlMeasureAction(riskId, id, input)` | `pgr.control_measures.update` | sim | `ActionResult<ControlMeasure>` (null → 404) |
-| `deleteControlMeasureAction(riskId, id)` | `pgr.control_measures.delete` | sim | `ActionResult<{ id: string }>` |
+| Action                                          | Operação                      | Audit | Retorno                                                      |
+| ----------------------------------------------- | ----------------------------- | ----- | ------------------------------------------------------------ |
+| `listControlMeasuresAction(riskId, params?)`    | `pgr.control_measures.list`   | não   | `ActionResult<Paginated<ControlMeasureListItem>>`            |
+| `getControlMeasureAction(id)`                   | `pgr.control_measures.get`    | não   | `ActionResult<ControlMeasure>` (null → 404)                  |
+| `createControlMeasureAction(riskId, input)`     | `pgr.control_measures.create` | sim   | `ActionResult<ControlMeasure>` (DUPLICATE se nível repetido) |
+| `updateControlMeasureAction(riskId, id, input)` | `pgr.control_measures.update` | sim   | `ActionResult<ControlMeasure>` (null → 404)                  |
+| `deleteControlMeasureAction(riskId, id)`        | `pgr.control_measures.delete` | sim   | `ActionResult<{ id: string }>`                               |
 
 > `update`/`delete` recebem `riskId` **apenas** para `revalidatePath` das rotas aninhadas (a
 > escrita/exclusão em si é por `id` da medida).
@@ -138,14 +138,14 @@ actions **já existentes**, evitando uma action redundante:
 
 ## Erros (via `toActionError` / `officeAction`)
 
-| Situação | Código | HTTP (na superfície REST) |
-| --- | --- | --- |
-| ranges/enum/condicional (actionWhat/How) inválidos | `VALIDATION` | 422 |
-| `riskId` inexistente/cross-tenant (create/list) | `FK_NOT_FOUND` | 422 |
-| medida inexistente/cross-tenant (get/update/delete) | `NOT_FOUND` | 404 |
-| **nível `control_level` duplicado no risco** (create) | `DUPLICATE` | **409** |
-| papel `client` | `FORBIDDEN` | 403 |
-| sem tenant | `NO_TENANT_CONTEXT` | 403 |
+| Situação                                              | Código              | HTTP (na superfície REST) |
+| ----------------------------------------------------- | ------------------- | ------------------------- |
+| ranges/enum/condicional (actionWhat/How) inválidos    | `VALIDATION`        | 422                       |
+| `riskId` inexistente/cross-tenant (create/list)       | `FK_NOT_FOUND`      | 422                       |
+| medida inexistente/cross-tenant (get/update/delete)   | `NOT_FOUND`         | 404                       |
+| **nível `control_level` duplicado no risco** (create) | `DUPLICATE`         | **409**                   |
+| papel `client`                                        | `FORBIDDEN`         | 403                       |
+| sem tenant                                            | `NO_TENANT_CONTEXT` | 403                       |
 
 Nunca aceitar `orgId`/`organizationId`/`organization_id` do cliente — o tenant vem de
 `officeAction` (`{ tenantId }`).

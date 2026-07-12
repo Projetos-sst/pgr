@@ -8,13 +8,13 @@ validação, mesmo `toActionError`); **não** chamam `revalidatePath`.
 
 ## Endpoints
 
-| Método · Rota | Ação | Sucesso |
-| --- | --- | --- |
-| `GET /api/v1/risks/{id}/control-measures` | list do risco (paginado `page`/`pageSize`) | 200 `{ rows, total }` |
-| `POST /api/v1/risks/{id}/control-measures` | create (corpo completo; nível NR-01) | 201 `ControlMeasure` |
-| `GET /api/v1/control-measures/{id}` | getById | 200 `ControlMeasure` |
-| `PUT /api/v1/control-measures/{id}` | update (corpo completo; `control_level` imutável) | 200 `ControlMeasure` |
-| `DELETE /api/v1/control-measures/{id}` | delete físico | 204 (sem corpo) |
+| Método · Rota                              | Ação                                              | Sucesso               |
+| ------------------------------------------ | ------------------------------------------------- | --------------------- |
+| `GET /api/v1/risks/{id}/control-measures`  | list do risco (paginado `page`/`pageSize`)        | 200 `{ rows, total }` |
+| `POST /api/v1/risks/{id}/control-measures` | create (corpo completo; nível NR-01)              | 201 `ControlMeasure`  |
+| `GET /api/v1/control-measures/{id}`        | getById                                           | 200 `ControlMeasure`  |
+| `PUT /api/v1/control-measures/{id}`        | update (corpo completo; `control_level` imutável) | 200 `ControlMeasure`  |
+| `DELETE /api/v1/control-measures/{id}`     | delete físico                                     | 204 (sem corpo)       |
 
 **Sem** endpoint de dependentes (sem FK de entrada). `{id}` na rota aninhada = **riskId**; na flat
 = **measureId**.
@@ -135,14 +135,14 @@ export function DELETE(req: NextRequest, { params }: Ctx) {
 
 ## Mapeamento código → HTTP (via `HTTP_BY_CODE` em `src/shared/api/rest.ts`)
 
-| Situação | Código | HTTP |
-| --- | --- | --- |
-| enum/condicional (actionWhat/How) inválidos | `VALIDATION` | **422** |
-| `riskId` inexistente/cross-tenant (list/create) | `FK_NOT_FOUND` | **422** |
-| medida inexistente/cross-tenant (get/put/delete) | `NOT_FOUND` | **404** |
-| **`control_level` duplicado no risco** (create) | `DUPLICATE` | **409** |
-| papel `client` | `FORBIDDEN` | **403** |
-| sem tenant | `NO_TENANT_CONTEXT` | **403** |
+| Situação                                         | Código              | HTTP    |
+| ------------------------------------------------ | ------------------- | ------- |
+| enum/condicional (actionWhat/How) inválidos      | `VALIDATION`        | **422** |
+| `riskId` inexistente/cross-tenant (list/create)  | `FK_NOT_FOUND`      | **422** |
+| medida inexistente/cross-tenant (get/put/delete) | `NOT_FOUND`         | **404** |
+| **`control_level` duplicado no risco** (create)  | `DUPLICATE`         | **409** |
+| papel `client`                                   | `FORBIDDEN`         | **403** |
+| sem tenant                                       | `NO_TENANT_CONTEXT` | **403** |
 
 > `DUPLICATE`/409 vem **automaticamente** do SQLSTATE 23505 da UNIQUE
 > `uq_control_measures_org_risk_level` (mapeado por `toActionError`) — o handler não trata

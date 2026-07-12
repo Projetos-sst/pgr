@@ -49,14 +49,14 @@ REST + 3 páginas UI + componentes + docs/Postman + unit & integração.
 
 _GATE — reavaliado após o design (Phase 1)._
 
-| Princípio (constituição) | Situação nesta fatia |
-| --- | --- |
-| **I — Isolamento multi-tenant** | ✅ `withOrg(orgId)` + RLS `app_runtime` em `control_measures`; toda query filtra `controlMeasures.orgId`; tenant de `requireOfficeStaff()`/contexto, nunca do client. |
-| **II — Serviço externo pago / emenda formal** | ✅ N/A — sem LLM/serviço externo pago. |
-| **Camadas (page→action→domain→repo→drizzle)** | ✅ Repositório é o único a tocar Drizzle; actions/handlers reusam repo/zod. |
-| **Superfície de API (Action + REST + docs + Postman)** | ✅ As 4 entregas planejadas juntas. |
-| **Testabilidade (unit + integração Postgres efêmero)** | ✅ Unit (domínio puro) + integração (actions/REST/RLS) contra `INTEGRATION_*`. |
-| **Zero migration / schema code-first** | ✅ Tabela e enum já existem (0012); nada em `schema/**` ou `migrations/**`. |
+| Princípio (constituição)                               | Situação nesta fatia                                                                                                                                                  |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **I — Isolamento multi-tenant**                        | ✅ `withOrg(orgId)` + RLS `app_runtime` em `control_measures`; toda query filtra `controlMeasures.orgId`; tenant de `requireOfficeStaff()`/contexto, nunca do client. |
+| **II — Serviço externo pago / emenda formal**          | ✅ N/A — sem LLM/serviço externo pago.                                                                                                                                |
+| **Camadas (page→action→domain→repo→drizzle)**          | ✅ Repositório é o único a tocar Drizzle; actions/handlers reusam repo/zod.                                                                                           |
+| **Superfície de API (Action + REST + docs + Postman)** | ✅ As 4 entregas planejadas juntas.                                                                                                                                   |
+| **Testabilidade (unit + integração Postgres efêmero)** | ✅ Unit (domínio puro) + integração (actions/REST/RLS) contra `INTEGRATION_*`.                                                                                        |
+| **Zero migration / schema code-first**                 | ✅ Tabela e enum já existem (0012); nada em `schema/**` ou `migrations/**`.                                                                                           |
 
 **Resultado do gate**: PASS (sem violações; Complexity Tracking vazio).
 
