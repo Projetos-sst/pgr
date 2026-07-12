@@ -52,6 +52,12 @@ export default async function RiskDetailPage({
               Avaliações
             </Link>
             <Link
+              href={`/risks/${risk.id}/control-measures`}
+              className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+            >
+              Medidas de controle
+            </Link>
+            <Link
               href={`/risks/new?from=${risk.id}`}
               className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
             >

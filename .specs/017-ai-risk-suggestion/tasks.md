@@ -4,7 +4,7 @@ description: "Task list — Sugestão de riscos assistida por IA"
 
 # Tasks: Sugestão de riscos assistida por IA
 
-**Input**: Design documents from `.specs/016-ai-risk-suggestion/`
+**Input**: Design documents from `.specs/017-ai-risk-suggestion/`
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 

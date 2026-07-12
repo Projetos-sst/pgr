@@ -2,7 +2,7 @@
 
 **Branch**: `feature/ai-risk-suggestion` | **Date**: 2026-07-08 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `.specs/016-ai-risk-suggestion/spec.md`
+**Input**: Feature specification from `.specs/017-ai-risk-suggestion/spec.md`
 
 > **Nota**: fatia já implementada (as-built). Este plano documenta a arquitetura efetiva e serve de
 > base para `/speckit-tasks`. Registro de implementação em
@@ -72,7 +72,7 @@ Histórico do gate mantido em Complexity Tracking.
 ### Documentation (this feature)
 
 ```text
-.specs/016-ai-risk-suggestion/
+.specs/017-ai-risk-suggestion/
 ├── plan.md              # Este arquivo
 ├── research.md          # Phase 0
 ├── data-model.md        # Phase 1

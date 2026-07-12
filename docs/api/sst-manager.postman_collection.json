@@ -59,6 +59,10 @@
       "value": ""
     },
     {
+      "key": "controlMeasureId",
+      "value": ""
+    },
+    {
       "key": "sessionCookie",
       "value": "<cookie __session do navegador logado>"
     },
@@ -1624,6 +1628,277 @@
               "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Medidas de Controle",
+      "item": [
+        {
+          "name": "GET /risks/:riskId/control-measures (lista NR-01)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/control-measures (create, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/control-measures (409 nível duplicado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/control-measures (422 validação: applicable sem actionWhat)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"administrative\",\n  \"applicable\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/control-measures (422 FK riskId inválido)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/00000000-0000-0000-0000-000000000000/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "00000000-0000-0000-0000-000000000000",
+                "control-measures"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"ppe\",\n  \"applicable\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /control-measures/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /control-measures/:id (update corpo completo, 200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /control-measures/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /risks/:riskId/control-measures (403 client)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+            }
+          }
+        },
+        {
+          "name": "GET /control-measures/:id (404 cross-tenant/inexistente)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
             }
           }
         }
