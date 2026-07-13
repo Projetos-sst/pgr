@@ -101,6 +101,18 @@
     {
       "key": "epiCatalogId",
       "value": ""
+    },
+    {
+      "key": "trainingId",
+      "value": ""
+    },
+    {
+      "key": "trainingRecordId",
+      "value": ""
+    },
+    {
+      "key": "requiredTrainingId",
+      "value": ""
     }
   ],
   "item": [
@@ -2179,6 +2191,365 @@
               "raw": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "categories", "{{categoryId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Treinamentos (catalogo)",
+      "item": [
+        {
+          "name": "GET /training-catalog (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog?search=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /training-catalog (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"NR-35 Trabalho em Altura\",\n  \"referenceNorm\": \"NR-35\",\n  \"workloadHours\": 8,\n  \"periodicity\": \"biennial\",\n  \"description\": \"Capacitacao obrigatoria para trabalho em altura\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /training-catalog/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /training-catalog/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"NR-35 Trabalho em Altura\",\n  \"referenceNorm\": \"NR-35\",\n  \"workloadHours\": 16,\n  \"periodicity\": \"biennial\",\n  \"description\": \"Atualizado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /training-catalog/:id (em uso -> 409 IN_USE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /training-catalog/:id/dependents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}/dependents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}", "dependents"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Realizacao de treinamento (training-records)",
+      "item": [
+        {
+          "name": "GET /training-records (list por funcionario)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records?employeeId={{employeeId}}&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records"],
+              "query": [
+                {
+                  "key": "employeeId",
+                  "value": "{{employeeId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /training-records (create — valid_until no servidor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"trainingId\": \"{{trainingId}}\",\n  \"completedAt\": \"2026-07-01\",\n  \"certificatePath\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /training-records/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records/{{trainingRecordId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records", "{{trainingRecordId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /training-records/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records/{{trainingRecordId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records", "{{trainingRecordId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Obrigatorios por funcao (job-role-required-trainings)",
+      "item": [
+        {
+          "name": "GET /job-role-required-trainings (list por funcao)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-role-required-trainings?jobRoleId={{jobRoleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-role-required-trainings"],
+              "query": [
+                {
+                  "key": "jobRoleId",
+                  "value": "{{jobRoleId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /job-role-required-trainings (add idempotente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-role-required-trainings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-role-required-trainings"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobRoleId\": \"{{jobRoleId}}\",\n  \"trainingId\": \"{{trainingId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /job-role-required-trainings/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-role-required-trainings/{{requiredTrainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "job-role-required-trainings",
+                "{{requiredTrainingId}}"
+              ]
             }
           }
         }
