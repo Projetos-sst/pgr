@@ -18,6 +18,9 @@ const PGR_NAV = [
   { href: "/categories", label: "Categorias" },
   { href: "/epi-catalog", label: "Catálogo de EPI" },
   { href: "/epi-stock", label: "Estoque de EPI" },
+  { href: "/training-catalog", label: "Treinamentos" },
+  { href: "/training-expiry", label: "Vencimentos" },
+  { href: "/training-compliance", label: "Conformidade" },
   { href: "/signatures", label: "Assinaturas" },
   { href: "/epi-returns", label: "Devoluções de EPI" },
 ];
