@@ -48,7 +48,24 @@ Reference implementation to copy from: **companies** (`actions/pgr/companies.ts`
 
 <!-- SPECKIT START -->
 
-Branch atual: **`feature/ai-risk-suggestion`**. Fatia atual (`016`) — **Sugestão de riscos assistida
+Branch atual: **`feature/training-module`**. Fatia atual (`017`) — **Módulo de Treinamentos / Fase 04
+completa** (issues `#28`/`#29`/`#30`/`#31`/`#80`). Plan: `.specs/017-training-module/plan.md`
+(spec/research/data-model/contracts/quickstart no mesmo diretório). Base `develop` pós-#142 (última
+migration `0015_ai_usage_events`); esta leva traz a **`0016_training_module`** (renumerada de `0015`
+no rebase — a `0015` é a `ai_usage_events` da fatia 016) — 3 tabelas tenant-isoladas
+(`training_catalog`, `training_records`, `job_role_required_trainings`) + enum `training_periodicity`
+(`annual|biennial|triennial|quinquennial|single`). Fundação (#28) + 4 US zero-migration: US1 CRUD do
+catálogo (#29); US2 registro de realização com `valid_until` calculado no servidor por
+`computeValidUntil` D1 (`single→null`); US3 controle de vencimento (helper D5 último-registro +
+`classifyTrainingStatus` D2, exclui `single`, resumo `{expired,dueSoon}` p/ dashboard); US4 obrigatórios
+por função + conformidade (reusa D5+D2, `missing` sem registro). Certificado = `certificate_path text`
+(sem GED — D4). Reusa `VALIDATION`/`DUPLICATE`/`NOT_FOUND`/`FK_NOT_FOUND`/`FORBIDDEN`; `IN_USE` (409)
+ganha mapeamento HTTP em `api/rest.ts` (o código já existia, sem status). Funções puras D1/D2 em
+`src/shared/domains/pgr/trainings.ts`; `todayInSaoPaulo` promovido de CAEPI p/ `src/shared/dates.ts`.
+Testes: unit (D1/D2/zod) + integração em Postgres efêmero (CRUD, cross-tenant, `dependents`,
+conformidade, `FORBIDDEN`).
+
+Fatia anterior (`016` — ai-risk-suggestion, mergeada em `develop`) — **Sugestão de riscos assistida
 por IA** (primeira feature que chama um LLM externo). Plan:
 `.specs/016-ai-risk-suggestion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
 diretório). 2 user stories: US1 (P1) botão "Sugerir Riscos com IA" no GES → contexto **não-PII** do GES
@@ -62,10 +79,10 @@ ilimitado — espelha a cota de assinatura). Núcleo compartilhado
 (`/api/v1/ges/[id]/risk-suggestions(/accept)`). Novo erro `AI_UNAVAILABLE` (502). Isolamento/cota
 verificados **antes** do LLM (cross-tenant → `FK_NOT_FOUND` sem chamar o LLM). **Constitution Check**:
 Princípio II (serviço externo pago) exige **emenda formal** — registrado em Complexity Tracking.
-Testes: unit + integração (Postgres efêmero `INTEGRATION_*`, **LLM mockado**). Base: `develop`
-(`cf0fdcc`); **migration `0014` renumerar no rebase** se colidir com fatia paralela.
+Testes: unit + integração (Postgres efêmero `INTEGRATION_*`, **LLM mockado**). Migration
+`0015_ai_usage_events` (renumerada de `0014` no rebase).
 
-Fatia anterior (`012`) — **Conclusão da Fase 02 /
+Fatia anterior (`012`) — Branch **`feature/epi-module-completion`** — **Conclusão da Fase 02 /
 módulo operacional de EPI** (issues `#18`/`#115`/`#75`, `#19`, `#20`, `#21`; `#78` fica p/ Fase 03).
 Plan: `.specs/012-epi-module-completion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
 diretório). 5 user stories: US1 plugar `CaField`/CAEPI no `epi-catalog-form.tsx` (wiring, zero migration);
