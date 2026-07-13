@@ -34,13 +34,4 @@ export function validateCa(record: ValidatableRecord, today: string): CaValidity
   return isSituationValid && record.validUntil >= today ? "valid" : "expired";
 }
 
-/**
- * "Hoje" no fuso de referência do dado regulatório (America/Sao_Paulo): o servidor
- * roda em UTC e, à noite, UTC já virou o dia seguinte — um CA que vence hoje no
- * Brasil seria marcado vencido cedo demais. `en-CA` formata como YYYY-MM-DD.
- */
-export function todayInSaoPaulo(): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-  }).format(new Date());
-}
+export { todayInSaoPaulo } from "@/shared/dates";
