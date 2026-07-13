@@ -7,14 +7,14 @@ Verbos **reduzidos e justificados** (associação / append-only / read-only) —
 
 ## Endpoints
 
-| Método · Rota | Ação | Sucesso |
-| --- | --- | --- |
-| `GET /api/v1/pgr/{id}/ges` | lista GES vinculados | 200 `PgrGesLinkItem[]` |
-| `POST /api/v1/pgr/{id}/ges` | adiciona vínculo (corpo `{ gesId }`) | 201 `PgrGes` |
-| `DELETE /api/v1/pgr/{id}/ges/{gesId}` | remove o vínculo (não apaga o GES) | 204 |
-| `GET /api/v1/pgr/{id}/revisions` | lista revisões | 200 `PgrRevisionListItem[]` |
-| `POST /api/v1/pgr/{id}/revisions` | cria revisão (append-only) | 201 `PgrRevision` |
-| `GET /api/v1/pgr/{id}/consolidated` | visão consolidada read-only | 200 `PgrConsolidated` |
+| Método · Rota                         | Ação                                 | Sucesso                     |
+| ------------------------------------- | ------------------------------------ | --------------------------- |
+| `GET /api/v1/pgr/{id}/ges`            | lista GES vinculados                 | 200 `PgrGesLinkItem[]`      |
+| `POST /api/v1/pgr/{id}/ges`           | adiciona vínculo (corpo `{ gesId }`) | 201 `PgrGes`                |
+| `DELETE /api/v1/pgr/{id}/ges/{gesId}` | remove o vínculo (não apaga o GES)   | 204                         |
+| `GET /api/v1/pgr/{id}/revisions`      | lista revisões                       | 200 `PgrRevisionListItem[]` |
+| `POST /api/v1/pgr/{id}/revisions`     | cria revisão (append-only)           | 201 `PgrRevision`           |
+| `GET /api/v1/pgr/{id}/consolidated`   | visão consolidada read-only          | 200 `PgrConsolidated`       |
 
 **Sem** PUT em `ges` (vínculo sem campos). **Sem** PUT/DELETE em `revisions` (append-only). `{id}`
 = **pgrId**; `{gesId}` = **gesId** (par do vínculo). Sem endpoint de dependentes.
@@ -34,12 +34,16 @@ export function GET(req, { params }: Ctx) {
   });
 }
 export function POST(req, { params }: Ctx) {
-  return restHandler(req, async ({ tenantId }) => {
-    const { id: pgrId } = await params;
-    if (!(await getPgrById(tenantId, pgrId))) throw new NotFoundError();
-    const { gesId } = pgrGesInputSchema.parse(await req.json());
-    return addGesToPgr(tenantId, pgrId, gesId);
-  }, { status: 201 });
+  return restHandler(
+    req,
+    async ({ tenantId }) => {
+      const { id: pgrId } = await params;
+      if (!(await getPgrById(tenantId, pgrId))) throw new NotFoundError();
+      const { gesId } = pgrGesInputSchema.parse(await req.json());
+      return addGesToPgr(tenantId, pgrId, gesId);
+    },
+    { status: 201 },
+  );
 }
 ```
 
@@ -48,25 +52,35 @@ export function POST(req, { params }: Ctx) {
 ```ts
 type Ctx = { params: Promise<{ id: string; gesId: string }> };
 export function DELETE(req, { params }: Ctx) {
-  return restHandler(req, async ({ tenantId }) => {
-    const { id: pgrId, gesId } = await params;
-    const deleted = await removeGesFromPgr(tenantId, pgrId, gesId);
-    if (!deleted) throw new NotFoundError();
-  }, { status: 204 });
+  return restHandler(
+    req,
+    async ({ tenantId }) => {
+      const { id: pgrId, gesId } = await params;
+      const deleted = await removeGesFromPgr(tenantId, pgrId, gesId);
+      if (!deleted) throw new NotFoundError();
+    },
+    { status: 204 },
+  );
 }
 ```
 
 ## `src/app/api/v1/pgr/[id]/revisions/route.ts`
 
 ```ts
-export function GET(req, { params }) { /* getPgrById→404; return listPgrRevisions */ }
+export function GET(req, { params }) {
+  /* getPgrById→404; return listPgrRevisions */
+}
 export function POST(req, { params }) {
-  return restHandler(req, async ({ tenantId }) => {
-    const { id: pgrId } = await params;
-    if (!(await getPgrById(tenantId, pgrId))) throw new NotFoundError();
-    const values = pgrRevisionInputSchema.parse(await req.json());
-    return createPgrRevision(tenantId, pgrId, values);
-  }, { status: 201 });
+  return restHandler(
+    req,
+    async ({ tenantId }) => {
+      const { id: pgrId } = await params;
+      if (!(await getPgrById(tenantId, pgrId))) throw new NotFoundError();
+      const values = pgrRevisionInputSchema.parse(await req.json());
+      return createPgrRevision(tenantId, pgrId, values);
+    },
+    { status: 201 },
+  );
 }
 ```
 
@@ -107,15 +121,15 @@ export function GET(req, { params }) {
 
 ## Mapeamento código → HTTP (`HTTP_BY_CODE`)
 
-| Situação | Código | HTTP |
-| --- | --- | --- |
-| PGR inexistente/cross-tenant | `NOT_FOUND` | **404** |
-| GES inexistente/cross-tenant (POST /ges) | `FK_NOT_FOUND` | **422** |
-| vínculo GES duplicado (POST /ges) | `DUPLICATE` | **409** |
-| revisão nº duplicado (POST /revisions) | `DUPLICATE` | **409** |
-| `gesId`/`revisionNumber`/`revisedAt` inválidos | `VALIDATION` | **422** |
-| papel `client` | `FORBIDDEN` | **403** |
-| sem tenant | `NO_TENANT_CONTEXT` | **403** |
+| Situação                                       | Código              | HTTP    |
+| ---------------------------------------------- | ------------------- | ------- |
+| PGR inexistente/cross-tenant                   | `NOT_FOUND`         | **404** |
+| GES inexistente/cross-tenant (POST /ges)       | `FK_NOT_FOUND`      | **422** |
+| vínculo GES duplicado (POST /ges)              | `DUPLICATE`         | **409** |
+| revisão nº duplicado (POST /revisions)         | `DUPLICATE`         | **409** |
+| `gesId`/`revisionNumber`/`revisedAt` inválidos | `VALIDATION`        | **422** |
+| papel `client`                                 | `FORBIDDEN`         | **403** |
+| sem tenant                                     | `NO_TENANT_CONTEXT` | **403** |
 
 > `DUPLICATE`/409 vem **automaticamente** do 23505 das UNIQUE `uq_pgr_ges_*` / `uq_pgr_revisions_*`
 > (mapeado por `toActionError`) — os handlers não tratam explicitamente.

@@ -9,14 +9,20 @@ via `auditedTenantWrite`. **Nenhum** captura 23505 (a UNIQUE sobe → `DUPLICATE
 /** PGR-alvo da rota: inexistente/cross-tenant → NOT_FOUND na Action (repo retorna null/false ou
  *  a Action valida com getPgrById). Para writes ancorados no PGR, valida presença no tenant. */
 async function assertPgrInTenant(tx, orgId, pgrId): Promise<void> {
-  const [row] = await tx.select({ id: pgr.id }).from(pgr)
-    .where(and(eq(pgr.orgId, orgId), eq(pgr.id, pgrId))).limit(1);
+  const [row] = await tx
+    .select({ id: pgr.id })
+    .from(pgr)
+    .where(and(eq(pgr.orgId, orgId), eq(pgr.id, pgrId)))
+    .limit(1);
   if (!row) throw new ReferenceNotFoundError("pgr"); // mapeado a NOT_FOUND na Action (ver server-actions)
 }
 /** GES referência de entrada → FK_NOT_FOUND. (mesmo padrão de risks.ts) */
 async function assertGesInTenant(tx, orgId, gesId): Promise<void> {
-  const [row] = await tx.select({ id: ges.id }).from(ges)
-    .where(and(eq(ges.orgId, orgId), eq(ges.id, gesId))).limit(1);
+  const [row] = await tx
+    .select({ id: ges.id })
+    .from(ges)
+    .where(and(eq(ges.orgId, orgId), eq(ges.id, gesId)))
+    .limit(1);
   if (!row) throw new ReferenceNotFoundError("ges");
 }
 ```
@@ -27,20 +33,27 @@ async function assertGesInTenant(tx, orgId, gesId): Promise<void> {
 
 ## `repositories/pgr-ges.ts`
 
-| Função | Retorno | Notas |
-| --- | --- | --- |
-| `listPgrGes(orgId, pgrId)` | `PgrGesLinkItem[]` | `pgr_ges` ⨝ `ges`; filtra `org_id`+`pgr_id`; ordena por `ges.name` |
-| `addGesToPgr(orgId, pgrId, gesId)` | `PgrGes` | `auditedTenantWrite` + `assertGesInTenant` + INSERT; UNIQUE → 23505 → DUPLICATE |
-| `removeGesFromPgr(orgId, pgrId, gesId)` | `boolean` | DELETE por `(org_id, pgr_id, ges_id)` RETURNING; **só o vínculo** |
+| Função                                  | Retorno            | Notas                                                                           |
+| --------------------------------------- | ------------------ | ------------------------------------------------------------------------------- |
+| `listPgrGes(orgId, pgrId)`              | `PgrGesLinkItem[]` | `pgr_ges` ⨝ `ges`; filtra `org_id`+`pgr_id`; ordena por `ges.name`              |
+| `addGesToPgr(orgId, pgrId, gesId)`      | `PgrGes`           | `auditedTenantWrite` + `assertGesInTenant` + INSERT; UNIQUE → 23505 → DUPLICATE |
+| `removeGesFromPgr(orgId, pgrId, gesId)` | `boolean`          | DELETE por `(org_id, pgr_id, ges_id)` RETURNING; **só o vínculo**               |
 
 ```ts
 export async function listPgrGes(orgId, pgrId): Promise<PgrGesLinkItem[]> {
   return withOrg(orgId, (tx) =>
-    tx.select({ id: pgrGes.id, gesId: pgrGes.gesId, gesName: ges.name, createdAt: pgrGes.createdAt })
+    tx
+      .select({
+        id: pgrGes.id,
+        gesId: pgrGes.gesId,
+        gesName: ges.name,
+        createdAt: pgrGes.createdAt,
+      })
       .from(pgrGes)
       .innerJoin(ges, and(eq(ges.id, pgrGes.gesId), eq(ges.orgId, orgId)))
       .where(and(eq(pgrGes.orgId, orgId), eq(pgrGes.pgrId, pgrId)))
-      .orderBy(asc(ges.name)));
+      .orderBy(asc(ges.name)),
+  );
 }
 
 export async function addGesToPgr(orgId, pgrId, gesId): Promise<PgrGes> {
@@ -49,49 +62,69 @@ export async function addGesToPgr(orgId, pgrId, gesId): Promise<PgrGes> {
       await assertGesInTenant(tx, orgId, gesId);
       const [row] = await tx.insert(pgrGes).values({ orgId, pgrId, gesId }).returning();
       return row;
-    }));
+    }),
+  );
 }
 
 export async function removeGesFromPgr(orgId, pgrId, gesId): Promise<boolean> {
   return auditedTenantWrite(orgId, "pgr.pgr_ges.write_rejected", () =>
     withOrg(orgId, async (tx) => {
-      const rows = await tx.delete(pgrGes)
-        .where(and(eq(pgrGes.orgId, orgId), eq(pgrGes.pgrId, pgrId), eq(pgrGes.gesId, gesId)))
+      const rows = await tx
+        .delete(pgrGes)
+        .where(
+          and(eq(pgrGes.orgId, orgId), eq(pgrGes.pgrId, pgrId), eq(pgrGes.gesId, gesId)),
+        )
         .returning({ id: pgrGes.id });
       return rows.length > 0;
-    }));
+    }),
+  );
 }
 ```
 
 ## `repositories/pgr-revisions.ts`
 
-| Função | Retorno | Notas |
-| --- | --- | --- |
-| `listPgrRevisions(orgId, pgrId)` | `PgrRevisionListItem[]` | filtra `org_id`+`pgr_id`; ordena `revision_number` desc |
-| `createPgrRevision(orgId, pgrId, values)` | `PgrRevision` | `auditedTenantWrite` + INSERT; UNIQUE `revision_number` → 23505 → DUPLICATE; **sem autor** |
+| Função                                    | Retorno                 | Notas                                                                                      |
+| ----------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
+| `listPgrRevisions(orgId, pgrId)`          | `PgrRevisionListItem[]` | filtra `org_id`+`pgr_id`; ordena `revision_number` desc                                    |
+| `createPgrRevision(orgId, pgrId, values)` | `PgrRevision`           | `auditedTenantWrite` + INSERT; UNIQUE `revision_number` → 23505 → DUPLICATE; **sem autor** |
 
 ```ts
 export async function listPgrRevisions(orgId, pgrId): Promise<PgrRevisionListItem[]> {
   return withOrg(orgId, (tx) =>
-    tx.select({ id: pgrRevisions.id, revisionNumber: pgrRevisions.revisionNumber,
-                revisedAt: pgrRevisions.revisedAt, notes: pgrRevisions.notes,
-                createdAt: pgrRevisions.createdAt })
+    tx
+      .select({
+        id: pgrRevisions.id,
+        revisionNumber: pgrRevisions.revisionNumber,
+        revisedAt: pgrRevisions.revisedAt,
+        notes: pgrRevisions.notes,
+        createdAt: pgrRevisions.createdAt,
+      })
       .from(pgrRevisions)
       .where(and(eq(pgrRevisions.orgId, orgId), eq(pgrRevisions.pgrId, pgrId)))
-      .orderBy(desc(pgrRevisions.revisionNumber)));
+      .orderBy(desc(pgrRevisions.revisionNumber)),
+  );
 }
 
-export async function createPgrRevision(orgId, pgrId, values: PgrRevisionValues): Promise<PgrRevision> {
+export async function createPgrRevision(
+  orgId,
+  pgrId,
+  values: PgrRevisionValues,
+): Promise<PgrRevision> {
   return auditedTenantWrite(orgId, "pgr.pgr_revisions.write_rejected", () =>
     withOrg(orgId, async (tx) => {
-      const [row] = await tx.insert(pgrRevisions).values({
-        orgId, pgrId,
-        revisionNumber: values.revisionNumber,
-        revisedAt: values.revisedAt,
-        notes: values.notes ?? null,
-      }).returning();
+      const [row] = await tx
+        .insert(pgrRevisions)
+        .values({
+          orgId,
+          pgrId,
+          revisionNumber: values.revisionNumber,
+          revisedAt: values.revisedAt,
+          notes: values.notes ?? null,
+        })
+        .returning();
       return row;
-    }));
+    }),
+  );
 }
 ```
 

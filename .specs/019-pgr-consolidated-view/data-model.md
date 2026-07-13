@@ -39,8 +39,8 @@ autor.** RLS `pgr_revisions_isolation`.
 
 ### `PgrGesInput` (adicionar vínculo) — `pgr-ges.ts`
 
-| Campo | Regra |
-| --- | --- |
+| Campo   | Regra                                      |
+| ------- | ------------------------------------------ |
 | `gesId` | UUID obrigatório (validado `requiredUuid`) |
 
 `org_id`/`pgr_id` **não** entram no input (sessão/rota). Remover é por rota (`pgrId`+`gesId`), sem
@@ -48,11 +48,11 @@ corpo.
 
 ### `PgrRevisionInput` (criar revisão) — `pgr-revision.ts`
 
-| Campo | Regra |
-| --- | --- |
-| `revisionNumber` | inteiro **≥ 1** obrigatório (`z.coerce.number().int().min(1)`) |
-| `revisedAt` | data `AAAA-MM-DD` obrigatória (`z.iso.date`; default "hoje" no form) |
-| `notes` | opcional (`optionalString`) |
+| Campo            | Regra                                                                |
+| ---------------- | -------------------------------------------------------------------- |
+| `revisionNumber` | inteiro **≥ 1** obrigatório (`z.coerce.number().int().min(1)`)       |
+| `revisedAt`      | data `AAAA-MM-DD` obrigatória (`z.iso.date`; default "hoje" no form) |
+| `notes`          | opcional (`optionalString`)                                          |
 
 Sem `author` (coluna inexistente). Ator no audit log.
 
@@ -62,9 +62,9 @@ Sem `author` (coluna inexistente). Ator no audit log.
 
 ```ts
 type PgrGesLinkItem = {
-  id: string;        // id do vínculo pgr_ges
+  id: string; // id do vínculo pgr_ges
   gesId: string;
-  gesName: string;   // ges.name
+  gesName: string; // ges.name
   createdAt: Date;
 };
 ```
@@ -75,7 +75,7 @@ type PgrGesLinkItem = {
 type PgrRevisionListItem = {
   id: string;
   revisionNumber: number;
-  revisedAt: string;   // coluna date → "AAAA-MM-DD"
+  revisedAt: string; // coluna date → "AAAA-MM-DD"
   notes: string | null;
   createdAt: Date;
 };
@@ -90,22 +90,22 @@ type ConsolidatedMeasure = {
   applicable: boolean;
   actionResponsible: string | null;
   actionDeadline: string | null;
-  state: MeasureState;               // deriveMeasureState (without_plan|planned|overdue)
+  state: MeasureState; // deriveMeasureState (without_plan|planned|overdue)
 };
 
 type ConsolidatedRisk = {
   id: string;
   agentType: RiskAgentType;
   description: string;
-  riskLevel: number | null;          // avaliação vigente (null = sem avaliação)
+  riskLevel: number | null; // avaliação vigente (null = sem avaliação)
   result: RiskClassification | null; // classificação vigente
-  measures: ConsolidatedMeasure[];   // [] = "Sem medidas de controle"
+  measures: ConsolidatedMeasure[]; // [] = "Sem medidas de controle"
 };
 
 type ConsolidatedGes = {
   id: string;
   name: string;
-  risks: ConsolidatedRisk[];         // [] = "GES sem riscos"; ordenados por risk_level desc, sem avaliação por último
+  risks: ConsolidatedRisk[]; // [] = "GES sem riscos"; ordenados por risk_level desc, sem avaliação por último
 };
 
 type PgrConsolidated = {
@@ -119,7 +119,7 @@ type PgrConsolidated = {
     issuedAt: string | null;
     validUntil: string | null;
   };
-  ges: ConsolidatedGes[];            // [] = "PGR sem GES"
+  ges: ConsolidatedGes[]; // [] = "PGR sem GES"
 };
 ```
 

@@ -46,11 +46,11 @@ código real do `develop`.
   2. **GES vinculados**: `pgr_ges` ⨝ `ges` where `pgr_id` (ordenado por nome do GES).
   3. **Riscos**: `risks` where `ges_id IN (gesIds)` (um único `inArray`).
   4. **Avaliação vigente por risco** em uma query: `DISTINCT ON (risk_id) ...
-     WHERE risk_id IN (riskIds) ORDER BY risk_id, assessed_at DESC, created_at DESC` (espelha a
+WHERE risk_id IN (riskIds) ORDER BY risk_id, assessed_at DESC, created_at DESC` (espelha a
      ordenação de `getCurrentRiskAssessment`).
   5. **Medidas**: `control_measures` where `risk_id IN (riskIds)` (um `inArray`).
-  Depois **compõe em memória**: agrupa riscos por GES; anexa avaliação vigente + medidas; deriva o
-  estado das medidas com `deriveMeasureState` (Feature 018); ordena riscos por `risk_level` desc.
+     Depois **compõe em memória**: agrupa riscos por GES; anexa avaliação vigente + medidas; deriva o
+     estado das medidas com `deriveMeasureState` (Feature 018); ordena riscos por `risk_level` desc.
 - **Rationale**: evita N+1 (nada de 1 query por risco); estrutura reutilizável pela Fase 05 (PDF).
 - **Alternativas rejeitadas**: 1 `getCurrentRiskAssessment`/`listControlMeasures` por risco (N+1);
   um mega-join (cardinalidade explode risco×medida×avaliação).

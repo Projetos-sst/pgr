@@ -46,16 +46,16 @@ editor em abas (1 página + ~6 componentes) + docs/Postman + unit & integração
 
 ## Constitution Check
 
-*GATE — reavaliado após o design (Phase 1).*
+_GATE — reavaliado após o design (Phase 1)._
 
-| Princípio | Situação nesta fatia |
-| --- | --- |
-| **I — Isolamento multi-tenant** | ✅ `withOrg(orgId)` + RLS `app_runtime`; `assertPgrInTenant`/`assertGesInTenant`; tenant de `requireOfficeStaff()`/contexto, nunca do client. |
-| **II — Serviço externo pago** | ✅ N/A (sem LLM/serviço pago). |
-| **Camadas (page→action→domain→repo→drizzle)** | ✅ Repositórios são os únicos a tocar Drizzle; actions/handlers reusam repo/zod. |
-| **Superfície de API (Action + REST + docs + Postman)** | ✅ As 4 entregas juntas para cada CRUD (GES-link, revisões) + REST GET consolidada. |
-| **Testabilidade (unit + integração Postgres efêmero)** | ✅ Unit (ordenação/estado derivado/validação) + integração (CRUD/RLS) contra `INTEGRATION_*`. |
-| **Zero migration / schema code-first** | ✅ Tabelas/enums já existem (0012); nada em `schema/**` ou `migrations/**`. |
+| Princípio                                              | Situação nesta fatia                                                                                                                          |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **I — Isolamento multi-tenant**                        | ✅ `withOrg(orgId)` + RLS `app_runtime`; `assertPgrInTenant`/`assertGesInTenant`; tenant de `requireOfficeStaff()`/contexto, nunca do client. |
+| **II — Serviço externo pago**                          | ✅ N/A (sem LLM/serviço pago).                                                                                                                |
+| **Camadas (page→action→domain→repo→drizzle)**          | ✅ Repositórios são os únicos a tocar Drizzle; actions/handlers reusam repo/zod.                                                              |
+| **Superfície de API (Action + REST + docs + Postman)** | ✅ As 4 entregas juntas para cada CRUD (GES-link, revisões) + REST GET consolidada.                                                           |
+| **Testabilidade (unit + integração Postgres efêmero)** | ✅ Unit (ordenação/estado derivado/validação) + integração (CRUD/RLS) contra `INTEGRATION_*`.                                                 |
+| **Zero migration / schema code-first**                 | ✅ Tabelas/enums já existem (0012); nada em `schema/**` ou `migrations/**`.                                                                   |
 
 **Resultado do gate**: PASS. Complexity Tracking vazio.
 
