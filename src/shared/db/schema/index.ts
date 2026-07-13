@@ -98,3 +98,15 @@ export {
   type AiUsageEvent,
   type NewAiUsageEvent,
 } from "./ai-usage-events";
+export {
+  trainingCatalog,
+  trainingRecords,
+  jobRoleRequiredTrainings,
+  trainingPeriodicity,
+  type TrainingCatalog,
+  type NewTrainingCatalog,
+  type TrainingRecord,
+  type NewTrainingRecord,
+  type JobRoleRequiredTraining,
+  type NewJobRoleRequiredTraining,
+} from "./trainings";
