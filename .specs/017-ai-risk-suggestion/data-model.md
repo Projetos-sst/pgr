@@ -17,9 +17,9 @@ Tabela append-only por organização; a cota é **derivada** por contagem no mê
 - **RLS**: `enableRLS()` + policy `ai_usage_events_isolation` `FOR ALL TO app_runtime USING/WITH CHECK
 (org_id = current_setting('app.current_org', true))`.
 - **GRANT**: `SELECT, INSERT` para `app_runtime` (least-privilege — sem UPDATE/DELETE; append-only).
-- **Migration**: `0014_ai_usage_events.sql` (CREATE TABLE + ENABLE RLS + FK + 2 índices + POLICY + GRANT).
-  ⚠️ Renumerar no rebase se colidir com fatia paralela (procedimento padrão: renomear `.sql`, `tag` no
-  `_journal.json`, `prevId` do snapshot; validar com `db:generate`).
+- **Migration**: `0015_ai_usage_events.sql` (CREATE TABLE + ENABLE RLS + FK + 2 índices + POLICY + GRANT).
+  Renumerada de `0014` no merge com o develop (colidiu com `0014_epi_risk_link`): renomeado o `.sql`,
+  reencadeados `tag` no `_journal.json` e `prevId` do snapshot; validado com `db:generate`.
 
 ### `risks` (EXISTENTE — reuso; sem alteração de schema)
 

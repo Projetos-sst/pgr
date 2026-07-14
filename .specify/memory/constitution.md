@@ -1,30 +1,37 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.2.1 → 1.3.0 (MINOR — Princípio II: provedores de LLM autorizados como infra permitida)
-Last amended: 2026-07-08
+Version change: 1.3.0 → 1.4.0 (MINOR — Princípio II: serviço auxiliar de PDF (Gotenberg) autorizado como infra permitida)
+Last amended: 2026-07-13
 
 Modified sections:
 - Princípio II (Stack Fixa e Simplicidade): adicionada cláusula que AUTORIZA o uso de um
-  provedor de IA/LLM gerenciado (ex.: Anthropic) como infraestrutura permitida para
-  features de assistência por IA, condicionada a salvaguardas (chave server-only;
-  zero-PII além do contexto necessário; rate limiting/cota por tenant conforme o plano;
-  falha do provedor não bloqueia o fluxo principal). Demais serviços externos pagos
-  continuam exigindo emenda formal. Linha da stack em "Restrições Técnicas & Stack"
-  atualizada para citar o provedor de LLM.
+  serviço auxiliar STATELESS de renderização HTML→PDF fora da Vercel (ex.: Gotenberg,
+  container Docker open-source) como infraestrutura permitida para a geração de documentos,
+  condicionada a salvaguardas (endpoint não-público protegido por token/segredo; serviço
+  stateless que não persiste o documento; segredo server-only; geração pesada/em lote
+  desacoplada da requisição conforme o Princípio IV; serviço substituível). Demais serviços
+  externos pagos continuam exigindo emenda formal. Linha da stack em "Restrições Técnicas &
+  Stack" atualizada para citar o serviço de geração de PDF.
 
-Rationale: a fatia 017 (.specs/017-ai-risk-suggestion — sugestão de riscos assistida por
-IA) é a primeira feature que consome um LLM externo. O Princípio II exige emenda formal
-antes de introduzir serviço externo pago; esta emenda autoriza explicitamente provedores
-de LLM sob salvaguardas, sem relaxar as regras não-negociáveis (isolamento multi-tenant do
-Princípio I e integridade/segredos do Princípio V permanecem intactos). A IA é auxiliar e
-sua indisponibilidade nunca pode bloquear o cadastro.
+Rationale: a Fase 5 (Documentos + Geração de PDF) exige renderizar documentos (ex.: PGR) em
+PDF. Rodar Chromium dentro das funções serverless da Vercel é inviável (cold start, limite
+de bundle ~250 MB e de memória); a solução é um worker auxiliar stateless dedicado (ver
+AD-06 em docs/produto/00-visao-geral.md e docs/produto/04-integracoes-e-servicos.md). O
+Princípio II exige emenda formal antes de introduzir infraestrutura nova fora da stack fixa;
+esta emenda autoriza explicitamente o serviço de PDF sob salvaguardas, sem relaxar as regras
+não-negociáveis (isolamento multi-tenant do Princípio I — o HTML é montado no servidor após
+checar o tenant — e integridade/segredos do Princípio V permanecem intactos). Diferente do
+provedor de LLM (1.3.0), a salvaguarda de "zero-PII" NÃO se aplica: o serviço recebe o
+documento completo do tenant por natureza; o risco é controlado por endpoint protegido,
+statelessness e segredo server-only. A geração de PDF é auxiliar/assíncrona e não bloqueia o
+fluxo do usuário (Princípio IV).
 
 Classificação MINOR: nova permissão materialmente expandida a um princípio existente
 (Princípio II), sem remover nem redefinir princípios de forma incompatível. Nenhuma regra
 não-negociável é enfraquecida.
 
-Principles modified: II (expandido — nova cláusula de autorização condicionada).
+Principles modified: II (expandido — segunda cláusula de autorização condicionada).
 Added sections: none. Removed sections: none.
 
 Templates reviewed for consistency:
@@ -38,7 +45,8 @@ Histórico:
 - 1.1.0: ajustes anteriores de governança/seções.
 - 1.2.0: exceção de Postgres efêmero para RLS/policies/triggers na cláusula de Integração.
 - 1.2.1: correção do identificador de tenant no Princípio I (Modelo B — tenant = escritório/`orgs.id`).
-- 1.3.0: Princípio II autoriza provedores de LLM como infra permitida sob salvaguardas (fatia 016).
+- 1.3.0: Princípio II autoriza provedores de LLM como infra permitida sob salvaguardas (fatia 017).
+- 1.4.0: Princípio II autoriza serviço auxiliar de PDF (Gotenberg) como infra permitida sob salvaguardas (Fase 5).
 
 Follow-up TODOs: none
 -->
@@ -95,6 +103,20 @@ Storage), Clerk (autenticação e organizações) e Cloudflare na borda.
   rate limiting/cota por tenant conforme o plano; (d) a falha do provedor NÃO
   bloqueia o fluxo principal (degradação graciosa). Outros serviços externos
   pagos continuam exigindo emenda formal.
+- **Serviço de renderização de PDF (AUTORIZADO — emenda 1.4.0)**: usar um
+  serviço auxiliar STATELESS de conversão HTML→PDF fora da Vercel (ex.:
+  Gotenberg, container Docker open-source hospedado em Railway/Render/Fly.io) é
+  infraestrutura PERMITIDA para a geração de documentos, desde que TODAS as
+  salvaguardas sejam atendidas: (a) o endpoint NÃO é público e é protegido por
+  token/segredo (ex.: `GOTENBERG_TOKEN`) e/ou restrição de rede — só a aplicação
+  o chama; (b) o serviço é stateless e NÃO persiste o documento (o PDF retorna e
+  a aplicação o salva no Storage); (c) o segredo reside SÓ no servidor, nunca no
+  cliente; (d) a geração pesada/em lote é desacoplada da requisição do usuário
+  (Princípio IV); (e) o serviço é substituível (HTTP stateless padrão). O
+  isolamento (Princípio I) é preservado montando o HTML no servidor APÓS checar o
+  tenant. Diferente do provedor de LLM, a salvaguarda de "zero-PII" NÃO se aplica:
+  o serviço recebe o documento completo do tenant por natureza. Outros serviços
+  externos pagos continuam exigindo emenda formal.
 - Aplicar YAGNI: implementar apenas o requisito atual da fatia em andamento;
   sem features ou abstrações especulativas.
 - Preferir a solução mais simples que atende o requisito.
@@ -166,6 +188,10 @@ de dados que, neste domínio, pode ter consequências regulatórias.
 - **IA/LLM**: provedor gerenciado (ex.: Anthropic) para features de assistência por
   IA, sob as salvaguardas do Princípio II (chave server-only, zero-PII, cota por
   tenant, degradação não-bloqueante).
+- **Geração de PDF**: serviço auxiliar stateless de renderização HTML→PDF fora da
+  Vercel (ex.: Gotenberg), sob as salvaguardas do Princípio II (endpoint protegido,
+  stateless, segredo server-only, geração assíncrona). Resolve os limites do
+  serverless para Chromium (cold start, bundle, memória).
 - **Borda**: Cloudflare — DNS, cache, WAF e mitigação.
 - Backend e frontend são unificados no Next.js (Server Actions e Route
   Handlers); NÃO há API separada tradicional.
@@ -207,4 +233,4 @@ test` e `npm run test:integration`).
   "Constitution Check"; violações justificadas vão em "Complexity Tracking".
 - Orientação de runtime para agentes: `CLAUDE.md` e `AGENTS.md`.
 
-**Version**: 1.3.0 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-07-08
+**Version**: 1.4.0 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-07-13
