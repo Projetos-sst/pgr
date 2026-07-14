@@ -3120,6 +3120,32 @@
       ]
     },
     {
+      "name": "Notificacoes (plataforma)",
+      "item": [
+        {
+          "name": "GET /notifications (alertas do tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Integracoes externas",
       "description": "Autofill de formularios (ViaCEP/CNPJ). Exige SESSAO Clerk real (nao ha bypass dev): cole o cookie __session em {{sessionCookie}}. Sem sessao -> 307 redirect. Dados publicos, sem tenant.",
       "item": [
