@@ -10,6 +10,10 @@ export const users = pgTable(
     firstName: text("first_name"),
     lastName: text("last_name"),
     imageUrl: text("image_url"),
+    // App-managed profile fields (not synced from Clerk; preserved across Clerk upserts).
+    phone: text("phone"),
+    cpf: text("cpf"),
+    jobTitle: text("job_title"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

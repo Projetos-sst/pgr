@@ -113,6 +113,10 @@
     {
       "key": "requiredTrainingId",
       "value": ""
+    },
+    {
+      "key": "memberUserId",
+      "value": "user_xxx"
     }
   ],
   "item": [
@@ -2941,10 +2945,10 @@
       ]
     },
     {
-      "name": "Dashboard (plataforma)",
+      "name": "Perfil (plataforma)",
       "item": [
         {
-          "name": "GET /dashboard/summary (agregacoes do tenant)",
+          "name": "GET /profile (self)",
           "request": {
             "method": "GET",
             "header": [
@@ -2958,9 +2962,158 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/dashboard/summary",
+              "raw": "{{baseUrl}}/api/v1/profile",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "dashboard", "summary"]
+              "path": ["api", "v1", "profile"]
+            }
+          }
+        },
+        {
+          "name": "PUT /profile (atualiza app-managed)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"11999998888\",\n  \"cpf\": \"123.456.789-09\",\n  \"jobTitle\": \"Tecnico de Seguranca\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Equipe (plataforma)",
+      "item": [
+        {
+          "name": "GET /team (roster, ?search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /team/invitations (convite, PRO, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team/invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team", "invitations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"novo@exemplo.com\",\n  \"role\": \"collaborator\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /team/:userId (papel, owner)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team/{{memberUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team", "{{memberUserId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"owner\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /team/:userId (remove, 204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team/{{memberUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team", "{{memberUserId}}"]
             }
           }
         }
