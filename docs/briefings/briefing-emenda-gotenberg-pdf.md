@@ -35,12 +35,12 @@ Impact Report e o footer de versão). Consequências:
 
 ## 3. Reconciliação card × repo (o enunciado erra caminhos e omite a versão)
 
-| Issue diz                                        | Na realidade do repo                                                                                          |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Issue diz                                        | Na realidade do repo                                                                                         |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | `docs/architecture/00-visao-geral.md` (AD-06)    | **`docs/produto/00-visao-geral.md`** — `docs/architecture/` está **VAZIO**. AD-06 está na tabela de decisões |
-| `docs/architecture/04-integracoes-e-servicos.md` | **`docs/produto/04-integracoes-e-servicos.md`** (seção "Serviço de geração de PDF — Gotenberg")               |
-| "Incrementar a versão (MINOR)"                   | Versão atual é **1.3.0**; o alvo é **1.4.0** (a issue não cita o número — confirmar 1.3.0 → 1.4.0)             |
-| Rodar `/speckit-constitution`                    | Existe a skill; **ou** editar à mão espelhando a 1.3.0 (foi como a 1.3.0 saiu). Ambos válidos — ver §11        |
+| `docs/architecture/04-integracoes-e-servicos.md` | **`docs/produto/04-integracoes-e-servicos.md`** (seção "Serviço de geração de PDF — Gotenberg")              |
+| "Incrementar a versão (MINOR)"                   | Versão atual é **1.3.0**; o alvo é **1.4.0** (a issue não cita o número — confirmar 1.3.0 → 1.4.0)           |
+| Rodar `/speckit-constitution`                    | Existe a skill; **ou** editar à mão espelhando a 1.3.0 (foi como a 1.3.0 saiu). Ambos válidos — ver §11      |
 
 **Fontes reais da decisão (source of truth já existente):**
 
@@ -112,13 +112,13 @@ possivelmente de funcionários). Zero-PII é impossível aqui — o dado É o do
 
 Portanto as salvaguardas do Gotenberg devem ser **reenquadradas** para o que realmente controla o risco:
 
-| Salvaguarda (Gotenberg)                                                                                          | Fonte no repo                                    |
-| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| (a) endpoint **não público**; protegido por **token** (`GOTENBERG_TOKEN`) e/ou restrição de rede — só a app chama | doc 04 §"Operação e segurança"                   |
-| (b) serviço **stateless** — não persiste o documento (sem volume, sem banco); o PDF volta e a app o salva no Storage | doc 04 (topologia/pipeline)                      |
-| (c) segredo (`GOTENBERG_URL`/`GOTENBERG_TOKEN`) **só no servidor**, nunca no cliente, nunca commitado (Princípio V) | doc 04 §"Variáveis de ambiente"                  |
-| (d) chamada de renderização **desacoplada** da resposta ao usuário (Princípio IV: `after()` / `jobs`+cron)       | doc 04 §"Pipeline assíncrono"                    |
-| (e) **substituível** (HTTP stateless padrão) — troca sem afetar o domínio; a indisponibilidade tem retry (`attempts`) | doc 04 / doc 05 (mitigação de risco)             |
+| Salvaguarda (Gotenberg)                                                                                               | Fonte no repo                        |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| (a) endpoint **não público**; protegido por **token** (`GOTENBERG_TOKEN`) e/ou restrição de rede — só a app chama     | doc 04 §"Operação e segurança"       |
+| (b) serviço **stateless** — não persiste o documento (sem volume, sem banco); o PDF volta e a app o salva no Storage  | doc 04 (topologia/pipeline)          |
+| (c) segredo (`GOTENBERG_URL`/`GOTENBERG_TOKEN`) **só no servidor**, nunca no cliente, nunca commitado (Princípio V)   | doc 04 §"Variáveis de ambiente"      |
+| (d) chamada de renderização **desacoplada** da resposta ao usuário (Princípio IV: `after()` / `jobs`+cron)            | doc 04 §"Pipeline assíncrono"        |
+| (e) **substituível** (HTTP stateless padrão) — troca sem afetar o domínio; a indisponibilidade tem retry (`attempts`) | doc 04 / doc 05 (mitigação de risco) |
 
 O isolamento multi-tenant (Princípio I) permanece **intacto**: o HTML já é montado no servidor **após**
 checar o tenant; o Gotenberg é um renderizador burro, não decide de quem é o dado.
@@ -164,12 +164,12 @@ Alvo: [.specify/memory/constitution.md](../../.specify/memory/constitution.md) (
 
 ## 9. Critérios de aceite → como serão verificados
 
-| Critério de aceite (issue)                                          | Como se verifica                                                                  |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Constituição emendada citando o serviço auxiliar de PDF             | Princípio II tem o bullet do Gotenberg + linha de stack "Geração de PDF"           |
-| Justificativa registrada (cold start / memória / bundle serverless) | Consta no Sync Impact Report (rationale) e no bullet do Princípio II              |
-| Versão incrementada conforme governança                            | Sync report `1.3.0 → 1.4.0 (MINOR)` + footer `Version: 1.4.0`                      |
-| Emenda concluída antes das demais issues da Fase 5                  | Esta issue mergeia **antes** de qualquer issue de PDF/documentos da Fase 5         |
+| Critério de aceite (issue)                                          | Como se verifica                                                           |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Constituição emendada citando o serviço auxiliar de PDF             | Princípio II tem o bullet do Gotenberg + linha de stack "Geração de PDF"   |
+| Justificativa registrada (cold start / memória / bundle serverless) | Consta no Sync Impact Report (rationale) e no bullet do Princípio II       |
+| Versão incrementada conforme governança                             | Sync report `1.3.0 → 1.4.0 (MINOR)` + footer `Version: 1.4.0`              |
+| Emenda concluída antes das demais issues da Fase 5                  | Esta issue mergeia **antes** de qualquer issue de PDF/documentos da Fase 5 |
 
 ---
 
@@ -225,7 +225,7 @@ A emenda **foi executada** via `/speckit-constitution` (comando recomendado pela
 [.specify/memory/constitution.md](../../.specify/memory/constitution.md) as **4 edições** do mapa da §7:
 
 1. **Sync Impact Report** (topo): `Version change: 1.3.0 → 1.4.0 (MINOR — Princípio II: serviço auxiliar
-   de PDF (Gotenberg) autorizado)`, `Last amended: 2026-07-13`, seção "Modified sections" reescrita para
+de PDF (Gotenberg) autorizado)`, `Last amended: 2026-07-13`, seção "Modified sections" reescrita para
    o PDF, rationale (limites do serverless para Chromium + AD-06), classificação MINOR, e entrada
    `1.4.0: …` no Histórico.
 2. **Princípio II** — novo bullet **"Serviço de renderização de PDF (AUTORIZADO — emenda 1.4.0)"** com as

@@ -33,13 +33,13 @@ Aprofunda a seção "Segurança & Privacidade" do [review.md](./review.md) (sani
 ## Saída do Modelo (não-confiável) & Integridade
 
 - [x] CHK011 O descarte de **lote parcialmente inválido** (item malformado / agente fora do conjunto) está especificado, preservando os itens válidos? [Edge Case, Spec §FR-006]
-- [ ] CHK012 Existe requisito de **tratar a saída do modelo como não-confiável** — sanitização/escape do texto sugerido antes de exibir e persistir (anti-injeção/XSS via conteúdo do LLM)? [Gap] — **ABERTO**: FR-006 descarta itens *estruturalmente* inválidos, mas nada exige neutralizar conteúdo *textual* hostil dentro de um item válido.
+- [ ] CHK012 Existe requisito de **tratar a saída do modelo como não-confiável** — sanitização/escape do texto sugerido antes de exibir e persistir (anti-injeção/XSS via conteúdo do LLM)? [Gap] — **ABERTO**: FR-006 descarta itens _estruturalmente_ inválidos, mas nada exige neutralizar conteúdo _textual_ hostil dentro de um item válido.
 - [x] CHK013 O aceite reutilizar o caminho de criação existente garante que riscos por IA passem pelas **mesmas validações** dos manuais (sem bypass de regra)? [Consistency, Spec §FR-015]
 
 ## Abuso, Custo & Observabilidade
 
 - [x] CHK014 A **cota mensal por plano** (free finita / pro ilimitada) está quantificada como requisito? [Clarity, Spec §FR-008 / §Assumptions]
-- [ ] CHK015 Existe requisito limitando o **tamanho do contexto enviado** (cap de payload) para conter custo/token e abuso (DoS por GES gigante)? [Gap] — **ABERTO**: a cota limita *frequência* de pedidos, mas não o *tamanho* de cada um.
+- [ ] CHK015 Existe requisito limitando o **tamanho do contexto enviado** (cap de payload) para conter custo/token e abuso (DoS por GES gigante)? [Gap] — **ABERTO**: a cota limita _frequência_ de pedidos, mas não o _tamanho_ de cada um.
 - [ ] CHK016 O registro append-only de uso cobre **auditoria/rastreabilidade** (quem pediu), além da contagem de cota (org + tipo + momento)? [Coverage, Gap, Data-model §ai_usage_events] — **ABERTO**: o modelo registra `org/tipo/timestamp`, sem o autor do pedido — insuficiente para trilha de auditoria "quem enviou dado para fora".
 - [x] CHK017 O comportamento em **cota esgotada** (bloqueio com mensagem clara; pro sem limite) está especificado sem vazar detalhe interno? [Completeness, Spec §Edge Cases / §FR-008]
 
