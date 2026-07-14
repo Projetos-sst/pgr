@@ -32,7 +32,7 @@ description: "Task list — Sugestão de riscos assistida por IA"
 
 - [x] T003 Criar schema `src/shared/db/schema/ai-usage-events.ts` (org_id FK cascade, kind, created_at, 2 índices, RLS `ai_usage_events_isolation`)
 - [x] T004 Exportar `aiUsageEvents` em `src/shared/db/schema/index.ts`
-- [x] T005 Gerar/editar migration `src/shared/db/migrations/0014_ai_usage_events.sql` (CREATE TABLE + ENABLE RLS + FK + índices + POLICY + `GRANT SELECT, INSERT`); validar `db:generate` → "No schema changes"
+- [x] T005 Gerar/editar migration `src/shared/db/migrations/0015_ai_usage_events.sql` (renumerada de `0014` no merge — ver T036) (CREATE TABLE + ENABLE RLS + FK + índices + POLICY + `GRANT SELECT, INSERT`); validar `db:generate` → "No schema changes"
 - [x] T006 [P] Criar erro `src/shared/errors/ai-unavailable-error.ts` (`AI_UNAVAILABLE`, 502)
 - [x] T007 [P] Mapear `AI_UNAVAILABLE: 502` em `src/shared/api/rest.ts`
 - [x] T008 [P] Estender `src/shared/tenant/plan.ts` com `FREE_AI_SUGGESTION_MONTHLY_QUOTA = 20` e `isAiSuggestionAvailable(plan, count)`
