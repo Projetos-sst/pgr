@@ -110,3 +110,9 @@ export {
   type JobRoleRequiredTraining,
   type NewJobRoleRequiredTraining,
 } from "./trainings";
+export {
+  scheduleEvents,
+  scheduleEventType,
+  type ScheduleEvent,
+  type NewScheduleEvent,
+} from "./schedule-events";
