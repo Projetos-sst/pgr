@@ -38,6 +38,16 @@ export async function createTenant(input: CreateTenantInput = {}): Promise<Org> 
   return mapOrg(data);
 }
 
+export async function getOrgById(id: string): Promise<Org | null> {
+  const { data, error } = await getRlsBypassingSupabaseClient()
+    .from("orgs")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapOrg(data) : null;
+}
+
 export async function deleteOrg(id: string): Promise<void> {
   const { error } = await getRlsBypassingSupabaseClient()
     .from("orgs")
