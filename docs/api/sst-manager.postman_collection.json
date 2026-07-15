@@ -3120,10 +3120,10 @@
       ]
     },
     {
-      "name": "Pendencias (plataforma)",
+      "name": "Notificacoes (plataforma)",
       "item": [
         {
-          "name": "GET /pending-items (pendencias do tenant)",
+          "name": "GET /notifications (alertas do tenant)",
           "request": {
             "method": "GET",
             "header": [
@@ -3137,9 +3137,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/pending-items",
+              "raw": "{{baseUrl}}/api/v1/notifications",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "pending-items"]
+              "path": ["api", "v1", "notifications"]
             }
           }
         }
