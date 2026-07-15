@@ -121,6 +121,18 @@
     {
       "key": "planId",
       "value": ""
+    },
+    {
+      "key": "vehicleId",
+      "value": ""
+    },
+    {
+      "key": "planItemId",
+      "value": ""
+    },
+    {
+      "key": "vehicularInspectionId",
+      "value": ""
     }
   ],
   "item": [
@@ -3262,6 +3274,181 @@
               "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "inspection-plans", "{{planId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes veiculares",
+      "item": [
+        {
+          "name": "GET /vehicular-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections?status=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /vehicular-inspections (passo 1 cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Ana\",\n  \"driverName\": \"João\",\n  \"currentKm\": 15000,\n  \"route\": \"Obra A → Obra B\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /vehicular-inspections/:id (itens+respostas)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections", "{{vehicularInspectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicular-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections", "{{vehicularInspectionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Ana (rev)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicular-inspections/:id/checklist (passo 2 conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}/checklist",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "vehicular-inspections",
+                "{{vehicularInspectionId}}",
+                "checklist"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responses\": [\n    {\n      \"planItemId\": \"{{planItemId}}\",\n      \"value\": true,\n      \"observation\": \"ok\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /vehicular-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections", "{{vehicularInspectionId}}"]
             }
           }
         }

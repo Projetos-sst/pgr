@@ -130,6 +130,7 @@ export {
   type NewVehicle,
   type Inspection,
   type NewInspection,
+  type InspectionStatus,
   type InspectionItemResponse,
   type NewInspectionItemResponse,
   type InspectionOccurrence,

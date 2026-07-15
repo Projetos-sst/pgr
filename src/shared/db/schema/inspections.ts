@@ -238,6 +238,7 @@ export type Vehicle = InferSelectModel<typeof vehicles>;
 export type NewVehicle = InferInsertModel<typeof vehicles>;
 export type Inspection = InferSelectModel<typeof inspections>;
 export type NewInspection = InferInsertModel<typeof inspections>;
+export type InspectionStatus = Inspection["status"];
 export type InspectionItemResponse = InferSelectModel<typeof inspectionItemResponses>;
 export type NewInspectionItemResponse = InferInsertModel<typeof inspectionItemResponses>;
 export type InspectionOccurrence = InferSelectModel<typeof inspectionOccurrences>;
