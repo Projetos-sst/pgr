@@ -136,3 +136,12 @@ export {
   type InspectionOccurrence,
   type NewInspectionOccurrence,
 } from "./inspections";
+export {
+  workPermits,
+  workPermitType,
+  workPermitStatus,
+  type WorkPermit,
+  type NewWorkPermit,
+  type WorkPermitStatusValue,
+  type WorkPermitTypeValue,
+} from "./work-permits";

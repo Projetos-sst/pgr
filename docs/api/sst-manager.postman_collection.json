@@ -145,6 +145,10 @@
     {
       "key": "safetyInspectionId",
       "value": ""
+    },
+    {
+      "key": "workPermitId",
+      "value": ""
     }
   ],
   "item": [
@@ -3815,6 +3819,154 @@
               "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "safety-inspections", "{{safetyInspectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permissoes de trabalho (PT)",
+      "item": [
+        {
+          "name": "GET /work-permits (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits?search=&status=&type=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "type",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /work-permits (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"PT-2026-001\",\n  \"type\": \"hot_work\",\n  \"status\": \"draft\",\n  \"companyId\": \"{{companyId}}\",\n  \"area\": \"Caldeiraria\",\n  \"description\": \"Solda em tubulação de vapor\",\n  \"validFrom\": \"2026-07-15\",\n  \"validUntil\": \"2026-07-16\",\n  \"requestedBy\": \"Encarregado\",\n  \"precautions\": \"Extintor + vigia de fogo\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /work-permits/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /work-permits/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"PT-2026-001\",\n  \"type\": \"hot_work\",\n  \"status\": \"active\",\n  \"description\": \"Solda (liberada)\",\n  \"validFrom\": \"2026-07-15\",\n  \"validUntil\": \"2026-07-16\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /work-permits/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
             }
           }
         }
