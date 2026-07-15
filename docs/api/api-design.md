@@ -43,10 +43,11 @@ Atualizado conforme o código em `src/shared/server/actions/` e `src/app/api/`.
 
 Estes **são** HTTP estável e chamáveis por Postman/cURL (ao contrário das Server Actions):
 
-| Método | Rota                  | Auth                                                                | Retorno                                                                         |
-| ------ | --------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `GET`  | `/api/me`             | cookie de sessão Clerk                                              | `200 { userId, orgId }` · `401` (sem sessão) · `403 { error: "NO_ACTIVE_ORG" }` |
-| `POST` | `/api/webhooks/clerk` | assinatura **Svix** (`svix-id`, `svix-timestamp`, `svix-signature`) | `200 ok\|ignored` · `400 invalid_payload\|invalid signature` · `500 db error`   |
+| Método | Rota                   | Auth                                                                | Retorno                                                                                                |
+| ------ | ---------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/me`              | cookie de sessão Clerk                                              | `200 { userId, orgId }` · `401` (sem sessão) · `403 { error: "NO_ACTIVE_ORG" }`                        |
+| `POST` | `/api/webhooks/clerk`  | assinatura **Svix** (`svix-id`, `svix-timestamp`, `svix-signature`) | `200 ok\|ignored` · `400 invalid_payload\|invalid signature` · `500 db error`                          |
+| `POST` | `/api/webhooks/stripe` | assinatura **Stripe** (`stripe-signature`; emenda 1.5.0)            | `200 ok` · `400 missing\|invalid signature` (sincroniza `orgs.plan` free/pro por evento de assinatura) |
 
 > `GET /api/me` é o equivalente REST da Server Action `meAction`. O webhook **rejeita** payloads
 > sem assinatura Svix válida (`verifyWebhook`), então só dispara com o signing secret do Clerk.
