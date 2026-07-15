@@ -1,191 +1,194 @@
-# API Design â SST Manager (estado atual)
+# API Design — SST Manager (estado atual)
 
-> **Natureza da "API".** HÃ¡ **duas** superfÃ­cies:
+> **Natureza da "API".** Há **duas** superfícies:
 >
-> 1. **Server Actions** (App Router) â a interface usada pela UI do app. SÃ£o funÃ§Ãµes `"use server"`
+> 1. **Server Actions** (App Router) — a interface usada pela UI do app. São funções `"use server"`
 >    invocadas via **POST** pelo framework (header `Next-Action: <id de build>` + payload do React);
->    **POST-only por design do Next** e **nÃ£o** chamÃ¡veis "cruas" por Postman/cURL.
-> 2. **REST API `/api/v1`** (Route Handlers) â superfÃ­cie HTTP RESTful de verdade
->    (GET/POST/PUT/DELETE), testÃ¡vel por Postman. Reusa os mesmos repositÃ³rios/validaÃ§Ã£o/erros das
->    actions. **Ã o que estÃ¡ na coleÃ§Ã£o Postman** (`sst-manager.postman_collection.json`).
+>    **POST-only por design do Next** e **não** chamáveis "cruas" por Postman/cURL.
+> 2. **REST API `/api/v1`** (Route Handlers) — superfície HTTP RESTful de verdade
+>    (GET/POST/PUT/DELETE), testável por Postman. Reusa os mesmos repositórios/validação/erros das
+>    actions. **É o que está na coleção Postman** (`sst-manager.postman_collection.json`).
 >
-> Este documento descreve o contrato lÃ³gico (assinaturas, entradas, retornos, erros) de tudo que
+> Este documento descreve o contrato lógico (assinaturas, entradas, retornos, erros) de tudo que
 > existe hoje.
 
-Atualizado conforme o cÃ³digo em `src/shared/server/actions/` e `src/app/api/`.
+Atualizado conforme o código em `src/shared/server/actions/` e `src/app/api/`.
 
-## AutenticaÃ§Ã£o, identidade e tenant (PRÃ-REQUISITO)
+## Autenticação, identidade e tenant (PRÉ-REQUISITO)
 
-> **NÃ£o hÃ¡ API prÃ³pria de cadastro/login.** A identidade vive no **Clerk** (provedor de auth),
+> **Não há API própria de cadastro/login.** A identidade vive no **Clerk** (provedor de auth),
 > conforme a fatia 005 (Modelo B). Operar qualquer CRUD exige: (1) ter conta no Clerk, (2) ter um
-> tenant/escritÃ³rio ativo. Ambos sÃ£o resolvidos fora das nossas Server Actions.
+> tenant/escritório ativo. Ambos são resolvidos fora das nossas Server Actions.
 
-**Fluxo de prÃ©-requisito (estado atual):**
+**Fluxo de pré-requisito (estado atual):**
 
-1. **Cadastro / login** â componentes **hospedados do Clerk** (`<SignUp>` / `<SignIn>`) nas
-   pÃ¡ginas `/(public)/sign-up` e `/(public)/sign-in`. Ã o fluxo/Frontend API do Clerk â **nÃ£o**
-   um endpoint nosso. NÃ£o Ã© chamÃ¡vel pela nossa API (nem por Postman como "API nossa").
-2. **Provisionamento do escritÃ³rio (free)** â no evento `user.created`, o Clerk dispara o
-   **webhook** `POST /api/webhooks/clerk` â `handleClerkEvent` â `provisionPersonalTenant`, que
+1. **Cadastro / login** — componentes **hospedados do Clerk** (`<SignUp>` / `<SignIn>`) nas
+   páginas `/(public)/sign-up` e `/(public)/sign-in`. É o fluxo/Frontend API do Clerk — **não**
+   um endpoint nosso. Não é chamável pela nossa API (nem por Postman como "API nossa").
+2. **Provisionamento do escritório (free)** — no evento `user.created`, o Clerk dispara o
+   **webhook** `POST /api/webhooks/clerk` → `handleClerkEvent` → `provisionPersonalTenant`, que
    cria o **tenant pessoal** (`orgs`, plano `free`) + **membership `owner`**. Toda identidade
-   ganha um escritÃ³rio prÃ³prio automaticamente, **mesmo free** (nÃ£o vira organizaÃ§Ã£o no Clerk
-   enquanto free â isso Ã© futuro, no upgrade PRO). NÃ£o hÃ¡ passo manual de "criar org" para free.
-3. **SincronizaÃ§Ã£o** â o mesmo webhook trata `user.{created,updated,deleted}`,
+   ganha um escritório próprio automaticamente, **mesmo free** (não vira organização no Clerk
+   enquanto free — isso é futuro, no upgrade PRO). Não há passo manual de "criar org" para free.
+3. **Sincronização** — o mesmo webhook trata `user.{created,updated,deleted}`,
    `organization.{created,updated,deleted}` e `organizationMembership.{created,updated,deleted}`,
    mantendo `users` e `org_memberships` em dia.
-4. **Org ativa** â definida pelo cookie **`tenant_active_org`** e reconciliada por
-   `reconcileActiveOrg` (Inv-2: a lista/seleÃ§Ã£o de tenant Ã© dirigida pelos nossos vÃ­nculos, nÃ£o
-   pelo Clerk). NÃ£o hÃ¡ endpoint dedicado de troca nesta fatia.
-5. **Onboarding** (`/(protected)/onboarding`) â usa componentes Clerk
-   (`<CreateOrganization>` / `<OrganizationList>`) para o caminho de organizaÃ§Ã£o Clerk (multi-org/PRO).
+4. **Org ativa** — definida pelo cookie **`tenant_active_org`** e reconciliada por
+   `reconcileActiveOrg` (Inv-2: a lista/seleção de tenant é dirigida pelos nossos vínculos, não
+   pelo Clerk). Não há endpoint dedicado de troca nesta fatia.
+5. **Onboarding** (`/(protected)/onboarding`) — usa componentes Clerk
+   (`<CreateOrganization>` / `<OrganizationList>`) para o caminho de organização Clerk (multi-org/PRO).
 
 ### Endpoints HTTP de verdade (Route Handlers)
 
-Estes **sÃ£o** HTTP estÃ¡vel e chamÃ¡veis por Postman/cURL (ao contrÃ¡rio das Server Actions):
+Estes **são** HTTP estável e chamáveis por Postman/cURL (ao contrário das Server Actions):
 
-| MÃ©todo | Rota                  | Auth                                                                | Retorno                                                                            |
-| ------- | --------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `GET`   | `/api/me`             | cookie de sessÃ£o Clerk                                             | `200 { userId, orgId }` Â· `401` (sem sessÃ£o) Â· `403 { error: "NO_ACTIVE_ORG" }` |
-| `POST`  | `/api/webhooks/clerk` | assinatura **Svix** (`svix-id`, `svix-timestamp`, `svix-signature`) | `200 ok\|ignored` Â· `400 invalid_payload\|invalid signature` Â· `500 db error`    |
+| Método | Rota                   | Auth                                                                | Retorno                                                                                                |
+| ------ | ---------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/me`              | cookie de sessão Clerk                                              | `200 { userId, orgId }` · `401` (sem sessão) · `403 { error: "NO_ACTIVE_ORG" }`                        |
+| `POST` | `/api/webhooks/clerk`  | assinatura **Svix** (`svix-id`, `svix-timestamp`, `svix-signature`) | `200 ok\|ignored` · `400 invalid_payload\|invalid signature` · `500 db error`                          |
+| `POST` | `/api/webhooks/stripe` | assinatura **Stripe** (`stripe-signature`; emenda 1.5.0)            | `200 ok` · `400 missing\|invalid signature` (sincroniza `orgs.plan` free/pro por evento de assinatura) |
 
-> `GET /api/me` Ã© o equivalente REST da Server Action `meAction`. O webhook **rejeita** payloads
-> sem assinatura Svix vÃ¡lida (`verifyWebhook`), entÃ£o sÃ³ dispara com o signing secret do Clerk.
+> `GET /api/me` é o equivalente REST da Server Action `meAction`. O webhook **rejeita** payloads
+> sem assinatura Svix válida (`verifyWebhook`), então só dispara com o signing secret do Clerk.
 
-### Rota pÃºblica de assinatura â `/sign/{token}` (fatia 012)
+### Rota pública de assinatura — `/sign/{token}` (fatia 012)
 
-PÃ¡gina pÃºblica (fora de `/api/v1`, **sem Clerk, sem tenant de sessÃ£o, sem bypass dev**): a
-credencial Ã© o **token HMAC** de 72h gerado por `generateSignTokenAction` (Server Action interna,
-office staff â a geraÃ§Ã£o NÃO tem espelho REST de propÃ³sito: o token Ã© credencial de escrita e a
-superfÃ­cie pÃºblica testÃ¡vel Ã© a prÃ³pria rota). O token embute `{ orgId, deliveryId, method, iat }`
+Página pública (fora de `/api/v1`, **sem Clerk, sem tenant de sessão, sem bypass dev**): a
+credencial é o **token HMAC** de 72h gerado por `generateSignTokenAction` (Server Action interna,
+office staff — a geração NÃO tem espelho REST de propósito: o token é credencial de escrita e a
+superfície pública testável é a própria rota). O token embute `{ orgId, deliveryId, method, iat }`
 assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS backstop).
 
-| AÃ§Ã£o | Rota            | Auth        | Desfecho                                                                                                                                                                                      |
-| ------ | --------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`  | `/sign/{token}` | sÃ³ o token | pÃ¡gina com itens + assinatura Â· "link invÃ¡lido" (`TOKEN_INVALID`, uniforme p/ adulterado/inexistente) Â· "link expirado" (`TOKEN_EXPIRED`, >72h) Â· "jÃ¡ confirmado" (negÃ³cio, nÃ£o erro) |
-| `POST` | `/sign/{token}` | sÃ³ o token | Server Action `submitSignatureAction`: `pending â signed_qr\|signed_link` (o `method` vem do payload assinado, nunca do cliente) Â· repetida â `ALREADY_SIGNED` (mensagem, nunca 500)         |
+| Ação   | Rota            | Auth       | Desfecho                                                                                                                                                                              |
+| ------ | --------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/sign/{token}` | só o token | página com itens + assinatura · "link inválido" (`TOKEN_INVALID`, uniforme p/ adulterado/inexistente) · "link expirado" (`TOKEN_EXPIRED`, >72h) · "já confirmado" (negócio, não erro) |
+| `POST` | `/sign/{token}` | só o token | Server Action `submitSignatureAction`: `pending → signed_qr\|signed_link` (o `method` vem do payload assinado, nunca do cliente) · repetida → `ALREADY_SIGNED` (mensagem, nunca 500)  |
 
-- Anti-enumeraÃ§Ã£o: espaÃ§o de chave HMAC-SHA256 + resposta uniforme; rate-limit por IP Ã© controle
-  complementar na **borda** (Cloudflare/WAF â infra, fora do app). `Cache-Control: no-store`.
+- Anti-enumeração: espaço de chave HMAC-SHA256 + resposta uniforme; rate-limit por IP é controle
+  complementar na **borda** (Cloudflare/WAF — infra, fora do app). `Cache-Control: no-store`.
 - O painel interno da entrega reflete a assinatura por **polling** do `signature_status`.
 
-### IntegraÃ§Ãµes externas (`/api/integrations`) â Route Handlers de consulta
+### Integrações externas (`/api/integrations`) — Route Handlers de consulta
 
-Camada de plataforma reutilizÃ¡vel (autofill de formulÃ¡rios). **SÃ³ sessÃ£o** (`requireAuth()`) â CEP e
-CNPJ sÃ£o **dados pÃºblicos**, nÃ£o do tenant; logo **sem** tenant/papel e **sem** bypass dev. Resposta
-no mesmo envelope `ActionResult<T>`. Falha externa **nunca** bloqueia o form (o hook trata em silÃªncio).
+Camada de plataforma reutilizável (autofill de formulários). **Só sessão** (`requireAuth()`) — CEP e
+CNPJ são **dados públicos**, não do tenant; logo **sem** tenant/papel e **sem** bypass dev. Resposta
+no mesmo envelope `ActionResult<T>`. Falha externa **nunca** bloqueia o form (o hook trata em silêncio).
 
-| MÃ©todo | Rota                            | Auth          | Retorno                                                                                               |
-| ------- | ------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------- |
-| `GET`   | `/api/integrations/cep/{cep}`   | sessÃ£o Clerk | `200 ok(endereÃ§o)` Â· `404 NOT_FOUND` Â· `422 VALIDATION` (formato) Â· `502 UPSTREAM_ERROR` Â· `401` |
-| `GET`   | `/api/integrations/cnpj/{cnpj}` | sessÃ£o Clerk | `200 ok(empresa+endereÃ§o)` Â· `404` Â· `422` Â· `502` Â· `401`                                       |
-| `GET`   | `/api/integrations/caepi/{ca}`  | sessÃ£o Clerk | `200 ok(CaLookupResult)` â 3 estados como payload Â· `422 VALIDATION` (formato) Â· `401`              |
+| Método | Rota                            | Auth         | Retorno                                                                                          |
+| ------ | ------------------------------- | ------------ | ------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/integrations/cep/{cep}`   | sessão Clerk | `200 ok(endereço)` · `404 NOT_FOUND` · `422 VALIDATION` (formato) · `502 UPSTREAM_ERROR` · `401` |
+| `GET`  | `/api/integrations/cnpj/{cnpj}` | sessão Clerk | `200 ok(empresa+endereço)` · `404` · `422` · `502` · `401`                                       |
+| `GET`  | `/api/integrations/caepi/{ca}`  | sessão Clerk | `200 ok(CaLookupResult)` — 3 estados como payload · `422 VALIDATION` (formato) · `401`           |
 
 - Provedores: **ViaCEP** (`viacep.com.br/ws`) e **BrasilAPI** (`brasilapi.com.br/api/cnpj/v1`), sem API
-  key. `src/shared/integrations/**` valida formato antes de chamar (evita request inÃºtil), aplica
-  timeout (`AbortController`) e cacheia sÃ³ o sucesso.
-- â ï¸ **Gotcha**: a BrasilAPI responde **403** ao User-Agent padrÃ£o do runtime â o cliente HTTP interno
-  manda um `User-Agent` identificÃ¡vel (`providers/http.ts`). Ao testar via cURL, o UA do curl jÃ¡ passa.
-- **CAEPI Ã© 100% local** (fatia 011): a consulta lÃª a tabela global `caepi_certificates` (espelho da
-  base pÃºblica do MTE, alimentada pelo job `scripts/caepi-sync.ts`) â **nenhum fetch externo por
+  key. `src/shared/integrations/**` valida formato antes de chamar (evita request inútil), aplica
+  timeout (`AbortController`) e cacheia só o sucesso.
+- ⚠️ **Gotcha**: a BrasilAPI responde **403** ao User-Agent padrão do runtime — o cliente HTTP interno
+  manda um `User-Agent` identificável (`providers/http.ts`). Ao testar via cURL, o UA do curl já passa.
+- **CAEPI é 100% local** (fatia 011): a consulta lê a tabela global `caepi_certificates` (espelho da
+  base pública do MTE, alimentada pelo job `scripts/caepi-sync.ts`) — **nenhum fetch externo por
   request**. Contrato `CaLookupResult`: `{ status: "valid" | "expired", ca, manufacturer, norm,
 validUntil, equipmentName? }` ou `{ status: "not_found", ca, baseUnsynced? }`.
-  **DivergÃªncia consciente do 404 de CEP/CNPJ**: os 3 estados voltam como **payload 200** â
-  `not_found`/`expired` sÃ£o resultado informativo de negÃ³cio (aviso na UI, nunca bloqueia o
-  cadastro), nÃ£o falha de transporte; Ã© o que permite ao hook `use-caepi-validation` reusar o
-  `useLookup` (que sÃ³ entrega dado em `response.ok && body.ok`). Sem cache (`Cache-Control:
-no-store`): a resposta depende de "hoje" (um CA que vence hoje muda de estado amanhÃ£).
+  **Divergência consciente do 404 de CEP/CNPJ**: os 3 estados voltam como **payload 200** —
+  `not_found`/`expired` são resultado informativo de negócio (aviso na UI, nunca bloqueia o
+  cadastro), não falha de transporte; é o que permite ao hook `use-caepi-validation` reusar o
+  `useLookup` (que só entrega dado em `response.ok && body.ok`). Sem cache (`Cache-Control:
+no-store`): a resposta depende de "hoje" (um CA que vence hoje muda de estado amanhã).
 
-## REST API (`/api/v1`) â CRUD por HTTP
+## REST API (`/api/v1`) — CRUD por HTTP
 
 Camada **RESTful** sobre Route Handlers (`src/app/api/v1/...`), com **verbos de verdade**
-(GET/POST/PUT/DELETE) â esta Ã© a superfÃ­cie testÃ¡vel por Postman/cURL. Reusa os mesmos
-repositÃ³rios, schemas zod e mapeamento de erro das Server Actions (sem duplicar regra).
-ColeÃ§Ã£o (arquivo **Ãºnico**): `sst-manager.postman_collection.json` â as variÃ¡veis (`baseUrl`,
-`devTenant`, `devRole`, ids) ficam na prÃ³pria coleÃ§Ã£o (Variables); troque `baseUrl` para alternar
-entre local/homolog/prod. (Mantemos sÃ³ **um** arquivo Postman de propÃ³sito.)
+(GET/POST/PUT/DELETE) — esta é a superfície testável por Postman/cURL. Reusa os mesmos
+repositórios, schemas zod e mapeamento de erro das Server Actions (sem duplicar regra).
+Coleção (arquivo **único**): `sst-manager.postman_collection.json` — as variáveis (`baseUrl`,
+`devTenant`, `devRole`, ids) ficam na própria coleção (Variables); troque `baseUrl` para alternar
+entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 
-> **Por que existe alÃ©m das Server Actions?** Server Actions sÃ£o **POST-only** por design do Next
-> (doc oficial) e exigem o header `Next-Action` (hash de build) â logo, nÃ£o-RESTful e nÃ£o testÃ¡veis
-> em Postman. Os Route Handlers sÃ£o a forma Next-nativa de expor REST.
+> **Por que existe além das Server Actions?** Server Actions são **POST-only** por design do Next
+> (doc oficial) e exigem o header `Next-Action` (hash de build) — logo, não-RESTful e não testáveis
+> em Postman. Os Route Handlers são a forma Next-nativa de expor REST.
 
 **Recursos** (todos sob `/api/v1`, escopados ao tenant ativo):
 
-| Recurso                                                                                                     | Verbos                                                                                                                                                   |
-| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/companies` Â· `/companies/{id}` Â· `/companies/{id}/dependents`                                           | GET, POST Â· GET, PUT, DELETE Â· GET                                                                                                                     |
-| `/work-units` Â· `/work-units/{id}` Â· `/work-units/{id}/dependents`                                        | GET, POST Â· GET, PUT, DELETE Â· GET                                                                                                                     |
-| `/job-roles` Â· `/job-roles/{id}` Â· `/job-roles/{id}/dependents`                                           | GET, POST Â· GET, PUT, DELETE Â· GET                                                                                                                     |
-| `/ges` Â· `/ges/{id}` Â· `/ges/{id}/dependents`                                                             | GET, POST Â· GET (inclui `exposedWorkers`), PUT, DELETE Â· GET                                                                                           |
-| `/ges/{id}/job-roles` Â· `/ges/{id}/job-roles/{linkId}`                                                     | GET (`?available=true` p/ nÃ£o vinculadas), POST Â· PUT, DELETE                                                                                          |
-| `/ges/{id}/risk-suggestions` Â· `/ges/{id}/risk-suggestions/accept`                                         | POST (sugere riscos por IA â nÃ£o persiste) Â· POST (persiste selecionados como rascunho, `201`)                                                         |
-| `/employees` Â· `/employees/{id}` Â· `/employees/{id}/epi-record`                                           | GET, POST Â· GET, PUT, DELETE Â· GET (ficha de EPI, read-only)                                                                                           |
-| `/pgr` Â· `/pgr/{id}`                                                                                       | GET, POST Â· GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                                |
-| `/risks` Â· `/risks/{id}`                                                                                   | GET, POST Â· GET, PUT, DELETE (inventÃ¡rio de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                        |
-| `/risks/{id}/epis` Â· `/risks/{id}/epis/{linkId}`                                                           | GET (`?available=true&search=` p/ EPIs nÃ£o vinculados), POST Â· PUT (neutralizaÃ§Ã£o), DELETE (vÃ­nculo EPI Ã risco)                                    |
-| `/risks/{id}/assessments` Â· `/risk-assessments/{id}`                                                       | GET, POST (avaliaÃ§Ã£o 5Ã5 do risco; 201) Â· GET, PUT, DELETE (histÃ³rico 1:N; `riskLevel`/`result` calculados; sem `/dependents`, sem 409)              |
-| `/risks/{id}/control-measures` Â· `/control-measures/{id}`                                                  | GET, POST (plano de aÃ§Ã£o 5W2H por nÃ­vel NR-01; 201) Â· GET, PUT, DELETE (nÃ­vel imutÃ¡vel; **DUPLICATE/409** se nÃ­vel repetido; sem `/dependents`)   |
-| `/categories` Â· `/categories/{id}`                                                                         | GET, POST Â· GET, PUT, DELETE                                                                                                                            |
-| `/risk-methodology`                                                                                         | GET, PUT (singleton por org â sem `list`/`{id}`/`dependents`)                                                                                            |
-| `/epi-deliveries` Â· `/epi-deliveries/{id}` Â· `/epi-deliveries/{id}/sign` Â· `/epi-deliveries/{id}/return` | GET, POST (baixa transacional) Â· GET, DELETE (sÃ³ `pending`; **sem PUT** â entrega imutÃ¡vel) Â· POST (assinatura manual) Â· POST (devoluÃ§Ã£o de item) |
-| `/training-catalog` Â· `/training-catalog/{id}` Â· `/training-catalog/{id}/dependents`                      | GET (`?search=` nome/norma), POST Â· GET, PUT, DELETE (em uso â `409 IN_USE`) Â· GET (`{records, requiredLinks}`)                                        |
-| `/training-records` Â· `/training-records/{id}`                                                             | GET (`?employeeId=`), POST (`valid_until` calculado no servidor; **sem PUT** â realizaÃ§Ã£o imutÃ¡vel) Â· GET, DELETE                                    |
-| `/job-role-required-trainings` Â· `/job-role-required-trainings/{id}`                                       | GET (`?jobRoleId=`), POST (add **idempotente** por UNIQUE) Â· DELETE (sem GET/PUT de item â vÃ­nculo magro)                                              |
+| Recurso                                                                                                  | Verbos                                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/companies` · `/companies/{id}` · `/companies/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
+| `/work-units` · `/work-units/{id}` · `/work-units/{id}/dependents`                                       | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
+| `/job-roles` · `/job-roles/{id}` · `/job-roles/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
+| `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                                                            | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET                                                                                      |
+| `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`                                                   | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE                                                                                     |
+| `/ges/{id}/risk-suggestions` · `/ges/{id}/risk-suggestions/accept`                                       | POST (sugere riscos por IA — não persiste) · POST (persiste selecionados como rascunho, `201`)                                                    |
+| `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                      |
+| `/pgr` · `/pgr/{id}`                                                                                     | GET, POST · GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                          |
+| `/risks` · `/risks/{id}`                                                                                 | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                   |
+| `/risks/{id}/epis` · `/risks/{id}/epis/{linkId}`                                                         | GET (`?available=true&search=` p/ EPIs não vinculados), POST · PUT (neutralização), DELETE (vínculo EPI × risco)                                  |
+| `/risks/{id}/assessments` · `/risk-assessments/{id}`                                                     | GET, POST (avaliação 5×5 do risco; 201) · GET, PUT, DELETE (histórico 1:N; `riskLevel`/`result` calculados; sem `/dependents`, sem 409)           |
+| `/risks/{id}/control-measures` · `/control-measures/{id}`                                                | GET, POST (plano de ação 5W2H por nível NR-01; 201) · GET, PUT, DELETE (nível imutável; **DUPLICATE/409** se nível repetido; sem `/dependents`)   |
+| `/categories` · `/categories/{id}`                                                                       | GET, POST · GET, PUT, DELETE                                                                                                                      |
+| `/risk-methodology`                                                                                      | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                     |
+| `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return` | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item) |
+| `/training-catalog` · `/training-catalog/{id}` · `/training-catalog/{id}/dependents`                     | GET (`?search=` nome/norma), POST · GET, PUT, DELETE (em uso → `409 IN_USE`) · GET (`{records, requiredLinks}`)                                   |
+| `/training-records` · `/training-records/{id}`                                                           | GET (`?employeeId=`), POST (`valid_until` calculado no servidor; **sem PUT** — realização imutável) · GET, DELETE                                 |
+| `/job-role-required-trainings` · `/job-role-required-trainings/{id}`                                     | GET (`?jobRoleId=`), POST (add **idempotente** por UNIQUE) · DELETE (sem GET/PUT de item — vínculo magro)                                         |
+| `/profile`                                                                                               | GET, PUT (perfil do **usuário logado** — self; edita só campos app-managed `phone`/`cpf`/`jobTitle`; nome/e-mail/foto são do Clerk)               |
+| `/team` · `/team/{userId}` · `/team/invitations`                                                         | GET (roster do tenant; `?search=`) · PUT, DELETE (papel / remoção — **owner**; via Clerk; barra o último owner) · POST (convite — **PRO**, `201`) |
+| `/pending-items`                                                                                         | GET (read-model das pendências sem página própria: PGRs vencidos, controles em atraso, EPIs abaixo do mínimo — top 5 cada, com link à origem)     |
+| `/dashboard/summary`                                                                                     | GET (agregações read-model do tenant: KPIs, riscos por agente, planos por nível, pendências/vencimentos; **sem tabelas novas**)                   |
 | `/vehicles` · `/vehicles/{id}`                                                                              | GET (`?search=` placa/modelo/marca), POST · GET, PUT, DELETE (frota; placa BR/Mercosul; `UNIQUE(org,placa)`→`DUPLICATE`; `201`/`204`)                    |
-| `/profile`                                                                                                  | GET, PUT (perfil do **usuÃ¡rio logado** â self; edita sÃ³ campos app-managed `phone`/`cpf`/`jobTitle`; nome/e-mail/foto sÃ£o do Clerk)                   |
-| `/team` Â· `/team/{userId}` Â· `/team/invitations`                                                          | GET (roster do tenant; `?search=`) Â· PUT, DELETE (papel / remoÃ§Ã£o â **owner**; via Clerk; barra o Ãºltimo owner) Â· POST (convite â **PRO**, `201`)   |
-| `/dashboard/summary`                                                                                        | GET (agregaÃ§Ãµes read-model do tenant: KPIs, riscos por agente, planos por nÃ­vel, pendÃªncias/vencimentos; **sem tabelas novas**)                      |
+| `/onboarding`                                                                                            | GET (progresso de primeiros-passos DERIVADO dos KPIs do tenant; sem tabela; read-only)                                                            |
 
 - **Filtros (query)**: list de cada recurso aceita `search`, `page`, `pageSize` + os filtros do
   recurso (`companyId`, `workUnitId`, `status`, `type`). Body de create/update = o mesmo `*Input`
   das actions. **`/categories`** filtra por `search` + `type` (`epi`|`machine`); **PUT exige corpo
-  completo `CategoryInput`** (espelho de companies, sem `.partial()`); **nÃ£o hÃ¡ `/dependents`**.
-- **`/risk-methodology`** Ã© um **singleton por organizaÃ§Ã£o** (issue #76): `GET` devolve a metodologia
-  ativa **ou** o padrÃ£o derivado (`configured:false`) quando nenhuma foi salva; `PUT` faz **upsert** do
-  corpo completo `RiskMethodologyInput` (gradaÃ§Ãµes 1â5 + faixas que particionam 1â25). Sem `list`,
+  completo `CategoryInput`** (espelho de companies, sem `.partial()`); **não há `/dependents`**.
+- **`/risk-methodology`** é um **singleton por organização** (issue #76): `GET` devolve a metodologia
+  ativa **ou** o padrão derivado (`configured:false`) quando nenhuma foi salva; `PUT` faz **upsert** do
+  corpo completo `RiskMethodologyInput` (gradações 1–5 + faixas que particionam 1–25). Sem `list`,
   `{id}` nem `dependents`.
-- **`/ges/{id}/risk-suggestions`** (sugestÃ£o de riscos por IA): `POST` monta o contexto **nÃ£o-PII** do
-  GES (processo, ambiente, tÃ­tulos de funÃ§Ã£o) e consulta o LLM (Anthropic/Claude, chave sÃ³ no servidor),
+- **`/ges/{id}/risk-suggestions`** (sugestão de riscos por IA): `POST` monta o contexto **não-PII** do
+  GES (processo, ambiente, títulos de função) e consulta o LLM (Anthropic/Claude, chave só no servidor),
   devolvendo uma lista de riscos sugeridos (`{ suggestions: [{ agentType, hazard?, description, sources? }] }`)
-  â **nada Ã© persistido**. GES de outra org â `422 FK_NOT_FOUND`; cota mensal do plano free estourada â
-  `402 QUOTA_EXCEEDED`; falha/timeout do LLM â `502 AI_UNAVAILABLE` (nunca bloqueia o cadastro). `POST
+  — **nada é persistido**. GES de outra org → `422 FK_NOT_FOUND`; cota mensal do plano free estourada →
+  `402 QUOTA_EXCEEDED`; falha/timeout do LLM → `502 AI_UNAVAILABLE` (nunca bloqueia o cadastro). `POST
 /accept` recebe os riscos selecionados/revisados e os grava como **rascunho** em `risks` (reusa a regra
   de `createRisk`), `201` com `{ created }`.
-- **`/epi-deliveries`** (fatia 012): list filtra por `employeeId` + `search` (nome do funcionÃ¡rio).
-  Create: `{ employeeId, deliveryDate, items: [{ stockId, quantity }] }` â `201` com a baixa
-  aplicada por item; qualquer item sem saldo â `422 INSUFFICIENT_STOCK` com **rollback total**.
-  `DELETE` de entrega assinada â `403 FORBIDDEN` (nÃ£o estorna saldo). `POST /{id}/sign` (body `{}`)
-  transiciona `pending â signed_manual`; repetida â `409 ALREADY_SIGNED`. Sem `PUT`: entregas sÃ£o
-  imutÃ¡veis apÃ³s a criaÃ§Ã£o (Ã© o que torna o `updated_at` da assinatura um timestamp legal).
-  `POST /{id}/return` (body `{ itemId }`) devolve UM item: seta `returned_at` (one-shot; repetida â
-  `409 ALREADY_RETURNED`) e repÃµe o saldo via movimento `employee_return`; independe do status de
+- **`/epi-deliveries`** (fatia 012): list filtra por `employeeId` + `search` (nome do funcionário).
+  Create: `{ employeeId, deliveryDate, items: [{ stockId, quantity }] }` → `201` com a baixa
+  aplicada por item; qualquer item sem saldo → `422 INSUFFICIENT_STOCK` com **rollback total**.
+  `DELETE` de entrega assinada → `403 FORBIDDEN` (não estorna saldo). `POST /{id}/sign` (body `{}`)
+  transiciona `pending → signed_manual`; repetida → `409 ALREADY_SIGNED`. Sem `PUT`: entregas são
+  imutáveis após a criação (é o que torna o `updated_at` da assinatura um timestamp legal).
+  `POST /{id}/return` (body `{ itemId }`) devolve UM item: seta `returned_at` (one-shot; repetida →
+  `409 ALREADY_RETURNED`) e repõe o saldo via movimento `employee_return`; independe do status de
   assinatura.
-- **`/employees/{id}/epi-record`** (fatia 012): ficha de EPI do funcionÃ¡rio, **read-only** (GET).
-  Query `?status=pendente|devolvido|todos&from=&to=&page=&pageSize=` â `status` mapeia para
-  `returned_at` (`pendente` â NULL, `devolvido` â NOT NULL); perÃ­odo filtra `delivery_date`.
-  FuncionÃ¡rio cross-tenant â `404 NOT_FOUND`; sem entregas â `{ rows: [], total: 0 }`.
-- **Treinamentos (fatia 017)**: **`/training-catalog`** â os 5 campos ePGR
+- **`/employees/{id}/epi-record`** (fatia 012): ficha de EPI do funcionário, **read-only** (GET).
+  Query `?status=pendente|devolvido|todos&from=&to=&page=&pageSize=` — `status` mapeia para
+  `returned_at` (`pendente` ⇒ NULL, `devolvido` ⇒ NOT NULL); período filtra `delivery_date`.
+  Funcionário cross-tenant → `404 NOT_FOUND`; sem entregas → `{ rows: [], total: 0 }`.
+- **Treinamentos (fatia 017)**: **`/training-catalog`** — os 5 campos ePGR
   (`name`, `referenceNorm?`, `workloadHours` inteiro > 0, `periodicity` enum
-  `annual|biennial|triennial|quinquennial|single`, `description?`); nome duplicado no escritÃ³rio â
-  `409 DUPLICATE`; exclusÃ£o de item com realizaÃ§Ãµes/vÃ­nculos â `409 IN_USE` (cheque `/dependents`
-  antes). **`/training-records`** â `{ employeeId, trainingId, completedAt, certificatePath? }`;
-  `valid_until` Ã© **calculado no servidor** pela periodicidade do catÃ¡logo (`single` â `null`) e
-  nunca vem do cliente; `completedAt` futuro â `422 VALIDATION`; funcionÃ¡rio/treinamento de outro
-  tenant â `422 FK_NOT_FOUND`. **`/job-role-required-trainings`** â `{ jobRoleId, trainingId }`;
-  POST repetido devolve o vÃ­nculo existente (idempotente). Leituras de vencimento/conformidade
-  (US3/US4) sÃ£o consultas de Server Component, sem endpoint prÃ³prio nesta fase.
+  `annual|biennial|triennial|quinquennial|single`, `description?`); nome duplicado no escritório →
+  `409 DUPLICATE`; exclusão de item com realizações/vínculos → `409 IN_USE` (cheque `/dependents`
+  antes). **`/training-records`** — `{ employeeId, trainingId, completedAt, certificatePath? }`;
+  `valid_until` é **calculado no servidor** pela periodicidade do catálogo (`single` → `null`) e
+  nunca vem do cliente; `completedAt` futuro → `422 VALIDATION`; funcionário/treinamento de outro
+  tenant → `422 FK_NOT_FOUND`. **`/job-role-required-trainings`** — `{ jobRoleId, trainingId }`;
+  POST repetido devolve o vínculo existente (idempotente). Leituras de vencimento/conformidade
+  (US3/US4) são consultas de Server Component, sem endpoint próprio nesta fase.
 - **Respostas**: recurso no corpo (`200`), `201` no create, `204` no delete. Erros:
-  `{ error: { code, message, fields? } }` com HTTP `422 VALIDATION` Â· `409 DUPLICATE` Â·
-  `409 IN_USE` Â· `422 FK_NOT_FOUND` Â· `404 NOT_FOUND` Â· `403 FORBIDDEN`/`NO_TENANT_CONTEXT` Â·
+  `{ error: { code, message, fields? } }` com HTTP `422 VALIDATION` · `409 DUPLICATE` ·
+  `409 IN_USE` · `422 FK_NOT_FOUND` · `404 NOT_FOUND` · `403 FORBIDDEN`/`NO_TENANT_CONTEXT` ·
   `401 UNAUTHORIZED`.
 
-### AutenticaÃ§Ã£o da REST API (2 modos) e os 3 ambientes
+### Autenticação da REST API (2 modos) e os 3 ambientes
 
-| Modo                  | Quando                                                         | Como                                                                                         | Tenant/papel                                    |
-| --------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| **Auth real (Clerk)** | qualquer ambiente, **default**; **obrigatÃ³rio em produÃ§Ã£o** | cookie `__session` (ou `Authorization: Bearer <session token>`) + cookie `tenant_active_org` | resolvidos por `requireOfficeStaff()` (sessÃ£o) |
-| **Bypass DEV**        | sÃ³ local/homolog, opt-in                                      | headers `x-dev-tenant`, `x-dev-role` (`owner\|collaborator\|client`), `x-dev-user`           | injetados; **nÃ£o** toca no Clerk               |
+| Modo                  | Quando                                                      | Como                                                                                         | Tenant/papel                                   |
+| --------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| **Auth real (Clerk)** | qualquer ambiente, **default**; **obrigatório em produção** | cookie `__session` (ou `Authorization: Bearer <session token>`) + cookie `tenant_active_org` | resolvidos por `requireOfficeStaff()` (sessão) |
+| **Bypass DEV**        | só local/homolog, opt-in                                    | headers `x-dev-tenant`, `x-dev-role` (`owner\|collaborator\|client`), `x-dev-user`           | injetados; **não** toca no Clerk               |
 
-O bypass Ã© ligado por **env** e tem **kill-switch duro em produÃ§Ã£o**:
+O bypass é ligado por **env** e tem **kill-switch duro em produção**:
 
 ```bash
 # local / homolog (.env.local)
@@ -194,261 +197,262 @@ DEV_API_AUTH_BYPASS=true   # libera /api/v1 sem token Clerk
 DEV_TENANT_ID=<orgId>      # tenant injetado (pode vir do header x-dev-tenant)
 DEV_ROLE=owner
 
-# produÃ§Ã£o
-APP_ENV=production         # DEV_API_AUTH_BYPASS Ã© IGNORADO; /api/v1 exige sessÃ£o Clerk
+# produção
+APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sessão Clerk
 ```
 
-- Em produÃ§Ã£o, `isDevAuthBypassEnabled()` Ã© sempre `false` (checa `APP_ENV !== "production"`),
-  e o middleware (`proxy.ts`) **nÃ£o** torna `/api/v1` pÃºblico â Clerk protege normalmente.
+- Em produção, `isDevAuthBypassEnabled()` é sempre `false` (checa `APP_ENV !== "production"`),
+  e o middleware (`proxy.ts`) **não** torna `/api/v1` público — Clerk protege normalmente.
 - Em local/homolog com a flag, o middleware libera `/api/v1` e o handler resolve o contexto pelos
   headers `x-dev-*` (ou envs `DEV_*`). Permite testar isolamento trocando `x-dev-tenant` e o gate
-  de papel com `x-dev-role: client` (â `403`).
+  de papel com `x-dev-role: client` (→ `403`).
 - **Auth real** (`/api/me` e o caminho default) usa a **org ativa do Clerk** via `requireOrgContext`
   para `/api/me`, enquanto `/api/v1` usa o **tenant interno** (Modelo B) via `requireOfficeStaff`.
 
-## SumÃ¡rio das actions/endpoints existentes
+## Sumário das actions/endpoints existentes
 
-| DomÃ­nio                    | Arquivo                                      | SuperfÃ­cie                                                                                                                                                                       |
-| --------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| REST API (Route Handlers)   | `app/api/v1/**`                              | CRUD HTTP de companies/work-units/job-roles/ges(+vÃ­nculos)/employees                                                                                                             |
-| Auth (Route Handler)        | `app/api/me/route.ts`                        | `GET /api/me`                                                                                                                                                                     |
-| Webhook (Route Handler)     | `app/api/webhooks/clerk/route.ts`            | `POST /api/webhooks/clerk` (provisiona tenant/sync)                                                                                                                               |
-| SessÃ£o / Identidade        | `actions/me.ts`                              | `meAction` (Server Action)                                                                                                                                                        |
-| Empresa                     | `actions/pgr/companies.ts`                   | list, options, get, create, update, delete, dependents                                                                                                                            |
-| Unidade de Obra             | `actions/pgr/work-units.ts`                  | list, get, create, update, delete, dependents                                                                                                                                     |
-| FunÃ§Ã£o (Cargo)            | `actions/pgr/job-roles.ts`                   | list, get, create, update, delete, dependents                                                                                                                                     |
-| GES + vÃ­nculos             | `actions/pgr/ges.ts`                         | list, get, create, update, delete, dependents + gestÃ£o de `ges_job_roles`                                                                                                        |
-| FuncionÃ¡rio                | `actions/pgr/employees.ts`                   | list, get, create, update, delete + picker de funÃ§Ã£o                                                                                                                            |
-| PGR (documento)             | `actions/pgr/pgr.ts`                         | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 nÃ£o persistido; sem 409)                                                                                 |
-| Riscos (GES)                | `actions/pgr/risks.ts`                       | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)                                                                  |
+| Domínio                    | Arquivo                                      | Superfície                                                                                                                                                                                                   |
+| -------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| REST API (Route Handlers)  | `app/api/v1/**`                              | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees                                                                                                                                         |
+| Auth (Route Handler)       | `app/api/me/route.ts`                        | `GET /api/me`                                                                                                                                                                                                |
+| Webhook (Route Handler)    | `app/api/webhooks/clerk/route.ts`            | `POST /api/webhooks/clerk` (provisiona tenant/sync)                                                                                                                                                          |
+| Sessão / Identidade        | `actions/me.ts`                              | `meAction` (Server Action)                                                                                                                                                                                   |
+| Empresa                    | `actions/pgr/companies.ts`                   | list, options, get, create, update, delete, dependents                                                                                                                                                       |
 | Ve�culos (inspe��es)        | `actions/inspections/vehicles.ts`            | list, get, create, update, delete + REST `/api/v1/vehicles/**` (frota; base das inspe��es veiculares; modelo na fatia 034)                                                        |
-| Perfil (plataforma)         | `actions/platform/profile.ts`                | getProfile, updateProfile (self) + REST `/api/v1/profile` (campos app-managed; nome/e-mail/foto delegados ao Clerk)                                                               |
-| Equipe (plataforma)         | `actions/platform/team.ts`                   | listTeamMembers, inviteMember, changeMemberRole, removeMember + REST `/api/v1/team/**` (multiusuÃ¡rio **PRO** via Clerk Org; owner-only; protege o Ãºltimo owner)                 |
-| Dashboard (plataforma)      | `actions/platform/dashboard.ts`              | getDashboardSummaryAction + REST `GET /api/v1/dashboard/summary` (read-model agregado por tenant; sem tabelas novas)                                                              |
-| EPI Ã risco (vÃ­nculo)      | `actions/pgr/epi-risk.ts`                    | list, available (busca nome/CA), add, update (neutralizaÃ§Ã£o), remove + REST `/api/v1/risks/{id}/epis/**`                                                                        |
-| AvaliaÃ§Ã£o de risco (5Ã5)  | `actions/pgr/risk-assessments.ts`            | list, get, getCurrent, create, update, delete + REST `/api/v1/risks/{id}/assessments` Â· `/risk-assessments/{id}` (histÃ³rico 1:N; snapshot de `result`; sem 409)                 |
-| Medidas de controle (5W2H)  | `actions/pgr/control-measures.ts`            | list, get, create, update, delete + REST `/api/v1/risks/{id}/control-measures` Â· `/control-measures/{id}` (1 por nÃ­vel NR-01; estados derivados; **409** por UNIQUE)            |
-| Categoria                   | `actions/pgr/categories.ts`                  | list, get, create, update, delete (catÃ¡logo `epi`/`machine`)                                                                                                                     |
-| Metodologia de Risco        | `actions/pgr/risk-methodology.ts`            | get (config ou padrÃ£o), save (upsert) + `GET`/`PUT /api/v1/risk-methodology`                                                                                                     |
-| SugestÃ£o de riscos (IA)    | `actions/pgr/ai-risk-suggestion.ts`          | suggest (LLM, nÃ£o persiste), accept (grava rascunhos) + REST `POST /api/v1/ges/{id}/risk-suggestions(/accept)`                                                                   |
-| CAEPI (consulta de CA)      | `actions/epi/lookup-ca.ts`                   | `lookupCa` (Server Action, sÃ³ sessÃ£o) + `GET /api/integrations/caepi/{ca}`                                                                                                      |
-| Entrega de EPI              | `actions/pgr/epi-deliveries.ts`              | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**`                                                                 |
-| Ficha de EPI                | `actions/pgr/epi-record.ts`                  | `getEmployeeEpiRecordAction` (read-only) + REST `GET /api/v1/employees/{id}/epi-record`                                                                                           |
-| Treinamento (catÃ¡logo)     | `actions/pgr/training-catalog.ts`            | list, options, get, create, update, delete, dependents + REST `/api/v1/training-catalog/**`                                                                                       |
-| RealizaÃ§Ã£o de treinamento | `actions/pgr/training-records.ts`            | list (por funcionÃ¡rio), get, create (`valid_until` via D1 no servidor), delete + vencimento (`listTrainingExpiry`, `getTrainingDueSummary`) + REST `/api/v1/training-records/**` |
-| ObrigatÃ³rios por funÃ§Ã£o  | `actions/pgr/job-role-required-trainings.ts` | list, add (idempotente), remove + conformidade (`getEmployeeCompliance`, `listNonCompliance`) + REST `/api/v1/job-role-required-trainings/**`                                     |
+| Unidade de Obra            | `actions/pgr/work-units.ts`                  | list, get, create, update, delete, dependents                                                                                                                                                                |
+| Função (Cargo)             | `actions/pgr/job-roles.ts`                   | list, get, create, update, delete, dependents                                                                                                                                                                |
+| GES + vínculos             | `actions/pgr/ges.ts`                         | list, get, create, update, delete, dependents + gestão de `ges_job_roles`                                                                                                                                    |
+| Funcionário                | `actions/pgr/employees.ts`                   | list, get, create, update, delete + picker de função                                                                                                                                                         |
+| PGR (documento)            | `actions/pgr/pgr.ts`                         | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 não persistido; sem 409)                                                                                                             |
+| Riscos (GES)               | `actions/pgr/risks.ts`                       | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)                                                                                             |
+| Perfil (plataforma)        | `actions/platform/profile.ts`                | getProfile, updateProfile (self) + REST `/api/v1/profile` (campos app-managed; nome/e-mail/foto delegados ao Clerk)                                                                                          |
+| Equipe (plataforma)        | `actions/platform/team.ts`                   | listTeamMembers, inviteMember, changeMemberRole, removeMember + REST `/api/v1/team/**` (multiusuário **PRO** via Clerk Org; owner-only; protege o último owner)                                              |
+| Dashboard (plataforma)     | `actions/platform/dashboard.ts`              | getDashboardSummaryAction + REST `GET /api/v1/dashboard/summary` (read-model agregado por tenant; sem tabelas novas)                                                                                         |
+| Billing (plataforma)       | `actions/platform/billing.ts`                | startProCheckoutAction (Server Action, owner) + webhook `POST /api/webhooks/stripe` (Stripe; emenda 1.5.0; Checkout hospedado — cartão nunca toca a app; plano em `orgs.plan`; migration `0018_org_billing`) |
+| EPI × risco (vínculo)      | `actions/pgr/epi-risk.ts`                    | list, available (busca nome/CA), add, update (neutralização), remove + REST `/api/v1/risks/{id}/epis/**`                                                                                                     |
+| Avaliação de risco (5×5)   | `actions/pgr/risk-assessments.ts`            | list, get, getCurrent, create, update, delete + REST `/api/v1/risks/{id}/assessments` · `/risk-assessments/{id}` (histórico 1:N; snapshot de `result`; sem 409)                                              |
+| Medidas de controle (5W2H) | `actions/pgr/control-measures.ts`            | list, get, create, update, delete + REST `/api/v1/risks/{id}/control-measures` · `/control-measures/{id}` (1 por nível NR-01; estados derivados; **409** por UNIQUE)                                         |
+| Categoria                  | `actions/pgr/categories.ts`                  | list, get, create, update, delete (catálogo `epi`/`machine`)                                                                                                                                                 |
+| Metodologia de Risco       | `actions/pgr/risk-methodology.ts`            | get (config ou padrão), save (upsert) + `GET`/`PUT /api/v1/risk-methodology`                                                                                                                                 |
+| Sugestão de riscos (IA)    | `actions/pgr/ai-risk-suggestion.ts`          | suggest (LLM, não persiste), accept (grava rascunhos) + REST `POST /api/v1/ges/{id}/risk-suggestions(/accept)`                                                                                               |
+| CAEPI (consulta de CA)     | `actions/epi/lookup-ca.ts`                   | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                                                                                                                   |
+| Entrega de EPI             | `actions/pgr/epi-deliveries.ts`              | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**`                                                                                            |
+| Ficha de EPI               | `actions/pgr/epi-record.ts`                  | `getEmployeeEpiRecordAction` (read-only) + REST `GET /api/v1/employees/{id}/epi-record`                                                                                                                      |
+| Treinamento (catálogo)     | `actions/pgr/training-catalog.ts`            | list, options, get, create, update, delete, dependents + REST `/api/v1/training-catalog/**`                                                                                                                  |
+| Realização de treinamento  | `actions/pgr/training-records.ts`            | list (por funcionário), get, create (`valid_until` via D1 no servidor), delete + vencimento (`listTrainingExpiry`, `getTrainingDueSummary`) + REST `/api/v1/training-records/**`                             |
+| Obrigatórios por função    | `actions/pgr/job-role-required-trainings.ts` | list, add (idempotente), remove + conformidade (`getEmployeeCompliance`, `listNonCompliance`) + REST `/api/v1/job-role-required-trainings/**`                                                                |
 
 ---
 
-## Contrato de retorno â `ActionResult<T>`
+## Contrato de retorno — `ActionResult<T>`
 
 Local: `src/shared/server/result.ts`. **Todas as actions de CRUD** retornam este envelope;
-nenhuma exceÃ§Ã£o crua chega Ã  UI.
+nenhuma exceção crua chega à UI.
 
 ```ts
 type ActionError = {
   code: string; // ver tabela abaixo
-  message: string; // mensagem curta exibÃ­vel
+  message: string; // mensagem curta exibível
   fields?: Record<string, string>; // erros por campo (origem zod)
 };
 
 type ActionResult<T> = { ok: true; data: T } | { ok: false; error: ActionError };
 ```
 
-> A `meAction` Ã© anterior a este contrato e usa um envelope prÃ³prio (ver seÃ§Ã£o SessÃ£o).
+> A `meAction` é anterior a este contrato e usa um envelope próprio (ver seção Sessão).
 
-### CÃ³digos de erro (canÃ´nicos)
+### Códigos de erro (canônicos)
 
-Mapeados por `toActionError` (`src/shared/server/action-error.ts`). Erro inesperado Ã©
-**relanÃ§ado** (nunca silenciado), caindo no error boundary do Next.
+Mapeados por `toActionError` (`src/shared/server/action-error.ts`). Erro inesperado é
+**relançado** (nunca silenciado), caindo no error boundary do Next.
 
-| code                 | Origem                                   | HTTP equiv. | Quando                                                                     |
-| -------------------- | ---------------------------------------- | ----------- | -------------------------------------------------------------------------- |
-| `VALIDATION`         | `ZodError` (com `fields`); CHECK `23514` | 422         | Entrada invÃ¡lida                                                          |
-| `DUPLICATE`          | UNIQUE `23505`                           | 409         | CNPJ/CPF/tÃ­tulo/vÃ­nculo duplicado no escritÃ³rio                         |
-| `FK_NOT_FOUND`       | FK `23503`; referÃªncia fora do tenant   | 422         | Empresa/obra/GES/funÃ§Ã£o inexistente no escritÃ³rio                       |
-| `FORBIDDEN`          | papel `client`                           | 403         | Membro nÃ£o-equipe tentou operar                                           |
-| `NOT_FOUND`          | `getById` â `null`                       | 404         | Registro inexistente no escritÃ³rio (inclui cross-tenant)                  |
-| `NO_TENANT_CONTEXT`  | sem escritÃ³rio ativo                    | 403         | SessÃ£o sem tenant resolvido                                               |
-| `INSUFFICIENT_STOCK` | `InsufficientStockError` (repositÃ³rio)  | 422         | SaÃ­da/entrega maior que o saldo disponÃ­vel (rollback total)              |
-| `ALREADY_SIGNED`     | `AlreadySignedError` (repositÃ³rio)      | 409         | Assinar entrega que jÃ¡ saiu de `pending` (one-shot)                       |
-| `ALREADY_RETURNED`   | `AlreadyReturnedError` (repositÃ³rio)    | 409         | Devolver item de entrega jÃ¡ devolvido (saldo intacto)                     |
-| `TOKEN_INVALID`      | `TokenInvalidError` (rota pÃºblica)      | 404         | Token de assinatura ausente/adulterado/inexistente                         |
-| `TOKEN_EXPIRED`      | `TokenExpiredError` (rota pÃºblica)      | 410         | Token com HMAC vÃ¡lido porÃ©m alÃ©m do TTL de 72h                          |
-| `IN_USE`             | `EntityInUseError` (repositÃ³rio)        | 409         | Excluir item de catÃ¡logo com dependentes (prÃ©-check + RESTRICT backstop) |
+| code                 | Origem                                   | HTTP equiv. | Quando                                                                   |
+| -------------------- | ---------------------------------------- | ----------- | ------------------------------------------------------------------------ |
+| `VALIDATION`         | `ZodError` (com `fields`); CHECK `23514` | 422         | Entrada inválida                                                         |
+| `DUPLICATE`          | UNIQUE `23505`                           | 409         | CNPJ/CPF/título/vínculo duplicado no escritório                          |
+| `FK_NOT_FOUND`       | FK `23503`; referência fora do tenant    | 422         | Empresa/obra/GES/função inexistente no escritório                        |
+| `FORBIDDEN`          | papel `client`                           | 403         | Membro não-equipe tentou operar                                          |
+| `NOT_FOUND`          | `getById` → `null`                       | 404         | Registro inexistente no escritório (inclui cross-tenant)                 |
+| `NO_TENANT_CONTEXT`  | sem escritório ativo                     | 403         | Sessão sem tenant resolvido                                              |
+| `INSUFFICIENT_STOCK` | `InsufficientStockError` (repositório)   | 422         | Saída/entrega maior que o saldo disponível (rollback total)              |
+| `ALREADY_SIGNED`     | `AlreadySignedError` (repositório)       | 409         | Assinar entrega que já saiu de `pending` (one-shot)                      |
+| `ALREADY_RETURNED`   | `AlreadyReturnedError` (repositório)     | 409         | Devolver item de entrega já devolvido (saldo intacto)                    |
+| `TOKEN_INVALID`      | `TokenInvalidError` (rota pública)       | 404         | Token de assinatura ausente/adulterado/inexistente                       |
+| `TOKEN_EXPIRED`      | `TokenExpiredError` (rota pública)       | 410         | Token com HMAC válido porém além do TTL de 72h                           |
+| `IN_USE`             | `EntityInUseError` (repositório)         | 409         | Excluir item de catálogo com dependentes (pré-check + RESTRICT backstop) |
 
-## PrÃ©-condiÃ§Ãµes comuns (toda action de CRUD)
+## Pré-condições comuns (toda action de CRUD)
 
 Encapsuladas em `officeAction(operation, fn, { audit? })` (`src/shared/server/office-action.ts`):
 
-1. **Gate de papel** (`requireOfficeStaff`): apenas `owner`/`collaborator`; papel `client` â
+1. **Gate de papel** (`requireOfficeStaff`): apenas `owner`/`collaborator`; papel `client` →
    `FORBIDDEN`. Vale para leitura e escrita.
-2. **Tenant da sessÃ£o**: `tenantId` vem de `requireTenantContext()`, **nunca** de input do
-   cliente. Todo acesso roda em `withOrg(tenantId, â¦)` + RLS backstop por `org_id`.
-3. **ValidaÃ§Ã£o**: escrita faz `schema.parse(input)` (zod) antes do repositÃ³rio â falha vira
+2. **Tenant da sessão**: `tenantId` vem de `requireTenantContext()`, **nunca** de input do
+   cliente. Todo acesso roda em `withOrg(tenantId, …)` + RLS backstop por `org_id`.
+3. **Validação**: escrita faz `schema.parse(input)` (zod) antes do repositório → falha vira
    `VALIDATION` com `fields`.
-4. **Auditoria**: escritas emitem evento de fronteira sem PII; leituras nÃ£o emitem em sucesso.
-5. **RevalidaÃ§Ã£o**: mutaÃ§Ãµes chamam `revalidatePath` da(s) rota(s) afetada(s).
+4. **Auditoria**: escritas emitem evento de fronteira sem PII; leituras não emitem em sucesso.
+5. **Revalidação**: mutações chamam `revalidatePath` da(s) rota(s) afetada(s).
 
-## PaginaÃ§Ã£o
+## Paginação
 
 `src/shared/pagination.ts`. Entrada `{ page?, pageSize? }` (default `pageSize = 20`, clamp a
-`PAGE_SIZE_MAX = 100`, `page >= 1`; invÃ¡lidos caem nos defaults). Listas retornam
+`PAGE_SIZE_MAX = 100`, `page >= 1`; inválidos caem nos defaults). Listas retornam
 `Paginated<T> = { rows: T[]; total: number }`.
 
 ---
 
-## SessÃ£o / Identidade â `actions/me.ts`
+## Sessão / Identidade — `actions/me.ts`
 
 | Action     | Entrada | Retorno                                                                                    |
 | ---------- | ------- | ------------------------------------------------------------------------------------------ |
-| `meAction` | â       | `{ ok: true; userId; orgId }` \| `{ ok: false; error: "UNAUTHORIZED" \| "NO_ACTIVE_ORG" }` |
+| `meAction` | —       | `{ ok: true; userId; orgId }` \| `{ ok: false; error: "UNAUTHORIZED" \| "NO_ACTIVE_ORG" }` |
 
-Resolve o usuÃ¡rio autenticado e a org ativa da sessÃ£o (Clerk). Envelope prÃ³prio (nÃ£o
+Resolve o usuário autenticado e a org ativa da sessão (Clerk). Envelope próprio (não
 `ActionResult`).
 
-## Empresa â `actions/pgr/companies.ts`
+## Empresa — `actions/pgr/companies.ts`
 
-| Action                       | Entrada                         | Retorno (`data`)                               |
-| ---------------------------- | ------------------------------- | ---------------------------------------------- |
-| `listCompaniesAction`        | `{ search?, page?, pageSize? }` | `{ rows: CompanyListItem[]; total }`           |
-| `listCompanyOptionsAction`   | â                               | `CompanyOption[]` (id, razaoSocial, endereÃ§o) |
-| `getCompanyAction`           | `id`                            | `Company` (null â `NOT_FOUND`)                 |
-| `createCompanyAction`        | `CompanyInput`                  | `Company` (CNPJ dup â `DUPLICATE`)             |
-| `updateCompanyAction`        | `id, CompanyInput`              | `Company`                                      |
-| `deleteCompanyAction`        | `id`                            | `{ id }` (cascata pelo banco)                  |
-| `getCompanyDependentsAction` | `id`                            | `{ workUnits, ges, jobRoles, employees }`      |
+| Action                       | Entrada                         | Retorno (`data`)                              |
+| ---------------------------- | ------------------------------- | --------------------------------------------- |
+| `listCompaniesAction`        | `{ search?, page?, pageSize? }` | `{ rows: CompanyListItem[]; total }`          |
+| `listCompanyOptionsAction`   | —                               | `CompanyOption[]` (id, razaoSocial, endereço) |
+| `getCompanyAction`           | `id`                            | `Company` (null → `NOT_FOUND`)                |
+| `createCompanyAction`        | `CompanyInput`                  | `Company` (CNPJ dup → `DUPLICATE`)            |
+| `updateCompanyAction`        | `id, CompanyInput`              | `Company`                                     |
+| `deleteCompanyAction`        | `id`                            | `{ id }` (cascata pelo banco)                 |
+| `getCompanyDependentsAction` | `id`                            | `{ workUnits, ges, jobRoles, employees }`     |
 
-**`CompanyInput`**: `razaoSocial*`, `riskGrade*` (1â4), `cnpj?` (14 dÃ­g. se preenchido),
+**`CompanyInput`**: `razaoSocial*`, `riskGrade*` (1–4), `cnpj?` (14 díg. se preenchido),
 `nomeFantasia?`, `phone?`, `email?`, `cnae?`, `mainActivity?`, `logoPath?`,
 `zipCode? street? number? complement? district? city? state?`.
 **`CompanyListItem`**: `{ id, razaoSocial, cnpj, city, state }`.
 
-## Unidade de Obra â `actions/pgr/work-units.ts`
+## Unidade de Obra — `actions/pgr/work-units.ts`
 
 | Action                        | Entrada                                     | Retorno                                              |
 | ----------------------------- | ------------------------------------------- | ---------------------------------------------------- |
 | `listWorkUnitsAction`         | `{ companyId?, search?, page?, pageSize? }` | `{ rows: WorkUnit[]; total }`                        |
 | `getWorkUnitAction`           | `id`                                        | `WorkUnit`                                           |
-| `createWorkUnitAction`        | `WorkUnitInput`                             | `WorkUnit` (empresa fora do tenant â `FK_NOT_FOUND`) |
+| `createWorkUnitAction`        | `WorkUnitInput`                             | `WorkUnit` (empresa fora do tenant → `FK_NOT_FOUND`) |
 | `updateWorkUnitAction`        | `id, WorkUnitInput`                         | `WorkUnit`                                           |
 | `deleteWorkUnitAction`        | `id`                                        | `{ id }`                                             |
 | `getWorkUnitDependentsAction` | `id`                                        | `{ ges }`                                            |
 
-**`WorkUnitInput`**: `companyId*`, `name*`, `description*`, `contractNumber?`, endereÃ§o (`zipCode?â¦state?`).
+**`WorkUnitInput`**: `companyId*`, `name*`, `description*`, `contractNumber?`, endereço (`zipCode?…state?`).
 
-## FunÃ§Ã£o (Cargo) â `actions/pgr/job-roles.ts`
+## Função (Cargo) — `actions/pgr/job-roles.ts`
 
-| Action                       | Entrada                                     | Retorno                                          |
-| ---------------------------- | ------------------------------------------- | ------------------------------------------------ |
-| `listJobRolesAction`         | `{ companyId?, search?, page?, pageSize? }` | `{ rows: JobRole[]; total }`                     |
-| `getJobRoleAction`           | `id`                                        | `JobRole`                                        |
-| `createJobRoleAction`        | `JobRoleInput`                              | `JobRole` (tÃ­tulo dup na empresa â `DUPLICATE`) |
-| `updateJobRoleAction`        | `id, JobRoleInput`                          | `JobRole`                                        |
-| `deleteJobRoleAction`        | `id`                                        | `{ id }`                                         |
-| `getJobRoleDependentsAction` | `id`                                        | `{ gesLinks, employees }`                        |
+| Action                       | Entrada                                     | Retorno                                         |
+| ---------------------------- | ------------------------------------------- | ----------------------------------------------- |
+| `listJobRolesAction`         | `{ companyId?, search?, page?, pageSize? }` | `{ rows: JobRole[]; total }`                    |
+| `getJobRoleAction`           | `id`                                        | `JobRole`                                       |
+| `createJobRoleAction`        | `JobRoleInput`                              | `JobRole` (título dup na empresa → `DUPLICATE`) |
+| `updateJobRoleAction`        | `id, JobRoleInput`                          | `JobRole`                                       |
+| `deleteJobRoleAction`        | `id`                                        | `{ id }`                                        |
+| `getJobRoleDependentsAction` | `id`                                        | `{ gesLinks, employees }`                       |
 
 **`JobRoleInput`**: `companyId*`, `title*`, `cbo?`, `workSchedule?`, `description?`.
 
-## GES + vÃ­nculos â `actions/pgr/ges.ts`
+## GES + vínculos — `actions/pgr/ges.ts`
 
-| Action                        | Entrada                                                  | Retorno                                                   |
-| ----------------------------- | -------------------------------------------------------- | --------------------------------------------------------- |
-| `listGesAction`               | `{ companyId?, workUnitId?, search?, page?, pageSize? }` | `{ rows: GesListItem[]; total; totalWorkers }`            |
-| `getGesAction`                | `id`                                                     | `{ ges: Ges; exposedWorkers }`                            |
-| `createGesAction`             | `GesInput`                                               | `Ges` (obra fora da empresa/tenant â `FK_NOT_FOUND`)      |
-| `updateGesAction`             | `id, GesInput`                                           | `Ges`                                                     |
-| `deleteGesAction`             | `id`                                                     | `{ id }` (cascata em vÃ­nculos; funcionÃ¡rios â GES nulo) |
-| `getGesDependentsAction`      | `id`                                                     | `{ jobRoleLinks, employees }`                             |
-| `listGesJobRolesAction`       | `gesId`                                                  | `GesJobRoleItem[]`                                        |
-| `listAvailableJobRolesAction` | `gesId`                                                  | `JobRoleOption[]` (funÃ§Ãµes da empresa nÃ£o vinculadas)  |
-| `addGesJobRoleAction`         | `{ gesId, jobRoleId, workerCount, workSchedule? }`       | `{ gesId }` (â¤0 â `VALIDATION`; dup â `DUPLICATE`)       |
-| `updateGesJobRoleAction`      | `id, gesId, { workerCount, workSchedule? }`              | `{ id }`                                                  |
-| `removeGesJobRoleAction`      | `id, gesId`                                              | `{ id }`                                                  |
+| Action                        | Entrada                                                  | Retorno                                                 |
+| ----------------------------- | -------------------------------------------------------- | ------------------------------------------------------- |
+| `listGesAction`               | `{ companyId?, workUnitId?, search?, page?, pageSize? }` | `{ rows: GesListItem[]; total; totalWorkers }`          |
+| `getGesAction`                | `id`                                                     | `{ ges: Ges; exposedWorkers }`                          |
+| `createGesAction`             | `GesInput`                                               | `Ges` (obra fora da empresa/tenant → `FK_NOT_FOUND`)    |
+| `updateGesAction`             | `id, GesInput`                                           | `Ges`                                                   |
+| `deleteGesAction`             | `id`                                                     | `{ id }` (cascata em vínculos; funcionários → GES nulo) |
+| `getGesDependentsAction`      | `id`                                                     | `{ jobRoleLinks, employees }`                           |
+| `listGesJobRolesAction`       | `gesId`                                                  | `GesJobRoleItem[]`                                      |
+| `listAvailableJobRolesAction` | `gesId`                                                  | `JobRoleOption[]` (funções da empresa não vinculadas)   |
+| `addGesJobRoleAction`         | `{ gesId, jobRoleId, workerCount, workSchedule? }`       | `{ gesId }` (≤0 → `VALIDATION`; dup → `DUPLICATE`)      |
+| `updateGesJobRoleAction`      | `id, gesId, { workerCount, workSchedule? }`              | `{ id }`                                                |
+| `removeGesJobRoleAction`      | `id, gesId`                                              | `{ id }`                                                |
 
 **`GesInput`**: `companyId*`, `workUnitId*`, `name*`, `processDescription? constructionType?
 ceilingHeight? floor? roof? lighting? ventilation? otherCharacteristics?`.
-**`GesListItem`**: `{ id, name, processDescription, exposedWorkers }` â `exposedWorkers` Ã©
-**derivado** (`SUM(worker_count)` das funÃ§Ãµes vinculadas), somente leitura, 0 sem vÃ­nculos.
+**`GesListItem`**: `{ id, name, processDescription, exposedWorkers }` — `exposedWorkers` é
+**derivado** (`SUM(worker_count)` das funções vinculadas), somente leitura, 0 sem vínculos.
 **`GesJobRoleItem`**: `{ id, jobRoleId, title, workerCount, workSchedule }`.
 **`JobRoleOption`**: `{ jobRoleId, title }`.
 
-## FuncionÃ¡rio â `actions/pgr/employees.ts`
+## Funcionário — `actions/pgr/employees.ts`
 
-| Action                   | Entrada                                              | Retorno                                                     |
-| ------------------------ | ---------------------------------------------------- | ----------------------------------------------------------- |
-| `listEmployeesAction`    | `{ companyId?, status?, search?, page?, pageSize? }` | `{ rows: EmployeeListItem[]; total }`                       |
-| `getEmployeeAction`      | `id`                                                 | `Employee`                                                  |
-| `createEmployeeAction`   | `EmployeeInput`                                      | `Employee` (CPF dup â `DUPLICATE`)                          |
-| `updateEmployeeAction`   | `id, EmployeeInput`                                  | `Employee`                                                  |
-| `deleteEmployeeAction`   | `id`                                                 | `{ id }`                                                    |
-| `listGesFunctionsAction` | `gesId`                                              | `JobRoleOption[]` (picker: sÃ³ funÃ§Ãµes vinculadas ao GES) |
+| Action                   | Entrada                                              | Retorno                                                  |
+| ------------------------ | ---------------------------------------------------- | -------------------------------------------------------- |
+| `listEmployeesAction`    | `{ companyId?, status?, search?, page?, pageSize? }` | `{ rows: EmployeeListItem[]; total }`                    |
+| `getEmployeeAction`      | `id`                                                 | `Employee`                                               |
+| `createEmployeeAction`   | `EmployeeInput`                                      | `Employee` (CPF dup → `DUPLICATE`)                       |
+| `updateEmployeeAction`   | `id, EmployeeInput`                                  | `Employee`                                               |
+| `deleteEmployeeAction`   | `id`                                                 | `{ id }`                                                 |
+| `listGesFunctionsAction` | `gesId`                                              | `JobRoleOption[]` (picker: só funções vinculadas ao GES) |
 
-**`EmployeeInput`**: `companyId*`, `fullName*`, `cpf*` (11 dÃ­g.), `gesId?`, `jobRoleId?`
-(exige `gesId` e vÃ­nculo existente no GES), `status?` (`active`|`on_leave`|`dismissed`, default
+**`EmployeeInput`**: `companyId*`, `fullName*`, `cpf*` (11 díg.), `gesId?`, `jobRoleId?`
+(exige `gesId` e vínculo existente no GES), `status?` (`active`|`on_leave`|`dismissed`, default
 `active`), `sex?` (`male`|`female`|`not_informed`), `maritalStatus?`
 (`single`|`married`|`divorced`|`widowed`|`stable_union`), `birthDate? admissionDate?
 dismissalDate? badgeValidUntil?` (datas), `phone? email? rg? badgeNumber? registration?
-bloodType? photoPath?`, endereÃ§o (`zipCode?â¦state?`).
+bloodType? photoPath?`, endereço (`zipCode?…state?`).
 **`EmployeeListItem`**: `{ id, fullName, status, companyName, gesName }`.
 
-## Categoria â `actions/pgr/categories.ts`
+## Categoria — `actions/pgr/categories.ts`
 
-CatÃ¡logo de categorias de `epi`/`machine` (fatia 009). Sem `/dependents` (catÃ¡logo sem FK de
-entrada). REST espelho em `/api/v1/categories` (GET, POST) Â· `/api/v1/categories/{id}` (GET, PUT, DELETE).
+Catálogo de categorias de `epi`/`machine` (fatia 009). Sem `/dependents` (catálogo sem FK de
+entrada). REST espelho em `/api/v1/categories` (GET, POST) · `/api/v1/categories/{id}` (GET, PUT, DELETE).
 
 | Action                 | Entrada                                | Retorno (`data`)                            |
 | ---------------------- | -------------------------------------- | ------------------------------------------- |
 | `listCategoriesAction` | `{ search?, type?, page?, pageSize? }` | `{ rows: Category[]; total }`               |
-| `getCategoryAction`    | `id`                                   | `Category` (null â `NOT_FOUND`)             |
-| `createCategoryAction` | `CategoryInput`                        | `Category` (nome dup no tipo â `DUPLICATE`) |
+| `getCategoryAction`    | `id`                                   | `Category` (null → `NOT_FOUND`)             |
+| `createCategoryAction` | `CategoryInput`                        | `Category` (nome dup no tipo → `DUPLICATE`) |
 | `updateCategoryAction` | `id, CategoryInput`                    | `Category`                                  |
 | `deleteCategoryAction` | `id`                                   | `{ id }`                                    |
 
 **`CategoryInput`**: `type*` (`epi`|`machine`), `name*`, `note?`. Unicidade por
-`UNIQUE(org_id, type, name)` â duplicidade no mesmo escritÃ³rio+tipo vira `DUPLICATE`; o mesmo nome
-Ã© aceito entre tipos distintos. **PUT (REST) exige corpo completo** (sem `.partial()`).
+`UNIQUE(org_id, type, name)` → duplicidade no mesmo escritório+tipo vira `DUPLICATE`; o mesmo nome
+é aceito entre tipos distintos. **PUT (REST) exige corpo completo** (sem `.partial()`).
 
 ---
 
-## PGR â `actions/pgr/pgr.ts`
+## PGR — `actions/pgr/pgr.ts`
 
-Documento PGR (NR-01/GRO) vinculado a Empresa (obrigatÃ³ria) e Obra/Contrato (opcional). Fatia 013,
-**zero-migration** (tabela `pgr` da migration `0012`). REST espelho em `/api/v1/pgr` (GET, POST) Â·
-`/api/v1/pgr/{id}` (GET, PUT, DELETE). **Sem `/dependents` e sem 409** (a tabela nÃ£o tem unique).
+Documento PGR (NR-01/GRO) vinculado a Empresa (obrigatória) e Obra/Contrato (opcional). Fatia 013,
+**zero-migration** (tabela `pgr` da migration `0012`). REST espelho em `/api/v1/pgr` (GET, POST) ·
+`/api/v1/pgr/{id}` (GET, PUT, DELETE). **Sem `/dependents` e sem 409** (a tabela não tem unique).
 
-| Action            | Entrada                                                  | Retorno (`data`)                                |
-| ----------------- | -------------------------------------------------------- | ----------------------------------------------- |
-| `listPgrAction`   | `{ companyId?, workUnitId?, search?, page?, pageSize? }` | `{ rows: PgrListItem[]; total }`                |
-| `getPgrAction`    | `id`                                                     | `Pgr` (inexistente/cross-tenant â `NOT_FOUND`)  |
-| `createPgrAction` | `PgrCreateInput`                                         | `Pgr` (empresa/obra invÃ¡lida â `FK_NOT_FOUND`) |
-| `updatePgrAction` | `id, PgrInput`                                           | `Pgr` (corpo completo, sem aceite)              |
-| `deletePgrAction` | `id`                                                     | `{ id }`                                        |
+| Action            | Entrada                                                  | Retorno (`data`)                               |
+| ----------------- | -------------------------------------------------------- | ---------------------------------------------- |
+| `listPgrAction`   | `{ companyId?, workUnitId?, search?, page?, pageSize? }` | `{ rows: PgrListItem[]; total }`               |
+| `getPgrAction`    | `id`                                                     | `Pgr` (inexistente/cross-tenant → `NOT_FOUND`) |
+| `createPgrAction` | `PgrCreateInput`                                         | `Pgr` (empresa/obra inválida → `FK_NOT_FOUND`) |
+| `updatePgrAction` | `id, PgrInput`                                           | `Pgr` (corpo completo, sem aceite)             |
+| `deletePgrAction` | `id`                                                     | `{ id }`                                       |
 
 **`PgrCreateInput`**: `companyId*` (uuid), `workUnitId?` (uuid da obra da empresa), `responsible?`,
-`registrationType*` (`crm`|`crea`|`mte`|`not_applicable`), `registrationNumber?` (obrigatÃ³rio p/
-CRM/CREA/MTE, proibido p/ "nÃ£o aplicÃ¡vel"), `issuedAt*` (AAAA-MM-DD), `validUntil*` (â¥ `issuedAt`),
-`declarationAccepted*` (`true`) â **aceite validado no servidor e NÃO persistido** (a tabela `pgr`
-nÃ£o tem coluna de aceite; persistÃªncia legal Ã© #79). **`PgrInput`** (update / PUT REST): igual,
+`registrationType*` (`crm`|`crea`|`mte`|`not_applicable`), `registrationNumber?` (obrigatório p/
+CRM/CREA/MTE, proibido p/ "não aplicável"), `issuedAt*` (AAAA-MM-DD), `validUntil*` (≥ `issuedAt`),
+`declarationAccepted*` (`true`) — **aceite validado no servidor e NÃO persistido** (a tabela `pgr`
+não tem coluna de aceite; persistência legal é #79). **`PgrInput`** (update / PUT REST): igual,
 **sem** `declarationAccepted` (corpo completo). **`PgrListItem`**: `{ id, companyId, companyName,
 workUnitId, workUnitName, responsible, registrationType, registrationNumber, issuedAt, validUntil }`.
-**Erros REST**: 422 (validaÃ§Ã£o/aceite ausente/FK), 404 (cross-tenant/inexistente), 403 (`client`);
-**nunca 409**. "UsuÃ¡rio autor" fora de escopo (modelo sem `created_by`).
+**Erros REST**: 422 (validação/aceite ausente/FK), 404 (cross-tenant/inexistente), 403 (`client`);
+**nunca 409**. "Usuário autor" fora de escopo (modelo sem `created_by`).
 
 ---
 
-## Riscos (GES) â `actions/pgr/risks.ts`
+## Riscos (GES) — `actions/pgr/risks.ts`
 
-InventÃ¡rio de risco por Grupo de ExposiÃ§Ã£o Similar (NR-01/GRO + eSocial S-2240). Fatia 014,
-**zero-migration** (tabela `risks` da migration `0012`; escopo restrito Ã s suas colunas â **nÃ£o**
-toca `risk_assessments`/`control_measures`). REST espelho em `/api/v1/risks` (GET, POST) Â·
-`/api/v1/risks/{id}` (GET, PUT, DELETE). **Sem `/dependents` e sem 409** (a tabela nÃ£o tem unique).
+Inventário de risco por Grupo de Exposição Similar (NR-01/GRO + eSocial S-2240). Fatia 014,
+**zero-migration** (tabela `risks` da migration `0012`; escopo restrito às suas colunas — **não**
+toca `risk_assessments`/`control_measures`). REST espelho em `/api/v1/risks` (GET, POST) ·
+`/api/v1/risks/{id}` (GET, PUT, DELETE). **Sem `/dependents` e sem 409** (a tabela não tem unique).
 
 | Action             | Entrada                                                          | Retorno (`data`)                                |
 | ------------------ | ---------------------------------------------------------------- | ----------------------------------------------- |
 | `listRisksAction`  | `{ companyId?, workUnitId?, gesId?, search?, page?, pageSize? }` | `{ rows: RiskListItem[]; total }`               |
-| `getRiskAction`    | `id`                                                             | `Risk` (inexistente/cross-tenant â `NOT_FOUND`) |
-| `createRiskAction` | `RiskInput`                                                      | `Risk` (`gesId` invÃ¡lido â `FK_NOT_FOUND`)     |
+| `getRiskAction`    | `id`                                                             | `Risk` (inexistente/cross-tenant → `NOT_FOUND`) |
+| `createRiskAction` | `RiskInput`                                                      | `Risk` (`gesId` inválido → `FK_NOT_FOUND`)      |
 | `updateRiskAction` | `id, RiskInput`                                                  | `Risk` (corpo completo)                         |
 | `deleteRiskAction` | `id`                                                             | `{ id }`                                        |
 
@@ -456,124 +460,124 @@ toca `risk_assessments`/`control_measures`). REST espelho em `/api/v1/risks` (GE
 (`physical`|`chemical`|`biological`|`ergonomic`|`mechanical`|`accident`|`psychosocial`),
 `description*`, `hazard?`, `sources?`, `propagation?`, `exposureTime?` (8 faixas), `possibleInjuries?`,
 `noxiousAgentCode?` (S-2240, texto), `measurementUnit?` (10 unidades, incl. `qualitative_na`),
-`concentrationIntensity?` (string decimal). **Regra `qualitative_na`**: concentraÃ§Ã£o sÃ³ Ã© aceita com
-unidade **quantitativa** (com `qualitative_na` ou sem unidade â 422 `VALIDATION`). **`RiskListItem`**:
-`{ id, gesId, gesName, agentType, description, exposureTime, measurementUnit }`. **ReutilizaÃ§Ã£o** Ã© por
-**prefill de UI** (`/risks/new?from=<id>` â `getRiskAction` â `createRiskAction`; novo `id`), **sem**
-action de clone. **Erros REST**: 422 (validaÃ§Ã£o/`qualitative_na`/FK `gesId`), 404
-(cross-tenant/inexistente), 403 (`client`); **nunca 409**. "UsuÃ¡rio autor" fora de escopo (modelo sem
+`concentrationIntensity?` (string decimal). **Regra `qualitative_na`**: concentração só é aceita com
+unidade **quantitativa** (com `qualitative_na` ou sem unidade → 422 `VALIDATION`). **`RiskListItem`**:
+`{ id, gesId, gesName, agentType, description, exposureTime, measurementUnit }`. **Reutilização** é por
+**prefill de UI** (`/risks/new?from=<id>` → `getRiskAction` → `createRiskAction`; novo `id`), **sem**
+action de clone. **Erros REST**: 422 (validação/`qualitative_na`/FK `gesId`), 404
+(cross-tenant/inexistente), 403 (`client`); **nunca 409**. "Usuário autor" fora de escopo (modelo sem
 `created_by`).
 
 ---
 
-## AvaliaÃ§Ã£o de risco (5Ã5) â `actions/pgr/risk-assessments.ts`
+## Avaliação de risco (5×5) — `actions/pgr/risk-assessments.ts`
 
-AvaliaÃ§Ã£o de risco pela matriz 5Ã5 (probabilidade Ã severidade). Fatia 016, **zero-migration**
-(tabela `risk_assessments` da migration `0012`; escopo restrito Ã s suas colunas â **nÃ£o** toca
-`control_measures`/`risk_methodology`, que Ã© apenas **lida**). **HistÃ³rico 1:N** por risco (sem
-unique â **sem 409**; avaliaÃ§Ã£o vigente = Ãºltima por `assessedAt desc`, `createdAt desc`).
-`riskLevel = probability Ã severity` Ã© **calculado e persistido**; `result` Ã© a **classificaÃ§Ã£o
-snapshot** pela metodologia da org (`getRiskMethodologyView` + `classify`, com fallback padrÃ£o). REST
-espelho: `/api/v1/risks/{id}/assessments` (GET, POST 201) Â· `/api/v1/risk-assessments/{id}` (GET, PUT,
+Avaliação de risco pela matriz 5×5 (probabilidade × severidade). Fatia 016, **zero-migration**
+(tabela `risk_assessments` da migration `0012`; escopo restrito às suas colunas — **não** toca
+`control_measures`/`risk_methodology`, que é apenas **lida**). **Histórico 1:N** por risco (sem
+unique → **sem 409**; avaliação vigente = última por `assessedAt desc`, `createdAt desc`).
+`riskLevel = probability × severity` é **calculado e persistido**; `result` é a **classificação
+snapshot** pela metodologia da org (`getRiskMethodologyView` + `classify`, com fallback padrão). REST
+espelho: `/api/v1/risks/{id}/assessments` (GET, POST 201) · `/api/v1/risk-assessments/{id}` (GET, PUT,
 DELETE 204).
 
-| Action                           | Entrada                           | Retorno (`data`)                                                                  |
-| -------------------------------- | --------------------------------- | --------------------------------------------------------------------------------- |
-| `listRiskAssessmentsAction`      | `riskId, { page?, pageSize? }`    | `{ rows: RiskAssessmentListItem[]; total }` (`riskId` invÃ¡lido â `FK_NOT_FOUND`) |
-| `getRiskAssessmentAction`        | `id`                              | `RiskAssessment` (inexistente/cross-tenant â `NOT_FOUND`)                         |
-| `getCurrentRiskAssessmentAction` | `riskId`                          | `RiskAssessment \| null` (null se risco sem avaliaÃ§Ãµes)                         |
-| `createRiskAssessmentAction`     | `riskId, RiskAssessmentInput`     | `RiskAssessment` (201; `riskId` invÃ¡lido â `FK_NOT_FOUND`)                       |
-| `updateRiskAssessmentAction`     | `riskId, id, RiskAssessmentInput` | `RiskAssessment` (corpo completo; recalcula `riskLevel`/`result`)                 |
-| `deleteRiskAssessmentAction`     | `riskId, id`                      | `{ id }` (delete fÃ­sico)                                                         |
+| Action                           | Entrada                           | Retorno (`data`)                                                                 |
+| -------------------------------- | --------------------------------- | -------------------------------------------------------------------------------- |
+| `listRiskAssessmentsAction`      | `riskId, { page?, pageSize? }`    | `{ rows: RiskAssessmentListItem[]; total }` (`riskId` inválido → `FK_NOT_FOUND`) |
+| `getRiskAssessmentAction`        | `id`                              | `RiskAssessment` (inexistente/cross-tenant → `NOT_FOUND`)                        |
+| `getCurrentRiskAssessmentAction` | `riskId`                          | `RiskAssessment \| null` (null se risco sem avaliações)                          |
+| `createRiskAssessmentAction`     | `riskId, RiskAssessmentInput`     | `RiskAssessment` (201; `riskId` inválido → `FK_NOT_FOUND`)                       |
+| `updateRiskAssessmentAction`     | `riskId, id, RiskAssessmentInput` | `RiskAssessment` (corpo completo; recalcula `riskLevel`/`result`)                |
+| `deleteRiskAssessmentAction`     | `riskId, id`                      | `{ id }` (delete físico)                                                         |
 
 **`RiskAssessmentInput`** (mesmo corpo para create e PUT): `criterion*` (`qualitative`|`quantitative`),
-`probability*` (1â5), `severity*` (1â5), `uncertaintyDegree` (0â2, default 0), `assessedAt*`
-(`AAAA-MM-DD`), `toleranceLimit?`. **NÃ£o** aceita `riskLevel`/`result` (calculados no servidor),
-`riskId` (vem da rota) nem `orgId` (sessÃ£o). **Erros REST**: 422 (validaÃ§Ã£o/FK `riskId`), 404
+`probability*` (1–5), `severity*` (1–5), `uncertaintyDegree` (0–2, default 0), `assessedAt*`
+(`AAAA-MM-DD`), `toleranceLimit?`. **Não** aceita `riskLevel`/`result` (calculados no servidor),
+`riskId` (vem da rota) nem `orgId` (sessão). **Erros REST**: 422 (validação/FK `riskId`), 404
 (cross-tenant/inexistente), 403 (`client`); **nunca 409**.
 
 ---
 
-## Medidas de controle (5W2H) â `actions/pgr/control-measures.ts`
+## Medidas de controle (5W2H) — `actions/pgr/control-measures.ts`
 
-Plano de aÃ§Ã£o 5W2H por risco, uma medida por **nÃ­vel da hierarquia NR-01** (`control_level`:
+Plano de ação 5W2H por risco, uma medida por **nível da hierarquia NR-01** (`control_level`:
 `elimination`/`collective_protection`/`administrative`/`ppe`). Fatia 018, **zero-migration** (tabela
-`control_measures` da migration `0012`; escopo restrito Ã s suas colunas â **nÃ£o** toca
+`control_measures` da migration `0012`; escopo restrito às suas colunas — **não** toca
 `risk_methodology`/`risk_assessments`, apenas **lidos** como contexto). A **UNIQUE
-`(org_id, risk_id, control_level)`** faz a duplicidade de nÃ­vel virar **`DUPLICATE`/409** (no mÃ¡x. 4
-medidas por risco). **Sem coluna de status**: `Sem plano`/`Planejada`/`Vencida` sÃ£o **derivados** na
-leitura (vencida â `applicable` + `actionDeadline < hoje`, fuso America/Sao_Paulo). ResponsÃ¡vel Ã©
-**texto** (`action_responsible`; combobox de funcionÃ¡rios grava `fullName`, sem FK). O contexto do
-risco e a avaliaÃ§Ã£o vigente (`riskLevel`/`result`) sÃ£o exibidos **derivados** (sem snapshot). REST
-espelho: `/api/v1/risks/{id}/control-measures` (GET, POST 201) Â· `/api/v1/control-measures/{id}`
+`(org_id, risk_id, control_level)`** faz a duplicidade de nível virar **`DUPLICATE`/409** (no máx. 4
+medidas por risco). **Sem coluna de status**: `Sem plano`/`Planejada`/`Vencida` são **derivados** na
+leitura (vencida ⇔ `applicable` + `actionDeadline < hoje`, fuso America/Sao_Paulo). Responsável é
+**texto** (`action_responsible`; combobox de funcionários grava `fullName`, sem FK). O contexto do
+risco e a avaliação vigente (`riskLevel`/`result`) são exibidos **derivados** (sem snapshot). REST
+espelho: `/api/v1/risks/{id}/control-measures` (GET, POST 201) · `/api/v1/control-measures/{id}`
 (GET, PUT, DELETE 204).
 
-| Action                       | Entrada                           | Retorno (`data`)                                                                           |
-| ---------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------ |
-| `listControlMeasuresAction`  | `riskId, { page?, pageSize? }`    | `{ rows: ControlMeasureListItem[]; total }` (`riskId` invÃ¡lido â `FK_NOT_FOUND`)          |
-| `getControlMeasureAction`    | `id`                              | `ControlMeasure` (inexistente/cross-tenant â `NOT_FOUND`)                                  |
-| `createControlMeasureAction` | `riskId, ControlMeasureInput`     | `ControlMeasure` (201; `riskId` invÃ¡lido â `FK_NOT_FOUND`; nÃ­vel repetido â `DUPLICATE`) |
-| `updateControlMeasureAction` | `riskId, id, ControlMeasureInput` | `ControlMeasure` (corpo completo; `control_level` imutÃ¡vel)                               |
-| `deleteControlMeasureAction` | `riskId, id`                      | `{ id }` (delete fÃ­sico)                                                                  |
+| Action                       | Entrada                           | Retorno (`data`)                                                                         |
+| ---------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------- |
+| `listControlMeasuresAction`  | `riskId, { page?, pageSize? }`    | `{ rows: ControlMeasureListItem[]; total }` (`riskId` inválido → `FK_NOT_FOUND`)         |
+| `getControlMeasureAction`    | `id`                              | `ControlMeasure` (inexistente/cross-tenant → `NOT_FOUND`)                                |
+| `createControlMeasureAction` | `riskId, ControlMeasureInput`     | `ControlMeasure` (201; `riskId` inválido → `FK_NOT_FOUND`; nível repetido → `DUPLICATE`) |
+| `updateControlMeasureAction` | `riskId, id, ControlMeasureInput` | `ControlMeasure` (corpo completo; `control_level` imutável)                              |
+| `deleteControlMeasureAction` | `riskId, id`                      | `{ id }` (delete físico)                                                                 |
 
 **`ControlMeasureInput`** (mesmo corpo para create e PUT): `controlLevel*` (enum NR-01; ignorado na
-escrita do PUT â imutÃ¡vel), `applicable` (bool), `actionWhat`/`actionHow` (**obrigatÃ³rios quando
+escrita do PUT — imutável), `applicable` (bool), `actionWhat`/`actionHow` (**obrigatórios quando
 `applicable=true`**), `actionTracking?`/`actionMeasurement?`/`actionResponsible?`/`actionDeadline?`
-(`AAAA-MM-DD`)/`justification?`/`monitoring?`. **NÃ£o** aceita `riskId` (rota) nem `orgId` (sessÃ£o).
-**Erros REST**: 422 (validaÃ§Ã£o/FK `riskId`), 404 (cross-tenant/inexistente), **409** (nÃ­vel
+(`AAAA-MM-DD`)/`justification?`/`monitoring?`. **Não** aceita `riskId` (rota) nem `orgId` (sessão).
+**Erros REST**: 422 (validação/FK `riskId`), 404 (cross-tenant/inexistente), **409** (nível
 duplicado), 403 (`client`).
 
 ---
 
-## Rotas de UI (superfÃ­cie HTTP navegÃ¡vel)
+## Rotas de UI (superfície HTTP navegável)
 
-Ãrea autenticada `(protected)` â layout aplica `requireTenantContext`; cada pÃ¡gina de CRUD
-aplica `requireOfficeStaffPage()` (papel `client` â `forbidden()`); detalhe/ediÃ§Ã£o por id
-inexistente ou de outro escritÃ³rio â `notFound()`.
+Área autenticada `(protected)` — layout aplica `requireTenantContext`; cada página de CRUD
+aplica `requireOfficeStaffPage()` (papel `client` → `forbidden()`); detalhe/edição por id
+inexistente ou de outro escritório → `notFound()`.
 
-| Rota                                                                            | DescriÃ§Ã£o                                                                                                                                              |
-| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/dashboard`                                                                    | Painel (Ã¡rea autenticada)                                                                                                                               |
-| `/companies` Â· `/companies/new` Â· `/companies/[id]/edit`                      | Empresa (lista paginada / criar / detalhe=ediÃ§Ã£o)                                                                                                      |
-| `/work-units` Â· `/work-units/new` Â· `/work-units/[id]/edit`                   | Unidade de obra (+ copiar endereÃ§o da empresa)                                                                                                          |
-| `/job-roles` Â· `/job-roles/new` Â· `/job-roles/[id]/edit`                      | FunÃ§Ã£o                                                                                                                                                 |
-| `/ges` Â· `/ges/new` Â· `/ges/[id]/edit`                                        | GES (lista + card "Total"; ediÃ§Ã£o gerencia vÃ­nculos e expostos)                                                                                       |
-| `/employees` Â· `/employees/new` Â· `/employees/[id]` Â· `/employees/[id]/edit` | FuncionÃ¡rio (lista filtrÃ¡vel / criar / ficha / editar)                                                                                                 |
-| `/pgr` Â· `/pgr/new` Â· `/pgr/[id]` Â· `/pgr/[id]/edit`                         | PGR (lista + filtro EmpresaâObra / criar com aceite NR-01 / detalhe / editar)                                                                            |
-| `/risks` Â· `/risks/new` Â· `/risks/[id]` Â· `/risks/[id]/edit`                 | Riscos do GES (lista + filtro EmpresaâObraâGES / criar / detalhe / editar / reutilizar por prefill)                                                      |
-| `/risks/[id]/assessments` Â· `.../new` Â· `.../[assessmentId]/edit`             | AvaliaÃ§Ãµes 5Ã5 do risco (histÃ³rico + vigente / criar com preview / editar) â atalho no detalhe do risco                                               |
-| `/risks/[id]/control-measures` Â· `.../new` Â· `.../[measureId]/edit`           | Medidas de controle 5W2H por nÃ­vel NR-01 (lista + estado derivado/vencida + contexto/avaliaÃ§Ã£o vigente / criar / editar) â atalho no detalhe do risco |
-| `/categories` Â· `/categories/new` Â· `/categories/[id]/edit`                   | Categoria (catÃ¡logo `epi`/`machine`; detalhe=ediÃ§Ã£o)                                                                                                  |
+| Rota                                                                         | Descrição                                                                                                                                             |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/dashboard`                                                                 | Painel (área autenticada)                                                                                                                             |
+| `/companies` · `/companies/new` · `/companies/[id]/edit`                     | Empresa (lista paginada / criar / detalhe=edição)                                                                                                     |
+| `/work-units` · `/work-units/new` · `/work-units/[id]/edit`                  | Unidade de obra (+ copiar endereço da empresa)                                                                                                        |
+| `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                                                                                                                |
+| `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos)                                                                                       |
+| `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)                                                                                                |
+| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / detalhe / editar)                                                                         |
+| `/risks` · `/risks/new` · `/risks/[id]` · `/risks/[id]/edit`                 | Riscos do GES (lista + filtro Empresa→Obra→GES / criar / detalhe / editar / reutilizar por prefill)                                                   |
+| `/risks/[id]/assessments` · `.../new` · `.../[assessmentId]/edit`            | Avaliações 5×5 do risco (histórico + vigente / criar com preview / editar) — atalho no detalhe do risco                                               |
+| `/risks/[id]/control-measures` · `.../new` · `.../[measureId]/edit`          | Medidas de controle 5W2H por nível NR-01 (lista + estado derivado/vencida + contexto/avaliação vigente / criar / editar) — atalho no detalhe do risco |
+| `/categories` · `/categories/new` · `/categories/[id]/edit`                  | Categoria (catálogo `epi`/`machine`; detalhe=edição)                                                                                                  |
 
 ## Invariantes de isolamento (multi-tenant)
 
-- Tenant ativo sempre da sessÃ£o; nunca de input do cliente.
-- Detalhe/ediÃ§Ã£o/exclusÃ£o de id de outro escritÃ³rio â `NOT_FOUND` (nunca dado alheio).
-- Papel `client` â `FORBIDDEN`/`forbidden()` em qualquer operaÃ§Ã£o.
-- `UNIQUE(org_id, cpf)` / `(org_id, cnpj)`: mesmo valor aceito entre escritÃ³rios, bloqueado no
-  mesmo escritÃ³rio.
-- NÂº de expostos do GES Ã© derivado e somente leitura.
+- Tenant ativo sempre da sessão; nunca de input do cliente.
+- Detalhe/edição/exclusão de id de outro escritório → `NOT_FOUND` (nunca dado alheio).
+- Papel `client` → `FORBIDDEN`/`forbidden()` em qualquer operação.
+- `UNIQUE(org_id, cpf)` / `(org_id, cnpj)`: mesmo valor aceito entre escritórios, bloqueado no
+  mesmo escritório.
+- Nº de expostos do GES é derivado e somente leitura.
 
 ## Protocolo de testes com cURL (para o time)
 
-Roteiro reproduzÃ­vel para validar endpoints **sem** UI. Regra: teste sempre o **status HTTP** e o
-**corpo** (`ActionResult`). Server Actions **nÃ£o** sÃ£o testÃ¡veis por cURL (POST-only + header
+Roteiro reproduzível para validar endpoints **sem** UI. Regra: teste sempre o **status HTTP** e o
+**corpo** (`ActionResult`). Server Actions **não** são testáveis por cURL (POST-only + header
 `Next-Action`); teste sempre pelo **espelho REST** `/api/v1`.
 
-### 0. PrÃ©-requisitos
+### 0. Pré-requisitos
 
 ```bash
-npm run dev                 # sobe em http://localhost:3000 (lÃª .env.local)
-# jq opcional, sÃ³ p/ ler o corpo bonito. Em .env.local (local/homolog):
+npm run dev                 # sobe em http://localhost:3000 (lê .env.local)
+# jq opcional, só p/ ler o corpo bonito. Em .env.local (local/homolog):
 #   APP_ENV=local
-#   DEV_API_AUTH_BYPASS=true      # libera /api/v1 sem sessÃ£o Clerk
+#   DEV_API_AUTH_BYPASS=true      # libera /api/v1 sem sessão Clerk
 #   DEV_TENANT_ID=<orgId de teste>
 export BASE=http://localhost:3000
 ```
 
-### 1. `/api/v1` (CRUD) â via **bypass DEV** (sem login)
+### 1. `/api/v1` (CRUD) — via **bypass DEV** (sem login)
 
-O tenant/papel vÃªm dos headers `x-dev-*`. Padronize um helper:
+O tenant/papel vêm dos headers `x-dev-*`. Padronize um helper:
 
 ```bash
 api() { curl -s -w '\n[HTTP %{http_code}]\n' \
@@ -590,41 +594,41 @@ api -X PUT "$BASE/api/v1/companies/<id>" \
 api -X DELETE "$BASE/api/v1/companies/<id>"                    # 204 (sem corpo)
 ```
 
-**Casos obrigatÃ³rios** (todo CRUD): valide os 4xx canÃ´nicos, nÃ£o sÃ³ o caminho feliz:
+**Casos obrigatórios** (todo CRUD): valide os 4xx canônicos, não só o caminho feliz:
 
 ```bash
-# 422 VALIDATION (zod)      â campo fora do domÃ­nio
+# 422 VALIDATION (zod)      — campo fora do domínio
 api -X POST "$BASE/api/v1/companies" -d '{"razaoSocial":"X","riskGrade":9}'
-# 409 DUPLICATE             â repete valor Ãºnico no mesmo tenant (ex.: cnpj)
-# 404 NOT_FOUND cross-tenant â id de OUTRO escritÃ³rio:
+# 409 DUPLICATE             — repete valor único no mesmo tenant (ex.: cnpj)
+# 404 NOT_FOUND cross-tenant — id de OUTRO escritório:
 api -H 'x-dev-tenant: org_a' "$BASE/api/v1/companies/<id_do_org_b>"   # 404
-# 403 FORBIDDEN             â papel client:
+# 403 FORBIDDEN             — papel client:
 curl -s -o /dev/null -w '%{http_code}\n' \
   -H 'x-dev-tenant: org_a' -H 'x-dev-role: client' "$BASE/api/v1/companies"  # 403
 ```
 
-> **Isolamento** Ã© o caso crÃ­tico: trocar `x-dev-tenant` NUNCA pode devolver dado de outro escritÃ³rio
-> (id alheio â 404, list â sÃ³ o tenant do header).
+> **Isolamento** é o caso crítico: trocar `x-dev-tenant` NUNCA pode devolver dado de outro escritório
+> (id alheio → 404, list → só o tenant do header).
 
-### 2. `/api/integrations/*` â exige **sessÃ£o Clerk real**
+### 2. `/api/integrations/*` — exige **sessão Clerk real**
 
-NÃ£o hÃ¡ bypass aqui (o `proxy.ts` protege e nÃ£o hÃ¡ dado de tenant). Sem sessÃ£o â **307/redirect** para
-o sign-in (nunca Ã© proxy aberto). Para testar o caminho feliz, copie o cookie `__session` do navegador
-logado (DevTools â Application â Cookies) e mande no header:
+Não há bypass aqui (o `proxy.ts` protege e não há dado de tenant). Sem sessão → **307/redirect** para
+o sign-in (nunca é proxy aberto). Para testar o caminho feliz, copie o cookie `__session` do navegador
+logado (DevTools → Application → Cookies) e mande no header:
 
 ```bash
 SESSION='<valor do cookie __session>'
 curl -s -w '\n[HTTP %{http_code}]\n' -H "cookie: __session=$SESSION" \
-  "$BASE/api/integrations/cep/01001000"      # 200 ok(endereÃ§o)
-curl -s -o /dev/null -w '%{http_code}\n' "$BASE/api/integrations/cep/99999999"  # 404 (autenticado) / 307 (sem sessÃ£o)
-curl -s -o /dev/null -w '%{http_code}\n' "$BASE/api/integrations/cep/123"       # 422 formato / 307 sem sessÃ£o
+  "$BASE/api/integrations/cep/01001000"      # 200 ok(endereço)
+curl -s -o /dev/null -w '%{http_code}\n' "$BASE/api/integrations/cep/99999999"  # 404 (autenticado) / 307 (sem sessão)
+curl -s -o /dev/null -w '%{http_code}\n' "$BASE/api/integrations/cep/123"       # 422 formato / 307 sem sessão
 ```
 
-### 3. Provedores externos direto (isola "Ã© a API deles ou o nosso cÃ³digo?")
+### 3. Provedores externos direto (isola "é a API deles ou o nosso código?")
 
 ```bash
 curl -s "https://viacep.com.br/ws/01001000/json/" | jq .
-# BrasilAPI 403 sem User-Agent â sempre mande um:
+# BrasilAPI 403 sem User-Agent → sempre mande um:
 curl -s -A 'sst-manager/1.0' "https://brasilapi.com.br/api/cnpj/v1/00000000000191" | jq '.razao_social'
 ```
 
@@ -632,5 +636,5 @@ curl -s -A 'sst-manager/1.0' "https://brasilapi.com.br/api/cnpj/v1/0000000000019
 
 - [ ] `/api/v1/<resource>` responde GET/POST e `/[id]` responde GET/PUT/DELETE (201/204 corretos).
 - [ ] 422 / 409 / 404 cross-tenant / 403 (papel client) reproduzidos por cURL.
-- [ ] Recurso documentado neste arquivo (tabelas "Recursos" + "SumÃ¡rio").
+- [ ] Recurso documentado neste arquivo (tabelas "Recursos" + "Sumário").
 - [ ] Requests adicionados ao `sst-manager.postman_collection.json` (pasta do recurso).
