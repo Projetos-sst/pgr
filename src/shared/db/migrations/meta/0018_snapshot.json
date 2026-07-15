@@ -1,5 +1,5 @@
 {
-  "id": "411a2421-9b0c-4027-bbe6-e5b66bb3275c",
+  "id": "20b5381a-7609-4540-b69a-79eeeb642651",
   "prevId": "f0ff62d5-7604-4781-a5bf-e59643bbf5fc",
   "version": "7",
   "dialect": "postgresql",
@@ -2987,6 +2987,24 @@
           "primaryKey": false,
           "notNull": false
         },
+        "stripe_customer_id": {
+          "name": "stripe_customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_subscription_id": {
+          "name": "stripe_subscription_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trial_ends_at": {
+          "name": "trial_ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -3023,6 +3041,21 @@
           "columns": [
             {
               "expression": "clerk_org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "orgs_stripe_customer_id_unique": {
+          "name": "orgs_stripe_customer_id_unique",
+          "columns": [
+            {
+              "expression": "stripe_customer_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -4742,13 +4775,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "is_master": {
-          "name": "is_master",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "created_at": {
           "name": "created_at",
