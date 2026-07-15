@@ -32,6 +32,44 @@ commits nem paralelizados entre si.
 
 ---
 
+## Estado da implementação (2026-07-14)
+
+**Progresso: 11/64 tasks concluídas** — MVP (US1 editor + US2 revisões server-side) implementado e
+**verificado em Postgres real**. Marcadas `[x]`: T005, T006, T007, T013, T030, T035, T036, T037, T038,
+**T085, T086**.
+
+**Verificação executada (Postgres efêmero em Docker):**
+
+- **Suíte `pgr-revisions.test.ts` → 9/9 verdes**: schema estrito (`revisionNumber` → `VALIDATION`),
+  número server-side (histórico vazio → 1; com histórico → MAX+1), **concorrência no mesmo PGR →
+  201+201 com números consecutivos, nenhuma perdida**, **lock não-global** (`pgrA` × `pgrA2`),
+  cross-tenant → `NOT_FOUND`, e **UNIQUE ativa** (insert direto duplicado → 23505). (T085, T086)
+- **`pgr-isolation.test.ts` → verde** após a correção de regressão abaixo.
+- Unit: 73 suítes / 564 testes verdes; typecheck/lint/build verdes; `db:generate` → "No schema changes".
+
+**🔧 Regressão encontrada e corrigida (auto-revisão):** a versão inicial do T005 inseria `pgrA2` no
+**seed base** (`seedPgrBase`), o que fazia `public.pgr` ter **2 linhas em org_a** e quebrava
+`pgr-isolation.test.ts` (`seededCountA: 1`). Corrigido de forma cirúrgica: `pgrA2` **saiu do seed base**
+(que mantém 1 pgr/tenant) e passou a ser inserido **dentro do `beforeEach` da própria suíte de
+revisões**, onde é necessário. Assim o lock-não-global continua provado e nenhum outro suite é afetado.
+
+**⚠️ T087 (REST) permanece `[ ]`:** a suíte `rest-pgr-editor.test.ts` retorna **500 em toda chamada** —
+é a **limitação pré-existente do harness REST-via-Jest** (os endpoints de GES/consolidada que **não
+foram tocados**, no mesmo arquivo, também dão 500). Precisa de **cURL contra servidor real** (T095), que
+não roda aqui (sem sessão Clerk / servidor de dev). Não marcada.
+
+**⚠️ Nota de ambiente:** o Postgres efêmero foi provisionado **manualmente** (roles + stub de
+`auth.jwt()`), pois não há script oficial commitado. Esse provisionamento **não é idêntico** ao setup
+Supabase real — por isso a suíte completa acusa falhas **também no baseline (HEAD)** em
+`least-privilege`, `clerk-membership`, `pgr.test.ts` e nas 6 suítes `rest-*`. Essas falhas **não são
+regressão desta fatia** (reproduzidas com as mudanças revertidas).
+
+**Pendente (não iniciado):** US3 consolidada (T045–T048); toda a stack de assinatura US4/US5
+(T008–T027, T055–T067); docs/Postman US6 (T075–T081); testes de integração de assinatura (T088–T092);
+validações manuais e gates finais (T095–T105). São a maior parte do trabalho e seguem em próxima sessão.
+
+---
+
 ## Phase 1 — Setup e guarda-corpos
 
 **Objetivo**: garantir o ponto de partida e travar os invariantes antes de tocar qualquer código.
@@ -58,18 +96,18 @@ commits nem paralelizados entre si.
 
 ### 2.1 Seed (bloqueia os testes de concorrência)
 
-- [ ] T005 Adicionar **`pgrA2`** (2º PGR em **`org_a`**) ao `PGR_IDS` e ao insert de `public.pgr` em
+- [x] T005 Adicionar **`pgrA2`** (2º PGR em **`org_a`**) ao `PGR_IDS` e ao insert de `public.pgr` em
       `src/__tests__/integration/_helpers/pgr-seed.ts`. **Critério**: seed cria `pgrA`@org_a,
       `pgrA2`@org_a e `pgrB`@org_b. **Por quê**: sem um 2º PGR no **mesmo** tenant é impossível provar que
       o lock **não é global** — usar `pgrB` testaria o RLS, não o lock.
 
 ### 2.2 Domínio das revisões (TDD — teste vermelho primeiro)
 
-- [ ] T006 [US2] Reescrever `src/__tests__/unit/domains/pgr/pgr-editor-schemas.test.ts` para o contrato
+- [x] T006 [US2] Reescrever `src/__tests__/unit/domains/pgr/pgr-editor-schemas.test.ts` para o contrato
       novo: (a) input **válido sem `revisionNumber`**; (b) **`revisionNumber` presente → `success:false`**
       (schema `.strict()`); (c) `revisedAt` inválido → falha; (d) `notes` opcional.
       **Critério**: suíte **VERMELHA** (o schema ainda exige `revisionNumber`).
-- [ ] T007 [US2] Em `src/shared/domains/pgr/pgr-revision.ts`: remover `revisionNumberField` e o campo
+- [x] T007 [US2] Em `src/shared/domains/pgr/pgr-revision.ts`: remover `revisionNumberField` e o campo
       `revisionNumber` do `pgrRevisionInputSchema`; aplicar **`.strict()`**; manter `revisedAt`
       (`z.iso.date`) e `notes` (`optionalString` — **sem inventar `.max()`**, o helper real não tem);
       manter `revisionNumber` **apenas** em `PgrRevisionListItem` (output). **Critério**: T006 **VERDE**.
@@ -106,7 +144,7 @@ commits nem paralelizados entre si.
       (companyName · workUnitName · responsible · issuedAt · validUntil) ou `null`.
       **NUNCA** lê `employees`, GES, riscos ou medidas.
       **Critério**: `null` para PGR inexistente/cross-tenant.
-- [ ] T013 [P] [US2] Adicionar `getLatestRevisionNumber(orgId, pgrId): Promise<number | null>` em
+- [x] T013 [P] [US2] Adicionar `getLatestRevisionNumber(orgId, pgrId): Promise<number | null>` em
       `src/shared/db/repositories/pgr-revisions.ts` (`max(revision_number)` sob `withOrg`; `null` se não
       houver revisão). **Critério**: alimenta `payload.revisionNumber`.
 - [ ] T014 [US4] Adicionar `getLatestRequestByTarget(orgId, targetType, targetId)` em
@@ -174,7 +212,7 @@ imageDataUrl})`; tela de sucesso. **NUNCA** consulta PGR/consolidada/`employees`
 **Causa-raiz** (research D1): a task **T022 da Feature 019 está marcada `[x]` e a edição nunca entrou no
 commit** — `ae34bff` não toca `page.tsx`, cujo último commit é `0adf3ca` (Feature 013).
 
-- [ ] T030 [US1] Reescrever `src/app/(protected)/pgr/[id]/page.tsx` como **shell** do editor:
+- [x] T030 [US1] Reescrever `src/app/(protected)/pgr/[id]/page.tsx` como **shell** do editor:
       `requireOfficeStaffPage()` → `getPgrAction(id)` → `!ok ⇒ notFound()` → **um** `Promise.all` com as
       chamadas **independentes**: `getCompanyAction(doc.companyId)`,
       `doc.workUnitId ? getWorkUnitAction(...) : Promise.resolve(null)`, `listPgrGesAction(id)`,
@@ -193,7 +231,7 @@ commit** — `ae34bff` não toca `page.tsx`, cujo último commit é `0adf3ca` (F
 **Meta**: o número da revisão deixa de vir do cliente. **Teste independente**: criar revisão sem enviar
 número e ver a sequência correta.
 
-- [ ] T035 [US2] Reescrever `createPgrRevision` em `src/shared/db/repositories/pgr-revisions.ts`
+- [x] T035 [US2] Reescrever `createPgrRevision` em `src/shared/db/repositories/pgr-revisions.ts`
       (contrato: [repositories.md](./contracts/repositories.md) §1), dentro do `withOrg` (que **já é**
       transação — `db/with-org.ts`):
       (1) `SELECT id FROM pgr WHERE org_id=? AND id=? FOR UPDATE LIMIT 1` — espelha `lockStockRow`
@@ -203,16 +241,16 @@ número e ver a sequência correta.
       (3) `INSERT … RETURNING` com o número calculado.
       **`values` não traz mais `revisionNumber`.** UNIQUE permanece como **backstop**.
       **SEM retry. SEM update/delete.** **Depende de**: T007.
-- [ ] T036 [US2] Ajustar `createPgrRevisionAction` em
+- [x] T036 [US2] Ajustar `createPgrRevisionAction` em
       `src/shared/server/actions/pgr/pgr-revisions.ts`: `pgrRevisionInputSchema.parse(input)` (o
       `.strict()` faz `revisionNumber` virar `VALIDATION`), delega ao repo, `revalidatePath(\`/pgr/${pgrId}\`)`,
 `{audit: true}`. O `getPgrById`prévio **sai do create** (o`FOR UPDATE`já é o guard); **permanece
 no list**.`listPgrRevisionsAction` **inalterada**. **Depende de**: T035.
-- [ ] T037 [US2] Verificar `src/app/api/v1/pgr/[id]/revisions/route.ts`: o handler **não muda de código**
+- [x] T037 [US2] Verificar `src/app/api/v1/pgr/[id]/revisions/route.ts`: o handler **não muda de código**
       (já faz `pgrRevisionInputSchema.parse(await req.json())`), mas o **contrato muda**.
       **Critério**: `POST` sem `revisionNumber` → **201** com o número do servidor; `POST` **com**
       `revisionNumber` → **422 `VALIDATION`**; `GET` inalterado. **Depende de**: T007, T035.
-- [ ] T038 [US2] Ajustar `src/app/(protected)/pgr/[id]/_components/pgr-revisions-tab.tsx`:
+- [x] T038 [US2] Ajustar `src/app/(protected)/pgr/[id]/_components/pgr-revisions-tab.tsx`:
       **remover** o `<input name="revisionNumber">` (linha 80) e seu `<FieldError>` (85); **remover** o
       `Math.max(...revisions.map(r => r.revisionNumber)) + 1` (35); **remover** `revisionNumber` do objeto
       enviado à action (52). **Manter** data e notas; **manter** a coluna do número na tabela de histórico
@@ -371,12 +409,12 @@ antigo","revisionNumber":99}`) · `PGR · Consolidada` (`GET`) · `PGR · Assina
 
 **Postgres efêmero, RLS real. Nunca SQLite. Nunca Supabase compartilhado.**
 
-- [ ] T085 [US2] Reescrever `src/__tests__/integration/pgr-editor/pgr-revisions.test.ts`: helper `rev()`
+- [x] T085 [US2] Reescrever `src/__tests__/integration/pgr-editor/pgr-revisions.test.ts`: helper `rev()`
       **sem `revisionNumber`**; substituir o teste "revisionNumber < 1 → VALIDATION" por
       **"`revisionNumber` no input → `VALIDATION`"**; histórico vazio → **1**; histórico com a nº 1 do seed
       → **2**; cross-tenant (`pgrB` com tenant A) → `NOT_FOUND`; papel `client` → `FORBIDDEN`.
       **Depende de**: T035, T036.
-- [ ] T086 [US2] Acrescentar à mesma suíte os **testes de concorrência**:
+- [x] T086 [US2] Acrescentar à mesma suíte os **testes de concorrência**:
       (a) duas criações simultâneas em **`pgrA`** → **ambas persistidas**, números **distintos e
       consecutivos**, **nenhuma perdida** (**não** esperar 409);
       (b) criações paralelas em **`pgrA` × `pgrA2`** (mesmo tenant) → **sem bloqueio mútuo** (o lock é

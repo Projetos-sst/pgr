@@ -31,14 +31,13 @@ export function PgrRevisionsTab({
   const [pending, startTransition] = useTransition();
 
   const today = new Date().toISOString().slice(0, 10);
-  const nextNumber = revisions.length
-    ? Math.max(...revisions.map((r) => r.revisionNumber)) + 1
-    : 1;
 
   function applyError(error: ActionError) {
     if (error.code === "DUPLICATE") {
       setErrors({});
-      setFormError("Já existe uma revisão com este número neste PGR.");
+      setFormError(
+        "Não foi possível registrar a revisão (conflito de número). Tente novamente.",
+      );
       return;
     }
     setErrors(error.fields ?? {});
@@ -48,8 +47,8 @@ export function PgrRevisionsTab({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
+    // O número da revisão é calculado no servidor (MAX+1) — o cliente NÃO o envia.
     const input: PgrRevisionInput = {
-      revisionNumber: String(fd.get("revisionNumber") ?? ""),
       revisedAt: String(fd.get("revisedAt") ?? ""),
       notes: String(fd.get("notes") ?? ""),
     };
@@ -71,19 +70,8 @@ export function PgrRevisionsTab({
 
       <form
         onSubmit={handleSubmit}
-        className="grid max-w-2xl gap-4 rounded-lg border border-black/10 p-4 sm:grid-cols-3 dark:border-white/10"
+        className="grid max-w-2xl gap-4 rounded-lg border border-black/10 p-4 sm:grid-cols-2 dark:border-white/10"
       >
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Número da revisão *</span>
-          <input
-            type="number"
-            name="revisionNumber"
-            min={1}
-            defaultValue={nextNumber}
-            className={inputClass}
-          />
-          <FieldError message={errors.revisionNumber} />
-        </label>
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium">Data da revisão *</span>
           <input
@@ -94,12 +82,15 @@ export function PgrRevisionsTab({
           />
           <FieldError message={errors.revisedAt} />
         </label>
-        <label className="flex flex-col gap-1 sm:col-span-3">
+        <p className="flex items-end text-xs text-zinc-500 dark:text-zinc-400">
+          O número da revisão é atribuído automaticamente pelo sistema.
+        </p>
+        <label className="flex flex-col gap-1 sm:col-span-2">
           <span className="text-sm font-medium">Notas</span>
           <input name="notes" className={inputClass} />
           <FieldError message={errors.notes} />
         </label>
-        <div className="sm:col-span-3">
+        <div className="sm:col-span-2">
           <button
             type="submit"
             disabled={pending}

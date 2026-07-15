@@ -32,7 +32,7 @@ function asOwner(tenantId: string) {
 }
 
 function rev(overrides: Partial<PgrRevisionInput> = {}): PgrRevisionInput {
-  return { revisionNumber: 2, revisedAt: "2026-07-12", ...overrides };
+  return { revisedAt: "2026-07-12", ...overrides };
 }
 
 (shouldRun ? describe : describe.skip)("Server Actions — pgr_revisions", () => {
@@ -46,6 +46,12 @@ function rev(overrides: Partial<PgrRevisionInput> = {}): PgrRevisionInput {
   });
   beforeEach(async () => {
     await seedPgrBase(admin);
+    // 2º PGR em org_a, fora do seed base (que mantém 1 pgr/tenant p/ os testes de
+    // isolamento): usado para provar que o lock de numeração é POR PGR, não global.
+    await admin`
+      insert into public.pgr (id, org_id, company_id, work_unit_id)
+      values (${PGR_IDS.pgrA2}, 'org_a', ${PGR_IDS.companyA}, ${PGR_IDS.workUnitA})
+    `;
     mockedGate.mockReset();
     asOwner("org_a");
   });
@@ -59,10 +65,10 @@ function rev(overrides: Partial<PgrRevisionInput> = {}): PgrRevisionInput {
     }
   });
 
-  it("create nova revisão (append-only) persiste número/data/notas", async () => {
+  it("create calcula o número no servidor (seed tem nº 1 → próxima = 2)", async () => {
     const created = await createPgrRevisionAction(
       PGR_IDS.pgrA,
-      rev({ revisionNumber: 2, notes: "Revisão anual" }),
+      rev({ notes: "Revisão anual" }),
     );
     expect(created.ok).toBe(true);
     if (created.ok) {
@@ -71,20 +77,49 @@ function rev(overrides: Partial<PgrRevisionInput> = {}): PgrRevisionInput {
     }
   });
 
-  it("create com número repetido → DUPLICATE (UNIQUE)", async () => {
-    const result = await createPgrRevisionAction(
-      PGR_IDS.pgrA,
-      rev({ revisionNumber: 1 }),
-    );
-    expect(!result.ok && result.error.code).toBe("DUPLICATE");
+  it("primeira revisão de um PGR sem histórico → nº 1", async () => {
+    // pgrA2 não tem revisão no seed.
+    const created = await createPgrRevisionAction(PGR_IDS.pgrA2, rev());
+    expect(created.ok && created.data.revisionNumber).toBe(1);
   });
 
-  it("validação (revisionNumber < 1) → VALIDATION", async () => {
-    const result = await createPgrRevisionAction(
-      PGR_IDS.pgrA,
-      rev({ revisionNumber: 0 }),
-    );
+  it("revisionNumber enviado pelo cliente → VALIDATION (schema estrito)", async () => {
+    const result = await createPgrRevisionAction(PGR_IDS.pgrA, {
+      revisedAt: "2026-07-12",
+      // @ts-expect-error — campo proibido no input; deve ser rejeitado, não ignorado.
+      revisionNumber: 99,
+    });
     expect(!result.ok && result.error.code).toBe("VALIDATION");
+  });
+
+  it("concorrência no MESMO PGR → ambas criadas, números consecutivos (nenhuma perdida)", async () => {
+    const [a, b] = await Promise.all([
+      createPgrRevisionAction(PGR_IDS.pgrA2, rev()),
+      createPgrRevisionAction(PGR_IDS.pgrA2, rev()),
+    ]);
+    expect(a.ok && b.ok).toBe(true);
+    if (a.ok && b.ok) {
+      const nums = [a.data.revisionNumber, b.data.revisionNumber].sort();
+      expect(nums).toEqual([1, 2]);
+    }
+    const list = await listPgrRevisionsAction(PGR_IDS.pgrA2);
+    expect(list.ok && list.data).toHaveLength(2);
+  });
+
+  it("concorrência em PGRs diferentes (mesmo tenant) → sem lock global", async () => {
+    const [a, b] = await Promise.all([
+      createPgrRevisionAction(PGR_IDS.pgrA, rev()), // seed nº 1 → 2
+      createPgrRevisionAction(PGR_IDS.pgrA2, rev()), // sem histórico → 1
+    ]);
+    expect(a.ok && a.data.revisionNumber).toBe(2);
+    expect(b.ok && b.data.revisionNumber).toBe(1);
+  });
+
+  it("UNIQUE continua ativa: número duplicado inserido fora do fluxo → 23505", async () => {
+    await expect(
+      admin`insert into public.pgr_revisions (org_id, pgr_id, revision_number)
+            values ('org_a', ${PGR_IDS.pgrA}, 1)`,
+    ).rejects.toMatchObject({ code: "23505" });
   });
 
   it("PGR inexistente/cross-tenant → NOT_FOUND (list/create)", async () => {
