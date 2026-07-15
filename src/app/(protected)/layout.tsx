@@ -25,6 +25,7 @@ const PGR_NAV = [
   { href: "/epi-returns", label: "Devoluções de EPI" },
   { href: "/planos-inspecao", label: "Planos de inspeção" },
   { href: "/inspecoes-veiculares", label: "Inspeções veiculares" },
+  { href: "/inspecoes-equipamentos", label: "Inspeções de equipamentos" },
   { href: "/equipe", label: "Equipe" },
   { href: "/perfil", label: "Perfil" },
 ];

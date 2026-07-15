@@ -133,6 +133,14 @@
     {
       "key": "vehicularInspectionId",
       "value": ""
+    },
+    {
+      "key": "equipmentCatalogId",
+      "value": ""
+    },
+    {
+      "key": "equipmentInspectionId",
+      "value": ""
     }
   ],
   "item": [
@@ -3449,6 +3457,181 @@
               "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "vehicular-inspections", "{{vehicularInspectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes de equipamentos",
+      "item": [
+        {
+          "name": "GET /equipment-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections?status=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /equipment-inspections (passo 1 cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentCatalogId\": \"{{equipmentCatalogId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Marcos\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /equipment-inspections/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections", "{{equipmentInspectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /equipment-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections", "{{equipmentInspectionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentCatalogId\": \"{{equipmentCatalogId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Marcos (rev)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /equipment-inspections/:id/checklist (passo 2 conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}/checklist",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "equipment-inspections",
+                "{{equipmentInspectionId}}",
+                "checklist"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responses\": [\n    {\n      \"planItemId\": \"{{planItemId}}\",\n      \"value\": true,\n      \"observation\": \"ok\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /equipment-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections", "{{equipmentInspectionId}}"]
             }
           }
         }

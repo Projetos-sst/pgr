@@ -135,6 +135,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/dashboard/summary`                                                                                     | GET (agregações read-model do tenant: KPIs, riscos por agente, planos por nível, pendências/vencimentos; **sem tabelas novas**)                           |
 | `/inspection-plans` · `/inspection-plans/{id}`                                                           | GET (`?search=` título, `?type=vehicular\|equipment`), POST · GET (inclui `items[]`), PUT, DELETE (`204`)                                                 |
 | `/vehicular-inspections` · `/vehicular-inspections/{id}` · `/vehicular-inspections/{id}/checklist`       | GET (`?status=`), POST (cabeçalho → `in_progress`, `201`) · GET (inclui itens+respostas), PUT (cabeçalho), DELETE (`204`) · PUT (respostas → `completed`) |
+| `/equipment-inspections` · `/equipment-inspections/{id}` · `/equipment-inspections/{id}/checklist`       | GET (`?status=`), POST (cabeçalho equipamento → `in_progress`, `201`) · GET, PUT, DELETE (`204`) · PUT (respostas → `completed`)                          |
 
 - **Filtros (query)**: list de cada recurso aceita `search`, `page`, `pageSize` + os filtros do
   recurso (`companyId`, `workUnitId`, `status`, `type`). Body de create/update = o mesmo `*Input`
@@ -182,6 +183,7 @@ title, description?, items: [{ description, defaultValue? }] }`; os **itens vive
   (subconsulta correlacionada). Título vazio/`type` inválido → `422 VALIDATION`; plano de outro tenant
   → `404 NOT_FOUND`. Sem `/dependents` nesta fatia.
 - **Inspeções veiculares (fatia 037)**: **`/vehicular-inspections`** — fluxo em **2 passos**. Passo 1 (`POST`): cabeçalho `{ vehicleId, planId, inspectedAt, responsible?, driverName?, driverLicense?, currentKm?, route?, notes? }` cria a inspeção `type=vehicular` em `in_progress` (`201`). `vehicleId`/`planId` devem ser do tenant e o plano ser **veicular** — senão `422 FK_NOT_FOUND`. Passo 2 (`PUT /{id}/checklist`): `{ responses: [{ planItemId, value: true|false|null, observation? }] }` **substitui** as respostas e conclui (`status=completed`); respostas de `planItemId` fora do plano são ignoradas. `GET /{id}` devolve `{ inspection, vehicle, plan, items }` (itens do plano + resposta atual). Plano imutável do lado do item — só o plano edita seus itens (fatia 036).
+- **Inspeções de equipamentos (fatia 038)**: **`/equipment-inspections`** — mesmo fluxo em 2 passos da veicular, mas o cabeçalho referencia um **equipamento do catálogo** (`epi_catalog` tipo `machine`) + um **plano de equipamento**. `POST`: `{ equipmentCatalogId, planId, inspectedAt, responsible?, notes? }`. Equipamento não-`machine`/cross-tenant ou plano não-`equipment` → `422 FK_NOT_FOUND`. Checklist (`PUT /{id}/checklist`) reusa o contrato tri-state da veicular. `GET /{id}` = `{ inspection, equipment, plan, items }`.
 - **Respostas**: recurso no corpo (`200`), `201` no create, `204` no delete. Erros:
   `{ error: { code, message, fields? } }` com HTTP `422 VALIDATION` · `409 DUPLICATE` ·
   `409 IN_USE` · `422 FK_NOT_FOUND` · `404 NOT_FOUND` · `403 FORBIDDEN`/`NO_TENANT_CONTEXT` ·
