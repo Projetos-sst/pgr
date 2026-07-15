@@ -48,6 +48,45 @@ export async function getOrgById(id: string): Promise<Org | null> {
   return data ? mapOrg(data) : null;
 }
 
+export async function getOrgByStripeCustomerId(customerId: string): Promise<Org | null> {
+  const { data, error } = await getRlsBypassingSupabaseClient()
+    .from("orgs")
+    .select("*")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapOrg(data) : null;
+}
+
+/** Sincroniza o billing do tenant (chamado pelo webhook do Stripe). */
+export async function updateOrgBilling(
+  orgId: string,
+  input: {
+    plan?: "free" | "pro";
+    stripeCustomerId?: string | null;
+    stripeSubscriptionId?: string | null;
+    trialEndsAt?: Date | null;
+  },
+): Promise<Org> {
+  const columns: Record<string, unknown> = {};
+  if (input.plan !== undefined) columns.plan = input.plan;
+  if (input.stripeCustomerId !== undefined)
+    columns.stripe_customer_id = input.stripeCustomerId;
+  if (input.stripeSubscriptionId !== undefined)
+    columns.stripe_subscription_id = input.stripeSubscriptionId;
+  if (input.trialEndsAt !== undefined)
+    columns.trial_ends_at = input.trialEndsAt ? input.trialEndsAt.toISOString() : null;
+
+  const { data, error } = await getRlsBypassingSupabaseClient()
+    .from("orgs")
+    .update(columns)
+    .eq("id", orgId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return mapOrg(data);
+}
+
 export async function deleteOrg(id: string): Promise<void> {
   const { error } = await getRlsBypassingSupabaseClient()
     .from("orgs")
@@ -87,6 +126,9 @@ function mapOrg(row: Record<string, unknown>): Org {
     imageUrl: (row.image_url as string | null) ?? null,
     plan: row.plan as string,
     clerkOrgId: (row.clerk_org_id as string | null) ?? null,
+    stripeCustomerId: (row.stripe_customer_id as string | null) ?? null,
+    stripeSubscriptionId: (row.stripe_subscription_id as string | null) ?? null,
+    trialEndsAt: row.trial_ends_at ? new Date(row.trial_ends_at as string) : null,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
   };
