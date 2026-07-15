@@ -59,3 +59,17 @@ export function fillActionPlansByLevel(
 ): CountByKey[] {
   return zeroFillCounts(CONTROL_LEVELS, controlLevelLabel, rows);
 }
+
+export type BarSegment = CountByKey & { percent: number };
+
+/**
+ * Percentual de cada barra relativo ao maior valor da série (para gráfico de
+ * barras CSS). Série toda zerada → todos 0%. Puro/testável.
+ */
+export function withBarPercents(rows: CountByKey[]): BarSegment[] {
+  const max = rows.reduce((m, r) => Math.max(m, r.count), 0);
+  return rows.map((r) => ({
+    ...r,
+    percent: max === 0 ? 0 : Math.round((r.count / max) * 100),
+  }));
+}

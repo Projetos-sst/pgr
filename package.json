@@ -14,7 +14,7 @@
     "fix": "npm run lint:fix && npm run format",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
     "test": "jest --selectProjects unit",
-    "test:integration": "jest --selectProjects integration",
+    "test:integration": "jest --selectProjects integration --runInBand",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
@@ -31,6 +31,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "signature_pad": "^5.1.3",
+    "stripe": "^22.3.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
