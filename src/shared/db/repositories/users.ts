@@ -90,6 +90,7 @@ function mapUser(row: Record<string, unknown>): User {
     phone: (row.phone as string | null) ?? null,
     cpf: (row.cpf as string | null) ?? null,
     jobTitle: (row.job_title as string | null) ?? null,
+    isMaster: (row.is_master as boolean | null) ?? false,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
   };

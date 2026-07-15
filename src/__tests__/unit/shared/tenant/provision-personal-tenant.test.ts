@@ -43,6 +43,9 @@ function fakeTenant(id: string) {
     imageUrl: null,
     plan: "free",
     clerkOrgId: null,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
+    trialEndsAt: null,
     createdAt: new Date("2026-06-19T00:00:00Z"),
     updatedAt: new Date("2026-06-19T00:00:00Z"),
   };
