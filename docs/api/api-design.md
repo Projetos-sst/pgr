@@ -133,6 +133,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/profile`                                                                                               | GET, PUT (perfil do **usuário logado** — self; edita só campos app-managed `phone`/`cpf`/`jobTitle`; nome/e-mail/foto são do Clerk)               |
 | `/team` · `/team/{userId}` · `/team/invitations`                                                         | GET (roster do tenant; `?search=`) · PUT, DELETE (papel / remoção — **owner**; via Clerk; barra o último owner) · POST (convite — **PRO**, `201`) |
 | `/dashboard/summary`                                                                                     | GET (agregações read-model do tenant: KPIs, riscos por agente, planos por nível, pendências/vencimentos; **sem tabelas novas**)                   |
+| `/inspection-plans` · `/inspection-plans/{id}`                                                           | GET (`?search=` título, `?type=vehicular\|equipment`), POST · GET (inclui `items[]`), PUT, DELETE (`204`)                                         |
 
 - **Filtros (query)**: list de cada recurso aceita `search`, `page`, `pageSize` + os filtros do
   recurso (`companyId`, `workUnitId`, `status`, `type`). Body de create/update = o mesmo `*Input`
@@ -172,6 +173,13 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
   tenant → `422 FK_NOT_FOUND`. **`/job-role-required-trainings`** — `{ jobRoleId, trainingId }`;
   POST repetido devolve o vínculo existente (idempotente). Leituras de vencimento/conformidade
   (US3/US4) são consultas de Server Component, sem endpoint próprio nesta fase.
+- **Planos de inspeção (fatia 036)**: **`/inspection-plans`** — checklist reutilizável das inspeções
+  veiculares/de equipamentos (segurança não usa plano). Body `{ type: vehicular|equipment, subtype?,
+title, description?, items: [{ description, defaultValue? }] }`; os **itens vivem dentro do plano**
+  (sem CRUD próprio) — salvar = **substituir todos os itens** transacionalmente (delete-then-insert,
+  `order` = índice). `GET /{id}` devolve `{ plan, items }` (itens ordenados). List projeta `itemCount`
+  (subconsulta correlacionada). Título vazio/`type` inválido → `422 VALIDATION`; plano de outro tenant
+  → `404 NOT_FOUND`. Sem `/dependents` nesta fatia.
 - **Respostas**: recurso no corpo (`200`), `201` no create, `204` no delete. Erros:
   `{ error: { code, message, fields? } }` com HTTP `422 VALIDATION` · `409 DUPLICATE` ·
   `409 IN_USE` · `422 FK_NOT_FOUND` · `404 NOT_FOUND` · `403 FORBIDDEN`/`NO_TENANT_CONTEXT` ·

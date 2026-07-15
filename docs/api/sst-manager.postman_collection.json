@@ -117,6 +117,10 @@
     {
       "key": "memberUserId",
       "value": "user_xxx"
+    },
+    {
+      "key": "planId",
+      "value": ""
     }
   ],
   "item": [
@@ -3114,6 +3118,150 @@
               "raw": "{{baseUrl}}/api/v1/team/{{memberUserId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "team", "{{memberUserId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Planos de inspecao",
+      "item": [
+        {
+          "name": "GET /inspection-plans (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans?search=&type=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "type",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /inspection-plans (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota\",\n  \"description\": \"Inspeção pré-uso\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Pneus\",\n      \"defaultValue\": false\n    },\n    {\n      \"description\": \"Luzes\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /inspection-plans/:id (inclui items)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans", "{{planId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /inspection-plans/:id (substitui itens)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans", "{{planId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota (v2)\",\n  \"description\": \"Revisado\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Documentação\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /inspection-plans/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans", "{{planId}}"]
             }
           }
         }

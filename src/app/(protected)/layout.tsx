@@ -23,6 +23,7 @@ const PGR_NAV = [
   { href: "/training-compliance", label: "Conformidade" },
   { href: "/signatures", label: "Assinaturas" },
   { href: "/epi-returns", label: "Devoluções de EPI" },
+  { href: "/planos-inspecao", label: "Planos de inspeção" },
   { href: "/equipe", label: "Equipe" },
   { href: "/perfil", label: "Perfil" },
 ];
