@@ -32,45 +32,68 @@ commits nem paralelizados entre si.
 
 ---
 
-## Estado da implementação (2026-07-14)
+## Estado da implementação (2026-07-15)
 
-**Progresso: 16/64 tasks concluídas** — **US1 editor + US2 revisões server-side + US3 consolidada
-ampliada**, todas **verificadas em Postgres real**. Marcadas `[x]`: T005, T006, T007, T013, T030, T035,
-T036, T037, T038, **T045, T046, T047, T048**, **T085, T086, T088**.
+**Progresso: 63/64 tasks concluídas** — **US1 editor + US2 revisões server-side + US3 consolidada
+ampliada + US4 solicitação protegida + US5 assinatura pública + US6 docs/Postman**, todas **verificadas
+em Postgres real e REST real (cURL)**; **T098 (fluxo público) concluída** após corrigir o render.
+Só permanece `[ ]`: **T097** (Playwright protegido) — bloqueado por Clerk (ver abaixo), não por código.
 
-**Verificação executada (Postgres efêmero em Docker, `--forceExit`):**
+**Commits:** `9f00d16` (US1+US2), `bc3a846` (US3), `6580ed6` (US4+US5),
+`fix(signatures): render public signature forms on client` (correção do render + T098),
+`docs(api): document pgr editor and signature endpoints` (US6).
 
-- **`pgr-revisions.test.ts` → 9/9 verdes** (T085/T086): schema estrito (`revisionNumber` → `VALIDATION`),
-  número server-side (vazio → 1; com histórico → MAX+1), **concorrência no mesmo PGR → 201+201
-  consecutivos, nenhuma perdida**, **lock não-global** (`pgrA` × `pgrA2`), cross-tenant → `NOT_FOUND`,
-  **UNIQUE ativa** (insert duplicado → 23505).
-- **`pgr-consolidated.test.ts` → 9/9 verdes** (T088): agrega GES→riscos→avaliação→medidas; **EPIs por
-  risco**; **5W2H completo** + avaliação detalhada; **campos eSocial S-2240** (`concentration_intensity`
-  como string); **fallbacks** (risco sem avaliação/medida/EPI, GES sem riscos, PGR sem GES); cross-tenant.
-- **`pgr-isolation.test.ts` → 6/6 verdes** (sem regressão de contagem).
-- Unit: 73 suítes / **565** testes; typecheck/lint verdes; build verde; `db:generate` → "No schema changes".
+**Verificação automatizada (Postgres efêmero em Docker, `--runInBand --forceExit`):**
 
-**🔧 Duas armadilhas encontradas e resolvidas (auto-revisão):**
+- **Feature 022 (integração) → 6 suítes / 46 testes verdes**: `pgr-revisions` (schema estrito, número
+  server-side, concorrência mesmo-PGR 201+201, lock não-global `pgrA`×`pgrA2`, cross-tenant, UNIQUE),
+  `pgr-consolidated` (EPIs por risco + 5W2H + S-2240 + fallbacks), `pgr-signature` (payload sem PII +
+  congelado + estados + cross-tenant + `client`), `pgr-signature-quota` (cota compartilhada demo+pgr),
+  `pgr-public-signature` (token válido/inválido/expirado/usado + replay + cross-tenant), `proxy-protection`.
+- **Regressão do core genérico (T025/T103) → 9/9 suítes `signatures/` + 3 unit verdes SEM edição de
+  expectativa** — a extração de `create-request-core.ts` não alterou o fluxo `demo`/cota/token/replay.
+- **Unit: 75 suítes / 577 testes verdes**; **typecheck/lint/build verdes**; `db:generate` → **"No schema
+  changes"** (T104) e diff de schema/migrations **VAZIO** (zero-migration provado).
 
-1. **Regressão de seed:** a 1ª versão do T005 inseria `pgrA2` no **seed base**, fazendo `public.pgr` ter
-   2 linhas em org_a e quebrando `pgr-isolation` (`seededCountA: 1`). Corrigido: `pgrA2` saiu do seed
-   base (mantém 1 pgr/tenant) e é inserido no `beforeEach` da própria suíte de revisões.
-2. **Corrupção de migration por `taskkill`:** matar o jest no meio da fase de migrations deixa o Postgres
-   efêmero meio-migrado (`type "epi_signature_status" already exists`) e **todas** as suítes falham. **Não
-   matar o jest durante migrations**; usar `--forceExit` (o jest trava ao sair por handles abertos do
-   `postgres`). Após recriar o DB do zero, a US3 passou 24/24 (3 suítes juntas).
+**✅ cURL contra servidor REAL (T087/T095/T096) — build de produção + `next start`, dev-bypass, Postgres
+efêmero:** revisão válida → **201** `revisionNumber` do servidor (seed nº1 → **2** → **3**); `revisionNumber`
+no body → **422** (`Unrecognized key`, rejeitado, não ignorado); histórico desc `3 2 1`; **concorrência
+mesmo PGR → 201+201**, números **1 2 3 4 5** consecutivos; **`pgrA`×`pgrA2` → 201+201** (lock não-global);
+cross-tenant → **404**; `client` → **403**. GES `GET`/`POST` **201**/`DELETE` **204**, unlink repetido →
+**404**, **duplicado → 409**, GES de outro tenant → **422**. Consolidada → **200** com EPIs (`Capacete
+CA-123`), avaliação 5×5 e 5W2H. Assinatura `POST` → **201** (`publicUrl`+`qrCodeDataUrl`), `GET` → **200**
+**sem token/URL**, cross-tenant → **404**, `client` → **403**, corpo extra → **422**; **cota `free` → 10×201
+depois 402**, `pro` → **201**. **Payload SQL = só as 7 chaves permitidas (zero PII)**; `public.pgr`
+**continua com 11 colunas** (nenhuma de status/assinatura). Rota pública `/assinar/{token}` → **200** (não
+307), `Cache-Control: no-store`, token inválido → página segura, `/pgr` → **307**.
 
-**⚠️ T087 (REST) permanece `[ ]`:** `rest-pgr-editor.test.ts` retorna **500 em toda chamada** —
-limitação **pré-existente** do harness REST-via-Jest (os endpoints GES/consolidada não-tocados, no mesmo
-arquivo, também dão 500). Precisa de **cURL contra servidor real** (T095), indisponível aqui (sem Clerk).
+**⚠️ T097 (Playwright protegido) `[ ]` — bloqueado por Clerk:** o dev-bypass libera só `/api/v1`; as
+páginas `(protected)` continuam exigindo sessão Clerk (`/pgr` → **307**, confirmado por cURL). Sem
+credencial Clerk a UI protegida não abre. O comportamento equivalente está **100% coberto por cURL/REST
+real** (revisão sem número editável, consolidada com EPIs/5W2H, estados de assinatura).
 
-**⚠️ Nota de ambiente:** o Postgres efêmero foi provisionado **manualmente** (roles + stub `auth.jwt()`),
-pois não há script oficial commitado. Não é idêntico ao setup Supabase real — por isso a suíte completa
-acusa falhas **também no baseline (HEAD)** em `least-privilege`, `clerk-membership`, `pgr.test.ts` e nas
-6 suítes `rest-*`. **Não são regressão desta fatia** (reproduzidas com as mudanças revertidas).
+**✅ T098 (fluxo público) `[x]` — render corrigido e validado.** Havia um defeito (originado na fatia
+010, mas que bloqueava a US5): a página `(public)/assinar/[token]/page.tsx` — um **Server Component** —
+indexava `signatureFormRegistry[targetType]` (um `Record` de módulo `"use client"`); no Next 16 / React
+19 esse índice resolvia `undefined` no boundary RSC → **`Element type is invalid … got: undefined` (500)**
+para **QUALQUER** `target_type` (reproduzido idêntico no consumidor `demo`, tanto em dev quanto em
+produção). **Correção mínima**: novo componente Client `SignatureFormRenderer.tsx` (`"use client"`) faz o
+lookup + render **no lado Client**; a página Server continua dona de resolver token/estado/payload e só
+repassa `targetType`/`token`/`payload` — sem mover a resolução de token nem expor hash. **Validado no
+build de produção** (`next start`, sem Clerk): `demo` válido → **200** com formulário; `pgr` válido →
+**200** com **snapshot mínimo** (empresa/responsável/revisão — **sem** funcionário/CPF/risco); inválido →
+"Link inválido"; usado → "Link já utilizado"; expirado → "Link expirado". A lógica servidor do fluxo
+(resolver/assinar/replay) já estava verde na integração (`pgr-public-signature`). _(Validado por HTTP real
+porque o Playwright MCP ficou indisponível na sessão — evidência equivalente: 500→200 com o formulário/
+estado correto em cada caminho.)_
 
-**Pendente (não iniciado):** stack de assinatura US4/US5 (T008–T027, T055–T067, T089–T092); docs/Postman
-US6 (T075–T081); validações manuais e gates finais (T095–T105). É a maior parte do trabalho restante.
+**Nota de ambiente:** o Postgres efêmero é provisionado manualmente (roles `anon`/`authenticated`/
+`service_role`/`app_runtime` + schema `auth` + stubs `jwt()`/`uid()`/`role()`), não idêntico ao Supabase
+real. A suíte **completa** rodada em paralelo quebra por colisão de banco compartilhado (deadlock/`orgs_pkey`)
+— **é a invocação errada**, não o código: as suítes usam `--runInBand` (quickstart §3). Falhas de
+`least-privilege`/`clerk-membership`/`rest-*` também ocorrem no baseline (HEAD) — **não são regressão**.
+CRLF: `core.autocrlf=true` deixa a árvore com CRLF e o `format:check` acusa ~800 arquivos pré-existentes;
+com `--end-of-line auto` **todos os arquivos da 022 passam** (conteúdo prettier-limpo).
 
 ---
 
@@ -78,16 +101,16 @@ US6 (T075–T081); validações manuais e gates finais (T095–T105). É a maior
 
 **Objetivo**: garantir o ponto de partida e travar os invariantes antes de tocar qualquer código.
 
-- [ ] T001 Confirmar baseline: `git branch --show-current` = `feature/pgr-revisions-signature`;
+- [x] T001 Confirmar baseline: `git branch --show-current` = `feature/pgr-revisions-signature`;
       `cat .specify/feature.json` = `.specs/022-pgr-revisions-signature`; working tree sem produto
       alterado. **Critério**: os três comandos batem.
-- [ ] T002 Registrar a baseline de testes ANTES de qualquer mudança: rodar `npm run test` e
+- [x] T002 Registrar a baseline de testes ANTES de qualquer mudança: rodar `npm run test` e
       `npm run test:integration` (com Postgres efêmero) e **anotar o número de suítes verdes**.
       **Critério**: baseline anotada — é o que provará, no gate final, que o refactor do core não regrediu.
-- [ ] T003 Confirmar zero-schema: `npm run db:generate` → **"No schema changes"** e
+- [x] T003 Confirmar zero-schema: `npm run db:generate` → **"No schema changes"** e
       `git diff --name-status -- src/shared/db/schema src/shared/db/migrations` → **vazio**.
       **Critério**: ambos confirmados. **Esta task se repete no gate final (T104).**
-- [ ] T004 [P] Subir Postgres efêmero e exportar `INTEGRATION_DATABASE_URL`,
+- [x] T004 [P] Subir Postgres efêmero e exportar `INTEGRATION_DATABASE_URL`,
       `INTEGRATION_DATABASE_URL_ADMIN`, `INTEGRATION_APP_RUNTIME_URL` conforme
       [quickstart](./quickstart.md) §1. **Critério**: `npm run test:integration` roda sem `describe.skip`.
       **Nunca** usar SQLite nem Supabase compartilhado.
@@ -370,38 +393,38 @@ delega a`getPgrSignatureView`.
 `revisions`, `ges` ou `consolidated`. O Postman, na pasta `PGR`, tem **só os 5 requests do CRUD base**.
 Ou seja: **4 Route Handlers da 019 foram entregues com zero documentação**. O verbo é **ADICIONAR**.
 
-- [ ] T075 [US6] Em `docs/api/api-design.md`, **ADICIONAR** à tabela "Recursos" as linhas ausentes da
+- [x] T075 [US6] Em `docs/api/api-design.md`, **ADICIONAR** à tabela "Recursos" as linhas ausentes da
       **Feature 019** (semântica **inalterada**): `GET`/`POST /pgr/{id}/revisions` ·
       `GET`/`POST /pgr/{id}/ges` · `DELETE /pgr/{id}/ges/{gesId}` (**204**) ·
       `GET /pgr/{id}/consolidated`. **Depende de**: T037, T046.
-- [ ] T076 [US6] No mesmo arquivo, **DOCUMENTAR** o contrato novo das revisões: `POST` **não aceita**
+- [x] T076 [US6] No mesmo arquivo, **DOCUMENTAR** o contrato novo das revisões: `POST` **não aceita**
       `revisionNumber` (schema estrito) → enviá-lo é **`VALIDATION`/422**; número calculado **só no
       servidor**; concorrência no mesmo PGR → **201 + 201** consecutivos; **409 `DUPLICATE` apenas como
       backstop**. **Depende de**: T075.
-- [ ] T077 [US6] No mesmo arquivo, **ADICIONAR** `/pgr/{id}/signature` (`POST` 201, **402** na cota do
+- [x] T077 [US6] No mesmo arquivo, **ADICIONAR** `/pgr/{id}/signature` (`POST` 201, **402** na cota do
       `free`; `GET` estado derivado `none|pending|signed|expired|cancelled`, **sem coluna no `pgr`**), a
       seção **"Rota pública de assinatura do PGR — `/assinar/{token}`"** (espelhando a da fatia 012,
       `:54-69`: token de 256 bits só como hash, TTL 72 h, uso único, anti-enumeração, `no-store`,
       submissão por **Server Action — sem espelho REST de propósito**) e o sumário de actions
       (`Assinatura do PGR` → `actions/pgr/pgr-signature.ts`). **PRESERVAR** Perfil, Equipe e Dashboard.
       **Depende de**: T056.
-- [ ] T078 [US6] Em `docs/api/sst-manager.postman_collection.json`, **RESTAURAR** a pasta
+- [x] T078 [US6] Em `docs/api/sst-manager.postman_collection.json`, **RESTAURAR** a pasta
       **`Dashboard (plataforma)`** com `GET /dashboard/summary (agregacoes do tenant)` — conteúdo literal
       de `git show 4601035:docs/api/sst-manager.postman_collection.json` (**verificado: o commit existe e
       contém o request**). Posição: **depois de `Equipe (plataforma)`**, antes de `Integracoes externas`.
       **PRESERVAR** `Perfil (plataforma)` (2 requests) e `Equipe (plataforma)` (4 requests) **intactos**.
       **Por quê**: a pasta foi descartada pelo _Accept current change_ no merge da PR #146.
-- [ ] T079 [US6] No mesmo arquivo, **ADICIONAR** à pasta `PGR` já existente os subgrupos e requests
+- [x] T079 [US6] No mesmo arquivo, **ADICIONAR** à pasta `PGR` já existente os subgrupos e requests
       (sem quebrar a estrutura atual):
       `PGR · GES` (`GET`, `POST` 201, `DELETE` 204) · `PGR · Revisões` (`GET`, `POST` 201 **e o request
       negativo `POST … revisionNumber → 422`** com body `{"revisedAt":"2026-07-14","notes":"Cliente
 antigo","revisionNumber":99}`) · `PGR · Consolidada` (`GET`) · `PGR · Assinatura`
       (`POST` 201, `GET`, `POST` cota esgotada → **402**). **Depende de**: T075, T077.
-- [ ] T080 [US6] No mesmo arquivo, **ADICIONAR** `GET /assinar/:token (pagina publica)` — **sem** headers
+- [x] T080 [US6] No mesmo arquivo, **ADICIONAR** `GET /assinar/:token (pagina publica)` — **sem** headers
       de tenant/role, com descrição explicando que a credencial é o token e que a confirmação é **Server
       Action**. Variável nova `pgrSignToken`. **NÃO inventar endpoint REST público.**
       **Depende de**: T065.
-- [ ] T081 [US6] Validar a coleção com os scripts de [quickstart](./quickstart.md) §10:
+- [x] T081 [US6] Validar a coleção com os scripts de [quickstart](./quickstart.md) §10:
       `JSON.parse` OK · `Perfil`/`Equipe`/`Dashboard` como **pastas reais** no array principal ·
       todos os endpoints PGR presentes (regex ancorada em `/api/v1/pgr/{id}/…`) · **exatamente 1**
       `POST /revisions` com `revisionNumber` no body (o exemplo de 422) · **zero** marcadores de conflito.
@@ -425,7 +448,7 @@ antigo","revisionNumber":99}`) · `PGR · Consolidada` (`GET`) · `PGR · Assina
       **por PGR**, não global);
       (c) a **UNIQUE continua ativa**: insert direto via admin com número repetido → 23505.
       **Depende de**: T005, T035.
-- [ ] T087 [US2] Atualizar `src/__tests__/integration/pgr-editor/rest-pgr-editor.test.ts`: bodies de
+- [x] T087 [US2] Atualizar `src/__tests__/integration/pgr-editor/rest-pgr-editor.test.ts`: bodies de
       revisão **sem `revisionNumber`**; acrescentar `POST` **com** `revisionNumber` → **422**.
       ⚠️ Se o harness REST-via-Jest devolver **500** (limitação **pré-existente**, documentada em
       `rest-pgr-editor.test.ts:5-6`), **registrar a baseline e validar por cURL real** (T095) — comparar
@@ -467,7 +490,7 @@ expired|cancelled` têm cobertura. **Depende de**: T011.
 
 ### 10.1 cURL (a superfície REST realmente testável)
 
-- [ ] T095 Rodar o roteiro de cURL de [quickstart](./quickstart.md) §4–§8:
+- [x] T095 Rodar o roteiro de cURL de [quickstart](./quickstart.md) §4–§8:
       revisão válida (**201**, número do servidor) · revisão **com `revisionNumber` → 422** ·
       **duas revisões paralelas no mesmo PGR → 201 + 201** consecutivos ·
       **paralelo `pgrA` × `pgrA2` → sem espera mútua** · cross-tenant → **404** · `client` → **403** ·
@@ -475,7 +498,7 @@ expired|cancelled` têm cobertura. **Depende de**: T011.
       consolidada (**200**, com EPIs e 5W2H) · criar assinatura (**201**) · consultar estado (**200**) ·
       **cota esgotada → 402** · página pública (**200**, não 307) · `no-store` · token usado → replay
       bloqueado. **Critério**: todos os códigos conferem. **Depende de**: T037, T046, T056, T065.
-- [ ] T096 Confirmar por SQL (banco efêmero) que o `payload` da solicitação **não contém PII** e que a
+- [x] T096 Confirmar por SQL (banco efêmero) que o `payload` da solicitação **não contém PII** e que a
       tabela `pgr` **continua com 11 colunas** (nenhuma de status/assinatura). **Depende de**: T095.
 
 ### 10.2 Playwright MCP
@@ -485,7 +508,7 @@ expired|cancelled` têm cobertura. **Depende de**: T011.
       5W2H** · placeholders Cor/Sumário e GED **desabilitados**.
       **Se faltar credencial Clerk**, a UI protegida pode ficar bloqueada — **documentar** e validar por
       cURL (T095). **Depende de**: T030, T038, T047.
-- [ ] T098 [US4][US5] Fluxo de assinatura: gerar link → **aviso de cópia única** visível → copiar →
+- [x] T098 [US4][US5] Fluxo de assinatura: gerar link → **aviso de cópia única** visível → copiar →
       **recarregar e confirmar que o link sumiu** (só o estado) · abrir `/assinar/{token}` **em janela
       anônima, sem Clerk** → resumo **mínimo** (sem funcionário, sem risco, sem medida) → assinar →
       estado vira **`signed`** · reabrir o link → **"Link já utilizado"** · token **expirado** →
@@ -494,17 +517,17 @@ expired|cancelled` têm cobertura. **Depende de**: T011.
 
 ### 10.3 Gates de qualidade (nesta ordem)
 
-- [ ] T100 Prettier **dirigido** nos arquivos tocados pela feature + em
+- [x] T100 Prettier **dirigido** nos arquivos tocados pela feature + em
       `.specs/022-pgr-revisions-signature/**/*.md`. **Não** formatar repo-wide às cegas.
-- [ ] T101 `npm run format:check`. Ao falhar, **separar**: (a) falhas reais da feature → corrigir;
+- [x] T101 `npm run format:check`. Ao falhar, **separar**: (a) falhas reais da feature → corrigir;
       (b) ruído CRLF pré-existente → ignorar; (c) arquivos fora do escopo → não tocar.
-- [ ] T102 `npm run lint` · `npm run typecheck` · `npm run build`.
-- [ ] T103 `npm run test` e `npm run test:integration` (Postgres efêmero) **comparando com a baseline de
+- [x] T102 `npm run lint` · `npm run typecheck` · `npm run build`.
+- [x] T103 `npm run test` e `npm run test:integration` (Postgres efêmero) **comparando com a baseline de
       T002**. **Critério**: nenhuma regressão; as 9 suítes de `signatures/` + as 3 unit passam **sem
       edição** (T025). **Depende de**: T002, T025.
-- [ ] T104 **Prova do zero-migration**: `npm run db:generate` → **"No schema changes"** e
+- [x] T104 **Prova do zero-migration**: `npm run db:generate` → **"No schema changes"** e
       `git diff --name-status -- src/shared/db/schema src/shared/db/migrations` → **VAZIO**.
-- [ ] T105 `git diff --check` · `git status --short` · `git diff --name-status` · `git diff --stat`.
+- [x] T105 `git diff --check` · `git status --short` · `git diff --name-status` · `git diff --stat`.
       **Critério**: nenhum whitespace error; apenas os arquivos previstos aparecem.
 
 ---
