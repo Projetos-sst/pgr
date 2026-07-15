@@ -34,39 +34,43 @@ commits nem paralelizados entre si.
 
 ## Estado da implementação (2026-07-14)
 
-**Progresso: 11/64 tasks concluídas** — MVP (US1 editor + US2 revisões server-side) implementado e
-**verificado em Postgres real**. Marcadas `[x]`: T005, T006, T007, T013, T030, T035, T036, T037, T038,
-**T085, T086**.
+**Progresso: 16/64 tasks concluídas** — **US1 editor + US2 revisões server-side + US3 consolidada
+ampliada**, todas **verificadas em Postgres real**. Marcadas `[x]`: T005, T006, T007, T013, T030, T035,
+T036, T037, T038, **T045, T046, T047, T048**, **T085, T086, T088**.
 
-**Verificação executada (Postgres efêmero em Docker):**
+**Verificação executada (Postgres efêmero em Docker, `--forceExit`):**
 
-- **Suíte `pgr-revisions.test.ts` → 9/9 verdes**: schema estrito (`revisionNumber` → `VALIDATION`),
-  número server-side (histórico vazio → 1; com histórico → MAX+1), **concorrência no mesmo PGR →
-  201+201 com números consecutivos, nenhuma perdida**, **lock não-global** (`pgrA` × `pgrA2`),
-  cross-tenant → `NOT_FOUND`, e **UNIQUE ativa** (insert direto duplicado → 23505). (T085, T086)
-- **`pgr-isolation.test.ts` → verde** após a correção de regressão abaixo.
-- Unit: 73 suítes / 564 testes verdes; typecheck/lint/build verdes; `db:generate` → "No schema changes".
+- **`pgr-revisions.test.ts` → 9/9 verdes** (T085/T086): schema estrito (`revisionNumber` → `VALIDATION`),
+  número server-side (vazio → 1; com histórico → MAX+1), **concorrência no mesmo PGR → 201+201
+  consecutivos, nenhuma perdida**, **lock não-global** (`pgrA` × `pgrA2`), cross-tenant → `NOT_FOUND`,
+  **UNIQUE ativa** (insert duplicado → 23505).
+- **`pgr-consolidated.test.ts` → 9/9 verdes** (T088): agrega GES→riscos→avaliação→medidas; **EPIs por
+  risco**; **5W2H completo** + avaliação detalhada; **campos eSocial S-2240** (`concentration_intensity`
+  como string); **fallbacks** (risco sem avaliação/medida/EPI, GES sem riscos, PGR sem GES); cross-tenant.
+- **`pgr-isolation.test.ts` → 6/6 verdes** (sem regressão de contagem).
+- Unit: 73 suítes / **565** testes; typecheck/lint verdes; build verde; `db:generate` → "No schema changes".
 
-**🔧 Regressão encontrada e corrigida (auto-revisão):** a versão inicial do T005 inseria `pgrA2` no
-**seed base** (`seedPgrBase`), o que fazia `public.pgr` ter **2 linhas em org_a** e quebrava
-`pgr-isolation.test.ts` (`seededCountA: 1`). Corrigido de forma cirúrgica: `pgrA2` **saiu do seed base**
-(que mantém 1 pgr/tenant) e passou a ser inserido **dentro do `beforeEach` da própria suíte de
-revisões**, onde é necessário. Assim o lock-não-global continua provado e nenhum outro suite é afetado.
+**🔧 Duas armadilhas encontradas e resolvidas (auto-revisão):**
 
-**⚠️ T087 (REST) permanece `[ ]`:** a suíte `rest-pgr-editor.test.ts` retorna **500 em toda chamada** —
-é a **limitação pré-existente do harness REST-via-Jest** (os endpoints de GES/consolidada que **não
-foram tocados**, no mesmo arquivo, também dão 500). Precisa de **cURL contra servidor real** (T095), que
-não roda aqui (sem sessão Clerk / servidor de dev). Não marcada.
+1. **Regressão de seed:** a 1ª versão do T005 inseria `pgrA2` no **seed base**, fazendo `public.pgr` ter
+   2 linhas em org_a e quebrando `pgr-isolation` (`seededCountA: 1`). Corrigido: `pgrA2` saiu do seed
+   base (mantém 1 pgr/tenant) e é inserido no `beforeEach` da própria suíte de revisões.
+2. **Corrupção de migration por `taskkill`:** matar o jest no meio da fase de migrations deixa o Postgres
+   efêmero meio-migrado (`type "epi_signature_status" already exists`) e **todas** as suítes falham. **Não
+   matar o jest durante migrations**; usar `--forceExit` (o jest trava ao sair por handles abertos do
+   `postgres`). Após recriar o DB do zero, a US3 passou 24/24 (3 suítes juntas).
 
-**⚠️ Nota de ambiente:** o Postgres efêmero foi provisionado **manualmente** (roles + stub de
-`auth.jwt()`), pois não há script oficial commitado. Esse provisionamento **não é idêntico** ao setup
-Supabase real — por isso a suíte completa acusa falhas **também no baseline (HEAD)** em
-`least-privilege`, `clerk-membership`, `pgr.test.ts` e nas 6 suítes `rest-*`. Essas falhas **não são
-regressão desta fatia** (reproduzidas com as mudanças revertidas).
+**⚠️ T087 (REST) permanece `[ ]`:** `rest-pgr-editor.test.ts` retorna **500 em toda chamada** —
+limitação **pré-existente** do harness REST-via-Jest (os endpoints GES/consolidada não-tocados, no mesmo
+arquivo, também dão 500). Precisa de **cURL contra servidor real** (T095), indisponível aqui (sem Clerk).
 
-**Pendente (não iniciado):** US3 consolidada (T045–T048); toda a stack de assinatura US4/US5
-(T008–T027, T055–T067); docs/Postman US6 (T075–T081); testes de integração de assinatura (T088–T092);
-validações manuais e gates finais (T095–T105). São a maior parte do trabalho e seguem em próxima sessão.
+**⚠️ Nota de ambiente:** o Postgres efêmero foi provisionado **manualmente** (roles + stub `auth.jwt()`),
+pois não há script oficial commitado. Não é idêntico ao setup Supabase real — por isso a suíte completa
+acusa falhas **também no baseline (HEAD)** em `least-privilege`, `clerk-membership`, `pgr.test.ts` e nas
+6 suítes `rest-*`. **Não são regressão desta fatia** (reproduzidas com as mudanças revertidas).
+
+**Pendente (não iniciado):** stack de assinatura US4/US5 (T008–T027, T055–T067, T089–T092); docs/Postman
+US6 (T075–T081); validações manuais e gates finais (T095–T105). É a maior parte do trabalho restante.
 
 ---
 
@@ -96,10 +100,10 @@ validações manuais e gates finais (T095–T105). São a maior parte do trabalh
 
 ### 2.1 Seed (bloqueia os testes de concorrência)
 
-- [x] T005 Adicionar **`pgrA2`** (2º PGR em **`org_a`**) ao `PGR_IDS` e ao insert de `public.pgr` em
-      `src/__tests__/integration/_helpers/pgr-seed.ts`. **Critério**: seed cria `pgrA`@org_a,
-      `pgrA2`@org_a e `pgrB`@org_b. **Por quê**: sem um 2º PGR no **mesmo** tenant é impossível provar que
-      o lock **não é global** — usar `pgrB` testaria o RLS, não o lock.
+- [x] T005 Adicionar **`pgrA2`** (2º PGR em **`org_a`**) ao `PGR_IDS`. **AJUSTE na implementação:** o
+      `pgrA2` **não** entra no `seedPgrBase` (isso deixaria `public.pgr` com 2 linhas em org_a e
+      quebraria `pgr-isolation` `seededCountA: 1`) — é inserido no **`beforeEach` da suíte de revisões**,
+      onde prova o lock-não-global. **Por quê**: usar `pgrB` testaria o RLS, não o lock.
 
 ### 2.2 Domínio das revisões (TDD — teste vermelho primeiro)
 
@@ -265,7 +269,7 @@ no list**.`listPgrRevisionsAction` **inalterada**. **Depende de**: T035.
 **Meta**: EPIs por risco + 5W2H completo + campos eSocial já persistidos. **Read-only, sem N+1, sem PDF.**
 **Teste independente**: abrir a aba Consolidada de um PGR com dados completos.
 
-- [ ] T045 [P] [US3] Ampliar `src/shared/domains/pgr/pgr-consolidated.ts`: `ConsolidatedEpi`
+- [x] T045 [P] [US3] Ampliar `src/shared/domains/pgr/pgr-consolidated.ts`: `ConsolidatedEpi`
       (`{id, catalogId, name, ca, neutralization}` — mesma forma de `EpiRiskLinkItem`);
       `ConsolidatedAssessment` (`criterion, probability, severity, riskLevel, uncertaintyDegree,
 toleranceLimit, result, assessedAt`); `ConsolidatedMeasure` ganha `justification`, `monitoring`,
@@ -275,7 +279,7 @@ toleranceLimit, result, assessedAt`); `ConsolidatedMeasure` ganha `justification
       inventado)**, `assessment` e `epis`.
       ⚠️ `concentrationIntensity` é **`numeric`** no banco → tipar **`string | null`**, não `number`.
       `sortConsolidatedRisks` continua válida (`riskLevel` permanece no tipo).
-- [ ] T046 [US3] Ampliar `src/shared/db/repositories/pgr-consolidated.ts` (contrato §2):
+- [x] T046 [US3] Ampliar `src/shared/db/repositories/pgr-consolidated.ts` (contrato §2):
       queries 3/4/5 **só ganham colunas** (riscos: campos eSocial + hazard/sources/propagation/
       possibleInjuries; avaliação `DISTINCT ON`: criterion/probability/severity/uncertainty_degree/
       tolerance_limit/assessed_at; medidas: os 4 campos 5W2H faltantes + justification/monitoring).
@@ -285,10 +289,10 @@ toleranceLimit, result, assessedAt`); `ConsolidatedMeasure` ganha `justification
       `import { epiRisk, epiCatalog } from "../schema/epis";`.
       **Critério**: **6 queries fixas**, independentes da quantidade de GES/riscos (**sem N+1**);
       assinatura de `getPgrConsolidated` **inalterada**; **nada é persistido**. **Depende de**: T045.
-- [ ] T047 [US3] Ampliar `src/app/(protected)/pgr/[id]/_components/pgr-consolidated-tab.tsx` para exibir
+- [x] T047 [US3] Ampliar `src/app/(protected)/pgr/[id]/_components/pgr-consolidated-tab.tsx` para exibir
       os EPIs por risco e o **5W2H completo** (hoje só mostra responsável e prazo).
       **Critério**: os 6 campos do plano de ação e a lista de EPIs aparecem. **Depende de**: T045.
-- [ ] T048 [P] [US3] Ampliar `src/__tests__/unit/domains/pgr/pgr-consolidated.test.ts`: ordenação
+- [x] T048 [P] [US3] Ampliar `src/__tests__/unit/domains/pgr/pgr-consolidated.test.ts`: ordenação
       (avaliados por `riskLevel` desc; **sem avaliação por último**); mapeamento de EPIs; mapeamento dos
       6 campos 5W2H. **Depende de**: T045.
 
@@ -426,7 +430,7 @@ antigo","revisionNumber":99}`) · `PGR · Consolidada` (`GET`) · `PGR · Assina
       ⚠️ Se o harness REST-via-Jest devolver **500** (limitação **pré-existente**, documentada em
       `rest-pgr-editor.test.ts:5-6`), **registrar a baseline e validar por cURL real** (T095) — comparar
       com o comportamento em `develop` antes de chamar de regressão. **Depende de**: T037.
-- [ ] T088 [P] [US3] Ampliar `src/__tests__/integration/pgr-editor/pgr-consolidated.test.ts`: consolidada
+- [x] T088 [P] [US3] Ampliar `src/__tests__/integration/pgr-editor/pgr-consolidated.test.ts`: consolidada
       com **EPIs** (o seed já tem `epi_risk` ligando `epiCatalogA` ↔ `riskA`) e com **5W2H completo**;
       **fallbacks**: PGR sem GES → `ges: []`; GES sem riscos → `risks: []`; risco sem avaliação →
       `assessment: null` e vai para o **fim** da ordenação; risco sem medidas → `measures: []`; risco sem
