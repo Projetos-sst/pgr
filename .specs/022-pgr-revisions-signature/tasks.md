@@ -119,21 +119,21 @@ US6 (T075–T081); validações manuais e gates finais (T095–T105). É a maior
 
 ### 2.3 Payload e domínio da assinatura do PGR
 
-- [ ] T008 [P] [US4] Criar `src/__tests__/unit/domains/signatures/pgr-payload.test.ts` (**vermelho**):
+- [x] T008 [P] [US4] Criar `src/__tests__/unit/domains/signatures/pgr-payload.test.ts` (**vermelho**):
       payload mínimo válido; **rejeita** campos proibidos (`orgId`, `pgrId`, ids de GES/risco,
       `employees`, CPF, e-mail, telefone, matrícula, listas de riscos/medidas/EPIs, dados de plano);
       `workUnitName`/`responsibleName`/`issuedAt`/`validUntil`/`revisionNumber` aceitam `null`.
       **Critério**: suíte vermelha (o schema não existe).
-- [ ] T009 [P] [US4] Criar `src/__tests__/unit/domains/pgr/pgr-signature.test.ts` (**vermelho**):
+- [x] T009 [P] [US4] Criar `src/__tests__/unit/domains/pgr/pgr-signature.test.ts` (**vermelho**):
       `buildPgrDocumentTitle` (com e sem `workUnitName`); `pgrSignatureRequestSchema` aceita
       `{}` e `{ttlSeconds: 3600}`, **rejeita** `{ttlSeconds: 0}`, `{ttlSeconds: -1}` e **qualquer campo
       extra** (`.strict()`); derivação de estado (`none` sem linha; `expired` quando `pending` +
       `expiresAt` no passado; senão o próprio status). **Critério**: suíte vermelha.
-- [ ] T010 [US4] Criar `src/shared/domains/signatures/targets/pgr.ts` com `pgrSignaturePayloadSchema`
+- [x] T010 [US4] Criar `src/shared/domains/signatures/targets/pgr.ts` com `pgrSignaturePayloadSchema`
       (`documentTitle`, `companyName`, `workUnitName`, `responsibleName`, `issuedAt`, `validUntil`,
       `revisionNumber` — **sem `pgrId`**, que vive em `target_id`; **sem `orgId`**; datas como
       `z.iso.date()` porque as colunas são `date`). **Critério**: T008 **VERDE**. **Depende de**: T008.
-- [ ] T011 [US4] Criar `src/shared/domains/pgr/pgr-signature.ts` com `PgrSignatureStatus`
+- [x] T011 [US4] Criar `src/shared/domains/pgr/pgr-signature.ts` com `PgrSignatureStatus`
       (= `SignatureStatusView`), `PgrSignatureState` (`"none" | PgrSignatureStatus`), `PgrSignatureView`,
       `pgrSignatureRequestSchema` (`.strict()`, `ttlSeconds: z.number().int().positive().optional()` —
       **sem máximo inventado**: a infra também não tem, só o default de 72 h),
@@ -142,7 +142,7 @@ US6 (T075–T081); validações manuais e gates finais (T095–T105). É a maior
 
 ### 2.4 Repositórios da assinatura
 
-- [ ] T012 [P] [US4] Criar `src/shared/db/repositories/pgr-signature.ts` com
+- [x] T012 [P] [US4] Criar `src/shared/db/repositories/pgr-signature.ts` com
       `getPgrSignatureSource(orgId, pgrId)`: **uma** query `pgr` ⨝ `companies` ⟕ `work_units` filtrando
       `org_id` + `id`, `limit 1`, dentro de `withOrg`. Retorna a fonte mínima
       (companyName · workUnitName · responsible · issuedAt · validUntil) ou `null`.
@@ -151,7 +151,7 @@ US6 (T075–T081); validações manuais e gates finais (T095–T105). É a maior
 - [x] T013 [P] [US2] Adicionar `getLatestRevisionNumber(orgId, pgrId): Promise<number | null>` em
       `src/shared/db/repositories/pgr-revisions.ts` (`max(revision_number)` sob `withOrg`; `null` se não
       houver revisão). **Critério**: alimenta `payload.revisionNumber`.
-- [ ] T014 [US4] Adicionar `getLatestRequestByTarget(orgId, targetType, targetId)` em
+- [x] T014 [US4] Adicionar `getLatestRequestByTarget(orgId, targetType, targetId)` em
       `src/shared/db/repositories/signature-requests.ts`: `withOrg` + LEFT JOIN `signature_captures` +
       `ORDER BY created_at DESC LIMIT 1`; retorna `{id, status, expiresAt, signedAt, signerName}` ou
       `null`. Servida pelo índice **já existente** `idx_signature_requests_target`. **Leitura → sem
@@ -160,29 +160,29 @@ US6 (T075–T081); validações manuais e gates finais (T095–T105). É a maior
 
 ### 2.5 Registro do target type `"pgr"` — **BLOCO ATÔMICO** (ver aviso no topo)
 
-- [ ] T020 [US4] Em `src/shared/domains/signatures/contract.ts`: `SIGNATURE_TARGET_TYPES = ["demo", "pgr"]` + entrada `pgr: { payloadSchema: pgrSignaturePayloadSchema }` no `signatureTargetRegistry`.
+- [x] T020 [US4] Em `src/shared/domains/signatures/contract.ts`: `SIGNATURE_TARGET_TYPES = ["demo", "pgr"]` + entrada `pgr: { payloadSchema: pgrSignaturePayloadSchema }` no `signatureTargetRegistry`.
       **Depende de**: T010. **NÃO commitar sem T021 e T022** (o `Record` exaustivo quebra o typecheck).
-- [ ] T021 [US5] Criar `src/shared/ui/signature/PgrSignatureForm.tsx` (`"use client"`), espelhando
+- [x] T021 [US5] Criar `src/shared/ui/signature/PgrSignatureForm.tsx` (`"use client"`), espelhando
       `DemoSignatureForm`: `safeParse` do payload → exibe **título, empresa, unidade (se houver),
       responsável (se houver), datas (se houver), nº da revisão (se houver)**; input de nome
       (`maxLength=120`); reusa `SignaturePad`; chama `submitPublicSignature(token, {signerName,
 imageDataUrl})`; tela de sucesso. **NUNCA** consulta PGR/consolidada/`employees` ao vivo — só o
       payload. **NÃO** exibe IDs internos. **Depende de**: T010.
-- [ ] T022 [US5] Em `src/shared/ui/signature/form-registry.tsx`: `pgr: PgrSignatureForm`.
+- [x] T022 [US5] Em `src/shared/ui/signature/form-registry.tsx`: `pgr: PgrSignatureForm`.
       **Depende de**: T020 + T021. **Critério do bloco**: `npm run typecheck` **verde** e
       `src/app/(public)/assinar/[token]/page.tsx` **NÃO é tocada** (ela resolve o form pelo registry).
 
 ### 2.6 Núcleo genérico da assinatura (refactor sem mudança de comportamento)
 
-- [ ] T023 [US4] Criar `src/shared/server/signatures/create-request-core.ts` com
+- [x] T023 [US4] Criar `src/shared/server/signatures/create-request-core.ts` com
       `createSignatureRequestCore(ctx, {targetType, targetId?, payload, ttlSeconds?})`, movendo de
       `actions/signatures.ts:36-69`: validação pelo registry → **gate de cota** (`countRequestsInCurrentMonth` + `isSignatureAvailable` → `QuotaExceededError`) → `generateToken` → `repo.createRequest(hashToken)`
       → `buildPublicSignatureUrl` → `QRCode.toDataURL`. **A regra de cota passa a existir UMA vez.**
-- [ ] T024 [US4] Refatorar `src/shared/server/actions/signatures.ts`: `createSignatureRequest` passa a
+- [x] T024 [US4] Refatorar `src/shared/server/actions/signatures.ts`: `createSignatureRequest` passa a
       **delegar** ao core (mantém `officeAction("signatures.create", …, {audit:true})` e
       `revalidatePath("/signatures")`). `getSignatureStatus` e `signManually` **inalterados**.
       **Depende de**: T023.
-- [ ] T025 [US4] **Gate de regressão do refactor**: rodar as **9 suítes** de
+- [x] T025 [US4] **Gate de regressão do refactor**: rodar as **9 suítes** de
       `src/__tests__/integration/signatures/*.test.ts` e as **3 unit**
       (`signatures-{token,schemas,quota}.test.ts`) **SEM EDITAR NENHUMA**.
       **Critério**: todas verdes. Se alguma exigir mudança de **expectativa** (não apenas estrutural), o
@@ -190,7 +190,7 @@ imageDataUrl})`; tela de sucesso. **NUNCA** consulta PGR/consolidada/`employees`
 
 ### 2.7 Núcleo do domínio PGR (adaptador)
 
-- [ ] T026 [US4] Criar `src/shared/server/pgr/pgr-signature-core.ts` (espelha
+- [x] T026 [US4] Criar `src/shared/server/pgr/pgr-signature-core.ts` (espelha
       `server/pgr/ai-risk-suggestion-core.ts`) com `createPgrSignature(ctx, pgrId, {ttlSeconds?})`:
       (1) `getPgrSignatureSource` → `null` ⇒ `NotFoundError` **antes de qualquer escrita ou consumo de
       cota**; (2) `getLatestRevisionNumber`; (3) `buildPgrDocumentTitle` **no servidor**; (4) monta o
@@ -198,7 +198,7 @@ imageDataUrl})`; tela de sucesso. **NUNCA** consulta PGR/consolidada/`employees`
       `targetType:"pgr"`, `targetId: pgrId`; (6) retorna `{signature, publicUrl, qrCodeDataUrl}`.
       **NUNCA** aceita payload do cliente. **NUNCA** loga o token.
       **Depende de**: T010, T011, T012, T013, T023.
-- [ ] T027 [US4] No mesmo arquivo, `getPgrSignatureView(ctx, pgrId)`: guard (`getPgrById` →
+- [x] T027 [US4] No mesmo arquivo, `getPgrSignatureView(ctx, pgrId)`: guard (`getPgrById` →
       `NotFoundError`) → `getLatestRequestByTarget(ctx.tenantId, "pgr", pgrId)` → **estado derivado**
       (reusa `isExpired`): sem linha → `none`; `pending` expirado → `expired`; senão o `status`.
       **NUNCA** reconstrói token/URL. **NUNCA** escreve no `pgr`.
@@ -303,7 +303,7 @@ toleranceLimit, result, assessedAt`); `ConsolidatedMeasure` ganha `justification
 **Meta**: gerar link e acompanhar o estado **derivado**. **Teste independente**: criar a solicitação e ver
 o estado mudar de `none` → `pending`.
 
-- [ ] T055 [US4] Criar `src/shared/server/actions/pgr/pgr-signature.ts` (casca fina —
+- [x] T055 [US4] Criar `src/shared/server/actions/pgr/pgr-signature.ts` (casca fina —
       [server-actions.md](./contracts/server-actions.md) §4):
       `createPgrSignatureRequestAction({pgrId, ttlSeconds?})` → `officeAction("pgr.signature.create", …,
 {audit:true})` → `pgrSignatureRequestSchema.parse` → **delega** a `createPgrSignature` →
@@ -312,14 +312,14 @@ o estado mudar de `none` → `pending`.
 delega a`getPgrSignatureView`.
       **A Action não monta payload, não toca Drizzle, não re-implementa cota.** Token **fora** do audit.
       **Depende de**: T026, T027.
-- [ ] T056 [US4] Criar `src/app/api/v1/pgr/[id]/signature/route.ts` (`runtime="nodejs"`,
+- [x] T056 [US4] Criar `src/app/api/v1/pgr/[id]/signature/route.ts` (`runtime="nodejs"`,
       `dynamic="force-dynamic"`): `POST` → `restHandler` → `pgrSignatureRequestSchema.parse(body)` →
       `createPgrSignature(ctx, pgrId, opts)` → **201** `{signature, publicUrl, qrCodeDataUrl}`;
       `GET` → `restHandler` → `getPgrSignatureView(ctx, pgrId)` → **200** `PgrSignatureView`
       (**nunca** token nem URL). `pgrId` vem **do path**. Body: só `ttlSeconds?` — `payload`/`pgrId`/
       `targetType`/`targetId`/`orgId` → **422** pelo `.strict()`.
       **Chama o MESMO core da Action.** **Depende de**: T026, T027.
-- [ ] T057 [US4] Criar `src/app/(protected)/pgr/[id]/_components/pgr-signature-panel.tsx` (`"use client"`,
+- [x] T057 [US4] Criar `src/app/(protected)/pgr/[id]/_components/pgr-signature-panel.tsx` (`"use client"`,
       espelhando `signatures/_components/signature-panel.tsx`): exibe o **estado atual**
       (`none|pending|signed|expired|cancelled`); botão **Solicitar assinatura**; ao criar, mostra o
       **link + QR** (`QrCode`) e o botão **Copiar**, com o aviso **literal**:
@@ -327,7 +327,7 @@ delega a`getPgrSignatureView`.
       Após **reload**, mostra **apenas o estado** — **nunca** o link (o token cru não é persistido, D12).
       **Não** persistir o token no browser. Sinalizar que **gerar outro link consome outra unidade da
       cota**. Polling de status ~3 s enquanto `pending`. **Depende de**: T055.
-- [ ] T058 [US4] Adicionar suporte **opcional** `signature?: PgrSignatureView` a
+- [x] T058 [US4] Adicionar suporte **opcional** `signature?: PgrSignatureView` a
       `src/app/(protected)/pgr/[id]/_components/pgr-editor-tabs.tsx` e repassá-lo a
       `pgr-basic-info-tab.tsx`, que renderiza `<PgrSignaturePanel pgrId signature />` **somente quando a
       prop é fornecida**. A prop **MUST** ser opcional — assim `PgrEditorTabs` continua compilável sem
@@ -335,7 +335,7 @@ delega a`getPgrSignatureView`.
       typecheck vermelho** entre as duas. **Não** usar `signature: PgrSignatureView` obrigatória; **não**
       depender de commit atômico T058↔T059. **Depende de**: T057.
       **Critério**: `npm run typecheck` verde com e sem a prop.
-- [ ] T059 [US4] Acrescentar `getPgrSignatureViewAction({pgrId: id})` ao `Promise.all` de
+- [x] T059 [US4] Acrescentar `getPgrSignatureViewAction({pgrId: id})` ao `Promise.all` de
       `src/app/(protected)/pgr/[id]/page.tsx` e passar o resultado a `PgrEditorTabs`.
       **Critério**: ao recarregar, o painel reflete o estado do banco. **Depende de**: T030, T055, T058.
 
@@ -345,16 +345,16 @@ delega a`getPgrSignatureView`.
 
 **Meta**: assinar sem conta. **Teste independente**: abrir o link em janela anônima e assinar.
 
-- [ ] T065 [US5] Em `src/proxy.ts`: acrescentar **`"/assinar/(.*)"`** a `isPublicRoute` e **`"/assinar/"`**
+- [x] T065 [US5] Em `src/proxy.ts`: acrescentar **`"/assinar/(.*)"`** a `isPublicRoute` e **`"/assinar/"`**
       a `NO_STORE_PATH_PREFIXES`. **Não** abrir `/api/**`; **não** mexer em `/sign/(.*)` (do EPI); **não**
       afrouxar nenhum outro matcher.
       **Por quê**: hoje `buildPublicSignatureUrl` emite `/assinar/{token}` mas o proxy só libera `/sign/` —
       **a rota pública cai no `auth.protect()`** e a US5 é inalcançável. Os 9 testes da 010 chamam as
       actions direto e por isso nunca pegaram isso.
-- [ ] T066 [US5] Estender `src/__tests__/integration/auth/proxy-protection.test.ts`: `/assinar/<token>` é
+- [x] T066 [US5] Estender `src/__tests__/integration/auth/proxy-protection.test.ts`: `/assinar/<token>` é
       **pública** (não redireciona); `/pgr` **continua protegida**; `/api/v1/**` **continua protegido**
       (sem o bypass dev); `no-store` aplicado a `/assinar/`. **Depende de**: T065.
-- [ ] T067 [US5] Confirmar que **`src/app/(public)/assinar/[token]/page.tsx` NÃO precisa ser tocada** —
+- [x] T067 [US5] Confirmar que **`src/app/(public)/assinar/[token]/page.tsx` NÃO precisa ser tocada** —
       ela resolve o formulário pelo `signatureFormRegistry` (`page.tsx:43-52`). Idem
       `actions/public-signatures.ts`, `SignaturePad.tsx`, `QrCode.tsx`.
       **Critério**: `git diff --name-status` **não** lista esses 4 arquivos. Só criar task de edição se
@@ -435,7 +435,7 @@ antigo","revisionNumber":99}`) · `PGR · Consolidada` (`GET`) · `PGR · Assina
       **fallbacks**: PGR sem GES → `ges: []`; GES sem riscos → `risks: []`; risco sem avaliação →
       `assessment: null` e vai para o **fim** da ordenação; risco sem medidas → `measures: []`; risco sem
       EPI → `epis: []`. **Depende de**: T046.
-- [ ] T089 [US4] Criar `src/__tests__/integration/pgr-editor/pgr-signature.test.ts` (mocks do harness:
+- [x] T089 [US4] Criar `src/__tests__/integration/pgr-editor/pgr-signature.test.ts` (mocks do harness:
       `@/shared/db/env`, `next/cache`, `@/shared/auth/require-office-staff`; seed via `seedPgrBase` +
       `seedRequest` — **não** chamar `seedSignatureOrgs`, que faz `truncate`):
       criar solicitação → `target_type='pgr'`, `target_id=pgrA`; **payload sem PII** (assert por SQL admin:
@@ -444,20 +444,20 @@ antigo","revisionNumber":99}`) · `PGR · Consolidada` (`GET`) · `PGR · Assina
       `getPgrSignatureView` → `none` → `pending` → `signed`; cross-tenant (`pgrB` com tenant A) →
       `NOT_FOUND` **sem escrita**; papel `client` → `FORBIDDEN`; **o `pgr` permanece com 11 colunas
       intactas**. **Depende de**: T026, T027, T055.
-- [ ] T090 [US4] Criar `src/__tests__/integration/pgr-editor/pgr-signature-quota.test.ts`:
+- [x] T090 [US4] Criar `src/__tests__/integration/pgr-editor/pgr-signature-quota.test.ts`:
       `org_a` é **`free`** (limite 10/mês) e `org_b` é **`pro`** (ilimitado) — já vêm do seed.
       (a) **contador compartilhado**: criar N solicitações de **`demo`** e depois uma de **`pgr`** →
       a de PGR **é bloqueada** quando o total do mês estoura o limite (prova que
       `countRequestsInCurrentMonth` **não filtra `target_type`**);
       (b) `free` acima da cota → **`QUOTA_EXCEEDED`**; (c) `pro` → **nunca bloqueado**.
       **Nenhuma cota nova, nenhum bypass, nada em billing/plans.** **Depende de**: T023, T026.
-- [ ] T091 [P] [US5] Criar `src/__tests__/integration/pgr-editor/pgr-public-signature.test.ts`:
+- [x] T091 [P] [US5] Criar `src/__tests__/integration/pgr-editor/pgr-public-signature.test.ts`:
       `resolvePublicSignature` de um token de `target_type='pgr'` → `signable` com o payload mínimo;
       token **inválido** ≡ **inexistente** → ambos `invalid` (**anti-enumeração**); **expirado** → `expired`
       **sem escrita**; **usado** → `used` **sem escrita**; **replay** (2º `submitPublicSignature` com o
       mesmo token) → `ALREADY_USED`, **no máximo 1 captura**; **cross-tenant** — token de `org_a` nunca lê
       nem escreve em `org_b`. **Depende de**: T020, T021, T022.
-- [ ] T092 [P] Criar/ampliar testes unitários de **cota** e **estado derivado** já cobertos pelos arquivos
+- [x] T092 [P] Criar/ampliar testes unitários de **cota** e **estado derivado** já cobertos pelos arquivos
       de T008/T009 — confirmar que `isSignatureAvailable` (free/pro) e a derivação `none|pending|signed|
 expired|cancelled` têm cobertura. **Depende de**: T011.
 
