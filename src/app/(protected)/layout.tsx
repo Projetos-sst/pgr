@@ -5,6 +5,8 @@ import { headers } from "next/headers";
 import { NoTenantContextError, UnauthorizedError } from "@/shared/auth/errors";
 import { requireTenantContext } from "@/shared/auth/require-tenant-context";
 
+import { NotificationsBell } from "./_ui/notifications-bell";
+
 const PGR_NAV = [
   { href: "/dashboard", label: "Painel" },
   { href: "/agenda", label: "Agenda" },
@@ -59,6 +61,7 @@ export default async function ProtectedLayout({
             {item.label}
           </Link>
         ))}
+        <NotificationsBell />
       </nav>
       <main className="flex flex-1 flex-col">{children}</main>
     </div>
