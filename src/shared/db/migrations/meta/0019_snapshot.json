@@ -1,6 +1,6 @@
 {
-  "id": "b0715358-33e9-4ee4-a591-7055e681d42a",
-  "prevId": "cbbb63c8-de18-481e-b230-8b138fcc8a1f",
+  "id": "4b0f05b1-cbed-4be2-aca9-1f757990f1e5",
+  "prevId": "20b5381a-7609-4540-b69a-79eeeb642651",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -3777,6 +3777,24 @@
           "primaryKey": false,
           "notNull": false
         },
+        "stripe_customer_id": {
+          "name": "stripe_customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_subscription_id": {
+          "name": "stripe_subscription_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trial_ends_at": {
+          "name": "trial_ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -3813,6 +3831,21 @@
           "columns": [
             {
               "expression": "clerk_org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "orgs_stripe_customer_id_unique": {
+          "name": "orgs_stripe_customer_id_unique",
+          "columns": [
+            {
+              "expression": "stripe_customer_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5533,6 +5566,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "is_master": {
+          "name": "is_master",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -5725,222 +5765,6 @@
         "vehicles_initial_km_check": {
           "name": "vehicles_initial_km_check",
           "value": "\"vehicles\".\"initial_km\" >= 0"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.work_permits": {
-      "name": "work_permits",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "org_id": {
-          "name": "org_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "number": {
-          "name": "number",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "type": {
-          "name": "type",
-          "type": "work_permit_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "work_permit_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'draft'"
-        },
-        "company_id": {
-          "name": "company_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "area": {
-          "name": "area",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "valid_from": {
-          "name": "valid_from",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "valid_until": {
-          "name": "valid_until",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "requested_by": {
-          "name": "requested_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "approved_by": {
-          "name": "approved_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "precautions": {
-          "name": "precautions",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_work_permits_org_id": {
-          "name": "idx_work_permits_org_id",
-          "columns": [
-            {
-              "expression": "org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_work_permits_org_status": {
-          "name": "idx_work_permits_org_status",
-          "columns": [
-            {
-              "expression": "org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "uq_work_permits_org_number": {
-          "name": "uq_work_permits_org_number",
-          "columns": [
-            {
-              "expression": "org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "number",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "work_permits_org_id_orgs_id_fk": {
-          "name": "work_permits_org_id_orgs_id_fk",
-          "tableFrom": "work_permits",
-          "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "work_permits_company_id_companies_id_fk": {
-          "name": "work_permits_company_id_companies_id_fk",
-          "tableFrom": "work_permits",
-          "tableTo": "companies",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {
-        "work_permits_isolation": {
-          "name": "work_permits_isolation",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "org_id = current_setting('app.current_org', true)",
-          "withCheck": "org_id = current_setting('app.current_org', true)"
-        }
-      },
-      "checkConstraints": {
-        "work_permits_valid_range_check": {
-          "name": "work_permits_valid_range_check",
-          "value": "\"work_permits\".\"valid_until\" >= \"work_permits\".\"valid_from\""
         }
       },
       "isRLSEnabled": true
@@ -6360,30 +6184,6 @@
         "van",
         "utility",
         "pickup",
-        "other"
-      ]
-    },
-    "public.work_permit_status": {
-      "name": "work_permit_status",
-      "schema": "public",
-      "values": [
-        "draft",
-        "active",
-        "suspended",
-        "closed",
-        "cancelled"
-      ]
-    },
-    "public.work_permit_type": {
-      "name": "work_permit_type",
-      "schema": "public",
-      "values": [
-        "hot_work",
-        "confined_space",
-        "height",
-        "electrical",
-        "excavation",
-        "cold_work",
         "other"
       ]
     }
