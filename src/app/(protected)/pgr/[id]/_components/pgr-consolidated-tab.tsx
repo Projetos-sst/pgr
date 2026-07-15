@@ -3,8 +3,12 @@ import {
   measureStateLabel,
   riskAgentTypeLabel,
   riskClassificationLabel,
+  exposureTimeLabel,
+  measurementUnitLabel,
+  epiNeutralizationLabel,
   type ConsolidatedGes,
   type ConsolidatedRisk,
+  type ConsolidatedMeasure,
   type MeasureState,
   type PgrConsolidated,
 } from "@/shared/domains/pgr/pgr-consolidated";
@@ -14,6 +18,71 @@ const STATE_CLASS: Record<MeasureState, string> = {
   planned: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
   overdue: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400",
 };
+
+/** Detalhe do risco: mostra só os campos preenchidos (fonte reutilizável pela Fase 05). */
+function RiskDetail({ risk }: { risk: ConsolidatedRisk }) {
+  const items: [string, string | null][] = [
+    ["Perigo", risk.hazard],
+    ["Fontes geradoras", risk.sources],
+    ["Propagação", risk.propagation],
+    [
+      "Tempo de exposição",
+      risk.exposureTime ? exposureTimeLabel(risk.exposureTime) : null,
+    ],
+    ["Possíveis lesões", risk.possibleInjuries],
+    ["Cód. agente nocivo (eSocial)", risk.noxiousAgentCode],
+    [
+      "Unidade de medida",
+      risk.measurementUnit ? measurementUnitLabel(risk.measurementUnit) : null,
+    ],
+    ["Concentração/intensidade", risk.concentrationIntensity],
+  ];
+  const shown = items.filter(([, v]) => v && v !== "");
+  if (shown.length === 0) return null;
+  return (
+    <dl className="mt-2 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
+      {shown.map(([label, value]) => (
+        <div key={label} className="flex flex-col">
+          <dt className="text-zinc-500">{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** Medida com o plano 5W2H completo. */
+function MeasureItem({ measure: m }: { measure: ConsolidatedMeasure }) {
+  const plan: [string, string | null][] = [
+    ["O quê", m.actionWhat],
+    ["Como", m.actionHow],
+    ["Acompanhamento", m.actionTracking],
+    ["Medição", m.actionMeasurement],
+    ["Responsável", m.actionResponsible],
+    ["Prazo", m.actionDeadline],
+  ];
+  const plan5w2h = plan.filter(([, v]) => v && v !== "");
+  return (
+    <li className="rounded border border-black/5 p-2 dark:border-white/5">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="font-medium">{controlLevelLabel(m.controlLevel)}</span>
+        <span className={`rounded-full px-2 py-0.5 font-medium ${STATE_CLASS[m.state]}`}>
+          {measureStateLabel(m.state)}
+        </span>
+      </div>
+      {plan5w2h.length > 0 ? (
+        <dl className="mt-1 grid gap-x-4 gap-y-0.5 text-xs sm:grid-cols-2">
+          {plan5w2h.map(([label, value]) => (
+            <div key={label} className="flex gap-1">
+              <dt className="text-zinc-500">{label}:</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+    </li>
+  );
+}
 
 function RiskRow({ risk }: { risk: ConsolidatedRisk }) {
   return (
@@ -33,24 +102,36 @@ function RiskRow({ risk }: { risk: ConsolidatedRisk }) {
           )}
         </span>
       </div>
+
+      <RiskDetail risk={risk} />
+
+      <p className="mt-3 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+        Medidas de controle
+      </p>
       {risk.measures.length === 0 ? (
-        <p className="mt-2 text-xs text-zinc-500">Sem medidas de controle</p>
+        <p className="mt-1 text-xs text-zinc-500">Sem medidas de controle</p>
       ) : (
-        <ul className="mt-2 flex flex-col gap-1">
+        <ul className="mt-1 flex flex-col gap-1">
           {risk.measures.map((m) => (
-            <li key={m.id} className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-medium">{controlLevelLabel(m.controlLevel)}</span>
-              <span
-                className={`rounded-full px-2 py-0.5 font-medium ${STATE_CLASS[m.state]}`}
-              >
-                {measureStateLabel(m.state)}
+            <MeasureItem key={m.id} measure={m} />
+          ))}
+        </ul>
+      )}
+
+      <p className="mt-3 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+        EPIs indicados
+      </p>
+      {risk.epis.length === 0 ? (
+        <p className="mt-1 text-xs text-zinc-500">Sem EPIs indicados</p>
+      ) : (
+        <ul className="mt-1 flex flex-col gap-1">
+          {risk.epis.map((e) => (
+            <li key={e.id} className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-medium">{e.name}</span>
+              {e.ca ? <span className="text-zinc-500">· CA {e.ca}</span> : null}
+              <span className="text-zinc-500">
+                · {epiNeutralizationLabel(e.neutralization)}
               </span>
-              {m.actionResponsible ? (
-                <span className="text-zinc-500">· {m.actionResponsible}</span>
-              ) : null}
-              {m.actionDeadline ? (
-                <span className="text-zinc-500">· prazo {m.actionDeadline}</span>
-              ) : null}
             </li>
           ))}
         </ul>

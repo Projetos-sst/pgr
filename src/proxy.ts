@@ -15,12 +15,22 @@ const isPublicRoute = createRouteMatcher([
   // Assinatura publica de entrega de EPI: a credencial e o proprio token HMAC
   // (verificado na rota), nao a sessao Clerk.
   "/sign/(.*)",
+  // Assinatura publica generica (fatia 010 + PGR na 022): a credencial e o token
+  // (resolvido pela policy de capability), nao a sessao Clerk.
+  "/assinar/(.*)",
   "/api/webhooks/(.*)",
   ...(devApiBypass ? ["/api/v1/(.*)"] : []),
 ]);
 
-// "/sign/" cobre a rota publica de assinatura (nunca cachear o estado da entrega).
-const NO_STORE_PATH_PREFIXES = ["/api/", "/sign-in", "/sign-up", "/sign/", "/dashboard"];
+// "/sign/" e "/assinar/" cobrem as rotas publicas de assinatura (nunca cachear o estado).
+const NO_STORE_PATH_PREFIXES = [
+  "/api/",
+  "/sign-in",
+  "/sign-up",
+  "/sign/",
+  "/assinar/",
+  "/dashboard",
+];
 
 export default clerkMiddleware(async (auth, request) => {
   const response = NextResponse.next();

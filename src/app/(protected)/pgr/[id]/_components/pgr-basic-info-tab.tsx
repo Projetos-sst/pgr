@@ -1,6 +1,9 @@
 import Link from "next/link";
 
 import { pgrRegistrationTypeLabel, type Pgr } from "@/shared/domains/pgr/pgr";
+import type { PgrSignatureView } from "@/shared/domains/pgr/pgr-signature";
+
+import { PgrSignaturePanel } from "./pgr-signature-panel";
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
@@ -22,11 +25,13 @@ export function PgrBasicInfoTab({
   pgr,
   companyName,
   workUnitName,
+  signature,
 }: {
   pgrId: string;
   pgr: Pgr;
   companyName: string;
   workUnitName: string | null;
+  signature?: PgrSignatureView;
 }) {
   return (
     <section className="flex flex-col gap-4">
@@ -50,6 +55,8 @@ export function PgrBasicInfoTab({
         <Field label="Data de emissão" value={brDate(pgr.issuedAt)} />
         <Field label="Data de validade" value={brDate(pgr.validUntil)} />
       </div>
+
+      <PgrSignaturePanel pgrId={pgrId} signature={signature} />
     </section>
   );
 }

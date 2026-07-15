@@ -5,6 +5,8 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   deriveMeasureState,
   sortConsolidatedRisks,
+  type ConsolidatedAssessment,
+  type ConsolidatedEpi,
   type ConsolidatedGes,
   type ConsolidatedMeasure,
   type ConsolidatedRisk,
@@ -12,7 +14,11 @@ import {
   type PgrConsolidated,
   type RiskAgentType,
   type RiskClassification,
+  type AssessmentCriterion,
+  type ExposureTime,
+  type MeasurementUnit,
 } from "@/shared/domains/pgr/pgr-consolidated";
+import type { EpiNeutralization } from "@/shared/domains/pgr/epi-risk";
 import type { PgrRegistrationType } from "@/shared/domains/pgr/pgr";
 
 import { withOrg } from "../with-org";
@@ -21,6 +27,7 @@ import { companies } from "../schema/companies";
 import { workUnits } from "../schema/work-units";
 import { ges } from "../schema/ges";
 import { risks, controlMeasures } from "../schema/risks";
+import { epiRisk, epiCatalog } from "../schema/epis";
 
 /** Data local do negócio (America/Sao_Paulo) em AAAA-MM-DD, para o estado derivado. */
 function todaySaoPaulo(): string {
@@ -29,16 +36,24 @@ function todaySaoPaulo(): string {
   );
 }
 
+/** Linha crua da avaliação vigente (snake_case — vem de `tx.execute`). */
 type CurrentAssessmentRow = {
   risk_id: string;
+  criterion: string;
+  probability: number;
+  severity: number;
   risk_level: number;
+  uncertainty_degree: number;
+  tolerance_limit: string | null;
   result: string | null;
+  assessed_at: string;
 };
 
 /**
- * Visão consolidada read-only do PGR. Composição em **≈5 queries em lote** (sem N+1):
- * PGR+empresa+obra → GES vinculados → riscos (`inArray`) → avaliação vigente por risco
- * (`DISTINCT ON`, params bind-seguros) → medidas (`inArray`); agrupa/ordena em memória.
+ * Visão consolidada read-only do PGR. Composição em **6 queries em lote** (sem N+1):
+ * PGR+empresa+obra → GES vinculados → riscos (`inArray`, detalhe + eSocial S-2240) → avaliação
+ * vigente por risco (`DISTINCT ON`, params bind-seguros) → medidas (`inArray`, 5W2H completo) →
+ * **EPIs por risco** (`epi_risk` ⨝ `epi_catalog`, `inArray`); agrupa/ordena em memória.
  * `null` se o PGR não existe no tenant (→ 404 na Action). Não persiste nada; não gera PDF.
  */
 export async function getPgrConsolidated(
@@ -92,23 +107,33 @@ export async function getPgrConsolidated(
     if (gesRows.length === 0) return { pgr: pgrHead, ges: [] };
     const gesIds = gesRows.map((g) => g.id);
 
-    // 3) Riscos dos GES (um inArray)
+    // 3) Riscos dos GES (um inArray) — detalhe + campos eSocial S-2240.
     const riskRows = await tx
       .select({
         id: risks.id,
         gesId: risks.gesId,
         agentType: risks.agentType,
         description: risks.description,
+        hazard: risks.hazard,
+        sources: risks.sources,
+        propagation: risks.propagation,
+        exposureTime: risks.exposureTime,
+        possibleInjuries: risks.possibleInjuries,
+        noxiousAgentCode: risks.noxiousAgentCode,
+        measurementUnit: risks.measurementUnit,
+        concentrationIntensity: risks.concentrationIntensity,
       })
       .from(risks)
       .where(and(eq(risks.orgId, orgId), inArray(risks.gesId, gesIds)));
     const riskIds = riskRows.map((r) => r.id);
 
-    // 4) Avaliação vigente por risco (DISTINCT ON, uma query, params bind-seguros)
-    const currentByRisk = new Map<string, { riskLevel: number; result: string | null }>();
+    // 4) Avaliação vigente por risco (DISTINCT ON, uma query, params bind-seguros).
+    const assessmentByRisk = new Map<string, ConsolidatedAssessment>();
     if (riskIds.length > 0) {
       const rows = (await tx.execute(sql`
-        select distinct on (risk_id) risk_id, risk_level, result
+        select distinct on (risk_id)
+          risk_id, criterion, probability, severity, risk_level,
+          uncertainty_degree, tolerance_limit, result, assessed_at
         from public.risk_assessments
         where org_id = ${orgId}
           and risk_id in (${sql.join(
@@ -118,14 +143,20 @@ export async function getPgrConsolidated(
         order by risk_id, assessed_at desc, created_at desc
       `)) as unknown as CurrentAssessmentRow[];
       for (const row of rows) {
-        currentByRisk.set(row.risk_id, {
+        assessmentByRisk.set(row.risk_id, {
+          criterion: row.criterion as AssessmentCriterion,
+          probability: row.probability,
+          severity: row.severity,
           riskLevel: row.risk_level,
-          result: row.result,
+          uncertaintyDegree: row.uncertainty_degree,
+          toleranceLimit: row.tolerance_limit,
+          result: row.result as RiskClassification | null,
+          assessedAt: row.assessed_at,
         });
       }
     }
 
-    // 5) Medidas por risco (um inArray)
+    // 5) Medidas por risco (um inArray) — 5W2H completo + estado derivado.
     const measuresByRisk = new Map<string, ConsolidatedMeasure[]>();
     if (riskIds.length > 0) {
       const today = todaySaoPaulo();
@@ -135,6 +166,12 @@ export async function getPgrConsolidated(
           riskId: controlMeasures.riskId,
           controlLevel: controlMeasures.controlLevel,
           applicable: controlMeasures.applicable,
+          justification: controlMeasures.justification,
+          monitoring: controlMeasures.monitoring,
+          actionWhat: controlMeasures.actionWhat,
+          actionHow: controlMeasures.actionHow,
+          actionTracking: controlMeasures.actionTracking,
+          actionMeasurement: controlMeasures.actionMeasurement,
           actionResponsible: controlMeasures.actionResponsible,
           actionDeadline: controlMeasures.actionDeadline,
         })
@@ -148,6 +185,12 @@ export async function getPgrConsolidated(
           id: m.id,
           controlLevel: m.controlLevel as ControlLevel,
           applicable: m.applicable,
+          justification: m.justification,
+          monitoring: m.monitoring,
+          actionWhat: m.actionWhat,
+          actionHow: m.actionHow,
+          actionTracking: m.actionTracking,
+          actionMeasurement: m.actionMeasurement,
           actionResponsible: m.actionResponsible,
           actionDeadline: m.actionDeadline,
           state: deriveMeasureState(
@@ -159,18 +202,57 @@ export async function getPgrConsolidated(
       }
     }
 
+    // 6) EPIs por risco (um inArray) — mesma forma de `listRiskEpis`.
+    const episByRisk = new Map<string, ConsolidatedEpi[]>();
+    if (riskIds.length > 0) {
+      const epiRows = await tx
+        .select({
+          id: epiRisk.id,
+          riskId: epiRisk.riskId,
+          catalogId: epiRisk.catalogId,
+          name: epiCatalog.name,
+          ca: epiCatalog.ca,
+          neutralization: epiRisk.neutralization,
+        })
+        .from(epiRisk)
+        .innerJoin(epiCatalog, eq(epiCatalog.id, epiRisk.catalogId))
+        .where(and(eq(epiRisk.orgId, orgId), inArray(epiRisk.riskId, riskIds)))
+        .orderBy(asc(epiCatalog.name));
+      for (const e of epiRows) {
+        const list = episByRisk.get(e.riskId) ?? [];
+        list.push({
+          id: e.id,
+          catalogId: e.catalogId,
+          name: e.name,
+          ca: e.ca,
+          neutralization: e.neutralization as EpiNeutralization,
+        });
+        episByRisk.set(e.riskId, list);
+      }
+    }
+
     // Composição em memória: riscos por GES, ordenados por nível.
     const risksByGes = new Map<string, ConsolidatedRisk[]>();
     for (const r of riskRows) {
-      const current = currentByRisk.get(r.id) ?? null;
+      const assessment = assessmentByRisk.get(r.id) ?? null;
       const list = risksByGes.get(r.gesId) ?? [];
       list.push({
         id: r.id,
         agentType: r.agentType as RiskAgentType,
         description: r.description,
-        riskLevel: current ? current.riskLevel : null,
-        result: current ? (current.result as RiskClassification | null) : null,
+        hazard: r.hazard,
+        sources: r.sources,
+        propagation: r.propagation,
+        exposureTime: r.exposureTime as ExposureTime | null,
+        possibleInjuries: r.possibleInjuries,
+        noxiousAgentCode: r.noxiousAgentCode,
+        measurementUnit: r.measurementUnit as MeasurementUnit | null,
+        concentrationIntensity: r.concentrationIntensity,
+        riskLevel: assessment ? assessment.riskLevel : null,
+        result: assessment ? assessment.result : null,
+        assessment,
         measures: measuresByRisk.get(r.id) ?? [],
+        epis: episByRisk.get(r.id) ?? [],
       });
       risksByGes.set(r.gesId, list);
     }
