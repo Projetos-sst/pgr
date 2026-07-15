@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, pgPolicy } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, pgPolicy } from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 import { authenticatedRole } from "drizzle-orm/supabase";
 
@@ -14,6 +14,8 @@ export const users = pgTable(
     phone: text("phone"),
     cpf: text("cpf"),
     jobTitle: text("job_title"),
+    // Superadmin global da plataforma (área /admin-global; NÃO é papel de tenant).
+    isMaster: boolean("is_master").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

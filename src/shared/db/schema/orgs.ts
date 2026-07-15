@@ -18,12 +18,17 @@ export const orgs = pgTable(
     imageUrl: text("image_url"),
     plan: text("plan").notNull().default("free"),
     clerkOrgId: text("clerk_org_id"),
+    // Billing (Stripe — emenda 1.5.0). Sincronizado pelo webhook; cartão nunca toca a app.
+    stripeCustomerId: text("stripe_customer_id"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     uniqueIndex("orgs_slug_unique").on(table.slug),
     uniqueIndex("orgs_clerk_org_id_unique").on(table.clerkOrgId),
+    uniqueIndex("orgs_stripe_customer_id_unique").on(table.stripeCustomerId),
     check("orgs_plan_check", sql`${table.plan} in ('free','pro')`),
     pgPolicy("orgs_select_active_org", {
       for: "select",
