@@ -26,6 +26,7 @@ const PGR_NAV = [
   { href: "/planos-inspecao", label: "Planos de inspeção" },
   { href: "/inspecoes-veiculares", label: "Inspeções veiculares" },
   { href: "/inspecoes-equipamentos", label: "Inspeções de equipamentos" },
+  { href: "/inspecoes-seguranca", label: "Inspeções de segurança" },
   { href: "/equipe", label: "Equipe" },
   { href: "/perfil", label: "Perfil" },
 ];

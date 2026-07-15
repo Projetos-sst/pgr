@@ -141,6 +141,10 @@
     {
       "key": "equipmentInspectionId",
       "value": ""
+    },
+    {
+      "key": "safetyInspectionId",
+      "value": ""
     }
   ],
   "item": [
@@ -3632,6 +3636,185 @@
               "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "equipment-inspections", "{{equipmentInspectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes de seguranca",
+      "item": [
+        {
+          "name": "GET /safety-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections?status=&category=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "category",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /safety-inspections (cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"safety\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"planned\": true,\n  \"area\": \"Almoxarifado\",\n  \"companyId\": \"{{companyId}}\",\n  \"responsible\": \"Fiscal\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /safety-inspections/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections", "{{safetyInspectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /safety-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections", "{{safetyInspectionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"safety\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"planned\": false,\n  \"area\": \"Pátio\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /safety-inspections/:id/occurrences (conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}/occurrences",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "safety-inspections",
+                "{{safetyInspectionId}}",
+                "occurrences"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"occurrences\": [\n    {\n      \"description\": \"Piso escorregadio\",\n      \"severity\": \"high\"\n    },\n    {\n      \"description\": \"Sinalização ausente\",\n      \"severity\": \"medium\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /safety-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections", "{{safetyInspectionId}}"]
             }
           }
         }
