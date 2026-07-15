@@ -6,6 +6,7 @@ import type { Pgr } from "@/shared/domains/pgr/pgr";
 import type { PgrGesLinkItem } from "@/shared/domains/pgr/pgr-ges";
 import type { PgrRevisionListItem } from "@/shared/domains/pgr/pgr-revision";
 import type { PgrConsolidated } from "@/shared/domains/pgr/pgr-consolidated";
+import type { PgrSignatureView } from "@/shared/domains/pgr/pgr-signature";
 
 import { PgrBasicInfoTab } from "./pgr-basic-info-tab";
 import { PgrGesTab } from "./pgr-ges-tab";
@@ -33,6 +34,7 @@ export function PgrEditorTabs({
   gesLinks,
   revisions,
   consolidated,
+  signature,
 }: {
   pgrId: string;
   pgr: Pgr;
@@ -42,6 +44,7 @@ export function PgrEditorTabs({
   gesLinks: PgrGesLinkItem[];
   revisions: PgrRevisionListItem[];
   consolidated: PgrConsolidated | null;
+  signature?: PgrSignatureView;
 }) {
   const [active, setActive] = useState<TabKey>("basic");
 
@@ -76,6 +79,7 @@ export function PgrEditorTabs({
           pgr={pgr}
           companyName={companyName}
           workUnitName={workUnitName}
+          signature={signature}
         />
       ) : null}
       {active === "ges" ? (

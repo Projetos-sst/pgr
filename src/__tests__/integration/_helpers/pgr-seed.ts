@@ -29,6 +29,10 @@ export const PGR_IDS = {
   controlMeasureA: "11111111-1111-1111-1111-1111111111d3",
   controlMeasureB: "22222222-2222-2222-2222-2222222222e3",
   pgrA: "11111111-1111-1111-1111-1111111111d4",
+  // 2º PGR no MESMO tenant (org_a): prova que o lock de numeração de revisão é POR PGR,
+  // não global (fatia 022). NÃO entra no seed base (manteria `pgr` com 2 linhas em org_a e
+  // quebraria a contagem de isolamento `seededCountA: 1`); é inserido só onde o teste precisa.
+  pgrA2: "11111111-1111-1111-1111-1111111111d7",
   pgrB: "22222222-2222-2222-2222-2222222222e4",
   pgrGesA: "11111111-1111-1111-1111-1111111111d5",
   pgrGesB: "22222222-2222-2222-2222-2222222222e5",

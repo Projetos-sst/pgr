@@ -117,6 +117,10 @@
     {
       "key": "memberUserId",
       "value": "user_xxx"
+    },
+    {
+      "key": "pgrPublicToken",
+      "value": "<token cru do publicUrl retornado no POST /pgr/:id/signature>"
     }
   ],
   "item": [
@@ -1180,6 +1184,259 @@
               "path": ["api", "v1", "pgr", "{{pgrId}}"]
             }
           }
+        },
+        {
+          "name": "PGR · Revisões",
+          "item": [
+            {
+              "name": "GET /pgr/:id/revisions (histórico)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "revisions"]
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/revisions (válido → 201)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "revisions"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"revisedAt\": \"2026-07-14\",\n  \"notes\": \"Descrição da revisão\"\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/revisions (revisionNumber no body → 422)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "revisions"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"revisedAt\": \"2026-07-14\",\n  \"notes\": \"Cliente antigo\",\n  \"revisionNumber\": 99\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · GES",
+          "item": [
+            {
+              "name": "GET /pgr/:id/ges (GES vinculados)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "ges"]
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/ges (vincula → 201)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "ges"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"gesId\": \"{{gesId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE /pgr/:id/ges/:gesId (desvincula → 204)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges/{{gesId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "ges", "{{gesId}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · Consolidada",
+          "item": [
+            {
+              "name": "GET /pgr/:id/consolidated (read-only; 5W2H + EPIs + S-2240)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/consolidated",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "consolidated"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · Assinatura",
+          "item": [
+            {
+              "name": "POST /pgr/:id/signature (cria → 201; publicUrl+QR)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/signature",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "signature"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ttlSeconds\": 259200\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /pgr/:id/signature (estado; sem token/URL)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/signature",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "signature"]
+                }
+              }
+            },
+            {
+              "name": "GET /assinar/:token (página pública, sem Clerk)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/assinar/{{pgrPublicToken}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["assinar", "{{pgrPublicToken}}"]
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -3120,10 +3377,10 @@
       ]
     },
     {
-      "name": "Onboarding (plataforma)",
+      "name": "Dashboard (plataforma)",
       "item": [
         {
-          "name": "GET /onboarding (progresso derivado)",
+          "name": "GET /dashboard/summary (agregacoes do tenant)",
           "request": {
             "method": "GET",
             "header": [
@@ -3137,9 +3394,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/onboarding",
+              "raw": "{{baseUrl}}/api/v1/dashboard/summary",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "onboarding"]
+              "path": ["api", "v1", "dashboard", "summary"]
             }
           }
         }
