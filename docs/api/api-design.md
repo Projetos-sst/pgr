@@ -120,6 +120,10 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/ges/{id}/risk-suggestions` · `/ges/{id}/risk-suggestions/accept`                                       | POST (sugere riscos por IA — não persiste) · POST (persiste selecionados como rascunho, `201`)                                                    |
 | `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                      |
 | `/pgr` · `/pgr/{id}`                                                                                     | GET, POST · GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                          |
+| `/pgr/{id}/revisions`                                                                                    | GET (histórico, mais recente primeiro), POST (número **server-side**; `revisionNumber` no body → `422`; `201`)                                    |
+| `/pgr/{id}/ges` · `/pgr/{id}/ges/{gesId}`                                                                | GET (GES vinculados ao PGR), POST (vincula GES; `201`) · DELETE (desvincula; `204`)                                                               |
+| `/pgr/{id}/consolidated`                                                                                 | GET (visão consolidada read-only: GES → riscos → avaliação vigente → medidas 5W2H → EPIs; campos eSocial S-2240)                                  |
+| `/pgr/{id}/signature`                                                                                    | POST (cria solicitação; body só `ttlSeconds?`; `201` com `publicUrl`+`qrCodeDataUrl`) · GET (estado derivado; **nunca** token/URL)                |
 | `/risks` · `/risks/{id}`                                                                                 | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                   |
 | `/risks/{id}/epis` · `/risks/{id}/epis/{linkId}`                                                         | GET (`?available=true&search=` p/ EPIs não vinculados), POST · PUT (neutralização), DELETE (vínculo EPI × risco)                                  |
 | `/risks/{id}/assessments` · `/risk-assessments/{id}`                                                     | GET, POST (avaliação 5×5 do risco; 201) · GET, PUT, DELETE (histórico 1:N; `riskLevel`/`result` calculados; sem `/dependents`, sem 409)           |
@@ -219,6 +223,10 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | GES + vínculos             | `actions/pgr/ges.ts`                         | list, get, create, update, delete, dependents + gestão de `ges_job_roles`                                                                                                        |
 | Funcionário                | `actions/pgr/employees.ts`                   | list, get, create, update, delete + picker de função                                                                                                                             |
 | PGR (documento)            | `actions/pgr/pgr.ts`                         | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 não persistido; sem 409)                                                                                 |
+| PGR · Revisões             | `actions/pgr/pgr-revisions.ts`               | list, create (número **server-side**, `.strict()`) + REST `/api/v1/pgr/{id}/revisions` (GET, POST 201; `revisionNumber` no body → 422)                                           |
+| PGR · GES (escopo)         | `actions/pgr/pgr-ges.ts`                     | list, add, remove + REST `/api/v1/pgr/{id}/ges` · `/{gesId}` (GET, POST 201, DELETE 204)                                                                                         |
+| PGR · Consolidada          | `actions/pgr/pgr-consolidated.ts`            | get (read-only; GES→riscos→avaliação→5W2H→EPIs; S-2240) + REST `GET /api/v1/pgr/{id}/consolidated`                                                                               |
+| PGR · Assinatura           | `actions/pgr/pgr-signature.ts`               | createPgrSignatureRequestAction, getPgrSignatureViewAction + REST `/api/v1/pgr/{id}/signature` (POST 201 payload server-side; GET estado, sem token/URL; cota compartilhada 402) |
 | Riscos (GES)               | `actions/pgr/risks.ts`                       | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)                                                                 |
 | Perfil (plataforma)        | `actions/platform/profile.ts`                | getProfile, updateProfile (self) + REST `/api/v1/profile` (campos app-managed; nome/e-mail/foto delegados ao Clerk)                                                              |
 | Equipe (plataforma)        | `actions/platform/team.ts`                   | listTeamMembers, inviteMember, changeMemberRole, removeMember + REST `/api/v1/team/**` (multiusuário **PRO** via Clerk Org; owner-only; protege o último owner)                  |
@@ -260,20 +268,21 @@ type ActionResult<T> = { ok: true; data: T } | { ok: false; error: ActionError }
 Mapeados por `toActionError` (`src/shared/server/action-error.ts`). Erro inesperado é
 **relançado** (nunca silenciado), caindo no error boundary do Next.
 
-| code                 | Origem                                   | HTTP equiv. | Quando                                                                   |
-| -------------------- | ---------------------------------------- | ----------- | ------------------------------------------------------------------------ |
-| `VALIDATION`         | `ZodError` (com `fields`); CHECK `23514` | 422         | Entrada inválida                                                         |
-| `DUPLICATE`          | UNIQUE `23505`                           | 409         | CNPJ/CPF/título/vínculo duplicado no escritório                          |
-| `FK_NOT_FOUND`       | FK `23503`; referência fora do tenant    | 422         | Empresa/obra/GES/função inexistente no escritório                        |
-| `FORBIDDEN`          | papel `client`                           | 403         | Membro não-equipe tentou operar                                          |
-| `NOT_FOUND`          | `getById` → `null`                       | 404         | Registro inexistente no escritório (inclui cross-tenant)                 |
-| `NO_TENANT_CONTEXT`  | sem escritório ativo                     | 403         | Sessão sem tenant resolvido                                              |
-| `INSUFFICIENT_STOCK` | `InsufficientStockError` (repositório)   | 422         | Saída/entrega maior que o saldo disponível (rollback total)              |
-| `ALREADY_SIGNED`     | `AlreadySignedError` (repositório)       | 409         | Assinar entrega que já saiu de `pending` (one-shot)                      |
-| `ALREADY_RETURNED`   | `AlreadyReturnedError` (repositório)     | 409         | Devolver item de entrega já devolvido (saldo intacto)                    |
-| `TOKEN_INVALID`      | `TokenInvalidError` (rota pública)       | 404         | Token de assinatura ausente/adulterado/inexistente                       |
-| `TOKEN_EXPIRED`      | `TokenExpiredError` (rota pública)       | 410         | Token com HMAC válido porém além do TTL de 72h                           |
-| `IN_USE`             | `EntityInUseError` (repositório)         | 409         | Excluir item de catálogo com dependentes (pré-check + RESTRICT backstop) |
+| code                 | Origem                                   | HTTP equiv. | Quando                                                                                                 |
+| -------------------- | ---------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------ |
+| `VALIDATION`         | `ZodError` (com `fields`); CHECK `23514` | 422         | Entrada inválida                                                                                       |
+| `DUPLICATE`          | UNIQUE `23505`                           | 409         | CNPJ/CPF/título/vínculo duplicado no escritório                                                        |
+| `FK_NOT_FOUND`       | FK `23503`; referência fora do tenant    | 422         | Empresa/obra/GES/função inexistente no escritório                                                      |
+| `FORBIDDEN`          | papel `client`                           | 403         | Membro não-equipe tentou operar                                                                        |
+| `NOT_FOUND`          | `getById` → `null`                       | 404         | Registro inexistente no escritório (inclui cross-tenant)                                               |
+| `NO_TENANT_CONTEXT`  | sem escritório ativo                     | 403         | Sessão sem tenant resolvido                                                                            |
+| `INSUFFICIENT_STOCK` | `InsufficientStockError` (repositório)   | 422         | Saída/entrega maior que o saldo disponível (rollback total)                                            |
+| `ALREADY_SIGNED`     | `AlreadySignedError` (repositório)       | 409         | Assinar entrega que já saiu de `pending` (one-shot)                                                    |
+| `ALREADY_RETURNED`   | `AlreadyReturnedError` (repositório)     | 409         | Devolver item de entrega já devolvido (saldo intacto)                                                  |
+| `TOKEN_INVALID`      | `TokenInvalidError` (rota pública)       | 404         | Token de assinatura ausente/adulterado/inexistente                                                     |
+| `TOKEN_EXPIRED`      | `TokenExpiredError` (rota pública)       | 410         | Token com HMAC válido porém além do TTL de 72h                                                         |
+| `IN_USE`             | `EntityInUseError` (repositório)         | 409         | Excluir item de catálogo com dependentes (pré-check + RESTRICT backstop)                               |
+| `QUOTA_EXCEEDED`     | `QuotaExceededError` (cota do plano)     | 402         | Cota mensal do plano `free` esgotada (sugestão IA; assinatura — contador compartilhado por tenant/mês) |
 
 ## Pré-condições comuns (toda action de CRUD)
 
@@ -433,6 +442,59 @@ workUnitId, workUnitName, responsible, registrationType, registrationNumber, iss
 **Erros REST**: 422 (validação/aceite ausente/FK), 404 (cross-tenant/inexistente), 403 (`client`);
 **nunca 409**. "Usuário autor" fora de escopo (modelo sem `created_by`).
 
+### Editor do PGR — revisões, GES, consolidada e assinatura (fatias 019 + 022)
+
+Sub-recursos do documento PGR, todos **zero-migration** (tabelas `pgr_revisions`, `pgr_ges`,
+`signature_requests`/`signature_captures` já existentes). Todos escopados ao tenant da sessão; PGR
+inexistente/de outro escritório → `404 NOT_FOUND` **antes** de qualquer efeito.
+
+- **`/pgr/{id}/revisions`** (revisões manuais, fatia 022): `GET` lista o histórico (mais recente
+  primeiro). `POST` **cria** uma revisão cujo **número é atribuído exclusivamente no servidor** —
+  o repositório trava a linha do PGR (`SELECT … FOR UPDATE` em `withOrg`) e calcula
+  `COALESCE(MAX(revision_number), 0) + 1` na mesma transação, então duas criações concorrentes no
+  mesmo PGR resultam em `201` + `201` com números **distintos e consecutivos** (nenhuma perdida);
+  PGRs diferentes não compartilham lock. O body aceita **somente** `{ revisedAt*, notes? }` e o
+  schema é **`.strict()`**: enviar `revisionNumber` (ou qualquer campo extra) → **`422 VALIDATION`**
+  (nunca ignorado em silêncio). A `UNIQUE(org_id, pgr_id, revision_number)` é backstop defensivo
+  (colisão inesperada → `409 DUPLICATE`); não há retry, update nem delete de revisão.
+  - Body válido: `{ "revisedAt": "2026-07-14", "notes": "Descrição da revisão" }` → `201`.
+  - Body inválido: `{ "revisedAt": "2026-07-14", "notes": "Cliente antigo", "revisionNumber": 99 }`
+    → **`422 VALIDATION`**.
+- **`/pgr/{id}/ges` · `/pgr/{id}/ges/{gesId}`** (GES do escopo do PGR, fatia 019): `GET` lista os GES
+  vinculados; `POST` vincula um GES (`{ gesId }`, `201`); `DELETE` desvincula (`204`; vínculo
+  inexistente → `404`). GES de outro tenant → falha de FK/isolamento (nunca vincula alheio).
+- **`/pgr/{id}/consolidated`** (visão consolidada, fatias 019 + 022): `GET` read-only que agrega, em
+  ~6 queries em lote (sem N+1), a cadeia GES → riscos → **avaliação vigente** → **medidas 5W2H** →
+  **EPIs por risco**, incluindo os campos **eSocial S-2240** persistidos (`concentration_intensity`
+  como **string**). Riscos ordenados por `risk_level` desc, sem avaliação por último; arrays vazios
+  tratados (PGR sem GES, GES sem riscos, risco sem avaliação/medida/EPI). Sem PDF/GED.
+- **`/pgr/{id}/signature`** (assinatura pública do PGR, fatia 022): `POST` (office staff) **cria** a
+  solicitação — o **payload público mínimo é montado NO SERVIDOR** (título/empresa/obra/responsável/
+  datas/nº revisão; **sem PII**, sem IDs internos), o body só aceita `{ ttlSeconds? }` (inteiro
+  positivo; schema `.strict()` → outro campo é `422`). Retorna `201` com `{ signature, publicUrl,
+qrCodeDataUrl }` — o **`publicUrl` só existe nesta resposta** (o token cru nunca é persistido nem
+  logado). `GET` devolve **somente** o estado derivado (`PgrSignatureView`:
+  `none|pending|signed|expired|cancelled` + metadados seguros) e **nunca** token ou URL. A **cota é
+  compartilhada** com os demais `target_type` (contador por tenant/mês, sem filtro): `free` limitado
+  → `402 QUOTA_EXCEEDED`, `pro` ilimitado. Cross-tenant → `404`. **Não** é um Route Handler REST
+  público — a superfície pública é a página `/assinar/{token}` (abaixo).
+
+### Rota pública de assinatura do PGR — `/assinar/{token}` (fatia 022)
+
+Página pública (fora de `/api/v1`, **sem Clerk, sem tenant de sessão, sem bypass dev**) da
+**infraestrutura genérica de assinatura** (fatia 010): a credencial é o **token** persistido só
+hasheado; o `target_type` `"pgr"` resolve o formulário via registry, que exibe **apenas** o snapshot
+mínimo congelado no `payload` da solicitação. A página **não** consulta o PGR/consolidada/
+funcionários ao vivo — alterar o PGR depois **não** muda um link já emitido.
+
+| Ação   | Rota               | Auth       | Desfecho                                                                                                  |
+| ------ | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/assinar/{token}` | só o token | página com o snapshot + captura de assinatura · inválido/expirado/usado → estado seguro (nunca vaza dado) |
+| `POST` | `/assinar/{token}` | só o token | Server Action `submitPublicSignature`: registra a captura (nome + PNG) · uso único / **replay bloqueado** |
+
+`Cache-Control: no-store` (proxy). `cancelled` aparece como `used` no público (comportamento herdado
+da infra). Não descrever como REST público — é a página genérica reutilizada.
+
 ---
 
 ## Riscos (GES) — `actions/pgr/risks.ts`
@@ -537,7 +599,8 @@ inexistente ou de outro escritório → `notFound()`.
 | `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                                                                                                                |
 | `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos)                                                                                       |
 | `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)                                                                                                |
-| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / detalhe / editar)                                                                         |
+| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / **editor em abas**: Informações + GES + Revisões + Consolidada + Assinatura / editar)     |
+| `/assinar/[token]`                                                           | **Pública** (sem Clerk) — captura de assinatura do PGR pelo token; exibe só o snapshot mínimo (`no-store`)                                            |
 | `/risks` · `/risks/new` · `/risks/[id]` · `/risks/[id]/edit`                 | Riscos do GES (lista + filtro Empresa→Obra→GES / criar / detalhe / editar / reutilizar por prefill)                                                   |
 | `/risks/[id]/assessments` · `.../new` · `.../[assessmentId]/edit`            | Avaliações 5×5 do risco (histórico + vigente / criar com preview / editar) — atalho no detalhe do risco                                               |
 | `/risks/[id]/control-measures` · `.../new` · `.../[measureId]/edit`          | Medidas de controle 5W2H por nível NR-01 (lista + estado derivado/vencida + contexto/avaliação vigente / criar / editar) — atalho no detalhe do risco |
