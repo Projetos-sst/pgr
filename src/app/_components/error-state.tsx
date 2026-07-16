@@ -29,7 +29,10 @@ export function ErrorState({
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-16">
       <div className="glass-card rounded-glass w-full max-w-md p-8 sm:p-10">
         <div className="flex items-start gap-5">
-          <span className="bg-primary mt-1.5 h-16 w-1 shrink-0 rounded-full" aria-hidden />
+          <span
+            className="bg-primary mt-1.5 h-16 w-1 shrink-0 rounded-full"
+            aria-hidden
+          />
           <div className="flex flex-col">
             <span className="text-text-subtle font-mono text-[11px] tracking-[0.18em] uppercase">
               {eyebrow}

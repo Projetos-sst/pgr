@@ -52,9 +52,8 @@ export default async function BoasVindasPage() {
           </div>
 
           <p className="text-text-muted max-w-xl text-base leading-relaxed">
-            Gerencie riscos ocupacionais de forma prática, segura e conforme a
-            legislação — transformando a gestão de segurança do trabalho em um processo
-            eficiente.
+            Gerencie riscos ocupacionais de forma prática, segura e conforme a legislação
+            — transformando a gestão de segurança do trabalho em um processo eficiente.
           </p>
         </div>
 
