@@ -23,7 +23,7 @@ import {
   type CreateSignatureRequestResult,
 } from "@/shared/server/actions/signatures";
 
-const BASE = "/inspecoes-seguranca";
+const BASE = "/safety-inspections";
 
 export type CompanyOption = { value: string; label: string };
 

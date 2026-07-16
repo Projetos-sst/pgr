@@ -33,30 +33,32 @@ export default async function SignUpPage({
 
   if (!ticket) {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-        <h1 className="text-text text-2xl font-bold tracking-tight">
-          Cadastro por convite
-        </h1>
-        <p className="text-text-muted max-w-md text-base">
-          O SST Manager é um sistema corporativo. Novas contas só podem ser criadas a
-          partir de um convite enviado por um administrador da sua organização.
-        </p>
-        <p className="text-text-muted max-w-md text-sm">
-          Procure no seu e-mail por uma mensagem com o link de convite, ou solicite um a
-          quem administra sua organização.
-        </p>
-        <Link
-          href="/sign-in"
-          className="glass-panel text-text-muted rounded-pill hover:text-text px-5 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
-          Já tenho uma conta — Entrar
-        </Link>
-      </main>
+      <AuthFrame eyebrow="Plataforma SST">
+        <div className="flex flex-col gap-4 text-center">
+          <h1 className="text-text text-2xl font-bold tracking-tight">
+            Cadastro por convite
+          </h1>
+          <p className="text-text-muted text-base">
+            O SST Manager é um sistema corporativo. Novas contas só podem ser criadas a
+            partir de um convite enviado por um administrador da sua organização.
+          </p>
+          <p className="text-text-muted text-sm">
+            Procure no seu e-mail por uma mensagem com o link de convite, ou solicite um a
+            quem administra sua organização.
+          </p>
+          <Link
+            href="/sign-in"
+            className="glass-panel text-text-muted rounded-pill hover:text-text mx-auto px-5 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            Já tenho uma conta — Entrar
+          </Link>
+        </div>
+      </AuthFrame>
     );
   }
 
   return (
-    <AuthFrame eyebrow="Plataforma SST" title="Criar sua conta">
+    <AuthFrame eyebrow="Plataforma SST">
       <SignUp path="/sign-up" appearance={clerkAppearance} />
     </AuthFrame>
   );

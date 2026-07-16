@@ -24,8 +24,8 @@ export async function startProCheckout(ctx: TenantContext): Promise<{ url: strin
     orgId: ctx.tenantId,
     customerId: org?.stripeCustomerId ?? null,
     trialDays: TRIAL_DAYS,
-    successUrl: `${base}/planos?status=success`,
-    cancelUrl: `${base}/planos?status=cancelled`,
+    successUrl: `${base}/plans?status=success`,
+    cancelUrl: `${base}/plans?status=cancelled`,
   });
   if (!url) throw new BillingUnavailableError();
   return { url };

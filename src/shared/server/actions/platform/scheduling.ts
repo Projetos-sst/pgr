@@ -40,7 +40,7 @@ export async function createScheduleEventAction(
     async ({ tenantId }) => {
       const values = scheduleEventInputSchema.parse(input);
       const row = await repo.createScheduleEvent(tenantId, values);
-      revalidatePath("/agenda");
+      revalidatePath("/schedule");
       return row;
     },
     { audit: true },
@@ -57,7 +57,7 @@ export async function updateScheduleEventAction(
       const values = scheduleEventInputSchema.parse(input);
       const row = await repo.updateScheduleEvent(tenantId, id, values);
       if (!row) throw new NotFoundError();
-      revalidatePath("/agenda");
+      revalidatePath("/schedule");
       return row;
     },
     { audit: true },
@@ -72,7 +72,7 @@ export async function deleteScheduleEventAction(
     async ({ tenantId }) => {
       const ok = await repo.deleteScheduleEvent(tenantId, id);
       if (!ok) throw new NotFoundError();
-      revalidatePath("/agenda");
+      revalidatePath("/schedule");
       return { deleted: true as const };
     },
     { audit: true },

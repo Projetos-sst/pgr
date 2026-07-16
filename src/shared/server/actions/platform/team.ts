@@ -30,7 +30,7 @@ export async function inviteMember(
     "platform.team.invite",
     async (ctx) => {
       const result = await inviteTeamMember(ctx, input);
-      revalidatePath("/equipe");
+      revalidatePath("/team");
       return result;
     },
     { audit: true },
@@ -45,7 +45,7 @@ export async function changeMemberRole(
     "platform.team.role",
     async (ctx) => {
       const result = await updateTeamMemberRole(ctx, userId, input);
-      revalidatePath("/equipe");
+      revalidatePath("/team");
       return result;
     },
     { audit: true },
@@ -59,7 +59,7 @@ export async function removeMember(
     "platform.team.remove",
     async (ctx) => {
       await removeTeamMember(ctx, userId);
-      revalidatePath("/equipe");
+      revalidatePath("/team");
       return { removed: true as const };
     },
     { audit: true },

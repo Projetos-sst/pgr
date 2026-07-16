@@ -24,7 +24,8 @@ const shouldRun = !!APP_RUNTIME_URL && !!ADMIN_URL;
 
 const mockedGate = requireOfficeStaff as jest.MockedFunction<typeof requireOfficeStaff>;
 const PNG = `data:image/png;base64,${"A".repeat(120)}`;
-const tokenFromUrl = (u: string) => u.slice(u.indexOf("/assinar/") + "/assinar/".length);
+const tokenFromUrl = (u: string) =>
+  u.slice(u.indexOf("/signature-requests/") + "/signature-requests/".length);
 
 (shouldRun ? describe : describe.skip)("US1 — submitPublicSignature", () => {
   let admin: ReturnType<typeof postgres>;

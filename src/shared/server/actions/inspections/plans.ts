@@ -40,7 +40,7 @@ export async function createPlanAction(
         tenantId,
         inspectionPlanInputSchema.parse(input),
       );
-      revalidatePath("/planos-inspecao");
+      revalidatePath("/inspection-plans");
       return result;
     },
     { audit: true },
@@ -60,7 +60,7 @@ export async function updatePlanAction(
         inspectionPlanInputSchema.parse(input),
       );
       if (!ok) throw new NotFoundError();
-      revalidatePath("/planos-inspecao");
+      revalidatePath("/inspection-plans");
       return { id };
     },
     { audit: true },
@@ -75,7 +75,7 @@ export async function deletePlanAction(
     async ({ tenantId }) => {
       const ok = await repo.deletePlan(tenantId, id);
       if (!ok) throw new NotFoundError();
-      revalidatePath("/planos-inspecao");
+      revalidatePath("/inspection-plans");
       return { deleted: true as const };
     },
     { audit: true },

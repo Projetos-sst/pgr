@@ -15,7 +15,7 @@ import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
 import type { Paginated } from "@/shared/pagination";
 
-const BASE = "/permissoes-trabalho";
+const BASE = "/work-permits";
 
 export type CompanyOption = { value: string; label: string };
 

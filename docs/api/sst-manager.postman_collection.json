@@ -1481,12 +1481,12 @@
               }
             },
             {
-              "name": "GET /assinar/:token (página pública, sem Clerk)",
+              "name": "GET /signature-requests/:token (página pública, sem Clerk)",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/assinar/{{pgrPublicToken}}",
+                  "raw": "{{baseUrl}}/signature-requests/{{pgrPublicToken}}",
                   "host": ["{{baseUrl}}"],
                   "path": ["assinar", "{{pgrPublicToken}}"]
                 }

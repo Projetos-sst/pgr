@@ -63,7 +63,7 @@ export function PendingPanel({
         Pendências e vencimentos
       </h2>
       {totalPending === 0 ? (
-        <p className="text-text-subtle text-sm">Nada pendente. Tudo em dia. ✅</p>
+        <p className="text-text-subtle text-sm">Nada pendente. Tudo em dia.</p>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2">
           {items.map((item) => (

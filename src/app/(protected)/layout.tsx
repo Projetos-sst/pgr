@@ -32,7 +32,7 @@ export default async function ProtectedLayout({
   return (
     <div className="flex flex-1 flex-col">
       <header className="app-nav flex h-[72px] items-center gap-4 px-5 sm:gap-6 sm:px-8">
-        <Link href="/boas-vindas" className="flex shrink-0 items-center gap-2.5">
+        <Link href="/welcome" className="flex shrink-0 items-center gap-2.5">
           <span className="btn-primary flex h-[34px] w-[34px] items-center justify-center rounded-[11px] text-sm font-extrabold">
             S
           </span>

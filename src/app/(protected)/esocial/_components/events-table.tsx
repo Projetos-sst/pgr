@@ -88,7 +88,7 @@ export function EventsTable({
           type="button"
           disabled={pending || selected.size === 0}
           onClick={onSend}
-          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
+          className="btn-primary rounded-pill px-4 py-2 text-sm font-semibold disabled:opacity-40"
         >
           Enviar selecionados ({selected.size})
         </button>
@@ -96,20 +96,18 @@ export function EventsTable({
           type="button"
           disabled={pending}
           onClick={onReport}
-          className="rounded-md border border-black/15 px-3 py-2 text-sm disabled:opacity-50 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           Gerar relatório
         </button>
       </div>
 
-      {message ? (
-        <p className="text-sm text-green-700 dark:text-green-400">{message}</p>
-      ) : null}
+      {message ? <p className="text-sm text-green-700">{message}</p> : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/10">
+      <div className="glass-card overflow-x-auto">
         <table className="w-full border-collapse text-sm">
-          <thead className="bg-black/3 text-left dark:bg-white/5">
+          <thead className="border-b border-white/50 text-left">
             <tr>
               <th className="px-3 py-2"></th>
               <th className="px-3 py-2 font-medium">Tipo</th>
@@ -121,13 +119,13 @@ export function EventsTable({
           <tbody>
             {events.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-zinc-500">
+                <td colSpan={5} className="text-text-subtle px-3 py-6 text-center">
                   Nenhum evento eSocial.
                 </td>
               </tr>
             ) : (
               events.map((e) => (
-                <tr key={e.id} className="border-t border-black/5 dark:border-white/5">
+                <tr key={e.id} className="border-t border-white/50">
                   <td className="px-3 py-2">
                     <input
                       type="checkbox"
@@ -141,8 +139,8 @@ export function EventsTable({
                   <td className="px-3 py-2 tabular-nums">{e.createdAt.slice(0, 10)}</td>
                   <td className="px-3 py-2 text-right">
                     <Link
-                      href={`/esocial/detalhe/${e.id}`}
-                      className="rounded-md border border-black/15 px-3 py-1 text-sm hover:bg-black/5 dark:border-white/15"
+                      href={`/esocial/detail/${e.id}`}
+                      className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
                     >
                       Detalhe
                     </Link>
@@ -154,7 +152,7 @@ export function EventsTable({
         </table>
       </div>
 
-      <p className="text-xs text-zinc-500">
+      <p className="text-text-subtle text-xs">
         {selectablePending.length} evento(s) pendente(s) selecionável(is).
       </p>
 
@@ -165,7 +163,7 @@ export function EventsTable({
             {batches.map((b) => (
               <li
                 key={b.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-black/10 p-3 dark:border-white/10"
+                className="glass-card flex flex-wrap items-center justify-between gap-2 p-3"
               >
                 <span className="text-sm">
                   {b.protocolNumber ?? "—"} · {b.status}
@@ -175,12 +173,12 @@ export function EventsTable({
                     type="button"
                     disabled={pending}
                     onClick={() => onQuery(b.id)}
-                    className="rounded-md border border-black/15 px-3 py-1 text-sm disabled:opacity-50 dark:border-white/15"
+                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-50"
                   >
                     Consultar retorno
                   </button>
                 ) : (
-                  <span className="text-xs text-zinc-500">processado</span>
+                  <span className="text-text-subtle text-xs">processado</span>
                 )}
               </li>
             ))}
@@ -189,9 +187,7 @@ export function EventsTable({
       ) : null}
 
       {report ? (
-        <pre className="max-h-80 overflow-auto rounded-md border border-black/10 bg-black/3 p-3 text-xs dark:border-white/10 dark:bg-white/5">
-          {report}
-        </pre>
+        <pre className="glass-card max-h-80 overflow-auto p-3 text-xs">{report}</pre>
       ) : null}
     </div>
   );

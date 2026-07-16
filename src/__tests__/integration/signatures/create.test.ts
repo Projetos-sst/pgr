@@ -25,7 +25,9 @@ const asOwner = (tenantId: string, plan: "free" | "pro" = "free") =>
   mockedGate.mockResolvedValue({ userId: "u", tenantId, plan, role: "owner" });
 
 function tokenFromUrl(publicUrl: string): string {
-  return publicUrl.slice(publicUrl.indexOf("/assinar/") + "/assinar/".length);
+  return publicUrl.slice(
+    publicUrl.indexOf("/signature-requests/") + "/signature-requests/".length,
+  );
 }
 
 (shouldRun ? describe : describe.skip)("US1 — createSignatureRequest", () => {

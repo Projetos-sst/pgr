@@ -19,7 +19,7 @@ import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
 import type { Paginated } from "@/shared/pagination";
 
-const BASE = "/inspecoes-veiculares";
+const BASE = "/vehicular-inspections";
 
 export type HeaderOption = { value: string; label: string };
 

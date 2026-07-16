@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { listNotificationsAction } from "@/shared/server/actions/platform/notifications";
 
-import { NOTIFICATIONS_READ_KEY } from "../notificacoes/_components/use-read-notifications";
+import { NOTIFICATIONS_READ_KEY } from "../notifications/_components/use-read-notifications";
 
 function loadReadKeys(): Set<string> {
   try {
@@ -32,7 +32,7 @@ export function NotificationsBell() {
 
   return (
     <Link
-      href="/notificacoes"
+      href="/notifications"
       className="text-text-muted hover:text-text rounded-card relative px-3 py-1.5 font-semibold transition-colors"
     >
       Notificações

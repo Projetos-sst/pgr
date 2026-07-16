@@ -18,7 +18,7 @@ export async function updateProfile(
     "platform.profile.update",
     async (ctx) => {
       const view = await updateMyProfile(ctx, input);
-      revalidatePath("/perfil");
+      revalidatePath("/profile");
       return view;
     },
     { audit: true },

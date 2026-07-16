@@ -35,8 +35,8 @@ export default function RootLayout({
           localization={ptBR}
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
-          signInFallbackRedirectUrl="/boas-vindas"
-          signUpFallbackRedirectUrl="/boas-vindas"
+          signInFallbackRedirectUrl="/welcome"
+          signUpFallbackRedirectUrl="/welcome"
           afterSignOutUrl="/"
         >
           {children}
