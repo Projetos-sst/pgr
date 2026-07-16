@@ -165,6 +165,14 @@
     {
       "key": "psychoRiskId",
       "value": ""
+    },
+    {
+      "key": "esocialEventId",
+      "value": ""
+    },
+    {
+      "key": "esocialBatchId",
+      "value": ""
     }
   ],
   "item": [
@@ -4816,6 +4824,216 @@
               "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "psychosocial-campaigns", "{{psychoCampaignId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "eSocial (SST)",
+      "item": [
+        {
+          "name": "GET /esocial-events (list+filtros)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events?status=&eventType=&dateFrom=&dateTo=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "eventType",
+                  "value": ""
+                },
+                {
+                  "key": "dateFrom",
+                  "value": ""
+                },
+                {
+                  "key": "dateTo",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-events (gerar S-2210)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"S-2210\",\n  \"input\": {\n    \"cpf\": \"12345678901\",\n    \"dataAcidente\": \"2026-02-01\",\n    \"descricao\": \"Corte no dedo\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-events (gerar S-2240)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"S-2240\",\n  \"input\": {\n    \"cpf\": \"12345678901\",\n    \"dataInicio\": \"2026-01-10\",\n    \"codigoAgenteNocivo\": \"01.01.001\",\n    \"unidadeMedida\": \"db_a\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /esocial-events/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events/{{esocialEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events", "{{esocialEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /esocial-batches (lotes)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-batches"]
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-batches (enviar lote)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-batches"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventIds\": [\n    \"{{esocialEventId}}\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-batches/:id/return (consultar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches/{{esocialBatchId}}/return",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-batches", "{{esocialBatchId}}", "return"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
             }
           }
         }

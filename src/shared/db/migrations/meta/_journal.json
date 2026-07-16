@@ -155,6 +155,13 @@
       "when": 1784161580170,
       "tag": "0021_psychosocial",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1784163996178,
+      "tag": "0022_esocial",
+      "breakpoints": true
     }
   ]
 }
