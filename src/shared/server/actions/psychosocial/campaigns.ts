@@ -25,7 +25,7 @@ import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
 import type { Paginated } from "@/shared/pagination";
 
-const BASE = "/psicossocial/campanhas";
+const BASE = "/psychosocial/campaigns";
 
 export type Option = { value: string; label: string };
 

@@ -31,7 +31,7 @@ const mockedGate = requireOfficeStaff as jest.MockedFunction<typeof requireOffic
 const PNG = `data:image/png;base64,${"A".repeat(120)}`;
 const asOwner = (tenantId: string) =>
   mockedGate.mockResolvedValue({ userId: "u", tenantId, plan: "free", role: "owner" });
-const tokenOf = (publicUrl: string) => publicUrl.split("/assinar/")[1];
+const tokenOf = (publicUrl: string) => publicUrl.split("/signature-requests/")[1];
 
 const ALLOWED_KEYS = [
   "documentTitle",
@@ -62,7 +62,7 @@ const ALLOWED_KEYS = [
     const res = await createPgrSignatureRequestAction({ pgrId: PGR_IDS.pgrA });
     expect(res.ok).toBe(true);
     if (!res.ok) return;
-    expect(res.data.publicUrl).toContain("/assinar/");
+    expect(res.data.publicUrl).toContain("/signature-requests/");
     const [row] = await admin<{ target_type: string; target_id: string }[]>`
       select target_type, target_id from public.signature_requests where org_id='org_a' limit 1`;
     expect(row.target_type).toBe("pgr");

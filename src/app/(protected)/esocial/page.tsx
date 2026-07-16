@@ -55,7 +55,7 @@ export default async function EsocialPage({
             type="date"
             name="dateFrom"
             defaultValue={sp.dateFrom}
-            className="rounded-md border border-black/15 bg-white px-3 py-2 dark:border-white/15 dark:bg-zinc-900"
+            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -64,7 +64,7 @@ export default async function EsocialPage({
             type="date"
             name="dateTo"
             defaultValue={sp.dateTo}
-            className="rounded-md border border-black/15 bg-white px-3 py-2 dark:border-white/15 dark:bg-zinc-900"
+            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -72,7 +72,7 @@ export default async function EsocialPage({
           <select
             name="status"
             defaultValue={sp.status ?? ""}
-            className="rounded-md border border-black/15 bg-white px-3 py-2 dark:border-white/15 dark:bg-zinc-900"
+            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
           >
             <option value="">Todos</option>
             {Object.entries(EVENT_STATUS_LABELS).map(([value, label]) => (
@@ -84,7 +84,7 @@ export default async function EsocialPage({
         </label>
         <button
           type="submit"
-          className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium hover:bg-black/5 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
         >
           Filtrar
         </button>

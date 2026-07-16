@@ -7,7 +7,7 @@ import { signatureFormRegistry } from "./form-registry";
 /**
  * Fronteira Client dedicada para renderizar o formulário público (fatia 022). O
  * `signatureFormRegistry` vive num módulo `"use client"`; indexá-lo direto dentro do Server
- * Component da página `/assinar/[token]` fazia o componente resolver para `undefined` no boundary
+ * Component da página `/signature-requests/[token]` fazia o componente resolver para `undefined` no boundary
  * RSC (Next 16 / React 19) → "Element type is invalid". Fazer o lookup + render **aqui**, no lado
  * Client, corrige isso para todos os `target_type` (`demo`, `pgr`, …).
  *

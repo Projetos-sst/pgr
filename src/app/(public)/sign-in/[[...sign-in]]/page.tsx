@@ -10,7 +10,7 @@ export default async function SignInPage() {
   if (session.isAuthenticated) redirect("/dashboard");
 
   return (
-    <AuthFrame eyebrow="Plataforma SST" title="Acessar o Sistema">
+    <AuthFrame eyebrow="Plataforma SST">
       <SignIn path="/sign-in" appearance={clerkAppearance} />
     </AuthFrame>
   );

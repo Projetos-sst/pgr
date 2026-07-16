@@ -37,19 +37,19 @@ describe("proxy.ts — deny-by-default", () => {
     },
   );
 
-  // Espelha a lista real de `src/proxy.ts` (fatia 022: `/assinar/(.*)` liberada) SEM o bypass dev.
+  // Espelha a lista real de `src/proxy.ts` (fatia 022: `/signature-requests/(.*)` liberada) SEM o bypass dev.
   const REAL_PUBLIC = [
     "/",
     "/sign-in(.*)",
     "/sign-up(.*)",
     "/sign/(.*)",
-    "/assinar/(.*)",
+    "/signature-requests/(.*)",
     "/api/webhooks/(.*)",
   ];
   const isPublicReal = (pathname: string) =>
     createRouteMatcher(REAL_PUBLIC)({ url: `http://localhost${pathname}` } as never);
 
-  it.each(["/assinar/abc123", "/sign/xyz", "/api/webhooks/clerk"])(
+  it.each(["/signature-requests/abc123", "/sign/xyz", "/api/webhooks/clerk"])(
     "rota pública de assinatura %s é liberada (sem Clerk)",
     (path) => {
       expect(isPublicReal(path)).toBe(true);
@@ -57,7 +57,7 @@ describe("proxy.ts — deny-by-default", () => {
   );
 
   it.each(["/api/v1/pgr/1/signature", "/api/v1/anything", "/pgr", "/pgr/1"])(
-    "%s continua protegida mesmo com /assinar liberado",
+    "%s continua protegida mesmo com /signature-requests liberado",
     (path) => {
       expect(isPublicReal(path)).toBe(false);
     },

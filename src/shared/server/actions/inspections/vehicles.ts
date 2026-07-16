@@ -37,7 +37,7 @@ export async function createVehicleAction(
     "inspections.vehicles.create",
     async ({ tenantId }) => {
       const row = await repo.createVehicle(tenantId, vehicleInputSchema.parse(input));
-      revalidatePath("/veiculos");
+      revalidatePath("/vehicles");
       return row;
     },
     { audit: true },
@@ -53,7 +53,7 @@ export async function updateVehicleAction(
     async ({ tenantId }) => {
       const row = await repo.updateVehicle(tenantId, id, vehicleInputSchema.parse(input));
       if (!row) throw new NotFoundError();
-      revalidatePath("/veiculos");
+      revalidatePath("/vehicles");
       return row;
     },
     { audit: true },
@@ -68,7 +68,7 @@ export async function deleteVehicleAction(
     async ({ tenantId }) => {
       const ok = await repo.deleteVehicle(tenantId, id);
       if (!ok) throw new NotFoundError();
-      revalidatePath("/veiculos");
+      revalidatePath("/vehicles");
       return { deleted: true as const };
     },
     { audit: true },
