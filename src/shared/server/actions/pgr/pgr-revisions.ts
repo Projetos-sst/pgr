@@ -32,8 +32,10 @@ export async function createPgrRevisionAction(
   return officeAction(
     "pgr.pgr_revisions.create",
     async ({ tenantId }) => {
-      if (!(await getPgrById(tenantId, pgrId))) throw new NotFoundError();
+      // Schema estrito: `revisionNumber` enviado pelo cliente → VALIDATION/422.
       const values = pgrRevisionInputSchema.parse(input);
+      // O número é calculado no repo (MAX+1 sob lock); o próprio SELECT … FOR UPDATE
+      // é o guard de existência/tenant (PGR inexistente/cross-tenant → NOT_FOUND/404).
       const row = await repo.createPgrRevision(tenantId, pgrId, values);
       revalidatePath(editPath(pgrId));
       return row;

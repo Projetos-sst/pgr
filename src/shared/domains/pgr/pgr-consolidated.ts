@@ -8,15 +8,23 @@ import {
 import { riskClassificationLabel, type RiskClassification } from "./risk-assessment";
 import {
   riskAgentTypeLabel,
+  exposureTimeLabel,
+  measurementUnitLabel,
+  assessmentCriterionLabel,
   type RiskAgentType,
   type PgrRegistrationType,
+  type ExposureTime,
+  type MeasurementUnit,
+  type AssessmentCriterion,
 } from "./risks";
+import { epiNeutralizationLabel, type EpiNeutralization } from "./epi-risk";
 
 /**
- * Domínio da visão consolidada do PGR — issue #27. Estrutura **derivada** (não persistida)
- * que agrega PGR → GES vinculados → riscos → avaliação vigente → medidas de controle, com
- * **estado derivado** das medidas (Feature 018) e riscos ordenados por `risk_level` desc.
- * **Zero migration.** Reutilizável pela Fase 05 (PDF); a geração de PDF fica fora do escopo.
+ * Domínio da visão consolidada do PGR — issue #27 / fatia 022. Estrutura **derivada** (não
+ * persistida) que agrega PGR → GES vinculados → riscos (com detalhe + campos eSocial S-2240) →
+ * avaliação vigente (detalhada) → medidas de controle (5W2H completo, estado derivado da
+ * Feature 018) → **EPIs por risco**, com riscos ordenados por `risk_level` desc.
+ * **Zero migration.** Read-only; reutilizável pela Fase 05 (PDF), cuja geração fica fora do escopo.
  */
 
 export {
@@ -25,13 +33,54 @@ export {
   measureStateLabel,
   riskClassificationLabel,
   riskAgentTypeLabel,
+  exposureTimeLabel,
+  measurementUnitLabel,
+  assessmentCriterionLabel,
+  epiNeutralizationLabel,
 };
-export type { ControlLevel, MeasureState, RiskClassification, RiskAgentType };
+export type {
+  ControlLevel,
+  MeasureState,
+  RiskClassification,
+  RiskAgentType,
+  ExposureTime,
+  MeasurementUnit,
+  AssessmentCriterion,
+  EpiNeutralization,
+};
+
+/** EPI indicado para um risco (mesma forma de `EpiRiskLinkItem`). */
+export type ConsolidatedEpi = {
+  id: string;
+  catalogId: string;
+  name: string;
+  ca: string | null;
+  neutralization: EpiNeutralization;
+};
+
+/** Avaliação vigente detalhada (última por `assessed_at`/`created_at`). */
+export type ConsolidatedAssessment = {
+  criterion: AssessmentCriterion;
+  probability: number;
+  severity: number;
+  riskLevel: number;
+  uncertaintyDegree: number;
+  toleranceLimit: string | null;
+  result: RiskClassification | null;
+  assessedAt: string;
+};
 
 export type ConsolidatedMeasure = {
   id: string;
   controlLevel: ControlLevel;
   applicable: boolean;
+  justification: string | null;
+  monitoring: string | null;
+  // Plano 5W2H completo (todos já persistidos em `control_measures`).
+  actionWhat: string | null;
+  actionHow: string | null;
+  actionTracking: string | null;
+  actionMeasurement: string | null;
   actionResponsible: string | null;
   actionDeadline: string | null;
   state: MeasureState; // deriveMeasureState (without_plan | planned | overdue)
@@ -41,9 +90,21 @@ export type ConsolidatedRisk = {
   id: string;
   agentType: RiskAgentType;
   description: string;
-  riskLevel: number | null; // avaliação vigente (null = sem avaliação)
-  result: RiskClassification | null; // classificação vigente
+  hazard: string | null;
+  sources: string | null; // fontes geradoras
+  propagation: string | null;
+  exposureTime: ExposureTime | null;
+  possibleInjuries: string | null;
+  // eSocial S-2240 (já persistidos — nada inventado).
+  noxiousAgentCode: string | null;
+  measurementUnit: MeasurementUnit | null;
+  concentrationIntensity: string | null; // numeric → string no Drizzle
+  // Avaliação vigente: `riskLevel`/`result` mantidos p/ compatibilidade + `assessment` detalhada.
+  riskLevel: number | null; // null = sem avaliação
+  result: RiskClassification | null;
+  assessment: ConsolidatedAssessment | null;
   measures: ConsolidatedMeasure[]; // [] = "Sem medidas de controle"
+  epis: ConsolidatedEpi[]; // [] = "Sem EPIs indicados"
 };
 
 export type ConsolidatedGes = {

@@ -119,6 +119,62 @@
       "value": "user_xxx"
     },
     {
+      "key": "pgrPublicToken",
+      "value": "<token cru do publicUrl retornado no POST /pgr/:id/signature>"
+    },
+    {
+      "key": "vehicleId",
+      "value": ""
+    },
+    {
+      "key": "planId",
+      "value": ""
+    },
+    {
+      "key": "planItemId",
+      "value": ""
+    },
+    {
+      "key": "vehicularInspectionId",
+      "value": ""
+    },
+    {
+      "key": "equipmentCatalogId",
+      "value": ""
+    },
+    {
+      "key": "equipmentInspectionId",
+      "value": ""
+    },
+    {
+      "key": "safetyInspectionId",
+      "value": ""
+    },
+    {
+      "key": "workPermitId",
+      "value": ""
+    },
+    {
+      "key": "psychoCampaignId",
+      "value": ""
+    },
+    {
+      "key": "psychoQuestionId",
+      "value": ""
+    },
+    {
+      "key": "psychoRiskId",
+      "value": ""
+    },
+    {
+      "key": "esocialEventId",
+      "value": ""
+    },
+    {
+      "key": "esocialBatchId",
+      "value": ""
+    },
+    {
       "key": "scheduleEventId",
       "value": ""
     }
@@ -143,8 +199,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/companies?search=&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "companies"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies"
+              ],
               "query": [
                 {
                   "key": "search",
@@ -182,8 +244,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/companies",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "companies"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -207,8 +275,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "companies", "{{companyId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}"
+              ]
             }
           }
         },
@@ -232,8 +307,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "companies", "{{companyId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -257,8 +339,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "companies", "{{companyId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}"
+              ]
             }
           }
         },
@@ -278,8 +367,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/dependents",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "companies", "{{companyId}}", "dependents"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "dependents"
+              ]
             }
           }
         }
@@ -304,8 +401,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/work-units?companyId={{companyId}}&search=&page=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "work-units"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-units"
+              ],
               "query": [
                 {
                   "key": "companyId",
@@ -343,8 +446,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/work-units",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "work-units"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-units"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -368,8 +477,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/work-units/{{workUnitId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "work-units", "{{workUnitId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-units",
+                "{{workUnitId}}"
+              ]
             }
           }
         },
@@ -393,8 +509,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/work-units/{{workUnitId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "work-units", "{{workUnitId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-units",
+                "{{workUnitId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -418,8 +541,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/work-units/{{workUnitId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "work-units", "{{workUnitId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-units",
+                "{{workUnitId}}"
+              ]
             }
           }
         },
@@ -439,8 +569,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/work-units/{{workUnitId}}/dependents",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "work-units", "{{workUnitId}}", "dependents"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-units",
+                "{{workUnitId}}",
+                "dependents"
+              ]
             }
           }
         }
@@ -465,8 +603,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/job-roles?companyId={{companyId}}&search=&page=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "job-roles"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "job-roles"
+              ],
               "query": [
                 {
                   "key": "companyId",
@@ -504,8 +648,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/job-roles",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "job-roles"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "job-roles"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -529,8 +679,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "job-roles", "{{jobRoleId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "job-roles",
+                "{{jobRoleId}}"
+              ]
             }
           }
         },
@@ -554,8 +711,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "job-roles", "{{jobRoleId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "job-roles",
+                "{{jobRoleId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -579,8 +743,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "job-roles", "{{jobRoleId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "job-roles",
+                "{{jobRoleId}}"
+              ]
             }
           }
         },
@@ -600,8 +771,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}/dependents",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "job-roles", "{{jobRoleId}}", "dependents"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "job-roles",
+                "{{jobRoleId}}",
+                "dependents"
+              ]
             }
           }
         }
@@ -626,8 +805,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges?companyId={{companyId}}&workUnitId=&search=&page=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges"
+              ],
               "query": [
                 {
                   "key": "companyId",
@@ -669,8 +854,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -694,8 +885,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}"
+              ]
             }
           }
         },
@@ -719,8 +917,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -744,8 +949,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}"
+              ]
             }
           }
         },
@@ -765,8 +977,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/dependents",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}", "dependents"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}",
+                "dependents"
+              ]
             }
           }
         },
@@ -786,8 +1006,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/job-roles",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}", "job-roles"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}",
+                "job-roles"
+              ]
             }
           }
         },
@@ -807,8 +1035,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/job-roles?available=true",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}", "job-roles"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}",
+                "job-roles"
+              ],
               "query": [
                 {
                   "key": "available",
@@ -838,8 +1074,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/job-roles",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}", "job-roles"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}",
+                "job-roles"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -867,8 +1111,17 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/job-roles/{{linkId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}", "job-roles", "{{linkId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}",
+                "job-roles",
+                "{{linkId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -892,8 +1145,17 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/job-roles/{{linkId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}", "job-roles", "{{linkId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}",
+                "job-roles",
+                "{{linkId}}"
+              ]
             }
           }
         }
@@ -918,8 +1180,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/employees?companyId={{companyId}}&status=active&search=&page=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "employees"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "employees"
+              ],
               "query": [
                 {
                   "key": "companyId",
@@ -961,8 +1229,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/employees",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "employees"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "employees"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -986,8 +1260,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "employees", "{{employeeId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "employees",
+                "{{employeeId}}"
+              ]
             }
           }
         },
@@ -1011,8 +1292,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "employees", "{{employeeId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "employees",
+                "{{employeeId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1036,8 +1324,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "employees", "{{employeeId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "employees",
+                "{{employeeId}}"
+              ]
             }
           }
         }
@@ -1062,8 +1357,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/pgr?companyId=&workUnitId=&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "pgr"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pgr"
+              ],
               "query": [
                 {
                   "key": "companyId",
@@ -1105,8 +1406,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/pgr",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "pgr"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pgr"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1130,8 +1437,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "pgr", "{{pgrId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pgr",
+                "{{pgrId}}"
+              ]
             }
           }
         },
@@ -1155,8 +1469,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "pgr", "{{pgrId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pgr",
+                "{{pgrId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1180,10 +1501,348 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "pgr", "{{pgrId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pgr",
+                "{{pgrId}}"
+              ]
             }
           }
+        },
+        {
+          "name": "PGR · Revisões",
+          "item": [
+            {
+              "name": "GET /pgr/:id/revisions (histórico)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "revisions"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/revisions (válido → 201)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "revisions"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"revisedAt\": \"2026-07-14\",\n  \"notes\": \"Descrição da revisão\"\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/revisions (revisionNumber no body → 422)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "revisions"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"revisedAt\": \"2026-07-14\",\n  \"notes\": \"Cliente antigo\",\n  \"revisionNumber\": 99\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · GES",
+          "item": [
+            {
+              "name": "GET /pgr/:id/ges (GES vinculados)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "ges"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/ges (vincula → 201)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "ges"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"gesId\": \"{{gesId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE /pgr/:id/ges/:gesId (desvincula → 204)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges/{{gesId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "ges",
+                    "{{gesId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · Consolidada",
+          "item": [
+            {
+              "name": "GET /pgr/:id/consolidated (read-only; 5W2H + EPIs + S-2240)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/consolidated",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "consolidated"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · Assinatura",
+          "item": [
+            {
+              "name": "POST /pgr/:id/signature (cria → 201; publicUrl+QR)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/signature",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "signature"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ttlSeconds\": 259200\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /pgr/:id/signature (estado; sem token/URL)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/signature",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "signature"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "GET /assinar/:token (página pública, sem Clerk)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/assinar/{{pgrPublicToken}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "assinar",
+                    "{{pgrPublicToken}}"
+                  ]
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -1206,8 +1865,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks?companyId=&workUnitId=&gesId=&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks"
+              ],
               "query": [
                 {
                   "key": "companyId",
@@ -1253,8 +1918,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1282,8 +1953,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1307,8 +1984,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}"
+              ]
             }
           }
         },
@@ -1332,8 +2016,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1357,8 +2048,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}"
+              ]
             }
           }
         },
@@ -1378,8 +2076,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/99999999-9999-9999-9999-999999999999",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "99999999-9999-9999-9999-999999999999"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "99999999-9999-9999-9999-999999999999"
+              ]
             }
           }
         },
@@ -1399,8 +2104,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}"
+              ]
             }
           }
         }
@@ -1425,8 +2137,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments?page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "assessments"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -1460,8 +2180,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "assessments"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1489,8 +2217,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "assessments"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1518,7 +2254,9 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/99999999-9999-9999-9999-999999999999/assessments",
-              "host": ["{{baseUrl}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
               "path": [
                 "api",
                 "v1",
@@ -1549,8 +2287,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risk-assessments",
+                "{{riskAssessmentId}}"
+              ]
             }
           }
         },
@@ -1574,8 +2319,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risk-assessments",
+                "{{riskAssessmentId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1599,8 +2351,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risk-assessments",
+                "{{riskAssessmentId}}"
+              ]
             }
           }
         },
@@ -1620,7 +2379,9 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risk-assessments/99999999-9999-9999-9999-999999999999",
-              "host": ["{{baseUrl}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
               "path": [
                 "api",
                 "v1",
@@ -1646,8 +2407,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risk-assessments",
+                "{{riskAssessmentId}}"
+              ]
             }
           }
         }
@@ -1672,8 +2440,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures?page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "control-measures"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -1707,8 +2483,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "control-measures"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1736,8 +2520,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "control-measures"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1765,8 +2557,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "control-measures"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1794,7 +2594,9 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/00000000-0000-0000-0000-000000000000/control-measures",
-              "host": ["{{baseUrl}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
               "path": [
                 "api",
                 "v1",
@@ -1825,8 +2627,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "control-measures",
+                "{{controlMeasureId}}"
+              ]
             }
           }
         },
@@ -1850,8 +2659,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "control-measures",
+                "{{controlMeasureId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1875,8 +2691,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "control-measures",
+                "{{controlMeasureId}}"
+              ]
             }
           }
         },
@@ -1896,8 +2719,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "control-measures"
+              ]
             }
           }
         },
@@ -1917,8 +2748,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "control-measures",
+                "{{controlMeasureId}}"
+              ]
             }
           }
         }
@@ -1943,8 +2781,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "epis"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "epis"
+              ]
             }
           }
         },
@@ -1964,8 +2810,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis?available=true&search=",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "epis"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "epis"
+              ],
               "query": [
                 {
                   "key": "available",
@@ -1999,8 +2853,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "epis"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "epis"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2028,8 +2890,17 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis/{{linkId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "epis", "{{linkId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "epis",
+                "{{linkId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2053,8 +2924,17 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epis/{{linkId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risks", "{{riskId}}", "epis", "{{linkId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "epis",
+                "{{linkId}}"
+              ]
             }
           }
         }
@@ -2079,8 +2959,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/categories?search=&type=&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "categories"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "categories"
+              ],
               "query": [
                 {
                   "key": "search",
@@ -2122,8 +3008,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/categories",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "categories"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "categories"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2147,8 +3039,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "categories", "{{categoryId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "categories",
+                "{{categoryId}}"
+              ]
             }
           }
         },
@@ -2172,8 +3071,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "categories", "{{categoryId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "categories",
+                "{{categoryId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2197,8 +3103,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "categories", "{{categoryId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "categories",
+                "{{categoryId}}"
+              ]
             }
           }
         }
@@ -2223,8 +3136,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/training-catalog?search=&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-catalog"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "training-catalog"
+              ],
               "query": [
                 {
                   "key": "search",
@@ -2262,8 +3181,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/training-catalog",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-catalog"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "training-catalog"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2287,8 +3212,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "training-catalog",
+                "{{trainingId}}"
+              ]
             }
           }
         },
@@ -2312,8 +3244,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "training-catalog",
+                "{{trainingId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2337,8 +3276,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "training-catalog",
+                "{{trainingId}}"
+              ]
             }
           }
         },
@@ -2358,8 +3304,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}/dependents",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-catalog", "{{trainingId}}", "dependents"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "training-catalog",
+                "{{trainingId}}",
+                "dependents"
+              ]
             }
           }
         }
@@ -2384,8 +3338,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/training-records?employeeId={{employeeId}}&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-records"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "training-records"
+              ],
               "query": [
                 {
                   "key": "employeeId",
@@ -2423,8 +3383,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/training-records",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-records"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "training-records"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2448,8 +3414,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/training-records/{{trainingRecordId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-records", "{{trainingRecordId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "training-records",
+                "{{trainingRecordId}}"
+              ]
             }
           }
         },
@@ -2469,8 +3442,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/training-records/{{trainingRecordId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-records", "{{trainingRecordId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "training-records",
+                "{{trainingRecordId}}"
+              ]
             }
           }
         }
@@ -2495,8 +3475,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/job-role-required-trainings?jobRoleId={{jobRoleId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "job-role-required-trainings"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "job-role-required-trainings"
+              ],
               "query": [
                 {
                   "key": "jobRoleId",
@@ -2526,8 +3512,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/job-role-required-trainings",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "job-role-required-trainings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "job-role-required-trainings"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2551,7 +3543,9 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/job-role-required-trainings/{{requiredTrainingId}}",
-              "host": ["{{baseUrl}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
               "path": [
                 "api",
                 "v1",
@@ -2582,8 +3576,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risk-methodology",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risk-methodology"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risk-methodology"
+              ]
             }
           }
         },
@@ -2607,8 +3607,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/risk-methodology",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "risk-methodology"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "risk-methodology"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2637,8 +3643,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-suggestions",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}", "risk-suggestions"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}",
+                "risk-suggestions"
+              ]
             }
           }
         },
@@ -2671,8 +3685,17 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-suggestions/accept",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "ges", "{{gesId}}", "risk-suggestions", "accept"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ges",
+                "{{gesId}}",
+                "risk-suggestions",
+                "accept"
+              ]
             }
           }
         }
@@ -2697,8 +3720,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/epi-deliveries?employeeId={{employeeId}}&search=&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "epi-deliveries"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "epi-deliveries"
+              ],
               "query": [
                 {
                   "key": "employeeId",
@@ -2740,8 +3769,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/epi-deliveries",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "epi-deliveries"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "epi-deliveries"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2765,8 +3800,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/epi-deliveries/{{deliveryId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "epi-deliveries", "{{deliveryId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "epi-deliveries",
+                "{{deliveryId}}"
+              ]
             }
           }
         },
@@ -2786,8 +3828,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/epi-deliveries/{{deliveryId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "epi-deliveries", "{{deliveryId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "epi-deliveries",
+                "{{deliveryId}}"
+              ]
             }
           }
         },
@@ -2811,8 +3860,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/epi-deliveries/{{deliveryId}}/sign",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "epi-deliveries", "{{deliveryId}}", "sign"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "epi-deliveries",
+                "{{deliveryId}}",
+                "sign"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2844,8 +3901,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/epi-deliveries/{{deliveryId}}/return",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "epi-deliveries", "{{deliveryId}}", "return"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "epi-deliveries",
+                "{{deliveryId}}",
+                "return"
+              ]
             },
             "description": "Devolve UM item da entrega (US4): seta returned_at (one-shot; repetida -> 409 ALREADY_RETURNED) e repoe o saldo via movimento employee_return. Independe do status de assinatura."
           }
@@ -2871,8 +3936,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}/epi-record?status=todos",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "employees", "{{employeeId}}", "epi-record"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "employees",
+                "{{employeeId}}",
+                "epi-record"
+              ],
               "query": [
                 {
                   "key": "status",
@@ -2918,8 +3991,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/sign/{{signToken}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["sign", "{{signToken}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sign",
+                "{{signToken}}"
+              ]
             },
             "description": "Rota PUBLICA: sem sessao Clerk, sem bypass dev — a credencial e o proprio token HMAC (72h), gerado na UI da entrega (generateSignTokenAction). Token invalido/expirado/entrega ja assinada viram paginas de negocio (nunca 500)."
           }
@@ -2936,8 +4014,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/sign/{{signToken}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["sign", "{{signToken}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sign",
+                "{{signToken}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -2967,8 +4050,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/profile",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "profile"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "profile"
+              ]
             }
           }
         },
@@ -2992,8 +4081,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/profile",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "profile"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "profile"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -3022,8 +4117,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/team?page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "team"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "team"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -3062,8 +4163,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/team/invitations",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "team", "invitations"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "team",
+                "invitations"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -3091,8 +4199,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/team/{{memberUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "team", "{{memberUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "team",
+                "{{memberUserId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -3116,8 +4231,1931 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/team/{{memberUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "team", "{{memberUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "team",
+                "{{memberUserId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard (plataforma)",
+      "item": [
+        {
+          "name": "GET /dashboard/summary (agregacoes do tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "summary"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Veiculos (inspecoes)",
+      "item": [
+        {
+          "name": "GET /vehicles (?search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /vehicles (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"type\": \"truck\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH\",\n  \"initialKm\": 1000\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /vehicles/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles",
+                "{{vehicleId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicles/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles",
+                "{{vehicleId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"type\": \"truck\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH\",\n  \"initialKm\": 1000\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /vehicles/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles",
+                "{{vehicleId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Planos de inspecao",
+      "item": [
+        {
+          "name": "GET /inspection-plans (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans?search=&type=&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inspection-plans"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "type",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /inspection-plans (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inspection-plans"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota\",\n  \"description\": \"Inspeção pré-uso\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Pneus\",\n      \"defaultValue\": false\n    },\n    {\n      \"description\": \"Luzes\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /inspection-plans/:id (inclui items)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inspection-plans",
+                "{{planId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /inspection-plans/:id (substitui itens)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inspection-plans",
+                "{{planId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota (v2)\",\n  \"description\": \"Revisado\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Documentação\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /inspection-plans/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inspection-plans",
+                "{{planId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes veiculares",
+      "item": [
+        {
+          "name": "GET /vehicular-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections?status=&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicular-inspections"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /vehicular-inspections (passo 1 cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicular-inspections"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Ana\",\n  \"driverName\": \"João\",\n  \"currentKm\": 15000,\n  \"route\": \"Obra A → Obra B\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /vehicular-inspections/:id (itens+respostas)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicular-inspections",
+                "{{vehicularInspectionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicular-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicular-inspections",
+                "{{vehicularInspectionId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Ana (rev)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicular-inspections/:id/checklist (passo 2 conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}/checklist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicular-inspections",
+                "{{vehicularInspectionId}}",
+                "checklist"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responses\": [\n    {\n      \"planItemId\": \"{{planItemId}}\",\n      \"value\": true,\n      \"observation\": \"ok\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /vehicular-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicular-inspections",
+                "{{vehicularInspectionId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes de equipamentos",
+      "item": [
+        {
+          "name": "GET /equipment-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections?status=&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "equipment-inspections"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /equipment-inspections (passo 1 cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "equipment-inspections"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentCatalogId\": \"{{equipmentCatalogId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Marcos\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /equipment-inspections/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "equipment-inspections",
+                "{{equipmentInspectionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /equipment-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "equipment-inspections",
+                "{{equipmentInspectionId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentCatalogId\": \"{{equipmentCatalogId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Marcos (rev)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /equipment-inspections/:id/checklist (passo 2 conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}/checklist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "equipment-inspections",
+                "{{equipmentInspectionId}}",
+                "checklist"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responses\": [\n    {\n      \"planItemId\": \"{{planItemId}}\",\n      \"value\": true,\n      \"observation\": \"ok\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /equipment-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "equipment-inspections",
+                "{{equipmentInspectionId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes de seguranca",
+      "item": [
+        {
+          "name": "GET /safety-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections?status=&category=&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "safety-inspections"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "category",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /safety-inspections (cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "safety-inspections"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"safety\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"planned\": true,\n  \"area\": \"Almoxarifado\",\n  \"companyId\": \"{{companyId}}\",\n  \"responsible\": \"Fiscal\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /safety-inspections/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "safety-inspections",
+                "{{safetyInspectionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /safety-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "safety-inspections",
+                "{{safetyInspectionId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"safety\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"planned\": false,\n  \"area\": \"Pátio\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /safety-inspections/:id/occurrences (conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}/occurrences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "safety-inspections",
+                "{{safetyInspectionId}}",
+                "occurrences"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"occurrences\": [\n    {\n      \"description\": \"Piso escorregadio\",\n      \"severity\": \"high\"\n    },\n    {\n      \"description\": \"Sinalização ausente\",\n      \"severity\": \"medium\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /safety-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "safety-inspections",
+                "{{safetyInspectionId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permissoes de trabalho (PT)",
+      "item": [
+        {
+          "name": "GET /work-permits (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits?search=&status=&type=&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-permits"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "type",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /work-permits (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-permits"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"PT-2026-001\",\n  \"type\": \"hot_work\",\n  \"status\": \"draft\",\n  \"companyId\": \"{{companyId}}\",\n  \"area\": \"Caldeiraria\",\n  \"description\": \"Solda em tubulação de vapor\",\n  \"validFrom\": \"2026-07-15\",\n  \"validUntil\": \"2026-07-16\",\n  \"requestedBy\": \"Encarregado\",\n  \"precautions\": \"Extintor + vigia de fogo\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /work-permits/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-permits",
+                "{{workPermitId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /work-permits/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-permits",
+                "{{workPermitId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"PT-2026-001\",\n  \"type\": \"hot_work\",\n  \"status\": \"active\",\n  \"description\": \"Solda (liberada)\",\n  \"validFrom\": \"2026-07-15\",\n  \"validUntil\": \"2026-07-16\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /work-permits/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-permits",
+                "{{workPermitId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Psicossocial (campanhas)",
+      "item": [
+        {
+          "name": "GET /psychosocial-campaigns (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns?status=&workUnitId=&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "workUnitId",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /psychosocial-campaigns (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Clima organizacional 2026\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"startsAt\": \"2026-07-01\",\n  \"endsAt\": \"2026-07-31\",\n  \"themeColor\": \"#2563eb\",\n  \"workerDescription\": \"Ajude-nos a melhorar o ambiente de trabalho.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /psychosocial-campaigns/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /psychosocial-campaigns/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Clima organizacional 2026\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"startsAt\": \"2026-07-01\",\n  \"endsAt\": \"2026-07-31\",\n  \"themeColor\": \"#2563eb\",\n  \"workerDescription\": \"Ajude-nos a melhorar o ambiente de trabalho.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /:id/status (transicao)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/questions (add)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Sinto-me sobrecarregado no trabalho?\",\n  \"questionType\": \"likert\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /:id/questions/:qid",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/questions/{{psychoQuestionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "questions",
+                "{{psychoQuestionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/questions/:qid/reorder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/questions/{{psychoQuestionId}}/reorder",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "questions",
+                "{{psychoQuestionId}}",
+                "reorder"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"up\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /:id/stats (dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "stats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/risks (derivar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/risks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "risks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/risks/:rid/register (PGR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/risks/{{psychoRiskId}}/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "risks",
+                "{{psychoRiskId}}",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gesId\": \"{{gesId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/conclude (encerrar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/conclude",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "conclude"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /psychosocial-campaigns/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "eSocial (SST)",
+      "item": [
+        {
+          "name": "GET /esocial-events (list+filtros)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events?status=&eventType=&dateFrom=&dateTo=&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "esocial-events"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "eventType",
+                  "value": ""
+                },
+                {
+                  "key": "dateFrom",
+                  "value": ""
+                },
+                {
+                  "key": "dateTo",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-events (gerar S-2210)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "esocial-events"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"S-2210\",\n  \"input\": {\n    \"cpf\": \"12345678901\",\n    \"dataAcidente\": \"2026-02-01\",\n    \"descricao\": \"Corte no dedo\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-events (gerar S-2240)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "esocial-events"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"S-2240\",\n  \"input\": {\n    \"cpf\": \"12345678901\",\n    \"dataInicio\": \"2026-01-10\",\n    \"codigoAgenteNocivo\": \"01.01.001\",\n    \"unidadeMedida\": \"db_a\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /esocial-events/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events/{{esocialEventId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "esocial-events",
+                "{{esocialEventId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /esocial-batches (lotes)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "esocial-batches"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-batches (enviar lote)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "esocial-batches"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventIds\": [\n    \"{{esocialEventId}}\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-batches/:id/return (consultar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches/{{esocialBatchId}}/return",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "esocial-batches",
+                "{{esocialBatchId}}",
+                "return"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
             }
           }
         }
@@ -3142,8 +6180,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/schedule-events?page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "schedule-events"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedule-events"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -3182,8 +6226,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/schedule-events",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "schedule-events"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedule-events"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -3207,8 +6257,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/schedule-events/{{scheduleEventId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "schedule-events", "{{scheduleEventId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedule-events",
+                "{{scheduleEventId}}"
+              ]
             }
           }
         },
@@ -3232,8 +6289,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/schedule-events/{{scheduleEventId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "schedule-events", "{{scheduleEventId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedule-events",
+                "{{scheduleEventId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -3257,8 +6321,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/schedule-events/{{scheduleEventId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "schedule-events", "{{scheduleEventId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedule-events",
+                "{{scheduleEventId}}"
+              ]
             }
           }
         }
@@ -3280,8 +6351,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/integrations/cep/{{cep}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "integrations", "cep", "{{cep}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "integrations",
+                "cep",
+                "{{cep}}"
+              ]
             },
             "description": "200 ok(endereco) | 404 NOT_FOUND | 422 VALIDATION (formato) | 502 UPSTREAM_ERROR | 401/307 sem sessao."
           }
@@ -3298,8 +6376,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/integrations/cnpj/{{cnpj}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "integrations", "cnpj", "{{cnpj}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "integrations",
+                "cnpj",
+                "{{cnpj}}"
+              ]
             },
             "description": "200 ok(empresa+endereco) | 404 | 422 (digito verificador) | 502 | 401/307 sem sessao."
           }
@@ -3320,8 +6405,15 @@
                 ],
                 "url": {
                   "raw": "{{baseUrl}}/api/integrations/caepi/{{ca}}",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "integrations", "caepi", "{{ca}}"]
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "integrations",
+                    "caepi",
+                    "{{ca}}"
+                  ]
                 },
                 "description": "200 ok({ status: 'valid', ca, manufacturer, norm, validUntil, equipmentName? }) — CA vigente; autofill no form de EPI."
               }
@@ -3338,8 +6430,15 @@
                 ],
                 "url": {
                   "raw": "{{baseUrl}}/api/integrations/caepi/{{caExpired}}",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "integrations", "caepi", "{{caExpired}}"]
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "integrations",
+                    "caepi",
+                    "{{caExpired}}"
+                  ]
                 },
                 "description": "200 ok({ status: 'expired', ... }) — situacao VENCIDO/CANCELADO ou validade passada; a UI avisa mas AINDA autopreenche."
               }
@@ -3356,8 +6455,15 @@
                 ],
                 "url": {
                   "raw": "{{baseUrl}}/api/integrations/caepi/999999999",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "integrations", "caepi", "999999999"]
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "integrations",
+                    "caepi",
+                    "999999999"
+                  ]
                 },
                 "description": "200 ok({ status: 'not_found', ca, baseUnsynced? }) — baseUnsynced=true quando a tabela nunca foi sincronizada."
               }
@@ -3374,8 +6480,15 @@
                 ],
                 "url": {
                   "raw": "{{baseUrl}}/api/integrations/caepi/abc123",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "integrations", "caepi", "abc123"]
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "integrations",
+                    "caepi",
+                    "abc123"
+                  ]
                 },
                 "description": "422 fail(VALIDATION, 'CA invalido.') — contem letras; nao toca a base."
               }

@@ -134,6 +134,41 @@
       "when": 1784041870437,
       "tag": "0018_schedule_events",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784133647554,
+      "tag": "0019_inspections_data_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784136699585,
+      "tag": "0020_work_permits",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1784161580170,
+      "tag": "0021_psychosocial",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1784163996178,
+      "tag": "0022_esocial",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1784169526133,
+      "tag": "0023_schedule_events",
+      "breakpoints": true
     }
   ]
 }

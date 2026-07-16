@@ -1,6 +1,5 @@
 "use server";
 
-import QRCode from "qrcode";
 import { revalidatePath } from "next/cache";
 
 import { NotFoundError } from "@/shared/errors/not-found-error";
@@ -12,17 +11,9 @@ import {
   type CreateSignatureRequestInput,
   type SignManuallyInput,
 } from "@/shared/domains/signatures/schemas";
-import { getPayloadSchema } from "@/shared/domains/signatures/contract";
-import {
-  computeExpiresAt,
-  generateToken,
-  hashToken,
-  isExpired,
-} from "@/shared/domains/signatures/token";
-import { buildPublicSignatureUrl } from "@/shared/domains/signatures/public-url";
+import { isExpired } from "@/shared/domains/signatures/token";
 import type { SignatureStatusView } from "@/shared/domains/signatures/types";
-import { FREE_SIGNATURE_MONTHLY_QUOTA, isSignatureAvailable } from "@/shared/tenant/plan";
-import { QuotaExceededError } from "@/shared/errors/quota-exceeded-error";
+import { createSignatureRequestCore } from "@/shared/server/signatures/create-request-core";
 import * as repo from "@/shared/db/repositories/signature-requests";
 
 const BASE_PATH = "/signatures";
@@ -38,31 +29,17 @@ export async function createSignatureRequest(
 ): Promise<ActionResult<CreateSignatureRequestResult>> {
   return officeAction(
     "signatures.create",
-    async ({ tenantId, plan }) => {
+    async (ctx) => {
       const data = createSignatureRequestSchema.parse(input);
-      const payload = getPayloadSchema(data.targetType).parse(data.payload);
-
-      // Gate de plano (FR-019/020): plano do tenant ativo; free limitado, pro ilimitado.
-      const monthlyCount = await repo.countRequestsInCurrentMonth(tenantId);
-      if (!isSignatureAvailable(plan, monthlyCount)) {
-        throw new QuotaExceededError(
-          `Limite de ${FREE_SIGNATURE_MONTHLY_QUOTA} assinaturas/mês do plano free atingido.`,
-        );
-      }
-
-      const rawToken = generateToken();
-      const { id } = await repo.createRequest(tenantId, {
+      // Cota, token, hash, TTL, persistência e URL vivem no núcleo compartilhado (regra única).
+      const result = await createSignatureRequestCore(ctx, {
         targetType: data.targetType,
         targetId: data.targetId,
-        tokenHash: hashToken(rawToken),
-        payload,
-        expiresAt: computeExpiresAt(data.ttlSeconds),
+        payload: data.payload,
+        ttlSeconds: data.ttlSeconds,
       });
-
-      const publicUrl = buildPublicSignatureUrl(rawToken);
-      const qrCodeDataUrl = await QRCode.toDataURL(publicUrl);
       revalidatePath(BASE_PATH);
-      return { requestId: id, publicUrl, qrCodeDataUrl };
+      return result;
     },
     { audit: true },
   );

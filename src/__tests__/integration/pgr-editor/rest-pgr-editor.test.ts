@@ -96,25 +96,22 @@ const ctx2 = (id: string, gesId: string) => ({ params: Promise.resolve({ id, ges
     expect(res.status).toBe(204);
   });
 
-  it("GET revisions (200) e POST duplicado → 409", async () => {
+  it("GET revisions (200) e POST com revisionNumber → 422 (schema estrito)", async () => {
     const list = await REV_LIST(req({ method: "GET" }), ctx(PGR_IDS.pgrA));
     expect(list.status).toBe(200);
-    const dup = await REV_CREATE(
+    const bad = await REV_CREATE(
       req({
         method: "POST",
-        body: JSON.stringify({ revisionNumber: 1, revisedAt: "2026-07-12" }),
+        body: JSON.stringify({ revisionNumber: 99, revisedAt: "2026-07-12" }),
       }),
       ctx(PGR_IDS.pgrA),
     );
-    expect(dup.status).toBe(409);
+    expect(bad.status).toBe(422);
   });
 
-  it("POST revision válida (201)", async () => {
+  it("POST revision válida (sem número, calculado no servidor) → 201", async () => {
     const res = await REV_CREATE(
-      req({
-        method: "POST",
-        body: JSON.stringify({ revisionNumber: 2, revisedAt: "2026-07-12" }),
-      }),
+      req({ method: "POST", body: JSON.stringify({ revisedAt: "2026-07-12" }) }),
       ctx(PGR_IDS.pgrA),
     );
     expect(res.status).toBe(201);

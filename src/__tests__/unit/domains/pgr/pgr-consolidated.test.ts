@@ -9,9 +9,20 @@ function risk(overrides: Partial<ConsolidatedRisk> = {}): ConsolidatedRisk {
     id: overrides.id ?? "r",
     agentType: "physical",
     description: overrides.description ?? "desc",
+    hazard: null,
+    sources: null,
+    propagation: null,
+    exposureTime: null,
+    possibleInjuries: null,
+    noxiousAgentCode: null,
+    measurementUnit: null,
+    concentrationIntensity: null,
     riskLevel: overrides.riskLevel ?? null,
     result: overrides.result ?? null,
+    assessment: null,
     measures: overrides.measures ?? [],
+    epis: overrides.epis ?? [],
+    ...overrides,
   };
 }
 
@@ -59,6 +70,36 @@ describe("sortConsolidatedRisks", () => {
     const copy = [...input];
     sortConsolidatedRisks(input);
     expect(input.map((r) => r.id)).toEqual(copy.map((r) => r.id));
+  });
+
+  it("preserva os EPIs e o 5W2H de cada risco ao ordenar (fatia 022)", () => {
+    const epi = {
+      id: "e1",
+      catalogId: "c1",
+      name: "Capacete",
+      ca: "CA-123",
+      neutralization: "neutralizes" as const,
+    };
+    const measure = {
+      id: "m1",
+      controlLevel: "ppe" as const,
+      applicable: true,
+      justification: "j",
+      monitoring: "mon",
+      actionWhat: "o quê",
+      actionHow: "como",
+      actionTracking: "acomp",
+      actionMeasurement: "medição",
+      actionResponsible: "resp",
+      actionDeadline: "2026-12-31",
+      state: "planned" as const,
+    };
+    const out = sortConsolidatedRisks([
+      risk({ id: "a", riskLevel: 5, epis: [epi], measures: [measure] }),
+    ]);
+    expect(out[0].epis).toEqual([epi]);
+    expect(out[0].measures[0].actionWhat).toBe("o quê");
+    expect(out[0].measures[0].actionMeasurement).toBe("medição");
   });
 });
 
