@@ -36,7 +36,10 @@ export function SignaturePad({ token }: { token: string }) {
     const { x, y } = pointFrom(event);
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#111";
+    ctx.strokeStyle =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-text")
+        .trim() || "currentColor";
     ctx.beginPath();
     ctx.moveTo(x, y);
   }

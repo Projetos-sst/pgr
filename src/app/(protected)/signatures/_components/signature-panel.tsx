@@ -88,7 +88,7 @@ export function SignaturePanel() {
           type="button"
           onClick={handleGenerate}
           disabled={generating}
-          className="bg-foreground text-background self-start rounded-full px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#383838] disabled:opacity-60"
+          className="btn-primary rounded-pill self-start px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60"
         >
           {generating ? "Gerando…" : "Gerar link/QR"}
         </button>

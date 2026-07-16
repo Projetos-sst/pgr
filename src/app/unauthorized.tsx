@@ -6,12 +6,12 @@ export default function Unauthorized() {
       <h1 className="text-2xl font-semibold tracking-tight">
         Você precisa estar autenticado
       </h1>
-      <p className="max-w-md text-base text-zinc-600">
+      <p className="text-text-muted max-w-md text-base">
         Faça login para acessar esta página.
       </p>
       <Link
         href="/sign-in"
-        className="bg-foreground text-background rounded-full px-5 py-2 text-sm font-medium transition-colors hover:bg-[#383838]"
+        className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold transition-colors"
       >
         Entrar
       </Link>
