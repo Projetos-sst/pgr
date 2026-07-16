@@ -8,6 +8,8 @@ jest.mock("next/navigation", () => ({
   redirect: jest.fn((path: string) => {
     throw new Error(`__redirect:${path}`);
   }),
+  // O mega-menu (NavMenu) usa usePathname para destacar a rota ativa.
+  usePathname: () => "/dashboard",
 }));
 
 jest.mock("next/headers", () => ({
@@ -17,6 +19,7 @@ jest.mock("next/headers", () => ({
 }));
 
 jest.mock("@clerk/nextjs", () => ({
+  UserButton: () => <div data-testid="user-button" />,
   OrganizationSwitcher: (props: {
     hidePersonal?: boolean;
     afterSelectOrganizationUrl?: string;
@@ -27,6 +30,11 @@ jest.mock("@clerk/nextjs", () => ({
       data-after-select={props.afterSelectOrganizationUrl}
     />
   ),
+}));
+
+// O seletor de tenant (server component async) é composto na barra unificada.
+jest.mock("@/app/_components/tenant-switcher", () => ({
+  TenantSwitcher: () => <div data-testid="tenant-switcher" />,
 }));
 
 jest.mock("@/shared/auth/require-tenant-context", () => ({
