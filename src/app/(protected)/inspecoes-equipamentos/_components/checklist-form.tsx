@@ -60,7 +60,7 @@ export function ChecklistForm({
 
   if (items.length === 0) {
     return (
-      <p className="text-sm text-zinc-500">
+      <p className="text-text-subtle text-sm">
         O plano desta inspeção não possui itens de checklist.
       </p>
     );
@@ -69,10 +69,10 @@ export function ChecklistForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <FormError message={formError} />
-      <ul className="flex flex-col divide-y divide-black/5 dark:divide-white/5">
+      <ul className="flex flex-col divide-y divide-white/50">
         {items.map((item, index) => (
           <li key={item.planItemId} className="flex flex-col gap-2 py-3">
-            <span className="text-sm font-medium">{item.description}</span>
+            <span className="text-text text-sm font-semibold">{item.description}</span>
             <div className="flex flex-wrap gap-3">
               {VALUE_OPTIONS.map((opt) => (
                 <label key={opt.key} className="flex items-center gap-1 text-sm">
@@ -90,7 +90,7 @@ export function ChecklistForm({
               value={rows[index].observation}
               onChange={(e) => setRow(index, { observation: e.target.value })}
               placeholder="Observação (opcional)"
-              className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+              className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
             />
           </li>
         ))}

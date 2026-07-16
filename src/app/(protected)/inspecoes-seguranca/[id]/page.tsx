@@ -33,7 +33,7 @@ export default async function InspecaoSegurancaPage({
         action={
           <Link
             href={`/inspecoes-seguranca/${id}/edit`}
-            className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+            className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
           >
             Editar cabeçalho
           </Link>
@@ -41,7 +41,7 @@ export default async function InspecaoSegurancaPage({
       />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Ocorrências</h2>
+        <h2 className="text-text text-lg font-semibold">Ocorrências</h2>
         <OccurrencesForm
           inspectionId={id}
           initial={occurrences.map((o) => ({
@@ -53,7 +53,10 @@ export default async function InspecaoSegurancaPage({
 
       <InspectionSignaturePanel inspectionId={id} />
 
-      <Link href="/inspecoes-seguranca" className="text-sm text-zinc-500 hover:underline">
+      <Link
+        href="/inspecoes-seguranca"
+        className="text-text-subtle text-sm hover:underline"
+      >
         ← Voltar
       </Link>
     </div>

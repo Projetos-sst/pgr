@@ -64,7 +64,7 @@ export default async function EmployeesPage({
         <select
           name="companyId"
           defaultValue={sp.companyId ?? ""}
-          className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
         >
           <option value="">Todas as empresas</option>
           {companies.map((c) => (
@@ -76,7 +76,7 @@ export default async function EmployeesPage({
         <select
           name="status"
           defaultValue={sp.status ?? ""}
-          className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
         >
           {STATUS_FILTER.map((s) => (
             <option key={s.value} value={s.value}>
@@ -88,11 +88,11 @@ export default async function EmployeesPage({
           name="search"
           defaultValue={sp.search ?? ""}
           placeholder="Buscar por nome, GES ou função"
-          className="w-full max-w-xs rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+          className="glass-input text-text rounded-card w-full max-w-xs px-3 py-2 text-sm outline-none"
         />
         <button
           type="submit"
-          className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
         >
           Filtrar
         </button>
@@ -103,7 +103,7 @@ export default async function EmployeesPage({
       ) : (
         <Table headers={["Nome", "Empresa", "GES", "Status", ""]}>
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
+            <tr key={row.id} className="border-t border-white/50">
               <td className="px-4 py-2">
                 <Link
                   href={`/employees/${row.id}`}
@@ -119,7 +119,7 @@ export default async function EmployeesPage({
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`/employees/${row.id}/edit`}
-                    className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
                   >
                     Editar
                   </Link>

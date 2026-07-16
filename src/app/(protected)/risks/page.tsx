@@ -63,7 +63,7 @@ export default async function RisksPage({
           headers={["Grupo do agente", "Descrição", "Tempo de exposição", "GES", ""]}
         >
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
+            <tr key={row.id} className="border-t border-white/50">
               <td className="px-4 py-2">
                 <Link href={`/risks/${row.id}`} className="font-medium hover:underline">
                   {riskAgentTypeLabel(row.agentType)}
@@ -78,7 +78,7 @@ export default async function RisksPage({
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`/risks/${row.id}/edit`}
-                    className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
                   >
                     Editar
                   </Link>

@@ -12,8 +12,7 @@ import type { PgrGesLinkItem } from "@/shared/domains/pgr/pgr-ges";
 import { EmptyState, Table } from "../../../_ui/list";
 import { FormError } from "../../../_ui/form";
 
-const inputClass =
-  "rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:bg-zinc-900";
+const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
 
 export function PgrGesTab({
   pgrId,
@@ -68,7 +67,7 @@ export function PgrGesTab({
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Vincular GES</span>
+          <span className="text-text-muted text-sm font-semibold">Vincular GES</span>
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
@@ -91,7 +90,7 @@ export function PgrGesTab({
           type="button"
           onClick={add}
           disabled={pending || !selected}
-          className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+          className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           Adicionar
         </button>
@@ -102,7 +101,7 @@ export function PgrGesTab({
       ) : (
         <Table headers={["GES", ""]}>
           {links.map((link) => (
-            <tr key={link.id} className="border-t border-black/5 dark:border-white/5">
+            <tr key={link.id} className="border-t border-white/50">
               <td className="px-4 py-2 font-medium">{link.gesName}</td>
               <td className="px-4 py-2">
                 <div className="flex justify-end">
@@ -114,7 +113,7 @@ export function PgrGesTab({
                       }
                     }}
                     disabled={pending}
-                    className="rounded-md border border-red-300 px-3 py-1 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
+                    className="rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
                   >
                     Remover
                   </button>

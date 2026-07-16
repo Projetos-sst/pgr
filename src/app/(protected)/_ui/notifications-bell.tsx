@@ -33,11 +33,11 @@ export function NotificationsBell() {
   return (
     <Link
       href="/notificacoes"
-      className="relative rounded-md px-3 py-1.5 font-medium text-zinc-700 transition-colors hover:bg-black/5 dark:text-zinc-300 dark:hover:bg-white/5"
+      className="text-text-muted hover:text-text rounded-card relative px-3 py-1.5 font-semibold transition-colors"
     >
       Notificações
       {unread > 0 ? (
-        <span className="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-medium text-white">
+        <span className="rounded-pill ml-1 bg-red-500 px-1.5 py-0.5 text-xs font-semibold text-white">
           {unread}
         </span>
       ) : null}

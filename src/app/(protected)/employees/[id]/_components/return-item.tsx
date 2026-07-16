@@ -24,7 +24,7 @@ export function ReturnItem({
 
   if (returnedAt) {
     return (
-      <span className="text-xs text-zinc-500">
+      <span className="text-text-subtle text-xs">
         Devolvido em {new Date(returnedAt).toLocaleDateString("pt-BR")}
       </span>
     );
@@ -48,7 +48,7 @@ export function ReturnItem({
         type="button"
         onClick={handleReturn}
         disabled={pending}
-        className="rounded-md border border-black/15 px-2 py-0.5 text-xs font-medium transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+        className="glass-panel text-text-muted rounded-card hover:text-text px-2 py-0.5 text-xs font-semibold transition-colors disabled:opacity-50"
       >
         {pending ? "Aguarde…" : "Devolver"}
       </button>

@@ -48,7 +48,27 @@ Reference implementation to copy from: **companies** (`actions/pgr/companies.ts`
 
 <!-- SPECKIT START -->
 
-Branch atual: **`feature/training-module`**. Fatia atual (`017`) — **Módulo de Treinamentos / Fase 04
+Branch atual: **`feature/redesign-implantation`**. Fatia atual (`019`) — **Implantação do design system
+do redesign visual** nas telas já implementadas (fatia de UI transversal, sem módulo de negócio novo).
+Plan: `.specs/019-redesign-implantation/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
+diretório). Fonte da verdade do "como": `docs/briefings/briefing-redesign-implantation.md` (+
+`docs/briefings/redesign-backlog-telas.md` cataloga as ~20 telas de módulos inexistentes, fora de
+escopo). Aplica os tokens dos mockups `sst-project/redesign/*.dc.html` (indigo `#5b63f5`, Manrope +
+JetBrains Mono, cards glass/blur, raio ~12px, sombras suaves) via `@theme inline` em `globals.css` +
+troca de fonte (`next/font/google`). Alavanca de cascata: restyle das **5 primitives** de
+`src/app/(protected)/_ui/` + shell (header raiz + nav → **mega-menu** por categoria, só rotas reais) →
+tema chega às ~13 telas sem mockup direto. 4 user stories: US1/US2 (P1) identidade visual nos
+cadastros+dashboard e mega-menu; US3/US4 (P2) nova rota `/boas-vindas` (reusa lista de módulos do
+`/dashboard`) + `/dashboard` rebuild (4 KPIs reais — Empresas/PGRs/Equipe/EPIs-abaixo-da-mínima,
+contagens `withOrg`; widgets sem dado usam empty-state do mockup, **nunca dado fictício**). Login/
+cadastro/onboarding = **Clerk** com moldura + `appearance` (não reimplementar auth). **Zero migration**,
+sem mudança de RLS/schema/contrato de Server Actions; única lógica nova = contagens simples do dashboard.
+Verificação: comparação visual (Playwright MCP) tela-real vs. `.dc.html` em 375/768/1440px (sem
+pixel-diff). Constitution Check: sem violações (Complexity Tracking vazio). Testes: unit (helper de KPI)
+
+- integração (Postgres efêmero, contagem isolada por tenant). Base: `develop`.
+
+Fatia anterior (`017`) — **Módulo de Treinamentos / Fase 04
 completa** (issues `#28`/`#29`/`#30`/`#31`/`#80`). Plan: `.specs/017-training-module/plan.md`
 (spec/research/data-model/contracts/quickstart no mesmo diretório). Base `develop` pós-#142 (última
 migration `0015_ai_usage_events`); esta leva traz a **`0016_training_module`** (renumerada de `0015`

@@ -82,7 +82,7 @@ export function RegisterTraining({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 dark:bg-white dark:text-black"
+        className="btn-primary rounded-pill px-4 py-2 text-sm font-semibold transition-colors"
       >
         Registrar treinamento
       </button>
@@ -92,7 +92,7 @@ export function RegisterTraining({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex w-full max-w-xl flex-col gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10"
+      className="glass-card flex w-full max-w-xl flex-col gap-4 p-4"
     >
       <FormError message={formError} />
       <SelectField
@@ -125,7 +125,7 @@ export function RegisterTraining({
         error={errors.certificatePath}
       />
       {selected ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-text-muted text-sm">
           Validade prevista:{" "}
           <span className="font-medium">
             {predictedValidity ? formatIsoDate(predictedValidity) : "não expira (única)"}
@@ -140,7 +140,7 @@ export function RegisterTraining({
           type="button"
           onClick={() => setOpen(false)}
           disabled={pending}
-          className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           Cancelar
         </button>

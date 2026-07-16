@@ -63,18 +63,18 @@ export function RequiredTrainings({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
-      <h2 className="text-lg font-semibold">Treinamentos obrigatórios</h2>
+    <section className="glass-card flex flex-col gap-4 p-4">
+      <h2 className="text-text text-lg font-semibold">Treinamentos obrigatórios</h2>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       <div className="flex items-end gap-2">
         <label className="flex w-full max-w-xs flex-col gap-1 text-sm">
-          <span className="font-medium">Adicionar obrigatório</span>
+          <span className="text-text-muted font-semibold">Adicionar obrigatório</span>
           <select
             value={trainingId}
             onChange={(event) => setTrainingId(event.target.value)}
-            className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
           >
             <option value="">
               {availableOptions.length === 0
@@ -92,23 +92,23 @@ export function RequiredTrainings({
           type="button"
           onClick={handleAdd}
           disabled={pending || !trainingId}
-          className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           Adicionar
         </button>
       </div>
 
       {links.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-black/15 px-4 py-6 text-center text-sm text-zinc-500 dark:border-white/15">
+        <p className="glass-card text-text-subtle px-4 py-6 text-center text-sm">
           Nenhum treinamento obrigatório para esta função.
         </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-black/5 dark:divide-white/5">
+        <ul className="flex flex-col divide-y divide-white/50">
           {links.map((link) => (
             <li key={link.id} className="flex items-center justify-between gap-4 py-2">
               <span className="text-sm">
                 {link.trainingName}{" "}
-                <span className="text-zinc-500">
+                <span className="text-text-subtle">
                   ({trainingPeriodicityLabel(link.periodicity)})
                 </span>
               </span>
@@ -116,7 +116,7 @@ export function RequiredTrainings({
                 type="button"
                 onClick={() => handleRemove(link.id)}
                 disabled={pending}
-                className="rounded-md border border-red-300 px-3 py-1 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
+                className="rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
               >
                 Remover
               </button>

@@ -45,7 +45,7 @@ export function ProfileForm({
     <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-4">
       <FormError message={formError} />
       {saved ? (
-        <p className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/40">
+        <p className="rounded-card border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-700">
           Perfil atualizado.
         </p>
       ) : null}

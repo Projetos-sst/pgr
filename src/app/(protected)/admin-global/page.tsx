@@ -24,7 +24,7 @@ export default async function AdminGlobalPage() {
       />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold tracking-tight">
+        <h2 className="text-text text-sm font-semibold tracking-tight">
           Administradores da plataforma (masters)
         </h2>
         {mastersRes.ok ? (
@@ -35,7 +35,7 @@ export default async function AdminGlobalPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold tracking-tight">
+        <h2 className="text-text text-sm font-semibold tracking-tight">
           Uso de IA (Anthropic) por organização
         </h2>
         {!usageRes.ok ? (
@@ -45,7 +45,7 @@ export default async function AdminGlobalPage() {
         ) : (
           <Table headers={["Organização", "org_id", "Chamadas"]}>
             {usageRes.data.map((row) => (
-              <tr key={row.orgId} className="border-t border-black/5 dark:border-white/5">
+              <tr key={row.orgId} className="border-t border-white/50">
                 <td className="px-4 py-2">{row.orgName ?? "—"}</td>
                 <td className="px-4 py-2 font-mono text-xs">{row.orgId}</td>
                 <td className="px-4 py-2 tabular-nums">{row.count}</td>
@@ -55,7 +55,7 @@ export default async function AdminGlobalPage() {
         )}
       </section>
 
-      <p className="text-xs text-zinc-500">
+      <p className="text-text-subtle text-xs">
         Convites de acesso e gestão de guias/conteúdo de onboarding ficam como evolução
         desta área (o manual de onboarding já é um tipo de relatório).
       </p>

@@ -67,8 +67,8 @@ export function AddressFields({
   }
 
   return (
-    <fieldset className="grid gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
-      <legend className="px-1 text-sm font-medium">Endereço</legend>
+    <fieldset className="glass-panel rounded-card grid gap-4 p-4">
+      <legend className="text-text-muted px-1 text-sm font-semibold">Endereço</legend>
       {headerSlot}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-1">
@@ -133,11 +133,11 @@ export function AddressFields({
 
 function CepStatus({ status }: { status: "idle" | "loading" | "success" | "error" }) {
   if (status === "loading") {
-    return <span className="text-xs text-black/50 dark:text-white/50">Buscando…</span>;
+    return <span className="text-text-subtle text-xs">Buscando…</span>;
   }
   if (status === "error") {
     return (
-      <span className="text-xs text-amber-600 dark:text-amber-400">
+      <span className="text-xs text-amber-600">
         CEP não encontrado. Preencha manualmente.
       </span>
     );

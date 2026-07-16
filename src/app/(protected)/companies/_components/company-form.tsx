@@ -210,11 +210,11 @@ export function CompanyForm({ company }: { company?: Company }) {
 
 function CnpjStatus({ status }: { status: "idle" | "loading" | "success" | "error" }) {
   if (status === "loading") {
-    return <span className="text-xs text-black/50 dark:text-white/50">Buscando…</span>;
+    return <span className="text-text-subtle text-xs">Buscando…</span>;
   }
   if (status === "error") {
     return (
-      <span className="text-xs text-amber-600 dark:text-amber-400">
+      <span className="text-xs text-amber-600">
         CNPJ não encontrado. Preencha manualmente.
       </span>
     );

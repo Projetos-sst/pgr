@@ -4,9 +4,9 @@
  */
 export function PgrDisabledPlaceholderTab({ title }: { title: string }) {
   return (
-    <section className="rounded-lg border border-dashed border-black/15 p-8 text-center dark:border-white/15">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+    <section className="glass-card p-8 text-center">
+      <h2 className="text-text text-lg font-semibold">{title}</h2>
+      <p className="text-text-subtle mt-2 text-sm">
         Esta seção será implementada na <strong>Fase 05</strong> (Documentos e geração de
         PDF). Não faz parte desta entrega.
       </p>

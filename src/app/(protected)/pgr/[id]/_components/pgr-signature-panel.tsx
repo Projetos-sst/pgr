@@ -21,11 +21,11 @@ const STATE_LABEL: Record<PgrSignatureState, string> = {
 };
 
 const STATE_CLASS: Record<PgrSignatureState, string> = {
-  none: "bg-black/5 text-zinc-600 dark:bg-white/10 dark:text-zinc-300",
-  pending: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
-  signed: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200",
-  expired: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400",
-  cancelled: "bg-black/5 text-zinc-600 dark:bg-white/10 dark:text-zinc-300",
+  none: "bg-black/5 text-text-muted",
+  pending: "bg-amber-100 text-amber-800",
+  signed: "bg-green-100 text-green-800",
+  expired: "bg-red-50 text-red-700",
+  cancelled: "bg-black/5 text-text-muted",
 };
 
 /**
@@ -88,9 +88,9 @@ export function PgrSignaturePanel({
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-black/10 p-4 dark:border-white/10">
+    <section className="glass-card flex flex-col gap-3 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">Assinatura do PGR</h3>
+        <h3 className="text-text text-sm font-semibold">Assinatura do PGR</h3>
         <span
           className={`rounded-full px-3 py-1 text-xs font-medium ${STATE_CLASS[state]}`}
         >
@@ -104,7 +104,7 @@ export function PgrSignaturePanel({
           type="button"
           onClick={handleGenerate}
           disabled={pending}
-          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+          className="btn-primary rounded-pill px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           {pending ? "…" : "Gerar link de assinatura"}
         </button>
@@ -112,7 +112,7 @@ export function PgrSignaturePanel({
           type="button"
           onClick={handleRefresh}
           disabled={pending}
-          className="rounded-md border border-black/15 px-3 py-2 text-sm transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           Atualizar estado
         </button>
@@ -121,18 +121,18 @@ export function PgrSignaturePanel({
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       {fresh ? (
-        <div className="flex flex-col gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
-          <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+        <div className="rounded-card flex flex-col gap-2 border border-amber-300 bg-amber-50 p-3">
+          <p className="text-xs font-medium text-amber-800">
             Copie este link agora. Por segurança, ele não poderá ser exibido novamente.
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <code className="max-w-md truncate rounded-md border border-black/10 px-2 py-1 text-xs dark:border-white/10">
+            <code className="rounded-card max-w-md truncate border border-amber-300 px-2 py-1 text-xs">
               {fresh.publicUrl}
             </code>
             <button
               type="button"
               onClick={handleCopy}
-              className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
             >
               {copied ? "Copiado!" : "Copiar link"}
             </button>
@@ -140,7 +140,7 @@ export function PgrSignaturePanel({
           <QrCode dataUrl={fresh.qrCodeDataUrl} />
         </div>
       ) : (
-        <p className="text-xs text-zinc-500">
+        <p className="text-text-subtle text-xs">
           O link público só é exibido no momento da criação. Gerar um novo consome uma
           unidade da cota mensal.
         </p>

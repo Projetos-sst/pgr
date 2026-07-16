@@ -43,7 +43,7 @@ export default async function EditarInspecaoSegurancaPage({
       />
       <Link
         href={`/inspecoes-seguranca/${id}`}
-        className="text-sm text-zinc-500 hover:underline"
+        className="text-text-subtle text-sm hover:underline"
       >
         ← Voltar
       </Link>

@@ -54,13 +54,13 @@ export const SignaturePad = forwardRef<SignaturePadHandle>(function SignaturePad
     <div className="flex flex-col gap-2">
       <canvas
         ref={canvasRef}
-        className="h-48 w-full touch-none rounded-md border border-black/15 bg-white dark:border-white/15"
+        className="rounded-card h-48 w-full touch-none border border-white/60 bg-white"
         aria-label="Área de assinatura"
       />
       <button
         type="button"
         onClick={() => padRef.current?.clear()}
-        className="self-start rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+        className="glass-panel text-text-muted rounded-card hover:text-text self-start px-3 py-1 text-sm font-semibold transition-colors"
       >
         Limpar
       </button>

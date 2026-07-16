@@ -56,7 +56,7 @@ export default async function EpiReturnsPage({
           headers={["Funcionário", "EPI", "CA", "Quantidade", "Entregue em", "Ação"]}
         >
           {rows.map((row) => (
-            <tr key={row.itemId} className="border-t border-black/5 dark:border-white/5">
+            <tr key={row.itemId} className="border-t border-white/50">
               <td className="px-4 py-2">{row.employeeName}</td>
               <td className="px-4 py-2">{row.name}</td>
               <td className="px-4 py-2">{row.ca ?? "—"}</td>

@@ -21,8 +21,7 @@ const CONTROL_LEVEL_OPTIONS = controlLevelSchema.options.map((v) => ({
   label: controlLevelLabel(v),
 }));
 
-const inputClass =
-  "rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:bg-zinc-900";
+const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
 
 export type ControlMeasureFormInitial = {
   controlLevel?: string;
@@ -52,7 +51,7 @@ function Textarea({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium">
+      <span className="text-text-muted text-sm font-medium">
         {label}
         {required ? " *" : ""}
       </span>
@@ -135,7 +134,7 @@ export function ControlMeasureForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Nível NR-01 *</span>
+          <span className="text-text-muted text-sm font-medium">Nível NR-01 *</span>
           <select
             value={controlLevel}
             onChange={(e) => setControlLevel(e.target.value)}
@@ -149,7 +148,7 @@ export function ControlMeasureForm({
             ))}
           </select>
           {lockLevel ? (
-            <span className="text-xs text-zinc-500">
+            <span className="text-text-subtle text-xs">
               O nível não pode ser alterado; crie/exclua medidas para mudar de nível.
             </span>
           ) : null}
@@ -163,7 +162,9 @@ export function ControlMeasureForm({
             onChange={(e) => setApplicable(e.target.checked)}
             className="h-4 w-4"
           />
-          <span className="text-sm font-medium">Medida aplicável a este risco</span>
+          <span className="text-text-muted text-sm font-medium">
+            Medida aplicável a este risco
+          </span>
         </label>
       </div>
 
@@ -198,7 +199,9 @@ export function ControlMeasureForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Responsável pela ação</span>
+          <span className="text-text-muted text-sm font-medium">
+            Responsável pela ação
+          </span>
           <input
             name="actionResponsible"
             defaultValue={initial.actionResponsible ?? ""}
@@ -214,7 +217,7 @@ export function ControlMeasureForm({
           <FieldError message={errors.actionResponsible} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Prazo para execução</span>
+          <span className="text-text-muted text-sm font-medium">Prazo para execução</span>
           <input
             type="date"
             name="actionDeadline"
@@ -245,7 +248,7 @@ export function ControlMeasureForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+          className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           {pending ? "Salvando…" : measureId ? "Salvar alterações" : "Criar medida"}
         </button>

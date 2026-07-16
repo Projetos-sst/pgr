@@ -50,7 +50,7 @@ export function InviteMemberForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="flex flex-col gap-3 rounded-lg border border-black/10 p-4 sm:flex-row sm:items-end dark:border-white/10"
+      className="glass-card flex flex-col gap-3 p-4 sm:flex-row sm:items-end"
     >
       <div className="flex-1">
         <TextField
@@ -77,9 +77,7 @@ export function InviteMemberForm() {
         </div>
       ) : null}
       {invited ? (
-        <p className="w-full text-sm text-green-700 dark:text-green-400">
-          Convite enviado para {invited}.
-        </p>
+        <p className="w-full text-sm text-green-700">Convite enviado para {invited}.</p>
       ) : null}
     </form>
   );
@@ -129,7 +127,7 @@ export function MemberActions({
         defaultValue={role}
         disabled={pending}
         onChange={(e) => onRoleChange(e.target.value)}
-        className="rounded-md border border-black/15 bg-white px-2 py-1 text-sm dark:border-white/15 dark:bg-zinc-900"
+        className="glass-input text-text rounded-card px-2 py-1 text-sm outline-none"
       >
         {ROLE_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -142,7 +140,7 @@ export function MemberActions({
           type="button"
           onClick={onRemove}
           disabled={pending}
-          className="rounded-md border border-red-300 px-3 py-1 text-sm text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400"
+          className="rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
         >
           Remover
         </button>

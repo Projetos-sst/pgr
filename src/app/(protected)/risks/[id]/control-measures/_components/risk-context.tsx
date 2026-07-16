@@ -8,8 +8,8 @@ import type { Risk, RiskAssessment } from "@/shared/domains/pgr/control-measure"
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div className="flex flex-col">
-      <span className="text-xs tracking-wide text-zinc-500 uppercase">{label}</span>
-      <span className="text-sm">{value && value !== "" ? value : "—"}</span>
+      <span className="text-text-subtle text-xs tracking-wide uppercase">{label}</span>
+      <span className="text-text text-sm">{value && value !== "" ? value : "—"}</span>
     </div>
   );
 }
@@ -27,7 +27,7 @@ export function RiskContext({
 }) {
   return (
     <section className="flex flex-col gap-4">
-      <div className="grid gap-4 rounded-lg border border-black/10 p-4 sm:grid-cols-3 dark:border-white/10">
+      <div className="glass-card grid gap-4 p-4 sm:grid-cols-3">
         <Field label="Grupo do agente" value={riskAgentTypeLabel(risk.agentType)} />
         <Field label="Perigo" value={risk.hazard} />
         <Field label="Descrição" value={risk.description} />
@@ -40,7 +40,7 @@ export function RiskContext({
         />
       </div>
 
-      <div className="grid gap-4 rounded-lg border border-black/10 p-4 sm:grid-cols-2 dark:border-white/10">
+      <div className="glass-card grid gap-4 p-4 sm:grid-cols-2">
         {assessment ? (
           <>
             <Field

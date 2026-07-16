@@ -39,7 +39,7 @@ export function InspectionSignatureForm({ token, payload }: PublicFormProps) {
 
   if (done) {
     return (
-      <div className="rounded-lg border border-green-300 bg-green-50 p-6 text-center text-green-800 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
+      <div className="rounded-card border border-green-300 bg-green-50 p-6 text-center text-green-800">
         Assinatura registrada. Obrigado!
       </div>
     );
@@ -48,8 +48,8 @@ export function InspectionSignatureForm({ token, payload }: PublicFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">{data.title}</h1>
-        <dl className="text-sm text-zinc-600 dark:text-zinc-400">
+        <h1 className="text-text text-xl font-semibold">{data.title}</h1>
+        <dl className="text-text-muted text-sm">
           {data.category ? (
             <div className="flex gap-2">
               <dt className="font-medium">Categoria:</dt>
@@ -84,17 +84,17 @@ export function InspectionSignatureForm({ token, payload }: PublicFormProps) {
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Seu nome</span>
+        <span className="text-text-muted text-sm font-semibold">Seu nome</span>
         <input
           value={signerName}
           onChange={(e) => setSignerName(e.target.value)}
-          className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
           required
         />
       </label>
 
       <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Assinatura</span>
+        <span className="text-text-muted text-sm font-semibold">Assinatura</span>
         <SignaturePad ref={padRef} />
       </div>
 
@@ -103,7 +103,7 @@ export function InspectionSignatureForm({ token, payload }: PublicFormProps) {
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+        className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
       >
         {submitting ? "Enviando…" : "Assinar"}
       </button>

@@ -37,7 +37,7 @@ export default async function AgendaPage({
         <select
           name="eventType"
           defaultValue={sp.eventType ?? ""}
-          className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
         >
           <option value="">Todos os tipos</option>
           {Object.entries(SCHEDULE_EVENT_TYPE_LABELS).map(([value, label]) => (
@@ -48,7 +48,7 @@ export default async function AgendaPage({
         </select>
         <button
           type="submit"
-          className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
         >
           Filtrar
         </button>
@@ -59,7 +59,7 @@ export default async function AgendaPage({
       ) : (
         <Table headers={["Data", "Tipo", "Título", ""]}>
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
+            <tr key={row.id} className="border-t border-white/50">
               <td className="px-4 py-2 tabular-nums">{row.eventDate}</td>
               <td className="px-4 py-2">{row.eventTypeLabel}</td>
               <td className="px-4 py-2">
@@ -74,7 +74,7 @@ export default async function AgendaPage({
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`/agenda/${row.id}/edit`}
-                    className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
                   >
                     Editar
                   </Link>

@@ -1,43 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { UserButton } from "@clerk/nextjs";
 
 import { NoTenantContextError, UnauthorizedError } from "@/shared/auth/errors";
 import { requireTenantContext } from "@/shared/auth/require-tenant-context";
 
+import { TenantSwitcher } from "../_components/tenant-switcher";
+import { NavMenu } from "./_components/nav-menu";
 import { NotificationsBell } from "./_ui/notifications-bell";
-
-const PGR_NAV = [
-  { href: "/dashboard", label: "Painel" },
-  { href: "/agenda", label: "Agenda" },
-  { href: "/companies", label: "Empresas" },
-  { href: "/work-units", label: "Unidades de obra" },
-  { href: "/job-roles", label: "Funções" },
-  { href: "/ges", label: "GES" },
-  { href: "/risk-methodology", label: "Metodologia de Risco" },
-  { href: "/employees", label: "Funcionários" },
-  { href: "/pgr", label: "PGR" },
-  { href: "/risks", label: "Riscos" },
-  { href: "/categories", label: "Categorias" },
-  { href: "/epi-catalog", label: "Catálogo de EPI" },
-  { href: "/epi-stock", label: "Estoque de EPI" },
-  { href: "/training-catalog", label: "Treinamentos" },
-  { href: "/training-expiry", label: "Vencimentos" },
-  { href: "/training-compliance", label: "Conformidade" },
-  { href: "/signatures", label: "Assinaturas" },
-  { href: "/epi-returns", label: "Devoluções de EPI" },
-  { href: "/planos", label: "Planos" },
-  { href: "/veiculos", label: "Veículos" },
-  { href: "/planos-inspecao", label: "Planos de inspeção" },
-  { href: "/inspecoes-veiculares", label: "Inspeções veiculares" },
-  { href: "/inspecoes-equipamentos", label: "Inspeções de equipamentos" },
-  { href: "/inspecoes-seguranca", label: "Inspeções de segurança" },
-  { href: "/permissoes-trabalho", label: "Permissões de trabalho" },
-  { href: "/psicossocial/campanhas", label: "Riscos psicossociais" },
-  { href: "/esocial", label: "eSocial (SST)" },
-  { href: "/equipe", label: "Equipe" },
-  { href: "/perfil", label: "Perfil" },
-];
 
 export default async function ProtectedLayout({
   children,
@@ -60,19 +31,25 @@ export default async function ProtectedLayout({
 
   return (
     <div className="flex flex-1 flex-col">
-      <nav className="flex flex-wrap gap-1 border-b border-black/10 px-6 py-3 text-sm dark:border-white/10">
-        {PGR_NAV.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="rounded-md px-3 py-1.5 font-medium text-zinc-700 transition-colors hover:bg-black/5 dark:text-zinc-300 dark:hover:bg-white/5"
-          >
-            {item.label}
-          </Link>
-        ))}
-        <NotificationsBell />
-      </nav>
-      <main className="flex flex-1 flex-col">{children}</main>
+      <header className="app-nav flex h-[72px] items-center gap-4 px-5 sm:gap-6 sm:px-8">
+        <Link href="/boas-vindas" className="flex shrink-0 items-center gap-2.5">
+          <span className="btn-primary flex h-[34px] w-[34px] items-center justify-center rounded-[11px] text-sm font-extrabold">
+            S
+          </span>
+          <span className="text-text hidden text-base font-extrabold tracking-tight sm:inline">
+            SST Manager
+          </span>
+        </Link>
+        <NavMenu />
+        <div className="ml-auto flex items-center gap-3">
+          <NotificationsBell />
+          <TenantSwitcher />
+          <UserButton />
+        </div>
+      </header>
+      <main className="flex flex-1 flex-col">
+        <div className="mx-auto w-full max-w-[1320px] flex-1">{children}</div>
+      </main>
     </div>
   );
 }

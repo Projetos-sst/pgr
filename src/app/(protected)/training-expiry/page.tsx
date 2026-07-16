@@ -22,9 +22,9 @@ function formatIsoDate(isoDate: string): string {
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex flex-col rounded-lg border border-black/10 px-4 py-3 dark:border-white/10">
-      <span className="text-xs tracking-wide text-zinc-500 uppercase">{label}</span>
-      <span className="text-2xl font-semibold">{value}</span>
+    <div className="glass-card flex flex-col px-4 py-3">
+      <span className="text-text-subtle text-xs tracking-wide uppercase">{label}</span>
+      <span className="text-text text-2xl font-semibold">{value}</span>
     </div>
   );
 }
@@ -64,7 +64,7 @@ export default async function TrainingExpiryPage({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-zinc-500">Janela:</span>
+        <span className="text-text-subtle text-sm">Janela:</span>
         {DUE_WINDOW_DAYS_OPTIONS.map((days) => {
           const active = dueWithinDays === days;
           const query = new URLSearchParams({ window: String(days) });
@@ -73,10 +73,8 @@ export default async function TrainingExpiryPage({
             <Link
               key={days}
               href={`/training-expiry?${query.toString()}`}
-              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                active
-                  ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-black/15 hover:bg-black/5 dark:border-white/15"
+              className={`rounded-pill px-3 py-1 text-sm font-semibold transition-colors ${
+                active ? "btn-primary" : "glass-panel text-text-muted hover:text-text"
               }`}
             >
               {days} dias
@@ -88,11 +86,11 @@ export default async function TrainingExpiryPage({
       <form action="/training-expiry" method="get" className="flex items-end gap-2">
         <input type="hidden" name="window" value={dueWithinDays} />
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Funcionário</span>
+          <span className="text-text-muted font-semibold">Funcionário</span>
           <select
             name="employeeId"
             defaultValue={employeeId ?? ""}
-            className="w-full max-w-xs rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+            className="glass-input text-text rounded-card w-full max-w-xs px-3 py-2 text-sm outline-none"
           >
             <option value="">Todos</option>
             {employeeOptions.map((employee) => (
@@ -104,7 +102,7 @@ export default async function TrainingExpiryPage({
         </label>
         <button
           type="submit"
-          className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
         >
           Filtrar
         </button>
@@ -119,7 +117,7 @@ export default async function TrainingExpiryPage({
           {rows.map((row) => (
             <tr
               key={`${row.employeeId}-${row.trainingId}`}
-              className="border-t border-black/5 dark:border-white/5"
+              className="border-t border-white/50"
             >
               <td className="px-4 py-2">
                 <Link

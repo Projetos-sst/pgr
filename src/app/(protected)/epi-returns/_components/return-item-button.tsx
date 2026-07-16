@@ -50,7 +50,7 @@ export function ReturnItemButton({
         <button
           type="button"
           onClick={() => setError(null)}
-          className="rounded-md border border-black/15 px-2 py-1 text-xs transition-colors hover:bg-black/5 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-2 py-1 text-xs font-semibold transition-colors"
         >
           Tentar de novo
         </button>
@@ -65,7 +65,7 @@ export function ReturnItemButton({
           type="button"
           onClick={devolver}
           disabled={pending}
-          className="rounded-md bg-black px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+          className="btn-primary rounded-pill px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
         >
           {pending ? "Devolvendo…" : "Confirmar"}
         </button>
@@ -73,7 +73,7 @@ export function ReturnItemButton({
           type="button"
           onClick={() => setConfirming(false)}
           disabled={pending}
-          className="rounded-md border border-black/15 px-3 py-1 text-xs transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
         >
           Cancelar
         </button>
@@ -85,7 +85,7 @@ export function ReturnItemButton({
     <button
       type="button"
       onClick={() => setConfirming(true)}
-      className="rounded-md border border-black/15 px-3 py-1 text-xs font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+      className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-xs font-semibold transition-colors"
     >
       Devolver
     </button>

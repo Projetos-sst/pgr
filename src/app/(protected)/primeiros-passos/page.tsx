@@ -34,19 +34,19 @@ export default async function PrimeirosPassosPage() {
         <>
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">
+              <span className="text-text font-semibold">
                 {result.data.completed} de {result.data.total} concluídos
               </span>
-              <span className="text-zinc-500">{result.data.percent}%</span>
+              <span className="text-text-subtle">{result.data.percent}%</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+            <div className="bg-primary-ring h-2 overflow-hidden rounded-full">
               <div
-                className="h-full rounded-full bg-black/70 transition-all dark:bg-white/70"
+                className="bg-primary h-full rounded-full transition-all"
                 style={{ width: `${result.data.percent}%` }}
               />
             </div>
             {result.data.allDone ? (
-              <p className="text-sm text-green-700 dark:text-green-400">
+              <p className="text-sm text-green-700">
                 Tudo pronto! Sua organização está configurada. 🎉
               </p>
             ) : null}
@@ -56,35 +56,29 @@ export default async function PrimeirosPassosPage() {
             {result.data.steps.map((step, index) => (
               <li
                 key={step.key}
-                className={`flex items-center gap-4 rounded-lg border px-4 py-3 ${
+                className={`flex items-center gap-4 px-4 py-3 ${
                   step.done
-                    ? "border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950/30"
-                    : "border-black/10 dark:border-white/10"
+                    ? "rounded-card border border-green-300 bg-green-50"
+                    : "glass-card"
                 }`}
               >
                 <span
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-medium ${
-                    step.done
-                      ? "bg-green-600 text-white"
-                      : "bg-black/5 text-zinc-500 dark:bg-white/10"
+                    step.done ? "bg-green-600 text-white" : "text-text-subtle bg-black/5"
                   }`}
                 >
                   {step.done ? "✓" : index + 1}
                 </span>
                 <div className="flex flex-1 flex-col">
-                  <span className="text-sm font-medium">{step.title}</span>
-                  <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                    {step.description}
-                  </span>
+                  <span className="text-text text-sm font-medium">{step.title}</span>
+                  <span className="text-text-muted text-sm">{step.description}</span>
                 </div>
                 {step.done ? (
-                  <span className="text-xs font-medium text-green-700 dark:text-green-400">
-                    Concluído
-                  </span>
+                  <span className="text-xs font-medium text-green-700">Concluído</span>
                 ) : (
                   <Link
                     href={step.href}
-                    className="shrink-0 rounded-full bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-black/85 dark:bg-white dark:text-black"
+                    className="btn-primary rounded-pill shrink-0 px-4 py-1.5 text-sm font-semibold transition-colors"
                   >
                     Começar
                   </Link>
@@ -94,13 +88,15 @@ export default async function PrimeirosPassosPage() {
           </ol>
 
           <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-semibold tracking-tight">Ações rápidas</h2>
+            <h2 className="text-text text-sm font-semibold tracking-tight">
+              Ações rápidas
+            </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {QUICK_ACTIONS.map((action) => (
                 <Link
                   key={action.href}
                   href={action.href}
-                  className="rounded-lg border border-black/10 px-4 py-3 text-sm font-medium transition-colors hover:bg-black/3 dark:border-white/10 dark:hover:bg-white/5"
+                  className="glass-card text-text px-4 py-3 text-sm font-medium transition-transform hover:-translate-y-0.5"
                 >
                   {action.label}
                 </Link>

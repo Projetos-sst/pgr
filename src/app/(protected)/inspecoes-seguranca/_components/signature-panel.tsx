@@ -58,39 +58,39 @@ export function InspectionSignaturePanel({ inspectionId }: { inspectionId: strin
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-black/10 p-4 dark:border-white/10">
-      <span className="text-sm font-medium">Assinatura digital</span>
+    <div className="glass-card flex flex-col gap-3 p-4">
+      <span className="text-text text-sm font-semibold">Assinatura digital</span>
       {!request ? (
         <button
           type="button"
           onClick={handleGenerate}
           disabled={generating}
-          className="self-start rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+          className="btn-primary rounded-pill self-start px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           {generating ? "Gerando…" : "Solicitar assinatura (link/QR)"}
         </button>
       ) : (
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Status:</span>
+            <span className="text-text text-sm font-semibold">Status:</span>
             <span
               className={`rounded-full px-3 py-1 text-sm ${
                 status === "signed"
-                  ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200"
-                  : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-amber-100 text-amber-800"
               }`}
             >
               {STATUS_LABELS[status]}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <code className="max-w-md truncate rounded-md border border-black/10 px-2 py-1 text-xs dark:border-white/10">
+            <code className="glass-panel text-text-muted rounded-card max-w-md truncate px-2 py-1 text-xs">
               {request.publicUrl}
             </code>
             <button
               type="button"
               onClick={handleCopy}
-              className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
             >
               {copied ? "Copiado!" : "Copiar link"}
             </button>

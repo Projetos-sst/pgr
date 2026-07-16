@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { SignUp } from "@clerk/nextjs";
 
 import { getSessionOrNull } from "@/shared/auth/get-session";
+import { AuthFrame } from "@/app/_components/auth-frame";
+import { clerkAppearance } from "@/app/_components/clerk-appearance";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -32,18 +34,20 @@ export default async function SignUpPage({
   if (!ticket) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Cadastro por convite</h1>
-        <p className="max-w-md text-base text-zinc-600">
+        <h1 className="text-text text-2xl font-bold tracking-tight">
+          Cadastro por convite
+        </h1>
+        <p className="text-text-muted max-w-md text-base">
           O SST Manager é um sistema corporativo. Novas contas só podem ser criadas a
           partir de um convite enviado por um administrador da sua organização.
         </p>
-        <p className="max-w-md text-sm text-zinc-600">
+        <p className="text-text-muted max-w-md text-sm">
           Procure no seu e-mail por uma mensagem com o link de convite, ou solicite um a
           quem administra sua organização.
         </p>
         <Link
           href="/sign-in"
-          className="rounded-full border border-black/[0.08] px-5 py-2 text-sm font-medium transition-colors hover:bg-black/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="glass-panel text-text-muted rounded-pill hover:text-text px-5 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           Já tenho uma conta — Entrar
         </Link>
@@ -52,8 +56,8 @@ export default async function SignUpPage({
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-12">
-      <SignUp path="/sign-up" />
-    </main>
+    <AuthFrame eyebrow="Plataforma SST" title="Criar sua conta">
+      <SignUp path="/sign-up" appearance={clerkAppearance} />
+    </AuthFrame>
   );
 }

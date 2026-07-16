@@ -64,10 +64,8 @@ export default async function CategoriesPage({
             <Link
               key={filter.label}
               href={`/categories${qs ? `?${qs}` : ""}`}
-              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                active
-                  ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-black/15 hover:bg-black/5 dark:border-white/15"
+              className={`rounded-pill px-3 py-1 text-sm font-semibold transition-colors ${
+                active ? "btn-primary" : "glass-panel text-text-muted hover:text-text"
               }`}
             >
               {filter.label}
@@ -88,7 +86,7 @@ export default async function CategoriesPage({
       ) : (
         <Table headers={["Nome", "Tipo", "Observação", ""]}>
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
+            <tr key={row.id} className="border-t border-white/50">
               <td className="px-4 py-2">
                 <Link
                   href={`/categories/${row.id}/edit`}
@@ -103,7 +101,7 @@ export default async function CategoriesPage({
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`/categories/${row.id}/edit`}
-                    className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
                   >
                     Editar
                   </Link>

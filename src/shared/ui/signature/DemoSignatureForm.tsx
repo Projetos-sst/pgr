@@ -44,7 +44,7 @@ export function DemoSignatureForm({ token, payload }: PublicFormProps) {
 
   if (done) {
     return (
-      <div className="rounded-md border border-green-600/30 bg-green-50 p-4 text-green-800 dark:bg-green-950 dark:text-green-200">
+      <div className="rounded-card border border-green-600/30 bg-green-50 p-4 text-green-800">
         Assinatura registrada com sucesso. Você já pode fechar esta página.
       </div>
     );
@@ -53,11 +53,9 @@ export function DemoSignatureForm({ token, payload }: PublicFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold">{data.title}</h1>
+        <h1 className="text-text text-xl font-semibold">{data.title}</h1>
         {data.description ? (
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            {data.description}
-          </p>
+          <p className="text-text-muted mt-1 text-sm">{data.description}</p>
         ) : null}
       </div>
 
@@ -68,7 +66,7 @@ export function DemoSignatureForm({ token, payload }: PublicFormProps) {
           onChange={(e) => setSignerName(e.target.value)}
           required
           maxLength={120}
-          className="rounded-md border border-black/15 px-3 py-2 dark:border-white/15"
+          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
           placeholder="Nome completo"
         />
       </label>
@@ -83,7 +81,7 @@ export function DemoSignatureForm({ token, payload }: PublicFormProps) {
       <button
         type="submit"
         disabled={submitting}
-        className="bg-foreground text-background self-start rounded-full px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#383838] disabled:opacity-60"
+        className="btn-primary rounded-pill self-start px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60"
       >
         {submitting ? "Enviando…" : "Assinar"}
       </button>

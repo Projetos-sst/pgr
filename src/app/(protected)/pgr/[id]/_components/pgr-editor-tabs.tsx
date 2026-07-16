@@ -49,12 +49,12 @@ export function PgrEditorTabs({
   const [active, setActive] = useState<TabKey>("basic");
 
   const tabClass = (isActive: boolean, phase05?: boolean) =>
-    `rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+    `rounded-card px-4 py-2 text-sm font-semibold transition-colors ${
       isActive
-        ? "bg-black text-white dark:bg-white dark:text-black"
+        ? "btn-primary"
         : phase05
-          ? "border border-dashed border-black/15 text-zinc-400 hover:bg-black/5 dark:border-white/15 dark:text-zinc-500"
-          : "border border-black/15 hover:bg-black/5 dark:border-white/15"
+          ? "glass-panel text-text-subtle hover:text-text-muted border-dashed"
+          : "glass-panel text-text-muted hover:text-text"
     }`;
 
   return (

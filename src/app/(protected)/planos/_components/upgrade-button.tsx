@@ -25,7 +25,7 @@ export function UpgradeButton() {
         type="button"
         onClick={onClick}
         disabled={pending}
-        className="rounded-full bg-black px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+        className="btn-primary rounded-pill px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50"
       >
         {pending ? "Redirecionando…" : "Assinar o Pro"}
       </button>

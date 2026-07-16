@@ -23,8 +23,8 @@ function StatusCard({ state }: { state: keyof typeof MESSAGES }) {
   const { title, body } = MESSAGES[state];
   return (
     <div className="flex flex-col gap-2 text-center">
-      <h1 className="text-xl font-semibold">{title}</h1>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">{body}</p>
+      <h1 className="text-text text-xl font-semibold">{title}</h1>
+      <p className="text-text-muted text-sm">{body}</p>
     </div>
   );
 }
@@ -38,8 +38,8 @@ export default async function PublicSignaturePage({
   const view = await resolvePublicSignature(token);
 
   return (
-    <div className="flex min-h-screen flex-1 items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-zinc-950">
-      <div className="w-full max-w-md rounded-xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900">
+    <div className="flex min-h-screen flex-1 items-center justify-center px-4 py-12">
+      <div className="glass-card w-full max-w-md bg-white/90 p-6">
         {view.state !== "signable" ? (
           <StatusCard state={view.state} />
         ) : view.targetType && isSignatureTargetType(view.targetType) ? (

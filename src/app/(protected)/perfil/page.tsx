@@ -9,10 +9,10 @@ export const dynamic = "force-dynamic";
 function DisplayField({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
+      <span className="text-text-subtle text-xs font-medium tracking-wide uppercase">
         {label}
       </span>
-      <span className="text-sm">{value || "—"}</span>
+      <span className="text-text text-sm">{value || "—"}</span>
     </div>
   );
 }
@@ -41,20 +41,20 @@ export default async function PerfilPage() {
       />
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-sm font-semibold tracking-wide text-zinc-500 uppercase">
+        <h2 className="text-text-subtle text-sm font-semibold tracking-wide uppercase">
           Conta (gerenciada pelo Clerk)
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <DisplayField label="Nome" value={fullName || null} />
           <DisplayField label="E-mail" value={profile.email} />
         </div>
-        <p className="text-xs text-zinc-500">
+        <p className="text-text-subtle text-xs">
           Nome, e-mail, foto e senha são gerenciados na sua conta de acesso.
         </p>
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-sm font-semibold tracking-wide text-zinc-500 uppercase">
+        <h2 className="text-text-subtle text-sm font-semibold tracking-wide uppercase">
           Dados do perfil
         </h2>
         <ProfileForm

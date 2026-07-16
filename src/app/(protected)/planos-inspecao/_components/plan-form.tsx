@@ -66,11 +66,11 @@ export function PlanForm({ id, initial }: { id?: string; initial?: PlanFormIniti
     <form onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-4">
       <FormError message={formError} />
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Tipo *</span>
+        <span className="text-text-muted text-sm font-semibold">Tipo *</span>
         <select
           name="type"
           defaultValue={initial?.type ?? "vehicular"}
-          className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
         >
           {TYPE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -88,16 +88,16 @@ export function PlanForm({ id, initial }: { id?: string; initial?: PlanFormIniti
       />
 
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Itens do checklist</span>
+        <span className="text-text-muted text-sm font-semibold">Itens do checklist</span>
         {items.map((item, index) => (
           <div key={index} className="flex items-center gap-2">
             <input
               value={item.description}
               onChange={(e) => setItem(index, { description: e.target.value })}
               placeholder={`Item ${index + 1}`}
-              className="flex-1 rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+              className="glass-input text-text rounded-card flex-1 px-3 py-2 text-sm outline-none"
             />
-            <label className="flex items-center gap-1 text-xs text-zinc-500">
+            <label className="text-text-subtle flex items-center gap-1 text-xs">
               <input
                 type="checkbox"
                 checked={item.defaultValue}
@@ -108,7 +108,7 @@ export function PlanForm({ id, initial }: { id?: string; initial?: PlanFormIniti
             <button
               type="button"
               onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))}
-              className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-2 py-1 text-sm font-semibold transition-colors"
             >
               ✕
             </button>
@@ -119,7 +119,7 @@ export function PlanForm({ id, initial }: { id?: string; initial?: PlanFormIniti
           onClick={() =>
             setItems((prev) => [...prev, { description: "", defaultValue: false }])
           }
-          className="w-fit rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text w-fit px-3 py-1 text-sm font-semibold transition-colors"
         >
           + Adicionar item
         </button>

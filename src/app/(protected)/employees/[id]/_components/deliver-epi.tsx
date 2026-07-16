@@ -7,8 +7,7 @@ import { createDeliveryAction } from "@/shared/server/actions/pgr/epi-deliveries
 import { listEpiStockAction } from "@/shared/server/actions/pgr/epi-stock";
 import type { EpiStockListItem } from "@/shared/domains/pgr/epi-stock";
 
-const inputClass =
-  "rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:bg-zinc-900";
+const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -89,15 +88,15 @@ export function DeliverEpi({ employeeId }: { employeeId: string }) {
       <button
         type="button"
         onClick={openDialog}
-        className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 dark:bg-white dark:text-black"
+        className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold"
       >
         Entregar EPI
       </button>
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-lg border border-black/10 bg-white p-6 shadow-lg dark:border-white/10 dark:bg-zinc-900">
-            <h2 className="text-lg font-semibold">Preparar entrega</h2>
+          <div className="glass-card flex max-h-[90vh] w-full max-w-3xl flex-col gap-4 overflow-y-auto bg-white/90 p-6">
+            <h2 className="text-text text-lg font-semibold">Preparar entrega</h2>
 
             <div className="flex flex-wrap items-end gap-3">
               <label className="flex flex-col gap-1 text-sm">
@@ -122,13 +121,13 @@ export function DeliverEpi({ employeeId }: { employeeId: string }) {
             </div>
 
             {stock.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-black/15 px-4 py-6 text-center text-sm text-zinc-500 dark:border-white/15">
+              <p className="text-text-subtle rounded-card border border-dashed border-white/60 px-4 py-6 text-center text-sm">
                 Nenhum item de estoque com saldo disponível.
               </p>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/10">
+              <div className="glass-card overflow-x-auto">
                 <table className="w-full border-collapse text-sm">
-                  <thead className="bg-black/3 text-left dark:bg-white/5">
+                  <thead className="text-text-muted border-b border-white/50 text-left">
                     <tr>
                       {["", "CA", "EPI", "Tam.", "Und.", "Disponível", "Quantidade"].map(
                         (header) => (
@@ -143,10 +142,7 @@ export function DeliverEpi({ employeeId }: { employeeId: string }) {
                     {stock.map((item) => {
                       const selected = item.id in quantities;
                       return (
-                        <tr
-                          key={item.id}
-                          className="border-t border-black/5 dark:border-white/5"
-                        >
+                        <tr key={item.id} className="border-t border-white/50">
                           <td className="px-3 py-2">
                             <input
                               type="checkbox"
@@ -192,7 +188,7 @@ export function DeliverEpi({ employeeId }: { employeeId: string }) {
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={pending}
-                className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+                className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -200,7 +196,7 @@ export function DeliverEpi({ employeeId }: { employeeId: string }) {
                 type="button"
                 onClick={confirmDelivery}
                 disabled={pending}
-                className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+                className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 {pending ? "Registrando…" : "Confirmar entrega"}
               </button>

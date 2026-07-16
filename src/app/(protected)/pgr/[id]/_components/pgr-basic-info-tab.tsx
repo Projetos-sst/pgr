@@ -8,7 +8,7 @@ import { PgrSignaturePanel } from "./pgr-signature-panel";
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div className="flex flex-col">
-      <span className="text-xs tracking-wide text-zinc-500 uppercase">{label}</span>
+      <span className="text-text-subtle text-xs tracking-wide uppercase">{label}</span>
       <span className="text-sm">{value && value !== "" ? value : "—"}</span>
     </div>
   );
@@ -38,12 +38,12 @@ export function PgrBasicInfoTab({
       <div className="flex justify-end">
         <Link
           href={`/pgr/${pgrId}/edit`}
-          className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
         >
           Editar informações básicas
         </Link>
       </div>
-      <div className="grid gap-4 rounded-lg border border-black/10 p-4 sm:grid-cols-3 dark:border-white/10">
+      <div className="glass-card grid gap-4 p-4 sm:grid-cols-3">
         <Field label="Empresa" value={companyName} />
         <Field label="Obra/Contrato" value={workUnitName} />
         <Field label="Responsável pela elaboração" value={pgr.responsible} />

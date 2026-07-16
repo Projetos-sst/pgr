@@ -18,8 +18,8 @@ export const dynamic = "force-dynamic";
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div className="flex flex-col">
-      <span className="text-xs tracking-wide text-zinc-500 uppercase">{label}</span>
-      <span className="text-sm">{value && value !== "" ? value : "—"}</span>
+      <span className="text-text-subtle text-xs tracking-wide uppercase">{label}</span>
+      <span className="text-text text-sm">{value && value !== "" ? value : "—"}</span>
     </div>
   );
 }
@@ -47,25 +47,25 @@ export default async function RiskDetailPage({
           <div className="flex gap-2">
             <Link
               href={`/risks/${risk.id}/assessments`}
-              className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
             >
               Avaliações
             </Link>
             <Link
               href={`/risks/${risk.id}/control-measures`}
-              className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
             >
               Medidas de controle
             </Link>
             <Link
               href={`/risks/new?from=${risk.id}`}
-              className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
             >
               Reutilizar
             </Link>
             <Link
               href={`/risks/${risk.id}/edit`}
-              className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
             >
               Editar
             </Link>
@@ -74,7 +74,7 @@ export default async function RiskDetailPage({
         }
       />
 
-      <section className="grid gap-4 rounded-lg border border-black/10 p-4 sm:grid-cols-3 dark:border-white/10">
+      <section className="glass-card grid gap-4 p-4 sm:grid-cols-3">
         <Field label="GES" value={gesName} />
         <Field label="Grupo do agente" value={riskAgentTypeLabel(risk.agentType)} />
         <Field label="Perigo" value={risk.hazard} />
