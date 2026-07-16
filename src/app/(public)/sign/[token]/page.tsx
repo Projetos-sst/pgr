@@ -11,9 +11,9 @@ function formatIsoDate(isoDate: string): string {
 function BusinessMessage({ title, detail }: { title: string; detail: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-lg border border-black/10 bg-white p-8 text-center dark:border-white/10 dark:bg-zinc-900">
-        <h1 className="text-xl font-semibold">{title}</h1>
-        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">{detail}</p>
+      <div className="glass-card w-full max-w-md p-8 text-center">
+        <h1 className="text-text text-xl font-semibold">{title}</h1>
+        <p className="text-text-muted mt-3 text-sm">{detail}</p>
       </div>
     </main>
   );
@@ -62,17 +62,19 @@ export default async function SignDeliveryPage({
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="flex w-full max-w-lg flex-col gap-5 rounded-lg border border-black/10 bg-white p-8 dark:border-white/10 dark:bg-zinc-900">
+      <div className="glass-card flex w-full max-w-lg flex-col gap-5 p-8">
         <div>
-          <h1 className="text-xl font-semibold">Confirmação de recebimento de EPI</h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <h1 className="text-text text-xl font-semibold">
+            Confirmação de recebimento de EPI
+          </h1>
+          <p className="text-text-muted mt-1 text-sm">
             {delivery.employeeName} · entrega de {formatIsoDate(delivery.deliveryDate)}
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/10">
+        <div className="glass-card overflow-x-auto">
           <table className="w-full border-collapse text-sm">
-            <thead className="bg-black/3 text-left dark:bg-white/5">
+            <thead className="text-text-muted border-b border-white/50 text-left">
               <tr>
                 <th className="px-3 py-2 font-medium">EPI</th>
                 <th className="px-3 py-2 font-medium">CA</th>
@@ -81,7 +83,7 @@ export default async function SignDeliveryPage({
             </thead>
             <tbody>
               {delivery.items.map((item) => (
-                <tr key={item.id} className="border-t border-black/5 dark:border-white/5">
+                <tr key={item.id} className="border-t border-white/50">
                   <td className="px-3 py-2">{item.name}</td>
                   <td className="px-3 py-2">{item.ca ?? "—"}</td>
                   <td className="px-3 py-2">{item.quantity}</td>
@@ -91,7 +93,7 @@ export default async function SignDeliveryPage({
           </table>
         </div>
 
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-text-muted text-sm">
           Ao confirmar, você declara ter recebido os itens acima em perfeitas condições de
           uso e se compromete a utilizá-los conforme orientação.
         </p>

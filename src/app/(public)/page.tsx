@@ -3,12 +3,12 @@ import { Show } from "@clerk/nextjs";
 
 export default function Home() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50">
-      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 bg-white px-8 py-24 text-center sm:items-start sm:text-left">
-        <h1 className="text-foreground max-w-xl text-4xl font-semibold tracking-tight sm:text-5xl">
+    <div className="flex flex-1 flex-col items-center justify-center">
+      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-8 py-24 text-center sm:items-start sm:text-left">
+        <h1 className="text-text max-w-xl text-4xl font-semibold tracking-tight sm:text-5xl">
           SST Manager
         </h1>
-        <p className="max-w-md text-lg leading-8 text-zinc-600">
+        <p className="text-text-muted max-w-md text-lg leading-8">
           Plataforma multiempresa de Segurança e Medicina do Trabalho. Acesse com sua
           conta para gerenciar sua organização.
         </p>

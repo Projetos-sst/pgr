@@ -19,7 +19,7 @@ export function QrCode({
       width={size}
       height={size}
       alt={alt}
-      className="rounded-md border border-black/10 dark:border-white/10"
+      className="rounded-card border border-white/60 bg-white"
     />
   );
 }

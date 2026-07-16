@@ -40,8 +40,7 @@ const UNCERTAINTY_OPTIONS = [0, 1, 2].map((n) => ({
   label: `${n} — ${uncertaintyDegreeLabel(n)}`,
 }));
 
-const inputClass =
-  "rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:bg-zinc-900";
+const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
 
 export type AssessmentFormInitial = {
   criterion?: string;
@@ -69,7 +68,7 @@ function Select({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium">{label} *</span>
+      <span className="text-text-muted text-sm font-medium">{label} *</span>
       <select
         name={name}
         value={value}
@@ -163,7 +162,7 @@ export function AssessmentForm({
       <FormError message={formError} />
 
       {!configured ? (
-        <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+        <p className="rounded-card border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           A organização ainda não configurou uma metodologia de risco. A classificação usa
           a <strong>metodologia padrão</strong> até que uma seja definida.
         </p>
@@ -179,7 +178,7 @@ export function AssessmentForm({
           error={errors.criterion}
         />
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Data da avaliação *</span>
+          <span className="text-text-muted text-sm font-medium">Data da avaliação *</span>
           <input
             type="date"
             name="assessedAt"
@@ -218,7 +217,7 @@ export function AssessmentForm({
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Limite de tolerância</span>
+        <span className="text-text-muted text-sm font-medium">Limite de tolerância</span>
         <input
           name="toleranceLimit"
           defaultValue={initial.toleranceLimit ?? ""}
@@ -227,20 +226,20 @@ export function AssessmentForm({
         <FieldError message={errors.toleranceLimit} />
       </label>
 
-      <div className="grid gap-4 rounded-lg border border-black/10 p-4 sm:grid-cols-2 dark:border-white/10">
+      <div className="glass-card grid gap-4 p-4 sm:grid-cols-2">
         <div className="flex flex-col">
-          <span className="text-xs tracking-wide text-zinc-500 uppercase">
+          <span className="text-text-subtle text-xs tracking-wide uppercase">
             Nível de risco (calculado)
           </span>
-          <span className="text-lg font-semibold">
+          <span className="text-text text-lg font-semibold">
             {preview ? preview.riskLevel : "—"}
           </span>
         </div>
         <div className="flex flex-col">
-          <span className="text-xs tracking-wide text-zinc-500 uppercase">
+          <span className="text-text-subtle text-xs tracking-wide uppercase">
             Classificação (prevista)
           </span>
-          <span className="text-lg font-semibold">
+          <span className="text-text text-lg font-semibold">
             {preview ? riskClassificationLabel(preview.result) : "—"}
           </span>
         </div>

@@ -47,9 +47,9 @@ export default async function GesPage({ searchParams }: { searchParams: SearchPa
         action={<PrimaryLink href="/ges/new">Novo GES</PrimaryLink>}
       />
 
-      <div className="w-fit rounded-lg border border-black/10 px-5 py-3 dark:border-white/10">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">Total de Trabalhadores</p>
-        <p className="text-2xl font-semibold">{totalWorkers}</p>
+      <div className="glass-card w-fit px-5 py-3">
+        <p className="text-text-muted text-sm">Total de Trabalhadores</p>
+        <p className="text-text text-2xl font-semibold">{totalWorkers}</p>
       </div>
 
       <SearchForm
@@ -64,7 +64,7 @@ export default async function GesPage({ searchParams }: { searchParams: SearchPa
       ) : (
         <Table headers={["Nome", "Descrição do processo", "Expostos", ""]}>
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
+            <tr key={row.id} className="border-t border-white/50">
               <td className="px-4 py-2">
                 <Link
                   href={`/ges/${row.id}/edit`}
@@ -79,7 +79,7 @@ export default async function GesPage({ searchParams }: { searchParams: SearchPa
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`/ges/${row.id}/edit`}
-                    className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
                   >
                     Gerenciar
                   </Link>

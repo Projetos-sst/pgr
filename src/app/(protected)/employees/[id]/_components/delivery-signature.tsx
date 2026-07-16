@@ -75,7 +75,7 @@ export function DeliverySignature({
 
   if (signatureStatus !== "pending") {
     return (
-      <span className="w-fit rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
+      <span className="w-fit rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
         {signatureLabel}
         {signedAt ? ` em ${new Date(signedAt).toLocaleString("pt-BR")}` : ""}
       </span>
@@ -85,14 +85,14 @@ export function DeliverySignature({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="w-fit rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
+        <span className="w-fit rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
           {signatureLabel}
         </span>
         <button
           type="button"
           onClick={signManual}
           disabled={pending}
-          className="rounded-md border border-black/15 px-3 py-1 text-xs font-medium transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
         >
           {pending ? "Aguarde…" : "Registrar assinatura manual"}
         </button>
@@ -100,7 +100,7 @@ export function DeliverySignature({
           type="button"
           onClick={() => generate("qr")}
           disabled={pending}
-          className="rounded-md border border-black/15 px-3 py-1 text-xs font-medium transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
         >
           Gerar QR
         </button>
@@ -108,7 +108,7 @@ export function DeliverySignature({
           type="button"
           onClick={() => generate("link")}
           disabled={pending}
-          className="rounded-md border border-black/15 px-3 py-1 text-xs font-medium transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
         >
           Gerar link
         </button>
@@ -116,7 +116,7 @@ export function DeliverySignature({
       </div>
 
       {generated ? (
-        <div className="flex flex-col gap-2 rounded-md border border-black/10 bg-black/2 p-3 dark:border-white/10 dark:bg-white/5">
+        <div className="glass-panel rounded-card flex flex-col gap-2 p-3">
           {generated.qrSvg ? (
             <div
               className="w-fit rounded bg-white p-2"
@@ -124,18 +124,16 @@ export function DeliverySignature({
               dangerouslySetInnerHTML={{ __html: generated.qrSvg }}
             />
           ) : null}
-          <p className="text-xs break-all text-zinc-600 dark:text-zinc-400">
-            {generated.url}
-          </p>
+          <p className="text-text-muted text-xs break-all">{generated.url}</p>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => navigator.clipboard.writeText(generated.url)}
-              className="rounded-md border border-black/15 px-3 py-1 text-xs font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-xs font-semibold transition-colors"
             >
               Copiar link
             </button>
-            <span className="text-xs text-zinc-500">
+            <span className="text-text-subtle text-xs">
               Aguardando confirmação do funcionário… (válido por 72h)
             </span>
           </div>

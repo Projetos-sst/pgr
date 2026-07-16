@@ -133,7 +133,7 @@ export function GesForm({
         />
       </div>
       {noWorkUnits ? (
-        <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+        <p className="rounded-card border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           Esta empresa não possui unidades de obra. Cadastre uma unidade antes de criar um
           GES.
         </p>
@@ -149,17 +149,19 @@ export function GesForm({
 
       {exposedWorkers !== undefined ? (
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium">
+          <span className="text-text-muted text-sm font-medium">
             Nº de trabalhadores expostos (derivado)
           </span>
-          <output className="rounded-md border border-black/10 bg-black/3 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5">
+          <output className="glass-panel text-text rounded-card px-3 py-2 text-sm">
             {exposedWorkers}
           </output>
         </div>
       ) : null}
 
-      <fieldset className="grid gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
-        <legend className="px-1 text-sm font-medium">Caracterização do ambiente</legend>
+      <fieldset className="glass-card grid gap-4 p-4">
+        <legend className="text-text-muted px-1 text-sm font-medium">
+          Caracterização do ambiente
+        </legend>
         <FieldHint>{GES_FIELD_HINTS.processDescription}</FieldHint>
         <FieldHint>{GES_FIELD_HINTS.environment}</FieldHint>
         <div className="grid gap-4 sm:grid-cols-2">

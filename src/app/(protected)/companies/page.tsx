@@ -49,7 +49,7 @@ export default async function CompaniesPage({
       ) : (
         <Table headers={["Razão social", "CNPJ", "Cidade/UF", ""]}>
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
+            <tr key={row.id} className="border-t border-white/50">
               <td className="px-4 py-2">
                 <Link
                   href={`/companies/${row.id}/edit`}
@@ -66,7 +66,7 @@ export default async function CompaniesPage({
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`/companies/${row.id}/edit`}
-                    className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
                   >
                     Editar
                   </Link>

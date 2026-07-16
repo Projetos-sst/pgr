@@ -75,13 +75,13 @@ export function SignaturePanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 rounded-xl border border-black/10 p-4 dark:border-white/10">
+      <div className="glass-card flex flex-col gap-3 p-4">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Título do termo (payload demo)</span>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="max-w-md rounded-md border border-black/15 px-3 py-2 dark:border-white/15"
+            className="glass-input text-text rounded-card max-w-md px-3 py-2 text-sm outline-none"
           />
         </label>
         <button
@@ -96,14 +96,14 @@ export function SignaturePanel() {
       </div>
 
       {request ? (
-        <div className="flex flex-col gap-4 rounded-xl border border-black/10 p-4 dark:border-white/10">
+        <div className="glass-card flex flex-col gap-4 p-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Status:</span>
             <span
               className={`rounded-full px-3 py-1 text-sm ${
                 status === "signed"
-                  ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200"
-                  : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-amber-100 text-amber-800"
               }`}
             >
               {STATUS_LABELS[status]}
@@ -113,13 +113,13 @@ export function SignaturePanel() {
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">Link público</span>
             <div className="flex flex-wrap items-center gap-2">
-              <code className="max-w-md truncate rounded-md border border-black/10 px-2 py-1 text-xs dark:border-white/10">
+              <code className="glass-panel rounded-card max-w-md truncate px-2 py-1 text-xs">
                 {request.publicUrl}
               </code>
               <button
                 type="button"
                 onClick={handleCopy}
-                className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+                className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
               >
                 {copied ? "Copiado!" : "Copiar link"}
               </button>
@@ -135,7 +135,7 @@ export function SignaturePanel() {
             <button
               type="button"
               onClick={handleManual}
-              className="self-start rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text self-start px-3 py-1 text-sm font-semibold transition-colors"
             >
               Registrar assinatura manual
             </button>

@@ -58,7 +58,7 @@ export default async function RiskAssessmentsPage({
           <div className="flex gap-2">
             <Link
               href={`/risks/${riskId}`}
-              className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
             >
               Voltar ao risco
             </Link>
@@ -85,11 +85,11 @@ export default async function RiskAssessmentsPage({
           ]}
         >
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
+            <tr key={row.id} className="border-t border-white/50">
               <td className="px-4 py-2">
                 {row.assessedAt}
                 {row.id === currentId ? (
-                  <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-xs font-medium dark:bg-white/10">
+                  <span className="rounded-pill text-text-muted ml-2 bg-white/60 px-2 py-0.5 text-xs font-medium">
                     Vigente
                   </span>
                 ) : null}
@@ -104,7 +104,7 @@ export default async function RiskAssessmentsPage({
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`/risks/${riskId}/assessments/${row.id}/edit`}
-                    className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
                   >
                     Editar
                   </Link>

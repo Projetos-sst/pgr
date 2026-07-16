@@ -84,7 +84,7 @@ export function SignaturePad({ token }: { token: string }) {
 
   if (done) {
     return (
-      <p className="rounded-md bg-emerald-100 px-4 py-3 text-center text-sm font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
+      <p className="rounded-card bg-emerald-100 px-4 py-3 text-center text-sm font-medium text-emerald-700">
         Recebimento confirmado. Obrigado!
       </p>
     );
@@ -96,7 +96,7 @@ export function SignaturePad({ token }: { token: string }) {
         ref={canvasRef}
         width={440}
         height={160}
-        className="w-full touch-none rounded-md border border-dashed border-black/25 bg-white dark:border-white/25"
+        className="rounded-card w-full touch-none border border-dashed border-white/60 bg-white"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -109,7 +109,7 @@ export function SignaturePad({ token }: { token: string }) {
           type="button"
           onClick={clearCanvas}
           disabled={pending}
-          className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           Limpar
         </button>
@@ -117,7 +117,7 @@ export function SignaturePad({ token }: { token: string }) {
           type="button"
           onClick={confirmSignature}
           disabled={pending}
-          className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+          className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           {pending ? "Confirmando…" : "Confirmar recebimento"}
         </button>

@@ -64,11 +64,11 @@ export function SuggestRisksSection({ gesId }: { gesId: string }) {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-black/10 p-4 dark:border-white/10">
+    <section className="glass-card flex flex-col gap-3 p-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-semibold">Sugestão de riscos por IA</h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <h2 className="text-text text-lg font-semibold">Sugestão de riscos por IA</h2>
+          <p className="text-text-subtle text-sm">
             Gera riscos candidatos a partir do processo, ambiente e funções deste GES.
             Você revisa e escolhe o que adicionar.
           </p>
@@ -77,16 +77,14 @@ export function SuggestRisksSection({ gesId }: { gesId: string }) {
           type="button"
           onClick={generate}
           disabled={pending}
-          className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+          className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold disabled:opacity-50"
         >
           {pending && !open ? "Consultando IA…" : "Sugerir Riscos com IA"}
         </button>
       </header>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {notice ? (
-        <p className="text-sm text-green-700 dark:text-green-400">{notice}</p>
-      ) : null}
+      {notice ? <p className="text-sm text-green-700">{notice}</p> : null}
 
       {open ? (
         <ReviewModal
@@ -124,32 +122,29 @@ function ReviewModal({
       aria-label="Revisão de riscos sugeridos pela IA"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
     >
-      <div className="flex max-h-[85vh] w-full max-w-2xl flex-col gap-4 overflow-hidden rounded-lg bg-white p-5 shadow-xl dark:bg-zinc-900">
+      <div className="glass-card flex max-h-[85vh] w-full max-w-2xl flex-col gap-4 overflow-hidden bg-white/90 p-5">
         <header className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-text text-lg font-semibold">
             Riscos sugeridos ({suggestions.length})
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+            className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
           >
             Fechar
           </button>
         </header>
 
         {suggestions.length === 0 ? (
-          <p className="text-sm text-zinc-500">
+          <p className="text-text-subtle text-sm">
             A IA não sugeriu riscos — descreva melhor o processo e o ambiente do GES e
             tente novamente.
           </p>
         ) : (
           <ul className="flex flex-col gap-2 overflow-y-auto">
             {suggestions.map((s, index) => (
-              <li
-                key={index}
-                className="flex gap-3 rounded-md border border-black/5 p-3 dark:border-white/5"
-              >
+              <li key={index} className="glass-panel rounded-card flex gap-3 p-3">
                 <input
                   type="checkbox"
                   checked={selected.has(index)}
@@ -158,17 +153,15 @@ function ReviewModal({
                   aria-label={`Selecionar risco: ${s.description}`}
                 />
                 <div className="flex flex-col gap-1">
-                  <span className="inline-flex w-fit rounded bg-black/5 px-2 py-0.5 text-xs font-medium dark:bg-white/10">
+                  <span className="text-text-muted inline-flex w-fit rounded bg-white/60 px-2 py-0.5 text-xs font-medium">
                     {riskAgentTypeLabel(s.agentType)}
                   </span>
-                  <span className="font-medium">{s.description}</span>
+                  <span className="text-text font-medium">{s.description}</span>
                   {s.hazard ? (
-                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Perigo: {s.hazard}
-                    </span>
+                    <span className="text-text-muted text-sm">Perigo: {s.hazard}</span>
                   ) : null}
                   {s.sources ? (
-                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <span className="text-text-muted text-sm">
                       Fontes geradoras: {s.sources}
                     </span>
                   ) : null}
@@ -178,13 +171,13 @@ function ReviewModal({
           </ul>
         )}
 
-        <footer className="flex items-center justify-between border-t border-black/5 pt-3 dark:border-white/5">
-          <span className="text-sm text-zinc-500">{selected.size} selecionado(s)</span>
+        <footer className="flex items-center justify-between border-t border-white/50 pt-3">
+          <span className="text-text-subtle text-sm">{selected.size} selecionado(s)</span>
           <button
             type="button"
             onClick={onAccept}
             disabled={pending || selected.size === 0}
-            className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+            className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold disabled:opacity-50"
           >
             {pending ? "Adicionando…" : "Adicionar selecionados"}
           </button>

@@ -17,8 +17,7 @@ import {
   type EpiRiskLinkItem,
 } from "@/shared/domains/pgr/epi-risk";
 
-const selectClass =
-  "rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900";
+const selectClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
 
 export function EpiRiscoSection({ riskId }: { riskId: string }) {
   const [linked, setLinked] = useState<EpiRiskLinkItem[]>([]);
@@ -88,10 +87,10 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
+    <section className="glass-card flex flex-col gap-4 p-4">
       <header>
-        <h2 className="text-lg font-semibold">EPIs vinculados ao risco</h2>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <h2 className="text-text text-lg font-semibold">EPIs vinculados ao risco</h2>
+        <p className="text-text-muted text-sm">
           Indique, por EPI, se neutraliza o risco. Riscos sem EPI (controlados por medidas
           coletivas/administrativas) podem ficar sem nenhum vínculo.
         </p>
@@ -100,12 +99,12 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       {linked.length === 0 ? (
-        <p className="text-sm text-zinc-500">Nenhum EPI vinculado a este risco.</p>
+        <p className="text-text-subtle text-sm">Nenhum EPI vinculado a este risco.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-black/10 text-xs text-zinc-500 dark:border-white/10">
+              <tr className="text-text-muted border-b border-white/50 text-xs">
                 <th className="py-2 pr-3 font-medium">Nome do EPI</th>
                 <th className="py-2 pr-3 font-medium">CA</th>
                 <th className="py-2 pr-3 font-medium">Neutraliza os Riscos?</th>
@@ -127,9 +126,9 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-end gap-3 border-t border-black/5 pt-4 dark:border-white/5">
+      <div className="flex flex-wrap items-end gap-3 border-t border-white/50 pt-4">
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Adicionar EPI</span>
+          <span className="text-text-muted text-sm font-medium">Adicionar EPI</span>
           <select
             value={newCatalogId}
             onChange={(e) => setNewCatalogId(e.target.value)}
@@ -145,7 +144,9 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Neutraliza os Riscos?</span>
+          <span className="text-text-muted text-sm font-medium">
+            Neutraliza os Riscos?
+          </span>
           <select
             value={newNeutralization}
             onChange={(e) => setNewNeutralization(e.target.value as EpiNeutralization)}
@@ -162,7 +163,7 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
           type="button"
           onClick={addLink}
           disabled={pending || !newCatalogId}
-          className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+          className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
         >
           Adicionar
         </button>
@@ -183,9 +184,9 @@ function LinkedRow({
   onRemove: (id: string) => void;
 }) {
   return (
-    <tr className="border-b border-black/5 dark:border-white/5">
+    <tr className="border-b border-white/50">
       <td className="py-2 pr-3 font-medium">{item.name}</td>
-      <td className="py-2 pr-3 text-zinc-600 dark:text-zinc-400">{item.ca ?? "—"}</td>
+      <td className="text-text-muted py-2 pr-3">{item.ca ?? "—"}</td>
       <td className="py-2 pr-3">
         <select
           value={item.neutralization}
@@ -205,7 +206,7 @@ function LinkedRow({
           type="button"
           onClick={() => onRemove(item.id)}
           disabled={pending}
-          className="rounded-md border border-red-300 px-3 py-1 text-sm text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400"
+          className="rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
         >
           Remover
         </button>

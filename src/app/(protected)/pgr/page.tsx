@@ -41,7 +41,7 @@ export default async function PgrPage({ searchParams }: { searchParams: SearchPa
               type="button"
               disabled
               title="Em breve (#76)"
-              className="cursor-not-allowed rounded-md border border-black/15 px-4 py-2 text-sm font-medium text-zinc-400 dark:border-white/15 dark:text-zinc-600"
+              className="glass-panel text-text-subtle rounded-card cursor-not-allowed px-4 py-2 text-sm font-semibold"
             >
               Metodologia de Avaliação
             </button>
@@ -63,7 +63,7 @@ export default async function PgrPage({ searchParams }: { searchParams: SearchPa
           headers={["Emissão", "Validade", "Obra/Contrato", "Empresa", "Responsável", ""]}
         >
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-black/5 dark:border-white/5">
+            <tr key={row.id} className="border-t border-white/50">
               <td className="px-4 py-2">{brDate(row.issuedAt)}</td>
               <td className="px-4 py-2">{brDate(row.validUntil)}</td>
               <td className="px-4 py-2">{row.workUnitName ?? "—"}</td>
@@ -77,13 +77,13 @@ export default async function PgrPage({ searchParams }: { searchParams: SearchPa
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`/pgr/${row.id}`}
-                    className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
                   >
                     Detalhe
                   </Link>
                   <Link
                     href={`/pgr/${row.id}/edit`}
-                    className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
                   >
                     Editar
                   </Link>
