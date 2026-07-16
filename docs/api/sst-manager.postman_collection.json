@@ -153,6 +153,26 @@
     {
       "key": "workPermitId",
       "value": ""
+    },
+    {
+      "key": "psychoCampaignId",
+      "value": ""
+    },
+    {
+      "key": "psychoQuestionId",
+      "value": ""
+    },
+    {
+      "key": "psychoRiskId",
+      "value": ""
+    },
+    {
+      "key": "esocialEventId",
+      "value": ""
+    },
+    {
+      "key": "esocialBatchId",
+      "value": ""
     }
   ],
   "item": [
@@ -4391,6 +4411,629 @@
               "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Psicossocial (campanhas)",
+      "item": [
+        {
+          "name": "GET /psychosocial-campaigns (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns?status=&workUnitId=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-campaigns"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "workUnitId",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /psychosocial-campaigns (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-campaigns"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Clima organizacional 2026\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"startsAt\": \"2026-07-01\",\n  \"endsAt\": \"2026-07-31\",\n  \"themeColor\": \"#2563eb\",\n  \"workerDescription\": \"Ajude-nos a melhorar o ambiente de trabalho.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /psychosocial-campaigns/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-campaigns", "{{psychoCampaignId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /psychosocial-campaigns/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-campaigns", "{{psychoCampaignId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Clima organizacional 2026\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"startsAt\": \"2026-07-01\",\n  \"endsAt\": \"2026-07-31\",\n  \"themeColor\": \"#2563eb\",\n  \"workerDescription\": \"Ajude-nos a melhorar o ambiente de trabalho.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /:id/status (transicao)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/questions (add)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/questions",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Sinto-me sobrecarregado no trabalho?\",\n  \"questionType\": \"likert\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /:id/questions/:qid",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/questions/{{psychoQuestionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "questions",
+                "{{psychoQuestionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/questions/:qid/reorder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/questions/{{psychoQuestionId}}/reorder",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "questions",
+                "{{psychoQuestionId}}",
+                "reorder"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"up\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /:id/stats (dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "stats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/risks (derivar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/risks",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "risks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/risks/:rid/register (PGR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/risks/{{psychoRiskId}}/register",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "risks",
+                "{{psychoRiskId}}",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gesId\": \"{{gesId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/conclude (encerrar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/conclude",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "conclude"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /psychosocial-campaigns/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-campaigns", "{{psychoCampaignId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "eSocial (SST)",
+      "item": [
+        {
+          "name": "GET /esocial-events (list+filtros)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events?status=&eventType=&dateFrom=&dateTo=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "eventType",
+                  "value": ""
+                },
+                {
+                  "key": "dateFrom",
+                  "value": ""
+                },
+                {
+                  "key": "dateTo",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-events (gerar S-2210)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"S-2210\",\n  \"input\": {\n    \"cpf\": \"12345678901\",\n    \"dataAcidente\": \"2026-02-01\",\n    \"descricao\": \"Corte no dedo\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-events (gerar S-2240)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"S-2240\",\n  \"input\": {\n    \"cpf\": \"12345678901\",\n    \"dataInicio\": \"2026-01-10\",\n    \"codigoAgenteNocivo\": \"01.01.001\",\n    \"unidadeMedida\": \"db_a\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /esocial-events/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events/{{esocialEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events", "{{esocialEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /esocial-batches (lotes)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-batches"]
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-batches (enviar lote)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-batches"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventIds\": [\n    \"{{esocialEventId}}\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-batches/:id/return (consultar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches/{{esocialBatchId}}/return",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-batches", "{{esocialBatchId}}", "return"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
             }
           }
         }

@@ -60,6 +60,7 @@ const NAV: NavEntry[] = [
       { href: "/inspecoes-equipamentos", label: "Inspeções de equipamentos" },
       { href: "/inspecoes-seguranca", label: "Inspeções de segurança" },
       { href: "/permissoes-trabalho", label: "Permissões de trabalho" },
+      { href: "/psicossocial/campanhas", label: "Riscos psicossociais" },
     ],
   },
   {
@@ -70,6 +71,7 @@ const NAV: NavEntry[] = [
       { href: "/relatorios", label: "Relatórios" },
       { href: "/epi-returns", label: "Devoluções de EPI" },
       { href: "/signatures", label: "Assinaturas" },
+      { href: "/esocial", label: "eSocial (SST)" },
       { href: "/equipe", label: "Equipe" },
       { href: "/perfil", label: "Perfil" },
       { href: "/planos", label: "Planos" },
