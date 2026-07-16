@@ -16,7 +16,7 @@ export function NotificationsList({
 
   if (notifications.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-black/15 px-6 py-12 text-center text-sm text-zinc-500 dark:border-white/15">
+      <div className="glass-card text-text-subtle px-6 py-12 text-center text-sm">
         Nenhuma notificação pendente. ✅
       </div>
     );
@@ -25,14 +25,14 @@ export function NotificationsList({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-zinc-500">
+        <span className="text-text-subtle text-sm">
           {unreadCount} não lida(s) de {notifications.length}
         </span>
         {unreadCount > 0 ? (
           <button
             type="button"
             onClick={() => markAll(notifications.map((n) => n.key))}
-            className="text-sm text-zinc-600 hover:underline dark:text-zinc-400"
+            className="text-text-muted text-sm hover:underline"
           >
             Marcar todas como lidas
           </button>
@@ -45,28 +45,24 @@ export function NotificationsList({
           return (
             <li
               key={n.key}
-              className={`flex items-start justify-between gap-4 rounded-lg border px-4 py-3 ${
-                isRead
-                  ? "border-black/10 opacity-60 dark:border-white/10"
-                  : "border-black/15 dark:border-white/15"
+              className={`glass-card flex items-start justify-between gap-4 px-4 py-3 ${
+                isRead ? "opacity-60" : ""
               }`}
             >
               <Link href={n.href} className="flex flex-col gap-0.5">
-                <span className="flex items-center gap-2 text-sm font-medium">
+                <span className="text-text flex items-center gap-2 text-sm font-medium">
                   {!isRead && n.severity === "high" ? (
                     <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />
                   ) : null}
                   {n.title}
                 </span>
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {n.description}
-                </span>
+                <span className="text-text-muted text-sm">{n.description}</span>
               </Link>
               {!isRead ? (
                 <button
                   type="button"
                   onClick={() => markRead(n.key)}
-                  className="shrink-0 text-xs text-zinc-500 hover:underline"
+                  className="text-text-subtle shrink-0 text-xs hover:underline"
                 >
                   Marcar como lida
                 </button>

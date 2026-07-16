@@ -14,8 +14,8 @@ function CountBadge({ count }: { count: number }) {
     <span
       className={
         count > 0
-          ? "rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-950/50 dark:text-red-300"
-          : "rounded-full bg-black/5 px-2 py-0.5 text-xs text-zinc-500 dark:bg-white/10"
+          ? "rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
+          : "text-text-subtle rounded-full bg-black/5 px-2 py-0.5 text-xs"
       }
     >
       {count}
@@ -25,18 +25,18 @@ function CountBadge({ count }: { count: number }) {
 
 function ItemList({ items }: { items: PendingItem[] }) {
   if (items.length === 0) {
-    return <p className="text-sm text-zinc-500">Nada nesta categoria.</p>;
+    return <p className="text-text-subtle text-sm">Nada nesta categoria.</p>;
   }
   return (
-    <ul className="flex flex-col divide-y divide-black/5 dark:divide-white/5">
+    <ul className="flex flex-col divide-y divide-white/50">
       {items.map((item) => (
         <li key={item.id}>
           <Link
             href={item.href}
-            className="flex items-center justify-between gap-3 px-1 py-2 text-sm transition-colors hover:bg-black/3 dark:hover:bg-white/5"
+            className="flex items-center justify-between gap-3 px-1 py-2 text-sm transition-transform hover:-translate-y-0.5"
           >
-            <span className="truncate font-medium">{item.primary}</span>
-            <span className="shrink-0 text-xs text-zinc-500">{item.secondary}</span>
+            <span className="text-text truncate font-medium">{item.primary}</span>
+            <span className="text-text-subtle shrink-0 text-xs">{item.secondary}</span>
           </Link>
         </li>
       ))}
@@ -54,9 +54,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-black/10 p-5 dark:border-white/10">
+    <section className="glass-card flex flex-col gap-3 p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
+        <h2 className="text-text text-sm font-semibold tracking-tight">{title}</h2>
         <CountBadge count={count} />
       </div>
       {children}
@@ -66,10 +66,7 @@ function Section({
 
 function LinkAll({ href, count }: { href: string; count: number }) {
   return (
-    <Link
-      href={href}
-      className="text-sm text-zinc-600 hover:underline dark:text-zinc-400"
-    >
+    <Link href={href} className="text-text-muted text-sm hover:underline">
       {count > 0 ? `Ver ${count} item(ns) →` : "Ver detalhes →"}
     </Link>
   );

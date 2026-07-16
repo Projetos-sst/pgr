@@ -34,7 +34,7 @@ export default async function NovaInspecaoVeicularPage() {
       )}
       <Link
         href="/inspecoes-veiculares"
-        className="text-sm text-zinc-500 hover:underline"
+        className="text-text-subtle text-sm hover:underline"
       >
         ← Voltar
       </Link>

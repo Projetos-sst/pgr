@@ -38,7 +38,7 @@ export default async function EquipePage({
 
       {canManage && isPro ? <InviteMemberForm /> : null}
       {canManage && !isPro ? (
-        <p className="rounded-lg border border-dashed border-black/15 px-4 py-3 text-sm text-zinc-600 dark:border-white/15 dark:text-zinc-400">
+        <p className="glass-card text-text-muted px-4 py-3 text-sm">
           A gestão de múltiplos usuários (convite de membros) está disponível no plano
           Pro.
         </p>
@@ -55,10 +55,7 @@ export default async function EquipePage({
       ) : (
         <Table headers={headers}>
           {rows.map((member) => (
-            <tr
-              key={member.userId}
-              className="border-t border-black/5 dark:border-white/5"
-            >
+            <tr key={member.userId} className="border-t border-white/50">
               <td className="px-4 py-2 font-medium">{member.name}</td>
               <td className="px-4 py-2">{member.email ?? "—"}</td>
               <td className="px-4 py-2">{member.jobTitle ?? "—"}</td>

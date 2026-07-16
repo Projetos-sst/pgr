@@ -25,16 +25,16 @@ export default async function PlanosPage() {
         description={`Seu plano atual: ${PLAN_LABEL[currentPlan] ?? currentPlan}.`}
       />
 
-      <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/10">
+      <div className="glass-card overflow-x-auto">
         <table className="w-full border-collapse text-sm">
-          <thead className="bg-black/3 text-left dark:bg-white/5">
+          <thead className="text-text-muted border-b border-white/50 text-left">
             <tr>
-              <th className="px-4 py-2 font-medium">Recurso</th>
-              <th className="px-4 py-2 text-center font-medium">
+              <th className="px-4 py-3 font-semibold">Recurso</th>
+              <th className="px-4 py-3 text-center font-semibold">
                 {PLAN_LABEL.free}
                 {currentPlan === "free" ? " (atual)" : ""}
               </th>
-              <th className="px-4 py-2 text-center font-medium">
+              <th className="px-4 py-3 text-center font-semibold">
                 {PLAN_LABEL.pro}
                 {currentPlan === "pro" ? " (atual)" : ""}
               </th>
@@ -42,7 +42,7 @@ export default async function PlanosPage() {
           </thead>
           <tbody>
             {PLAN_FEATURES.map((row) => (
-              <tr key={row.label} className="border-t border-black/5 dark:border-white/5">
+              <tr key={row.label} className="border-t border-white/50">
                 <td className="px-4 py-2">{row.label}</td>
                 <td className="px-4 py-2 text-center">{row.free}</td>
                 <td className="px-4 py-2 text-center font-medium">{row.pro}</td>
@@ -53,23 +53,21 @@ export default async function PlanosPage() {
       </div>
 
       {currentPlan === "pro" ? (
-        <p className="text-sm text-green-700 dark:text-green-400">
-          Você já está no plano Pro. 🎉
-        </p>
+        <p className="text-sm text-green-700">Você já está no plano Pro. 🎉</p>
       ) : canUpgrade && billingOn ? (
         <div className="flex flex-col gap-2">
           <UpgradeButton />
-          <span className="text-xs text-zinc-500">
+          <span className="text-text-subtle text-xs">
             Teste grátis de {TRIAL_DAYS} dias. Cancele quando quiser.
           </span>
         </div>
       ) : canUpgrade && !billingOn ? (
-        <p className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+        <p className="rounded-card border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           A assinatura online ainda não está configurada neste ambiente (
           <code>STRIPE_SECRET_KEY</code>).
         </p>
       ) : (
-        <p className="text-sm text-zinc-500">
+        <p className="text-text-subtle text-sm">
           Apenas o administrador da organização pode gerenciar a assinatura.
         </p>
       )}

@@ -31,7 +31,7 @@ export default async function InspecaoEquipamentoChecklistPage({
         action={
           <Link
             href={`/inspecoes-equipamentos/${id}/edit`}
-            className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+            className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
           >
             Editar cabeçalho
           </Link>
@@ -40,7 +40,7 @@ export default async function InspecaoEquipamentoChecklistPage({
       <ChecklistForm inspectionId={id} items={items} />
       <Link
         href="/inspecoes-equipamentos"
-        className="text-sm text-zinc-500 hover:underline"
+        className="text-text-subtle text-sm hover:underline"
       >
         ← Voltar
       </Link>

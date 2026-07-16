@@ -13,8 +13,7 @@ import type { ActionError } from "@/shared/server/result";
 import { EmptyState, Table } from "../../../_ui/list";
 import { FieldError, FormError } from "../../../_ui/form";
 
-const inputClass =
-  "rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:bg-zinc-900";
+const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
 
 const brDate = (d: string | null) => (d ? d.split("-").reverse().join("/") : "—");
 
@@ -70,10 +69,10 @@ export function PgrRevisionsTab({
 
       <form
         onSubmit={handleSubmit}
-        className="grid max-w-2xl gap-4 rounded-lg border border-black/10 p-4 sm:grid-cols-2 dark:border-white/10"
+        className="glass-card grid max-w-2xl gap-4 p-4 sm:grid-cols-2"
       >
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Data da revisão *</span>
+          <span className="text-text-muted text-sm font-semibold">Data da revisão *</span>
           <input
             type="date"
             name="revisedAt"
@@ -82,11 +81,11 @@ export function PgrRevisionsTab({
           />
           <FieldError message={errors.revisedAt} />
         </label>
-        <p className="flex items-end text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-text-subtle flex items-end text-xs">
           O número da revisão é atribuído automaticamente pelo sistema.
         </p>
         <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-sm font-medium">Notas</span>
+          <span className="text-text-muted text-sm font-semibold">Notas</span>
           <input name="notes" className={inputClass} />
           <FieldError message={errors.notes} />
         </label>
@@ -94,7 +93,7 @@ export function PgrRevisionsTab({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+            className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
           >
             {pending ? "Salvando…" : "Registrar revisão"}
           </button>
@@ -106,7 +105,7 @@ export function PgrRevisionsTab({
       ) : (
         <Table headers={["Revisão", "Data", "Notas"]}>
           {revisions.map((rev) => (
-            <tr key={rev.id} className="border-t border-black/5 dark:border-white/5">
+            <tr key={rev.id} className="border-t border-white/50">
               <td className="px-4 py-2 font-medium">{rev.revisionNumber}</td>
               <td className="px-4 py-2">{brDate(rev.revisedAt)}</td>
               <td className="px-4 py-2">{rev.notes ?? "—"}</td>

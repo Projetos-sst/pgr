@@ -48,7 +48,7 @@ export default async function EditarInspecaoVeicularPage({
       />
       <Link
         href={`/inspecoes-veiculares/${id}`}
-        className="text-sm text-zinc-500 hover:underline"
+        className="text-text-subtle text-sm hover:underline"
       >
         ← Voltar ao checklist
       </Link>

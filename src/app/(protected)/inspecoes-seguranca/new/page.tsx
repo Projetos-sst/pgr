@@ -20,7 +20,10 @@ export default async function NovaInspecaoSegurancaPage() {
         description="Passo 1 de 2 — cabeçalho (categoria, área, empresa)."
       />
       <HeaderForm companies={companies} />
-      <Link href="/inspecoes-seguranca" className="text-sm text-zinc-500 hover:underline">
+      <Link
+        href="/inspecoes-seguranca"
+        className="text-text-subtle text-sm hover:underline"
+      >
         ← Voltar
       </Link>
     </div>

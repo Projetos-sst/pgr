@@ -46,7 +46,10 @@ export default async function EditarPermissaoTrabalhoPage({
           notes: permit.notes,
         }}
       />
-      <Link href="/permissoes-trabalho" className="text-sm text-zinc-500 hover:underline">
+      <Link
+        href="/permissoes-trabalho"
+        className="text-text-subtle text-sm hover:underline"
+      >
         ← Voltar
       </Link>
     </div>

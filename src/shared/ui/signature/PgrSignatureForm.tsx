@@ -46,7 +46,7 @@ export function PgrSignatureForm({ token, payload }: PublicFormProps) {
 
   if (done) {
     return (
-      <div className="rounded-md border border-green-600/30 bg-green-50 p-4 text-green-800 dark:bg-green-950 dark:text-green-200">
+      <div className="rounded-card border border-green-600/30 bg-green-50 p-4 text-green-800">
         Assinatura registrada com sucesso. Você já pode fechar esta página.
       </div>
     );
@@ -66,7 +66,7 @@ export function PgrSignatureForm({ token, payload }: PublicFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold">
+        <h1 className="text-text text-xl font-semibold">
           {data ? data.documentTitle : "Assinatura do PGR"}
         </h1>
         {summary.filter(([, v]) => v).length > 0 ? (
@@ -75,7 +75,7 @@ export function PgrSignatureForm({ token, payload }: PublicFormProps) {
               .filter(([, v]) => v)
               .map(([label, value]) => (
                 <div key={label} className="flex gap-1">
-                  <dt className="text-zinc-500">{label}:</dt>
+                  <dt className="text-text-subtle">{label}:</dt>
                   <dd>{value}</dd>
                 </div>
               ))}
@@ -84,19 +84,19 @@ export function PgrSignatureForm({ token, payload }: PublicFormProps) {
       </div>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">Seu nome</span>
+        <span className="text-text-muted font-semibold">Seu nome</span>
         <input
           value={signerName}
           onChange={(e) => setSignerName(e.target.value)}
           required
           maxLength={120}
-          className="rounded-md border border-black/15 px-3 py-2 dark:border-white/15"
+          className="glass-input text-text rounded-card px-3 py-2 outline-none"
           placeholder="Nome completo"
         />
       </label>
 
       <div className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">Assinatura</span>
+        <span className="text-text-muted font-semibold">Assinatura</span>
         <SignaturePad ref={padRef} />
       </div>
 
@@ -105,7 +105,7 @@ export function PgrSignatureForm({ token, payload }: PublicFormProps) {
       <button
         type="submit"
         disabled={submitting}
-        className="bg-foreground text-background self-start rounded-full px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#383838] disabled:opacity-60"
+        className="btn-primary rounded-pill self-start px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60"
       >
         {submitting ? "Enviando…" : "Assinar"}
       </button>

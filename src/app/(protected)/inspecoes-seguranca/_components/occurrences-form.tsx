@@ -68,7 +68,7 @@ export function OccurrencesForm({
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <FormError message={formError} />
       {rows.length === 0 ? (
-        <p className="text-sm text-zinc-500">
+        <p className="text-text-subtle text-sm">
           Nenhuma ocorrência. Adicione abaixo ou conclua sem ocorrências.
         </p>
       ) : (
@@ -76,20 +76,20 @@ export function OccurrencesForm({
           {rows.map((row, index) => (
             <li
               key={index}
-              className="flex flex-col gap-2 rounded-md border border-black/10 p-3 sm:flex-row sm:items-start dark:border-white/10"
+              className="glass-card flex flex-col gap-2 p-3 sm:flex-row sm:items-start"
             >
               <input
                 value={row.description}
                 onChange={(e) => setRow(index, { description: e.target.value })}
                 placeholder={`Ocorrência ${index + 1}`}
-                className="flex-1 rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+                className="glass-input text-text rounded-card flex-1 px-3 py-2 text-sm outline-none"
               />
               <select
                 value={row.severity}
                 onChange={(e) =>
                   setRow(index, { severity: e.target.value as Row["severity"] })
                 }
-                className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+                className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
               >
                 <option value="">— severidade —</option>
                 {SEVERITY_OPTIONS.map(([value, label]) => (
@@ -101,7 +101,7 @@ export function OccurrencesForm({
               <button
                 type="button"
                 onClick={() => setRows((prev) => prev.filter((_, i) => i !== index))}
-                className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
+                className="glass-panel text-text-muted rounded-card hover:text-text px-2 py-1 text-sm font-semibold transition-colors"
               >
                 ✕
               </button>
@@ -112,7 +112,7 @@ export function OccurrencesForm({
       <button
         type="button"
         onClick={() => setRows((prev) => [...prev, { description: "", severity: "" }])}
-        className="w-fit rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 dark:border-white/15"
+        className="glass-panel text-text-muted rounded-card hover:text-text w-fit px-3 py-1 text-sm font-semibold transition-colors"
       >
         + Adicionar ocorrência
       </button>

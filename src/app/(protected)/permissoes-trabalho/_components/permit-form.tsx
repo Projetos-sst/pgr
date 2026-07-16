@@ -105,11 +105,11 @@ export function PermitForm({
         defaultValue={initial?.number}
       />
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Tipo de trabalho *</span>
+        <span className="text-text-muted text-sm font-semibold">Tipo de trabalho *</span>
         <select
           name="type"
           defaultValue={initial?.type ?? "hot_work"}
-          className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
         >
           {TYPE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -119,11 +119,11 @@ export function PermitForm({
         </select>
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Status *</span>
+        <span className="text-text-muted text-sm font-semibold">Status *</span>
         <select
           name="status"
           defaultValue={initial?.status ?? "draft"}
-          className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
         >
           {STATUS_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>

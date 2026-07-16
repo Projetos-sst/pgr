@@ -80,11 +80,11 @@ export function HeaderForm({
     <form onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-4">
       <FormError message={formError} />
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Categoria *</span>
+        <span className="text-text-muted text-sm font-semibold">Categoria *</span>
         <select
           name="category"
           defaultValue={initial?.category ?? "safety"}
-          className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
         >
           {CATEGORY_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>

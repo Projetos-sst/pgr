@@ -18,7 +18,7 @@ export default async function RelatoriosPage() {
       />
 
       {!pdfEnabled ? (
-        <p className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+        <p className="rounded-card border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           A geração de PDF ainda não está configurada neste ambiente (
           <code>GOTENBERG_URL</code>). Os relatórios disponíveis aparecem abaixo e serão
           gerados assim que o serviço estiver ativo.
@@ -27,23 +27,18 @@ export default async function RelatoriosPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {REPORT_TYPES.map((report) => (
-          <div
-            key={report.key}
-            className="flex flex-col gap-2 rounded-lg border border-black/10 p-5 dark:border-white/10"
-          >
-            <span className="font-medium tracking-tight">{report.title}</span>
-            <span className="flex-1 text-sm text-zinc-600 dark:text-zinc-400">
-              {report.description}
-            </span>
+          <div key={report.key} className="glass-card flex flex-col gap-2 p-5">
+            <span className="text-text font-medium tracking-tight">{report.title}</span>
+            <span className="text-text-muted flex-1 text-sm">{report.description}</span>
             {report.available && pdfEnabled ? (
               <a
                 href={`/api/v1/reports/${report.key}`}
-                className="mt-2 inline-block rounded-full bg-black px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-black/85 dark:bg-white dark:text-black"
+                className="btn-primary rounded-pill mt-2 inline-block px-4 py-2 text-center text-sm font-semibold transition-colors"
               >
                 Gerar PDF
               </a>
             ) : (
-              <span className="mt-2 inline-block rounded-full border border-black/15 px-4 py-2 text-center text-sm text-zinc-500 dark:border-white/15">
+              <span className="glass-panel text-text-subtle rounded-pill mt-2 inline-block px-4 py-2 text-center text-sm">
                 {report.available ? "Indisponível" : "Em breve"}
               </span>
             )}
