@@ -67,6 +67,7 @@ const NAV: NavEntry[] = [
     kind: "group",
     label: "Gestão",
     items: [
+      { href: "/agenda", label: "Agenda" },
       { href: "/pendencias", label: "Pendências" },
       { href: "/relatorios", label: "Relatórios" },
       { href: "/epi-returns", label: "Devoluções de EPI" },
