@@ -18,6 +18,9 @@ const isPublicRoute = createRouteMatcher([
   // Assinatura publica generica (fatia 010 + PGR na 022): a credencial e o token
   // (resolvido pela policy de capability), nao a sessao Clerk.
   "/assinar/(.*)",
+  // Questionario psicossocial publico e anonimo (fatia 041): credencial = token
+  // da campanha (policy de capability), nunca sessao Clerk.
+  "/responderpsico/(.*)",
   "/api/webhooks/(.*)",
   ...(devApiBypass ? ["/api/v1/(.*)"] : []),
 ]);
@@ -29,6 +32,7 @@ const NO_STORE_PATH_PREFIXES = [
   "/sign-up",
   "/sign/",
   "/assinar/",
+  "/responderpsico/",
   "/dashboard",
 ];
 
