@@ -58,3 +58,6 @@ next-env.d.ts
 
 # Referências locais (prints/screenshots do ePGR e afins — não versionar)
 /docs/_local-refs/
+
+# Pasta guarda-chuva com referência de redesign (não versionar)
+/sst-project/redesign/
