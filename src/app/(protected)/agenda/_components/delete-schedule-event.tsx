@@ -22,7 +22,7 @@ export function DeleteScheduleEvent({ id }: { id: string }) {
       type="button"
       onClick={onDelete}
       disabled={pending}
-      className="rounded-md border border-red-300 px-3 py-1 text-sm text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400"
+      className="rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
     >
       Remover
     </button>
