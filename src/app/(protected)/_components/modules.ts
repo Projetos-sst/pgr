@@ -44,4 +44,24 @@ export const PGR_MODULES: PgrModule[] = [
     title: "Catálogo de EPI",
     description: "Itens de EPI e de máquinas/equipamentos, com CA e validade.",
   },
+  {
+    href: "/training-catalog",
+    title: "Treinamentos",
+    description: "Catálogo de treinamentos, vencimentos e conformidade por função.",
+  },
+  {
+    href: "/inspecoes-seguranca",
+    title: "Inspeções",
+    description: "Inspeções de segurança, veiculares e de equipamentos.",
+  },
+  {
+    href: "/permissoes-trabalho",
+    title: "Permissões de trabalho",
+    description: "Emissão e controle de permissões de trabalho (PT).",
+  },
+  {
+    href: "/relatorios",
+    title: "Relatórios",
+    description: "Relatórios em PDF e resumo da organização.",
+  },
 ];

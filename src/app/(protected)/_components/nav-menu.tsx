@@ -43,10 +43,37 @@ const NAV: NavEntry[] = [
   },
   {
     kind: "group",
+    label: "Treinamentos",
+    items: [
+      { href: "/training-catalog", label: "Catálogo de treinamentos" },
+      { href: "/training-expiry", label: "Vencimentos" },
+      { href: "/training-compliance", label: "Conformidade" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "Inspeções",
+    items: [
+      { href: "/veiculos", label: "Veículos" },
+      { href: "/planos-inspecao", label: "Planos de inspeção" },
+      { href: "/inspecoes-veiculares", label: "Inspeções veiculares" },
+      { href: "/inspecoes-equipamentos", label: "Inspeções de equipamentos" },
+      { href: "/inspecoes-seguranca", label: "Inspeções de segurança" },
+      { href: "/permissoes-trabalho", label: "Permissões de trabalho" },
+    ],
+  },
+  {
+    kind: "group",
     label: "Gestão",
     items: [
+      { href: "/pendencias", label: "Pendências" },
+      { href: "/relatorios", label: "Relatórios" },
       { href: "/epi-returns", label: "Devoluções de EPI" },
       { href: "/signatures", label: "Assinaturas" },
+      { href: "/equipe", label: "Equipe" },
+      { href: "/perfil", label: "Perfil" },
+      { href: "/planos", label: "Planos" },
+      { href: "/primeiros-passos", label: "Primeiros passos" },
     ],
   },
 ];
