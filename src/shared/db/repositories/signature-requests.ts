@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type { SignatureMethodValue } from "@/shared/domains/signatures/types";
 
@@ -66,6 +66,47 @@ export type RequestStatusRow = {
   expiresAt: Date;
   signedAt: Date | null;
 };
+
+export type LatestRequestRow = {
+  id: string;
+  status: SignatureRequest["status"];
+  expiresAt: Date;
+  signedAt: Date | null;
+  signerName: string | null;
+};
+
+/**
+ * Solicitação mais recente de um alvo (`target_type`+`target_id`) no tenant. Servida pelo índice
+ * `idx_signature_requests_target`. Leitura → sem `auditedTenantWrite`. **Nunca** devolve token/hash.
+ */
+export async function getLatestRequestByTarget(
+  orgId: string,
+  targetType: string,
+  targetId: string,
+): Promise<LatestRequestRow | null> {
+  return withOrg(orgId, async (tx) => {
+    const [row] = await tx
+      .select({
+        id: signatureRequests.id,
+        status: signatureRequests.status,
+        expiresAt: signatureRequests.expiresAt,
+        signedAt: signatureCaptures.signedAt,
+        signerName: signatureCaptures.signerName,
+      })
+      .from(signatureRequests)
+      .leftJoin(signatureCaptures, eq(signatureCaptures.requestId, signatureRequests.id))
+      .where(
+        and(
+          eq(signatureRequests.orgId, orgId),
+          eq(signatureRequests.targetType, targetType),
+          eq(signatureRequests.targetId, targetId),
+        ),
+      )
+      .orderBy(desc(signatureRequests.createdAt))
+      .limit(1);
+    return row ?? null;
+  });
+}
 
 export async function getRequestStatusById(
   orgId: string,

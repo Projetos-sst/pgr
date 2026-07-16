@@ -21,6 +21,44 @@ export async function deleteUser(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function getUserById(id: string): Promise<User | null> {
+  const { data, error } = await getRlsBypassingSupabaseClient()
+    .from("users")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapUser(data) : null;
+}
+
+/**
+ * App-managed profile update (self-service). Only touches the app-managed
+ * columns (phone/cpf/job_title) — name/email/avatar stay Clerk-owned so the
+ * Clerk webhook sync never clobbers user edits. No external dependency, so this
+ * is exercised end-to-end against the ephemeral Postgres.
+ */
+export async function updateUserProfile(
+  id: string,
+  input: {
+    phone: string | null;
+    cpf: string | null;
+    jobTitle: string | null;
+  },
+): Promise<User> {
+  const { data, error } = await getRlsBypassingSupabaseClient()
+    .from("users")
+    .update({
+      phone: input.phone,
+      cpf: input.cpf,
+      job_title: input.jobTitle,
+    })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return mapUser(data);
+}
+
 function toUserColumns(input: NewUser): Record<string, unknown> {
   return {
     id: input.id,
@@ -49,6 +87,10 @@ function mapUser(row: Record<string, unknown>): User {
     firstName: (row.first_name as string | null) ?? null,
     lastName: (row.last_name as string | null) ?? null,
     imageUrl: (row.image_url as string | null) ?? null,
+    phone: (row.phone as string | null) ?? null,
+    cpf: (row.cpf as string | null) ?? null,
+    jobTitle: (row.job_title as string | null) ?? null,
+    isMaster: (row.is_master as boolean | null) ?? false,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
   };

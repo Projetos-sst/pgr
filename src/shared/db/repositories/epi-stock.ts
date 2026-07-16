@@ -172,26 +172,6 @@ export async function countEpiStockDependents(
   });
 }
 
-/**
- * KPI do dashboard: nº de itens de estoque abaixo da quantidade mínima
- * (`balance < min_quantity`) no tenant. Inclui itens com saldo zero — todos
- * demandam reposição (contrato em `data-model.md`). Sempre escopado por `withOrg`.
- */
-export async function countEpiStockBelowMinimum(orgId: string): Promise<number> {
-  return withOrg(orgId, async (tx) => {
-    const [row] = await tx
-      .select({ total: sql<number>`count(*)::int` })
-      .from(epiStock)
-      .where(
-        and(
-          eq(epiStock.orgId, orgId),
-          sql`${epiStock.balance} < ${epiStock.minQuantity}`,
-        ),
-      );
-    return row.total;
-  });
-}
-
 /** Itens do catálogo ainda SEM estoque no tenant (popula o seletor de "Criar"). */
 export async function listAvailableCatalogOptions(
   orgId: string,

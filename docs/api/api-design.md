@@ -43,10 +43,11 @@ Atualizado conforme o código em `src/shared/server/actions/` e `src/app/api/`.
 
 Estes **são** HTTP estável e chamáveis por Postman/cURL (ao contrário das Server Actions):
 
-| Método | Rota                  | Auth                                                                | Retorno                                                                         |
-| ------ | --------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `GET`  | `/api/me`             | cookie de sessão Clerk                                              | `200 { userId, orgId }` · `401` (sem sessão) · `403 { error: "NO_ACTIVE_ORG" }` |
-| `POST` | `/api/webhooks/clerk` | assinatura **Svix** (`svix-id`, `svix-timestamp`, `svix-signature`) | `200 ok\|ignored` · `400 invalid_payload\|invalid signature` · `500 db error`   |
+| Método | Rota                   | Auth                                                                | Retorno                                                                                                |
+| ------ | ---------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/me`              | cookie de sessão Clerk                                              | `200 { userId, orgId }` · `401` (sem sessão) · `403 { error: "NO_ACTIVE_ORG" }`                        |
+| `POST` | `/api/webhooks/clerk`  | assinatura **Svix** (`svix-id`, `svix-timestamp`, `svix-signature`) | `200 ok\|ignored` · `400 invalid_payload\|invalid signature` · `500 db error`                          |
+| `POST` | `/api/webhooks/stripe` | assinatura **Stripe** (`stripe-signature`; emenda 1.5.0)            | `200 ok` · `400 missing\|invalid signature` (sincroniza `orgs.plan` free/pro por evento de assinatura) |
 
 > `GET /api/me` é o equivalente REST da Server Action `meAction`. O webhook **rejeita** payloads
 > sem assinatura Svix válida (`verifyWebhook`), então só dispara com o signing secret do Clerk.
@@ -110,23 +111,41 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 
 **Recursos** (todos sob `/api/v1`, escopados ao tenant ativo):
 
-| Recurso                                                                                                  | Verbos                                                                                                                                            |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/companies` · `/companies/{id}` · `/companies/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
-| `/work-units` · `/work-units/{id}` · `/work-units/{id}/dependents`                                       | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
-| `/job-roles` · `/job-roles/{id}` · `/job-roles/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                |
-| `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                                                            | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET                                                                                      |
-| `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`                                                   | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE                                                                                     |
-| `/ges/{id}/risk-suggestions` · `/ges/{id}/risk-suggestions/accept`                                       | POST (sugere riscos por IA — não persiste) · POST (persiste selecionados como rascunho, `201`)                                                    |
-| `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                      |
-| `/pgr` · `/pgr/{id}`                                                                                     | GET, POST · GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                          |
-| `/risks` · `/risks/{id}`                                                                                 | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                   |
-| `/risks/{id}/epis` · `/risks/{id}/epis/{linkId}`                                                         | GET (`?available=true&search=` p/ EPIs não vinculados), POST · PUT (neutralização), DELETE (vínculo EPI × risco)                                  |
-| `/risks/{id}/assessments` · `/risk-assessments/{id}`                                                     | GET, POST (avaliação 5×5 do risco; 201) · GET, PUT, DELETE (histórico 1:N; `riskLevel`/`result` calculados; sem `/dependents`, sem 409)           |
-| `/risks/{id}/control-measures` · `/control-measures/{id}`                                                | GET, POST (plano de ação 5W2H por nível NR-01; 201) · GET, PUT, DELETE (nível imutável; **DUPLICATE/409** se nível repetido; sem `/dependents`)   |
-| `/categories` · `/categories/{id}`                                                                       | GET, POST · GET, PUT, DELETE                                                                                                                      |
-| `/risk-methodology`                                                                                      | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                     |
-| `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return` | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item) |
+| Recurso                                                                                                  | Verbos                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/companies` · `/companies/{id}` · `/companies/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                           |
+| `/work-units` · `/work-units/{id}` · `/work-units/{id}/dependents`                                       | GET, POST · GET, PUT, DELETE · GET                                                                                                                           |
+| `/job-roles` · `/job-roles/{id}` · `/job-roles/{id}/dependents`                                          | GET, POST · GET, PUT, DELETE · GET                                                                                                                           |
+| `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                                                            | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET                                                                                                 |
+| `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`                                                   | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE                                                                                                |
+| `/ges/{id}/risk-suggestions` · `/ges/{id}/risk-suggestions/accept`                                       | POST (sugere riscos por IA — não persiste) · POST (persiste selecionados como rascunho, `201`)                                                               |
+| `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                          | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                                 |
+| `/pgr` · `/pgr/{id}`                                                                                     | GET, POST · GET, PUT, DELETE (documento PGR; sem `/dependents`, sem 409)                                                                                     |
+| `/pgr/{id}/revisions`                                                                                    | GET (histórico, mais recente primeiro), POST (número **server-side**; `revisionNumber` no body → `422`; `201`)                                               |
+| `/pgr/{id}/ges` · `/pgr/{id}/ges/{gesId}`                                                                | GET (GES vinculados ao PGR), POST (vincula GES; `201`) · DELETE (desvincula; `204`)                                                                          |
+| `/pgr/{id}/consolidated`                                                                                 | GET (visão consolidada read-only: GES → riscos → avaliação vigente → medidas 5W2H → EPIs; campos eSocial S-2240)                                             |
+| `/pgr/{id}/signature`                                                                                    | POST (cria solicitação; body só `ttlSeconds?`; `201` com `publicUrl`+`qrCodeDataUrl`) · GET (estado derivado; **nunca** token/URL)                           |
+| `/risks` · `/risks/{id}`                                                                                 | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                              |
+| `/risks/{id}/epis` · `/risks/{id}/epis/{linkId}`                                                         | GET (`?available=true&search=` p/ EPIs não vinculados), POST · PUT (neutralização), DELETE (vínculo EPI × risco)                                             |
+| `/risks/{id}/assessments` · `/risk-assessments/{id}`                                                     | GET, POST (avaliação 5×5 do risco; 201) · GET, PUT, DELETE (histórico 1:N; `riskLevel`/`result` calculados; sem `/dependents`, sem 409)                      |
+| `/risks/{id}/control-measures` · `/control-measures/{id}`                                                | GET, POST (plano de ação 5W2H por nível NR-01; 201) · GET, PUT, DELETE (nível imutável; **DUPLICATE/409** se nível repetido; sem `/dependents`)              |
+| `/categories` · `/categories/{id}`                                                                       | GET, POST · GET, PUT, DELETE                                                                                                                                 |
+| `/risk-methodology`                                                                                      | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                                |
+| `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return` | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item)            |
+| `/training-catalog` · `/training-catalog/{id}` · `/training-catalog/{id}/dependents`                     | GET (`?search=` nome/norma), POST · GET, PUT, DELETE (em uso → `409 IN_USE`) · GET (`{records, requiredLinks}`)                                              |
+| `/training-records` · `/training-records/{id}`                                                           | GET (`?employeeId=`), POST (`valid_until` calculado no servidor; **sem PUT** — realização imutável) · GET, DELETE                                            |
+| `/job-role-required-trainings` · `/job-role-required-trainings/{id}`                                     | GET (`?jobRoleId=`), POST (add **idempotente** por UNIQUE) · DELETE (sem GET/PUT de item — vínculo magro)                                                    |
+| `/profile`                                                                                               | GET, PUT (perfil do **usuário logado** — self; edita só campos app-managed `phone`/`cpf`/`jobTitle`; nome/e-mail/foto são do Clerk)                          |
+| `/team` · `/team/{userId}` · `/team/invitations`                                                         | GET (roster do tenant; `?search=`) · PUT, DELETE (papel / remoção — **owner**; via Clerk; barra o último owner) · POST (convite — **PRO**, `201`)            |
+| `/pending-items`                                                                                         | GET (read-model das pendências sem página própria: PGRs vencidos, controles em atraso, EPIs abaixo do mínimo — top 5 cada, com link à origem)                |
+| `/dashboard/summary`                                                                                     | GET (agregações read-model do tenant: KPIs, riscos por agente, planos por nível, pendências/vencimentos; **sem tabelas novas**)                              |
+| `/vehicles` · `/vehicles/{id}`                                                                           | GET (`?search=` placa/modelo/marca), POST · GET, PUT, DELETE (frota; placa BR/Mercosul; `UNIQUE(org,placa)`→`DUPLICATE`; `201`/`204`)                        |
+| `/inspection-plans` · `/inspection-plans/{id}`                                                           | GET (`?search=` título, `?type=vehicular\|equipment`), POST · GET (inclui `items[]`), PUT, DELETE (`204`)                                                    |
+| `/vehicular-inspections` · `/vehicular-inspections/{id}` · `/vehicular-inspections/{id}/checklist`       | GET (`?status=`), POST (cabeçalho → `in_progress`, `201`) · GET (inclui itens+respostas), PUT (cabeçalho), DELETE (`204`) · PUT (respostas → `completed`)    |
+| `/equipment-inspections` · `/equipment-inspections/{id}` · `/equipment-inspections/{id}/checklist`       | GET (`?status=`), POST (cabeçalho equipamento → `in_progress`, `201`) · GET, PUT, DELETE (`204`) · PUT (respostas → `completed`)                             |
+| `/safety-inspections` · `/safety-inspections/{id}` · `/safety-inspections/{id}/occurrences`              | GET (`?status=`/`?category=`), POST (cabeçalho → `in_progress`, `201`) · GET (inclui `occurrences[]`), PUT, DELETE (`204`) · PUT (ocorrências → `completed`) |
+| `/work-permits` · `/work-permits/{id}`                                                                   | GET (`?search=`/`?status=`/`?type=`), POST (`201`) · GET, PUT, DELETE (`204`) — nº único por org (`DUPLICATE`), empresa opcional                             |
+| `/onboarding`                                                                                            | GET (progresso de primeiros-passos DERIVADO dos KPIs do tenant; sem tabela; read-only)                                                                       |
 
 - **Filtros (query)**: list de cada recurso aceita `search`, `page`, `pageSize` + os filtros do
   recurso (`companyId`, `workUnitId`, `status`, `type`). Body de create/update = o mesmo `*Input`
@@ -156,9 +175,25 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
   Query `?status=pendente|devolvido|todos&from=&to=&page=&pageSize=` — `status` mapeia para
   `returned_at` (`pendente` ⇒ NULL, `devolvido` ⇒ NOT NULL); período filtra `delivery_date`.
   Funcionário cross-tenant → `404 NOT_FOUND`; sem entregas → `{ rows: [], total: 0 }`.
+- **Treinamentos (fatia 017)**: **`/training-catalog`** — os 5 campos ePGR
+  (`name`, `referenceNorm?`, `workloadHours` inteiro > 0, `periodicity` enum
+  `annual|biennial|triennial|quinquennial|single`, `description?`); nome duplicado no escritório →
+  `409 DUPLICATE`; exclusão de item com realizações/vínculos → `409 IN_USE` (cheque `/dependents`
+  antes). **`/training-records`** — `{ employeeId, trainingId, completedAt, certificatePath? }`;
+  `valid_until` é **calculado no servidor** pela periodicidade do catálogo (`single` → `null`) e
+  nunca vem do cliente; `completedAt` futuro → `422 VALIDATION`; funcionário/treinamento de outro
+  tenant → `422 FK_NOT_FOUND`. **`/job-role-required-trainings`** — `{ jobRoleId, trainingId }`;
+  POST repetido devolve o vínculo existente (idempotente). Leituras de vencimento/conformidade
+  (US3/US4) são consultas de Server Component, sem endpoint próprio nesta fase.
+- **Planos de inspeção (fatia 036)**: **`/inspection-plans`** — checklist reutilizável das inspeções
+- **Inspeções veiculares (fatia 037)**: **`/vehicular-inspections`** — fluxo em **2 passos**. Passo 1 (`POST`): cabeçalho `{ vehicleId, planId, inspectedAt, responsible?, driverName?, driverLicense?, currentKm?, route?, notes? }` cria a inspeção `type=vehicular` em `in_progress` (`201`). `vehicleId`/`planId` devem ser do tenant e o plano ser **veicular** — senão `422 FK_NOT_FOUND`. Passo 2 (`PUT /{id}/checklist`): `{ responses: [{ planItemId, value: true|false|null, observation? }] }` **substitui** as respostas e conclui (`status=completed`); respostas de `planItemId` fora do plano são ignoradas. `GET /{id}` devolve `{ inspection, vehicle, plan, items }` (itens do plano + resposta atual). Plano imutável do lado do item — só o plano edita seus itens (fatia 036).
+- **Inspeções de equipamentos (fatia 038)**: **`/equipment-inspections`** — mesmo fluxo em 2 passos da veicular, mas o cabeçalho referencia um **equipamento do catálogo** (`epi_catalog` tipo `machine`) + um **plano de equipamento**. `POST`: `{ equipmentCatalogId, planId, inspectedAt, responsible?, notes? }`. Equipamento não-`machine`/cross-tenant ou plano não-`equipment` → `422 FK_NOT_FOUND`. Checklist (`PUT /{id}/checklist`) reusa o contrato tri-state da veicular. `GET /{id}` = `{ inspection, equipment, plan, items }`.
+- **Inspeções de segurança (fatia 039)**: **`/safety-inspections`** — inspeção **livre** (sem plano/checklist). `POST`: `{ category, inspectedAt, planned?, area?, companyId?, responsible?, notes? }` cria `type=safety` em `in_progress`. `companyId` opcional; se informado, deve ser do tenant → senão `422 FK_NOT_FOUND`. `PUT /{id}/occurrences`: `{ occurrences: [{ description, severity: low|medium|high|null }] }` **substitui** as ocorrências e conclui (`completed`). `GET /{id}` = `{ inspection, company, occurrences }`. **Assinatura digital** reusa a infra de assinaturas (fatia 010) com `target_type: "inspection"` — via a Server Action `requestInspectionSignatureAction` (mesma superfície das assinaturas: sem espelho REST de criação; a rota pública `/sign/{token}` é a superfície testável).
+- **Permissões de trabalho (fatia 040)**: **`/work-permits`** — PT autorizando trabalho de risco (NR-33/35/10/18). Body `{ number, type (hot_work|confined_space|height|electrical|excavation|cold_work|other), status?, companyId?, area?, description, validFrom, validUntil, requestedBy?, approvedBy?, precautions?, notes? }`. `number` **único por org** → `409 DUPLICATE`; `validUntil >= validFrom` (Zod + CHECK no banco) → `422`; empresa opcional cross-tenant → `422 FK_NOT_FOUND`. **Migration `0020_work_permits`** (1 tabela + 2 enums, isolada por tenant). Módulo independente da cadeia de inspeções.
 - **Respostas**: recurso no corpo (`200`), `201` no create, `204` no delete. Erros:
   `{ error: { code, message, fields? } }` com HTTP `422 VALIDATION` · `409 DUPLICATE` ·
-  `422 FK_NOT_FOUND` · `404 NOT_FOUND` · `403 FORBIDDEN`/`NO_TENANT_CONTEXT` · `401 UNAUTHORIZED`.
+  `409 IN_USE` · `422 FK_NOT_FOUND` · `404 NOT_FOUND` · `403 FORBIDDEN`/`NO_TENANT_CONTEXT` ·
+  `401 UNAUTHORIZED`.
 
 ### Autenticação da REST API (2 modos) e os 3 ambientes
 
@@ -190,28 +225,39 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 
 ## Sumário das actions/endpoints existentes
 
-| Domínio                    | Arquivo                             | Superfície                                                                                                                                                           |
-| -------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| REST API (Route Handlers)  | `app/api/v1/**`                     | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees                                                                                                 |
-| Auth (Route Handler)       | `app/api/me/route.ts`               | `GET /api/me`                                                                                                                                                        |
-| Webhook (Route Handler)    | `app/api/webhooks/clerk/route.ts`   | `POST /api/webhooks/clerk` (provisiona tenant/sync)                                                                                                                  |
-| Sessão / Identidade        | `actions/me.ts`                     | `meAction` (Server Action)                                                                                                                                           |
-| Empresa                    | `actions/pgr/companies.ts`          | list, options, get, create, update, delete, dependents                                                                                                               |
-| Unidade de Obra            | `actions/pgr/work-units.ts`         | list, get, create, update, delete, dependents                                                                                                                        |
-| Função (Cargo)             | `actions/pgr/job-roles.ts`          | list, get, create, update, delete, dependents                                                                                                                        |
-| GES + vínculos             | `actions/pgr/ges.ts`                | list, get, create, update, delete, dependents + gestão de `ges_job_roles`                                                                                            |
-| Funcionário                | `actions/pgr/employees.ts`          | list, get, create, update, delete + picker de função                                                                                                                 |
-| PGR (documento)            | `actions/pgr/pgr.ts`                | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 não persistido; sem 409)                                                                     |
-| Riscos (GES)               | `actions/pgr/risks.ts`              | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)                                                     |
-| EPI × risco (vínculo)      | `actions/pgr/epi-risk.ts`           | list, available (busca nome/CA), add, update (neutralização), remove + REST `/api/v1/risks/{id}/epis/**`                                                             |
-| Avaliação de risco (5×5)   | `actions/pgr/risk-assessments.ts`   | list, get, getCurrent, create, update, delete + REST `/api/v1/risks/{id}/assessments` · `/risk-assessments/{id}` (histórico 1:N; snapshot de `result`; sem 409)      |
-| Medidas de controle (5W2H) | `actions/pgr/control-measures.ts`   | list, get, create, update, delete + REST `/api/v1/risks/{id}/control-measures` · `/control-measures/{id}` (1 por nível NR-01; estados derivados; **409** por UNIQUE) |
-| Categoria                  | `actions/pgr/categories.ts`         | list, get, create, update, delete (catálogo `epi`/`machine`)                                                                                                         |
-| Metodologia de Risco       | `actions/pgr/risk-methodology.ts`   | get (config ou padrão), save (upsert) + `GET`/`PUT /api/v1/risk-methodology`                                                                                         |
-| Sugestão de riscos (IA)    | `actions/pgr/ai-risk-suggestion.ts` | suggest (LLM, não persiste), accept (grava rascunhos) + REST `POST /api/v1/ges/{id}/risk-suggestions(/accept)`                                                       |
-| CAEPI (consulta de CA)     | `actions/epi/lookup-ca.ts`          | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                                                                           |
-| Entrega de EPI             | `actions/pgr/epi-deliveries.ts`     | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**`                                                    |
-| Ficha de EPI               | `actions/pgr/epi-record.ts`         | `getEmployeeEpiRecordAction` (read-only) + REST `GET /api/v1/employees/{id}/epi-record`                                                                              |
+| Domínio                    | Arquivo                                      | Superfície                                                                                                                                                                       |
+| -------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| REST API (Route Handlers)  | `app/api/v1/**`                              | CRUD HTTP de companies/work-units/job-roles/ges(+vínculos)/employees                                                                                                             |
+| Auth (Route Handler)       | `app/api/me/route.ts`                        | `GET /api/me`                                                                                                                                                                    |
+| Webhook (Route Handler)    | `app/api/webhooks/clerk/route.ts`            | `POST /api/webhooks/clerk` (provisiona tenant/sync)                                                                                                                              |
+| Sessão / Identidade        | `actions/me.ts`                              | `meAction` (Server Action)                                                                                                                                                       |
+| Empresa                    | `actions/pgr/companies.ts`                   | list, options, get, create, update, delete, dependents                                                                                                                           |
+| Ve�culos (inspe��es)       | `actions/inspections/vehicles.ts`            | list, get, create, update, delete + REST `/api/v1/vehicles/**` (frota; base das inspe��es veiculares; modelo na fatia 034)                                                       |
+| Unidade de Obra            | `actions/pgr/work-units.ts`                  | list, get, create, update, delete, dependents                                                                                                                                    |
+| Função (Cargo)             | `actions/pgr/job-roles.ts`                   | list, get, create, update, delete, dependents                                                                                                                                    |
+| GES + vínculos             | `actions/pgr/ges.ts`                         | list, get, create, update, delete, dependents + gestão de `ges_job_roles`                                                                                                        |
+| Funcionário                | `actions/pgr/employees.ts`                   | list, get, create, update, delete + picker de função                                                                                                                             |
+| PGR (documento)            | `actions/pgr/pgr.ts`                         | list, get, create, update, delete + REST `/api/v1/pgr/**` (aceite NR-01 não persistido; sem 409)                                                                                 |
+| PGR · Revisões             | `actions/pgr/pgr-revisions.ts`               | list, create (número **server-side**, `.strict()`) + REST `/api/v1/pgr/{id}/revisions` (GET, POST 201; `revisionNumber` no body → 422)                                           |
+| PGR · GES (escopo)         | `actions/pgr/pgr-ges.ts`                     | list, add, remove + REST `/api/v1/pgr/{id}/ges` · `/{gesId}` (GET, POST 201, DELETE 204)                                                                                         |
+| PGR · Consolidada          | `actions/pgr/pgr-consolidated.ts`            | get (read-only; GES→riscos→avaliação→5W2H→EPIs; S-2240) + REST `GET /api/v1/pgr/{id}/consolidated`                                                                               |
+| PGR · Assinatura           | `actions/pgr/pgr-signature.ts`               | createPgrSignatureRequestAction, getPgrSignatureViewAction + REST `/api/v1/pgr/{id}/signature` (POST 201 payload server-side; GET estado, sem token/URL; cota compartilhada 402) |
+| Riscos (GES)               | `actions/pgr/risks.ts`                       | list, get, create, update, delete + REST `/api/v1/risks/**` (regra `qualitative_na`; reuso por prefill; sem 409)                                                                 |
+| Perfil (plataforma)        | `actions/platform/profile.ts`                | getProfile, updateProfile (self) + REST `/api/v1/profile` (campos app-managed; nome/e-mail/foto delegados ao Clerk)                                                              |
+| Equipe (plataforma)        | `actions/platform/team.ts`                   | listTeamMembers, inviteMember, changeMemberRole, removeMember + REST `/api/v1/team/**` (multiusuário **PRO** via Clerk Org; owner-only; protege o último owner)                  |
+| Dashboard (plataforma)     | `actions/platform/dashboard.ts`              | getDashboardSummaryAction + REST `GET /api/v1/dashboard/summary` (read-model agregado por tenant; sem tabelas novas)                                                             |
+| EPI × risco (vínculo)      | `actions/pgr/epi-risk.ts`                    | list, available (busca nome/CA), add, update (neutralização), remove + REST `/api/v1/risks/{id}/epis/**`                                                                         |
+| Avaliação de risco (5×5)   | `actions/pgr/risk-assessments.ts`            | list, get, getCurrent, create, update, delete + REST `/api/v1/risks/{id}/assessments` · `/risk-assessments/{id}` (histórico 1:N; snapshot de `result`; sem 409)                  |
+| Medidas de controle (5W2H) | `actions/pgr/control-measures.ts`            | list, get, create, update, delete + REST `/api/v1/risks/{id}/control-measures` · `/control-measures/{id}` (1 por nível NR-01; estados derivados; **409** por UNIQUE)             |
+| Categoria                  | `actions/pgr/categories.ts`                  | list, get, create, update, delete (catálogo `epi`/`machine`)                                                                                                                     |
+| Metodologia de Risco       | `actions/pgr/risk-methodology.ts`            | get (config ou padrão), save (upsert) + `GET`/`PUT /api/v1/risk-methodology`                                                                                                     |
+| Sugestão de riscos (IA)    | `actions/pgr/ai-risk-suggestion.ts`          | suggest (LLM, não persiste), accept (grava rascunhos) + REST `POST /api/v1/ges/{id}/risk-suggestions(/accept)`                                                                   |
+| CAEPI (consulta de CA)     | `actions/epi/lookup-ca.ts`                   | `lookupCa` (Server Action, só sessão) + `GET /api/integrations/caepi/{ca}`                                                                                                       |
+| Entrega de EPI             | `actions/pgr/epi-deliveries.ts`              | create (baixa transacional), list, get, delete (guard), signManual, returnItem + REST `/api/v1/epi-deliveries/**`                                                                |
+| Ficha de EPI               | `actions/pgr/epi-record.ts`                  | `getEmployeeEpiRecordAction` (read-only) + REST `GET /api/v1/employees/{id}/epi-record`                                                                                          |
+| Treinamento (catálogo)     | `actions/pgr/training-catalog.ts`            | list, options, get, create, update, delete, dependents + REST `/api/v1/training-catalog/**`                                                                                      |
+| Realização de treinamento  | `actions/pgr/training-records.ts`            | list (por funcionário), get, create (`valid_until` via D1 no servidor), delete + vencimento (`listTrainingExpiry`, `getTrainingDueSummary`) + REST `/api/v1/training-records/**` |
+| Obrigatórios por função    | `actions/pgr/job-role-required-trainings.ts` | list, add (idempotente), remove + conformidade (`getEmployeeCompliance`, `listNonCompliance`) + REST `/api/v1/job-role-required-trainings/**`                                    |
 
 ---
 
@@ -237,19 +283,21 @@ type ActionResult<T> = { ok: true; data: T } | { ok: false; error: ActionError }
 Mapeados por `toActionError` (`src/shared/server/action-error.ts`). Erro inesperado é
 **relançado** (nunca silenciado), caindo no error boundary do Next.
 
-| code                 | Origem                                   | HTTP equiv. | Quando                                                      |
-| -------------------- | ---------------------------------------- | ----------- | ----------------------------------------------------------- |
-| `VALIDATION`         | `ZodError` (com `fields`); CHECK `23514` | 422         | Entrada inválida                                            |
-| `DUPLICATE`          | UNIQUE `23505`                           | 409         | CNPJ/CPF/título/vínculo duplicado no escritório             |
-| `FK_NOT_FOUND`       | FK `23503`; referência fora do tenant    | 422         | Empresa/obra/GES/função inexistente no escritório           |
-| `FORBIDDEN`          | papel `client`                           | 403         | Membro não-equipe tentou operar                             |
-| `NOT_FOUND`          | `getById` → `null`                       | 404         | Registro inexistente no escritório (inclui cross-tenant)    |
-| `NO_TENANT_CONTEXT`  | sem escritório ativo                     | 403         | Sessão sem tenant resolvido                                 |
-| `INSUFFICIENT_STOCK` | `InsufficientStockError` (repositório)   | 422         | Saída/entrega maior que o saldo disponível (rollback total) |
-| `ALREADY_SIGNED`     | `AlreadySignedError` (repositório)       | 409         | Assinar entrega que já saiu de `pending` (one-shot)         |
-| `ALREADY_RETURNED`   | `AlreadyReturnedError` (repositório)     | 409         | Devolver item de entrega já devolvido (saldo intacto)       |
-| `TOKEN_INVALID`      | `TokenInvalidError` (rota pública)       | 404         | Token de assinatura ausente/adulterado/inexistente          |
-| `TOKEN_EXPIRED`      | `TokenExpiredError` (rota pública)       | 410         | Token com HMAC válido porém além do TTL de 72h              |
+| code                 | Origem                                   | HTTP equiv. | Quando                                                                                                 |
+| -------------------- | ---------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------ |
+| `VALIDATION`         | `ZodError` (com `fields`); CHECK `23514` | 422         | Entrada inválida                                                                                       |
+| `DUPLICATE`          | UNIQUE `23505`                           | 409         | CNPJ/CPF/título/vínculo duplicado no escritório                                                        |
+| `FK_NOT_FOUND`       | FK `23503`; referência fora do tenant    | 422         | Empresa/obra/GES/função inexistente no escritório                                                      |
+| `FORBIDDEN`          | papel `client`                           | 403         | Membro não-equipe tentou operar                                                                        |
+| `NOT_FOUND`          | `getById` → `null`                       | 404         | Registro inexistente no escritório (inclui cross-tenant)                                               |
+| `NO_TENANT_CONTEXT`  | sem escritório ativo                     | 403         | Sessão sem tenant resolvido                                                                            |
+| `INSUFFICIENT_STOCK` | `InsufficientStockError` (repositório)   | 422         | Saída/entrega maior que o saldo disponível (rollback total)                                            |
+| `ALREADY_SIGNED`     | `AlreadySignedError` (repositório)       | 409         | Assinar entrega que já saiu de `pending` (one-shot)                                                    |
+| `ALREADY_RETURNED`   | `AlreadyReturnedError` (repositório)     | 409         | Devolver item de entrega já devolvido (saldo intacto)                                                  |
+| `TOKEN_INVALID`      | `TokenInvalidError` (rota pública)       | 404         | Token de assinatura ausente/adulterado/inexistente                                                     |
+| `TOKEN_EXPIRED`      | `TokenExpiredError` (rota pública)       | 410         | Token com HMAC válido porém além do TTL de 72h                                                         |
+| `IN_USE`             | `EntityInUseError` (repositório)         | 409         | Excluir item de catálogo com dependentes (pré-check + RESTRICT backstop)                               |
+| `QUOTA_EXCEEDED`     | `QuotaExceededError` (cota do plano)     | 402         | Cota mensal do plano `free` esgotada (sugestão IA; assinatura — contador compartilhado por tenant/mês) |
 
 ## Pré-condições comuns (toda action de CRUD)
 
@@ -409,6 +457,59 @@ workUnitId, workUnitName, responsible, registrationType, registrationNumber, iss
 **Erros REST**: 422 (validação/aceite ausente/FK), 404 (cross-tenant/inexistente), 403 (`client`);
 **nunca 409**. "Usuário autor" fora de escopo (modelo sem `created_by`).
 
+### Editor do PGR — revisões, GES, consolidada e assinatura (fatias 019 + 022)
+
+Sub-recursos do documento PGR, todos **zero-migration** (tabelas `pgr_revisions`, `pgr_ges`,
+`signature_requests`/`signature_captures` já existentes). Todos escopados ao tenant da sessão; PGR
+inexistente/de outro escritório → `404 NOT_FOUND` **antes** de qualquer efeito.
+
+- **`/pgr/{id}/revisions`** (revisões manuais, fatia 022): `GET` lista o histórico (mais recente
+  primeiro). `POST` **cria** uma revisão cujo **número é atribuído exclusivamente no servidor** —
+  o repositório trava a linha do PGR (`SELECT … FOR UPDATE` em `withOrg`) e calcula
+  `COALESCE(MAX(revision_number), 0) + 1` na mesma transação, então duas criações concorrentes no
+  mesmo PGR resultam em `201` + `201` com números **distintos e consecutivos** (nenhuma perdida);
+  PGRs diferentes não compartilham lock. O body aceita **somente** `{ revisedAt*, notes? }` e o
+  schema é **`.strict()`**: enviar `revisionNumber` (ou qualquer campo extra) → **`422 VALIDATION`**
+  (nunca ignorado em silêncio). A `UNIQUE(org_id, pgr_id, revision_number)` é backstop defensivo
+  (colisão inesperada → `409 DUPLICATE`); não há retry, update nem delete de revisão.
+  - Body válido: `{ "revisedAt": "2026-07-14", "notes": "Descrição da revisão" }` → `201`.
+  - Body inválido: `{ "revisedAt": "2026-07-14", "notes": "Cliente antigo", "revisionNumber": 99 }`
+    → **`422 VALIDATION`**.
+- **`/pgr/{id}/ges` · `/pgr/{id}/ges/{gesId}`** (GES do escopo do PGR, fatia 019): `GET` lista os GES
+  vinculados; `POST` vincula um GES (`{ gesId }`, `201`); `DELETE` desvincula (`204`; vínculo
+  inexistente → `404`). GES de outro tenant → falha de FK/isolamento (nunca vincula alheio).
+- **`/pgr/{id}/consolidated`** (visão consolidada, fatias 019 + 022): `GET` read-only que agrega, em
+  ~6 queries em lote (sem N+1), a cadeia GES → riscos → **avaliação vigente** → **medidas 5W2H** →
+  **EPIs por risco**, incluindo os campos **eSocial S-2240** persistidos (`concentration_intensity`
+  como **string**). Riscos ordenados por `risk_level` desc, sem avaliação por último; arrays vazios
+  tratados (PGR sem GES, GES sem riscos, risco sem avaliação/medida/EPI). Sem PDF/GED.
+- **`/pgr/{id}/signature`** (assinatura pública do PGR, fatia 022): `POST` (office staff) **cria** a
+  solicitação — o **payload público mínimo é montado NO SERVIDOR** (título/empresa/obra/responsável/
+  datas/nº revisão; **sem PII**, sem IDs internos), o body só aceita `{ ttlSeconds? }` (inteiro
+  positivo; schema `.strict()` → outro campo é `422`). Retorna `201` com `{ signature, publicUrl,
+qrCodeDataUrl }` — o **`publicUrl` só existe nesta resposta** (o token cru nunca é persistido nem
+  logado). `GET` devolve **somente** o estado derivado (`PgrSignatureView`:
+  `none|pending|signed|expired|cancelled` + metadados seguros) e **nunca** token ou URL. A **cota é
+  compartilhada** com os demais `target_type` (contador por tenant/mês, sem filtro): `free` limitado
+  → `402 QUOTA_EXCEEDED`, `pro` ilimitado. Cross-tenant → `404`. **Não** é um Route Handler REST
+  público — a superfície pública é a página `/assinar/{token}` (abaixo).
+
+### Rota pública de assinatura do PGR — `/assinar/{token}` (fatia 022)
+
+Página pública (fora de `/api/v1`, **sem Clerk, sem tenant de sessão, sem bypass dev**) da
+**infraestrutura genérica de assinatura** (fatia 010): a credencial é o **token** persistido só
+hasheado; o `target_type` `"pgr"` resolve o formulário via registry, que exibe **apenas** o snapshot
+mínimo congelado no `payload` da solicitação. A página **não** consulta o PGR/consolidada/
+funcionários ao vivo — alterar o PGR depois **não** muda um link já emitido.
+
+| Ação   | Rota               | Auth       | Desfecho                                                                                                  |
+| ------ | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/assinar/{token}` | só o token | página com o snapshot + captura de assinatura · inválido/expirado/usado → estado seguro (nunca vaza dado) |
+| `POST` | `/assinar/{token}` | só o token | Server Action `submitPublicSignature`: registra a captura (nome + PNG) · uso único / **replay bloqueado** |
+
+`Cache-Control: no-store` (proxy). `cancelled` aparece como `used` no público (comportamento herdado
+da infra). Não descrever como REST público — é a página genérica reutilizada.
+
 ---
 
 ## Riscos (GES) — `actions/pgr/risks.ts`
@@ -513,7 +614,8 @@ inexistente ou de outro escritório → `notFound()`.
 | `/job-roles` · `/job-roles/new` · `/job-roles/[id]/edit`                     | Função                                                                                                                                                |
 | `/ges` · `/ges/new` · `/ges/[id]/edit`                                       | GES (lista + card "Total"; edição gerencia vínculos e expostos)                                                                                       |
 | `/employees` · `/employees/new` · `/employees/[id]` · `/employees/[id]/edit` | Funcionário (lista filtrável / criar / ficha / editar)                                                                                                |
-| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / detalhe / editar)                                                                         |
+| `/pgr` · `/pgr/new` · `/pgr/[id]` · `/pgr/[id]/edit`                         | PGR (lista + filtro Empresa→Obra / criar com aceite NR-01 / **editor em abas**: Informações + GES + Revisões + Consolidada + Assinatura / editar)     |
+| `/assinar/[token]`                                                           | **Pública** (sem Clerk) — captura de assinatura do PGR pelo token; exibe só o snapshot mínimo (`no-store`)                                            |
 | `/risks` · `/risks/new` · `/risks/[id]` · `/risks/[id]/edit`                 | Riscos do GES (lista + filtro Empresa→Obra→GES / criar / detalhe / editar / reutilizar por prefill)                                                   |
 | `/risks/[id]/assessments` · `.../new` · `.../[assessmentId]/edit`            | Avaliações 5×5 do risco (histórico + vigente / criar com preview / editar) — atalho no detalhe do risco                                               |
 | `/risks/[id]/control-measures` · `.../new` · `.../[measureId]/edit`          | Medidas de controle 5W2H por nível NR-01 (lista + estado derivado/vencida + contexto/avaliação vigente / criar / editar) — atalho no detalhe do risco |

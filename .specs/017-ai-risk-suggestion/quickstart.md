@@ -7,7 +7,7 @@ Guia de validação ponta a ponta. Detalhes de dados/contratos em [data-model.md
 
 - `npm install` (inclui `@anthropic-ai/sdk`).
 - `.env.local`: `ANTHROPIC_API_KEY=<chave>` e opcionalmente `AI_SUGGESTION_MODEL` (default `claude-opus-4-8`).
-- Migration `0014_ai_usage_events` aplicada (`npm run db:migrate` — conexão owner).
+- Migration `0015_ai_usage_events` aplicada (`npm run db:migrate` — conexão owner).
 - Para integração: `INTEGRATION_DATABASE_URL` (+ `INTEGRATION_APP_RUNTIME_URL`) → **Postgres efêmero**.
 
 ## Cenários de validação

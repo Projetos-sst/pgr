@@ -101,6 +101,58 @@
     {
       "key": "epiCatalogId",
       "value": ""
+    },
+    {
+      "key": "trainingId",
+      "value": ""
+    },
+    {
+      "key": "trainingRecordId",
+      "value": ""
+    },
+    {
+      "key": "requiredTrainingId",
+      "value": ""
+    },
+    {
+      "key": "memberUserId",
+      "value": "user_xxx"
+    },
+    {
+      "key": "pgrPublicToken",
+      "value": "<token cru do publicUrl retornado no POST /pgr/:id/signature>"
+    },
+    {
+      "key": "vehicleId",
+      "value": ""
+    },
+    {
+      "key": "planId",
+      "value": ""
+    },
+    {
+      "key": "planItemId",
+      "value": ""
+    },
+    {
+      "key": "vehicularInspectionId",
+      "value": ""
+    },
+    {
+      "key": "equipmentCatalogId",
+      "value": ""
+    },
+    {
+      "key": "equipmentInspectionId",
+      "value": ""
+    },
+    {
+      "key": "safetyInspectionId",
+      "value": ""
+    },
+    {
+      "key": "workPermitId",
+      "value": ""
     }
   ],
   "item": [
@@ -1164,6 +1216,259 @@
               "path": ["api", "v1", "pgr", "{{pgrId}}"]
             }
           }
+        },
+        {
+          "name": "PGR · Revisões",
+          "item": [
+            {
+              "name": "GET /pgr/:id/revisions (histórico)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "revisions"]
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/revisions (válido → 201)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "revisions"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"revisedAt\": \"2026-07-14\",\n  \"notes\": \"Descrição da revisão\"\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/revisions (revisionNumber no body → 422)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "revisions"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"revisedAt\": \"2026-07-14\",\n  \"notes\": \"Cliente antigo\",\n  \"revisionNumber\": 99\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · GES",
+          "item": [
+            {
+              "name": "GET /pgr/:id/ges (GES vinculados)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "ges"]
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/ges (vincula → 201)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "ges"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"gesId\": \"{{gesId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE /pgr/:id/ges/:gesId (desvincula → 204)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges/{{gesId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "ges", "{{gesId}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · Consolidada",
+          "item": [
+            {
+              "name": "GET /pgr/:id/consolidated (read-only; 5W2H + EPIs + S-2240)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/consolidated",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "consolidated"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · Assinatura",
+          "item": [
+            {
+              "name": "POST /pgr/:id/signature (cria → 201; publicUrl+QR)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/signature",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "signature"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ttlSeconds\": 259200\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /pgr/:id/signature (estado; sem token/URL)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/signature",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "signature"]
+                }
+              }
+            },
+            {
+              "name": "GET /assinar/:token (página pública, sem Clerk)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/assinar/{{pgrPublicToken}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["assinar", "{{pgrPublicToken}}"]
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -2185,6 +2490,365 @@
       ]
     },
     {
+      "name": "Treinamentos (catalogo)",
+      "item": [
+        {
+          "name": "GET /training-catalog (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog?search=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /training-catalog (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"NR-35 Trabalho em Altura\",\n  \"referenceNorm\": \"NR-35\",\n  \"workloadHours\": 8,\n  \"periodicity\": \"biennial\",\n  \"description\": \"Capacitacao obrigatoria para trabalho em altura\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /training-catalog/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /training-catalog/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"NR-35 Trabalho em Altura\",\n  \"referenceNorm\": \"NR-35\",\n  \"workloadHours\": 16,\n  \"periodicity\": \"biennial\",\n  \"description\": \"Atualizado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /training-catalog/:id (em uso -> 409 IN_USE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /training-catalog/:id/dependents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}/dependents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}", "dependents"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Realizacao de treinamento (training-records)",
+      "item": [
+        {
+          "name": "GET /training-records (list por funcionario)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records?employeeId={{employeeId}}&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records"],
+              "query": [
+                {
+                  "key": "employeeId",
+                  "value": "{{employeeId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /training-records (create — valid_until no servidor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"trainingId\": \"{{trainingId}}\",\n  \"completedAt\": \"2026-07-01\",\n  \"certificatePath\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /training-records/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records/{{trainingRecordId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records", "{{trainingRecordId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /training-records/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records/{{trainingRecordId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records", "{{trainingRecordId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Obrigatorios por funcao (job-role-required-trainings)",
+      "item": [
+        {
+          "name": "GET /job-role-required-trainings (list por funcao)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-role-required-trainings?jobRoleId={{jobRoleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-role-required-trainings"],
+              "query": [
+                {
+                  "key": "jobRoleId",
+                  "value": "{{jobRoleId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /job-role-required-trainings (add idempotente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-role-required-trainings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-role-required-trainings"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobRoleId\": \"{{jobRoleId}}\",\n  \"trainingId\": \"{{trainingId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /job-role-required-trainings/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-role-required-trainings/{{requiredTrainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "job-role-required-trainings",
+                "{{requiredTrainingId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Metodologia de Risco",
       "item": [
         {
@@ -2565,6 +3229,1169 @@
               "raw": "{}"
             },
             "description": "A confirmacao real e uma Server Action (submitSignatureAction) disparada pela pagina — Server Actions sao POST-only com header Next-Action (hash de build), entao este request documenta a superficie mas o fluxo testavel de ponta a ponta e abrir o GET no navegador e confirmar na pagina."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Perfil (plataforma)",
+      "item": [
+        {
+          "name": "GET /profile (self)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile"]
+            }
+          }
+        },
+        {
+          "name": "PUT /profile (atualiza app-managed)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"11999998888\",\n  \"cpf\": \"123.456.789-09\",\n  \"jobTitle\": \"Tecnico de Seguranca\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Equipe (plataforma)",
+      "item": [
+        {
+          "name": "GET /team (roster, ?search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /team/invitations (convite, PRO, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team/invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team", "invitations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"novo@exemplo.com\",\n  \"role\": \"collaborator\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /team/:userId (papel, owner)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team/{{memberUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team", "{{memberUserId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"owner\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /team/:userId (remove, 204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team/{{memberUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team", "{{memberUserId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard (plataforma)",
+      "item": [
+        {
+          "name": "GET /dashboard/summary (agregacoes do tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard", "summary"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Veiculos (inspecoes)",
+      "item": [
+        {
+          "name": "GET /vehicles (?search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /vehicles (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"type\": \"truck\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH\",\n  \"initialKm\": 1000\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /vehicles/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "{{vehicleId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicles/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "{{vehicleId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"type\": \"truck\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH\",\n  \"initialKm\": 1000\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /vehicles/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "{{vehicleId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Planos de inspecao",
+      "item": [
+        {
+          "name": "GET /inspection-plans (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans?search=&type=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "type",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /inspection-plans (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota\",\n  \"description\": \"Inspeção pré-uso\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Pneus\",\n      \"defaultValue\": false\n    },\n    {\n      \"description\": \"Luzes\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /inspection-plans/:id (inclui items)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans", "{{planId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /inspection-plans/:id (substitui itens)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans", "{{planId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota (v2)\",\n  \"description\": \"Revisado\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Documentação\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /inspection-plans/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans", "{{planId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes veiculares",
+      "item": [
+        {
+          "name": "GET /vehicular-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections?status=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /vehicular-inspections (passo 1 cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Ana\",\n  \"driverName\": \"João\",\n  \"currentKm\": 15000,\n  \"route\": \"Obra A → Obra B\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /vehicular-inspections/:id (itens+respostas)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections", "{{vehicularInspectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicular-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections", "{{vehicularInspectionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Ana (rev)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicular-inspections/:id/checklist (passo 2 conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}/checklist",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "vehicular-inspections",
+                "{{vehicularInspectionId}}",
+                "checklist"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responses\": [\n    {\n      \"planItemId\": \"{{planItemId}}\",\n      \"value\": true,\n      \"observation\": \"ok\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /vehicular-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections", "{{vehicularInspectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes de equipamentos",
+      "item": [
+        {
+          "name": "GET /equipment-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections?status=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /equipment-inspections (passo 1 cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentCatalogId\": \"{{equipmentCatalogId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Marcos\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /equipment-inspections/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections", "{{equipmentInspectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /equipment-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections", "{{equipmentInspectionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentCatalogId\": \"{{equipmentCatalogId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Marcos (rev)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /equipment-inspections/:id/checklist (passo 2 conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}/checklist",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "equipment-inspections",
+                "{{equipmentInspectionId}}",
+                "checklist"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responses\": [\n    {\n      \"planItemId\": \"{{planItemId}}\",\n      \"value\": true,\n      \"observation\": \"ok\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /equipment-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections", "{{equipmentInspectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes de seguranca",
+      "item": [
+        {
+          "name": "GET /safety-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections?status=&category=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "category",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /safety-inspections (cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"safety\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"planned\": true,\n  \"area\": \"Almoxarifado\",\n  \"companyId\": \"{{companyId}}\",\n  \"responsible\": \"Fiscal\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /safety-inspections/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections", "{{safetyInspectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /safety-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections", "{{safetyInspectionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"safety\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"planned\": false,\n  \"area\": \"Pátio\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /safety-inspections/:id/occurrences (conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}/occurrences",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "safety-inspections",
+                "{{safetyInspectionId}}",
+                "occurrences"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"occurrences\": [\n    {\n      \"description\": \"Piso escorregadio\",\n      \"severity\": \"high\"\n    },\n    {\n      \"description\": \"Sinalização ausente\",\n      \"severity\": \"medium\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /safety-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections", "{{safetyInspectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permissoes de trabalho (PT)",
+      "item": [
+        {
+          "name": "GET /work-permits (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits?search=&status=&type=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "type",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /work-permits (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"PT-2026-001\",\n  \"type\": \"hot_work\",\n  \"status\": \"draft\",\n  \"companyId\": \"{{companyId}}\",\n  \"area\": \"Caldeiraria\",\n  \"description\": \"Solda em tubulação de vapor\",\n  \"validFrom\": \"2026-07-15\",\n  \"validUntil\": \"2026-07-16\",\n  \"requestedBy\": \"Encarregado\",\n  \"precautions\": \"Extintor + vigia de fogo\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /work-permits/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /work-permits/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"PT-2026-001\",\n  \"type\": \"hot_work\",\n  \"status\": \"active\",\n  \"description\": \"Solda (liberada)\",\n  \"validFrom\": \"2026-07-15\",\n  \"validUntil\": \"2026-07-16\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /work-permits/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
+            }
           }
         }
       ]

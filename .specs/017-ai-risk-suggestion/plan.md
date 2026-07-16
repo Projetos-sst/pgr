@@ -97,7 +97,7 @@ src/
 │   │   └── anthropic.ts                 # server-only: requestRiskSuggestions (ÚNICO ponto de rede)
 │   ├── db/
 │   │   ├── schema/ai-usage-events.ts    # tabela nova (cota) + RLS
-│   │   ├── migrations/0014_ai_usage_events.sql
+│   │   ├── migrations/0015_ai_usage_events.sql
 │   │   └── repositories/ai-risk-suggestion.ts  # fetchGesRiskContext / count / record
 │   ├── server/
 │   │   ├── pgr/ai-risk-suggestion-core.ts      # runSuggestRisks / runAcceptSuggestedRisks

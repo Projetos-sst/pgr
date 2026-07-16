@@ -1,154 +1,127 @@
 import Link from "next/link";
 
-import { requireTenantContext } from "@/shared/auth/require-tenant-context";
-import { getDashboardKpis } from "@/shared/server/dashboard/kpis";
+import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { withBarPercents } from "@/shared/domains/platform/dashboard";
+import { getDashboardSummaryAction } from "@/shared/server/actions/platform/dashboard";
+import { getTenantSwitcher } from "@/shared/tenant/switcher";
 
-import { PGR_MODULES } from "../_components/modules";
+import { BarChart, PendingPanel, StatCard } from "./_components/dashboard-widgets";
 
 export const dynamic = "force-dynamic";
 
-type Kpi = {
-  label: string;
-  value: number;
-  hint: string;
-  href: string;
-  emphasis?: boolean;
-};
-
-/** Widgets de gráfico sem fonte de agregação pronta → empty-state honesto (FR-008). */
-const EMPTY_WIDGETS = [
-  { title: "Riscos por Categoria", note: "Sem agregação disponível nesta versão." },
-  { title: "Planos de Ação", note: "Sem agregação disponível nesta versão." },
-  { title: "Status de OS", note: "Módulo de Ordens de Serviço ainda não disponível." },
-  {
-    title: "Categorias de Incidentes",
-    note: "Módulo de Incidentes ainda não disponível.",
-  },
+const PGR_MODULES = [
+  { href: "/companies", title: "Empresas" },
+  { href: "/ges", title: "GES" },
+  { href: "/risks", title: "Riscos" },
+  { href: "/pgr", title: "PGR" },
+  { href: "/epi-stock", title: "Estoque de EPI" },
+  { href: "/training-compliance", title: "Conformidade" },
 ];
 
 export default async function DashboardPage() {
-  const { tenantId } = await requireTenantContext();
-  const kpis = await getDashboardKpis(tenantId);
+  await requireOfficeStaffPage();
+  const switcher = await getTenantSwitcher();
+  const orgName = switcher?.options.find((o) => o.isActive)?.name ?? "Minha organização";
 
-  const cards: Kpi[] = [
-    {
-      label: "EMPRESAS",
-      value: kpis.companies,
-      hint: "Empresas-cliente",
-      href: "/companies",
-    },
-    {
-      label: "PGRS",
-      value: kpis.pgrs,
-      hint: "Programas de gestão de risco",
-      href: "/pgr",
-    },
-    {
-      label: "EQUIPE",
-      value: kpis.employees,
-      hint: "Funcionários cadastrados",
-      href: "/employees",
-    },
-    {
-      label: "EPIS ABAIXO DA MÍNIMA",
-      value: kpis.epiBelowMinimum,
-      hint: "Itens que demandam reposição",
-      href: "/epi-stock",
-      emphasis: true,
-    },
-  ];
+  const result = await getDashboardSummaryAction();
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-6 py-8 sm:px-8">
-      <header className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-text text-[26px] font-extrabold tracking-tight">
-            Dashboard
-          </h1>
-          <p className="text-text-subtle mt-1 text-sm">
-            Visão geral do escritório · dados do tenant ativo.
-          </p>
-        </div>
+      <header>
+        <h1 className="text-text text-[26px] font-extrabold tracking-tight">Dashboard</h1>
+        <p className="text-text-subtle mt-1 text-sm">
+          Organização ativa: <strong>{orgName}</strong>.
+        </p>
       </header>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((card) => (
-          <Link
-            key={card.label}
-            href={card.href}
-            className={
-              card.emphasis
-                ? "rounded-glass shadow-primary bg-primary flex flex-col gap-3 p-5 text-white transition-transform hover:-translate-y-0.5"
-                : "glass-card flex flex-col gap-3 p-5 transition-transform hover:-translate-y-0.5"
-            }
-          >
-            <span
-              className={
-                card.emphasis
-                  ? "font-mono text-[10px] tracking-[0.12em] text-white/70"
-                  : "text-text-subtle font-mono text-[10px] tracking-[0.12em]"
-              }
-            >
-              {card.label}
-            </span>
-            <span
-              className={
-                card.emphasis
-                  ? "text-4xl font-extrabold tracking-tight text-white"
-                  : "text-primary-strong text-4xl font-extrabold tracking-tight"
-              }
-            >
-              {card.value}
-            </span>
-            <span
-              className={
-                card.emphasis
-                  ? "text-xs font-semibold text-white/85"
-                  : "text-text-muted text-xs font-semibold"
-              }
-            >
-              {card.hint}
-            </span>
-          </Link>
-        ))}
-      </div>
-
-      <section className="flex flex-col gap-4">
-        <span className="text-text-subtle font-mono text-[11px] tracking-[0.16em] uppercase">
-          Acesso rápido aos cadastros
-        </span>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {PGR_MODULES.map((module) => (
-            <Link
-              key={module.href}
-              href={module.href}
-              className="glass-card group flex flex-col gap-1 p-5 transition-transform hover:-translate-y-0.5"
-            >
-              <span className="text-text font-bold tracking-tight">{module.title}</span>
-              <span className="text-text-muted text-sm">{module.description}</span>
-            </Link>
-          ))}
+      {!result.ok ? (
+        <div className="glass-card text-text-subtle px-6 py-12 text-center text-sm">
+          Não foi possível carregar os indicadores.
         </div>
-      </section>
+      ) : (
+        <>
+          <section className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-6">
+            <StatCard
+              label="Empresas"
+              value={result.data.kpis.companies}
+              href="/companies"
+            />
+            <StatCard
+              label="Funcionários"
+              value={result.data.kpis.employees}
+              href="/employees"
+            />
+            <StatCard
+              label="Unidades"
+              value={result.data.kpis.workUnits}
+              href="/work-units"
+            />
+            <StatCard label="GES" value={result.data.kpis.ges} href="/ges" />
+            <StatCard label="Riscos" value={result.data.kpis.risks} href="/risks" />
+            <StatCard label="PGRs" value={result.data.kpis.pgrs} href="/pgr" />
+          </section>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <BarChart
+              title="Riscos por tipo de agente"
+              segments={withBarPercents(result.data.risksByAgentType)}
+            />
+            <BarChart
+              title="Planos de ação por nível de controle"
+              segments={withBarPercents(result.data.actionPlansByLevel)}
+            />
+          </div>
+
+          <PendingPanel
+            items={[
+              {
+                label: "PGRs vencidos",
+                count: result.data.pending.pgrsExpired,
+                href: "/pgr",
+              },
+              {
+                label: "Controles em atraso",
+                count: result.data.pending.controlsOverdue,
+                href: "/risks",
+              },
+              {
+                label: "EPIs abaixo do mínimo",
+                count: result.data.pending.episLowStock,
+                href: "/epi-stock",
+              },
+              {
+                label: "EPIs a devolver",
+                count: result.data.pending.episPendingReturn,
+                href: "/epi-returns",
+              },
+              {
+                label: "Treinamentos vencidos",
+                count: result.data.pending.trainingsExpired,
+                href: "/training-expiry",
+              },
+              {
+                label: "Treinamentos a vencer",
+                count: result.data.pending.trainingsDueSoon,
+                href: "/training-expiry",
+              },
+            ]}
+          />
+        </>
+      )}
 
       <section className="flex flex-col gap-4">
         <span className="text-text-subtle font-mono text-[11px] tracking-[0.16em] uppercase">
-          Indicadores
+          Atalhos
         </span>
-        <div className="grid gap-5 sm:grid-cols-2">
-          {EMPTY_WIDGETS.map((widget) => (
-            <div key={widget.title} className="glass-card flex flex-col gap-4 p-6">
-              <span className="text-text text-[15px] font-bold">{widget.title}</span>
-              <div className="text-text-subtle flex flex-col items-center gap-2 py-8 text-center text-sm">
-                <span
-                  aria-hidden
-                  className="bg-primary-ring text-primary flex h-9 w-9 items-center justify-center rounded-full font-bold"
-                >
-                  i
-                </span>
-                <span>{widget.note}</span>
-              </div>
-            </div>
+        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          {PGR_MODULES.map((m) => (
+            <Link
+              key={m.href}
+              href={m.href}
+              className="glass-card text-text px-4 py-3 text-sm font-semibold transition-transform hover:-translate-y-0.5"
+            >
+              {m.title}
+            </Link>
           ))}
         </div>
       </section>

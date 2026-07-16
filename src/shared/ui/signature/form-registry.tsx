@@ -3,6 +3,8 @@
 import type { SignatureTargetType } from "@/shared/domains/signatures/contract";
 
 import { DemoSignatureForm } from "./DemoSignatureForm";
+import { InspectionSignatureForm } from "./InspectionSignatureForm";
+import { PgrSignatureForm } from "./PgrSignatureForm";
 
 export type PublicFormProps = { token: string; payload: unknown };
 
@@ -16,4 +18,6 @@ export const signatureFormRegistry: Record<
   (props: PublicFormProps) => React.ReactNode
 > = {
   demo: DemoSignatureForm,
+  inspection: InspectionSignatureForm,
+  pgr: PgrSignatureForm,
 };

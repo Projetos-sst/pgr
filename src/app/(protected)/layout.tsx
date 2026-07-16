@@ -8,6 +8,7 @@ import { requireTenantContext } from "@/shared/auth/require-tenant-context";
 
 import { TenantSwitcher } from "../_components/tenant-switcher";
 import { NavMenu } from "./_components/nav-menu";
+import { NotificationsBell } from "./_ui/notifications-bell";
 
 export default async function ProtectedLayout({
   children,
@@ -41,6 +42,7 @@ export default async function ProtectedLayout({
         </Link>
         <NavMenu />
         <div className="ml-auto flex items-center gap-3">
+          <NotificationsBell />
           <TenantSwitcher />
           <UserButton />
         </div>
