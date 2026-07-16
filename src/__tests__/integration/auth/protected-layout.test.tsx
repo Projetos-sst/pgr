@@ -37,6 +37,12 @@ jest.mock("@/app/_components/tenant-switcher", () => ({
   TenantSwitcher: () => <div data-testid="tenant-switcher" />,
 }));
 
+// O sino de notificações importa Server Action → cadeia de DB; mockar evita
+// carregar o driver postgres no jsdom.
+jest.mock("@/app/(protected)/_ui/notifications-bell", () => ({
+  NotificationsBell: () => <div data-testid="notifications-bell" />,
+}));
+
 jest.mock("@/shared/auth/require-tenant-context", () => ({
   requireTenantContext: jest.fn(),
 }));

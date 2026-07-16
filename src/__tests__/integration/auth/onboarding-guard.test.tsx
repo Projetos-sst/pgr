@@ -24,6 +24,11 @@ jest.mock("@/app/_components/tenant-switcher", () => ({
   TenantSwitcher: () => <div data-testid="tenant-switcher" />,
 }));
 
+// Mesmo motivo: o sino de notificações importa Server Action → cadeia de DB.
+jest.mock("@/app/(protected)/_ui/notifications-bell", () => ({
+  NotificationsBell: () => <div data-testid="notifications-bell" />,
+}));
+
 jest.mock("@/shared/auth/require-tenant-context", () => ({
   requireTenantContext: jest.fn(),
 }));
