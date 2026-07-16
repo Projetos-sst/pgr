@@ -87,7 +87,7 @@ export function TenantSwitcherMenu({
         <ul
           role="listbox"
           aria-label="Trocar de organização"
-          className="glass-card absolute right-0 z-20 mt-2 w-72 overflow-hidden bg-white/90 py-1"
+          className="glass-menu absolute right-0 z-50 mt-2 w-72 overflow-hidden py-1"
         >
           {options.map((option) => (
             <li key={option.orgId} role="option" aria-selected={option.isActive}>
@@ -95,7 +95,7 @@ export function TenantSwitcherMenu({
                 type="button"
                 onClick={() => selectTenant(option.orgId)}
                 disabled={pendingOrgId !== null}
-                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-white/60 disabled:opacity-60"
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-black/[0.04] disabled:opacity-60"
               >
                 <span className="flex min-w-0 flex-col">
                   <span className="text-text truncate font-medium">{option.name}</span>

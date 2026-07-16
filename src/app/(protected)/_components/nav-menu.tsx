@@ -151,7 +151,7 @@ export function NavMenu() {
                 {entry.label} <span aria-hidden>▾</span>
               </button>
               {open ? (
-                <div className="glass-card absolute top-full left-0 z-30 mt-2 flex min-w-[220px] flex-col gap-0.5 bg-white/85 p-2">
+                <div className="glass-menu absolute top-full left-0 z-50 mt-2 flex min-w-[220px] flex-col gap-0.5 p-2">
                   {entry.items.map((item) => (
                     <Link
                       key={item.href}
@@ -160,7 +160,7 @@ export function NavMenu() {
                       className={`rounded-card px-3 py-2 text-sm font-medium transition-colors ${
                         isActive(pathname, item.href)
                           ? "bg-primary-ring text-primary-strong"
-                          : "text-text-muted hover:text-text hover:bg-white/60"
+                          : "text-text-muted hover:text-text hover:bg-black/[0.04]"
                       }`}
                     >
                       {item.label}
@@ -187,7 +187,7 @@ export function NavMenu() {
         {mobileOpen ? (
           <div
             id="nav-mobile-panel"
-            className="glass-card absolute top-full left-0 z-30 mt-2 flex w-[240px] flex-col gap-3 bg-white/90 p-4"
+            className="glass-menu absolute top-full left-0 z-50 mt-2 flex w-[240px] flex-col gap-3 p-4"
           >
             {NAV.map((entry) =>
               entry.kind === "link" ? (
