@@ -111,6 +111,12 @@ export {
   type NewJobRoleRequiredTraining,
 } from "./trainings";
 export {
+  scheduleEvents,
+  scheduleEventType,
+  type ScheduleEvent,
+  type NewScheduleEvent,
+} from "./schedule-events";
+export {
   inspectionPlans,
   inspectionPlanItems,
   vehicles,

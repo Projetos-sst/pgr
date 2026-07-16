@@ -9,7 +9,7 @@ import { NotificationsBell } from "./_ui/notifications-bell";
 
 const PGR_NAV = [
   { href: "/dashboard", label: "Painel" },
-  { href: "/primeiros-passos", label: "Primeiros passos" },
+  { href: "/agenda", label: "Agenda" },
   { href: "/companies", label: "Empresas" },
   { href: "/work-units", label: "Unidades de obra" },
   { href: "/job-roles", label: "Funções" },

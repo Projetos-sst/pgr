@@ -1,5 +1,5 @@
 {
-  "id": "20b5381a-7609-4540-b69a-79eeeb642651",
+  "id": "73fa352e-ef57-4a27-83c2-5a87f8cca0e2",
   "prevId": "f0ff62d5-7604-4781-a5bf-e59643bbf5fc",
   "version": "7",
   "dialect": "postgresql",
@@ -2987,24 +2987,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "stripe_customer_id": {
-          "name": "stripe_customer_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "stripe_subscription_id": {
-          "name": "stripe_subscription_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "trial_ends_at": {
-          "name": "trial_ends_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -3041,21 +3023,6 @@
           "columns": [
             {
               "expression": "clerk_org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "orgs_stripe_customer_id_unique": {
-          "name": "orgs_stripe_customer_id_unique",
-          "columns": [
-            {
-              "expression": "stripe_customer_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -4009,6 +3976,139 @@
       "policies": {
         "risks_isolation": {
           "name": "risks_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "app_runtime"
+          ],
+          "using": "org_id = current_setting('app.current_org', true)",
+          "withCheck": "org_id = current_setting('app.current_org', true)"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.schedule_events": {
+      "name": "schedule_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "schedule_event_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_date": {
+          "name": "event_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reference_url": {
+          "name": "reference_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_schedule_events_org_id": {
+          "name": "idx_schedule_events_org_id",
+          "columns": [
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_schedule_events_org_date": {
+          "name": "idx_schedule_events_org_date",
+          "columns": [
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "event_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "schedule_events_org_id_orgs_id_fk": {
+          "name": "schedule_events_org_id_orgs_id_fk",
+          "tableFrom": "schedule_events",
+          "tableTo": "orgs",
+          "columnsFrom": [
+            "org_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "schedule_events_isolation": {
+          "name": "schedule_events_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
           "to": [
@@ -5143,6 +5243,17 @@
         "moderate",
         "substantial",
         "intolerable"
+      ]
+    },
+    "public.schedule_event_type": {
+      "name": "schedule_event_type",
+      "schema": "public",
+      "values": [
+        "inspection",
+        "training",
+        "exam",
+        "document_expiry",
+        "other"
       ]
     },
     "public.signature_method": {

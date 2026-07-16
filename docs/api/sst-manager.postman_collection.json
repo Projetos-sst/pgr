@@ -173,6 +173,10 @@
     {
       "key": "esocialBatchId",
       "value": ""
+    },
+    {
+      "key": "scheduleEventId",
+      "value": ""
     }
   ],
   "item": [
@@ -5034,6 +5038,147 @@
             "body": {
               "mode": "raw",
               "raw": "{}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agenda (plataforma)",
+      "item": [
+        {
+          "name": "GET /schedule-events (?eventType&from&to)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedule-events?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedule-events"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "eventType",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /schedule-events (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedule-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedule-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"inspection\",\n  \"title\": \"Inspecao do canteiro\",\n  \"eventDate\": \"2026-08-01\",\n  \"description\": \"Vistoria mensal\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /schedule-events/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedule-events/{{scheduleEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedule-events", "{{scheduleEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /schedule-events/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedule-events/{{scheduleEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedule-events", "{{scheduleEventId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"inspection\",\n  \"title\": \"Inspecao do canteiro\",\n  \"eventDate\": \"2026-08-01\",\n  \"description\": \"Vistoria mensal\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /schedule-events/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedule-events/{{scheduleEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedule-events", "{{scheduleEventId}}"]
             }
           }
         }
