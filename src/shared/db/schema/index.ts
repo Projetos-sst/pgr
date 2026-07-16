@@ -166,3 +166,17 @@ export {
   type PsychosocialRisk,
   type NewPsychosocialRisk,
 } from "./psychosocial";
+export {
+  esocialEvents,
+  esocialBatches,
+  esocialEventType,
+  esocialEventStatus,
+  esocialBatchStatus,
+  type EsocialEvent,
+  type NewEsocialEvent,
+  type EsocialEventType,
+  type EsocialEventStatus,
+  type EsocialBatch,
+  type NewEsocialBatch,
+  type EsocialBatchStatus,
+} from "./esocial";
