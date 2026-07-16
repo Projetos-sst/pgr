@@ -5,12 +5,12 @@
  */
 export function FieldHint({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-1 flex gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+    <p className="text-text-subtle mt-1 flex gap-1.5 text-xs">
       <span aria-hidden className="select-none">
         💡
       </span>
       <span>
-        <span className="font-medium">Dica da IA:</span> {children}
+        <span className="text-primary-strong font-semibold">Dica da IA:</span> {children}
       </span>
     </p>
   );
