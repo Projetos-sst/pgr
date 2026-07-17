@@ -50,6 +50,31 @@ export async function listAccidentsAction(
   );
 }
 
+export type ManagementIncidentItem = AccidentListItem & { activePlanCount: number };
+
+/**
+ * Lista para a tela de **gestão do ciclo de vida**: incidentes + contagem de planos ativos
+ * por incidente (para exibir pendências e antecipar o bloqueio de conclusão). A contagem é
+ * enriquecida no servidor via `countActivePlansForIncident` (sem Drizzle na Action).
+ */
+export async function listIncidentsManagementAction(
+  input: AccidentFilters = {},
+): Promise<ActionResult<Paginated<ManagementIncidentItem>>> {
+  return officeAction("safety.accidents.management_list", async ({ tenantId }) => {
+    const { rows, total } = await repo.listAccidents(
+      tenantId,
+      accidentFiltersSchema.parse(input),
+    );
+    const enriched = await Promise.all(
+      rows.map(async (row) => ({
+        ...row,
+        activePlanCount: await repo.countActivePlansForIncident(tenantId, row.id),
+      })),
+    );
+    return { rows: enriched, total };
+  });
+}
+
 export async function getAccidentAction(id: string): Promise<ActionResult<Accident>> {
   return officeAction("safety.accidents.get", async ({ tenantId }) => {
     const row = await repo.getAccidentById(tenantId, id);

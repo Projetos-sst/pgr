@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, gte, ilike, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, inArray, lte, or, sql, type SQL } from "drizzle-orm";
 
 import {
   toAccidentListItem,
@@ -12,6 +12,7 @@ import {
 import {
   isTerminalIncidentStatus,
   requiresJustification,
+  shouldAdvanceOnNewActivePlan,
   validateIncidentTransition,
   type IncidentStatus,
 } from "@/shared/domains/safety/incident-lifecycle";
@@ -19,9 +20,12 @@ import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-erro
 import { ValidationError } from "@/shared/errors/validation-error";
 import { resolvePageParams, type Paginated } from "@/shared/pagination";
 
-import { accidents, companies, employees, type Accident } from "../schema";
+import { accidents, actionPlans, companies, employees, type Accident } from "../schema";
 import { withOrg, type TenantTransaction } from "../with-org";
 import { auditedTenantWrite } from "./audited-write";
+
+/** Status de plano que contam como **ativos** (pendentes) — bloqueiam a conclusão do incidente. */
+const ACTIVE_PLAN_STATUSES = ["planned", "in_progress"] as const;
 
 // Auditoria de fronteira sem PII/dado de saúde: apenas o nome da operação (FR-026).
 const WRITE_EVENT = "safety.accidents.write_rejected";
@@ -241,16 +245,24 @@ export async function setAccidentStatus(
         .limit(1);
       if (!current) return null;
 
+      // Conclusão é bloqueada com plano ativo (SC-009): a contagem roda na MESMA transação,
+      // então um plano criado concorrentemente não escapa entre o teste e o commit.
+      const activePlanCount =
+        to === "completed" ? await countActivePlansForIncidentTx(tx, orgId, id) : 0;
+
       const check = validateIncidentTransition(
         current.status as IncidentStatus,
         to,
         justification,
+        { activePlanCount },
       );
       if (!check.ok) {
         throw new ValidationError(
           check.reason === "justification_required"
             ? "Justificativa é obrigatória para concluir ou cancelar o incidente."
-            : "Transição de estado inválida para o incidente.",
+            : check.reason === "blocked_by_active_plans"
+              ? "Incidente com plano de ação ativo não pode ser concluído."
+              : "Transição de estado inválida para o incidente.",
         );
       }
 
@@ -269,4 +281,61 @@ export async function setAccidentStatus(
       return row ?? null;
     }),
   );
+}
+
+// ── Acoplamento com o ciclo de vida do incidente (Bloco E, camada única) ────────
+//
+// O repositório de `action_plans` **orquestra a transação**; estes helpers, coesos aqui,
+// aplicam as regras de `incident-lifecycle.ts`. Acoplamento **unidirecional**: planos avançam
+// o incidente; nada aqui escreve em `action_plans` além de contar.
+
+/** Conta planos ativos (`planned`/`in_progress`) de um incidente, dentro da transação dada. */
+export function countActivePlansForIncidentTx(
+  tx: TenantTransaction,
+  orgId: string,
+  incidentId: string,
+): Promise<number> {
+  return tx
+    .select({ total: countExpr })
+    .from(actionPlans)
+    .where(
+      and(
+        eq(actionPlans.orgId, orgId),
+        eq(actionPlans.originType, "incident"),
+        eq(actionPlans.originId, incidentId),
+        inArray(actionPlans.status, [...ACTIVE_PLAN_STATUSES]),
+      ),
+    )
+    .then(([r]) => r?.total ?? 0);
+}
+
+/** Versão pública (abre `withOrg`) para a UI de gestão exibir a contagem de planos pendentes. */
+export function countActivePlansForIncident(
+  orgId: string,
+  incidentId: string,
+): Promise<number> {
+  return withOrg(orgId, (tx) => countActivePlansForIncidentTx(tx, orgId, incidentId));
+}
+
+/**
+ * Avança o incidente `awaiting_planning → awaiting_completion` na criação do **primeiro plano
+ * ativo** (regra pura `shouldAdvanceOnNewActivePlan`). Idempotente e chamado **dentro** da
+ * transação de criação do plano (`action-plans.ts`). Só toca o incidente do tenant ativo.
+ */
+export async function advanceIncidentOnFirstPlanTx(
+  tx: TenantTransaction,
+  orgId: string,
+  incidentId: string,
+): Promise<void> {
+  const [current] = await tx
+    .select({ status: accidents.status })
+    .from(accidents)
+    .where(and(eq(accidents.orgId, orgId), eq(accidents.id, incidentId)))
+    .limit(1);
+  if (!current) return;
+  if (!shouldAdvanceOnNewActivePlan(current.status as IncidentStatus)) return;
+  await tx
+    .update(accidents)
+    .set({ status: "awaiting_completion", updatedAt: new Date() })
+    .where(and(eq(accidents.orgId, orgId), eq(accidents.id, incidentId)));
 }

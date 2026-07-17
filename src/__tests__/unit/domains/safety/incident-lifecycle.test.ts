@@ -5,6 +5,7 @@ import {
   isTerminalIncidentStatus,
   nextIncidentStatuses,
   requiresJustification,
+  shouldAdvanceOnNewActivePlan,
   validateIncidentTransition,
 } from "@/shared/domains/safety/incident-lifecycle";
 import {
@@ -99,6 +100,45 @@ describe("validateIncidentTransition (pura, sem throw)", () => {
     expect(validateIncidentTransition("registered", "cancelled", "Duplicado")).toEqual({
       ok: true,
     });
+  });
+});
+
+describe("acoplamento com planos (Bloco E, fonte única)", () => {
+  it("só awaiting_planning avança na criação do primeiro plano ativo", () => {
+    expect(shouldAdvanceOnNewActivePlan("awaiting_planning")).toBe(true);
+    expect(shouldAdvanceOnNewActivePlan("registered")).toBe(false);
+    expect(shouldAdvanceOnNewActivePlan("awaiting_completion")).toBe(false);
+    expect(shouldAdvanceOnNewActivePlan("completed")).toBe(false);
+    expect(shouldAdvanceOnNewActivePlan("cancelled")).toBe(false);
+  });
+
+  it("conclusão é bloqueada com plano ativo (SC-009)", () => {
+    expect(
+      validateIncidentTransition("awaiting_completion", "completed", "Justif", {
+        activePlanCount: 1,
+      }),
+    ).toEqual({ ok: false, reason: "blocked_by_active_plans" });
+  });
+
+  it("conclusão passa quando não há plano ativo (todos resolvidos)", () => {
+    expect(
+      validateIncidentTransition("awaiting_completion", "completed", "Justif", {
+        activePlanCount: 0,
+      }),
+    ).toEqual({ ok: true });
+  });
+
+  it("planos ativos não afetam transições que não sejam conclusão", () => {
+    expect(
+      validateIncidentTransition("awaiting_planning", "awaiting_completion", null, {
+        activePlanCount: 3,
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      validateIncidentTransition("awaiting_completion", "cancelled", "Justif", {
+        activePlanCount: 3,
+      }),
+    ).toEqual({ ok: true });
   });
 });
 

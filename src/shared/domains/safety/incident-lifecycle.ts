@@ -75,22 +75,43 @@ export function requiresJustification(to: IncidentStatus): boolean {
 
 export type IncidentTransitionCheck =
   | { ok: true }
-  | { ok: false; reason: "invalid_transition" | "justification_required" };
+  | {
+      ok: false;
+      reason: "invalid_transition" | "justification_required" | "blocked_by_active_plans";
+    };
 
 /**
  * Validação **pura** de uma transição (sem throw): a camada que chama (repositório)
- * mapeia `invalid_transition`/`justification_required` para `VALIDATION` (422). A UI usa
- * o mesmo resultado para desabilitar ações inválidas — regra jamais duplicada.
+ * mapeia os motivos para `VALIDATION` (422). A UI usa o mesmo resultado para desabilitar
+ * ações inválidas — regra jamais duplicada.
+ *
+ * `activePlanCount` = planos relacionados em `planned`/`in_progress` (Bloco E). Conclusão é
+ * **bloqueada** enquanto houver plano ativo (SC-009); `cancelled`/`completed` já são resolvidos
+ * e não entram nessa contagem. Quem chama passa a contagem obtida na mesma transação.
  */
 export function validateIncidentTransition(
   from: IncidentStatus,
   to: IncidentStatus,
   justification: string | null | undefined,
+  context: { activePlanCount?: number } = {},
 ): IncidentTransitionCheck {
   if (!canTransitionIncident(from, to))
     return { ok: false, reason: "invalid_transition" };
   if (requiresJustification(to) && !justification?.trim()) {
     return { ok: false, reason: "justification_required" };
   }
+  if (to === "completed" && (context.activePlanCount ?? 0) > 0) {
+    return { ok: false, reason: "blocked_by_active_plans" };
+  }
   return { ok: true };
+}
+
+/**
+ * Acoplamento **unidirecional** (T010): a criação do **primeiro plano ativo** avança o incidente
+ * `awaiting_planning → awaiting_completion`. Só esse estado avança automaticamente — `registered`
+ * (só sai por transição manual explícita), `awaiting_completion`, `completed` e `cancelled` não.
+ * Idempotente: um segundo plano encontra o incidente já em `awaiting_completion` e não re-transiciona.
+ */
+export function shouldAdvanceOnNewActivePlan(current: IncidentStatus): boolean {
+  return current === "awaiting_planning";
 }

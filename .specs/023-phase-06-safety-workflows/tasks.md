@@ -85,18 +85,18 @@ Convenção de reuso (não reimplementar): `withOrg`, `officeAction`, `restHandl
 
 ## Bloco E — Planos 5W2H + ciclo de vida do incidente (US6 + US5)
 
-- [ ] T051 [P] [US6] `src/shared/domains/safety/action-plan.ts`: zod 5W2H (`what/why/who/where/when/how/how_much`), `priority`, status, `overdue` derivado (fuso America/Sao_Paulo). Depende de: T018. Conclusão: unit de 5W2H + overdue.
-- [ ] T052 [P] [US6] `src/shared/domains/safety/action-plan-origin.ts`: allowlist `{risk, incident}` + contrato de resolução de origem. Depende de: T018. Conclusão: tipos não suportados rejeitados na validação.
-- [ ] T053 [US6] `src/shared/db/repositories/action-plans.ts`: `list/get/create/update/delete-cancel` + transições; `resolveOriginRef` (existe + mesmo tenant → senão `FkNotFound`); origem removida → plano persiste (histórico); `completed_at`/`cancelled_at`; exclusão física só `planned` sem dependentes. Depende de: T051, T052, T043. Conclusão: repo compila; origem cross-tenant → 422.
-- [ ] T054 [US5] Ampliar `src/shared/db/repositories/accidents.ts` com `advanceIncidentOnFirstPlan(tx, …)` + `countActivePlansForIncident`, aplicando `incident-lifecycle` na **mesma transação** de `action_plans` (camada única). Depende de: T053, T042. Conclusão: primeiro plano ativo move `awaiting_planning→awaiting_completion`; regra não duplicada.
-- [ ] T055 [US6] `src/shared/server/actions/safety/action-plans.ts` (create/update/status/delete-cancel). Depende de: T053. Conclusão: `ActionResult<T>`; audit sem PII.
-- [ ] T056 [US5] `setAccidentStatusAction` em `src/shared/server/actions/safety/accidents.ts` usando `incident-lifecycle` (conclusão exige justificativa; bloqueada com plano ativo). Depende de: T054, T044. Conclusão: conclusão bloqueada retorna erro de estado.
-- [ ] T057 [P] [US6] REST `src/app/api/v1/action-plans/route.ts` + `[id]/route.ts` + `[id]/status/route.ts`. Depende de: T053. Conclusão: 201/204/200; 422 origem inválida.
-- [ ] T058 [US6] UI `src/app/(protected)/action-plans/**` (central multiorigem, filtros, detalhe, form 5W2H) + `nav-menu.tsx`. Depende de: T055. Conclusão: navegável; "Origem removida" exibido quando aplicável.
-- [ ] T059 [US5] UI `src/app/(protected)/incidents/management/**` (filtros Todos/Aguardando planejamento/Aguardando conclusão/Concluídos, ocultar concluídos, iniciar plano, marcar concluído, contagem de planos). Depende de: T056, T048. Conclusão: tela central operacional.
-- [ ] T060 [P] [US6] Unit `src/__tests__/unit/domains/safety/action-plan.test.ts` (5W2H, overdue, allowlist de origem). Depende de: T051, T052. Conclusão: verde.
-- [ ] T061 [US6] Integração `src/__tests__/integration/safety/action-plans.test.ts`: origem válida/inválida/cross-tenant→422 (SC-010), status, overdue, cancelamento, origem removida. Depende de: T055. Conclusão: verde.
-- [ ] T062 [US5] Integração `src/__tests__/integration/safety/incident-lifecycle.test.ts`: primeiro plano move o incidente; conclusão bloqueada com plano ativo (SC-009); plano cancelado resolve; justificativa obrigatória; terminal não volta. Depende de: T056. Conclusão: verde; **Gate Bloco E**.
+- [x] T051 [P] [US6] `src/shared/domains/safety/action-plan.ts`: zod 5W2H (`what/why/who/where/when/how/how_much`), `priority`, status, `overdue` derivado (fuso America/Sao_Paulo). Depende de: T018. Conclusão: unit de 5W2H + overdue.
+- [x] T052 [P] [US6] `src/shared/domains/safety/action-plan-origin.ts`: allowlist `{risk, incident}` + contrato de resolução de origem. Depende de: T018. Conclusão: tipos não suportados rejeitados na validação.
+- [x] T053 [US6] `src/shared/db/repositories/action-plans.ts`: `list/get/create/update/delete-cancel` + transições; `resolveOriginRef` (existe + mesmo tenant → senão `FkNotFound`); origem removida → plano persiste (histórico); `completed_at`/`cancelled_at`; exclusão física só `planned` sem dependentes. Depende de: T051, T052, T043. Conclusão: repo compila; origem cross-tenant → 422.
+- [x] T054 [US5] Ampliar `src/shared/db/repositories/accidents.ts` com `advanceIncidentOnFirstPlan(tx, …)` + `countActivePlansForIncident`, aplicando `incident-lifecycle` na **mesma transação** de `action_plans` (camada única). Depende de: T053, T042. Conclusão: primeiro plano ativo move `awaiting_planning→awaiting_completion`; regra não duplicada.
+- [x] T055 [US6] `src/shared/server/actions/safety/action-plans.ts` (create/update/status/delete-cancel). Depende de: T053. Conclusão: `ActionResult<T>`; audit sem PII.
+- [x] T056 [US5] `setAccidentStatusAction` em `src/shared/server/actions/safety/accidents.ts` usando `incident-lifecycle` (conclusão exige justificativa; bloqueada com plano ativo). Depende de: T054, T044. Conclusão: conclusão bloqueada retorna erro de estado.
+- [x] T057 [P] [US6] REST `src/app/api/v1/action-plans/route.ts` + `[id]/route.ts` + `[id]/status/route.ts`. Depende de: T053. Conclusão: 201/204/200; 422 origem inválida.
+- [x] T058 [US6] UI `src/app/(protected)/action-plans/**` (central multiorigem, filtros, detalhe, form 5W2H) + `nav-menu.tsx`. Depende de: T055. Conclusão: navegável; "Origem removida" exibido quando aplicável.
+- [x] T059 [US5] UI `src/app/(protected)/incidents/management/**` (filtros Todos/Aguardando planejamento/Aguardando conclusão/Concluídos, ocultar concluídos, iniciar plano, marcar concluído, contagem de planos). Depende de: T056, T048. Conclusão: tela central operacional.
+- [x] T060 [P] [US6] Unit `src/__tests__/unit/domains/safety/action-plan.test.ts` (5W2H, overdue, allowlist de origem). Depende de: T051, T052. Conclusão: verde.
+- [x] T061 [US6] Integração `src/__tests__/integration/safety/action-plans.test.ts`: origem válida/inválida/cross-tenant→422 (SC-010), status, overdue, cancelamento, origem removida. Depende de: T055. Conclusão: verde.
+- [x] T062 [US5] Integração `src/__tests__/integration/safety/incident-lifecycle.test.ts`: primeiro plano move o incidente; conclusão bloqueada com plano ativo (SC-009); plano cancelado resolve; justificativa obrigatória; terminal não volta. Depende de: T056. Conclusão: verde; **Gate Bloco E**.
 
 ---
 
