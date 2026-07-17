@@ -61,7 +61,7 @@ H=(-H "x-dev-tenant: $ORG" -H "x-dev-role: owner" -H 'content-type: application/
 
 # ── Service Orders ────────────────────────────────────────────────────────────
 curl -s "${H[@]}" -X POST  $BASE/api/v1/service-orders \
-  -d '{"companyId":"<uuid>","description":"OS de manutenção","items":[{"description":"Trocar EPI"}]}'   # 201 (número server-side)
+  -d '{"title":"OS de manutenção","openedAt":"2026-07-15","assignedEmployeeId":"<uuid>","items":[{"description":"Trocar EPI"}]}'  # 201 (número server-side)
 curl -s "${H[@]}"          $BASE/api/v1/service-orders?page=1                                          # 200 lista
 curl -s "${H[@]}"          $BASE/api/v1/service-orders/<id>                                            # 200 detalhe+itens | 404 cross-tenant
 curl -s "${H[@]}" -X PUT   $BASE/api/v1/service-orders/<id>/status -d '{"status":"in_progress"}'       # 200 (terminal não volta)
@@ -93,13 +93,41 @@ curl -s "${H[@]}" -X PUT   $BASE/api/v1/risk-audits/<id>/status -d '{"status":"c
 curl -s "${H[@]}" -X POST  $BASE/api/v1/risk-audits/<id>/suggest-action-plan -d '{}'                    # 200 5W2H | 402 QUOTA_EXCEEDED | 502 AI_UNAVAILABLE
 ```
 
-**Evidência (T074)**: nesta sessão **não** havia servidor Next + Supabase em execução para captura de
-respostas cURL ao vivo (proibido tocar no banco real e chamar a Anthropic real). As mesmas superfícies —
-mesmos repositórios, schemas Zod e mapeamento de erro consumidos pelo REST — são verificadas
-**ponta-a-ponta** pelas suítes de integração em Postgres efêmero (`--runInBand`, LLM mockado):
-`safety/service-orders`, `safety/service-order-signature`, `safety/incidents`, `safety/action-plans`,
-`safety/incident-lifecycle`, `safety/risk-audits` (todas verdes no gate final). O roteiro acima é o
-mapa 1:1 com esses cenários para reexecução manual quando um ambiente local autorizado estiver ativo.
+**Evidência executada (T074)**: cURLs rodados **ao vivo** contra `npm run dev` apontado ao **Postgres
+efêmero** (bypass DEV; IA no **mock local** via `ANTHROPIC_BASE_URL`, nunca Anthropic real; sem tocar o
+banco real). Códigos observados (sanitizados — sem tokens/URLs/PII):
+
+```txt
+POST   /service-orders                                 -> 201   (número server-side)
+GET    /service-orders                                 -> 200
+GET    /service-orders/{id}                            -> 200
+PUT    /service-orders/{id}/status(in_progress)        -> 200
+POST   /service-orders/{id}/signature                  -> 201   (token/URL não exibidos)
+GET    /service-orders/{id}/signature                  -> 200
+POST   /service-orders [role client]                   -> 403
+POST   /service-orders [sem title]                     -> 422
+POST   /incidents (CAT interno)                        -> 201
+PUT    /incidents/{id}/status(awaiting_planning)       -> 200
+PUT    /incidents/{id}/status(completed sem justif.)   -> 422
+GET    /incidents [role client]                        -> 403
+POST   /action-plans (risk)                            -> 201
+POST   /action-plans (origem inspection)               -> 422 (VALIDATION)
+POST   /action-plans (origem inexistente)              -> 422 (FK_NOT_FOUND)
+PUT    /action-plans/{id}/status(in_progress)          -> 200
+DELETE /action-plans/{id} (iniciado)                   -> 409 (IN_USE)
+POST   /risk-audits                                    -> 201
+POST   /risk-audits (segunda ativa mesma origem)       -> 409 (IN_USE)
+GET    /risk-audits/{id}                               -> 200
+PUT    /risk-audits/{id}/status(planning_actions)      -> 200
+PUT    /risk-audits/{id}/status(completed sem justif.) -> 422
+PUT    /risk-audits/{id}/status(completed +justif.)    -> 200
+POST   /risk-audits/{id}/suggest-action-plan (IA mock) -> 200 (5W2H)
+```
+
+> Precondição de assinatura da OS: exige **funcionário atribuído** (`assignedEmployeeId`) — sem ele o
+> payload público não tem `employeeName`/`companyName` e a emissão retorna `422 VALIDATION`.
+> Os mesmos contratos também são cobertos ponta-a-ponta pelas suítes de integração
+> (`safety/service-orders|service-order-signature|incidents|action-plans|incident-lifecycle|risk-audits`).
 
 ## Playwright
 

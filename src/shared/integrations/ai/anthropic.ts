@@ -9,7 +9,7 @@ import type {
 import type { SuggestionInput } from "@/shared/domains/safety/action-plan-suggestion";
 import { AiUnavailableError } from "@/shared/errors/ai-unavailable-error";
 
-import { getAiModel, requireAnthropicApiKey } from "./config";
+import { getAiBaseUrl, getAiModel, requireAnthropicApiKey } from "./config";
 import {
   SUGGESTION_TOOL_NAME,
   buildRiskSuggestionPrompt,
@@ -37,7 +37,10 @@ export async function requestRiskSuggestions(
   ctx: GesRiskContext,
 ): Promise<SuggestedRisk[]> {
   const { system, user } = buildRiskSuggestionPrompt(ctx);
-  const client = new Anthropic({ apiKey: requireAnthropicApiKey() });
+  const client = new Anthropic({
+    apiKey: requireAnthropicApiKey(),
+    baseURL: getAiBaseUrl(),
+  });
 
   try {
     const response = await client.messages.create({
@@ -65,7 +68,10 @@ export async function requestActionPlanSuggestion(
   input: SuggestionInput,
 ): Promise<unknown> {
   const { system, user } = buildActionPlanPrompt(input);
-  const client = new Anthropic({ apiKey: requireAnthropicApiKey() });
+  const client = new Anthropic({
+    apiKey: requireAnthropicApiKey(),
+    baseURL: getAiBaseUrl(),
+  });
 
   try {
     const response = await client.messages.create(

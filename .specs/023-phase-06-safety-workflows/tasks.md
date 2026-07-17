@@ -119,7 +119,7 @@ Convenção de reuso (não reimplementar): `withOrg`, `officeAction`, `restHandl
 - [x] T073 [P] Adicionar as requests ao `docs/api/sst-manager.postman_collection.json` (uma pasta por recurso, exemplos válidos + erros principais; reusar variáveis `baseUrl`/`devTenant`/`devRole`/ids). Depende de: T036, T045, T057, T068. Conclusão: JSON válido; 1 arquivo.
 - [x] T074 cURL manual (roteiro em `quickstart.md`): CRUDs, transições, concorrência, assinatura, cross-tenant, 403/404/409/422, IA, cota. Depende de: T072, T073. Conclusão: respostas conferem com os contratos.
 - [ ] T075 [P] Playwright protegido `src/__tests__/e2e/safety-protected.spec.ts`: OS, assinatura (painel), incidentes, planos, kanban (quando Clerk disponível). Depende de: T037, T048, T058, T069. Conclusão: verde no ambiente com Clerk.
-- [ ] T076 [P] Playwright público `src/__tests__/e2e/service-order-signature-public.spec.ts`: assinatura da OS sem Clerk; token usado/expirado. Depende de: T038. Conclusão: verde.
+- [x] T076 [P] Playwright público `src/__tests__/e2e/service-order-signature-public.spec.ts`: assinatura da OS sem Clerk; token usado/expirado. Depende de: T038. Conclusão: verde.
 - [ ] T077 **Gate final único**: `format:check` + `lint` + `typecheck` + `unit` + `integration --runInBand` + `build` + validar Postman JSON + `git diff --check` + diff de schema/migrations = apenas `0024` + reconciliação esperada. Depende de: T028, T040, T049, T061, T062, T071, T072, T073, T075, T076. Conclusão: tudo verde; PR pronto para review.
 
 ---

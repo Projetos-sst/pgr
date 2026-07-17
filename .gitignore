@@ -61,3 +61,10 @@ next-env.d.ts
 
 # Pasta guarda-chuva com referência de redesign (não versionar)
 /sst-project/redesign/
+
+# Playwright E2E (nunca versionar credenciais/estado/artefatos)
+/.auth/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

@@ -30,7 +30,7 @@ export function buildActionPlanTool() {
           description: "Prazo sugerido no formato AAAA-MM-DD (opcional).",
         },
         how: { type: "string", description: "Como a ação será executada." },
-        how_much: { type: "number", description: "Custo estimado em R$ (opcional)." },
+        howMuch: { type: "number", description: "Custo estimado em R$ (opcional)." },
         priority: {
           type: "integer",
           description: "Prioridade 1 (baixa) a 3 (alta).",
@@ -101,11 +101,23 @@ export function buildActionPlanPrompt(input: SuggestionInput): {
 
 type ContentBlockLike = { type: string; name?: string; input?: unknown };
 
-/** Extrai o objeto 5W2H cru do bloco `tool_use`. Sem bloco válido → `null`. */
+/**
+ * Extrai o objeto 5W2H cru do bloco `tool_use` e **normaliza** a chave de custo: alguns modelos
+ * emitem `how_much` (snake_case) apesar do tool schema camelCase — mapeamos para `howMuch` para o
+ * validador (que é `.strict()`). Sem bloco válido → `null`.
+ */
 export function extractActionPlanFromContent(content: ContentBlockLike[]): unknown {
   for (const block of content) {
     if (block.type === "tool_use" && block.name === ACTION_PLAN_TOOL_NAME) {
-      return block.input;
+      const input = block.input;
+      if (input && typeof input === "object" && !Array.isArray(input)) {
+        const obj = input as Record<string, unknown>;
+        if ("how_much" in obj && !("howMuch" in obj)) {
+          const { how_much, ...rest } = obj;
+          return { ...rest, howMuch: how_much };
+        }
+      }
+      return input;
     }
   }
   return null;

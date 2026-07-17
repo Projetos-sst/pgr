@@ -6584,7 +6584,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"description\": \"Manutenção preventiva da prensa hidráulica\",\n  \"items\": [\n    {\n      \"description\": \"Trocar EPI de proteção auditiva\"\n    }\n  ]\n}"
+              "raw": "{\n  \"title\": \"OS manutencao prensa\",\n  \"openedAt\": \"2026-07-15\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
             }
           }
         },
@@ -6648,7 +6648,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"description\": \"Manutenção preventiva da prensa hidráulica\",\n  \"items\": [\n    {\n      \"description\": \"Trocar EPI de proteção auditiva\"\n    }\n  ]\n}"
+              "raw": "{\n  \"title\": \"OS manutencao prensa (rev)\",\n  \"openedAt\": \"2026-07-15\",\n  \"status\": \"in_progress\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
             }
           }
         },
@@ -6784,7 +6784,7 @@
           }
         },
         {
-          "name": "POST /service-orders (422 VALIDATION — description ausente)",
+          "name": "POST /service-orders (422 VALIDATION — title ausente)",
           "request": {
             "method": "POST",
             "header": [
@@ -6814,7 +6814,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"companyId\": \"{{companyId}}\"\n}"
+              "raw": "{\n  \"openedAt\": \"2026-07-15\"\n}"
             }
           }
         },
@@ -6849,7 +6849,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"description\": \"Manutenção preventiva da prensa hidráulica\",\n  \"items\": [\n    {\n      \"description\": \"Trocar EPI de proteção auditiva\"\n    }\n  ]\n}"
+              "raw": "{\n  \"title\": \"OS manutencao prensa\",\n  \"openedAt\": \"2026-07-15\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
             }
           }
         }

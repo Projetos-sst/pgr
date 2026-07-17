@@ -200,16 +200,19 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 - **Riscos psicossociais (Fase 09)**: **`/psychosocial-campaigns`** — campanha de mapeamento (NR-01/GRO). CRUD da campanha + **sub-entidade `questions`** (add/update/remove/reorder, sempre escopada ao `campaign_id`). `POST` body `{ name, companyId, workUnitId, startsAt?, endsAt?, themeColor?, coverPath?, workerDescription? }`; empresa/obra cross-tenant → `422 FK_NOT_FOUND`; ativar sem perguntas → `422 VALIDATION`. `/{id}/status` transiciona (`draft→active→closed`, `archived` terminal). Dashboard: `/{id}/stats` (média Likert + participação). Riscos: `POST /{id}/risks` **deriva** (upsert idempotente); `POST /{id}/risks/{rid}/register` cria risco no inventário/PGR (agente `psychosocial`) no GES informado. **Rota pública anônima** `/psychosocial-response/{campaignId}/{token}` (fora de `/api/v1`, sem sessão): resolve a campanha pela **policy de capability** do token; respostas gravadas sem vínculo nominal; campanha fechada/fora do período → mensagem amigável. **Migration `0021_psychosocial`** (5 tabelas + 2 enums, tenant-isoladas).
 - **eSocial SST (Fase 10)**: **`/esocial-events`** — eventos S-2190..S-2300. `POST` `{ type, input, referenceId? }` valida o `input` pelo schema do tipo (builder), monta o **XML** (`ambientePadrao="Producao"` fixo) e persiste com status `pending`. Geração a partir de fontes existentes via Server Action (`generateS2200FromEmployee`, `generateS2240FromRisk` — usa código do agente nocivo + unidade do inventário de riscos); origem cross-tenant → `422 FK_NOT_FOUND`. **`/esocial-batches`**: `POST { eventIds }` agrupa os `pending` do tenant num lote (protocolo persistido) e marca `sent` (ids não-pending/cross-tenant são ignorados); `POST /{id}/return` consulta o retorno (**simulado** — sem transmissão externa real) e atualiza cada evento (`accepted`). UI `/esocial` (lista+filtros+seleção múltipla+lote) e `/esocial/detalhe/{id}`. **Migration `0022_esocial`** (2 tabelas + 3 enums; `reference_id` polimórfico; payload XML como texto).
 - **Fase 06 — Ordens de Serviço (fatia 023)**: **`/service-orders`** — OS de SST com itens. `POST`
-  `{ companyId, assignedEmployeeId?, description, status?, items?: [{ description }] }`; o **número** é
-  gerado no servidor (`FOR UPDATE` na linha do tenant + `max+1`, `UNIQUE(org,number)` backstop) e OS+itens
-  gravam na **mesma transação**. `employee` cross-tenant → `422 FK_NOT_FOUND`; OS cross-tenant → `404`.
-  `PUT /{id}` bloqueia edição de itens se a OS estiver assinada (imutável); `DELETE` só se **não** assinada
-  e status ∈ {open, in_progress}, senão erro de estado. `PUT /{id}/status` transiciona (terminal não volta).
-  **Assinatura**: `POST /{id}/signature` monta o payload público **no servidor** e delega a
-  `createSignatureRequestCore` (cota de assinatura compartilhada → `402 QUOTA_EXCEEDED`), devolvendo
-  `{ signature, requestId, publicUrl, qrCodeDataUrl }` (`publicUrl`/token **só** na criação); `GET
-/{id}/signature` devolve o estado derivado (`none|pending|signed|expired|cancelled`), **nunca** token/URL.
-  Só office staff; `client` → `403`. **Zero** upload/base64 aqui.
+  `{ title, openedAt (AAAA-MM-DD), assignedEmployeeId?, dueDate?, items?: [{ description, done? }] }`;
+  `status` inicial é sempre `open` (não configurável); o **número** é gerado no servidor (`FOR UPDATE` na
+  linha do tenant + `max+1`, `UNIQUE(org,number)` backstop) e OS+itens gravam na **mesma transação**.
+  `assignedEmployeeId` cross-tenant → `422 FK_NOT_FOUND`; OS cross-tenant → `404`. `PUT /{id}` (corpo
+  completo `{ title, openedAt, status, items, … }`) bloqueia edição de itens se a OS estiver assinada
+  (imutável); `DELETE` só se **não** assinada e status ∈ {open, in_progress}, senão erro de estado. `PUT
+/{id}/status` transiciona (terminal não volta). **Assinatura**: `POST /{id}/signature` monta o payload
+  público **no servidor** e delega a `createSignatureRequestCore` (cota de assinatura compartilhada →
+  `402 QUOTA_EXCEEDED`), devolvendo `{ signature, requestId, publicUrl, qrCodeDataUrl }` (`publicUrl`/token
+  **só** na criação); exige **funcionário atribuído** (senão `422 VALIDATION` — sem `employeeName`/
+  `companyName` no payload). `GET /{id}/signature` devolve o estado derivado
+  (`none|pending|signed|expired|cancelled`), **nunca** token/URL. Só office staff; `client` → `403`.
+  **Zero** upload/base64 aqui.
 - **Fase 06 — Incidentes/Acidentes (fatia 023)**: **`/incidents`** (tabela canônica `accidents`, rótulo de
   UI "Incidentes/Acidentes") — registro com enums fechados (`type`, `category`, `severity`) e campos CAT
   **textuais opcionais** (registro **interno**; **sem** S-2210/`esocial_events`). Dado de saúde é **P0**:
