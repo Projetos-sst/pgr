@@ -20,6 +20,10 @@ import {
   computeDaysOpen,
   nextServiceOrderNumber,
 } from "@/shared/domains/safety/service-order-number";
+import {
+  SERVICE_ORDER_SIGNED_DELETE_MESSAGE,
+  SERVICE_ORDER_SIGNED_EDIT_MESSAGE,
+} from "@/shared/domains/safety/service-order-signature";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
@@ -39,6 +43,7 @@ import {
 } from "../schema";
 import { withOrg, type TenantTransaction } from "../with-org";
 import { auditedTenantWrite } from "./audited-write";
+import { isServiceOrderSignedTx } from "./service-order-signature";
 
 const WRITE_EVENT = "safety.service_orders.write_rejected";
 const countExpr = sql<number>`count(*)::int`;
@@ -290,7 +295,13 @@ export async function updateServiceOrder(
         .limit(1);
       if (!current) return null;
 
-      // Estado terminal é imutável (FR-014). "OS assinada é imutável" entra no Bloco C.
+      // Backstop de assinatura (FR-018): OS assinada é imutável. A checagem trava as solicitações
+      // do alvo na MESMA transação — uma assinatura concorrente não escorrega entre o teste e o
+      // commit. A UI só antecipa este bloqueio; a regra vive aqui.
+      if (await isServiceOrderSignedTx(tx, orgId, id)) {
+        throw new EntityInUseError(SERVICE_ORDER_SIGNED_EDIT_MESSAGE);
+      }
+      // Estado terminal é imutável (FR-014).
       if (isServiceOrderTerminal(current.status)) {
         throw new EntityInUseError("OS em estado terminal não pode ser editada.");
       }
@@ -377,7 +388,11 @@ export async function deleteServiceOrder(orgId: string, id: string): Promise<boo
         .where(and(eq(serviceOrders.orgId, orgId), eq(serviceOrders.id, id)))
         .limit(1);
       if (!current) return false;
-      // Só OS não assinada e ainda open/in_progress (FR-014). Assinatura no Bloco C.
+      // Backstop de assinatura (FR-018): OS assinada não é excluível, em nenhum estado.
+      if (await isServiceOrderSignedTx(tx, orgId, id)) {
+        throw new EntityInUseError(SERVICE_ORDER_SIGNED_DELETE_MESSAGE);
+      }
+      // Só OS ainda open/in_progress (FR-014).
       if (!isServiceOrderEditable(current.status)) {
         throw new EntityInUseError(
           "OS em estado terminal não pode ser excluída; utilize o cancelamento.",

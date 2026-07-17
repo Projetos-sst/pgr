@@ -3,11 +3,14 @@ import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import type { ServiceOrderStatus } from "@/shared/domains/safety/service-order";
+import { isServiceOrderSigned } from "@/shared/domains/safety/service-order-signature";
 import { getServiceOrderAction } from "@/shared/server/actions/safety/service-orders";
+import { getServiceOrderSignatureViewAction } from "@/shared/server/actions/safety/service-order-signature";
 
 import { PageHeader } from "../../_ui/list";
 import { DeleteServiceOrder } from "../_components/delete-service-order";
 import { StatusActions } from "../_components/status-actions";
+import { ServiceOrderSignaturePanel } from "./_components/signature-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -28,21 +31,31 @@ export default async function ServiceOrderDetailPage({
   if (!result.ok) notFound();
   const { order, statusLabel, daysOpen, employee, items } = result.data;
 
+  // Estado derivado da infra genérica de assinatura (a OS não tem coluna própria). A UI só
+  // **antecipa** o bloqueio de OS assinada — o backstop real é o repositório, na transação.
+  const signatureResult = await getServiceOrderSignatureViewAction({
+    serviceOrderId: id,
+  });
+  const signature = signatureResult.ok ? signatureResult.data : undefined;
+  const signed = signature ? isServiceOrderSigned(signature.state) : false;
+
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
         title={`OS #${order.number} — ${order.title}`}
         description={`Status: ${statusLabel} · ${daysOpen} dia(s) em aberto`}
         action={
-          <div className="flex gap-2">
-            <Link
-              href={`/service-orders/${id}/edit`}
-              className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
-            >
-              Editar
-            </Link>
-            <DeleteServiceOrder id={id} redirectTo="/service-orders" />
-          </div>
+          signed ? null : (
+            <div className="flex gap-2">
+              <Link
+                href={`/service-orders/${id}/edit`}
+                className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
+              >
+                Editar
+              </Link>
+              <DeleteServiceOrder id={id} redirectTo="/service-orders" />
+            </div>
+          )
         }
       />
 
@@ -52,6 +65,8 @@ export default async function ServiceOrderDetailPage({
         <Field label="Prazo" value={order.dueDate ?? "—"} />
         <Field label="Fechada em" value={order.closedAt ?? "—"} />
       </div>
+
+      <ServiceOrderSignaturePanel serviceOrderId={id} signature={signature} />
 
       <section className="flex flex-col gap-2">
         <h2 className="text-text text-sm font-semibold">Alterar status</h2>

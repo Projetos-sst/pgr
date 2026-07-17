@@ -1,11 +1,13 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import type { ServiceOrderStatus } from "@/shared/domains/safety/service-order";
+import { isServiceOrderSigned } from "@/shared/domains/safety/service-order-signature";
 import {
   getServiceOrderAction,
   listEmployeeOptionsAction,
 } from "@/shared/server/actions/safety/service-orders";
+import { getServiceOrderSignatureViewAction } from "@/shared/server/actions/safety/service-order-signature";
 
 import { PageHeader } from "../../../_ui/list";
 import { ServiceOrderForm } from "../../_components/service-order-form";
@@ -26,6 +28,14 @@ export default async function EditServiceOrderPage({
   if (!result.ok) notFound();
   const { order, items } = result.data;
   const employees = employeesResult.ok ? employeesResult.data : [];
+
+  // OS assinada é imutável: a UI apenas antecipa o bloqueio que o repositório aplica de fato.
+  const signatureResult = await getServiceOrderSignatureViewAction({
+    serviceOrderId: id,
+  });
+  if (signatureResult.ok && isServiceOrderSigned(signatureResult.data.state)) {
+    redirect(`/service-orders/${id}`);
+  }
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
