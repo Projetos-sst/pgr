@@ -149,6 +149,10 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/psychosocial-campaigns` · `/{id}` · `/{id}/status` · `/{id}/questions(/{qid}(/reorder))` · `/{id}/stats` · `/{id}/risks(/{rid}/register)` · `/{id}/conclude` | GET (`?status=`/`?workUnitId=`), POST · GET (inclui `questions[]`), PUT, DELETE · PUT (transição) · POST perguntas + PUT/DELETE + POST reorder · GET agregações · GET/POST derivar + POST registrar no PGR · POST encerrar |
 | `/esocial-events` · `/{id}` · `/esocial-batches` · `/esocial-batches/{id}/return`                                                                              | GET (`?status=`/`?eventType=`/`?dateFrom=`/`?dateTo=`), POST (gera+persiste, `201`) · GET · GET (lotes), POST (envia pending, `201`) · POST (consulta retorno)                                                             |
 | `/onboarding`                                                                                                                                                  | GET (progresso de primeiros-passos DERIVADO dos KPIs do tenant; sem tabela; read-only)                                                                                                                                     |
+| `/service-orders` · `/service-orders/{id}` · `/service-orders/{id}/status` · `/service-orders/{id}/signature`                                                  | GET, POST (número **server-side**; itens na mesma tx; `201`) · GET (inclui itens), PUT (itens imutáveis se assinada), DELETE (`204`; só não-assinada + open/in_progress) · PUT (transição; terminal não volta) · GET (estado derivado, **sem** token/URL), POST (cria solicitação; `201` com `publicUrl`+`qrCodeDataUrl`; cota compartilhada) |
+| `/incidents` (tabela `accidents`) · `/incidents/{id}` · `/incidents/{id}/status`                                                                               | GET, POST · GET, PUT, DELETE (`204`) · PUT (state machine `registered→awaiting_planning→awaiting_completion→completed`/`cancelled`; conclusão exige justificativa **e** sem plano ativo → `422`)                             |
+| `/action-plans` · `/action-plans/{id}` · `/action-plans/{id}/status`                                                                                           | GET, POST (origem `risk\|incident` validada → `422 FK_NOT_FOUND` se inválida/cross-tenant; `201`) · GET, PUT, DELETE (`204`; física só `planned`, senão `409 IN_USE` → cancelar) · PUT (`planned→in_progress→completed`/`cancelled`; terminal não volta) |
+| `/risk-audits` · `/risk-audits/{id}` · `/risk-audits/{id}/status` · `/risk-audits/{id}/suggest-action-plan`                                                    | GET, POST (uma ativa por origem → `409 IN_USE`; `201`) · GET (inclui planos da origem) · PUT (transição explícita `awaiting_analysis→planning_actions→completed`; conclusão exige justificativa; inválida → `422`) · POST (sugestão 5W2H por IA; `200`; `402 QUOTA_EXCEEDED` / `502 AI_UNAVAILABLE`) |
 
 - **Filtros (query)**: list de cada recurso aceita `search`, `page`, `pageSize` + os filtros do
   recurso (`companyId`, `workUnitId`, `status`, `type`). Body de create/update = o mesmo `*Input`
@@ -195,10 +199,51 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 - **Permissões de trabalho (fatia 040)**: **`/work-permits`** — PT autorizando trabalho de risco (NR-33/35/10/18). Body `{ number, type (hot_work|confined_space|height|electrical|excavation|cold_work|other), status?, companyId?, area?, description, validFrom, validUntil, requestedBy?, approvedBy?, precautions?, notes? }`. `number` **único por org** → `409 DUPLICATE`; `validUntil >= validFrom` (Zod + CHECK no banco) → `422`; empresa opcional cross-tenant → `422 FK_NOT_FOUND`. **Migration `0020_work_permits`** (1 tabela + 2 enums, isolada por tenant). Módulo independente da cadeia de inspeções.
 - **Riscos psicossociais (Fase 09)**: **`/psychosocial-campaigns`** — campanha de mapeamento (NR-01/GRO). CRUD da campanha + **sub-entidade `questions`** (add/update/remove/reorder, sempre escopada ao `campaign_id`). `POST` body `{ name, companyId, workUnitId, startsAt?, endsAt?, themeColor?, coverPath?, workerDescription? }`; empresa/obra cross-tenant → `422 FK_NOT_FOUND`; ativar sem perguntas → `422 VALIDATION`. `/{id}/status` transiciona (`draft→active→closed`, `archived` terminal). Dashboard: `/{id}/stats` (média Likert + participação). Riscos: `POST /{id}/risks` **deriva** (upsert idempotente); `POST /{id}/risks/{rid}/register` cria risco no inventário/PGR (agente `psychosocial`) no GES informado. **Rota pública anônima** `/psychosocial-response/{campaignId}/{token}` (fora de `/api/v1`, sem sessão): resolve a campanha pela **policy de capability** do token; respostas gravadas sem vínculo nominal; campanha fechada/fora do período → mensagem amigável. **Migration `0021_psychosocial`** (5 tabelas + 2 enums, tenant-isoladas).
 - **eSocial SST (Fase 10)**: **`/esocial-events`** — eventos S-2190..S-2300. `POST` `{ type, input, referenceId? }` valida o `input` pelo schema do tipo (builder), monta o **XML** (`ambientePadrao="Producao"` fixo) e persiste com status `pending`. Geração a partir de fontes existentes via Server Action (`generateS2200FromEmployee`, `generateS2240FromRisk` — usa código do agente nocivo + unidade do inventário de riscos); origem cross-tenant → `422 FK_NOT_FOUND`. **`/esocial-batches`**: `POST { eventIds }` agrupa os `pending` do tenant num lote (protocolo persistido) e marca `sent` (ids não-pending/cross-tenant são ignorados); `POST /{id}/return` consulta o retorno (**simulado** — sem transmissão externa real) e atualiza cada evento (`accepted`). UI `/esocial` (lista+filtros+seleção múltipla+lote) e `/esocial/detalhe/{id}`. **Migration `0022_esocial`** (2 tabelas + 3 enums; `reference_id` polimórfico; payload XML como texto).
+- **Fase 06 — Ordens de Serviço (fatia 023)**: **`/service-orders`** — OS de SST com itens. `POST`
+  `{ companyId, assignedEmployeeId?, description, status?, items?: [{ description }] }`; o **número** é
+  gerado no servidor (`FOR UPDATE` na linha do tenant + `max+1`, `UNIQUE(org,number)` backstop) e OS+itens
+  gravam na **mesma transação**. `employee` cross-tenant → `422 FK_NOT_FOUND`; OS cross-tenant → `404`.
+  `PUT /{id}` bloqueia edição de itens se a OS estiver assinada (imutável); `DELETE` só se **não** assinada
+  e status ∈ {open, in_progress}, senão erro de estado. `PUT /{id}/status` transiciona (terminal não volta).
+  **Assinatura**: `POST /{id}/signature` monta o payload público **no servidor** e delega a
+  `createSignatureRequestCore` (cota de assinatura compartilhada → `402 QUOTA_EXCEEDED`), devolvendo
+  `{ signature, requestId, publicUrl, qrCodeDataUrl }` (`publicUrl`/token **só** na criação); `GET
+/{id}/signature` devolve o estado derivado (`none|pending|signed|expired|cancelled`), **nunca** token/URL.
+  Só office staff; `client` → `403`. **Zero** upload/base64 aqui.
+- **Fase 06 — Incidentes/Acidentes (fatia 023)**: **`/incidents`** (tabela canônica `accidents`, rótulo de
+  UI "Incidentes/Acidentes") — registro com enums fechados (`type`, `category`, `severity`) e campos CAT
+  **textuais opcionais** (registro **interno**; **sem** S-2210/`esocial_events`). Dado de saúde é **P0**:
+  só office staff (`client` → `403 FORBIDDEN`), nunca em log/audit/erro. Cross-tenant → `404`. `PUT
+/{id}/status` aplica a state machine (`incident-lifecycle`, fonte única); **conclusão** exige justificativa
+  e é **bloqueada** enquanto houver plano de ação ativo (→ `422 VALIDATION`). Sem upload de fotos (a aba
+  "Fotos" da UI é placeholder).
+- **Fase 06 — Planos de Ação 5W2H (fatia 023)**: **`/action-plans`** — central multiorigem. `POST`
+  `{ originType: risk|incident, originId, what, why, who, where, how, when?, howMuch?, priority? }`;
+  `origin_type` é **TEXT** validado na app (V1 só `risk|incident`; `inspection`/`non_conformity` **não**
+  são aceitos). Origem inválida/inexistente/cross-tenant → `422 FK_NOT_FOUND`; plano cross-tenant → `404`.
+  O **primeiro** plano ativo de um incidente avança `awaiting_planning → awaiting_completion` (acoplamento
+  unidirecional, mesma transação). `overdue` é **derivado** (prazo vencido + não terminal). `DELETE` físico
+  só em `planned`; iniciado/finalizado → `409 IN_USE` (usar cancelamento). Filtros: `status`, `origin_type`,
+  `origin_id`, `overdue`, `page`.
+- **Fase 06 — Auditorias de Risco / Kanban + IA (fatia 023)**: **`/risk-audits`** — análise por origem em
+  kanban de 3 estados. `POST` `{ originType: risk|incident, originId }`; origem inválida/cross-tenant →
+  `422 FK_NOT_FOUND`; **uma auditoria ativa por origem** (UNIQUE parcial `WHERE status <> 'completed'` como
+  backstop) → segunda ativa devolve `409 IN_USE`. `PUT /{id}/status` faz a transição **explícita**
+  (`awaiting_analysis → planning_actions → completed`; sem reabrir/pular; conclusão exige justificativa;
+  transição inválida → `422 VALIDATION`); `started_at`/`completed_at` são preenchidos no servidor.
+  `GET /{id}` inclui os planos vinculados **à origem** (não à auditoria — sem `risk_audit_id`). `POST
+/{id}/suggest-action-plan` sugere um plano 5W2H por IA: input **sanitizado** por allowlist não-PII
+  (nunca nome/CPF/hospital/lesão/testemunhas/CAT), saída 5W2H validada por Zod, uso registrado em
+  `ai_usage_events` (`kind = action_plan_suggestion`, coluna TEXT → **zero migration**); cota `free` 20/mês
+  (`pro` ilimitado) → `402 QUOTA_EXCEEDED`; falha/timeout do LLM → `502 AI_UNAVAILABLE` (**degradação
+  graciosa** — nunca persiste plano nem bloqueia o CRUD; a sugestão só **preenche** o formulário, que é
+  confirmado pelo fluxo normal de `action-plans`).
+- **Assinatura pública da OS**: reusa a **página** (não-REST) `/signature-requests/{token}` (fatia 022) —
+  ver a seção dedicada abaixo. **Não** há endpoint REST público de assinatura, nem rota `/assinar/{token}`.
 - **Respostas**: recurso no corpo (`200`), `201` no create, `204` no delete. Erros:
   `{ error: { code, message, fields? } }` com HTTP `422 VALIDATION` · `409 DUPLICATE` ·
   `409 IN_USE` · `422 FK_NOT_FOUND` · `404 NOT_FOUND` · `403 FORBIDDEN`/`NO_TENANT_CONTEXT` ·
-  `401 UNAUTHORIZED`.
+  `401 UNAUTHORIZED` · `402 QUOTA_EXCEEDED` · `502 AI_UNAVAILABLE`.
 
 ### Autenticação da REST API (2 modos) e os 3 ambientes
 
@@ -264,6 +309,11 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Treinamento (catálogo)     | `actions/pgr/training-catalog.ts`            | list, options, get, create, update, delete, dependents + REST `/api/v1/training-catalog/**`                                                                                      |
 | Realização de treinamento  | `actions/pgr/training-records.ts`            | list (por funcionário), get, create (`valid_until` via D1 no servidor), delete + vencimento (`listTrainingExpiry`, `getTrainingDueSummary`) + REST `/api/v1/training-records/**` |
 | Obrigatórios por função    | `actions/pgr/job-role-required-trainings.ts` | list, add (idempotente), remove + conformidade (`getEmployeeCompliance`, `listNonCompliance`) + REST `/api/v1/job-role-required-trainings/**`                                    |
+| Ordem de Serviço (023)     | `actions/safety/service-orders.ts`           | list, get, create, update, delete + REST `/api/v1/service-orders/**` (número server-side; itens na mesma tx; itens imutáveis se assinada)                                        |
+| OS · Assinatura (023)      | `actions/safety/service-order-signature.ts`  | create (payload server-side; `publicUrl`/QR só na criação), get (estado derivado) + REST `/api/v1/service-orders/{id}/signature` (cota compartilhada 402)                        |
+| Incidentes/Acidentes (023) | `actions/safety/accidents.ts`                | list, get, create, update, delete, setStatus (incident-lifecycle) + REST `/api/v1/incidents/**` (dado de saúde P0; `client`→403; CAT interno, sem S-2210)                        |
+| Planos de Ação 5W2H (023)  | `actions/safety/action-plans.ts`             | list, get, create, update, setStatus, delete + REST `/api/v1/action-plans/**` (origem `risk\|incident`→422; overdue derivado; física só `planned`, senão `409 IN_USE`)          |
+| Auditorias de Risco (023)  | `actions/safety/risk-audits.ts`              | list, get, create, setStatus, suggestActionPlan (IA) + REST `/api/v1/risk-audits/**` (uma ativa/origem→409; `suggest-action-plan` allowlist não-PII, `kind=action_plan_suggestion`) |
 
 ---
 
