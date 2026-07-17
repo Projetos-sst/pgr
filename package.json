@@ -35,6 +35,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@clerk/testing": "^2.2.10",
+    "@playwright/test": "^1.61.1",
     "@swc/core": "^1.15.40",
     "@swc/jest": "^0.2.39",
     "@tailwindcss/postcss": "^4",

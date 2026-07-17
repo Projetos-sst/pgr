@@ -177,6 +177,22 @@
     {
       "key": "scheduleEventId",
       "value": ""
+    },
+    {
+      "key": "serviceOrderId",
+      "value": ""
+    },
+    {
+      "key": "incidentId",
+      "value": ""
+    },
+    {
+      "key": "actionPlanId",
+      "value": ""
+    },
+    {
+      "key": "riskAuditId",
+      "value": ""
     }
   ],
   "item": [
@@ -5301,6 +5317,1020 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Ordens de Serviço (023)",
+      "item": [
+        {
+          "name": "GET /service-orders (lista)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /service-orders (create, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"OS manutencao prensa\",\n  \"openedAt\": \"2026-07-15\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /service-orders/:id (detalhe + itens)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /service-orders/:id (update; itens imutáveis se assinada)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"OS manutencao prensa (rev)\",\n  \"openedAt\": \"2026-07-15\",\n  \"status\": \"in_progress\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /service-orders/:id (204; só não-assinada + open/in_progress)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /service-orders/:id/status (transição)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /service-orders/:id/signature (estado derivado, sem token/URL)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}/signature",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}", "signature"]
+            }
+          }
+        },
+        {
+          "name": "POST /service-orders/:id/signature (cria; 201; publicUrl/QR só aqui)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}/signature",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}", "signature"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /service-orders (422 VALIDATION — title ausente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"openedAt\": \"2026-07-15\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /service-orders (403 FORBIDDEN — role client)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"OS manutencao prensa\",\n  \"openedAt\": \"2026-07-15\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Incidentes/Acidentes (023)",
+      "item": [
+        {
+          "name": "GET /incidents (lista; filtros status/company_id/q)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /incidents (create, 201; CAT interno)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"occurredAt\": \"2026-07-10T14:30:00Z\",\n  \"type\": \"typical\",\n  \"category\": \"without_leave\",\n  \"severity\": \"minor\",\n  \"location\": \"Setor de usinagem\",\n  \"description\": \"Quase-acidente com peça em movimento\",\n  \"catNumber\": \"CAT-INTERNO-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /incidents/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents/{{incidentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents", "{{incidentId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /incidents/:id (update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents/{{incidentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents", "{{incidentId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"occurredAt\": \"2026-07-10T14:30:00Z\",\n  \"type\": \"typical\",\n  \"category\": \"without_leave\",\n  \"severity\": \"minor\",\n  \"location\": \"Setor de usinagem\",\n  \"description\": \"Quase-acidente com peça em movimento\",\n  \"catNumber\": \"CAT-INTERNO-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /incidents/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents/{{incidentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents", "{{incidentId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /incidents/:id/status (transição; conclusão exige justificativa)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents/{{incidentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents", "{{incidentId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"awaiting_planning\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /incidents/:id/status (422 — concluir com plano ativo/sem justificativa)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents/{{incidentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents", "{{incidentId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /incidents (403 FORBIDDEN — role client)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"occurredAt\": \"2026-07-10T14:30:00Z\",\n  \"type\": \"typical\",\n  \"category\": \"without_leave\",\n  \"severity\": \"minor\",\n  \"location\": \"Setor de usinagem\",\n  \"description\": \"Quase-acidente com peça em movimento\",\n  \"catNumber\": \"CAT-INTERNO-001\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Planos de Ação 5W2H (023)",
+      "item": [
+        {
+          "name": "GET /action-plans (central; filtros status/origin_type/origin_id/overdue)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /action-plans (create p/ risco, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"{{riskId}}\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /action-plans (create p/ incidente, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"incident\",\n  \"originId\": \"{{incidentId}}\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /action-plans (422 FK_NOT_FOUND — origem inexistente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"99999999-9999-9999-9999-999999999999\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /action-plans (422 VALIDATION — origem não suportada)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"inspection\",\n  \"originId\": \"{{riskId}}\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /action-plans/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans/{{actionPlanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans", "{{actionPlanId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /action-plans/:id (update 5W2H)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans/{{actionPlanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans", "{{actionPlanId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"what\": \"Revisado\",\n  \"why\": \"Ajuste\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira\",\n  \"priority\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /action-plans/:id/status (planned→in_progress→completed/cancelled)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans/{{actionPlanId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans", "{{actionPlanId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /action-plans/:id (204 se planned; 409 IN_USE se iniciado)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans/{{actionPlanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans", "{{actionPlanId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auditorias de Risco (023)",
+      "item": [
+        {
+          "name": "GET /risk-audits (kanban; filtros status/origin_type)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits?page=1&pageSize=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "100"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risk-audits (create, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"{{riskId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risk-audits (409 IN_USE — segunda ativa p/ mesma origem)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"{{riskId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risk-audits (422 FK_NOT_FOUND — origem inválida/cross-tenant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"99999999-9999-9999-9999-999999999999\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /risk-audits/:id (inclui planos da origem)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits/{{riskAuditId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits", "{{riskAuditId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /risk-audits/:id/status (awaiting_analysis→planning_actions)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits/{{riskAuditId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits", "{{riskAuditId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"planning_actions\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /risk-audits/:id/status (completed; justificativa obrigatória)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits/{{riskAuditId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits", "{{riskAuditId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\",\n  \"justification\": \"Ações planejadas e tratadas\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /risk-audits/:id/status (422 — transição inválida / sem justificativa)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits/{{riskAuditId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits", "{{riskAuditId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risk-audits/:id/suggest-action-plan (IA; 200; 402 QUOTA / 502 AI_UNAVAILABLE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits/{{riskAuditId}}/suggest-action-plan",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "risk-audits",
+                "{{riskAuditId}}",
+                "suggest-action-plan"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
         }
       ]
     }

@@ -186,3 +186,33 @@ export {
   type NewEsocialBatch,
   type EsocialBatchStatus,
 } from "./esocial";
+export {
+  serviceOrders,
+  serviceOrderItems,
+  serviceOrderStatus,
+  type ServiceOrder,
+  type NewServiceOrder,
+  type ServiceOrderItem,
+  type NewServiceOrderItem,
+} from "./service-orders";
+export {
+  accidents,
+  accidentType,
+  accidentCategory,
+  accidentSeverity,
+  accidentStatus,
+  type Accident,
+  type NewAccident,
+} from "./accidents";
+export {
+  actionPlans,
+  actionPlanStatus,
+  type ActionPlan,
+  type NewActionPlan,
+} from "./action-plans";
+export {
+  riskAudits,
+  riskAuditStatus,
+  type RiskAudit,
+  type NewRiskAudit,
+} from "./risk-audits";
