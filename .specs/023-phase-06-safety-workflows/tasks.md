@@ -36,16 +36,16 @@ Convenção de reuso (não reimplementar): `withOrg`, `officeAction`, `restHandl
 
 ## Bloco B — CRUD de Ordem de Serviço + itens (US2)
 
-- [ ] T019 [P] [US2] `src/shared/domains/safety/service-order.ts`: schemas Zod `.strict()` (OS + item, `description` ≤500), status, filtros/paginação, regras de edição/exclusão, marcação de snapshot. Depende de: T018. Conclusão: unit da validação passa; `days_open` exposto como derivado.
-- [ ] T020 [P] [US2] `src/shared/domains/safety/service-order-number.ts`: função pura de derivação/validação de número e `days_open` (fuso America/Sao_Paulo). Depende de: T018. Conclusão: unit cobre casos de borda.
-- [ ] T021 [US2] `src/shared/db/repositories/service-orders.ts`: `list/getById/create/update/delete` + `buildSuggestedItems` (`employee.ges_id → risks → epi_risk → epi_catalog`); numeração `SELECT … FOR UPDATE` na linha de `orgs` + `max(number)+1` + UNIQUE backstop (sem lock global); OS+itens na **mesma transação** (rollback conjunto); employee cross-tenant → `FkNotFound`, OS cross-tenant → `NotFound`. Depende de: T019, T020. Conclusão: repo compila; itens imutáveis após assinatura.
-- [ ] T022 [US2] `src/shared/server/actions/safety/service-orders.ts`: Actions via `officeAction` (audit sem PII) + `revalidatePath`; **sem** Drizzle direto. Depende de: T021. Conclusão: `ActionResult<T>` para list/get/create/update/delete.
-- [ ] T023 [P] [US2] `src/app/api/v1/service-orders/route.ts` (`GET` list + `POST` create, 201). Depende de: T021. Conclusão: cURL retorna 200/201; usa o mesmo repo/zod.
-- [ ] T024 [P] [US2] `src/app/api/v1/service-orders/[id]/route.ts` (`GET`/`PUT`/`DELETE`, 204). Depende de: T021. Conclusão: 404 cross-tenant; 204 no delete permitido.
-- [ ] T025 [P] [US2] `src/app/api/v1/service-orders/[id]/status/route.ts` (`PUT` transição de estado). Depende de: T021. Conclusão: terminal não retrocede (erro de estado).
-- [ ] T026 [US2] UI `src/app/(protected)/service-orders/**` (list/filtros/paginação/`new`/`[id]`/`[id]/edit`/checklist + empty/loading/error) seguindo o design system 019; registrar rota no mega-menu `src/app/(protected)/_components/nav-menu.tsx`. Depende de: T022. Conclusão: fluxo navegável; rota aparece no menu.
-- [ ] T027 [P] [US2] Unit `src/__tests__/unit/domains/safety/service-order.test.ts` (numeração, `days_open`, `description` ≤500, regras de exclusão). Depende de: T019, T020. Conclusão: verde.
-- [ ] T028 [US2] Integração `src/__tests__/integration/safety/service-orders.test.ts`: 2 OS concorrentes no mesmo tenant → números consecutivos (SC-001); tenants independentes (SC-002); OS+itens atômico + rollback (SC-003); snapshot; cross-tenant (404/422); filtros; exclusão permitida/bloqueada. Depende de: T022. Conclusão: verde; **Gate Bloco B**.
+- [x] T019 [P] [US2] `src/shared/domains/safety/service-order.ts`: schemas Zod `.strict()` (OS + item, `description` ≤500), status, filtros/paginação, regras de edição/exclusão, marcação de snapshot. Depende de: T018. Conclusão: unit da validação passa; `days_open` exposto como derivado.
+- [x] T020 [P] [US2] `src/shared/domains/safety/service-order-number.ts`: função pura de derivação/validação de número e `days_open` (fuso America/Sao_Paulo). Depende de: T018. Conclusão: unit cobre casos de borda.
+- [x] T021 [US2] `src/shared/db/repositories/service-orders.ts`: `list/getById/create/update/delete` + `buildSuggestedItems` (`employee.ges_id → risks → epi_risk → epi_catalog`); numeração `SELECT … FOR UPDATE` na linha de `orgs` + `max(number)+1` + UNIQUE backstop (sem lock global); OS+itens na **mesma transação** (rollback conjunto); employee cross-tenant → `FkNotFound`, OS cross-tenant → `NotFound`. Depende de: T019, T020. Conclusão: repo compila; itens imutáveis após assinatura.
+- [x] T022 [US2] `src/shared/server/actions/safety/service-orders.ts`: Actions via `officeAction` (audit sem PII) + `revalidatePath`; **sem** Drizzle direto. Depende de: T021. Conclusão: `ActionResult<T>` para list/get/create/update/delete.
+- [x] T023 [P] [US2] `src/app/api/v1/service-orders/route.ts` (`GET` list + `POST` create, 201). Depende de: T021. Conclusão: cURL retorna 200/201; usa o mesmo repo/zod.
+- [x] T024 [P] [US2] `src/app/api/v1/service-orders/[id]/route.ts` (`GET`/`PUT`/`DELETE`, 204). Depende de: T021. Conclusão: 404 cross-tenant; 204 no delete permitido.
+- [x] T025 [P] [US2] `src/app/api/v1/service-orders/[id]/status/route.ts` (`PUT` transição de estado). Depende de: T021. Conclusão: terminal não retrocede (erro de estado).
+- [x] T026 [US2] UI `src/app/(protected)/service-orders/**` (list/filtros/paginação/`new`/`[id]`/`[id]/edit`/checklist + empty/loading/error) seguindo o design system 019; registrar rota no mega-menu `src/app/(protected)/_components/nav-menu.tsx`. Depende de: T022. Conclusão: fluxo navegável; rota aparece no menu.
+- [x] T027 [P] [US2] Unit `src/__tests__/unit/domains/safety/service-order.test.ts` (numeração, `days_open`, `description` ≤500, regras de exclusão). Depende de: T019, T020. Conclusão: verde.
+- [x] T028 [US2] Integração `src/__tests__/integration/safety/service-orders.test.ts`: 2 OS concorrentes no mesmo tenant → números consecutivos (SC-001); tenants independentes (SC-002); OS+itens atômico + rollback (SC-003); snapshot; cross-tenant (404/422); filtros; exclusão permitida/bloqueada. Depende de: T022. Conclusão: verde; **Gate Bloco B**.
 
 ---
 
