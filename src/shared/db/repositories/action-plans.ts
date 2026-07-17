@@ -37,7 +37,7 @@ const countExpr = sql<number>`count(*)::int`;
 // ── Validação e snapshot de origem (única fonte; risk|incident na V1) ───────────
 
 /** Valida que a origem existe DENTRO do tenant. Origem inválida/cross-tenant → FK_NOT_FOUND. */
-async function assertOriginInTenant(
+export async function assertOriginInTenant(
   tx: TenantTransaction,
   orgId: string,
   originType: ActionPlanOriginType,
@@ -57,7 +57,7 @@ async function assertOriginInTenant(
  * descrição do risco ou tipo+data do incidente — **nunca** dado médico/PII. Origem apagada →
  * `removed: true`, mantendo o plano como histórico (FR-036).
  */
-async function loadOriginSnapshots(
+export async function loadOriginSnapshots(
   tx: TenantTransaction,
   orgId: string,
   refs: { originType: string; originId: string }[],

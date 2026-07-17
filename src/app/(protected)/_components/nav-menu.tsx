@@ -42,6 +42,7 @@ const NAV: NavEntry[] = [
       { href: "/service-orders", label: "Ordens de Serviço" },
       { href: "/incidents", label: "Incidentes/Acidentes" },
       { href: "/action-plans", label: "Planos de Ação" },
+      { href: "/risk-audits", label: "Auditorias de Risco" },
     ],
   },
   {
