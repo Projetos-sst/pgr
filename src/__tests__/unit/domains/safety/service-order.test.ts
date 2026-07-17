@@ -75,7 +75,9 @@ describe("estados editáveis/terminais (US2, FR-014)", () => {
 
 describe("serviceOrderItemInputSchema (US2, snapshot textual)", () => {
   it("aceita item mínimo (default manual/não-feito)", () => {
-    const parsed = serviceOrderItemInputSchema.parse({ description: "Entregar capacete" });
+    const parsed = serviceOrderItemInputSchema.parse({
+      description: "Entregar capacete",
+    });
     expect(parsed.sourceType).toBe("manual");
     expect(parsed.done).toBe(false);
   });
@@ -83,7 +85,9 @@ describe("serviceOrderItemInputSchema (US2, snapshot textual)", () => {
   it("rejeita descrição vazia e acima de 500 caracteres", () => {
     expect(() => serviceOrderItemInputSchema.parse({ description: "   " })).toThrow();
     expect(() =>
-      serviceOrderItemInputSchema.parse({ description: "x".repeat(MAX_ITEM_DESCRIPTION + 1) }),
+      serviceOrderItemInputSchema.parse({
+        description: "x".repeat(MAX_ITEM_DESCRIPTION + 1),
+      }),
     ).toThrow();
     expect(
       serviceOrderItemInputSchema.parse({ description: "x".repeat(MAX_ITEM_DESCRIPTION) })
@@ -116,12 +120,16 @@ describe("serviceOrderCreateSchema (US2)", () => {
   it("rejeita `number` e `org_id` vindos do cliente (strict)", () => {
     expect(() => serviceOrderCreateSchema.parse({ ...base, number: 5 })).toThrow();
     expect(() => serviceOrderCreateSchema.parse({ ...base, orgId: "org_a" })).toThrow();
-    expect(() => serviceOrderCreateSchema.parse({ ...base, status: "completed" })).toThrow();
+    expect(() =>
+      serviceOrderCreateSchema.parse({ ...base, status: "completed" }),
+    ).toThrow();
   });
 
   it("exige título e data de abertura válida", () => {
     expect(() => serviceOrderCreateSchema.parse({ openedAt: "2026-07-16" })).toThrow();
-    expect(() => serviceOrderCreateSchema.parse({ title: "x", openedAt: "16/07" })).toThrow();
+    expect(() =>
+      serviceOrderCreateSchema.parse({ title: "x", openedAt: "16/07" }),
+    ).toThrow();
   });
 
   it("limita a coleção de itens", () => {

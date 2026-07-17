@@ -83,7 +83,16 @@ export default async function ServiceOrdersPage({
         <EmptyState message="Nenhuma Ordem de Serviço encontrada." />
       ) : (
         <Table
-          headers={["Nº", "Título", "Funcionário", "Aberta em", "Dias", "Itens", "Status", ""]}
+          headers={[
+            "Nº",
+            "Título",
+            "Funcionário",
+            "Aberta em",
+            "Dias",
+            "Itens",
+            "Status",
+            "",
+          ]}
         >
           {rows.map((row) => (
             <tr key={row.id} className="border-t border-white/50">

@@ -10,9 +10,7 @@ import {
 } from "@/shared/domains/safety/service-order";
 import { setServiceOrderStatusAction } from "@/shared/server/actions/safety/service-orders";
 
-const ALL_STATUSES = Object.keys(
-  SERVICE_ORDER_STATUS_LABELS,
-) as ServiceOrderStatus[];
+const ALL_STATUSES = Object.keys(SERVICE_ORDER_STATUS_LABELS) as ServiceOrderStatus[];
 
 export function StatusActions({
   id,

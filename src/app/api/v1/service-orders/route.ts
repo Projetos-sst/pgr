@@ -14,9 +14,7 @@ export function GET(req: NextRequest) {
   return restHandler(req, ({ tenantId }) => {
     const { page, pageSize, search } = pageParamsFrom(req);
     const statusParam = req.nextUrl.searchParams.get("status");
-    const status = statusParam
-      ? serviceOrderStatusSchema.parse(statusParam)
-      : undefined;
+    const status = statusParam ? serviceOrderStatusSchema.parse(statusParam) : undefined;
     return repo.listServiceOrders(tenantId, { page, pageSize, q: search, status });
   });
 }

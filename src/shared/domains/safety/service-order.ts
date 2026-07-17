@@ -79,7 +79,10 @@ export const serviceOrderItemInputSchema = z
       .string({ error: "Descrição do item é obrigatória" })
       .trim()
       .min(1, "Descrição do item é obrigatória")
-      .max(MAX_ITEM_DESCRIPTION, `Descrição deve ter no máximo ${MAX_ITEM_DESCRIPTION} caracteres`),
+      .max(
+        MAX_ITEM_DESCRIPTION,
+        `Descrição deve ter no máximo ${MAX_ITEM_DESCRIPTION} caracteres`,
+      ),
     sourceType: serviceOrderItemSourceSchema.default("manual"),
     sourceId: optionalUuid.nullable().optional(),
     done: z.coerce.boolean().default(false),
