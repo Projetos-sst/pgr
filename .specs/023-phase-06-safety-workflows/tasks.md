@@ -70,16 +70,16 @@ Convenção de reuso (não reimplementar): `withOrg`, `officeAction`, `restHandl
 
 ## Bloco D — CRUD de Incidentes/Acidentes (US4)
 
-- [ ] T041 [P] [US4] `src/shared/domains/safety/accident.ts`: zod input, enums fechados, campos CAT **textuais opcionais** (CAT interno, sem S-2210/`esocial_events`). Depende de: T018. Conclusão: unit aceita campos opcionais vazios.
-- [ ] T042 [P] [US4] `src/shared/domains/safety/incident-lifecycle.ts`: **única** fonte das transições `registered→awaiting_planning→awaiting_completion→completed` (+`cancelled`), regras de conclusão (justificativa, bloqueio com plano ativo), terminal não volta. Depende de: T018. Conclusão: unit cobre transições válidas/inválidas.
-- [ ] T043 [US4] `src/shared/db/repositories/accidents.ts`: `list/get/create/update/delete` + filtros/paginação; valida `company_id`/`employee_id` no tenant; sem gravar `esocial_events`. Depende de: T041. Conclusão: repo compila; cross-tenant → `NotFound`.
-- [ ] T044 [US4] `src/shared/server/actions/safety/accidents.ts`: Actions via `officeAction` (`requireOfficeStaff`; `client`→403); audit **sem** dado de saúde. Depende de: T043. Conclusão: `ActionResult<T>`; log sem PII/saúde.
-- [ ] T045 [P] [US4] `src/app/api/v1/incidents/route.ts` (`GET`/`POST`). Depende de: T043. Conclusão: 200/201; `client`→403.
-- [ ] T046 [P] [US4] `src/app/api/v1/incidents/[id]/route.ts` (`GET`/`PUT`/`DELETE`). Depende de: T043. Conclusão: 404 cross-tenant; corpo de erro sem dado de saúde.
-- [ ] T047 [P] [US4] `src/app/api/v1/incidents/[id]/status/route.ts` (`PUT`). Depende de: T043, T042. Conclusão: transição via `incident-lifecycle`.
-- [ ] T048 [US4] UI `src/app/(protected)/incidents/**` com abas **Dados / Causas e investigação / Fotos** (Fotos = placeholder, sem upload/storage/base64); office staff; registrar no `nav-menu.tsx`. Depende de: T044. Conclusão: abas navegáveis; placeholder exibido.
-- [ ] T049 [US4] Integração `src/__tests__/integration/safety/incidents.test.ts`: CRUD, `client`→403 (SC-008), cross-tenant→404 (SC-007), campos opcionais, ausência de dado de saúde em log/audit, placeholder de fotos. Depende de: T044. Conclusão: verde.
-- [ ] T050 [P] [US4] Unit `src/__tests__/unit/domains/safety/incident-lifecycle.test.ts`. Depende de: T042. Conclusão: verde; **Gate Bloco D**.
+- [x] T041 [P] [US4] `src/shared/domains/safety/accident.ts`: zod input, enums fechados, campos CAT **textuais opcionais** (CAT interno, sem S-2210/`esocial_events`). Depende de: T018. Conclusão: unit aceita campos opcionais vazios.
+- [x] T042 [P] [US4] `src/shared/domains/safety/incident-lifecycle.ts`: **única** fonte das transições `registered→awaiting_planning→awaiting_completion→completed` (+`cancelled`), regras de conclusão (justificativa, bloqueio com plano ativo), terminal não volta. Depende de: T018. Conclusão: unit cobre transições válidas/inválidas.
+- [x] T043 [US4] `src/shared/db/repositories/accidents.ts`: `list/get/create/update/delete` + filtros/paginação; valida `company_id`/`employee_id` no tenant; sem gravar `esocial_events`. Depende de: T041. Conclusão: repo compila; cross-tenant → `NotFound`.
+- [x] T044 [US4] `src/shared/server/actions/safety/accidents.ts`: Actions via `officeAction` (`requireOfficeStaff`; `client`→403); audit **sem** dado de saúde. Depende de: T043. Conclusão: `ActionResult<T>`; log sem PII/saúde.
+- [x] T045 [P] [US4] `src/app/api/v1/incidents/route.ts` (`GET`/`POST`). Depende de: T043. Conclusão: 200/201; `client`→403.
+- [x] T046 [P] [US4] `src/app/api/v1/incidents/[id]/route.ts` (`GET`/`PUT`/`DELETE`). Depende de: T043. Conclusão: 404 cross-tenant; corpo de erro sem dado de saúde.
+- [x] T047 [P] [US4] `src/app/api/v1/incidents/[id]/status/route.ts` (`PUT`). Depende de: T043, T042. Conclusão: transição via `incident-lifecycle`.
+- [x] T048 [US4] UI `src/app/(protected)/incidents/**` com abas **Dados / Causas e investigação / Fotos** (Fotos = placeholder, sem upload/storage/base64); office staff; registrar no `nav-menu.tsx`. Depende de: T044. Conclusão: abas navegáveis; placeholder exibido.
+- [x] T049 [US4] Integração `src/__tests__/integration/safety/incidents.test.ts`: CRUD, `client`→403 (SC-008), cross-tenant→404 (SC-007), campos opcionais, ausência de dado de saúde em log/audit, placeholder de fotos. Depende de: T044. Conclusão: verde.
+- [x] T050 [P] [US4] Unit `src/__tests__/unit/domains/safety/incident-lifecycle.test.ts`. Depende de: T042. Conclusão: verde; **Gate Bloco D**.
 
 ---
 

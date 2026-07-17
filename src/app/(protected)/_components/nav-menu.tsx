@@ -40,6 +40,7 @@ const NAV: NavEntry[] = [
       { href: "/epi-catalog", label: "Catálogo de EPI" },
       { href: "/epi-stock", label: "Estoque de EPI" },
       { href: "/service-orders", label: "Ordens de Serviço" },
+      { href: "/incidents", label: "Incidentes/Acidentes" },
     ],
   },
   {
