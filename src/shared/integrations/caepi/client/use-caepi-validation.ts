@@ -11,7 +11,8 @@ export type CaepiValidationStatus =
   | "valid"
   | "expired"
   | "not_found"
-  | "error";
+  | "error"
+  | "invalid";
 
 export type CaFound = Extract<CaLookupResult, { status: "valid" | "expired" }>;
 
@@ -28,14 +29,20 @@ const buildUrl = (value: string) => `/api/integrations/caepi/${normalizeCa(value
  * requisição anterior, nunca lança — falha externa vira `error` silencioso).
  * O REST devolve os 3 estados como payload 200, então o status exposto é
  * derivado do `status` do payload. `onFound` é chamado em `valid` E `expired`
- * (autofill acontece nos dois — FR-061), nunca em `not_found`.
+ * (autofill acontece nos dois — FR-061), nunca em `not_found`. `onNotFound`
+ * permite ao formulário descartar sugestões de uma consulta anterior quando o
+ * novo CA não existe (sem ele, o autofill antigo ficava colado no form).
  */
-export function useCaepiValidation(onFound: (data: CaFound) => void): CaepiValidationApi {
+export function useCaepiValidation(
+  onFound: (data: CaFound) => void,
+  onNotFound?: () => void,
+): CaepiValidationApi {
   const { status, data, lookup } = useLookup<CaLookupResult>({
     isValid: isValidCa,
     buildUrl,
     onFound: (result) => {
       if (result.status === "valid" || result.status === "expired") onFound(result);
+      else if (result.status === "not_found") onNotFound?.();
     },
   });
 

@@ -208,7 +208,11 @@ export function CompanyForm({ company }: { company?: Company }) {
   );
 }
 
-function CnpjStatus({ status }: { status: "idle" | "loading" | "success" | "error" }) {
+function CnpjStatus({
+  status,
+}: {
+  status: "idle" | "loading" | "success" | "error" | "invalid";
+}) {
   if (status === "loading") {
     return <span className="text-text-subtle text-xs">Buscando…</span>;
   }
@@ -216,6 +220,13 @@ function CnpjStatus({ status }: { status: "idle" | "loading" | "success" | "erro
     return (
       <span className="text-xs text-amber-600">
         CNPJ não encontrado. Preencha manualmente.
+      </span>
+    );
+  }
+  if (status === "invalid") {
+    return (
+      <span className="text-xs text-amber-600 dark:text-amber-400">
+        CNPJ inválido — confira os dígitos.
       </span>
     );
   }

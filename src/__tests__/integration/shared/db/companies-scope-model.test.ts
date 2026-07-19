@@ -33,9 +33,9 @@ type IdRow = { id: string };
 
     it("mesmo cnpj em dois escritórios → duas companies distintas (FR-018/SC-011)", async () => {
       const rows = await admin<IdRow[]>`
-        insert into public.companies (org_id, cnpj) values
-          ('org_a','12345678000199'),
-          ('org_b','12345678000199')
+        insert into public.companies (org_id, razao_social, cnpj) values
+          ('org_a','A Ltda','12345678000199'),
+          ('org_b','B Ltda','12345678000199')
         returning id
       `;
       expect(rows).toHaveLength(2);
@@ -43,15 +43,15 @@ type IdRow = { id: string };
     });
 
     it("uq_companies_org_id_cnpj rejeita cnpj duplicado INTRA-tenant", async () => {
-      await admin`insert into public.companies (org_id, cnpj) values ('org_a','77777777000177')`;
+      await admin`insert into public.companies (org_id, razao_social, cnpj) values ('org_a','Dup Ltda','77777777000177')`;
       await expect(
-        admin`insert into public.companies (org_id, cnpj) values ('org_a','77777777000177')`,
+        admin`insert into public.companies (org_id, razao_social, cnpj) values ('org_a','Dup Ltda','77777777000177')`,
       ).rejects.toThrow();
     });
 
     it("org_memberships.scoped_company_id aceita FK válida", async () => {
       const [company] = await admin<IdRow[]>`
-        insert into public.companies (org_id, cnpj) values ('org_a','55555555000155') returning id
+        insert into public.companies (org_id, razao_social, cnpj) values ('org_a','Escopo Ltda','55555555000155') returning id
       `;
       const rows = await admin<IdRow[]>`
         insert into public.org_memberships (org_id, user_id, role, scoped_company_id)

@@ -23,3 +23,17 @@ export const signatureFormRegistry: Record<
   pgr: PgrSignatureForm,
   service_order: ServiceOrderSignatureForm,
 };
+
+/**
+ * Ponto de entrada para Server Components: o lookup no registry PRECISA rodar
+ * dentro de um módulo client — importado num Server Component, o objeto acima
+ * vira client reference proxy e a indexação devolve `undefined`.
+ */
+export function PublicSignatureForm({
+  targetType,
+  token,
+  payload,
+}: PublicFormProps & { targetType: SignatureTargetType }) {
+  const Form = signatureFormRegistry[targetType];
+  return <Form token={token} payload={payload} />;
+}
