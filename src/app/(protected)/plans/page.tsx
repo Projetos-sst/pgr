@@ -8,6 +8,7 @@ import {
 import { isBillingEnabled } from "@/shared/integrations/stripe/config";
 
 import { PageHeader } from "../_ui/list";
+import { ManageBillingButton } from "./_components/manage-billing-button";
 import { UpgradeButton } from "./_components/upgrade-button";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +54,10 @@ export default async function PlanosPage() {
       </div>
 
       {currentPlan === "pro" ? (
-        <p className="text-sm text-green-700">Você já está no plano Pro.</p>
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-green-700">Você já está no plano Pro.</p>
+          {ctx.role === "owner" && billingOn ? <ManageBillingButton /> : null}
+        </div>
       ) : canUpgrade && billingOn ? (
         <div className="flex flex-col gap-2">
           <UpgradeButton />

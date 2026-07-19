@@ -10,7 +10,10 @@ import {
   planFromSubscriptionStatus,
 } from "@/shared/domains/platform/billing";
 import { BillingUnavailableError } from "@/shared/errors/billing-unavailable-error";
-import { createProCheckoutSession } from "@/shared/integrations/stripe/client";
+import {
+  createBillingPortalSession,
+  createProCheckoutSession,
+} from "@/shared/integrations/stripe/client";
 import { getAppBaseUrl } from "@/shared/integrations/stripe/config";
 
 /** Inicia o Checkout do plano Pro. Só o `owner` gerencia a assinatura. */
@@ -29,6 +32,24 @@ export async function startProCheckout(ctx: TenantContext): Promise<{ url: strin
   });
   if (!url) throw new BillingUnavailableError();
   return { url };
+}
+
+/**
+ * Abre o Portal de Billing hospedado (gerenciar cartão, ver faturas, cancelar a
+ * assinatura). Só o `owner` gerencia; exige assinatura já iniciada (customer do
+ * Stripe existente) — sem checkout prévio não há o que gerenciar.
+ */
+export async function openBillingPortal(ctx: TenantContext): Promise<{ url: string }> {
+  if (ctx.role !== "owner") {
+    throw new ForbiddenError("Apenas o administrador gerencia a assinatura.");
+  }
+  const org = await orgsRepo.getOrgById(ctx.tenantId);
+  if (!org?.stripeCustomerId) throw new BillingUnavailableError();
+  const base = getAppBaseUrl();
+  return createBillingPortalSession({
+    customerId: org.stripeCustomerId,
+    returnUrl: `${base}/plans`,
+  });
 }
 
 function orgIdFromMetadata(metadata: Stripe.Metadata | null | undefined): string | null {
