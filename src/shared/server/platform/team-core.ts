@@ -14,6 +14,7 @@ import {
 } from "@/shared/domains/platform/team";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { isTeamManagementAvailable } from "@/shared/tenant/plan";
+import { toDomainRole } from "@/shared/tenant/roles";
 import * as clerkOrg from "@/shared/integrations/clerk/organizations";
 import { resolvePageParams, type Paginated } from "@/shared/pagination";
 
@@ -82,8 +83,10 @@ export async function updateTeamMemberRole(
   });
   if (!membership) throw new NotFoundError();
 
-  // Proteção: não rebaixar o último administrador da organização.
-  if (membership.role === "owner" && values.role !== "owner") {
+  // Proteção: não rebaixar o último administrador da organização. `membership.role`
+  // é o valor cru gravado no espelho local (`org:admin` em orgs Clerk-backed) —
+  // normalizar antes de comparar, senão a checagem nunca dispara para essas orgs.
+  if (toDomainRole(membership.role) === "owner" && values.role !== "owner") {
     const owners = await membershipsRepo.countOwnersByOrg(ctx.tenantId);
     if (owners <= 1) {
       throw new ForbiddenError("Não é possível rebaixar o último administrador.");
@@ -115,8 +118,9 @@ export async function removeTeamMember(
   });
   if (!membership) throw new NotFoundError();
 
-  // Proteção: não remover o último administrador.
-  if (membership.role === "owner") {
+  // Proteção: não remover o último administrador (mesmo cuidado de normalização
+  // do `updateTeamMemberRole` acima).
+  if (toDomainRole(membership.role) === "owner") {
     const owners = await membershipsRepo.countOwnersByOrg(ctx.tenantId);
     if (owners <= 1) {
       throw new ForbiddenError("Não é possível remover o último administrador.");

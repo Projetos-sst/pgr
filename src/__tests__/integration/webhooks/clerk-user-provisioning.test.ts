@@ -87,6 +87,30 @@ describe("clerk webhook — provisionamento de tenant pessoal (US1)", () => {
     expect(provisionPersonalTenant).not.toHaveBeenCalled();
   });
 
+  // Regressão (self-signup): sem first/last name — comum em cadastro aberto via
+  // magic link/OAuth mínimo — o nome do tenant nunca pode ir null; deriva do
+  // local-part do e-mail primário.
+  it("user.created sem first/last name → provisiona com nome derivado do e-mail (nunca null)", async () => {
+    (verifyWebhook as jest.Mock).mockResolvedValueOnce({
+      type: "user.created",
+      data: {
+        id: "user_y",
+        first_name: null,
+        last_name: null,
+        primary_email_address_id: "idn_2",
+        email_addresses: [{ id: "idn_2", email_address: "grace.hopper@example.com" }],
+      },
+    });
+
+    const res = await POST(fakeReq());
+
+    expect(res.status).toBe(200);
+    expect(provisionPersonalTenant).toHaveBeenCalledWith({
+      userId: "user_y",
+      name: "grace.hopper",
+    });
+  });
+
   it("payload inválido (sem id) → 400 e NENHUM provisionamento [FR-025]", async () => {
     (verifyWebhook as jest.Mock).mockResolvedValueOnce({
       type: "user.created",

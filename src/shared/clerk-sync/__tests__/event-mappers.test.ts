@@ -1,4 +1,5 @@
 import {
+  nameFromUser,
   OrganizationMembershipPayload,
   orgEventToRow,
   toOrgMembershipRow,
@@ -128,6 +129,71 @@ describe("user-event mapper", () => {
       lastName: null,
       imageUrl: null,
     });
+  });
+});
+
+describe("nameFromUser (fallback do nome do tenant pessoal — self-signup)", () => {
+  it("usa first_name + last_name quando presentes", () => {
+    expect(
+      nameFromUser({
+        id: "user_1",
+        first_name: "Ada",
+        last_name: "Lovelace",
+        primary_email_address_id: "e1",
+        email_addresses: [{ id: "e1", email_address: "ada@example.com" }],
+      }),
+    ).toBe("Ada Lovelace");
+  });
+
+  it("usa só first_name quando last_name ausente", () => {
+    expect(
+      nameFromUser({
+        id: "user_1",
+        first_name: "Ada",
+        last_name: null,
+        primary_email_address_id: "e1",
+        email_addresses: [{ id: "e1", email_address: "ada@example.com" }],
+      }),
+    ).toBe("Ada");
+  });
+
+  // Regressão (CTO): sem first/last name (cadastro aberto via magic link/OAuth
+  // mínimo), o nome do tenant NUNCA pode ficar null — deriva do local-part do
+  // e-mail primário.
+  it("sem first/last name: deriva do local-part do e-mail primário", () => {
+    expect(
+      nameFromUser({
+        id: "user_1",
+        first_name: null,
+        last_name: null,
+        primary_email_address_id: "e1",
+        email_addresses: [{ id: "e1", email_address: "grace.hopper@example.com" }],
+      }),
+    ).toBe("grace.hopper");
+  });
+
+  it("sem first/last name e sem e-mail primário casando: fallback fixo 'Usuário' (nunca null)", () => {
+    expect(
+      nameFromUser({
+        id: "user_1",
+        first_name: null,
+        last_name: null,
+        primary_email_address_id: "missing",
+        email_addresses: [{ id: "e1", email_address: "grace@example.com" }],
+      }),
+    ).toBe("Usuário");
+  });
+
+  it("sem first/last name e sem nenhum e-mail: fallback fixo 'Usuário'", () => {
+    expect(
+      nameFromUser({
+        id: "user_1",
+        first_name: null,
+        last_name: null,
+        primary_email_address_id: null,
+        email_addresses: [],
+      }),
+    ).toBe("Usuário");
   });
 });
 

@@ -1,22 +1,12 @@
-import { CreateOrganization, OrganizationList } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
 
-import { AuthFrame } from "@/app/_components/auth-frame";
-import { clerkAppearance } from "@/app/_components/clerk-appearance";
-
+/**
+ * Aposentada (spec 005 / Modelo B): esta rota criava/selecionava organização via
+ * Clerk (`CreateOrganization`/`OrganizationList`, Modelo A da fatia 004) — todo
+ * usuário já tem um tenant pessoal provisionado automaticamente no cadastro
+ * (`provisionPersonalTenant`), então não há mais "criar organização" a fazer
+ * aqui. Mantida como redirect (não 404) para não quebrar links/bookmarks antigos.
+ */
 export default function OnboardingPage() {
-  return (
-    <AuthFrame eyebrow="Primeiros passos" title="Crie ou escolha sua organização">
-      <div className="flex w-full flex-col items-center gap-8">
-        <CreateOrganization
-          afterCreateOrganizationUrl="/dashboard"
-          appearance={clerkAppearance}
-        />
-        <OrganizationList
-          hidePersonal
-          afterSelectOrganizationUrl="/dashboard"
-          appearance={clerkAppearance}
-        />
-      </div>
-    </AuthFrame>
-  );
+  redirect("/welcome");
 }

@@ -68,11 +68,28 @@ export const ClerkUserPayload = z.object({
 
 export type ClerkUserPayloadT = z.infer<typeof ClerkUserPayload>;
 
-export function nameFromUser(data: ClerkUserPayloadT): string | null {
+/** E-mail primário (mesma resolução usada para gravar `users.email`). */
+function primaryEmailOf(data: ClerkUserPayloadT): string | null {
+  const primary = data.email_addresses?.find(
+    (email) => email.id === data.primary_email_address_id,
+  );
+  return primary?.email_address ?? null;
+}
+
+/**
+ * Nome de exibição do tenant pessoal provisionado no cadastro. Sem first/last
+ * name (comum em cadastro via magic link/OAuth mínimo), deriva do local-part do
+ * e-mail primário — **nunca `null`**: `orgs.name` nunca fica sem rótulo.
+ */
+export function nameFromUser(data: ClerkUserPayloadT): string {
   const parts = [data.first_name, data.last_name].filter((part): part is string =>
     Boolean(part),
   );
-  return parts.length > 0 ? parts.join(" ") : null;
+  if (parts.length > 0) return parts.join(" ");
+
+  const email = primaryEmailOf(data);
+  const localPart = email?.split("@")[0]?.trim();
+  return localPart && localPart.length > 0 ? localPart : "Usuário";
 }
 
 export type ClerkUserEventData = {

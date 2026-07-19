@@ -77,6 +77,8 @@ const NAV: NavEntry[] = [
       { href: "/epi-returns", label: "Devoluções de EPI" },
       { href: "/signatures", label: "Assinaturas" },
       { href: "/esocial", label: "eSocial (SST)" },
+      { href: "/documents", label: "Documentos" },
+      { href: "/form-controls", label: "Controle de formulário" },
       { href: "/team", label: "Equipe" },
       { href: "/profile", label: "Perfil" },
       { href: "/plans", label: "Planos" },

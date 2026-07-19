@@ -2,6 +2,7 @@ import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { ROLE_LABEL, type AssignableRole } from "@/shared/domains/platform/team";
 import { resolvePageParams } from "@/shared/pagination";
 import { listTeamMembers } from "@/shared/server/actions/platform/team";
+import { isTeamManagementAvailable } from "@/shared/tenant/plan";
 
 import { EmptyState, PageHeader, Pagination, SearchForm, Table } from "../_ui/list";
 import { InviteMemberForm, MemberActions } from "./_components/team-actions";
@@ -16,8 +17,11 @@ export default async function EquipePage({
   searchParams: SearchParams;
 }) {
   const ctx = await requireOfficeStaffPage();
-  const canManage = ctx.role === "owner";
-  const isPro = ctx.plan === "pro";
+  const isOwner = ctx.role === "owner";
+  const isPro = isTeamManagementAvailable(ctx.plan);
+  // Gestão de equipe (dropdown de papel + remoção) é PRO — esconder na UI para
+  // owners de plano free, não só deixar a Server Action falhar (FORBIDDEN).
+  const canManage = isOwner && isPro;
 
   const sp = await searchParams;
   const { page, pageSize } = resolvePageParams({
@@ -36,8 +40,8 @@ export default async function EquipePage({
         description="Membros do escritório e seus papéis nesta organização."
       />
 
-      {canManage && isPro ? <InviteMemberForm /> : null}
-      {canManage && !isPro ? (
+      {isOwner && isPro ? <InviteMemberForm /> : null}
+      {isOwner && !isPro ? (
         <p className="glass-card text-text-muted px-4 py-3 text-sm">
           A gestão de múltiplos usuários (convite de membros) está disponível no plano
           Pro.

@@ -110,13 +110,37 @@ describe("inviteTeamMember", () => {
 });
 
 describe("updateTeamMemberRole", () => {
-  it("bloqueia rebaixar o último administrador", async () => {
+  // Regressão: o tenant do `ctx()` é PRO/Clerk-backed (clerkOrgId "clerk_a"), então
+  // o papel REAL gravado em `org_memberships.role` para um admin é "org:admin", não
+  // o literal "owner" — usar "owner" aqui mascarava a proteção nunca disparando em
+  // produção (a comparação crua `role === "owner"` falha contra "org:admin").
+  it("bloqueia rebaixar o último administrador (papel cru do Clerk org:admin)", async () => {
+    asMock(memberships.getOrgMembership).mockResolvedValue(membershipRow("org:admin"));
+    asMock(memberships.countOwnersByOrg).mockResolvedValue(1);
+    await expect(
+      updateTeamMemberRole(ctx(), "member-2", { role: "collaborator" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(clerkOrg.updateOrgMembershipRole).not.toHaveBeenCalled();
+  });
+
+  it("bloqueia rebaixar o último administrador (tenant pessoal, papel literal owner)", async () => {
     asMock(memberships.getOrgMembership).mockResolvedValue(membershipRow("owner"));
     asMock(memberships.countOwnersByOrg).mockResolvedValue(1);
     await expect(
       updateTeamMemberRole(ctx(), "member-2", { role: "collaborator" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(clerkOrg.updateOrgMembershipRole).not.toHaveBeenCalled();
+  });
+
+  it("permite rebaixar um admin quando há outro administrador (org:admin, owners > 1)", async () => {
+    asMock(memberships.getOrgMembership).mockResolvedValue(membershipRow("org:admin"));
+    asMock(memberships.countOwnersByOrg).mockResolvedValue(2);
+    await updateTeamMemberRole(ctx(), "member-2", { role: "collaborator" });
+    expect(clerkOrg.updateOrgMembershipRole).toHaveBeenCalledWith({
+      clerkOrgId: "clerk_a",
+      userId: "member-2",
+      role: "collaborator",
+    });
   });
 
   it("membro inexistente → NOT_FOUND", async () => {
@@ -144,7 +168,17 @@ describe("removeTeamMember", () => {
     });
   });
 
-  it("bloqueia remover o último administrador", async () => {
+  // Mesma regressão de `updateTeamMemberRole`: papel real do Clerk é "org:admin".
+  it("bloqueia remover o último administrador (papel cru do Clerk org:admin)", async () => {
+    asMock(memberships.getOrgMembership).mockResolvedValue(membershipRow("org:admin"));
+    asMock(memberships.countOwnersByOrg).mockResolvedValue(1);
+    await expect(removeTeamMember(ctx(), "member-2")).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(clerkOrg.removeOrgMembership).not.toHaveBeenCalled();
+  });
+
+  it("bloqueia remover o último administrador (tenant pessoal, papel literal owner)", async () => {
     asMock(memberships.getOrgMembership).mockResolvedValue(membershipRow("owner"));
     asMock(memberships.countOwnersByOrg).mockResolvedValue(1);
     await expect(removeTeamMember(ctx(), "member-2")).rejects.toMatchObject({

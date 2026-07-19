@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { TeamMemberRow } from "@/shared/db/repositories/org-memberships";
+import { toDomainRole } from "@/shared/tenant/roles";
 
 // Papéis de domínio atribuíveis a um membro (espelham DOMAIN_ROLES do active-tenant).
 export const assignableRoleSchema = z.enum(["owner", "collaborator", "client"]);
@@ -36,10 +37,14 @@ export type TeamMemberView = {
 
 export function toTeamMemberView(row: TeamMemberRow): TeamMemberView {
   const name = [row.firstName, row.lastName].filter(Boolean).join(" ").trim();
+  // `row.role` é o valor cru gravado em `org_memberships` — para orgs Clerk-backed
+  // isso é `org:admin`/`org:member`, não o vocabulário de domínio. Normalizar aqui
+  // é o que faz o rótulo (e o `<select>` de papel na UI) baterem com o papel real.
+  const role = toDomainRole(row.role);
   return {
     userId: row.userId,
-    role: row.role,
-    roleLabel: ROLE_LABEL[row.role as AssignableRole] ?? "Membro",
+    role,
+    roleLabel: ROLE_LABEL[role],
     name: name || row.email || "Sem nome",
     email: row.email,
     imageUrl: row.imageUrl,

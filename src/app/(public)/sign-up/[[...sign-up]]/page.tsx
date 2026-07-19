@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignUp } from "@clerk/nextjs";
 
@@ -31,35 +30,13 @@ export default async function SignUpPage({
     redirect("/dashboard");
   }
 
-  if (!ticket) {
-    return (
-      <AuthFrame eyebrow="Plataforma SST">
-        <div className="flex flex-col gap-4 text-center">
-          <h1 className="text-text text-2xl font-bold tracking-tight">
-            Cadastro por convite
-          </h1>
-          <p className="text-text-muted text-base">
-            O SST Manager é um sistema corporativo. Novas contas só podem ser criadas a
-            partir de um convite enviado por um administrador da sua organização.
-          </p>
-          <p className="text-text-muted text-sm">
-            Procure no seu e-mail por uma mensagem com o link de convite, ou solicite um a
-            quem administra sua organização.
-          </p>
-          <Link
-            href="/sign-in"
-            className="glass-panel text-text-muted rounded-pill hover:text-text mx-auto px-5 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            Já tenho uma conta — Entrar
-          </Link>
-        </div>
-      </AuthFrame>
-    );
-  }
-
+  // Cadastro aberto (Modelo B / spec 005): qualquer visitante pode criar conta —
+  // provisiona um tenant pessoal automaticamente (ver `provisionPersonalTenant`).
+  // `__clerk_ticket` (convite) continua funcionando: o Clerk detecta o ticket na
+  // URL e conduz o fluxo de aceite de convite normalmente dentro do componente.
   return (
     <AuthFrame eyebrow="Plataforma SST">
-      <SignUp path="/sign-up" appearance={clerkAppearance} />
+      <SignUp path="/sign-up" appearance={clerkAppearance} forceRedirectUrl="/welcome" />
     </AuthFrame>
   );
 }
