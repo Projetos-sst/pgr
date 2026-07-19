@@ -4,9 +4,12 @@
 -- claims de request.jwt.claims. Este script cria esse shim de forma idempotente.
 -- Uso (rodar conectado ao BANCO de teste, ex.: sst_test):
 --   psql -h localhost -U postgres -d sst_test -f scripts/ci-integration-bootstrap.sql
--- Depois exporte:
---   INTEGRATION_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sst_test
+-- Depois exporte (mesma cabeação do ci.yml):
+--   INTEGRATION_DATABASE_URL=postgresql://app_runtime:app_runtime@localhost:5432/sst_test        -- app_runtime: RLS ENFORCED (least-privilege). É a conexão que `appRuntimeClient()` usa.
+--   INTEGRATION_DATABASE_URL_ADMIN=postgresql://postgres:postgres@localhost:5432/sst_test         -- superuser: migrations + seed (bypassa RLS). Usado por `adminClient()`.
 --   INTEGRATION_APP_RUNTIME_URL=postgresql://app_runtime:app_runtime@localhost:5432/sst_test
+-- ATENÇÃO: NÃO aponte INTEGRATION_DATABASE_URL para o superuser `postgres` — o superuser
+-- IGNORA RLS, e os testes de backstop de isolamento passam a "enxergar" tudo (falso-positivo/negativo).
 
 -- Roles são globais no cluster; criadas idempotentemente.
 DO $$
