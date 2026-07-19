@@ -6,3 +6,4 @@ src/shared/db/migrations
 .agents
 .claude
 .specify
+.maestri
