@@ -1,7 +1,13 @@
 import "server-only";
 
 import * as dashboardRepo from "@/shared/db/repositories/dashboard";
-import { buildOrgSummaryHtml, findReportType } from "@/shared/domains/platform/reports";
+import { listEsocialEventsForReport } from "@/shared/db/repositories/esocial-events";
+import {
+  buildEsocialEventsHtml,
+  buildOnboardingManualHtml,
+  buildOrgSummaryHtml,
+  findReportType,
+} from "@/shared/domains/platform/reports";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ReportUnavailableError } from "@/shared/errors/report-unavailable-error";
 import { htmlToPdf } from "@/shared/integrations/pdf/gotenberg";
@@ -23,11 +29,23 @@ export async function generateReport(
   if (!report) throw new NotFoundError();
   if (!report.available) throw new ReportUnavailableError();
 
+  const today = todayInSaoPaulo();
+
   if (type === "organization-summary") {
     const summary = await dashboardRepo.getDashboardSummary(orgId);
-    const html = buildOrgSummaryHtml(orgName, summary, todayInSaoPaulo());
-    const pdf = await htmlToPdf(html);
-    return { fileName: `resumo-organizacao-${todayInSaoPaulo()}.pdf`, pdf };
+    const html = buildOrgSummaryHtml(orgName, summary, today);
+    return { fileName: `resumo-organizacao-${today}.pdf`, pdf: await htmlToPdf(html) };
+  }
+
+  if (type === "esocial-events") {
+    const events = await listEsocialEventsForReport(orgId);
+    const html = buildEsocialEventsHtml(orgName, events, today);
+    return { fileName: `eventos-esocial-${today}.pdf`, pdf: await htmlToPdf(html) };
+  }
+
+  if (type === "onboarding-manual") {
+    const html = buildOnboardingManualHtml(orgName, today);
+    return { fileName: `manual-onboarding-${today}.pdf`, pdf: await htmlToPdf(html) };
   }
 
   throw new ReportUnavailableError();

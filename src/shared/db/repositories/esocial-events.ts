@@ -66,6 +66,31 @@ export async function listEvents(
   });
 }
 
+/**
+ * Todos os eventos do tenant para o relatório consolidado (#83) — sem paginação,
+ * org-scopado (`withOrg` + RLS). O isolamento do download vem daqui: nunca
+ * retorna evento de outro escritório.
+ */
+export async function listEsocialEventsForReport(
+  orgId: string,
+): Promise<EventListItem[]> {
+  return withOrg(orgId, async (tx) => {
+    const rows = await tx
+      .select({
+        id: esocialEvents.id,
+        eventType: esocialEvents.eventType,
+        status: esocialEvents.status,
+        referenceId: esocialEvents.referenceId,
+        batchId: esocialEvents.batchId,
+        createdAt: esocialEvents.createdAt,
+      })
+      .from(esocialEvents)
+      .where(eq(esocialEvents.orgId, orgId))
+      .orderBy(desc(esocialEvents.createdAt));
+    return rows.map(toEventListItem);
+  });
+}
+
 export async function getEvent(orgId: string, id: string): Promise<EsocialEvent | null> {
   return withOrg(orgId, async (tx) => {
     const [row] = await tx
