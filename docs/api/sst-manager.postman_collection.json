@@ -3004,6 +3004,172 @@
       ]
     },
     {
+      "name": "Catalogo de EPI (epi-catalog)",
+      "item": [
+        {
+          "name": "GET /epi-catalog (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog?search=&type=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "epi|machine"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /epi-catalog (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"epi\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Capacete de Seguranca\",\n  \"ca\": \"12345\",\n  \"caValidUntil\": \"2027-12-31\",\n  \"manufacturer\": \"Fabricante X\",\n  \"norm\": \"NBR 8221\",\n  \"size\": \"M\",\n  \"unitOfMeasure\": \"un\",\n  \"description\": \"EPI de protecao da cabeca\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /epi-catalog/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /epi-catalog/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"epi\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Capacete de Seguranca (atualizado)\",\n  \"ca\": \"12345\",\n  \"caValidUntil\": \"2028-06-30\",\n  \"manufacturer\": \"Fabricante X\",\n  \"norm\": \"NBR 8221\",\n  \"size\": \"G\",\n  \"unitOfMeasure\": \"un\",\n  \"description\": \"Atualizado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /epi-catalog/:id (em uso -> 409 IN_USE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /epi-catalog/:id/dependents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}/dependents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}", "dependents"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Entrega de EPI",
       "item": [
         {
