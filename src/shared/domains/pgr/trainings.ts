@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import type { TrainingCatalog } from "@/shared/db/schema/trainings";
-import { todayInSaoPaulo } from "@/shared/dates";
+import {
+  DUE_WINDOW_DAYS_OPTIONS,
+  todayInSaoPaulo,
+  type DueWindowDays,
+} from "@/shared/dates";
 
 import { optionalString, requiredString, requiredUuid } from "./form-fields";
 
@@ -108,10 +112,8 @@ export function statusForDueWindow(
   return classifyTrainingStatus({ validUntil }, { today, dueWindowDays: dueWithinDays });
 }
 
-/** Janelas de vencimento aceitas pelo filtro da US3 (`dueWithinDays`). */
-export const DUE_WINDOW_DAYS_OPTIONS = [30, 60, 90] as const;
-
-export type DueWindowDays = (typeof DUE_WINDOW_DAYS_OPTIONS)[number];
+/** Janelas de vencimento — canônico em `@/shared/dates`; re-export para compat. */
+export { DUE_WINDOW_DAYS_OPTIONS, type DueWindowDays };
 
 export function parseDueWindowDays(value: unknown): DueWindowDays {
   const parsed = Number(value);

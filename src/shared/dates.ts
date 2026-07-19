@@ -9,3 +9,8 @@ export function todayInSaoPaulo(): string {
     timeZone: "America/Sao_Paulo",
   }).format(new Date());
 }
+
+/** Janelas de vencimento aceitas pelos filtros de "a vencer" (treinamentos, documentos). */
+export const DUE_WINDOW_DAYS_OPTIONS = [30, 60, 90] as const;
+
+export type DueWindowDays = (typeof DUE_WINDOW_DAYS_OPTIONS)[number];

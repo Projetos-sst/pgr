@@ -48,7 +48,28 @@ Reference implementation to copy from: **companies** (`actions/pgr/companies.ts`
 
 <!-- SPECKIT START -->
 
-Branch atual: **`feature/redesign-implantation`**. Fatia atual (`019`) — **Implantação do design system
+Branch atual: **`feature/documents-data-model`**. Fatia atual (`023`) — **Modelo de dados de
+Documentos, Pastas e Jobs** (Fase 05, issue #33) — fatia de modelagem pura (schema + migration +
+RLS + testes), análoga às 006/008, sem UI/CRUD. Plan: `.specs/023-documents-data-model/plan.md`
+(spec/research/data-model/contracts/quickstart no mesmo diretório; brainstorms da fase em
+`claudedocs/fase-05-brainstorms/`). 3 tabelas (`folders`, `documents`, `jobs`) + 3 enums
+(`document_status` `generating|ready`, `job_type` `pdf_batch`, `job_status`
+`pending|processing|done|failed`), migration **`0025_documents_data_model`** (renumerada de `0024` no rebase — o develop pós-#175
+trouxe a `0024_phase_06_safety_workflows`). Decisões: 1 linha
+por versão agrupada por `document_group_id` + `UNIQUE(org_id, group, version)`; `doc_type` texto
+livre; validade **derivada na leitura** (`classifyDocumentValidity` em
+`src/shared/domains/documents/validity.ts`, espelho da 017; `valid_until date` nullable);
+unicidade de pasta irmã (incl. raiz) via `UNIQUE ... NULLS NOT DISTINCT` (PG≥15); ON DELETE
+RESTRICT na cadeia `folders→folders`/`documents→folders` (CASCADE só no org); vínculo polimórfico
+`related_entity_type/related_entity_id` sem FK + CHECK completo-ou-vazio + índice parcial
+(conjunto fechado zod, inicial `pgr`); fila com claim atômico `FOR UPDATE SKIP LOCKED` +
+`locked_at` p/ stale claim (contrato SQL em contracts/ — worker é da #39, leitura administrativa
+fora do `app_runtime` via precedente `caepi-upsert`/`admin.ts`, escrita sempre
+`withOrg(job.org_id)`; **nenhuma policy nova além do isolamento**). Testes: unit (validade) +
+integração Postgres efêmero (RLS 3 tabelas, unicidades, RESTRICT, claim concorrente).
+Constitution Check: sem violações. Base: `develop`.
+
+Fatia anterior (`019`) — **Implantação do design system
 do redesign visual** nas telas já implementadas (fatia de UI transversal, sem módulo de negócio novo).
 Plan: `.specs/019-redesign-implantation/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
 diretório). Fonte da verdade do "como": `docs/briefings/briefing-redesign-implantation.md` (+
