@@ -173,6 +173,16 @@ export {
   type NewPsychosocialRisk,
 } from "./psychosocial";
 export {
+  folders,
+  documents,
+  documentStatus,
+  type Folder,
+  type NewFolder,
+  type Document,
+  type NewDocument,
+} from "./documents";
+export { jobs, jobType, jobStatus, type Job, type NewJob } from "./jobs";
+export {
   esocialEvents,
   esocialBatches,
   esocialEventType,
