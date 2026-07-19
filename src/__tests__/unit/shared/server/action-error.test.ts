@@ -57,6 +57,10 @@ describe("toActionError", () => {
     expect(toActionError({ code: "23514" })?.code).toBe("VALIDATION");
   });
 
+  it("invalid text representation / uuid cru (22P02) → VALIDATION (§13)", () => {
+    expect(toActionError({ code: "22P02" })?.code).toBe("VALIDATION");
+  });
+
   it("erro do Postgres embrulhado pelo Drizzle (code em .cause) → mapeia", () => {
     const drizzleError = Object.assign(new Error("Failed query: insert into ..."), {
       cause: Object.assign(new Error("violates foreign key constraint"), {

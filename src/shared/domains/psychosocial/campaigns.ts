@@ -63,6 +63,14 @@ export const campaignInputSchema = z
 export type CampaignInput = z.input<typeof campaignInputSchema>;
 export type CampaignValues = z.output<typeof campaignInputSchema>;
 
+// Registro de risco psicossocial no PGR: o GES é escolhido pelo usuário e chega
+// como texto cru — precisa ser uuid válido antes de tocar o repositório (evita
+// que uma string malformada vire SQLSTATE 22P02 cru → 500).
+export const registerRiskInPgrSchema = z.object({
+  gesId: uuid,
+});
+export type RegisterRiskInPgrInput = z.input<typeof registerRiskInPgrSchema>;
+
 export const questionInputSchema = z.object({
   text: requiredString("Texto da pergunta é obrigatório"),
   questionType: questionTypeSchema,

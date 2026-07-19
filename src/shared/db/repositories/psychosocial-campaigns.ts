@@ -10,6 +10,7 @@ import type {
 } from "@/shared/domains/psychosocial/campaigns";
 import {
   canActivateCampaign,
+  canTransitionStatus,
   toCampaignListItem,
 } from "@/shared/domains/psychosocial/campaigns";
 import type { SubmitResponseValues } from "@/shared/domains/psychosocial/responses";
@@ -223,13 +224,16 @@ export async function setCampaignStatus(
   return auditedTenantWrite(orgId, WRITE_EVENT, () =>
     withOrg(orgId, async (tx) => {
       const [campaign] = await tx
-        .select({ id: psychosocialCampaigns.id })
+        .select({ id: psychosocialCampaigns.id, status: psychosocialCampaigns.status })
         .from(psychosocialCampaigns)
         .where(
           and(eq(psychosocialCampaigns.orgId, orgId), eq(psychosocialCampaigns.id, id)),
         )
         .limit(1);
       if (!campaign) return false;
+      if (!canTransitionStatus(campaign.status, status)) {
+        throw new ValidationError("Transição de status inválida.");
+      }
       if (status === "active") {
         const [{ total }] = await tx
           .select({ total: countExpr })

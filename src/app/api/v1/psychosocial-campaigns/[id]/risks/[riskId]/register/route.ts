@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 
 import { restHandler } from "@/shared/api/rest";
 import * as repo from "@/shared/db/repositories/psychosocial-campaigns";
+import { registerRiskInPgrSchema } from "@/shared/domains/psychosocial/campaigns";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 
 export const runtime = "nodejs";
@@ -15,12 +16,8 @@ export function POST(req: NextRequest, { params }: Ctx) {
     req,
     async ({ tenantId }) => {
       const { riskId } = await params;
-      const body = (await req.json()) as { gesId?: unknown };
-      const result = await repo.registerRiskInPgr(
-        tenantId,
-        riskId,
-        String(body.gesId ?? ""),
-      );
+      const { gesId } = registerRiskInPgrSchema.parse(await req.json());
+      const result = await repo.registerRiskInPgr(tenantId, riskId, gesId);
       if (!result) throw new NotFoundError();
       return result;
     },
