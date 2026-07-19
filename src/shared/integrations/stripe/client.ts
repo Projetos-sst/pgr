@@ -44,6 +44,22 @@ export async function createProCheckoutSession(args: {
   return { url: session.url };
 }
 
+/**
+ * Sessão do Portal de Billing hospedado (gerenciar método de pagamento, ver
+ * faturas, cancelar a assinatura). Exige um `customerId` já existente — só existe
+ * após o primeiro checkout.
+ */
+export async function createBillingPortalSession(args: {
+  customerId: string;
+  returnUrl: string;
+}): Promise<{ url: string }> {
+  const session = await stripeClient().billingPortal.sessions.create({
+    customer: args.customerId,
+    return_url: args.returnUrl,
+  });
+  return { url: session.url };
+}
+
 /** Verifica a assinatura do webhook e devolve o evento tipado. */
 export function constructWebhookEvent(payload: string, signature: string): Stripe.Event {
   const config = getStripeConfig();

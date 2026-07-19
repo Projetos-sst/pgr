@@ -68,3 +68,8 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Maestri workspace (agent terminals, logs, session state)
+.maestri/
+# Espelho local do CLAUDE.md gerado pelo Maestri para agentes (nao versionar)
+AGENTS.md

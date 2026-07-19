@@ -60,9 +60,28 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["zod"],
   experimental: {
     authInterrupts: true,
+    // GED upload: teto de ARQUIVO do módulo é 25 MiB (`MAX_FILE_BYTES` em
+    // `domains/documents/files.ts`, validado por `validateFile` contra `file.size`
+    // exato). `bodySizeLimit`/`proxyClientMaxBodySize` abaixo medem o CORPO
+    // multipart inteiro (arquivo + boundaries + demais campos do form), que é
+    // sempre um pouco maior que o arquivo puro — por isso levam uma folga de 2MiB
+    // acima do teto de 25MiB da app: sem essa folga, um arquivo de EXATAMENTE
+    // 25MiB era barrado pelo transporte antes de chegar em `validateFile`, que é
+    // quem deveria decidir (e devolver o 422 amigável de verdade). Arquivos bem
+    // maiores (> 27mb de corpo) continuam sendo barrados antes da Server Action —
+    // esse caminho é tratado como erro amigável na UI do formulário, não como
+    // crash (ver `document-upload-form.tsx`/`new-version-modal.tsx`).
     serverActions: {
       allowedOrigins: allowedOrigins.length > 0 ? allowedOrigins : undefined,
+      bodySizeLimit: "27mb",
     },
+    // Toda request passa por src/proxy.ts (middleware) ANTES da Server Action —
+    // o Next clona o corpo nesse ponto com um teto PRÓPRIO (`DEFAULT_BODY_CLONE_SIZE_LIMIT`,
+    // 10MB, independente de `serverActions.bodySizeLimit`). Sem isto, upload de
+    // GED entre 10MB e 25MB era bloqueado no proxy antes de chegar à Server Action
+    // (bug de QA). Precisa acompanhar `serverActions.bodySizeLimit` (mesma folga
+    // de multipart acima).
+    proxyClientMaxBodySize: "27mb",
   },
   async headers() {
     return [

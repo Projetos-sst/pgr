@@ -36,13 +36,12 @@ const AI_REQUEST_TIMEOUT_MS = 20_000;
 export async function requestRiskSuggestions(
   ctx: GesRiskContext,
 ): Promise<SuggestedRisk[]> {
-  const { system, user } = buildRiskSuggestionPrompt(ctx);
-  const client = new Anthropic({
-    apiKey: requireAnthropicApiKey(),
-    baseURL: getAiBaseUrl(),
-  });
-
   try {
+    const { system, user } = buildRiskSuggestionPrompt(ctx);
+    const client = new Anthropic({
+      apiKey: requireAnthropicApiKey(),
+      baseURL: getAiBaseUrl(),
+    });
     const response = await client.messages.create({
       model: getAiModel(),
       max_tokens: 2048,
@@ -67,13 +66,12 @@ export async function requestRiskSuggestions(
 export async function requestActionPlanSuggestion(
   input: SuggestionInput,
 ): Promise<unknown> {
-  const { system, user } = buildActionPlanPrompt(input);
-  const client = new Anthropic({
-    apiKey: requireAnthropicApiKey(),
-    baseURL: getAiBaseUrl(),
-  });
-
   try {
+    const { system, user } = buildActionPlanPrompt(input);
+    const client = new Anthropic({
+      apiKey: requireAnthropicApiKey(),
+      baseURL: getAiBaseUrl(),
+    });
     const response = await client.messages.create(
       {
         model: getAiModel(),

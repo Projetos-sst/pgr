@@ -5,6 +5,7 @@ jest.mock("@/shared/db/repositories/orgs", () => ({
 }));
 jest.mock("@/shared/integrations/stripe/client", () => ({
   createProCheckoutSession: jest.fn(),
+  createBillingPortalSession: jest.fn(),
 }));
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
@@ -12,6 +13,7 @@ import * as orgs from "@/shared/db/repositories/orgs";
 import * as stripe from "@/shared/integrations/stripe/client";
 import {
   handleStripeEvent,
+  openBillingPortal,
   startProCheckout,
 } from "@/shared/server/platform/billing-core";
 
@@ -38,6 +40,35 @@ describe("startProCheckout", () => {
       code: "FORBIDDEN",
     });
     expect(stripe.createProCheckoutSession).not.toHaveBeenCalled();
+  });
+});
+
+describe("openBillingPortal", () => {
+  it("owner com customer existente → devolve a URL do portal", async () => {
+    asMock(orgs.getOrgById).mockResolvedValue({ id: "org_a", stripeCustomerId: "cus_1" });
+    asMock(stripe.createBillingPortalSession).mockResolvedValue({
+      url: "https://billing.stripe/portal/x",
+    });
+    const result = await openBillingPortal(ctx());
+    expect(result.url).toBe("https://billing.stripe/portal/x");
+    expect(stripe.createBillingPortalSession).toHaveBeenCalledWith(
+      expect.objectContaining({ customerId: "cus_1" }),
+    );
+  });
+
+  it("não-owner → FORBIDDEN", async () => {
+    await expect(openBillingPortal(ctx({ role: "collaborator" }))).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(stripe.createBillingPortalSession).not.toHaveBeenCalled();
+  });
+
+  it("sem customer do Stripe (nunca assinou) → BILLING_UNAVAILABLE", async () => {
+    asMock(orgs.getOrgById).mockResolvedValue({ id: "org_a", stripeCustomerId: null });
+    await expect(openBillingPortal(ctx())).rejects.toMatchObject({
+      code: "BILLING_UNAVAILABLE",
+    });
+    expect(stripe.createBillingPortalSession).not.toHaveBeenCalled();
   });
 });
 

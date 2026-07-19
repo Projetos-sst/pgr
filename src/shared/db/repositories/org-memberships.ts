@@ -2,6 +2,7 @@ import "server-only";
 
 import { getRlsBypassingSupabaseClient } from "@/shared/supabase/admin";
 import type { NewOrgMembership, OrgMembership } from "@/shared/db/schema";
+import { toDomainRole } from "@/shared/tenant/roles";
 
 export async function upsertOrgMembership(
   input: NewOrgMembership,
@@ -139,13 +140,20 @@ export async function updateMembershipRole(args: {
   return mapMembership(data);
 }
 
+/**
+ * Conta administradores (papel normalizado `owner`) da org. `role` cru varia por
+ * origem — `owner` literal no tenant pessoal, `org:admin` em orgs Clerk-backed —
+ * então a contagem é feita em app (bounded por tenant, igual à busca/paginação de
+ * `listMembershipsByOrg`), não via filtro de igualdade no banco.
+ */
 export async function countOwnersByOrg(orgId: string): Promise<number> {
-  const { count, error } = await getRlsBypassingSupabaseClient()
+  const { data, error } = await getRlsBypassingSupabaseClient()
     .from("org_memberships")
-    .select("user_id", { count: "exact", head: true })
-    .match({ org_id: orgId, role: "owner" });
+    .select("role")
+    .eq("org_id", orgId);
   if (error) throw error;
-  return count ?? 0;
+  return (data ?? []).filter((row) => toDomainRole(row.role as string) === "owner")
+    .length;
 }
 
 function mapTeamMemberRow(row: Record<string, unknown>): TeamMemberRow {

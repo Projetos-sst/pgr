@@ -10,6 +10,7 @@ import {
   campaignInputSchema,
   campaignStatusSchema,
   questionInputSchema,
+  registerRiskInPgrSchema,
   type CampaignInput,
   type CampaignListItem,
   type CampaignWithQuestions,
@@ -260,7 +261,8 @@ export async function registerRiskInPgrAction(
   return officeAction(
     "psychosocial.risks.register",
     async ({ tenantId }) => {
-      const result = await repo.registerRiskInPgr(tenantId, psychoRiskId, gesId);
+      const { gesId: validGesId } = registerRiskInPgrSchema.parse({ gesId });
+      const result = await repo.registerRiskInPgr(tenantId, psychoRiskId, validGesId);
       if (!result) throw new NotFoundError();
       revalidatePath(`${BASE}/${campaignId}`);
       return result;

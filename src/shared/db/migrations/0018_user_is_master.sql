@@ -1,1 +1,0 @@
-ALTER TABLE "users" ADD COLUMN "is_master" boolean DEFAULT false NOT NULL;

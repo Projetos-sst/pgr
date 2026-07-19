@@ -47,6 +47,18 @@
       "value": ""
     },
     {
+      "key": "formControlId",
+      "value": ""
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    },
+    {
+      "key": "folderId",
+      "value": ""
+    },
+    {
       "key": "pgrId",
       "value": ""
     },
@@ -1509,6 +1521,39 @@
               }
             }
           ]
+        },
+        {
+          "name": "PGR · PDF",
+          "item": [
+            {
+              "name": "GET /pgr/:id/pdf (gera PDF via Gotenberg; ?color= opcional; application/pdf; 404/503)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/pdf?color=",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "pdf"],
+                  "query": [
+                    {
+                      "key": "color",
+                      "value": "",
+                      "description": "Cor hex da capa (ex.: %235b63f5); vazio = default"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -2530,6 +2575,528 @@
       ]
     },
     {
+      "name": "Controle de Formulario (ISO)",
+      "item": [
+        {
+          "name": "GET /form-controls (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls?search=&formType=&companyId=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "formType",
+                  "value": ""
+                },
+                {
+                  "key": "companyId",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /form-controls (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /form-controls (409 codigo FRM duplicado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formType\": \"OS\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /form-controls/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls/{{formControlId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls", "{{formControlId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /form-controls/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls/{{formControlId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls", "{{formControlId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"01\",\n  \"issueDate\": \"2026-02-01\",\n  \"nonConformityNumber\": \"NC-002\",\n  \"position\": \"both\",\n  \"notes\": \"atualizado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /form-controls/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls/{{formControlId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls", "{{formControlId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documentos (GED)",
+      "item": [
+        {
+          "name": "GET /documents (list + KPIs + arvore)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents?folderId=&search=&docType=&validity=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"],
+              "query": [
+                {
+                  "key": "folderId",
+                  "value": ""
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "docType",
+                  "value": ""
+                },
+                {
+                  "key": "validity",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /documents (create, multipart)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "name",
+                  "value": "Laudo Ergonomico",
+                  "type": "text"
+                },
+                {
+                  "key": "docType",
+                  "value": "Laudo",
+                  "type": "text"
+                },
+                {
+                  "key": "validUntil",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "folderId",
+                  "value": "",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /documents/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /documents/:id (metadados)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Laudo revisado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /documents/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /documents/:id/versions (nova versao, multipart)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/versions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}", "versions"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /documents/:id/move",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/move",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}", "move"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folderId\": \"{{folderId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /documents/:id/download (URL assinada, TTL 60s)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}", "download"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pastas (GED)",
+      "item": [
+        {
+          "name": "GET /folders (arvore + breadcrumb)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/folders?parentId=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "folders"],
+              "query": [
+                {
+                  "key": "parentId",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /folders (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/folders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "folders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contratos\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /folders/:id (renomear)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/folders/{{folderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "folders", "{{folderId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Novo nome\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Treinamentos (catalogo)",
       "item": [
         {
@@ -2998,6 +3565,172 @@
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-suggestions/accept",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "ges", "{{gesId}}", "risk-suggestions", "accept"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalogo de EPI (epi-catalog)",
+      "item": [
+        {
+          "name": "GET /epi-catalog (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog?search=&type=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "epi|machine"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /epi-catalog (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"epi\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Capacete de Seguranca\",\n  \"ca\": \"12345\",\n  \"caValidUntil\": \"2027-12-31\",\n  \"manufacturer\": \"Fabricante X\",\n  \"norm\": \"NBR 8221\",\n  \"size\": \"M\",\n  \"unitOfMeasure\": \"un\",\n  \"description\": \"EPI de protecao da cabeca\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /epi-catalog/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /epi-catalog/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"epi\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Capacete de Seguranca (atualizado)\",\n  \"ca\": \"12345\",\n  \"caValidUntil\": \"2028-06-30\",\n  \"manufacturer\": \"Fabricante X\",\n  \"norm\": \"NBR 8221\",\n  \"size\": \"G\",\n  \"unitOfMeasure\": \"un\",\n  \"description\": \"Atualizado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /epi-catalog/:id (em uso -> 409 IN_USE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /epi-catalog/:id/dependents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}/dependents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}", "dependents"]
             }
           }
         }

@@ -4,6 +4,7 @@ import {
   canTransitionStatus,
   parseOptions,
   questionInputSchema,
+  registerRiskInPgrSchema,
   toCampaignListItem,
 } from "@/shared/domains/psychosocial/campaigns";
 import {
@@ -52,6 +53,20 @@ describe("campaignInputSchema", () => {
   });
 });
 
+describe("registerRiskInPgrSchema (§13)", () => {
+  it("aceita gesId uuid válido", () => {
+    expect(registerRiskInPgrSchema.parse({ gesId: UUID }).gesId).toBe(UUID);
+  });
+
+  it("rejeita gesId não-uuid (string malformada → VALIDATION, não 500)", () => {
+    expect(() => registerRiskInPgrSchema.parse({ gesId: "nao-e-uuid" })).toThrow();
+  });
+
+  it("rejeita gesId ausente", () => {
+    expect(() => registerRiskInPgrSchema.parse({})).toThrow();
+  });
+});
+
 describe("questionInputSchema", () => {
   it("exige texto e tipo fechado", () => {
     expect(
@@ -79,6 +94,21 @@ describe("regras de status", () => {
     expect(canTransitionStatus("closed", "active")).toBe(true);
     expect(canTransitionStatus("archived", "active")).toBe(false);
     expect(canTransitionStatus("draft", "closed")).toBe(false);
+  });
+
+  it("bloqueia transições inválidas do QA-PSI-08 (ex.: archived→closed)", () => {
+    // archived é estado terminal — nenhuma saída.
+    expect(canTransitionStatus("archived", "closed")).toBe(false);
+    expect(canTransitionStatus("archived", "draft")).toBe(false);
+    // draft não pula direto pra closed; active não volta pra draft.
+    expect(canTransitionStatus("draft", "closed")).toBe(false);
+    expect(canTransitionStatus("active", "draft")).toBe(false);
+    expect(canTransitionStatus("closed", "draft")).toBe(false);
+  });
+
+  it("no-op (mesmo status) é permitido", () => {
+    expect(canTransitionStatus("archived", "archived")).toBe(true);
+    expect(canTransitionStatus("draft", "draft")).toBe(true);
   });
 });
 

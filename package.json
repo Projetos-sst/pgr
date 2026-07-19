@@ -1,6 +1,6 @@
 {
   "name": "sst-manager",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,7 +17,8 @@
     "test:integration": "jest --selectProjects integration --runInBand",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "worker": "node --conditions=react-server --import tsx worker/index.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",

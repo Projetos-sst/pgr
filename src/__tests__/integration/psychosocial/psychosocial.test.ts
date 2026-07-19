@@ -99,6 +99,46 @@ async function tokenOf(id: string): Promise<string> {
     ).toBe(false);
   });
 
+  it("setCampaignStatus bloqueia transição inválida no write path (QA-PSI-08)", async () => {
+    const { id } = await repo.createCampaign("org_a", {
+      name: "Transições",
+      companyId: COMPANY_A,
+      workUnitId: WORKUNIT_A,
+    });
+    await repo.addQuestion("org_a", id, {
+      text: "Carga mental?",
+      questionType: "likert",
+    });
+
+    // draft → active (válida) → archived (válida, terminal)
+    expect(await repo.setCampaignStatus("org_a", id, "active")).toBe(true);
+    expect(await repo.setCampaignStatus("org_a", id, "archived")).toBe(true);
+
+    // archived é terminal: archived → closed é INVÁLIDA → VALIDATION (antes: aceitava)
+    await expect(repo.setCampaignStatus("org_a", id, "closed")).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    // archived → active também inválida
+    await expect(repo.setCampaignStatus("org_a", id, "active")).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+
+    // status permanece archived (update não ocorreu)
+    const detail = await repo.getCampaignWithQuestions("org_a", id);
+    expect(detail!.campaign.status).toBe("archived");
+  });
+
+  it("setCampaignStatus: active sem perguntas preserva o guard de ativação", async () => {
+    const { id } = await repo.createCampaign("org_a", {
+      name: "Sem perguntas",
+      companyId: COMPANY_A,
+      workUnitId: WORKUNIT_A,
+    });
+    await expect(repo.setCampaignStatus("org_a", id, "active")).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
   it("rota pública: resolve ativa, submete anônimo, rejeita fechada/expirada/inválida", async () => {
     const { id } = await repo.createCampaign("org_a", {
       name: "Pública",

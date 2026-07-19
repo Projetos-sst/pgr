@@ -35,6 +35,15 @@ const BLOCKED_CODES = new Set(["FORBIDDEN", "NO_TENANT_CONTEXT", "UNAUTHORIZED"]
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
+ * Status HTTP do código de erro do contrato, com o mesmo mapa do `restHandler`.
+ * Fallback 400. Usado também por rotas binárias (PDF) que não passam por
+ * `restHandler` mas precisam do mesmo mapeamento (ex.: `UNAUTHORIZED → 401`).
+ */
+export function restStatusForCode(code: string): number {
+  return HTTP_BY_CODE[code] ?? 400;
+}
+
+/**
  * Dev-only auth bypass para testar /api/v1 sem token Clerk (local/homolog).
  * IMPOSSÍVEL em produção: exige `APP_ENV !== "production"` E `DEV_API_AUTH_BYPASS === "true"`.
  * O tenant/papel vêm dos headers `x-dev-tenant`/`x-dev-role`/`x-dev-user` (ou das envs
@@ -54,7 +63,7 @@ function devContextFrom(req: NextRequest): TenantContext | null {
   return { tenantId, userId, role, plan: "free" };
 }
 
-async function resolveContext(req: NextRequest): Promise<TenantContext> {
+export async function resolveContext(req: NextRequest): Promise<TenantContext> {
   if (isDevAuthBypassEnabled()) {
     const dev = devContextFrom(req);
     if (!dev) throw new NoTenantContextError();
