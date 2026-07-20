@@ -58,3 +58,18 @@ next-env.d.ts
 
 # Referências locais (prints/screenshots do ePGR e afins — não versionar)
 /docs/_local-refs/
+
+# Pasta guarda-chuva com referência de redesign (não versionar)
+/sst-project/redesign/
+
+# Playwright E2E (nunca versionar credenciais/estado/artefatos)
+/.auth/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Maestri workspace (agent terminals, logs, session state)
+.maestri/
+# Espelho local do CLAUDE.md gerado pelo Maestri para agentes (nao versionar)
+AGENTS.md

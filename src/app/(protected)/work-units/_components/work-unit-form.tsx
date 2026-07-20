@@ -145,7 +145,7 @@ export function WorkUnitForm({
             type="button"
             onClick={copyCompanyAddress}
             disabled={!canCopyAddress}
-            className="self-start rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 disabled:opacity-40 dark:border-white/15"
+            className="glass-panel text-text-muted rounded-card hover:text-text self-start px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-40"
           >
             Preencher com endereço da empresa
           </button>

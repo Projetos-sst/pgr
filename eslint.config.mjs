@@ -22,6 +22,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Mockups de design-comp (fonte visual do redesign) — não são código da app.
+    "sst-project/**",
+    // Worktrees/artefatos de sessão do Claude Code (espelha o .prettierignore).
+    ".claude/**",
   ]),
   {
     files: ["src/app/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}"],

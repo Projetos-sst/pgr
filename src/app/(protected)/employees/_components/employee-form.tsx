@@ -161,8 +161,8 @@ export function EmployeeForm({
     <form onSubmit={handleSubmit} className="flex max-w-3xl flex-col gap-6">
       <FormError message={formError} />
 
-      <fieldset className="grid gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
-        <legend className="px-1 text-sm font-medium">Geral</legend>
+      <fieldset className="glass-card grid gap-4 p-4">
+        <legend className="text-text-muted px-1 text-sm font-medium">Geral</legend>
         <TextField
           label="Nome completo"
           name="fullName"
@@ -260,8 +260,8 @@ export function EmployeeForm({
         </div>
       </fieldset>
 
-      <fieldset className="grid gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
-        <legend className="px-1 text-sm font-medium">Contato</legend>
+      <fieldset className="glass-card grid gap-4 p-4">
+        <legend className="text-text-muted px-1 text-sm font-medium">Contato</legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Telefone" name="phone" defaultValue={employee?.phone} />
           <TextField label="E-mail" name="email" defaultValue={employee?.email} />

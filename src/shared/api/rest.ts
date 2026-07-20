@@ -15,10 +15,10 @@ const HTTP_BY_CODE: Record<string, number> = {
   VALIDATION: 422,
   DUPLICATE: 409,
   FK_NOT_FOUND: 422,
+  IN_USE: 409,
   INSUFFICIENT_STOCK: 422,
   ALREADY_SIGNED: 409,
   ALREADY_RETURNED: 409,
-  IN_USE: 409,
   TOKEN_INVALID: 404,
   TOKEN_EXPIRED: 410,
   FORBIDDEN: 403,
@@ -26,10 +26,22 @@ const HTTP_BY_CODE: Record<string, number> = {
   NO_TENANT_CONTEXT: 403,
   UNAUTHORIZED: 401,
   QUOTA_EXCEEDED: 402,
+  AI_UNAVAILABLE: 502,
+  REPORT_UNAVAILABLE: 503,
+  BILLING_UNAVAILABLE: 503,
 };
 
 const BLOCKED_CODES = new Set(["FORBIDDEN", "NO_TENANT_CONTEXT", "UNAUTHORIZED"]);
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+/**
+ * Status HTTP do código de erro do contrato, com o mesmo mapa do `restHandler`.
+ * Fallback 400. Usado também por rotas binárias (PDF) que não passam por
+ * `restHandler` mas precisam do mesmo mapeamento (ex.: `UNAUTHORIZED → 401`).
+ */
+export function restStatusForCode(code: string): number {
+  return HTTP_BY_CODE[code] ?? 400;
+}
 
 /**
  * Dev-only auth bypass para testar /api/v1 sem token Clerk (local/homolog).
@@ -51,7 +63,7 @@ function devContextFrom(req: NextRequest): TenantContext | null {
   return { tenantId, userId, role, plan: "free" };
 }
 
-async function resolveContext(req: NextRequest): Promise<TenantContext> {
+export async function resolveContext(req: NextRequest): Promise<TenantContext> {
   if (isDevAuthBypassEnabled()) {
     const dev = devContextFrom(req);
     if (!dev) throw new NoTenantContextError();

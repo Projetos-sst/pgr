@@ -8,7 +8,7 @@ import type { TenantOption } from "@/shared/tenant/switcher";
 
 function PlanBadge({ plan }: { plan: TenantOption["plan"] }) {
   return (
-    <span className="rounded-sm bg-black/5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-zinc-600 uppercase">
+    <span className="text-text-muted rounded-sm bg-white/60 px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase">
       {plan}
     </span>
   );
@@ -60,7 +60,7 @@ export function TenantSwitcherMenu({
 
   if (!canSwitch) {
     return (
-      <span className="inline-flex items-center gap-2 rounded-md border border-black/10 px-3 py-1.5 text-sm font-medium text-zinc-700">
+      <span className="glass-panel text-text-muted rounded-card inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium">
         {active.name}
         <PlanBadge plan={active.plan} />
       </span>
@@ -74,11 +74,11 @@ export function TenantSwitcherMenu({
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="inline-flex items-center gap-2 rounded-md border border-black/15 px-3 py-1.5 text-sm font-medium text-zinc-800 transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-black/40 focus-visible:outline-none"
+        className="glass-panel text-text rounded-card focus-visible:ring-primary-ring inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
       >
         <span className="max-w-[14rem] truncate">{active.name}</span>
         <PlanBadge plan={active.plan} />
-        <span aria-hidden className="text-zinc-400">
+        <span aria-hidden className="text-text-subtle">
           ▾
         </span>
       </button>
@@ -87,7 +87,7 @@ export function TenantSwitcherMenu({
         <ul
           role="listbox"
           aria-label="Trocar de organização"
-          className="absolute right-0 z-20 mt-2 w-72 overflow-hidden rounded-lg border border-black/10 bg-white py-1 shadow-lg"
+          className="glass-menu absolute right-0 z-50 mt-2 w-72 overflow-hidden py-1"
         >
           {options.map((option) => (
             <li key={option.orgId} role="option" aria-selected={option.isActive}>
@@ -95,18 +95,16 @@ export function TenantSwitcherMenu({
                 type="button"
                 onClick={() => selectTenant(option.orgId)}
                 disabled={pendingOrgId !== null}
-                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-black/4 disabled:opacity-60"
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-black/[0.04] disabled:opacity-60"
               >
                 <span className="flex min-w-0 flex-col">
-                  <span className="truncate font-medium text-zinc-900">
-                    {option.name}
-                  </span>
-                  <span className="text-xs text-zinc-500">{option.roleLabel}</span>
+                  <span className="text-text truncate font-medium">{option.name}</span>
+                  <span className="text-text-subtle text-xs">{option.roleLabel}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   <PlanBadge plan={option.plan} />
                   {option.isActive ? (
-                    <span aria-hidden className="text-zinc-900">
+                    <span aria-hidden className="text-text">
                       ✓
                     </span>
                   ) : null}

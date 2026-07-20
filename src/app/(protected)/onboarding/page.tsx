@@ -1,10 +1,12 @@
-import { CreateOrganization, OrganizationList } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
 
+/**
+ * Aposentada (spec 005 / Modelo B): esta rota criava/selecionava organização via
+ * Clerk (`CreateOrganization`/`OrganizationList`, Modelo A da fatia 004) — todo
+ * usuário já tem um tenant pessoal provisionado automaticamente no cadastro
+ * (`provisionPersonalTenant`), então não há mais "criar organização" a fazer
+ * aqui. Mantida como redirect (não 404) para não quebrar links/bookmarks antigos.
+ */
 export default function OnboardingPage() {
-  return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-12">
-      <CreateOrganization afterCreateOrganizationUrl="/dashboard" />
-      <OrganizationList hidePersonal afterSelectOrganizationUrl="/dashboard" />
-    </main>
-  );
+  redirect("/welcome");
 }

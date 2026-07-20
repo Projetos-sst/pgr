@@ -1,0 +1,65 @@
+import {
+  pgTable,
+  pgEnum,
+  text,
+  uuid,
+  date,
+  timestamp,
+  index,
+  uniqueIndex,
+  pgPolicy,
+} from "drizzle-orm/pg-core";
+import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
+
+import { appRuntimeRole } from "../roles";
+import { orgs } from "./orgs";
+import { companies } from "./companies";
+import { ges } from "./ges";
+
+const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
+
+// Posicionamento do cabeçalho ISO no documento gerado (consumido pelo pipeline
+// Gotenberg em outra fatia; aqui só a configuração).
+export const formControlPosition = pgEnum("form_control_position", [
+  "top",
+  "bottom",
+  "both",
+]);
+
+export const formControls = pgTable(
+  "form_controls",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    formType: text("form_type").notNull(),
+    companyId: uuid("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+    frmCode: text("frm_code").notNull(),
+    revision: text("revision").notNull(),
+    issueDate: date("issue_date").notNull(),
+    nonConformityNumber: text("non_conformity_number"),
+    gesId: uuid("ges_id").references(() => ges.id, { onDelete: "set null" }),
+    position: formControlPosition("position").notNull().default("top"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_form_controls_org_id").on(table.orgId),
+    index("idx_form_controls_company_id").on(table.companyId),
+    index("idx_form_controls_ges_id").on(table.gesId),
+    uniqueIndex("uq_form_controls_org_frm_code").on(table.orgId, table.frmCode),
+    pgPolicy("form_controls_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+  ],
+).enableRLS();
+
+export type FormControl = InferSelectModel<typeof formControls>;
+export type NewFormControl = InferInsertModel<typeof formControls>;

@@ -1,19 +1,27 @@
 import type { NextRequest } from "next/server";
 
 import { restHandler, pageParamsFrom } from "@/shared/api/rest";
-import { categoryTypeSchema } from "@/shared/domains/pgr/validation";
 import { epiCatalogInputSchema } from "@/shared/domains/pgr/epi-catalog";
+import { categoryTypeSchema } from "@/shared/domains/pgr/validation";
+import type { ListEpiCatalogParams } from "@/shared/db/repositories/epi-catalog";
 import * as repo from "@/shared/db/repositories/epi-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function filtersFrom(req: NextRequest): Pick<ListEpiCatalogParams, "search" | "type"> {
+  const sp = req.nextUrl.searchParams;
+  const type = categoryTypeSchema.safeParse(sp.get("type"));
+  return {
+    search: sp.get("search") ?? undefined,
+    type: type.success ? type.data : undefined,
+  };
+}
+
 export function GET(req: NextRequest) {
-  return restHandler(req, ({ tenantId }) => {
-    const rawType = req.nextUrl.searchParams.get("type");
-    const type = rawType ? categoryTypeSchema.parse(rawType) : undefined;
-    return repo.listEpiCatalog(tenantId, { ...pageParamsFrom(req), type });
-  });
+  return restHandler(req, ({ tenantId }) =>
+    repo.listEpiCatalog(tenantId, { ...pageParamsFrom(req), ...filtersFrom(req) }),
+  );
 }
 
 export function POST(req: NextRequest) {

@@ -21,11 +21,11 @@ import { FormError, SelectField, SubmitButton } from "../../_ui/form";
 
 /** Cores por classe (strings literais para o Tailwind v4 capturar no scan). */
 const CLASSIFICATION_STYLE: Record<RiskClassification, string> = {
-  trivial: "bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-200",
-  tolerable: "bg-lime-100 text-lime-900 dark:bg-lime-950 dark:text-lime-200",
-  moderate: "bg-yellow-100 text-yellow-900 dark:bg-yellow-950 dark:text-yellow-200",
-  substantial: "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-200",
-  intolerable: "bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200",
+  trivial: "bg-green-100 text-green-900",
+  tolerable: "bg-lime-100 text-lime-900",
+  moderate: "bg-yellow-100 text-yellow-900",
+  substantial: "bg-orange-100 text-orange-900",
+  intolerable: "bg-red-100 text-red-900",
 };
 
 const BASE_OPTIONS: { value: MethodologyBase; label: string }[] = [
@@ -35,8 +35,7 @@ const BASE_OPTIONS: { value: MethodologyBase; label: string }[] = [
   { value: "custom", label: methodologyBaseLabel("custom") },
 ];
 
-const inputClass =
-  "rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:bg-zinc-900";
+const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
 
 type State = Omit<RiskMethodologyView, "configured">;
 
@@ -100,7 +99,7 @@ export function MethodologyEditor({ initial }: { initial: RiskMethodologyView })
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-8">
       {!initial.configured ? (
-        <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+        <p className="rounded-card border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           Sua organização ainda não configurou uma metodologia — exibindo os valores
           padrão ({methodologyBaseLabel(state.base)}). Ajuste e salve para adotá-la.
         </p>
@@ -115,7 +114,7 @@ export function MethodologyEditor({ initial }: { initial: RiskMethodologyView })
           options={BASE_OPTIONS}
           emptyLabel="— selecione —"
         />
-        <p className="mt-1 text-xs text-black/50 dark:text-white/50">
+        <p className="text-text-subtle mt-1 text-xs">
           Selecionar uma base preenche gradações e faixas com os valores padrão
           (editáveis).
         </p>
@@ -134,14 +133,12 @@ export function MethodologyEditor({ initial }: { initial: RiskMethodologyView })
       />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Matriz 5×5</h2>
+        <h2 className="text-text text-lg font-semibold">Matriz 5×5</h2>
         <div className="overflow-x-auto">
           <table className="border-separate border-spacing-1 text-center text-sm">
             <thead>
               <tr>
-                <th className="p-2 text-xs font-medium text-black/50 dark:text-white/50">
-                  P \ S
-                </th>
+                <th className="text-text-subtle p-2 text-xs font-medium">P \ S</th>
                 {state.severityGrades.map((g) => (
                   <th key={g.level} className="p-2 text-xs font-medium">
                     {g.level}. {g.label}
@@ -179,7 +176,7 @@ export function MethodologyEditor({ initial }: { initial: RiskMethodologyView })
         </div>
 
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-medium">
+          <h3 className="text-text text-sm font-medium">
             Faixas de classificação (limite superior)
           </h3>
           <div className="flex flex-wrap gap-3">
@@ -209,25 +206,21 @@ export function MethodologyEditor({ initial }: { initial: RiskMethodologyView })
               );
             })}
           </div>
-          <p className="text-xs text-black/50 dark:text-white/50">
+          <p className="text-text-subtle text-xs">
             Os limites devem ser crescentes; a última faixa fecha sempre em 25.
           </p>
         </div>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Controle de Riscos (hierarquia NR-01)</h2>
+        <h2 className="text-text text-lg font-semibold">
+          Controle de Riscos (hierarquia NR-01)
+        </h2>
         <ol className="flex flex-col gap-2">
           {NR01_CONTROL_HIERARCHY.map((item) => (
-            <li
-              key={item.level}
-              className="rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/10"
-            >
-              <span className="font-medium">{item.label}</span>
-              <span className="text-black/60 dark:text-white/60">
-                {" "}
-                — {item.description}
-              </span>
+            <li key={item.level} className="glass-card px-3 py-2 text-sm">
+              <span className="text-text font-medium">{item.label}</span>
+              <span className="text-text-muted"> — {item.description}</span>
             </li>
           ))}
         </ol>
@@ -238,7 +231,7 @@ export function MethodologyEditor({ initial }: { initial: RiskMethodologyView })
         {saved ? (
           <p
             role="status"
-            className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300"
+            className="rounded-card border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-700"
           >
             Metodologia salva.
           </p>
@@ -262,16 +255,14 @@ function GradeSection({
 }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <h2 className="text-text text-lg font-semibold">{title}</h2>
       <div className="flex flex-col gap-2">
         {grades.map((grade, index) => (
           <div
             key={grade.level}
             className="grid grid-cols-[2rem_1fr_2fr] items-center gap-3"
           >
-            <span className="text-sm font-semibold text-black/60 dark:text-white/60">
-              {grade.level}
-            </span>
+            <span className="text-text-muted text-sm font-semibold">{grade.level}</span>
             <input
               aria-label={`Rótulo do nível ${grade.level}`}
               value={grade.label}

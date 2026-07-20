@@ -1,35 +1,37 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.2.0 → 1.2.1 (PATCH — clarificação/correção de Princípio I)
-Last amended: 2026-06-19
+Version change: 1.4.0 → 1.5.0 (MINOR — Princípio II: provedor de pagamento (Stripe) autorizado como infra permitida)
+Last amended: 2026-07-15
 
 Modified sections:
-- Princípio I (Isolamento Multi-Tenant): corrigido o identificador de tenant — de
-  "organização do Clerk" para "o tenant = escritório/workspace (`orgs.id` no nosso
-  banco), resolvido da sessão autenticada via vínculos (`org_memberships`)". Adicionada
-  a distinção empresa-cliente (`company_id`, dimensão de dados DENTRO do tenant) vs.
-  tenant (`org_id`, fronteira de isolamento). A organização do Clerk passa a ser apenas
-  a camada de UI B2B do plano PRO (`orgs.clerk_org_id`), opcional; contas free têm
-  tenant isolado sem organização no Clerk.
-- "Restrições Técnicas & Stack" → linha Auth/Multi-tenant ajustada à mesma premissa.
+- Princípio II (Stack Fixa e Simplicidade): adicionada cláusula que AUTORIZA o uso de um
+  provedor de pagamento/assinatura gerenciado (ex.: Stripe) como infraestrutura permitida
+  para billing/planos, condicionada a salvaguardas (chaves server-only; webhook com
+  assinatura verificada; NENHUM dado de cartão trafega ou persiste na aplicação — Checkout
+  hospedado/tokenização no provedor, PCI SAQ-A; o plano do tenant em `orgs.plan` é a fonte da
+  verdade local, sincronizada pelo webhook). Demais serviços externos pagos continuam
+  exigindo emenda formal. Linha da stack em "Restrições Técnicas & Stack" atualizada para
+  citar o provedor de pagamento.
 
-Rationale: a fatia 005 (.specs/005-modelo-tenant-gate-pro) adota o Modelo B — o tenant
-é o escritório do profissional de SST, e contas free têm tenant isolado SEM organização
-no Clerk. Logo, o identificador de tenant não pode ser a org do Clerk. A redação anterior
-assumia "org do Clerk = tenant" (premissa da 004), incompatível com o free. A emenda
-corrige o descritor SEM relaxar a regra não-negociável: o tenant continua vindo sempre da
-sessão autenticada e NUNCA de input do cliente.
+Rationale: a Fase 7 (planos/assinatura/trial) exige cobrança recorrente e gestão de plano
+(free/pro + trial). Processar pagamento in-house é inviável e inseguro (escopo PCI); a solução
+é um provedor gerenciado (Stripe) com Checkout hospedado — o cartão nunca toca a aplicação. O
+Princípio II exige emenda formal antes de introduzir serviço externo pago; esta emenda
+autoriza o provedor de pagamento sob salvaguardas, sem relaxar as regras não-negociáveis
+(isolamento do Princípio I — o plano é escopado ao tenant; integridade/segredos do Princípio V
+permanecem intactos: chaves server-only, webhook assinado). A cobrança não bloqueia o uso das
+features do plano free; o upgrade é opcional.
 
-Classificação PATCH: nenhum princípio adicionado, removido ou redefinido de forma
-incompatível; a regra não-negociável (isolamento + tenant da sessão) é preservada — apenas
-o identificador é descrito com precisão e estendido ao caminho free.
+Classificação MINOR: nova permissão materialmente expandida a um princípio existente
+(Princípio II), sem remover nem redefinir princípios de forma incompatível. Nenhuma regra
+não-negociável é enfraquecida.
 
-Principles modified: I (clarificado, não redefinido em incompatibilidade).
+Principles modified: II (expandido — terceira cláusula de autorização condicionada).
 Added sections: none. Removed sections: none.
 
 Templates reviewed for consistency:
-- .specify/templates/plan-template.md ........ ✅ ok (Constitution Check preenchido pelo /speckit-plan; sem referência hardcoded ao identificador de tenant)
+- .specify/templates/plan-template.md ........ ✅ ok (Constitution Check cobre o novo gate via Complexity Tracking)
 - .specify/templates/spec-template.md ......... ✅ ok (sem conflito)
 - .specify/templates/tasks-template.md ........ ✅ ok (sem conflito)
 - .specify/templates/checklist-template.md .... ✅ ok (sem conflito)
@@ -39,6 +41,9 @@ Histórico:
 - 1.1.0: ajustes anteriores de governança/seções.
 - 1.2.0: exceção de Postgres efêmero para RLS/policies/triggers na cláusula de Integração.
 - 1.2.1: correção do identificador de tenant no Princípio I (Modelo B — tenant = escritório/`orgs.id`).
+- 1.3.0: Princípio II autoriza provedores de LLM como infra permitida sob salvaguardas (fatia 017).
+- 1.4.0: Princípio II autoriza serviço auxiliar de PDF (Gotenberg) como infra permitida sob salvaguardas (Fase 5).
+- 1.5.0: Princípio II autoriza provedor de pagamento (Stripe) como infra permitida sob salvaguardas (Fase 7).
 
 Follow-up TODOs: none
 -->
@@ -87,6 +92,39 @@ Storage), Clerk (autenticação e organizações) e Cloudflare na borda.
 - Introduzir nova infraestrutura (AWS completa, microserviços, filas dedicadas,
   serviços externos pagos, novo banco) MUST exigir emenda formal a esta
   constituição antes da implementação.
+- **Provedores de LLM (AUTORIZADO — emenda 1.3.0)**: usar um provedor de IA/LLM
+  gerenciado (ex.: Anthropic) é infraestrutura PERMITIDA para features de
+  assistência por IA, desde que TODAS as salvaguardas sejam atendidas: (a) a
+  chave/segredo reside SÓ no servidor; (b) NENHUM dado sensível/PII (ex.:
+  funcionários/CPF) é enviado além do contexto estritamente necessário; (c) há
+  rate limiting/cota por tenant conforme o plano; (d) a falha do provedor NÃO
+  bloqueia o fluxo principal (degradação graciosa). Outros serviços externos
+  pagos continuam exigindo emenda formal.
+- **Serviço de renderização de PDF (AUTORIZADO — emenda 1.4.0)**: usar um
+  serviço auxiliar STATELESS de conversão HTML→PDF fora da Vercel (ex.:
+  Gotenberg, container Docker open-source hospedado em Railway/Render/Fly.io) é
+  infraestrutura PERMITIDA para a geração de documentos, desde que TODAS as
+  salvaguardas sejam atendidas: (a) o endpoint NÃO é público e é protegido por
+  token/segredo (ex.: `GOTENBERG_TOKEN`) e/ou restrição de rede — só a aplicação
+  o chama; (b) o serviço é stateless e NÃO persiste o documento (o PDF retorna e
+  a aplicação o salva no Storage); (c) o segredo reside SÓ no servidor, nunca no
+  cliente; (d) a geração pesada/em lote é desacoplada da requisição do usuário
+  (Princípio IV); (e) o serviço é substituível (HTTP stateless padrão). O
+  isolamento (Princípio I) é preservado montando o HTML no servidor APÓS checar o
+  tenant. Diferente do provedor de LLM, a salvaguarda de "zero-PII" NÃO se aplica:
+  o serviço recebe o documento completo do tenant por natureza. Outros serviços
+  externos pagos continuam exigindo emenda formal.
+- **Provedor de pagamento (AUTORIZADO — emenda 1.5.0)**: usar um provedor de
+  pagamento/assinatura gerenciado (ex.: Stripe) é infraestrutura PERMITIDA para
+  billing/planos, desde que TODAS as salvaguardas sejam atendidas: (a) as chaves
+  (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) residem SÓ no servidor, nunca no
+  cliente; (b) o webhook verifica a **assinatura** do provedor antes de agir; (c)
+  NENHUM dado de cartão trafega ou persiste na aplicação — usa-se **Checkout
+  hospedado**/tokenização no provedor (mantém o escopo PCI em SAQ-A); (d) o plano
+  do tenant (`orgs.plan`) é a fonte da verdade local, sincronizada pelo webhook; a
+  cobrança NÃO bloqueia o uso das features do plano free (upgrade opcional); (e) o
+  provedor é substituível. O isolamento (Princípio I) é preservado: o plano é
+  escopado ao tenant. Outros serviços externos pagos continuam exigindo emenda formal.
 - Aplicar YAGNI: implementar apenas o requisito atual da fatia em andamento;
   sem features ou abstrações especulativas.
 - Preferir a solução mais simples que atende o requisito.
@@ -155,6 +193,16 @@ de dados que, neste domínio, pode ter consequências regulatórias.
   é o `orgs.id` do nosso banco, resolvido pela sessão via `org_memberships` (não a org do
   Clerk). Organizações do Clerk, quando existirem, são a camada de UI B2B do plano PRO
   (`orgs.clerk_org_id`).
+- **IA/LLM**: provedor gerenciado (ex.: Anthropic) para features de assistência por
+  IA, sob as salvaguardas do Princípio II (chave server-only, zero-PII, cota por
+  tenant, degradação não-bloqueante).
+- **Geração de PDF**: serviço auxiliar stateless de renderização HTML→PDF fora da
+  Vercel (ex.: Gotenberg), sob as salvaguardas do Princípio II (endpoint protegido,
+  stateless, segredo server-only, geração assíncrona). Resolve os limites do
+  serverless para Chromium (cold start, bundle, memória).
+- **Pagamento/Billing**: provedor gerenciado (ex.: Stripe) para planos/assinatura,
+  sob as salvaguardas do Princípio II (chaves server-only, webhook assinado, Checkout
+  hospedado — cartão nunca toca a aplicação; plano do tenant em `orgs.plan`).
 - **Borda**: Cloudflare — DNS, cache, WAF e mitigação.
 - Backend e frontend são unificados no Next.js (Server Actions e Route
   Handlers); NÃO há API separada tradicional.
@@ -196,4 +244,4 @@ test` e `npm run test:integration`).
   "Constitution Check"; violações justificadas vão em "Complexity Tracking".
 - Orientação de runtime para agentes: `CLAUDE.md` e `AGENTS.md`.
 
-**Version**: 1.2.1 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-06-19
+**Version**: 1.5.0 | **Ratified**: 2026-05-19 | **Last Amended**: 2026-07-15

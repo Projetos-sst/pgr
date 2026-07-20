@@ -13,9 +13,9 @@ export function PageHeader({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-text text-2xl font-extrabold tracking-tight">{title}</h1>
         {description ? (
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{description}</p>
+          <p className="text-text-muted mt-1 text-sm">{description}</p>
         ) : null}
       </div>
       {action}
@@ -27,7 +27,7 @@ export function PrimaryLink({ href, children }: { href: string; children: ReactN
   return (
     <Link
       href={href}
-      className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 dark:bg-white dark:text-black"
+      className="btn-primary rounded-pill px-4 py-2 text-sm font-semibold transition-colors"
     >
       {children}
     </Link>
@@ -36,7 +36,7 @@ export function PrimaryLink({ href, children }: { href: string; children: ReactN
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-black/15 px-6 py-12 text-center text-sm text-zinc-500 dark:border-white/15">
+    <div className="glass-card text-text-subtle px-6 py-12 text-center text-sm">
       {message}
     </div>
   );
@@ -76,11 +76,11 @@ export function SearchForm({
         name="search"
         defaultValue={defaultValue ?? ""}
         placeholder={placeholder}
-        className="w-full max-w-xs rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+        className="glass-input text-text placeholder:text-text-subtle rounded-card w-full max-w-xs px-3 py-2 text-sm"
       />
       <button
         type="submit"
-        className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+        className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
       >
         Buscar
       </button>
@@ -107,14 +107,14 @@ export function Pagination({
   const hasNext = page < totalPages;
   return (
     <nav className="flex items-center justify-between gap-4 text-sm">
-      <span className="text-zinc-500">
+      <span className="text-text-subtle">
         Página {page} de {totalPages} · {total} registro(s)
       </span>
       <div className="flex gap-2">
         {hasPrev ? (
           <Link
             href={`${basePath}${buildQuery(params, { page: String(page - 1) })}`}
-            className="rounded-md border border-black/15 px-3 py-1 transition-colors hover:bg-black/5 dark:border-white/15"
+            className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 transition-colors"
           >
             Anterior
           </Link>
@@ -122,7 +122,7 @@ export function Pagination({
         {hasNext ? (
           <Link
             href={`${basePath}${buildQuery(params, { page: String(page + 1) })}`}
-            className="rounded-md border border-black/15 px-3 py-1 transition-colors hover:bg-black/5 dark:border-white/15"
+            className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 transition-colors"
           >
             Próxima
           </Link>
@@ -134,12 +134,12 @@ export function Pagination({
 
 export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/10">
+    <div className="glass-card overflow-x-auto">
       <table className="w-full border-collapse text-sm">
-        <thead className="bg-black/3 text-left dark:bg-white/5">
+        <thead className="text-text-muted border-b border-white/50 text-left">
           <tr>
             {headers.map((h) => (
-              <th key={h} className="px-4 py-2 font-medium">
+              <th key={h} className="px-4 py-3 font-semibold">
                 {h}
               </th>
             ))}

@@ -16,6 +16,36 @@ aleatória, ex.: `openssl rand -hex 32`).
 
 Comandos úteis: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:integration`.
 
+### Geração de PDF (Gotenberg)
+
+A geração de documentos (ex.: PDF do PGR) usa o [Gotenberg](https://gotenberg.dev), um serviço
+stateless de conversão HTML→PDF, consumido por `src/shared/integrations/pdf/gotenberg.ts`. Suba o
+container local com Docker:
+
+```bash
+docker compose up -d gotenberg      # sobe o Gotenberg em http://localhost:3001
+docker compose logs -f gotenberg    # acompanhar
+docker compose down                 # derrubar
+```
+
+No `.env.local`, aponte o app para o container (a variável ausente **desabilita** a geração —
+`isPdfGenerationEnabled()` fica `false` — sem quebrar o resto):
+
+```bash
+GOTENBERG_URL=http://localhost:3001
+# GOTENBERG_TOKEN=           # opcional; vazio em dev (sem auth). Em prod, token/gateway.
+```
+
+Validação ponta a ponta (opcional, roda **só** com o serviço no ar):
+
+```bash
+docker compose up -d gotenberg
+GOTENBERG_URL=http://localhost:3001 npm run test:integration -- pdf/gotenberg
+```
+
+Em produção, hospeda-se o **mesmo** container em rede privada (Railway/Render/Fly.io) atrás de
+token/gateway; só a aplicação o chama (Constituição, Princípio II / emenda 1.4.0).
+
 ## Documentação da fatia atual
 
 - Plano e contratos: [`specs/001-clerk-auth/plan.md`](specs/001-clerk-auth/plan.md)

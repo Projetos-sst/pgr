@@ -47,6 +47,18 @@
       "value": ""
     },
     {
+      "key": "formControlId",
+      "value": ""
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    },
+    {
+      "key": "folderId",
+      "value": ""
+    },
+    {
       "key": "pgrId",
       "value": ""
     },
@@ -55,7 +67,11 @@
       "value": ""
     },
     {
-      "key": "epiCatalogId",
+      "key": "riskAssessmentId",
+      "value": ""
+    },
+    {
+      "key": "controlMeasureId",
       "value": ""
     },
     {
@@ -96,6 +112,98 @@
     },
     {
       "key": "epiCatalogId",
+      "value": ""
+    },
+    {
+      "key": "trainingId",
+      "value": ""
+    },
+    {
+      "key": "trainingRecordId",
+      "value": ""
+    },
+    {
+      "key": "requiredTrainingId",
+      "value": ""
+    },
+    {
+      "key": "memberUserId",
+      "value": "user_xxx"
+    },
+    {
+      "key": "pgrPublicToken",
+      "value": "<token cru do publicUrl retornado no POST /pgr/:id/signature>"
+    },
+    {
+      "key": "vehicleId",
+      "value": ""
+    },
+    {
+      "key": "planId",
+      "value": ""
+    },
+    {
+      "key": "planItemId",
+      "value": ""
+    },
+    {
+      "key": "vehicularInspectionId",
+      "value": ""
+    },
+    {
+      "key": "equipmentCatalogId",
+      "value": ""
+    },
+    {
+      "key": "equipmentInspectionId",
+      "value": ""
+    },
+    {
+      "key": "safetyInspectionId",
+      "value": ""
+    },
+    {
+      "key": "workPermitId",
+      "value": ""
+    },
+    {
+      "key": "psychoCampaignId",
+      "value": ""
+    },
+    {
+      "key": "psychoQuestionId",
+      "value": ""
+    },
+    {
+      "key": "psychoRiskId",
+      "value": ""
+    },
+    {
+      "key": "esocialEventId",
+      "value": ""
+    },
+    {
+      "key": "esocialBatchId",
+      "value": ""
+    },
+    {
+      "key": "scheduleEventId",
+      "value": ""
+    },
+    {
+      "key": "serviceOrderId",
+      "value": ""
+    },
+    {
+      "key": "incidentId",
+      "value": ""
+    },
+    {
+      "key": "actionPlanId",
+      "value": ""
+    },
+    {
+      "key": "riskAuditId",
       "value": ""
     }
   ],
@@ -1160,6 +1268,292 @@
               "path": ["api", "v1", "pgr", "{{pgrId}}"]
             }
           }
+        },
+        {
+          "name": "PGR · Revisões",
+          "item": [
+            {
+              "name": "GET /pgr/:id/revisions (histórico)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "revisions"]
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/revisions (válido → 201)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "revisions"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"revisedAt\": \"2026-07-14\",\n  \"notes\": \"Descrição da revisão\"\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/revisions (revisionNumber no body → 422)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "revisions"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"revisedAt\": \"2026-07-14\",\n  \"notes\": \"Cliente antigo\",\n  \"revisionNumber\": 99\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · GES",
+          "item": [
+            {
+              "name": "GET /pgr/:id/ges (GES vinculados)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "ges"]
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/ges (vincula → 201)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "ges"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"gesId\": \"{{gesId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE /pgr/:id/ges/:gesId (desvincula → 204)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/ges/{{gesId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "ges", "{{gesId}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · Consolidada",
+          "item": [
+            {
+              "name": "GET /pgr/:id/consolidated (read-only; 5W2H + EPIs + S-2240)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/consolidated",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "consolidated"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · Assinatura",
+          "item": [
+            {
+              "name": "POST /pgr/:id/signature (cria → 201; publicUrl+QR)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/signature",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "signature"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ttlSeconds\": 259200\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /pgr/:id/signature (estado; sem token/URL)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/signature",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "signature"]
+                }
+              }
+            },
+            {
+              "name": "GET /signature-requests/:token (página pública, sem Clerk)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/signature-requests/{{pgrPublicToken}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["assinar", "{{pgrPublicToken}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "PGR · PDF",
+          "item": [
+            {
+              "name": "GET /pgr/:id/pdf (gera PDF via Gotenberg; ?color= opcional; application/pdf; 404/503)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/pdf?color=",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "pdf"],
+                  "query": [
+                    {
+                      "key": "color",
+                      "value": "",
+                      "description": "Cor hex da capa (ex.: %235b63f5); vazio = default"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -1377,6 +1771,524 @@
               "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "risks", "{{riskId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Avaliações de Risco",
+      "item": [
+        {
+          "name": "GET /risks/:riskId/assessments (histórico)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/assessments (create, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"uncertaintyDegree\": 0,\n  \"toleranceLimit\": \"85 dB(A) / NEN 8h\",\n  \"assessedAt\": \"2026-07-08\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/assessments (422 validação)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 9,\n  \"severity\": 3,\n  \"assessedAt\": \"2026-07-08\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/assessments (422 FK riskId inválido)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/99999999-9999-9999-9999-999999999999/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "99999999-9999-9999-9999-999999999999",
+                "assessments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"assessedAt\": \"2026-07-08\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /risk-assessments/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /risk-assessments/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 5,\n  \"severity\": 5,\n  \"uncertaintyDegree\": 1,\n  \"assessedAt\": \"2026-07-08\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /risk-assessments/:id (403 com x-dev-role client)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /risk-assessments/:id (404 inexistente/cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-assessments/99999999-9999-9999-9999-999999999999",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "risk-assessments",
+                "99999999-9999-9999-9999-999999999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /risk-assessments/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Medidas de Controle",
+      "item": [
+        {
+          "name": "GET /risks/:riskId/control-measures (lista NR-01)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/control-measures (create, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/control-measures (409 nível duplicado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/control-measures (422 validação: applicable sem actionWhat)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"administrative\",\n  \"applicable\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/control-measures (422 FK riskId inválido)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/00000000-0000-0000-0000-000000000000/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "00000000-0000-0000-0000-000000000000",
+                "control-measures"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"ppe\",\n  \"applicable\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /control-measures/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /control-measures/:id (update corpo completo, 200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /control-measures/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /risks/:riskId/control-measures (403 client)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+            }
+          }
+        },
+        {
+          "name": "GET /control-measures/:id (404 cross-tenant/inexistente)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/control-measures/{{controlMeasureId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "control-measures", "{{controlMeasureId}}"]
             }
           }
         }
@@ -1663,6 +2575,887 @@
       ]
     },
     {
+      "name": "Controle de Formulario (ISO)",
+      "item": [
+        {
+          "name": "GET /form-controls (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls?search=&formType=&companyId=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "formType",
+                  "value": ""
+                },
+                {
+                  "key": "companyId",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /form-controls (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /form-controls (409 codigo FRM duplicado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formType\": \"OS\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /form-controls/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls/{{formControlId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls", "{{formControlId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /form-controls/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls/{{formControlId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls", "{{formControlId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"01\",\n  \"issueDate\": \"2026-02-01\",\n  \"nonConformityNumber\": \"NC-002\",\n  \"position\": \"both\",\n  \"notes\": \"atualizado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /form-controls/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/form-controls/{{formControlId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "form-controls", "{{formControlId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documentos (GED)",
+      "item": [
+        {
+          "name": "GET /documents (list + KPIs + arvore)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents?folderId=&search=&docType=&validity=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"],
+              "query": [
+                {
+                  "key": "folderId",
+                  "value": ""
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "docType",
+                  "value": ""
+                },
+                {
+                  "key": "validity",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /documents (create, multipart)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "name",
+                  "value": "Laudo Ergonomico",
+                  "type": "text"
+                },
+                {
+                  "key": "docType",
+                  "value": "Laudo",
+                  "type": "text"
+                },
+                {
+                  "key": "validUntil",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "folderId",
+                  "value": "",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /documents/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /documents/:id (metadados)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Laudo revisado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /documents/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /documents/:id/versions (nova versao, multipart)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/versions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}", "versions"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /documents/:id/move",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/move",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}", "move"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folderId\": \"{{folderId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /documents/:id/download (URL assinada, TTL 60s)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}", "download"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pastas (GED)",
+      "item": [
+        {
+          "name": "GET /folders (arvore + breadcrumb)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/folders?parentId=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "folders"],
+              "query": [
+                {
+                  "key": "parentId",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /folders (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/folders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "folders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contratos\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /folders/:id (renomear)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/folders/{{folderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "folders", "{{folderId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Novo nome\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Treinamentos (catalogo)",
+      "item": [
+        {
+          "name": "GET /training-catalog (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog?search=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /training-catalog (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"NR-35 Trabalho em Altura\",\n  \"referenceNorm\": \"NR-35\",\n  \"workloadHours\": 8,\n  \"periodicity\": \"biennial\",\n  \"description\": \"Capacitacao obrigatoria para trabalho em altura\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /training-catalog/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /training-catalog/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"NR-35 Trabalho em Altura\",\n  \"referenceNorm\": \"NR-35\",\n  \"workloadHours\": 16,\n  \"periodicity\": \"biennial\",\n  \"description\": \"Atualizado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /training-catalog/:id (em uso -> 409 IN_USE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /training-catalog/:id/dependents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}/dependents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}", "dependents"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Realizacao de treinamento (training-records)",
+      "item": [
+        {
+          "name": "GET /training-records (list por funcionario)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records?employeeId={{employeeId}}&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records"],
+              "query": [
+                {
+                  "key": "employeeId",
+                  "value": "{{employeeId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /training-records (create — valid_until no servidor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"trainingId\": \"{{trainingId}}\",\n  \"completedAt\": \"2026-07-01\",\n  \"certificatePath\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /training-records/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records/{{trainingRecordId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records", "{{trainingRecordId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /training-records/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/training-records/{{trainingRecordId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "training-records", "{{trainingRecordId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Obrigatorios por funcao (job-role-required-trainings)",
+      "item": [
+        {
+          "name": "GET /job-role-required-trainings (list por funcao)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-role-required-trainings?jobRoleId={{jobRoleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-role-required-trainings"],
+              "query": [
+                {
+                  "key": "jobRoleId",
+                  "value": "{{jobRoleId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /job-role-required-trainings (add idempotente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-role-required-trainings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-role-required-trainings"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobRoleId\": \"{{jobRoleId}}\",\n  \"trainingId\": \"{{trainingId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /job-role-required-trainings/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-role-required-trainings/{{requiredTrainingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "job-role-required-trainings",
+                "{{requiredTrainingId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Metodologia de Risco",
       "item": [
         {
@@ -1718,7 +3511,67 @@
       ]
     },
     {
-      "name": "Catalogo de EPI",
+      "name": "Sugestao de riscos (IA)",
+      "item": [
+        {
+          "name": "POST /ges/{id}/risk-suggestions (sugere por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "risk-suggestions"]
+            }
+          }
+        },
+        {
+          "name": "POST /ges/{id}/risk-suggestions/accept (grava rascunhos)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suggestions\": [\n    {\n      \"agentType\": \"physical\",\n      \"description\": \"Ruido continuo\",\n      \"hazard\": \"Nivel acima de 85 dB(A)\",\n      \"sources\": \"Esmerilhadeira\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-suggestions/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "risk-suggestions", "accept"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalogo de EPI (epi-catalog)",
       "item": [
         {
           "name": "GET /epi-catalog (list)",
@@ -1745,7 +3598,8 @@
                 },
                 {
                   "key": "type",
-                  "value": ""
+                  "value": "",
+                  "description": "epi|machine"
                 },
                 {
                   "key": "page",
@@ -1784,7 +3638,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"epi\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Luva Nitrílica\",\n  \"ca\": \"31469\",\n  \"manufacturer\": \"\",\n  \"norm\": \"\",\n  \"size\": \"\"\n}"
+              "raw": "{\n  \"type\": \"epi\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Capacete de Seguranca\",\n  \"ca\": \"12345\",\n  \"caValidUntil\": \"2027-12-31\",\n  \"manufacturer\": \"Fabricante X\",\n  \"norm\": \"NBR 8221\",\n  \"size\": \"M\",\n  \"unitOfMeasure\": \"un\",\n  \"description\": \"EPI de protecao da cabeca\"\n}"
             }
           }
         },
@@ -1834,7 +3688,28 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"epi\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Luva Nitrílica (editada)\",\n  \"ca\": \"31469\"\n}"
+              "raw": "{\n  \"type\": \"epi\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Capacete de Seguranca (atualizado)\",\n  \"ca\": \"12345\",\n  \"caValidUntil\": \"2028-06-30\",\n  \"manufacturer\": \"Fabricante X\",\n  \"norm\": \"NBR 8221\",\n  \"size\": \"G\",\n  \"unitOfMeasure\": \"un\",\n  \"description\": \"Atualizado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /epi-catalog/:id (em uso -> 409 IN_USE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}"]
             }
           }
         },
@@ -1856,27 +3731,6 @@
               "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}/dependents",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}", "dependents"]
-            }
-          }
-        },
-        {
-          "name": "DELETE /epi-catalog/:id",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "x-dev-tenant",
-                "value": "{{devTenant}}"
-              },
-              {
-                "key": "x-dev-role",
-                "value": "{{devRole}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}"]
             }
           }
         }
@@ -2153,6 +4007,1933 @@
       ]
     },
     {
+      "name": "Perfil (plataforma)",
+      "item": [
+        {
+          "name": "GET /profile (self)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile"]
+            }
+          }
+        },
+        {
+          "name": "PUT /profile (atualiza app-managed)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"11999998888\",\n  \"cpf\": \"123.456.789-09\",\n  \"jobTitle\": \"Tecnico de Seguranca\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Equipe (plataforma)",
+      "item": [
+        {
+          "name": "GET /team (roster, ?search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /team/invitations (convite, PRO, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team/invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team", "invitations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"novo@exemplo.com\",\n  \"role\": \"collaborator\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /team/:userId (papel, owner)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team/{{memberUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team", "{{memberUserId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"owner\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /team/:userId (remove, 204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/team/{{memberUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "team", "{{memberUserId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard (plataforma)",
+      "item": [
+        {
+          "name": "GET /dashboard/summary (agregacoes do tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard", "summary"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Veiculos (inspecoes)",
+      "item": [
+        {
+          "name": "GET /vehicles (?search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /vehicles (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"type\": \"truck\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH\",\n  \"initialKm\": 1000\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /vehicles/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "{{vehicleId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicles/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "{{vehicleId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"type\": \"truck\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH\",\n  \"initialKm\": 1000\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /vehicles/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "{{vehicleId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Planos de inspecao",
+      "item": [
+        {
+          "name": "GET /inspection-plans (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans?search=&type=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "type",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /inspection-plans (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota\",\n  \"description\": \"Inspeção pré-uso\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Pneus\",\n      \"defaultValue\": false\n    },\n    {\n      \"description\": \"Luzes\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /inspection-plans/:id (inclui items)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans", "{{planId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /inspection-plans/:id (substitui itens)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans", "{{planId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota (v2)\",\n  \"description\": \"Revisado\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Documentação\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /inspection-plans/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inspection-plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inspection-plans", "{{planId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes veiculares",
+      "item": [
+        {
+          "name": "GET /vehicular-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections?status=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /vehicular-inspections (passo 1 cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Ana\",\n  \"driverName\": \"João\",\n  \"currentKm\": 15000,\n  \"route\": \"Obra A → Obra B\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /vehicular-inspections/:id (itens+respostas)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections", "{{vehicularInspectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicular-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections", "{{vehicularInspectionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Ana (rev)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /vehicular-inspections/:id/checklist (passo 2 conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}/checklist",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "vehicular-inspections",
+                "{{vehicularInspectionId}}",
+                "checklist"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responses\": [\n    {\n      \"planItemId\": \"{{planItemId}}\",\n      \"value\": true,\n      \"observation\": \"ok\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /vehicular-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicular-inspections/{{vehicularInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicular-inspections", "{{vehicularInspectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes de equipamentos",
+      "item": [
+        {
+          "name": "GET /equipment-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections?status=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /equipment-inspections (passo 1 cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentCatalogId\": \"{{equipmentCatalogId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Marcos\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /equipment-inspections/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections", "{{equipmentInspectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /equipment-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections", "{{equipmentInspectionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentCatalogId\": \"{{equipmentCatalogId}}\",\n  \"planId\": \"{{planId}}\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"responsible\": \"Marcos (rev)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /equipment-inspections/:id/checklist (passo 2 conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}/checklist",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "equipment-inspections",
+                "{{equipmentInspectionId}}",
+                "checklist"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responses\": [\n    {\n      \"planItemId\": \"{{planItemId}}\",\n      \"value\": true,\n      \"observation\": \"ok\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /equipment-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/equipment-inspections/{{equipmentInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "equipment-inspections", "{{equipmentInspectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspecoes de seguranca",
+      "item": [
+        {
+          "name": "GET /safety-inspections (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections?status=&category=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "category",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /safety-inspections (cabecalho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"safety\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"planned\": true,\n  \"area\": \"Almoxarifado\",\n  \"companyId\": \"{{companyId}}\",\n  \"responsible\": \"Fiscal\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /safety-inspections/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections", "{{safetyInspectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /safety-inspections/:id (cabecalho)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections", "{{safetyInspectionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"safety\",\n  \"inspectedAt\": \"2026-07-15\",\n  \"planned\": false,\n  \"area\": \"Pátio\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /safety-inspections/:id/occurrences (conclui)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}/occurrences",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "safety-inspections",
+                "{{safetyInspectionId}}",
+                "occurrences"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"occurrences\": [\n    {\n      \"description\": \"Piso escorregadio\",\n      \"severity\": \"high\"\n    },\n    {\n      \"description\": \"Sinalização ausente\",\n      \"severity\": \"medium\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /safety-inspections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/safety-inspections/{{safetyInspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "safety-inspections", "{{safetyInspectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permissoes de trabalho (PT)",
+      "item": [
+        {
+          "name": "GET /work-permits (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits?search=&status=&type=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "type",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /work-permits (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"PT-2026-001\",\n  \"type\": \"hot_work\",\n  \"status\": \"draft\",\n  \"companyId\": \"{{companyId}}\",\n  \"area\": \"Caldeiraria\",\n  \"description\": \"Solda em tubulação de vapor\",\n  \"validFrom\": \"2026-07-15\",\n  \"validUntil\": \"2026-07-16\",\n  \"requestedBy\": \"Encarregado\",\n  \"precautions\": \"Extintor + vigia de fogo\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /work-permits/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /work-permits/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"PT-2026-001\",\n  \"type\": \"hot_work\",\n  \"status\": \"active\",\n  \"description\": \"Solda (liberada)\",\n  \"validFrom\": \"2026-07-15\",\n  \"validUntil\": \"2026-07-16\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /work-permits/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Psicossocial (campanhas)",
+      "item": [
+        {
+          "name": "GET /psychosocial-campaigns (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns?status=&workUnitId=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-campaigns"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "workUnitId",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /psychosocial-campaigns (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-campaigns"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Clima organizacional 2026\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"startsAt\": \"2026-07-01\",\n  \"endsAt\": \"2026-07-31\",\n  \"themeColor\": \"#2563eb\",\n  \"workerDescription\": \"Ajude-nos a melhorar o ambiente de trabalho.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /psychosocial-campaigns/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-campaigns", "{{psychoCampaignId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /psychosocial-campaigns/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-campaigns", "{{psychoCampaignId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Clima organizacional 2026\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"startsAt\": \"2026-07-01\",\n  \"endsAt\": \"2026-07-31\",\n  \"themeColor\": \"#2563eb\",\n  \"workerDescription\": \"Ajude-nos a melhorar o ambiente de trabalho.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /:id/status (transicao)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/questions (add)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/questions",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Sinto-me sobrecarregado no trabalho?\",\n  \"questionType\": \"likert\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /:id/questions/:qid",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/questions/{{psychoQuestionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "questions",
+                "{{psychoQuestionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/questions/:qid/reorder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/questions/{{psychoQuestionId}}/reorder",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "questions",
+                "{{psychoQuestionId}}",
+                "reorder"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"up\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /:id/stats (dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "stats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/risks (derivar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/risks",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "risks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/risks/:rid/register (PGR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/risks/{{psychoRiskId}}/register",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "risks",
+                "{{psychoRiskId}}",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gesId\": \"{{gesId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/conclude (encerrar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}/conclude",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "psychosocial-campaigns",
+                "{{psychoCampaignId}}",
+                "conclude"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /psychosocial-campaigns/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-campaigns", "{{psychoCampaignId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "eSocial (SST)",
+      "item": [
+        {
+          "name": "GET /esocial-events (list+filtros)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events?status=&eventType=&dateFrom=&dateTo=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "eventType",
+                  "value": ""
+                },
+                {
+                  "key": "dateFrom",
+                  "value": ""
+                },
+                {
+                  "key": "dateTo",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-events (gerar S-2210)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"S-2210\",\n  \"input\": {\n    \"cpf\": \"12345678901\",\n    \"dataAcidente\": \"2026-02-01\",\n    \"descricao\": \"Corte no dedo\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-events (gerar S-2240)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"S-2240\",\n  \"input\": {\n    \"cpf\": \"12345678901\",\n    \"dataInicio\": \"2026-01-10\",\n    \"codigoAgenteNocivo\": \"01.01.001\",\n    \"unidadeMedida\": \"db_a\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /esocial-events/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-events/{{esocialEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-events", "{{esocialEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /esocial-batches (lotes)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-batches"]
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-batches (enviar lote)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-batches"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventIds\": [\n    \"{{esocialEventId}}\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /esocial-batches/:id/return (consultar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-batches/{{esocialBatchId}}/return",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-batches", "{{esocialBatchId}}", "return"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agenda (plataforma)",
+      "item": [
+        {
+          "name": "GET /schedule-events (?eventType&from&to)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedule-events?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedule-events"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "eventType",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /schedule-events (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedule-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedule-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"inspection\",\n  \"title\": \"Inspecao do canteiro\",\n  \"eventDate\": \"2026-08-01\",\n  \"description\": \"Vistoria mensal\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /schedule-events/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedule-events/{{scheduleEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedule-events", "{{scheduleEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /schedule-events/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedule-events/{{scheduleEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedule-events", "{{scheduleEventId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"inspection\",\n  \"title\": \"Inspecao do canteiro\",\n  \"eventDate\": \"2026-08-01\",\n  \"description\": \"Vistoria mensal\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /schedule-events/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedule-events/{{scheduleEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedule-events", "{{scheduleEventId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Integracoes externas",
       "description": "Autofill de formularios (ViaCEP/CNPJ). Exige SESSAO Clerk real (nao ha bypass dev): cole o cookie __session em {{sessionCookie}}. Sem sessao -> 307 redirect. Dados publicos, sem tenant.",
       "item": [
@@ -2269,6 +6050,1020 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Ordens de Serviço (023)",
+      "item": [
+        {
+          "name": "GET /service-orders (lista)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /service-orders (create, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"OS manutencao prensa\",\n  \"openedAt\": \"2026-07-15\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /service-orders/:id (detalhe + itens)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /service-orders/:id (update; itens imutáveis se assinada)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"OS manutencao prensa (rev)\",\n  \"openedAt\": \"2026-07-15\",\n  \"status\": \"in_progress\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /service-orders/:id (204; só não-assinada + open/in_progress)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /service-orders/:id/status (transição)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /service-orders/:id/signature (estado derivado, sem token/URL)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}/signature",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}", "signature"]
+            }
+          }
+        },
+        {
+          "name": "POST /service-orders/:id/signature (cria; 201; publicUrl/QR só aqui)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}/signature",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders", "{{serviceOrderId}}", "signature"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /service-orders (422 VALIDATION — title ausente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"openedAt\": \"2026-07-15\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /service-orders (403 FORBIDDEN — role client)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"OS manutencao prensa\",\n  \"openedAt\": \"2026-07-15\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Incidentes/Acidentes (023)",
+      "item": [
+        {
+          "name": "GET /incidents (lista; filtros status/company_id/q)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /incidents (create, 201; CAT interno)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"occurredAt\": \"2026-07-10T14:30:00Z\",\n  \"type\": \"typical\",\n  \"category\": \"without_leave\",\n  \"severity\": \"minor\",\n  \"location\": \"Setor de usinagem\",\n  \"description\": \"Quase-acidente com peça em movimento\",\n  \"catNumber\": \"CAT-INTERNO-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /incidents/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents/{{incidentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents", "{{incidentId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /incidents/:id (update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents/{{incidentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents", "{{incidentId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"occurredAt\": \"2026-07-10T14:30:00Z\",\n  \"type\": \"typical\",\n  \"category\": \"without_leave\",\n  \"severity\": \"minor\",\n  \"location\": \"Setor de usinagem\",\n  \"description\": \"Quase-acidente com peça em movimento\",\n  \"catNumber\": \"CAT-INTERNO-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /incidents/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents/{{incidentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents", "{{incidentId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /incidents/:id/status (transição; conclusão exige justificativa)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents/{{incidentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents", "{{incidentId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"awaiting_planning\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /incidents/:id/status (422 — concluir com plano ativo/sem justificativa)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents/{{incidentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents", "{{incidentId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /incidents (403 FORBIDDEN — role client)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/incidents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "incidents"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"occurredAt\": \"2026-07-10T14:30:00Z\",\n  \"type\": \"typical\",\n  \"category\": \"without_leave\",\n  \"severity\": \"minor\",\n  \"location\": \"Setor de usinagem\",\n  \"description\": \"Quase-acidente com peça em movimento\",\n  \"catNumber\": \"CAT-INTERNO-001\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Planos de Ação 5W2H (023)",
+      "item": [
+        {
+          "name": "GET /action-plans (central; filtros status/origin_type/origin_id/overdue)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /action-plans (create p/ risco, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"{{riskId}}\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /action-plans (create p/ incidente, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"incident\",\n  \"originId\": \"{{incidentId}}\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /action-plans (422 FK_NOT_FOUND — origem inexistente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"99999999-9999-9999-9999-999999999999\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /action-plans (422 VALIDATION — origem não suportada)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"inspection\",\n  \"originId\": \"{{riskId}}\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /action-plans/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans/{{actionPlanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans", "{{actionPlanId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /action-plans/:id (update 5W2H)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans/{{actionPlanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans", "{{actionPlanId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"what\": \"Revisado\",\n  \"why\": \"Ajuste\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira\",\n  \"priority\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /action-plans/:id/status (planned→in_progress→completed/cancelled)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans/{{actionPlanId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans", "{{actionPlanId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /action-plans/:id (204 se planned; 409 IN_USE se iniciado)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/action-plans/{{actionPlanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "action-plans", "{{actionPlanId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auditorias de Risco (023)",
+      "item": [
+        {
+          "name": "GET /risk-audits (kanban; filtros status/origin_type)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits?page=1&pageSize=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "100"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risk-audits (create, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"{{riskId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risk-audits (409 IN_USE — segunda ativa p/ mesma origem)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"{{riskId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risk-audits (422 FK_NOT_FOUND — origem inválida/cross-tenant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"99999999-9999-9999-9999-999999999999\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /risk-audits/:id (inclui planos da origem)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits/{{riskAuditId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits", "{{riskAuditId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /risk-audits/:id/status (awaiting_analysis→planning_actions)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits/{{riskAuditId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits", "{{riskAuditId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"planning_actions\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /risk-audits/:id/status (completed; justificativa obrigatória)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits/{{riskAuditId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits", "{{riskAuditId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\",\n  \"justification\": \"Ações planejadas e tratadas\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /risk-audits/:id/status (422 — transição inválida / sem justificativa)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits/{{riskAuditId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risk-audits", "{{riskAuditId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risk-audits/:id/suggest-action-plan (IA; 200; 402 QUOTA / 502 AI_UNAVAILABLE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risk-audits/{{riskAuditId}}/suggest-action-plan",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "risk-audits",
+                "{{riskAuditId}}",
+                "suggest-action-plan"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
         }
       ]
     }

@@ -12,8 +12,12 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("@clerk/nextjs", () => ({
-  SignUp: ({ path }: { path: string }) => (
-    <div data-testid="clerk-sign-up" data-path={path}>
+  SignUp: ({ path, forceRedirectUrl }: { path: string; forceRedirectUrl?: string }) => (
+    <div
+      data-testid="clerk-sign-up"
+      data-path={path}
+      data-force-redirect={forceRedirectUrl}
+    >
       sign-up widget
     </div>
   ),
@@ -33,7 +37,7 @@ const renderPage = async (
   return render(node as React.ReactElement);
 };
 
-describe("SignUpPage (invite-only)", () => {
+describe("SignUpPage (cadastro aberto — spec 005)", () => {
   beforeEach(() => {
     mockedAuth.mockReset();
     mockedAuth.mockResolvedValue({
@@ -42,17 +46,22 @@ describe("SignUpPage (invite-only)", () => {
     mockedRedirect.mockClear();
   });
 
-  it("anônimo + sem __clerk_ticket: exibe mensagem de convite obrigatório", async () => {
+  it("anônimo + sem __clerk_ticket: monta o <SignUp /> aberto (sem gate de convite)", async () => {
     await renderPage({});
-    expect(screen.queryByTestId("clerk-sign-up")).toBeNull();
-    expect(screen.getByText(/Cadastro por convite/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Entrar/i })).toHaveAttribute(
-      "href",
-      "/sign-in",
+    const node = screen.getByTestId("clerk-sign-up");
+    expect(node).toBeInTheDocument();
+    expect(node).toHaveAttribute("data-path", "/sign-up");
+  });
+
+  it("aplica forceRedirectUrl=/welcome (independe de config do dashboard Clerk)", async () => {
+    await renderPage({});
+    expect(screen.getByTestId("clerk-sign-up")).toHaveAttribute(
+      "data-force-redirect",
+      "/welcome",
     );
   });
 
-  it("anônimo + __clerk_ticket: monta o <SignUp /> do Clerk", async () => {
+  it("anônimo + __clerk_ticket: também monta o <SignUp /> (fluxo de convite segue funcionando)", async () => {
     await renderPage({ __clerk_ticket: "abc123" });
     const node = screen.getByTestId("clerk-sign-up");
     expect(node).toBeInTheDocument();
@@ -85,15 +94,18 @@ describe("SignUpPage (invite-only)", () => {
     );
   });
 
-  it("ticket inválido (array): tratado como ausente — mostra mensagem de convite", async () => {
-    await renderPage({ __clerk_ticket: ["a", "b"] });
-    expect(screen.queryByTestId("clerk-sign-up")).toBeNull();
-    expect(screen.getByText(/Cadastro por convite/i)).toBeInTheDocument();
+  it("ticket inválido (array) + logado: tratado como ausente — redireciona para /dashboard", async () => {
+    mockedAuth.mockResolvedValue({
+      isAuthenticated: true,
+      userId: "u1",
+    } as unknown as Awaited<ReturnType<typeof auth>>);
+    await expect(
+      SignUpPage({ searchParams: Promise.resolve({ __clerk_ticket: ["a", "b"] }) }),
+    ).rejects.toThrow("__redirect:/dashboard");
   });
 
-  it("ticket inválido (string vazia): tratado como ausente", async () => {
+  it("ticket inválido (string vazia): tratado como ausente — <SignUp/> aberto normalmente", async () => {
     await renderPage({ __clerk_ticket: "" });
-    expect(screen.queryByTestId("clerk-sign-up")).toBeNull();
-    expect(screen.getByText(/Cadastro por convite/i)).toBeInTheDocument();
+    expect(screen.getByTestId("clerk-sign-up")).toBeInTheDocument();
   });
 });

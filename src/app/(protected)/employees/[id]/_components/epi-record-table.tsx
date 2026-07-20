@@ -72,7 +72,7 @@ export function EpiRecordTable({
 
   const totalPages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
   const inputClass =
-    "rounded-md border border-black/15 bg-white px-3 py-1.5 text-sm dark:border-white/15 dark:bg-zinc-900";
+    "glass-input text-text rounded-card px-3 py-1.5 text-sm outline-none";
 
   return (
     <div className="epi-record-print flex flex-col gap-3">
@@ -86,12 +86,12 @@ export function EpiRecordTable({
         }
       `}</style>
 
-      <p className="hidden text-sm font-medium print:block">
+      <p className="text-text hidden text-sm font-medium print:block">
         Ficha de EPI — {employeeName}
       </p>
 
       <div className="epi-record-no-print flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
+        <label className="text-text-subtle flex flex-col gap-1 text-xs">
           Status
           <select
             value={status}
@@ -109,7 +109,7 @@ export function EpiRecordTable({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
+        <label className="text-text-subtle flex flex-col gap-1 text-xs">
           De
           <input
             type="date"
@@ -121,7 +121,7 @@ export function EpiRecordTable({
             className={inputClass}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
+        <label className="text-text-subtle flex flex-col gap-1 text-xs">
           Até
           <input
             type="date"
@@ -136,7 +136,7 @@ export function EpiRecordTable({
         <button
           type="button"
           onClick={() => window.print()}
-          className="ml-auto rounded-md border border-black/15 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15"
+          className="glass-panel text-text-muted rounded-card hover:text-text ml-auto px-3 py-1.5 text-sm font-semibold transition-colors"
         >
           Imprimir
         </button>
@@ -158,7 +158,7 @@ export function EpiRecordTable({
           ]}
         >
           {data.rows.map((row) => (
-            <tr key={row.itemId} className="border-t border-black/5 dark:border-white/5">
+            <tr key={row.itemId} className="border-t border-white/50">
               <td className="px-4 py-2">{row.ca ?? "—"}</td>
               <td className="px-4 py-2">{row.epiName}</td>
               <td className="px-4 py-2">{row.size ?? "—"}</td>
@@ -177,7 +177,7 @@ export function EpiRecordTable({
 
       {totalPages > 1 ? (
         <nav className="epi-record-no-print flex items-center justify-between gap-4 text-sm">
-          <span className="text-zinc-500">
+          <span className="text-text-subtle">
             Página {page} de {totalPages} · {data.total} registro(s)
           </span>
           <div className="flex gap-2">
@@ -185,7 +185,7 @@ export function EpiRecordTable({
               type="button"
               disabled={pending || page <= 1}
               onClick={() => load({ page: page - 1 })}
-              className="rounded-md border border-black/15 px-3 py-1 transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 font-semibold transition-colors disabled:opacity-50"
             >
               Anterior
             </button>
@@ -193,7 +193,7 @@ export function EpiRecordTable({
               type="button"
               disabled={pending || page >= totalPages}
               onClick={() => load({ page: page + 1 })}
-              className="rounded-md border border-black/15 px-3 py-1 transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+              className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 font-semibold transition-colors disabled:opacity-50"
             >
               Próxima
             </button>

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 
 import {
   resolveExposedTotal,
@@ -159,6 +159,18 @@ export async function updateGes(
         .returning();
       return row ?? null;
     }),
+  );
+}
+
+export type GesOption = { id: string; name: string };
+
+export async function listGesOptions(orgId: string): Promise<GesOption[]> {
+  return withOrg(orgId, (tx) =>
+    tx
+      .select({ id: ges.id, name: ges.name })
+      .from(ges)
+      .where(eq(ges.orgId, orgId))
+      .orderBy(asc(ges.name)),
   );
 }
 

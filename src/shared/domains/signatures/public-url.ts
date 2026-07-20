@@ -1,6 +1,6 @@
 /** Caminho da rota pública de assinatura. */
 export function publicSignaturePath(token: string): string {
-  return `/assinar/${token}`;
+  return `/signature-requests/${token}`;
 }
 
 /**

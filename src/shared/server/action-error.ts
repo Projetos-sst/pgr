@@ -9,6 +9,7 @@ const PG_ERROR_MAP: Record<string, { code: string; message: string }> = {
   "23503": { code: "FK_NOT_FOUND", message: "Referência inexistente neste escritório." },
   "23514": { code: "VALIDATION", message: "Valor fora do permitido." },
   "23502": { code: "VALIDATION", message: "Campo obrigatório ausente." },
+  "22P02": { code: "VALIDATION", message: "Formato de dado inválido." },
 };
 
 const PG_SQLSTATE = /^[0-9A-Z]{5}$/;

@@ -14,7 +14,19 @@ jest.mock("next/headers", () => ({
 }));
 
 jest.mock("@clerk/nextjs", () => ({
+  UserButton: () => <div data-testid="user-button" />,
   OrganizationSwitcher: () => <div data-testid="org-switcher" />,
+}));
+
+// A barra unificada compõe o TenantSwitcher (server component → cadeia de DB);
+// mockar evita carregar a cadeia supabase no import do layout neste teste jsdom.
+jest.mock("@/app/_components/tenant-switcher", () => ({
+  TenantSwitcher: () => <div data-testid="tenant-switcher" />,
+}));
+
+// Mesmo motivo: o sino de notificações importa Server Action → cadeia de DB.
+jest.mock("@/app/(protected)/_ui/notifications-bell", () => ({
+  NotificationsBell: () => <div data-testid="notifications-bell" />,
 }));
 
 jest.mock("@/shared/auth/require-tenant-context", () => ({

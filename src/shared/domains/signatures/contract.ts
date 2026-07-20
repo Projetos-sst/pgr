@@ -1,13 +1,21 @@
 import type { ZodType } from "zod";
 
 import { demoPayloadSchema } from "./targets/demo";
+import { inspectionPayloadSchema } from "./targets/inspection";
+import { pgrSignaturePayloadSchema } from "./targets/pgr";
+import { serviceOrderSignaturePayloadSchema } from "./targets/service-order";
 
 /**
  * Tipos de alvo suportados. Cresce ao registrar novos consumidores — adicionar
  * um novo módulo é +1 entrada no registry, **zero mudança de schema** (o banco
  * armazena `target_type`/`target_id`/`payload` genéricos).
  */
-export const SIGNATURE_TARGET_TYPES = ["demo"] as const;
+export const SIGNATURE_TARGET_TYPES = [
+  "demo",
+  "inspection",
+  "pgr",
+  "service_order",
+] as const;
 export type SignatureTargetType = (typeof SIGNATURE_TARGET_TYPES)[number];
 
 export type TargetRegistryEntry = {
@@ -22,6 +30,9 @@ export type TargetRegistryEntry = {
  */
 export const signatureTargetRegistry: Record<SignatureTargetType, TargetRegistryEntry> = {
   demo: { payloadSchema: demoPayloadSchema },
+  inspection: { payloadSchema: inspectionPayloadSchema },
+  pgr: { payloadSchema: pgrSignaturePayloadSchema },
+  service_order: { payloadSchema: serviceOrderSignaturePayloadSchema },
 };
 
 export function isSignatureTargetType(value: string): value is SignatureTargetType {

@@ -59,8 +59,8 @@ export function EpiStockForm({
 
       {isEdit ? (
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Item do catálogo</span>
-          <p className="rounded-md border border-black/10 bg-black/3 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5">
+          <span className="text-text-muted text-sm font-semibold">Item do catálogo</span>
+          <p className="glass-panel text-text rounded-card px-3 py-2 text-sm">
             {stock!.name}
             {stock!.ca ? ` · CA ${stock!.ca}` : ""}
           </p>
@@ -89,7 +89,7 @@ export function EpiStockForm({
       />
 
       {isEdit ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-text-subtle text-sm">
           Saldo atual: <strong>{stock!.currentBalance}</strong>. O saldo é alterado apenas
           por movimentações de estoque — não é editável aqui.
         </p>

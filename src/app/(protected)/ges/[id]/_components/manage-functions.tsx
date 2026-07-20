@@ -10,6 +10,9 @@ import {
   updateGesJobRoleAction,
 } from "@/shared/server/actions/pgr/ges";
 import type { GesJobRoleItem, JobRoleOption } from "@/shared/domains/pgr/ges";
+import { GES_FIELD_HINTS } from "@/shared/domains/pgr/field-hints";
+
+import { FieldHint } from "../../../_ui/field-hint";
 
 export function ManageFunctions({ gesId }: { gesId: string }) {
   const [linked, setLinked] = useState<GesJobRoleItem[]>([]);
@@ -80,18 +83,22 @@ export function ManageFunctions({ gesId }: { gesId: string }) {
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-black/10 p-4 dark:border-white/10">
+    <section className="glass-card flex flex-col gap-4 p-4">
       <header className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Funções vinculadas</h2>
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">
+        <h2 className="text-text text-lg font-semibold">Funções vinculadas</h2>
+        <span className="text-text-muted text-sm">
           Expostos (soma): <strong>{exposedWorkers}</strong>
         </span>
       </header>
 
+      <FieldHint>{GES_FIELD_HINTS.functions}</FieldHint>
+
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       {linked.length === 0 ? (
-        <p className="text-sm text-zinc-500">Nenhuma função vinculada (expostos = 0).</p>
+        <p className="text-text-subtle text-sm">
+          Nenhuma função vinculada (expostos = 0).
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
           {linked.map((item) => (
@@ -106,13 +113,13 @@ export function ManageFunctions({ gesId }: { gesId: string }) {
         </ul>
       )}
 
-      <div className="flex flex-wrap items-end gap-3 border-t border-black/5 pt-4 dark:border-white/5">
+      <div className="flex flex-wrap items-end gap-3 border-t border-white/50 pt-4">
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Adicionar função</span>
+          <span className="text-text-muted text-sm font-medium">Adicionar função</span>
           <select
             value={newJobRoleId}
             onChange={(e) => setNewJobRoleId(e.target.value)}
-            className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
           >
             <option value="">— selecione —</option>
             {available.map((opt) => (
@@ -123,20 +130,20 @@ export function ManageFunctions({ gesId }: { gesId: string }) {
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Nº de trabalhadores</span>
+          <span className="text-text-muted text-sm font-medium">Nº de trabalhadores</span>
           <input
             type="number"
             min={1}
             value={newWorkerCount}
             onChange={(e) => setNewWorkerCount(e.target.value)}
-            className="w-32 rounded-md border border-black/15 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-zinc-900"
+            className="glass-input text-text rounded-card w-32 px-3 py-2 text-sm outline-none"
           />
         </label>
         <button
           type="button"
           onClick={addLink}
           disabled={pending || !newJobRoleId}
-          className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-50 dark:bg-white dark:text-black"
+          className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold disabled:opacity-50"
         >
           Adicionar
         </button>
@@ -158,20 +165,20 @@ function LinkedRow({
 }) {
   const [count, setCount] = useState(String(item.workerCount));
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-md border border-black/5 px-3 py-2 dark:border-white/5">
-      <span className="flex-1 font-medium">{item.title}</span>
+    <li className="glass-panel rounded-card flex flex-wrap items-center gap-3 px-3 py-2">
+      <span className="text-text flex-1 font-medium">{item.title}</span>
       <input
         type="number"
         min={1}
         value={count}
         onChange={(e) => setCount(e.target.value)}
-        className="w-24 rounded-md border border-black/15 bg-white px-2 py-1 text-sm dark:border-white/15 dark:bg-zinc-900"
+        className="glass-input text-text rounded-card w-24 px-2 py-1 text-sm outline-none"
       />
       <button
         type="button"
         onClick={() => onSave(item.id, count)}
         disabled={pending}
-        className="rounded-md border border-black/15 px-3 py-1 text-sm transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
+        className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-50"
       >
         Salvar
       </button>
@@ -179,7 +186,7 @@ function LinkedRow({
         type="button"
         onClick={() => onRemove(item.id)}
         disabled={pending}
-        className="rounded-md border border-red-300 px-3 py-1 text-sm text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400"
+        className="rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
       >
         Remover
       </button>

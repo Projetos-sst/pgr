@@ -15,21 +15,24 @@ const isPublicRoute = createRouteMatcher([
   // Assinatura publica de entrega de EPI: a credencial e o proprio token HMAC
   // (verificado na rota), nao a sessao Clerk.
   "/sign/(.*)",
-  // Assinatura publica da infra generica (fatia 010): credencial = token opaco
-  // hasheado, verificado pela propria rota via withSignatureToken.
-  "/assinar/(.*)",
+  // Assinatura publica generica (fatia 010 + PGR na 022): a credencial e o token
+  // (resolvido pela policy de capability), nao a sessao Clerk.
+  "/signature-requests/(.*)",
+  // Questionario psicossocial publico e anonimo (fatia 041): credencial = token
+  // da campanha (policy de capability), nunca sessao Clerk.
+  "/psychosocial-response/(.*)",
   "/api/webhooks/(.*)",
   ...(devApiBypass ? ["/api/v1/(.*)"] : []),
 ]);
 
-// "/sign/" e "/assinar/" cobrem as rotas publicas de assinatura (nunca cachear o
-// estado da entrega/pedido).
+// "/sign/" e "/signature-requests/" cobrem as rotas publicas de assinatura (nunca cachear o estado).
 const NO_STORE_PATH_PREFIXES = [
   "/api/",
   "/sign-in",
   "/sign-up",
   "/sign/",
-  "/assinar/",
+  "/signature-requests/",
+  "/psychosocial-response/",
   "/dashboard",
 ];
 

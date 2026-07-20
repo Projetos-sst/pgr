@@ -48,7 +48,82 @@ Reference implementation to copy from: **companies** (`actions/pgr/companies.ts`
 
 <!-- SPECKIT START -->
 
-Branch atual: **`feature/epi-module-completion`**. Fatia atual (`012`) — **Conclusão da Fase 02 /
+Branch atual: **`feature/documents-data-model`**. Fatia atual (`023`) — **Modelo de dados de
+Documentos, Pastas e Jobs** (Fase 05, issue #33) — fatia de modelagem pura (schema + migration +
+RLS + testes), análoga às 006/008, sem UI/CRUD. Plan: `.specs/023-documents-data-model/plan.md`
+(spec/research/data-model/contracts/quickstart no mesmo diretório; brainstorms da fase em
+`claudedocs/fase-05-brainstorms/`). 3 tabelas (`folders`, `documents`, `jobs`) + 3 enums
+(`document_status` `generating|ready`, `job_type` `pdf_batch`, `job_status`
+`pending|processing|done|failed`), migration **`0025_documents_data_model`** (renumerada de `0024` no rebase — o develop pós-#175
+trouxe a `0024_phase_06_safety_workflows`). Decisões: 1 linha
+por versão agrupada por `document_group_id` + `UNIQUE(org_id, group, version)`; `doc_type` texto
+livre; validade **derivada na leitura** (`classifyDocumentValidity` em
+`src/shared/domains/documents/validity.ts`, espelho da 017; `valid_until date` nullable);
+unicidade de pasta irmã (incl. raiz) via `UNIQUE ... NULLS NOT DISTINCT` (PG≥15); ON DELETE
+RESTRICT na cadeia `folders→folders`/`documents→folders` (CASCADE só no org); vínculo polimórfico
+`related_entity_type/related_entity_id` sem FK + CHECK completo-ou-vazio + índice parcial
+(conjunto fechado zod, inicial `pgr`); fila com claim atômico `FOR UPDATE SKIP LOCKED` +
+`locked_at` p/ stale claim (contrato SQL em contracts/ — worker é da #39, leitura administrativa
+fora do `app_runtime` via precedente `caepi-upsert`/`admin.ts`, escrita sempre
+`withOrg(job.org_id)`; **nenhuma policy nova além do isolamento**). Testes: unit (validade) +
+integração Postgres efêmero (RLS 3 tabelas, unicidades, RESTRICT, claim concorrente).
+Constitution Check: sem violações. Base: `develop`.
+
+Fatia anterior (`019`) — **Implantação do design system
+do redesign visual** nas telas já implementadas (fatia de UI transversal, sem módulo de negócio novo).
+Plan: `.specs/019-redesign-implantation/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
+diretório). Fonte da verdade do "como": `docs/briefings/briefing-redesign-implantation.md` (+
+`docs/briefings/redesign-backlog-telas.md` cataloga as ~20 telas de módulos inexistentes, fora de
+escopo). Aplica os tokens dos mockups `sst-project/redesign/*.dc.html` (indigo `#5b63f5`, Manrope +
+JetBrains Mono, cards glass/blur, raio ~12px, sombras suaves) via `@theme inline` em `globals.css` +
+troca de fonte (`next/font/google`). Alavanca de cascata: restyle das **5 primitives** de
+`src/app/(protected)/_ui/` + shell (header raiz + nav → **mega-menu** por categoria, só rotas reais) →
+tema chega às ~13 telas sem mockup direto. 4 user stories: US1/US2 (P1) identidade visual nos
+cadastros+dashboard e mega-menu; US3/US4 (P2) nova rota `/boas-vindas` (reusa lista de módulos do
+`/dashboard`) + `/dashboard` rebuild (4 KPIs reais — Empresas/PGRs/Equipe/EPIs-abaixo-da-mínima,
+contagens `withOrg`; widgets sem dado usam empty-state do mockup, **nunca dado fictício**). Login/
+cadastro/onboarding = **Clerk** com moldura + `appearance` (não reimplementar auth). **Zero migration**,
+sem mudança de RLS/schema/contrato de Server Actions; única lógica nova = contagens simples do dashboard.
+Verificação: comparação visual (Playwright MCP) tela-real vs. `.dc.html` em 375/768/1440px (sem
+pixel-diff). Constitution Check: sem violações (Complexity Tracking vazio). Testes: unit (helper de KPI)
+
+- integração (Postgres efêmero, contagem isolada por tenant). Base: `develop`.
+
+Fatia anterior (`017`) — **Módulo de Treinamentos / Fase 04
+completa** (issues `#28`/`#29`/`#30`/`#31`/`#80`). Plan: `.specs/017-training-module/plan.md`
+(spec/research/data-model/contracts/quickstart no mesmo diretório). Base `develop` pós-#142 (última
+migration `0015_ai_usage_events`); esta leva traz a **`0016_training_module`** (renumerada de `0015`
+no rebase — a `0015` é a `ai_usage_events` da fatia 016) — 3 tabelas tenant-isoladas
+(`training_catalog`, `training_records`, `job_role_required_trainings`) + enum `training_periodicity`
+(`annual|biennial|triennial|quinquennial|single`). Fundação (#28) + 4 US zero-migration: US1 CRUD do
+catálogo (#29); US2 registro de realização com `valid_until` calculado no servidor por
+`computeValidUntil` D1 (`single→null`); US3 controle de vencimento (helper D5 último-registro +
+`classifyTrainingStatus` D2, exclui `single`, resumo `{expired,dueSoon}` p/ dashboard); US4 obrigatórios
+por função + conformidade (reusa D5+D2, `missing` sem registro). Certificado = `certificate_path text`
+(sem GED — D4). Reusa `VALIDATION`/`DUPLICATE`/`NOT_FOUND`/`FK_NOT_FOUND`/`FORBIDDEN`; `IN_USE` (409)
+ganha mapeamento HTTP em `api/rest.ts` (o código já existia, sem status). Funções puras D1/D2 em
+`src/shared/domains/pgr/trainings.ts`; `todayInSaoPaulo` promovido de CAEPI p/ `src/shared/dates.ts`.
+Testes: unit (D1/D2/zod) + integração em Postgres efêmero (CRUD, cross-tenant, `dependents`,
+conformidade, `FORBIDDEN`).
+
+Fatia anterior (`016` — ai-risk-suggestion, mergeada em `develop`) — **Sugestão de riscos assistida
+por IA** (primeira feature que chama um LLM externo). Plan:
+`.specs/016-ai-risk-suggestion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
+diretório). 2 user stories: US1 (P1) botão "Sugerir Riscos com IA" no GES → contexto **não-PII** do GES
+(processo/ambiente/**títulos** de função, nunca `employees`) → LLM Anthropic (`@anthropic-ai/sdk`,
+saída estruturada por tool use validada por Zod, chave **server-only**) → modal de revisão/aceite →
+aceitos viram **rascunho** em `risks` via `createRisk` (zero migration de risco); US2 (P2) dicas
+estáticas NR-01 nos campos de GES/risco. Rate limiting por org: **migration nova
+`0014_ai_usage_events`** (append-only + RLS; cota = contagem do mês corrente; free 20/mês, pro
+ilimitado — espelha a cota de assinatura). Núcleo compartilhado
+`server/pgr/ai-risk-suggestion-core.ts` consumido por Server Action (`officeAction`) + REST mirror
+(`/api/v1/ges/[id]/risk-suggestions(/accept)`). Novo erro `AI_UNAVAILABLE` (502). Isolamento/cota
+verificados **antes** do LLM (cross-tenant → `FK_NOT_FOUND` sem chamar o LLM). **Constitution Check**:
+Princípio II (serviço externo pago) exige **emenda formal** — registrado em Complexity Tracking.
+Testes: unit + integração (Postgres efêmero `INTEGRATION_*`, **LLM mockado**). Migration
+`0015_ai_usage_events` (renumerada de `0014` no rebase).
+
+Fatia anterior (`012`) — Branch **`feature/epi-module-completion`** — **Conclusão da Fase 02 /
 módulo operacional de EPI** (issues `#18`/`#115`/`#75`, `#19`, `#20`, `#21`; `#78` fica p/ Fase 03).
 Plan: `.specs/012-epi-module-completion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
 diretório). 5 user stories: US1 plugar `CaField`/CAEPI no `epi-catalog-form.tsx` (wiring, zero migration);

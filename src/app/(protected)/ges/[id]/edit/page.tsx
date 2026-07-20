@@ -8,6 +8,7 @@ import { PageHeader } from "../../../_ui/list";
 import { GesForm } from "../../_components/ges-form";
 import { DeleteGes } from "../../_components/delete-ges";
 import { ManageFunctions } from "../_components/manage-functions";
+import { SuggestRisksSection } from "../_components/suggest-risks-section";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,7 @@ export default async function EditGesPage({
       />
       <GesForm companies={companies} ges={gesRow} exposedWorkers={exposedWorkers} />
       <ManageFunctions gesId={gesRow.id} />
+      <SuggestRisksSection gesId={gesRow.id} />
     </div>
   );
 }

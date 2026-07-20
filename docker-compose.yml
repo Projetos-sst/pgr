@@ -1,0 +1,49 @@
+# Serviços auxiliares locais do SST Manager.
+#
+# Gotenberg — serviço stateless de conversão HTML→PDF (Constituição, emenda 1.4.0).
+# Consumido por `src/shared/integrations/pdf/gotenberg.ts` via `GOTENBERG_URL`.
+# Em DEV: sem auth (endpoint local). Em PROD: hospedar o MESMO container atrás de
+# rede privada + token/gateway e apontar `GOTENBERG_URL`/`GOTENBERG_TOKEN` para ele.
+#
+# Subir:   docker compose up -d gotenberg
+# Logs:    docker compose logs -f gotenberg
+# Derrubar: docker compose down
+services:
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: sst-gotenberg
+    restart: unless-stopped
+    # Container escuta em 3000; mapeado p/ 3001 no host (3000 é o Next dev).
+    ports:
+      - "3001:3000"
+    command:
+      - gotenberg
+      - --api-timeout=120s
+      - --chromium-max-queue-size=0
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Worker de geração de PDF em lote (#39) — consome a fila `jobs`.
+  # Subir (usa segredos do .env.local): docker compose up -d --build worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: sst-pdf-worker
+    restart: unless-stopped
+    depends_on:
+      gotenberg:
+        condition: service_healthy
+    env_file:
+      - path: .env.local
+        required: false
+    environment:
+      # Dentro da rede do compose o Gotenberg atende em <serviço>:3000 (não 3001).
+      GOTENBERG_URL: http://gotenberg:3000
+      WORKER_POLL_IDLE_MS: "2000"
+      WORKER_STALE_AFTER_SECONDS: "300"
+      WORKER_MAX_ATTEMPTS: "3"
