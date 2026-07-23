@@ -1,0 +1,860 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+          rel="stylesheet"
+        />
+        <style>
+          * {
+            box-sizing: border-box;
+          }
+          body {
+            margin: 0;
+          }
+          a {
+            color: inherit;
+            text-decoration: none;
+          }
+        </style>
+      </helmet>
+
+      <div
+        data-screen-label="Planos de Assinatura"
+        style="
+          min-height: 100vh;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          background:
+            radial-gradient(
+              48% 60% at 3% -6%,
+              rgba(158, 156, 160, 0.22),
+              transparent 60%
+            ),
+            radial-gradient(
+              42% 50% at 98% 0%,
+              rgba(158, 156, 160, 0.16),
+              transparent 58%
+            ),
+            radial-gradient(
+              50% 60% at 96% 104%,
+              rgba(158, 156, 160, 0.18),
+              transparent 60%
+            ),
+            radial-gradient(
+              44% 52% at 1% 102%,
+              rgba(158, 156, 160, 0.16),
+              transparent 60%
+            ),
+            #eae9e8;
+          font-family: &quot;Manrope&quot;, system-ui, sans-serif;
+          color: #1b1f2e;
+        "
+      >
+        <div
+          style="
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            padding: 0 30px;
+            height: 72px;
+            background: rgba(255, 255, 255, 0.42);
+            backdrop-filter: blur(34px) saturate(180%);
+            -webkit-backdrop-filter: blur(34px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+          "
+        >
+          <a href="home.dc.html" style="display: flex; align-items: center; gap: 10px">
+            <div
+              style="
+                width: 34px;
+                height: 34px;
+                border-radius: 11px;
+                background: #5b63f5;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                font-weight: 800;
+                font-size: 14px;
+                box-shadow: 0 4px 14px rgba(91, 99, 245, 0.4);
+              "
+            >
+              S
+            </div>
+            <span style="font-weight: 800; font-size: 16px; letter-spacing: -0.01em"
+              >SST Manager</span
+            >
+          </a>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              font-size: 13px;
+              font-weight: 600;
+              color: #7a7f97;
+              margin-left: 8px;
+            "
+          >
+            <a href="dashboard.dc.html" style="padding: 9px 13px">Dashboard</a>
+            <a href="pgrs.dc.html" style="padding: 9px 13px">Módulos &#9662;</a>
+            <a href="funcionarios.dc.html" style="padding: 9px 13px">Cadastro &#9662;</a>
+            <a href="gestao-os.dc.html" style="padding: 9px 13px"
+              >Gestão de Segurança &#9662;</a
+            >
+            <a href="ged.dc.html" style="padding: 9px 13px">Qualidade &#9662;</a>
+          </div>
+          <div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                height: 40px;
+                padding: 0 16px;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.34);
+                backdrop-filter: blur(20px) saturate(170%);
+                -webkit-backdrop-filter: blur(20px) saturate(170%);
+                border: 1px solid rgba(255, 255, 255, 0.5);
+                font-size: 13px;
+                font-weight: 600;
+                color: #52576e;
+              "
+            >
+              Todas as Empresas <span style="color: #9095ad">&#9662;</span>
+            </div>
+            <a
+              href="#"
+              style="
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.34);
+                backdrop-filter: blur(20px) saturate(170%);
+                -webkit-backdrop-filter: blur(20px) saturate(170%);
+                border: 1px solid rgba(255, 255, 255, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #5b63f5;
+              "
+              ><svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              >
+                <path d="M9 3v15l6-3 6 3V6l-6-3-6 3-6-3v15l6 3" /></svg
+            ></a>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 9px;
+                height: 40px;
+                padding: 0 8px 0 5px;
+                border-radius: 30px;
+                background: rgba(255, 255, 255, 0.34);
+                backdrop-filter: blur(20px) saturate(170%);
+                -webkit-backdrop-filter: blur(20px) saturate(170%);
+                border: 1px solid rgba(255, 255, 255, 0.5);
+              "
+            >
+              <div
+                style="
+                  width: 30px;
+                  height: 30px;
+                  border-radius: 50%;
+                  background: #5b63f5;
+                  color: #fff;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: 700;
+                  font-size: 13px;
+                "
+              >
+                D
+              </div>
+              <div style="line-height: 1.1">
+                <div style="font-size: 10px; color: #9095ad">Boa noite,</div>
+                <div style="font-size: 13px; font-weight: 700">Douglas</div>
+              </div>
+              <span style="color: #9095ad; margin: 0 4px">&#9662;</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="
+            flex: 1;
+            width: 100%;
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 36px 30px 44px;
+          "
+        >
+          <!-- current subscription banner -->
+          <div
+            style="
+              position: relative;
+              overflow: hidden;
+              border-radius: 22px;
+              padding: 26px 28px;
+              margin-bottom: 16px;
+              background: linear-gradient(140deg, #4f46e5, #5b63f5 55%, #7c7bf7);
+              color: #fff;
+              box-shadow: 0 18px 40px rgba(91, 99, 245, 0.32);
+            "
+          >
+            <div
+              style="
+                position: absolute;
+                width: 240px;
+                height: 240px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.1);
+                top: -110px;
+                right: -50px;
+              "
+            ></div>
+            <div
+              style="position: relative; display: flex; align-items: center; gap: 24px"
+            >
+              <div style="flex: 1">
+                <div
+                  style="
+                    font-family: &quot;JetBrains Mono&quot;, monospace;
+                    font-size: 11px;
+                    letter-spacing: 0.16em;
+                    text-transform: uppercase;
+                    color: rgba(255, 255, 255, 0.72);
+                    margin-bottom: 8px;
+                  "
+                >
+                  Sua assinatura
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.02em">
+                    Pacote Smart
+                  </div>
+                  <span
+                    style="
+                      font-size: 11px;
+                      font-weight: 700;
+                      padding: 4px 12px;
+                      border-radius: 20px;
+                      background: rgba(255, 255, 255, 0.2);
+                    "
+                    >Teste grátis · 07 dias</span
+                  >
+                </div>
+                <div
+                  style="
+                    font-size: 13px;
+                    color: rgba(255, 255, 255, 0.82);
+                    margin-top: 6px;
+                  "
+                >
+                  Solução completa para gestão de segurança do trabalho. Renova em
+                  13/07/2026.
+                </div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  height: 46px;
+                  padding: 0 22px;
+                  border-radius: 12px;
+                  background: #fff;
+                  color: #5b63f5;
+                  font-size: 13px;
+                  font-weight: 800;
+                  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+                "
+              >
+                Gerenciar pagamento
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin: 34px 0 24px">
+            <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.02em">
+              Escolha o plano ideal para sua operação
+            </div>
+            <div style="font-size: 14px; color: #8c91a8; margin-top: 6px">
+              Todos os planos incluem 7 dias grátis · cancele quando quiser
+            </div>
+            <div
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                margin-top: 18px;
+                padding: 5px;
+                border-radius: 14px;
+                background: rgba(255, 255, 255, 0.4);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.6);
+              "
+            >
+              <span
+                style="
+                  padding: 9px 20px;
+                  border-radius: 10px;
+                  background: #5b63f5;
+                  color: #fff;
+                  font-size: 13px;
+                  font-weight: 700;
+                  box-shadow: 0 6px 16px rgba(91, 99, 245, 0.32);
+                "
+                >Mensal</span
+              >
+              <span
+                style="
+                  padding: 9px 20px;
+                  border-radius: 10px;
+                  color: #52576e;
+                  font-size: 13px;
+                  font-weight: 600;
+                "
+                >Anual <span style="color: #0e9f6e; font-weight: 700">−20%</span></span
+              >
+            </div>
+          </div>
+
+          <!-- pricing cards -->
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 20px;
+              align-items: start;
+            "
+          >
+            <!-- Start -->
+            <div
+              style="
+                border-radius: 22px;
+                padding: 28px;
+                background: rgba(255, 255, 255, 0.24);
+                backdrop-filter: blur(30px) saturate(190%);
+                -webkit-backdrop-filter: blur(30px) saturate(190%);
+                border: 1px solid rgba(255, 255, 255, 0.55);
+                box-shadow:
+                  0 14px 34px rgba(50, 55, 100, 0.16),
+                  inset 0 1px 1px rgba(255, 255, 255, 0.85);
+              "
+            >
+              <div style="font-size: 15px; font-weight: 800">Start</div>
+              <div style="font-size: 12px; color: #8c91a8; margin-top: 2px">
+                Para começar a organizar a SST
+              </div>
+              <div
+                style="display: flex; align-items: baseline; gap: 4px; margin: 20px 0 4px"
+              >
+                <span style="font-size: 16px; font-weight: 700; color: #52576e">R$</span
+                ><span style="font-size: 40px; font-weight: 800; letter-spacing: -0.03em"
+                  >149</span
+                ><span style="font-size: 14px; color: #8c91a8">/mês</span>
+              </div>
+              <div style="font-size: 12px; color: #8c91a8; margin-bottom: 22px">
+                até 25 funcionários
+              </div>
+              <div
+                style="
+                  height: 46px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border-radius: 12px;
+                  background: rgba(255, 255, 255, 0.5);
+                  border: 1px solid rgba(255, 255, 255, 0.7);
+                  font-size: 13px;
+                  font-weight: 700;
+                  color: #5b63f5;
+                "
+              >
+                Selecionar plano
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  margin-top: 22px;
+                  font-size: 13px;
+                  color: #52576e;
+                "
+              >
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#0e9f6e"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Emissão do PGR
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#0e9f6e"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Dashboard e indicadores
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#0e9f6e"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Gestão de EPI (estoque)
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#0e9f6e"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Suporte via chat
+                </div>
+                <div style="display: flex; gap: 10px; color: #c3c6d4">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                  Integração eSocial
+                </div>
+                <div style="display: flex; gap: 10px; color: #c3c6d4">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                  Módulo Psicossocial
+                </div>
+              </div>
+            </div>
+
+            <!-- Smart (featured) -->
+            <div
+              style="
+                position: relative;
+                border-radius: 22px;
+                padding: 28px;
+                background: linear-gradient(160deg, #2d2f4a, #20223a);
+                color: #fff;
+                box-shadow: 0 22px 48px rgba(30, 32, 58, 0.4);
+                transform: translateY(-8px);
+              "
+            >
+              <div
+                style="
+                  position: absolute;
+                  top: 22px;
+                  right: 22px;
+                  font-size: 10px;
+                  font-weight: 800;
+                  letter-spacing: 0.1em;
+                  text-transform: uppercase;
+                  padding: 5px 12px;
+                  border-radius: 20px;
+                  background: #5b63f5;
+                  box-shadow: 0 6px 16px rgba(91, 99, 245, 0.5);
+                "
+              >
+                Mais popular
+              </div>
+              <div style="font-size: 15px; font-weight: 800">Smart</div>
+              <div
+                style="font-size: 12px; color: rgba(255, 255, 255, 0.6); margin-top: 2px"
+              >
+                Gestão completa e automatizada
+              </div>
+              <div
+                style="display: flex; align-items: baseline; gap: 4px; margin: 20px 0 4px"
+              >
+                <span
+                  style="
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: rgba(255, 255, 255, 0.7);
+                  "
+                  >R$</span
+                ><span style="font-size: 40px; font-weight: 800; letter-spacing: -0.03em"
+                  >349</span
+                ><span style="font-size: 14px; color: rgba(255, 255, 255, 0.6)"
+                  >/mês</span
+                >
+              </div>
+              <div
+                style="
+                  font-size: 12px;
+                  color: rgba(255, 255, 255, 0.6);
+                  margin-bottom: 22px;
+                "
+              >
+                até 150 funcionários
+              </div>
+              <div
+                style="
+                  height: 46px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border-radius: 12px;
+                  background: #5b63f5;
+                  color: #fff;
+                  font-size: 13px;
+                  font-weight: 800;
+                  box-shadow: 0 10px 24px rgba(91, 99, 245, 0.5);
+                "
+              >
+                Continuar com Smart
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  margin-top: 22px;
+                  font-size: 13px;
+                  color: rgba(255, 255, 255, 0.85);
+                "
+              >
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#7ee0b8"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Tudo do plano Start
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#7ee0b8"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Integração eSocial (SST)
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#7ee0b8"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Ordem de Serviço + assinatura digital
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#7ee0b8"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Planos de ação automáticos
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#7ee0b8"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Módulo Psicossocial
+                </div>
+                <div style="display: flex; gap: 10px; color: rgba(255, 255, 255, 0.4)">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                  Multiempresa ilimitada
+                </div>
+              </div>
+            </div>
+
+            <!-- Enterprise -->
+            <div
+              style="
+                border-radius: 22px;
+                padding: 28px;
+                background: rgba(255, 255, 255, 0.24);
+                backdrop-filter: blur(30px) saturate(190%);
+                -webkit-backdrop-filter: blur(30px) saturate(190%);
+                border: 1px solid rgba(255, 255, 255, 0.55);
+                box-shadow:
+                  0 14px 34px rgba(50, 55, 100, 0.16),
+                  inset 0 1px 1px rgba(255, 255, 255, 0.85);
+              "
+            >
+              <div style="font-size: 15px; font-weight: 800">Enterprise</div>
+              <div style="font-size: 12px; color: #8c91a8; margin-top: 2px">
+                Para consultorias e grandes grupos
+              </div>
+              <div
+                style="display: flex; align-items: baseline; gap: 6px; margin: 20px 0 4px"
+              >
+                <span style="font-size: 32px; font-weight: 800; letter-spacing: -0.02em"
+                  >Sob consulta</span
+                >
+              </div>
+              <div style="font-size: 12px; color: #8c91a8; margin-bottom: 22px">
+                funcionários ilimitados
+              </div>
+              <div
+                style="
+                  height: 46px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border-radius: 12px;
+                  background: rgba(255, 255, 255, 0.5);
+                  border: 1px solid rgba(255, 255, 255, 0.7);
+                  font-size: 13px;
+                  font-weight: 700;
+                  color: #5b63f5;
+                "
+              >
+                Falar com vendas
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  margin-top: 22px;
+                  font-size: 13px;
+                  color: #52576e;
+                "
+              >
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#0e9f6e"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Tudo do plano Smart
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#0e9f6e"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Multiempresa ilimitada
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#0e9f6e"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  API e integrações personalizadas
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#0e9f6e"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Gerente de conta dedicado
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#0e9f6e"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  SLA e suporte prioritário
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#0e9f6e"
+                    stroke-width="2.2"
+                    style="flex-shrink: 0"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Treinamento da equipe
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+              margin-top: 28px;
+              font-size: 12px;
+              color: #8c91a8;
+            "
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <rect x="4" y="10" width="16" height="10" rx="2" />
+              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+            </svg>
+            Pagamento seguro · cancele quando quiser · sem fidelidade
+          </div>
+        </div>
+
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            height: 54px;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(26px) saturate(175%);
+            -webkit-backdrop-filter: blur(26px) saturate(175%);
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            color: #9095ad;
+          "
+        >
+          <span>© 2026 — SST Manager · Todos os direitos reservados</span
+          ><a href="#" style="color: #5b63f5; font-weight: 600"
+            >Política de Privacidade</a
+          >
+        </div>
+      </div>
+    </x-dc>
+  </body>
+</html>
