@@ -9,17 +9,35 @@ import { resolvePageParams } from "@/shared/pagination";
 import { listServiceOrdersAction } from "@/shared/server/actions/safety/service-orders";
 
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  PrimaryLink,
-  SearchForm,
-  Table,
-} from "../_ui/list";
-import { EditRowAction, RowActions, ViewRowAction } from "../_ui/row-actions";
+  AvatarBadge,
+  Cell,
+  DataGrid,
+  EditIconLink,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  RowActions,
+  StatusBadge,
+  ToolbarButton,
+  ToolbarSearch,
+  type StatusTone,
+} from "../_ui/data-list";
+import { EmptyState, PageHeader } from "../_ui/list";
 import { DeleteServiceOrder } from "./_components/delete-service-order";
+import { ServiceOrderIcon } from "./_components/service-order-icon";
 
 export const dynamic = "force-dynamic";
+
+const TEMPLATE = "1.6fr 1.4fr 1.2fr 1fr 0.9fr 1.4fr 84px";
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  open: "amber",
+  in_progress: "indigo",
+  completed: "green",
+  cancelled: "red",
+};
 
 type SearchParams = Promise<{ page?: string; search?: string; status?: string }>;
 
@@ -41,95 +59,108 @@ export default async function ServiceOrdersPage({
   const params = { search: sp.search, status: sp.status };
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
+        icon={<ServiceOrderIcon />}
         title="Ordens de Serviço"
-        description="Documente a entrega de EPIs e instruções ao trabalhador com checklist e número por escritório."
-        action={<PrimaryLink href="/service-orders/new">Nova OS</PrimaryLink>}
+        description="Entrega de EPIs e instruções ao trabalhador, com checklist e número por escritório"
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <SearchForm
-          basePath="/service-orders"
-          placeholder="Buscar por título ou número"
-          defaultValue={sp.search}
-          hidden={{ status: sp.status }}
-        />
-        <nav className="flex flex-wrap gap-2 text-sm">
-          <Link
-            href="/service-orders"
-            className={`glass-panel rounded-card px-3 py-1 font-semibold transition-colors ${
-              !sp.status ? "text-primary-strong" : "text-text-muted hover:text-text"
-            }`}
-          >
-            Todas
-          </Link>
-          {Object.entries(SERVICE_ORDER_STATUS_LABELS).map(([value, label]) => (
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSearch
+            basePath="/service-orders"
+            placeholder="Buscar por título ou número…"
+            defaultValue={sp.search}
+            hidden={{ status: sp.status }}
+          />
+          <div className="flex flex-wrap items-center gap-1.5">
             <Link
-              key={value}
-              href={`/service-orders?status=${value}`}
-              className={`glass-panel rounded-card px-3 py-1 font-semibold transition-colors ${
-                sp.status === value
-                  ? "text-primary-strong"
-                  : "text-text-muted hover:text-text"
+              href="/service-orders"
+              className={`rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                !sp.status
+                  ? "btn-primary"
+                  : "text-text-muted hover:text-text border border-white/70 bg-white/50"
               }`}
             >
-              {label}
+              Todas
             </Link>
-          ))}
-        </nav>
-      </div>
+            {Object.entries(SERVICE_ORDER_STATUS_LABELS).map(([value, label]) => (
+              <Link
+                key={value}
+                href={`/service-orders?status=${value}`}
+                className={`rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                  sp.status === value
+                    ? "btn-primary"
+                    : "text-text-muted hover:text-text border border-white/70 bg-white/50"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+          <ToolbarButton href="/service-orders/new">Nova OS</ToolbarButton>
+        </ListToolbar>
 
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhuma Ordem de Serviço encontrada." />
-      ) : (
-        <Table
-          headers={[
-            "Nº",
-            "Título",
-            "Funcionário",
-            "Aberta em",
-            "Dias",
-            "Itens",
-            "Status",
-            "",
-          ]}
-        >
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2 tabular-nums">#{row.number}</td>
-              <td className="px-4 py-2">
-                <Link
-                  href={`/service-orders/${row.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {row.title}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.employeeName ?? "—"}</td>
-              <td className="px-4 py-2 tabular-nums">{row.openedAt}</td>
-              <td className="px-4 py-2 tabular-nums">{row.daysOpen}</td>
-              <td className="px-4 py-2 tabular-nums">{row.itemCount}</td>
-              <td className="px-4 py-2">{row.statusLabel}</td>
-              <td className="px-4 py-2">
-                <RowActions>
-                  <ViewRowAction href={`/service-orders/${row.id}`} label="Abrir" />
-                  <EditRowAction href={`/service-orders/${row.id}/edit`} />
-                  <DeleteServiceOrder id={row.id} />
-                </RowActions>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
-
-      <Pagination
-        basePath="/service-orders"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={params}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState message="Nenhuma Ordem de Serviço encontrada." />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={1000}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Funcionário" },
+                  { header: "OS" },
+                  { header: "Tipo OS" },
+                  { header: "Data Emissão" },
+                  { header: "Dias Aberta" },
+                  { header: "Status" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <Cell>
+                    <span className="flex items-center gap-3">
+                      <AvatarBadge name={row.employeeName ?? "?"} />
+                      <span className="text-text font-semibold">
+                        {row.employeeName ?? "—"}
+                      </span>
+                    </span>
+                  </Cell>
+                  <Cell className="text-primary font-mono font-semibold">
+                    #{row.number}
+                  </Cell>
+                  <Cell>{row.title}</Cell>
+                  <Cell className="text-text-muted font-mono">{row.openedAt}</Cell>
+                  <Cell className="tabular-nums">{row.daysOpen}</Cell>
+                  <Cell>
+                    <StatusBadge tone={STATUS_TONE[row.status] ?? "neutral"}>
+                      {row.statusLabel}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell align="right">
+                    <RowActions>
+                      <EditIconLink href={`/service-orders/${row.id}`} />
+                      <DeleteServiceOrder id={row.id} />
+                    </RowActions>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/service-orders"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={params}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }
