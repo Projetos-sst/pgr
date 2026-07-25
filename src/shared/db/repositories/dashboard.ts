@@ -5,6 +5,7 @@ import { and, eq, isNull, lt, ne, sql } from "drizzle-orm";
 import { todayInSaoPaulo } from "@/shared/dates";
 
 import {
+  accidents,
   companies,
   controlMeasures,
   employees,
@@ -14,6 +15,7 @@ import {
   ges,
   pgr,
   risks,
+  serviceOrders,
   workUnits,
 } from "../schema";
 import { withOrg } from "../with-org";
@@ -28,10 +30,7 @@ const countExpr = sql<number>`count(*)::int`;
 
 /**
  * Read-model do dashboard: agregações escopadas ao tenant (todas as queries
- * filtram `org_id` explicitamente, além do backstop RLS via `withOrg`). Sem
- * tabelas novas. Módulos ainda não modelados (ordens de serviço, incidentes-evento,
- * monitoramento psicossocial) não têm dado — "acidentes"/"psicossocial" aparecem
- * apenas como grupos de `risks.agent_type`.
+ * filtram `org_id` explicitamente, além do backstop RLS via `withOrg`).
  */
 export async function getDashboardSummary(orgId: string): Promise<DashboardSummary> {
   const today = todayInSaoPaulo();
@@ -58,6 +57,32 @@ export async function getDashboardSummary(orgId: string): Promise<DashboardSumma
       .from(controlMeasures)
       .where(and(eq(controlMeasures.orgId, orgId), eq(controlMeasures.applicable, true)))
       .groupBy(controlMeasures.controlLevel);
+
+    const soRows = await tx
+      .select({ status: serviceOrders.status, count: countExpr })
+      .from(serviceOrders)
+      .where(eq(serviceOrders.orgId, orgId))
+      .groupBy(serviceOrders.status);
+
+    const accidentRows = await tx
+      .select({ status: accidents.status, count: countExpr })
+      .from(accidents)
+      .where(eq(accidents.orgId, orgId))
+      .groupBy(accidents.status);
+
+    const soMap = new Map(soRows.map((r) => [r.status, r.count]));
+    const signedSO = soMap.get("completed") ?? 0;
+    const pendingSO = (soMap.get("open") ?? 0) + (soMap.get("in_progress") ?? 0);
+    const refusedSO = soMap.get("cancelled") ?? 0;
+    const totalSO = signedSO + pendingSO + refusedSO;
+
+    const accMap = new Map(accidentRows.map((r) => [r.status, r.count]));
+    const openAcc = accMap.get("registered") ?? 0;
+    const analysisAcc =
+      (accMap.get("awaiting_planning") ?? 0) + (accMap.get("awaiting_completion") ?? 0);
+    const resolvedAcc = accMap.get("completed") ?? 0;
+    const archivedAcc = accMap.get("cancelled") ?? 0;
+    const totalAcc = openAcc + analysisAcc + resolvedAcc + archivedAcc;
 
     const [{ n: pgrsExpired }] = await tx
       .select({ n: countExpr })
@@ -110,6 +135,19 @@ export async function getDashboardSummary(orgId: string): Promise<DashboardSumma
       risksByAgentType: fillRisksByAgentType(risksByAgent),
       actionPlansByLevel: fillActionPlansByLevel(plansByLevel),
       pending: { pgrsExpired, controlsOverdue, episLowStock, episPendingReturn },
+      serviceOrdersSummary: {
+        signed: signedSO,
+        pending: pendingSO,
+        refused: refusedSO,
+        total: totalSO,
+      },
+      accidentsSummary: {
+        open: openAcc,
+        inAnalysis: analysisAcc,
+        resolved: resolvedAcc,
+        archived: archivedAcc,
+        total: totalAcc,
+      },
     };
   });
 

@@ -19,6 +19,7 @@ jest.mock("next/headers", () => ({
 }));
 
 jest.mock("@clerk/nextjs", () => ({
+  useUser: () => ({ user: { firstName: "Douglas", username: "douglas" } }),
   UserButton: () => <div data-testid="user-button" />,
   OrganizationSwitcher: (props: {
     hidePersonal?: boolean;

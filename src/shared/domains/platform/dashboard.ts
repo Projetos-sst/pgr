@@ -28,11 +28,28 @@ export type DashboardPending = {
   trainingsDueSoon: number;
 };
 
+export type ServiceOrdersSummary = {
+  signed: number;
+  pending: number;
+  refused: number;
+  total: number;
+};
+
+export type AccidentsSummary = {
+  open: number;
+  inAnalysis: number;
+  resolved: number;
+  archived: number;
+  total: number;
+};
+
 export type DashboardSummary = {
   kpis: DashboardKpis;
   risksByAgentType: CountByKey[];
   actionPlansByLevel: CountByKey[];
   pending: DashboardPending;
+  serviceOrdersSummary?: ServiceOrdersSummary;
+  accidentsSummary?: AccidentsSummary;
 };
 
 /**
