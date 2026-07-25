@@ -10,7 +10,7 @@ export function UserProfilePill() {
   const firstName = user?.firstName ?? user?.username ?? "Usuário";
 
   return (
-    <div className="flex h-[40px] items-center gap-[9px] rounded-[30px] border border-white/50 bg-white/34 py-0 pr-3 pl-[5px] saturate-[170%] backdrop-blur-[20px]">
+    <div className="flex h-[40px] items-center gap-[9px] rounded-[30px] border border-white/50 bg-white/34 py-0 pr-3 pl-[5px] saturate-[170%] backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/55">
       <UserButton
         appearance={{
           elements: {

@@ -134,8 +134,8 @@ export function NavMenu() {
                 onClick={closeAll}
                 className={
                   active
-                    ? "rounded-[11px] bg-[#5b63f5] px-3.5 py-2 text-[13px] font-bold text-white shadow-[0_4px_14px_rgba(91,99,245,0.35)]"
-                    : "rounded-[11px] px-3.5 py-2 text-[13px] font-semibold text-[#7a7f97] transition-colors hover:text-[#1b1f2e]"
+                    ? "rounded-[11px] bg-[#5b63f5] px-3.5 py-2 text-[13px] font-bold text-white shadow-[0_4px_14px_rgba(91,99,245,0.35)] transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_6px_20px_rgba(91,99,245,0.5)] active:scale-[0.97]"
+                    : "rounded-[11px] px-3.5 py-2 text-[13px] font-semibold text-[#7a7f97] transition-all duration-200 hover:bg-white/40 hover:text-[#1b1f2e] active:scale-[0.97]"
                 }
               >
                 {entry.label}
@@ -150,26 +150,31 @@ export function NavMenu() {
                 type="button"
                 aria-expanded={open}
                 onClick={() => setOpenGroup(open ? null : entry.label)}
-                className={`rounded-[11px] px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                className={`group flex items-center gap-1 rounded-[11px] px-3.5 py-2 text-[13px] font-semibold transition-all duration-200 hover:bg-white/40 active:scale-[0.97] ${
                   groupActive ? "text-[#5b63f5]" : "text-[#7a7f97] hover:text-[#1b1f2e]"
                 }`}
               >
-                {entry.label}{" "}
-                <span aria-hidden className="text-[#9095ad]">
+                {entry.label}
+                <span
+                  aria-hidden
+                  className={`inline-block text-[#9095ad] transition-transform duration-200 ${
+                    open ? "rotate-180" : ""
+                  }`}
+                >
                   ▾
                 </span>
               </button>
               {open ? (
-                <div className="glass-menu absolute top-full left-0 z-50 mt-2 flex min-w-[220px] flex-col gap-0.5 p-2">
+                <div className="glass-menu animate-modal-pop absolute top-full left-0 z-50 mt-2 flex min-w-[220px] flex-col gap-0.5 p-2">
                   {entry.items.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={closeAll}
-                      className={`rounded-card px-3 py-2 text-sm font-medium transition-colors ${
+                      className={`rounded-card px-3 py-2 text-sm font-medium transition-all duration-150 ${
                         isActive(pathname, item.href)
-                          ? "bg-primary-ring text-primary-strong"
-                          : "text-text-muted hover:text-text hover:bg-black/[0.04]"
+                          ? "bg-primary-ring text-primary-strong font-bold"
+                          : "text-text-muted hover:text-text hover:translate-x-0.5 hover:bg-black/[0.04]"
                       }`}
                     >
                       {item.label}

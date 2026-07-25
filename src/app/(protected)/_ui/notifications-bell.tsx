@@ -34,7 +34,7 @@ export function NotificationsBell() {
     <Link
       href="/notifications"
       title="Notificações"
-      className="relative flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[12px] border border-white/50 bg-white/34 text-[#5b63f5] saturate-[170%] backdrop-blur-[20px] transition-all hover:bg-white/50"
+      className="group relative flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[12px] border border-white/50 bg-white/34 text-[#5b63f5] saturate-[170%] backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/55 active:scale-[0.95]"
     >
       <svg
         width="18"
@@ -43,6 +43,7 @@ export function NotificationsBell() {
         fill="none"
         stroke="currentColor"
         strokeWidth="1.7"
+        className="transition-transform duration-200 group-hover:rotate-12"
         aria-hidden="true"
       >
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />

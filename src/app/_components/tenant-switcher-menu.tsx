@@ -74,11 +74,16 @@ export function TenantSwitcherMenu({
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex h-[40px] items-center gap-2 rounded-[12px] border border-white/50 bg-white/34 px-4 text-[13px] font-semibold text-[#52576e] saturate-[170%] backdrop-blur-[20px] transition-colors hover:bg-white/50 focus-visible:outline-none"
+        className="flex h-[40px] items-center gap-2 rounded-[12px] border border-white/50 bg-white/34 px-4 text-[13px] font-semibold text-[#52576e] saturate-[170%] backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/55 focus-visible:outline-none active:scale-[0.97]"
       >
         <span className="max-w-[14rem] truncate">{active.name}</span>
         <PlanBadge plan={active.plan} />
-        <span aria-hidden className="text-[#9095ad]">
+        <span
+          aria-hidden
+          className={`inline-block text-[#9095ad] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        >
           ▾
         </span>
       </button>
@@ -87,7 +92,7 @@ export function TenantSwitcherMenu({
         <ul
           role="listbox"
           aria-label="Trocar de organização"
-          className="glass-menu absolute right-0 z-50 mt-2 w-72 overflow-hidden py-1"
+          className="glass-menu animate-modal-pop absolute right-0 z-50 mt-2 w-72 overflow-hidden py-1"
         >
           {options.map((option) => (
             <li key={option.orgId} role="option" aria-selected={option.isActive}>
