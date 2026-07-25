@@ -133,8 +133,8 @@ export function CustomizeViewModal({
   }
 
   return (
-    <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs duration-200">
-      <div className="glass-menu relative w-full max-w-lg overflow-hidden rounded-[20px] border border-white/80 bg-white/95 p-6 shadow-2xl">
+    <div className="animate-backdrop-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+      <div className="glass-menu animate-modal-pop relative w-full max-w-lg overflow-hidden rounded-[20px] border border-white/80 bg-white/95 p-6 shadow-2xl">
         <div className="flex items-center justify-between border-b border-black/5 pb-4">
           <div>
             <h3 className="text-lg font-bold text-[#1b1f2e]">

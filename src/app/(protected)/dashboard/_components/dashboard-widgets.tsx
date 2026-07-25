@@ -24,7 +24,7 @@ export function StatCard({
     return (
       <Link
         href={href}
-        className="group relative flex flex-col justify-between rounded-[18px] bg-[#5b63f5] p-[20px] text-white shadow-[0_14px_30px_rgba(91,99,245,0.3)] transition-all hover:-translate-y-1 hover:shadow-xl"
+        className="group hover-lift animate-fade-slide-up relative flex flex-col justify-between rounded-[18px] bg-[#5b63f5] p-[20px] text-white shadow-[0_14px_30px_rgba(91,99,245,0.3)] transition-all"
       >
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[10px] font-semibold tracking-[0.12em] text-white/70 uppercase">
@@ -51,7 +51,7 @@ export function StatCard({
   return (
     <Link
       href={href}
-      className="glass-card group flex flex-col justify-between p-[20px] transition-all hover:-translate-y-1 hover:border-[#5b63f5]/40"
+      className="glass-card group hover-lift animate-fade-slide-up flex flex-col justify-between p-[20px] transition-all hover:border-[#5b63f5]/40"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[#9095ad] uppercase">
@@ -87,7 +87,7 @@ export function RiskCategoryChart({ segments }: { segments: BarSegment[] }) {
   const total = segments.reduce((sum, s) => sum + s.count, 0);
 
   return (
-    <section className="glass-card flex flex-col gap-5 rounded-[18px] p-[22px]">
+    <section className="glass-card hover-lift animate-fade-slide-up flex flex-col gap-5 rounded-[18px] p-[22px]">
       <div className="flex items-center gap-2 text-[15px] font-bold text-[#1b1f2e]">
         <svg
           width="18"
@@ -140,7 +140,7 @@ export function ActionPlanDonutChart({ segments }: { segments: BarSegment[] }) {
 
   if (total === 0) {
     return (
-      <section className="glass-card flex flex-col gap-5 rounded-[18px] p-[22px]">
+      <section className="glass-card hover-lift animate-fade-slide-up flex flex-col gap-5 rounded-[18px] p-[22px]">
         <div className="flex items-center gap-2 text-[15px] font-bold text-[#1b1f2e]">
           <svg
             width="18"
@@ -177,7 +177,7 @@ export function ActionPlanDonutChart({ segments }: { segments: BarSegment[] }) {
   const gradient = `conic-gradient(${slices.join(", ")})`;
 
   return (
-    <section className="glass-card flex flex-col gap-5 rounded-[18px] p-[22px]">
+    <section className="glass-card hover-lift animate-fade-slide-up flex flex-col gap-5 rounded-[18px] p-[22px]">
       <div className="flex items-center gap-2 text-[15px] font-bold text-[#1b1f2e]">
         <svg
           width="18"
@@ -264,7 +264,7 @@ export function ServiceOrderDonutChart({
   const gradient = `conic-gradient(#2dd4bf 0% ${sPct}%, #38bdf8 ${sPct}% ${sPct + pPct}%, #f5a524 ${sPct + pPct}% 100%)`;
 
   return (
-    <section className="glass-card flex flex-col gap-5 rounded-[18px] p-[22px]">
+    <section className="glass-card hover-lift animate-fade-slide-up flex flex-col gap-5 rounded-[18px] p-[22px]">
       <div className="flex items-center gap-2 text-[15px] font-bold text-[#1b1f2e]">
         <svg
           width="18"
@@ -341,7 +341,7 @@ export function IncidentVerticalChart({
 }) {
   if (!summary || summary.total === 0) {
     return (
-      <section className="glass-card flex flex-col gap-5 rounded-[18px] p-[22px]">
+      <section className="glass-card hover-lift animate-fade-slide-up flex flex-col gap-5 rounded-[18px] p-[22px]">
         <div className="flex items-center gap-2 text-[15px] font-bold text-[#1b1f2e]">
           <svg
             width="18"
@@ -376,7 +376,7 @@ export function IncidentVerticalChart({
   const archivedPct = Math.round((summary.archived / maxVal) * 100);
 
   return (
-    <section className="glass-card flex flex-col gap-5 rounded-[18px] p-[22px]">
+    <section className="glass-card hover-lift animate-fade-slide-up flex flex-col gap-5 rounded-[18px] p-[22px]">
       <div className="flex items-center gap-2 text-[15px] font-bold text-[#1b1f2e]">
         <svg
           width="18"
@@ -428,7 +428,7 @@ export function IncidentVerticalChart({
 
 export function PsicossocialBanner() {
   return (
-    <section className="glass-card flex flex-col gap-5 rounded-[18px] p-5 md:flex-row md:items-center md:justify-between md:p-[22px]">
+    <section className="glass-card hover-lift animate-fade-slide-up flex flex-col gap-5 rounded-[18px] p-5 md:flex-row md:items-center md:justify-between md:p-[22px]">
       <div className="flex items-center gap-[22px]">
         <div className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[15px] bg-[#5b63f5] text-white shadow-[0_8px_20px_rgba(91,99,245,0.35)]">
           <svg
@@ -476,7 +476,7 @@ export function PendingPanel({
 }) {
   const totalPending = items.reduce((sum, i) => sum + i.count, 0);
   return (
-    <section className="glass-card flex flex-col gap-4 p-5 sm:p-6">
+    <section className="glass-card hover-lift animate-fade-slide-up flex flex-col gap-4 p-5 sm:p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <span className="flex h-5 w-5 shrink-0 items-center justify-center text-[#5b63f5]">
