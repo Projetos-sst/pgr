@@ -135,11 +135,14 @@ export default async function MinhasTarefasPage({
   // Bug #2: KPI counts use aggregate data from dashboard (full counts, not capped list)
   // allRealTasks.length is capped at 5 per category — use p (summaryRes aggregate) instead
   const totalCount =
-    p.pgrsExpired + p.controlsOverdue + p.episLowStock +
+    p.pgrsExpired +
+    p.controlsOverdue +
+    p.episLowStock +
     (p.episPendingReturn > 0 ? 1 : 0) +
     (p.trainingsExpired > 0 ? 1 : 0) +
     (p.trainingsDueSoon > 0 ? 1 : 0);
-  const overdueCount = p.pgrsExpired + p.controlsOverdue + (p.trainingsExpired > 0 ? 1 : 0);
+  const overdueCount =
+    p.pgrsExpired + p.controlsOverdue + (p.trainingsExpired > 0 ? 1 : 0);
   const dueSoonCount = p.episLowStock + (p.trainingsDueSoon > 0 ? 1 : 0);
   const onTimeCount = p.episPendingReturn > 0 ? 1 : 0;
   const completedCount = 0;
@@ -149,7 +152,8 @@ export default async function MinhasTarefasPage({
     const params = new URLSearchParams();
     if (overrides.view ?? (activeView !== "my" ? activeView : undefined))
       params.set("view", overrides.view ?? activeView);
-    const filter = overrides.filter ?? (currentFilter !== "all" ? currentFilter : undefined);
+    const filter =
+      overrides.filter ?? (currentFilter !== "all" ? currentFilter : undefined);
     if (filter && filter !== "all") params.set("filter", filter);
     const search = overrides.search ?? (searchQuery || undefined);
     if (search) params.set("search", search);
