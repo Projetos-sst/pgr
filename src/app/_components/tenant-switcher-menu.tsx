@@ -60,7 +60,7 @@ export function TenantSwitcherMenu({
 
   if (!canSwitch) {
     return (
-      <span className="glass-panel text-text-muted rounded-card inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium">
+      <span className="flex h-[40px] items-center gap-2 rounded-[12px] border border-white/50 bg-white/34 px-4 text-[13px] font-semibold text-[#52576e] shadow-xs saturate-[170%] backdrop-blur-[20px]">
         {active.name}
         <PlanBadge plan={active.plan} />
       </span>
@@ -74,11 +74,11 @@ export function TenantSwitcherMenu({
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="glass-panel text-text rounded-card focus-visible:ring-primary-ring inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="flex h-[40px] items-center gap-2 rounded-[12px] border border-white/50 bg-white/34 px-4 text-[13px] font-semibold text-[#52576e] saturate-[170%] backdrop-blur-[20px] transition-colors hover:bg-white/50 focus-visible:outline-none"
       >
         <span className="max-w-[14rem] truncate">{active.name}</span>
         <PlanBadge plan={active.plan} />
-        <span aria-hidden className="text-text-subtle">
+        <span aria-hidden className="text-[#9095ad]">
           ▾
         </span>
       </button>

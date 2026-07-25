@@ -134,8 +134,8 @@ export function NavMenu() {
                 onClick={closeAll}
                 className={
                   active
-                    ? "btn-primary rounded-card px-3.5 py-2 text-[13px] font-bold"
-                    : "text-text-muted hover:text-text rounded-card px-3.5 py-2 text-[13px] font-semibold transition-colors"
+                    ? "rounded-[11px] bg-[#5b63f5] px-3.5 py-2 text-[13px] font-bold text-white shadow-[0_4px_14px_rgba(91,99,245,0.35)]"
+                    : "rounded-[11px] px-3.5 py-2 text-[13px] font-semibold text-[#7a7f97] transition-colors hover:text-[#1b1f2e]"
                 }
               >
                 {entry.label}
@@ -150,11 +150,14 @@ export function NavMenu() {
                 type="button"
                 aria-expanded={open}
                 onClick={() => setOpenGroup(open ? null : entry.label)}
-                className={`rounded-card px-3.5 py-2 text-[13px] font-semibold transition-colors ${
-                  groupActive ? "text-primary-strong" : "text-text-muted hover:text-text"
+                className={`rounded-[11px] px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                  groupActive ? "text-[#5b63f5]" : "text-[#7a7f97] hover:text-[#1b1f2e]"
                 }`}
               >
-                {entry.label} <span aria-hidden>▾</span>
+                {entry.label}{" "}
+                <span aria-hidden className="text-[#9095ad]">
+                  ▾
+                </span>
               </button>
               {open ? (
                 <div className="glass-menu absolute top-full left-0 z-50 mt-2 flex min-w-[220px] flex-col gap-0.5 p-2">

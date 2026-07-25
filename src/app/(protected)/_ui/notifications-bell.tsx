@@ -33,11 +33,23 @@ export function NotificationsBell() {
   return (
     <Link
       href="/notifications"
-      className="text-text-muted hover:text-text rounded-card relative px-3 py-1.5 font-semibold transition-colors"
+      title="Notificações"
+      className="relative flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[12px] border border-white/50 bg-white/34 text-[#5b63f5] saturate-[170%] backdrop-blur-[20px] transition-all hover:bg-white/50"
     >
-      Notificações
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        aria-hidden="true"
+      >
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
       {unread > 0 ? (
-        <span className="rounded-pill ml-1 bg-red-500 px-1.5 py-0.5 text-xs font-semibold text-white">
+        <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-xs">
           {unread}
         </span>
       ) : null}
