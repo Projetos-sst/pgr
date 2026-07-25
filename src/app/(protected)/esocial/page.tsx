@@ -6,9 +6,13 @@ import {
 } from "@/shared/server/actions/esocial/events";
 
 import { PageHeader } from "../_ui/list";
+import { EsocialIcon } from "./_components/esocial-icon";
 import { EventsTable } from "./_components/events-table";
 
 export const dynamic = "force-dynamic";
+
+const filterInput =
+  "text-text h-11 rounded-xl border border-white/70 bg-white/50 px-3.5 text-[13px] outline-none focus:border-primary focus:ring-[3px] focus:ring-primary-ring";
 
 type SearchParams = Promise<{
   status?: string;
@@ -42,37 +46,42 @@ export default async function EsocialPage({
     : [];
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
+        icon={<EsocialIcon />}
         title="eSocial — eventos SST"
-        description="Geração, envio em lote e consulta de retorno dos eventos SST (S-2190 a S-2300)."
+        description="Geração, envio em lote e retorno dos eventos SST (S-2190 a S-2300)"
       />
 
-      <form action="/esocial" method="get" className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Data inicial</span>
+      <form
+        action="/esocial"
+        method="get"
+        className="glass-card flex flex-wrap items-end gap-3 rounded-[20px] p-5"
+      >
+        <label className="flex flex-col gap-1.5">
+          <span className="text-text-muted text-[12px] font-semibold">Data inicial</span>
           <input
             type="date"
             name="dateFrom"
             defaultValue={sp.dateFrom}
-            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
+            className={filterInput}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Data final</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-text-muted text-[12px] font-semibold">Data final</span>
           <input
             type="date"
             name="dateTo"
             defaultValue={sp.dateTo}
-            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
+            className={filterInput}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Status</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-text-muted text-[12px] font-semibold">Status</span>
           <select
             name="status"
             defaultValue={sp.status ?? ""}
-            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
+            className={`${filterInput} font-semibold`}
           >
             <option value="">Todos</option>
             {Object.entries(EVENT_STATUS_LABELS).map(([value, label]) => (
@@ -84,7 +93,7 @@ export default async function EsocialPage({
         </label>
         <button
           type="submit"
-          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
+          className="text-text-muted hover:text-text h-11 rounded-xl border border-white/70 bg-white/50 px-4 text-[13px] font-semibold transition-colors"
         >
           Filtrar
         </button>
