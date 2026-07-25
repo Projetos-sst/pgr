@@ -6,8 +6,9 @@ import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies"
 import { listRequiredTrainingsAction } from "@/shared/server/actions/pgr/job-role-required-trainings";
 import { listTrainingCatalogOptionsAction } from "@/shared/server/actions/pgr/training-catalog";
 
-import { PageHeader } from "../../../_ui/list";
+import { FormPageHeader } from "../../../_ui/list";
 import { JobRoleForm } from "../../_components/job-role-form";
+import { JobRoleIcon } from "../../_components/job-role-icon";
 import { DeleteJobRole } from "../../_components/delete-job-role";
 import { RequiredTrainings } from "../../_components/required-trainings";
 
@@ -33,12 +34,18 @@ export default async function EditJobRolePage({
   const trainingOptions = trainingOptionsResult.ok ? trainingOptionsResult.data : [];
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader
+    <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
+      <FormPageHeader
+        backHref="/job-roles"
+        icon={<JobRoleIcon />}
         title={jobRoleResult.data.title}
-        description="Detalhe e edição da função."
+        description="Detalhe e edição da função"
         action={
-          <DeleteJobRole id={jobRoleResult.data.id} redirectTo="/job-roles" hasLabel />
+          <DeleteJobRole
+            id={jobRoleResult.data.id}
+            redirectTo="/job-roles"
+            variant="text"
+          />
         }
       />
       <JobRoleForm companies={companies} jobRole={jobRoleResult.data} />

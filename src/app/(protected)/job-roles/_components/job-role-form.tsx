@@ -11,9 +11,11 @@ import type { JobRoleInput, JobRole } from "@/shared/domains/pgr/job-roles";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 
 import {
+  CancelLink,
   FieldError,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
@@ -58,45 +60,56 @@ export function JobRoleForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <FormError message={formError} />
-      <SelectField
-        label="Empresa"
-        name="companyId"
-        required
-        defaultValue={jobRole?.companyId}
-        options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
-        error={errors.companyId}
-      />
-      <TextField
-        label="Título"
-        name="title"
-        required
-        defaultValue={jobRole?.title}
-        error={errors.title}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <TextField
-          label="CBO"
-          name="cbo"
-          defaultValue={jobRole?.cbo}
-          error={errors.cbo}
-        />
-        <TextField
-          label="Jornada"
-          name="workSchedule"
-          defaultValue={jobRole?.workSchedule}
-          error={errors.workSchedule}
-        />
-      </div>
-      <TextField
-        label="Descrição"
-        name="description"
-        defaultValue={jobRole?.description}
-        error={errors.description}
-      />
+
+      <FormSection title="Função">
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <SelectField
+            label="Empresa"
+            name="companyId"
+            required
+            defaultValue={jobRole?.companyId}
+            options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
+            error={errors.companyId}
+          />
+          <TextField
+            label="Título"
+            name="title"
+            required
+            defaultValue={jobRole?.title}
+            error={errors.title}
+          />
+          <TextField
+            label="CBO"
+            name="cbo"
+            mono
+            placeholder="0000-00"
+            defaultValue={jobRole?.cbo}
+            error={errors.cbo}
+          />
+          <TextField
+            label="Jornada"
+            name="workSchedule"
+            placeholder="Ex.: 44h semanais"
+            defaultValue={jobRole?.workSchedule}
+            error={errors.workSchedule}
+          />
+          <div className="sm:col-span-2">
+            <TextField
+              label="Descrição"
+              name="description"
+              placeholder="Atribuições e responsabilidades do cargo"
+              defaultValue={jobRole?.description}
+              error={errors.description}
+            />
+          </div>
+        </div>
+      </FormSection>
+
       <FieldError message={errors._} />
       <FormActions>
+        <CancelLink href="/job-roles" />
         <SubmitButton
           pending={pending}
           label={jobRole ? "Salvar alterações" : "Criar função"}

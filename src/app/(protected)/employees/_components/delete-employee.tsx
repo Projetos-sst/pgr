@@ -7,11 +7,11 @@ import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 export function DeleteEmployee({
   id,
   redirectTo,
-  hasLabel,
+  variant = "icon",
 }: {
   id: string;
   redirectTo?: string;
-  hasLabel?: boolean;
+  variant?: "text" | "icon";
 }) {
   return (
     <ConfirmDeleteButton
@@ -19,7 +19,7 @@ export function DeleteEmployee({
       entityName="funcionário"
       deleteAction={deleteEmployeeAction}
       redirectTo={redirectTo}
-      hasLabel={hasLabel}
+      variant={variant}
     />
   );
 }

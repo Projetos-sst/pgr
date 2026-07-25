@@ -1,13 +1,26 @@
-import Link from "next/link";
-
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
 import { listEmployeesAction } from "@/shared/server/actions/pgr/employees";
 import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies";
 
-import { EmptyState, PageHeader, Pagination, PrimaryLink, Table } from "../_ui/list";
-import { EditRowAction, RowActions, ViewRowAction } from "../_ui/row-actions";
+import {
+  AvatarBadge,
+  Cell,
+  DataGrid,
+  EditIconLink,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  RowActions,
+  StatusBadge,
+  ToolbarButton,
+  type StatusTone,
+} from "../_ui/data-list";
+import { EmptyState, PageHeader } from "../_ui/list";
 import { DeleteEmployee } from "./_components/delete-employee";
+import { EmployeeIcon } from "./_components/employee-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +36,17 @@ const STATUS_LABEL: Record<string, string> = {
   on_leave: "Afastado",
   dismissed: "Desligado",
 };
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  active: "green",
+  on_leave: "amber",
+  dismissed: "red",
+};
+
+const TEMPLATE = "2fr 1.4fr 1.4fr 1.2fr 100px 84px";
+
+const filterInput =
+  "text-text h-11 rounded-xl border border-white/70 bg-white/50 px-3.5 text-[13px] outline-none focus:border-primary focus:ring-[3px] focus:ring-primary-ring";
 
 type SearchParams = Promise<{
   search?: string;
@@ -54,87 +78,117 @@ export default async function EmployeesPage({
   const companies = companiesResult.ok ? companiesResult.data : [];
 
   return (
-    <div className="animate-fade-slide-up flex flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
+        icon={<EmployeeIcon />}
         title="Funcionários"
-        description="Pessoas vinculadas às empresas-cliente."
-        action={<PrimaryLink href="/employees/new">Novo funcionário</PrimaryLink>}
+        description="Pessoas vinculadas às empresas-cliente"
       />
 
-      <form action="/employees" method="get" className="flex flex-wrap gap-2">
-        <select
-          name="companyId"
-          defaultValue={sp.companyId ?? ""}
-          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
-        >
-          <option value="">Todas as empresas</option>
-          {companies.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.razaoSocial}
-            </option>
-          ))}
-        </select>
-        <select
-          name="status"
-          defaultValue={sp.status ?? ""}
-          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
-        >
-          {STATUS_FILTER.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <input
-          name="search"
-          defaultValue={sp.search ?? ""}
-          placeholder="Buscar por nome, GES ou função"
-          className="glass-input text-text rounded-card w-full max-w-xs px-3 py-2 text-sm outline-none"
-        />
-        <button
-          type="submit"
-          className="glass-panel hover-lift text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-all"
-        >
-          Filtrar
-        </button>
-      </form>
+      <ListCard>
+        <ListToolbar>
+          <form
+            action="/employees"
+            method="get"
+            className="flex flex-1 flex-wrap items-center gap-2.5"
+          >
+            <input
+              name="search"
+              defaultValue={sp.search ?? ""}
+              placeholder="Buscar por nome, GES ou função…"
+              className={`${filterInput} min-w-[200px] flex-1`}
+            />
+            <select
+              name="companyId"
+              defaultValue={sp.companyId ?? ""}
+              className={`${filterInput} font-semibold`}
+            >
+              <option value="">Todas as empresas</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.razaoSocial}
+                </option>
+              ))}
+            </select>
+            <select
+              name="status"
+              defaultValue={sp.status ?? ""}
+              className={`${filterInput} font-semibold`}
+            >
+              {STATUS_FILTER.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="text-text-muted hover:text-text h-11 rounded-xl border border-white/70 bg-white/50 px-4 text-[13px] font-semibold transition-colors"
+            >
+              Filtrar
+            </button>
+          </form>
+          <ToolbarButton href="/employees/new">Novo Funcionário</ToolbarButton>
+        </ListToolbar>
 
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhum funcionário encontrado." />
-      ) : (
-        <Table headers={["Nome", "Empresa", "GES", "Status", ""]}>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2">
-                <Link
-                  href={`/employees/${row.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {row.fullName}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.companyName}</td>
-              <td className="px-4 py-2">{row.gesName ?? "—"}</td>
-              <td className="px-4 py-2">{STATUS_LABEL[row.status] ?? row.status}</td>
-              <td className="px-4 py-2">
-                <RowActions>
-                  <ViewRowAction href={`/employees/${row.id}`} />
-                  <EditRowAction href={`/employees/${row.id}/edit`} />
-                  <DeleteEmployee id={row.id} />
-                </RowActions>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
-
-      <Pagination
-        basePath="/employees"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={{ search: sp.search, companyId: sp.companyId, status: sp.status }}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState message="Nenhum funcionário encontrado." />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={940}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Nome" },
+                  { header: "GES / Obra" },
+                  { header: "Empresa" },
+                  { header: "Ordens de Serviço" },
+                  { header: "Status" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <Cell>
+                    <span className="flex items-center gap-3">
+                      <AvatarBadge name={row.fullName} />
+                      <a
+                        href={`/employees/${row.id}`}
+                        className="text-text font-semibold hover:underline"
+                      >
+                        {row.fullName}
+                      </a>
+                    </span>
+                  </Cell>
+                  <Cell>{row.gesName ?? "—"}</Cell>
+                  <Cell>{row.companyName}</Cell>
+                  <Cell className="text-text-subtle">—</Cell>
+                  <Cell>
+                    <StatusBadge tone={STATUS_TONE[row.status] ?? "neutral"}>
+                      {STATUS_LABEL[row.status] ?? row.status}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell align="right">
+                    <RowActions>
+                      <EditIconLink href={`/employees/${row.id}/edit`} />
+                      <DeleteEmployee id={row.id} />
+                    </RowActions>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/employees"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={{ search: sp.search, companyId: sp.companyId, status: sp.status }}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }
