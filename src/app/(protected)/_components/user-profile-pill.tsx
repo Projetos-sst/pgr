@@ -4,18 +4,27 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+function getDisplayName(user: ReturnType<typeof useUser>["user"]): string {
+  if (!user) return "Usuário";
+  return (
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+    user.username ||
+    "Usuário"
+  );
+}
+
+function getAvatarInitial(name: string): string {
+  return name.charAt(0).toUpperCase() || "U";
+}
+
 export function UserProfilePill() {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [open, setOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  const name = user
-    ? [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-      user.username ||
-      "Usuário"
-    : "Usuário";
-  const initial = name.charAt(0).toUpperCase() || "U";
+  const name = getDisplayName(user);
+  const initial = getAvatarInitial(name);
   const avatarUrl = user?.imageUrl;
 
   useEffect(() => {

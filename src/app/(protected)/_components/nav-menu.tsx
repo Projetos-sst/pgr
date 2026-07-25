@@ -376,6 +376,16 @@ function isActive(pathname: string, href?: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function isMenuItemActive(item: MenuItem, pathname: string): boolean {
+  if (item.href) return isActive(pathname, item.href);
+  return Boolean(item.children?.some((child) => isActive(pathname, child.href)));
+}
+
+function isGroupActive(entry: NavEntry, pathname: string): boolean {
+  if (entry.kind !== "group") return false;
+  return entry.items.some((item) => isMenuItemActive(item, pathname));
+}
+
 const emptySubscribe = () => () => {};
 function useIsMounted() {
   return useSyncExternalStore(
@@ -395,11 +405,7 @@ function isGroupExpanded(
   }
   const entry = NAV.find((e) => e.kind === "group" && e.label === entryLabel);
   if (!entry || entry.kind !== "group") return false;
-  return entry.items.some((item) =>
-    item.href
-      ? isActive(pathname, item.href)
-      : item.children?.some((child) => isActive(pathname, child.href)),
-  );
+  return entry.items.some((item) => isMenuItemActive(item, pathname));
 }
 
 export function NavMenu() {
@@ -473,11 +479,7 @@ export function NavMenu() {
           }
 
           const open = openGroup === entry.label;
-          const groupActive = entry.items.some((item) =>
-            item.href
-              ? isActive(pathname, item.href)
-              : item.children?.some((child) => isActive(pathname, child.href)),
-          );
+          const groupActive = isGroupActive(entry, pathname);
 
           return (
             <div key={entry.label} className="relative">
@@ -514,9 +516,7 @@ export function NavMenu() {
                       item.children && item.children.length > 0,
                     );
                     const isSubOpen = activeSubmenu === item.label;
-                    const itemActive = item.href
-                      ? isActive(pathname, item.href)
-                      : item.children?.some((child) => isActive(pathname, child.href));
+                    const itemActive = isMenuItemActive(item, pathname);
 
                     if (hasChildren) {
                       return (
@@ -764,13 +764,7 @@ export function NavMenu() {
                           pathname,
                           mobileExpandedGroups,
                         );
-                        const groupActive = entry.items.some((item) =>
-                          item.href
-                            ? isActive(pathname, item.href)
-                            : item.children?.some((child) =>
-                                isActive(pathname, child.href),
-                              ),
-                        );
+                        const groupActive = isGroupActive(entry, pathname);
 
                         return (
                           <div
