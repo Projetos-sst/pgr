@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSyncExternalStore, useState } from "react";
 
 export type DashboardViewConfig = {
   kpis: boolean;
@@ -24,24 +24,43 @@ export const DEFAULT_VIEW_CONFIG: DashboardViewConfig = {
 
 const STORAGE_KEY = "sst_dashboard_view_config";
 
+function subscribe(callback: () => void) {
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+
+function getSnapshot(): string {
+  return localStorage.getItem(STORAGE_KEY) ?? "";
+}
+
+function getServerSnapshot(): string {
+  return "";
+}
+
 export function useDashboardViewConfig() {
-  const [config, setConfig] = useState<DashboardViewConfig>(() => {
-    if (typeof window === "undefined") return DEFAULT_VIEW_CONFIG;
+  const rawSaved = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [userConfig, setUserConfig] = useState<Partial<DashboardViewConfig>>({});
+
+  let savedParsed: Partial<DashboardViewConfig> = {};
+  if (rawSaved) {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return { ...DEFAULT_VIEW_CONFIG, ...JSON.parse(saved) };
-      }
+      savedParsed = JSON.parse(rawSaved) as Partial<DashboardViewConfig>;
     } catch {
-      // fallback default
+      // ignore
     }
-    return DEFAULT_VIEW_CONFIG;
-  });
+  }
+
+  const config: DashboardViewConfig = {
+    ...DEFAULT_VIEW_CONFIG,
+    ...savedParsed,
+    ...userConfig,
+  };
 
   function updateConfig(newConfig: DashboardViewConfig) {
-    setConfig(newConfig);
+    setUserConfig(newConfig);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
+      window.dispatchEvent(new Event("storage"));
     } catch {
       // ignore
     }
