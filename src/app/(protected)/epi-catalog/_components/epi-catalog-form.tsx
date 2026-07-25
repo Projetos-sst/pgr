@@ -13,9 +13,11 @@ import { CaField } from "@/shared/integrations/caepi/client/ca-field";
 import type { CaFound } from "@/shared/integrations/caepi/client/use-caepi-validation";
 
 import {
+  CancelLink,
   FieldError,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
@@ -123,93 +125,118 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <FormError message={formError} />
-      <SelectField
-        label="Tipo"
-        name="type"
-        required
-        value={type}
-        onChange={handleTypeChange}
-        options={TYPE_OPTIONS}
-        error={errors.type}
-      />
-      <SelectField
-        label="Categoria"
-        name="categoryId"
-        required
-        value={categoryId}
-        onChange={setCategoryId}
-        options={categories}
-        error={errors.categoryId}
-        disabled={categories.length === 0}
-        emptyLabel={
-          type === "" ? "— selecione o tipo primeiro —" : "— selecione a categoria —"
-        }
-      />
-      <TextField
-        label="Nome"
-        name="name"
-        required
-        defaultValue={item?.name}
-        error={errors.name}
-      />
-      <CaField
-        label="CA"
-        value={ca}
-        onChange={setCa}
-        onFound={handleCaFound}
-        onNotFound={handleCaNotFound}
-        error={errors.ca}
-      />
-      <TextField
-        label="Validade do CA"
-        name="caValidUntil"
-        type="date"
-        value={caValidUntil}
-        onChange={setCaValidUntil}
-        error={errors.caValidUntil}
-      />
-      <TextField
-        label="Fabricante"
-        name="manufacturer"
-        value={manufacturer}
-        onChange={setManufacturer}
-        error={errors.manufacturer}
-      />
-      <TextField
-        label="Norma"
-        name="norm"
-        value={norm}
-        onChange={setNorm}
-        error={errors.norm}
-      />
-      <TextField
-        label="Tamanho"
-        name="size"
-        defaultValue={item?.size}
-        error={errors.size}
-      />
-      <TextField
-        label="Unidade de medida"
-        name="unitOfMeasure"
-        defaultValue={item?.unitOfMeasure}
-        error={errors.unitOfMeasure}
-      />
-      <TextField
-        label="Descrição"
-        name="description"
-        defaultValue={item?.description}
-        error={errors.description}
-      />
-      <TextField
-        label="Caminho da foto"
-        name="photoPath"
-        defaultValue={item?.photoPath}
-        error={errors.photoPath}
-      />
+
+      <FormSection title="Classificação">
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <SelectField
+            label="Tipo"
+            name="type"
+            required
+            value={type}
+            onChange={handleTypeChange}
+            options={TYPE_OPTIONS}
+            error={errors.type}
+          />
+          <SelectField
+            label="Categoria"
+            name="categoryId"
+            required
+            value={categoryId}
+            onChange={setCategoryId}
+            options={categories}
+            error={errors.categoryId}
+            disabled={categories.length === 0}
+            emptyLabel={
+              type === "" ? "— selecione o tipo primeiro —" : "— selecione a categoria —"
+            }
+          />
+        </div>
+      </FormSection>
+
+      <FormSection title="Identificação & CA">
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <TextField
+              label="Nome"
+              name="name"
+              required
+              placeholder="Ex.: Capacete de segurança aba frontal"
+              defaultValue={item?.name}
+              error={errors.name}
+            />
+          </div>
+          <CaField
+            label="CA"
+            value={ca}
+            onChange={setCa}
+            onFound={handleCaFound}
+            onNotFound={handleCaNotFound}
+            error={errors.ca}
+          />
+          <TextField
+            label="Validade do CA"
+            name="caValidUntil"
+            type="date"
+            value={caValidUntil}
+            onChange={setCaValidUntil}
+            error={errors.caValidUntil}
+          />
+          <TextField
+            label="Fabricante"
+            name="manufacturer"
+            value={manufacturer}
+            onChange={setManufacturer}
+            error={errors.manufacturer}
+          />
+          <TextField
+            label="Norma"
+            name="norm"
+            value={norm}
+            onChange={setNorm}
+            error={errors.norm}
+          />
+        </div>
+      </FormSection>
+
+      <FormSection title="Especificações">
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <TextField
+            label="Tamanho"
+            name="size"
+            defaultValue={item?.size}
+            error={errors.size}
+          />
+          <TextField
+            label="Unidade de medida"
+            name="unitOfMeasure"
+            placeholder="Ex.: par, unidade"
+            defaultValue={item?.unitOfMeasure}
+            error={errors.unitOfMeasure}
+          />
+          <div className="sm:col-span-2">
+            <TextField
+              label="Descrição"
+              name="description"
+              defaultValue={item?.description}
+              error={errors.description}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <TextField
+              label="Caminho da foto"
+              name="photoPath"
+              defaultValue={item?.photoPath}
+              error={errors.photoPath}
+            />
+          </div>
+        </div>
+      </FormSection>
+
       <FieldError message={errors._} />
       <FormActions>
+        <CancelLink href="/epi-catalog" />
         <SubmitButton
           pending={pending}
           label={item ? "Salvar alterações" : "Criar item"}
