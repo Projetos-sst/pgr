@@ -1,12 +1,13 @@
 import Link from "next/link";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { listMembershipsByOrg } from "@/shared/db/repositories/org-memberships";
 import { getDashboardSummaryAction } from "@/shared/server/actions/platform/dashboard";
 import { getPendingItemsAction } from "@/shared/server/actions/platform/pending-items";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ filter?: string; search?: string }>;
+type SearchParams = Promise<{ filter?: string; search?: string; view?: string }>;
 
 type RenderedTask = {
   id: string;
@@ -23,15 +24,19 @@ export default async function MinhasTarefasPage({
 }: {
   searchParams: SearchParams;
 }) {
-  await requireOfficeStaffPage();
+  const ctx = await requireOfficeStaffPage();
   const sp = await searchParams;
   const currentFilter = sp.filter ?? "all";
   const searchQuery = (sp.search ?? "").toLowerCase().trim();
 
-  const [summaryRes, itemsRes] = await Promise.all([
+  const [summaryRes, itemsRes, teamRoster] = await Promise.all([
     getDashboardSummaryAction(),
     getPendingItemsAction(),
+    listMembershipsByOrg(ctx.tenantId),
   ]);
+
+  const hasActiveTeam = teamRoster.total > 1;
+  const activeView = sp.view === "team" && hasActiveTeam ? "team" : "my";
 
   const p = summaryRes.ok ? summaryRes.data.pending : null;
   const items = itemsRes.ok ? itemsRes.data : null;
@@ -161,34 +166,67 @@ export default async function MinhasTarefasPage({
           </div>
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-[#1b1f2e]">
-              Minhas Tarefas
+              {activeView === "team" ? "Tarefas da Equipe" : "Minhas Tarefas"}
             </h1>
             <p className="text-xs font-medium text-[#8c91a8]">
-              Acompanhe todos os seus prazos e atividades ativas no sistema.
+              {activeView === "team"
+                ? `Acompanhe os prazos e pendências de todos os ${teamRoster.total} membros da equipe.`
+                : "Acompanhe todos os seus prazos e atividades ativas no sistema."}
             </p>
           </div>
         </div>
 
         {/* Visão da Equipe Toggle Pill */}
-        <div className="flex items-center gap-2.5 rounded-full border border-white/60 bg-white/40 px-3.5 py-1.5 backdrop-blur-md">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#7a7f97"
-            strokeWidth="1.8"
+        {hasActiveTeam ? (
+          <Link
+            href={`/pending-items?view=${activeView === "team" ? "my" : "team"}${currentFilter !== "all" ? `&filter=${currentFilter}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}`}
+            title={activeView === "team" ? "Alternar para minhas tarefas" : "Alternar para visão de toda a equipe"}
+            className="flex items-center gap-2.5 rounded-full border border-white/60 bg-white/50 px-3.5 py-1.5 backdrop-blur-md transition-all hover:bg-white/80 hover:scale-105 active:scale-95 shadow-xs"
           >
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-          <span className="text-xs font-bold text-[#52576e]">Visão da Equipe</span>
-          <div className="h-4 w-7 rounded-full bg-black/10 p-0.5 transition-colors">
-            <div className="h-3 w-3 rounded-full bg-white shadow-xs" />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={activeView === "team" ? "#5b63f5" : "#52576e"}
+              strokeWidth="1.8"
+            >
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span className={`text-xs font-bold ${activeView === "team" ? "text-[#5b63f5]" : "text-[#52576e]"}`}>
+              Visão da Equipe
+            </span>
+            <div className={`h-4 w-7 rounded-full p-0.5 transition-colors ${activeView === "team" ? "bg-[#5b63f5]" : "bg-black/15"}`}>
+              <div className={`h-3 w-3 rounded-full bg-white shadow-xs transition-transform ${activeView === "team" ? "translate-x-3" : "translate-x-0"}`} />
+            </div>
+          </Link>
+        ) : (
+          <div
+            title="Visão da equipe disponível apenas para organizações com equipe ativa (mais de 1 membro)."
+            className="flex items-center gap-2.5 rounded-full border border-white/40 bg-white/20 px-3.5 py-1.5 backdrop-blur-md opacity-60 cursor-not-allowed select-none"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#7a7f97"
+              strokeWidth="1.8"
+            >
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span className="text-xs font-bold text-[#7a7f97]">Visão da Equipe</span>
+            <div className="h-4 w-7 rounded-full bg-slate-200 p-0.5">
+              <div className="h-3 w-3 rounded-full bg-slate-400 shadow-xs" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 5 KPI Metric Cards REAIS */}

@@ -11,11 +11,11 @@ export function HeaderActions() {
 
   return (
     <div className="flex items-center gap-2">
-      {/* Ícone de Mapa / Trilha de Sucesso / Tutorial */}
+      {/* Ícone de Mapa / Trilha do Sucesso — SST Manager */}
       <Link
         href="/getting-started"
-        title="Trilha de Sucesso / Tutorial da Plataforma"
-        className={`flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/50 bg-white/34 text-[#52576e] shadow-xs backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/60 active:scale-95 ${
+        title="Trilha do Sucesso — SST Manager"
+        className={`flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/50 bg-white/34 text-[#52576e] shadow-xs backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:scale-105 hover:bg-white/60 hover:text-[#5b63f5] active:scale-95 ${
           isGettingStarted ? "border-[#5b63f5] bg-[#5b63f5]/10 text-[#5b63f5]" : ""
         }`}
       >
@@ -39,7 +39,7 @@ export function HeaderActions() {
       <Link
         href="/pending-items"
         title="Minhas Tarefas e Pendências"
-        className={`flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/50 bg-white/34 text-[#52576e] shadow-xs backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/60 active:scale-95 ${
+        className={`flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/50 bg-white/34 text-[#52576e] shadow-xs backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:scale-105 hover:bg-white/60 hover:text-[#5b63f5] active:scale-95 ${
           isPendingItems ? "border-[#5b63f5] bg-[#5b63f5]/10 text-[#5b63f5]" : ""
         }`}
       >

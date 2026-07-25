@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type SubMenuItem = {
   href: string;
@@ -360,7 +361,18 @@ export function NavMenu() {
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileExpandedGroups, setMobileExpandedGroups] = useState<Record<string, boolean>>({});
+  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  function closeDesktop() {
+    setOpenGroup(null);
+    setActiveSubmenu(null);
+  }
 
   function closeAll() {
     setOpenGroup(null);
@@ -368,10 +380,28 @@ export function NavMenu() {
     setMobileOpen(false);
   }
 
+  // Pre-expand group containing current active route on mobile
+  useEffect(() => {
+    const initialExpanded: Record<string, boolean> = {};
+    NAV.forEach((entry) => {
+      if (entry.kind === "group") {
+        const hasActive = entry.items.some((item) =>
+          item.href
+            ? isActive(pathname, item.href)
+            : item.children?.some((child) => isActive(pathname, child.href))
+        );
+        if (hasActive) {
+          initialExpanded[entry.label] = true;
+        }
+      }
+    });
+    setMobileExpandedGroups((prev) => ({ ...initialExpanded, ...prev }));
+  }, [pathname]);
+
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        closeAll();
+        closeDesktop();
       }
     }
     function onEscape(event: KeyboardEvent) {
@@ -385,10 +415,17 @@ export function NavMenu() {
     };
   }, []);
 
+  function toggleMobileGroup(label: string) {
+    setMobileExpandedGroups((prev) => ({
+      ...prev,
+      [label]: !prev[label],
+    }));
+  }
+
   return (
     <div ref={containerRef} className="flex items-center">
-      {/* Desktop: itens inline na barra */}
-      <nav className="hidden items-center gap-1 md:flex">
+      {/* Desktop: itens inline na barra (apenas xl: 1280px e acima) */}
+      <nav className="hidden items-center gap-1 xl:flex">
         {NAV.map((entry) => {
           if (entry.kind === "link") {
             const active = isActive(pathname, entry.href);
@@ -428,11 +465,11 @@ export function NavMenu() {
                   groupActive ? "text-[#5b63f5]" : "text-[#7a7f97] hover:text-[#1b1f2e]"
                 }`}
               >
-                <NavIcon name={entry.iconName} className="w-4 h-4 text-[#7a7f97] group-hover:text-[#5b63f5]" />
+                <NavIcon name={entry.iconName} className="h-4 w-4 text-[#7a7f97] group-hover:text-[#5b63f5]" />
                 {entry.label}
                 <span
                   aria-hidden
-                  className={`inline-block text-[#9095ad] text-[11px] transition-transform duration-200 ${
+                  className={`inline-block text-[11px] text-[#9095ad] transition-transform duration-200 ${
                     open ? "rotate-180" : ""
                   }`}
                 >
@@ -441,7 +478,7 @@ export function NavMenu() {
               </button>
 
               {open ? (
-                <div className="glass-menu animate-modal-pop absolute top-full left-0 z-50 mt-2 flex min-w-[230px] flex-col gap-0.5 p-2 shadow-2xl">
+                <div className="glass-menu animate-dropdown-pop absolute top-full left-0 z-50 mt-2 flex min-w-[240px] flex-col gap-0.5 p-2 shadow-2xl">
                   {entry.items.map((item) => {
                     const hasChildren = Boolean(item.children && item.children.length > 0);
                     const isSubOpen = activeSubmenu === item.label;
@@ -464,12 +501,12 @@ export function NavMenu() {
                             }
                             className={`flex w-full items-center justify-between rounded-card px-3 py-2 text-sm font-medium transition-all duration-150 ${
                               itemActive || isSubOpen
-                                ? "bg-primary-ring/60 text-primary-strong font-bold"
-                                : "text-text-muted hover:text-text hover:bg-black/[0.04]"
+                                ? "bg-primary-ring/60 font-bold text-primary-strong"
+                                : "text-text-muted hover:bg-black/[0.04] hover:text-text"
                             }`}
                           >
                             <span className="flex items-center gap-2.5">
-                              <NavIcon name={item.iconName} className="text-[#5b63f5] w-4 h-4" />
+                              <NavIcon name={item.iconName} className="h-4 w-4 text-[#5b63f5]" />
                               {item.label}
                             </span>
                             <span className="text-[12px] text-[#9095ad]">›</span>
@@ -477,7 +514,7 @@ export function NavMenu() {
 
                           {/* Flyout Submenu */}
                           {isSubOpen ? (
-                            <div className="glass-menu animate-modal-pop absolute top-0 left-full z-50 ml-1 flex min-w-[200px] flex-col gap-0.5 p-2 shadow-2xl">
+                            <div className="glass-menu animate-dropdown-pop absolute top-0 left-full z-50 ml-1 flex min-w-[200px] flex-col gap-0.5 p-2 shadow-2xl">
                               {item.children?.map((child) => (
                                 <Link
                                   key={child.href}
@@ -485,11 +522,11 @@ export function NavMenu() {
                                   onClick={closeAll}
                                   className={`flex items-center gap-2.5 rounded-card px-3 py-2 text-sm font-medium transition-all duration-150 ${
                                     isActive(pathname, child.href)
-                                      ? "bg-primary-ring text-primary-strong font-bold"
-                                      : "text-text-muted hover:text-text hover:translate-x-0.5 hover:bg-black/[0.04]"
+                                      ? "bg-primary-ring font-bold text-primary-strong"
+                                      : "text-text-muted hover:translate-x-0.5 hover:bg-black/[0.04] hover:text-text"
                                   }`}
                                 >
-                                  <NavIcon name={child.iconName} className="text-[#5b63f5] w-4 h-4" />
+                                  <NavIcon name={child.iconName} className="h-4 w-4 text-[#5b63f5]" />
                                   {child.label}
                                 </Link>
                               ))}
@@ -506,11 +543,11 @@ export function NavMenu() {
                         onClick={closeAll}
                         className={`flex items-center gap-2.5 rounded-card px-3 py-2 text-sm font-medium transition-all duration-150 ${
                           isActive(pathname, item.href!)
-                            ? "bg-primary-ring text-primary-strong font-bold"
-                            : "text-text-muted hover:text-text hover:translate-x-0.5 hover:bg-black/[0.04]"
+                            ? "bg-primary-ring font-bold text-primary-strong"
+                            : "text-text-muted hover:translate-x-0.5 hover:bg-black/[0.04] hover:text-text"
                         }`}
                       >
-                        <NavIcon name={item.iconName} className="text-[#5b63f5] w-4 h-4" />
+                        <NavIcon name={item.iconName} className="h-4 w-4 text-[#5b63f5]" />
                         {item.label}
                       </Link>
                     );
@@ -522,86 +559,272 @@ export function NavMenu() {
         })}
       </nav>
 
-      {/* Mobile: hambúrguer + painel absoluto */}
-      <div className="relative md:hidden">
+      {/* Mobile e Tablet: Botão de Menu (Apenas Ícone) (< 1280px) */}
+      <div className="xl:hidden">
         <button
           type="button"
           aria-expanded={mobileOpen}
           aria-controls="nav-mobile-panel"
+          aria-label="Abrir Menu de Navegação"
+          title="Menu de Navegação"
           onClick={() => setMobileOpen((v) => !v)}
-          className="glass-panel text-text-muted rounded-card flex items-center gap-2 px-3 py-1.5 text-sm font-semibold"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] border border-white/50 bg-white/40 text-[#5b63f5] shadow-xs backdrop-blur-[20px] transition-all duration-200 hover:scale-105 hover:bg-white/60 active:scale-95"
         >
-          <span aria-hidden>☰</span> Menu
-        </button>
-        {mobileOpen ? (
-          <div
-            id="nav-mobile-panel"
-            className="glass-menu absolute top-full left-0 z-50 mt-2 flex w-[260px] flex-col gap-3 p-4 shadow-2xl"
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            {NAV.map((entry) =>
-              entry.kind === "link" ? (
-                <Link
-                  key={entry.href}
-                  href={entry.href}
+            {mobileOpen ? (
+              <path d="M18 6L6 18M6 6l12 12" />
+            ) : (
+              <>
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </>
+            )}
+          </svg>
+        </button>
+
+        {/* Portal para document.body (impede qualquer corte por backdrop-filter do header) */}
+        {mobileOpen && mounted
+          ? createPortal(
+              <>
+                {/* Backdrop escuro absoluto */}
+                <div
+                  className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-xs xl:hidden animate-fade-in"
                   onClick={closeAll}
-                  className={`rounded-card px-3 py-2 text-sm font-semibold ${
-                    isActive(pathname, entry.href)
-                      ? "bg-primary-ring text-primary-strong"
-                      : "text-text-muted"
-                  }`}
+                />
+
+                {/* Off-Canvas Side Drawer Sólido no Body com Animação de Entrada */}
+                <div
+                  id="nav-mobile-panel"
+                  className="fixed inset-y-0 left-0 z-[999] flex w-[340px] sm:w-[380px] max-w-[90vw] flex-col border-r border-slate-200 bg-white text-[#1b1f2e] shadow-2xl xl:hidden overflow-hidden animate-drawer-slide-left"
                 >
-                  {entry.label}
-                </Link>
-              ) : (
-                <div key={entry.label} className="flex flex-col gap-1">
-                  <span className="text-text-subtle font-mono text-[10px] tracking-[0.12em] uppercase flex items-center gap-1.5">
-                    <NavIcon name={entry.iconName} className="w-3.5 h-3.5" />
-                    {entry.label}
-                  </span>
-                  {entry.items.map((item) =>
-                    item.children ? (
-                      <div key={item.label} className="flex flex-col gap-1 pl-2">
-                        <span className="text-xs font-semibold text-[#5b63f5] flex items-center gap-1.5 pt-1">
-                          <NavIcon name={item.iconName} className="w-3.5 h-3.5" />
-                          {item.label}
-                        </span>
-                        {item.children.map((child) => (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            onClick={closeAll}
-                            className={`rounded-card px-3 py-1.5 text-xs font-medium flex items-center gap-2 ${
-                              isActive(pathname, child.href)
-                                ? "bg-primary-ring text-primary-strong font-bold"
-                                : "text-text-muted"
-                            }`}
-                          >
-                            <NavIcon name={child.iconName} className="w-3.5 h-3.5 text-[#5b63f5]" />
-                            {child.label}
-                          </Link>
-                        ))}
-                      </div>
-                    ) : (
+                  {/* Drawer Top Header */}
+                  <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-slate-100 px-5 bg-white">
+                    <Link
+                      href="/welcome"
+                      onClick={closeAll}
+                      className="flex items-center gap-2.5 transition-transform hover:scale-105"
+                    >
+                      <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-[#5b63f5] text-sm font-extrabold text-white shadow-[0_4px_14px_rgba(91,99,245,0.4)]">
+                        S
+                      </span>
+                      <span className="text-base font-extrabold tracking-tight text-[#1b1f2e]">
+                        SST Manager
+                      </span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={closeAll}
+                      aria-label="Fechar menu"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 active:scale-95"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Drawer Scrollable Content */}
+                  <div className="flex-1 overflow-y-auto p-4 bg-white">
+                    {/* Ações Rápidas (Exibidas no celular quando ocultas da barra superior) */}
+                    <div className="mb-4 flex flex-col gap-2 border-b border-slate-100 pb-4 md:hidden">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#9095ad]">
+                        Acesso Rápido
+                      </span>
                       <Link
-                        key={item.href}
-                        href={item.href!}
+                        href="/getting-started"
                         onClick={closeAll}
-                        className={`rounded-card px-3 py-1.5 text-sm font-medium flex items-center gap-2 ${
-                          isActive(pathname, item.href!)
-                            ? "bg-primary-ring text-primary-strong font-bold"
-                            : "text-text-muted"
+                        className={`flex items-center gap-2.5 rounded-[12px] px-3 py-2 text-xs font-semibold transition-all ${
+                          pathname === "/getting-started"
+                            ? "bg-[#5b63f5]/10 font-bold text-[#5b63f5]"
+                            : "text-[#52576e] hover:bg-slate-100 hover:text-[#1b1f2e]"
                         }`}
                       >
-                        <NavIcon name={item.iconName} className="w-4 h-4 text-[#5b63f5]" />
-                        {item.label}
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-[#5b63f5]"
+                        >
+                          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+                          <line x1="8" y1="2" x2="8" y2="18" />
+                          <line x1="16" y1="6" x2="16" y2="22" />
+                        </svg>
+                        <span>Trilha do Sucesso — SST Manager</span>
                       </Link>
-                    )
-                  )}
+
+                      <Link
+                        href="/pending-items"
+                        onClick={closeAll}
+                        className={`flex items-center gap-2.5 rounded-[12px] px-3 py-2 text-xs font-semibold transition-all ${
+                          pathname === "/pending-items"
+                            ? "bg-[#5b63f5]/10 font-bold text-[#5b63f5]"
+                            : "text-[#52576e] hover:bg-slate-100 hover:text-[#1b1f2e]"
+                        }`}
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-[#5b63f5]"
+                        >
+                          <path d="M9 11l3 3L22 4" />
+                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                        </svg>
+                        <span>Minhas Tarefas e Pendências</span>
+                      </Link>
+                    </div>
+
+                    <div className="mb-2">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#9095ad]">
+                        Menu de Navegação
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      {NAV.map((entry) => {
+                        if (entry.kind === "link") {
+                          const active = isActive(pathname, entry.href);
+                          return (
+                            <Link
+                              key={entry.href}
+                              href={entry.href}
+                              onClick={closeAll}
+                              className={`flex items-center justify-between rounded-[12px] px-3.5 py-2.5 text-sm font-semibold transition-all ${
+                                active
+                                  ? "bg-[#5b63f5] font-bold text-white shadow-[0_4px_14px_rgba(91,99,245,0.3)]"
+                                  : "text-[#52576e] hover:bg-slate-100 hover:text-[#1b1f2e]"
+                              }`}
+                            >
+                              <span>{entry.label}</span>
+                            </Link>
+                          );
+                        }
+
+                        const isExpanded = Boolean(mobileExpandedGroups[entry.label]);
+                        const groupActive = entry.items.some((item) =>
+                          item.href
+                            ? isActive(pathname, item.href)
+                            : item.children?.some((child) => isActive(pathname, child.href))
+                        );
+
+                        return (
+                          <div
+                            key={entry.label}
+                            className="overflow-hidden rounded-[14px] border border-slate-200/70 bg-slate-50/60"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => toggleMobileGroup(entry.label)}
+                              className={`flex w-full items-center justify-between px-3.5 py-2.5 text-sm font-bold transition-colors ${
+                                groupActive
+                                  ? "text-[#5b63f5]"
+                                  : "text-[#1b1f2e] hover:text-[#5b63f5]"
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <NavIcon name={entry.iconName} className="h-4 w-4 text-[#5b63f5]" />
+                                {entry.label}
+                              </span>
+                              <span
+                                className={`text-xs text-[#9095ad] transition-transform duration-200 ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
+                              >
+                                ▾
+                              </span>
+                            </button>
+
+                            {isExpanded ? (
+                              <div className="flex flex-col gap-1 border-t border-slate-200/60 bg-white p-2">
+                                {entry.items.map((item) => {
+                                  if (item.children) {
+                                    return (
+                                      <div key={item.label} className="flex flex-col gap-1 pl-2">
+                                        <span className="flex items-center gap-1.5 pt-1.5 text-xs font-bold text-[#5b63f5]">
+                                          <NavIcon name={item.iconName} className="h-3.5 w-3.5" />
+                                          {item.label}
+                                        </span>
+                                        {item.children.map((child) => {
+                                          const childActive = isActive(pathname, child.href);
+                                          return (
+                                            <Link
+                                              key={child.href}
+                                              href={child.href}
+                                              onClick={closeAll}
+                                              className={`flex items-center gap-2 rounded-[9px] px-3 py-1.5 text-xs font-medium transition-all ${
+                                                childActive
+                                                  ? "bg-[#5b63f5]/10 font-bold text-[#5b63f5]"
+                                                  : "text-[#646982] hover:bg-slate-100 hover:text-[#1b1f2e]"
+                                              }`}
+                                            >
+                                              <NavIcon name={child.iconName} className="h-3.5 w-3.5 text-[#5b63f5]" />
+                                              {child.label}
+                                            </Link>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  }
+
+                                  const itemActive = item.href ? isActive(pathname, item.href) : false;
+                                  return (
+                                    <Link
+                                      key={item.href}
+                                      href={item.href!}
+                                      onClick={closeAll}
+                                      className={`flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-medium transition-all ${
+                                        itemActive
+                                          ? "bg-[#5b63f5]/10 font-bold text-[#5b63f5]"
+                                          : "text-[#52576e] hover:bg-slate-100 hover:text-[#1b1f2e]"
+                                      }`}
+                                    >
+                                      <NavIcon name={item.iconName} className="h-4 w-4 text-[#5b63f5]" />
+                                      {item.label}
+                                    </Link>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Drawer Footer */}
+                  <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-4">
+                    <Link
+                      href="/welcome"
+                      onClick={closeAll}
+                      className="flex items-center justify-between text-xs font-medium text-[#7a7f97] hover:text-[#5b63f5]"
+                    >
+                      <span>SST Manager System v0.2</span>
+                      <span>Boas-vindas →</span>
+                    </Link>
+                  </div>
                 </div>
-              )
-            )}
-          </div>
-        ) : null}
+              </>,
+              document.body
+            )
+          : null}
       </div>
     </div>
   );
