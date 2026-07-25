@@ -9,6 +9,7 @@ import { TenantSwitcher } from "../_components/tenant-switcher";
 import { UserProfilePill } from "./_components/user-profile-pill";
 import { NavMenu } from "./_components/nav-menu";
 import { NotificationsBell } from "./_ui/notifications-bell";
+import { HeaderActions } from "./_components/header-actions";
 
 export default async function ProtectedLayout({
   children,
@@ -44,8 +45,31 @@ export default async function ProtectedLayout({
           </span>
         </Link>
         <NavMenu />
-        <div className="ml-auto flex items-center gap-3">
-          <TenantSwitcher />
+        <div className="ml-auto flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-[#5b63f5]"
+            >
+              <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+              <line x1="9" y1="6" x2="9" y2="6.01" />
+              <line x1="15" y1="6" x2="15" y2="6.01" />
+              <line x1="9" y1="10" x2="9" y2="10.01" />
+              <line x1="15" y1="10" x2="15" y2="10.01" />
+              <line x1="9" y1="14" x2="9" y2="14.01" />
+              <line x1="15" y1="14" x2="15" y2="14.01" />
+              <line x1="9" y1="18" x2="15" y2="18" />
+            </svg>
+            <TenantSwitcher />
+          </div>
+          <HeaderActions />
           <NotificationsBell />
           <UserProfilePill />
         </div>
