@@ -22,7 +22,6 @@ export default async function PlanosPage() {
 
   return (
     <div className="flex flex-col gap-8 px-6 py-8">
-      {/* Top Banner / Header */}
       <div className="glass-panel flex flex-col items-center gap-3 rounded-3xl border border-white/60 p-8 text-center shadow-xl">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#5b63f5]/15 px-3.5 py-1 text-xs font-extrabold text-[#5b63f5]">
           ✦ Planos de Assinatura SST Manager
@@ -35,7 +34,6 @@ export default async function PlanosPage() {
           alertas automáticos, IA assistida para riscos e assinaturas digitais ilimitadas.
         </p>
 
-        {/* Current Plan Badge */}
         <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-4 py-1.5 shadow-xs backdrop-blur-md">
           <span className="text-xs font-semibold text-[#8c91a8]">Seu plano atual:</span>
           <span className="text-xs font-extrabold tracking-wider text-[#5b63f5] uppercase">
@@ -44,9 +42,7 @@ export default async function PlanosPage() {
         </div>
       </div>
 
-      {/* 3 Pricing Tier Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Tier 1: Gratuito */}
         <div className="glass-card flex flex-col justify-between p-6 transition-all duration-200 hover:-translate-y-1">
           <div>
             <div className="flex items-center justify-between">
@@ -113,7 +109,6 @@ export default async function PlanosPage() {
           </div>
         </div>
 
-        {/* Tier 2: PLANO PRO (Destaque Recomendo) */}
         <div className="glass-card relative flex flex-col justify-between border-2 border-[#5b63f5] bg-gradient-to-b from-[#5b63f5]/10 via-white/80 to-white p-6 shadow-2xl shadow-[#5b63f5]/20 transition-all duration-200 hover:-translate-y-1">
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#5b63f5] px-3.5 py-0.5 text-[10px] font-extrabold tracking-wider text-white uppercase shadow-md">
             ★ MAIS POPULAR & RECOMENDADO
@@ -196,7 +191,6 @@ export default async function PlanosPage() {
           </div>
         </div>
 
-        {/* Tier 3: Enterprise */}
         <div className="glass-card flex flex-col justify-between p-6 transition-all duration-200 hover:-translate-y-1">
           <div>
             <div className="flex items-center justify-between">
@@ -249,7 +243,6 @@ export default async function PlanosPage() {
         </div>
       </div>
 
-      {/* Comparison Table */}
       <div className="glass-panel overflow-hidden rounded-2xl border border-white/60 p-6 shadow-xl">
         <h3 className="mb-4 text-base font-extrabold text-[#1b1f2e]">
           Comparativo Detalhado de Recursos

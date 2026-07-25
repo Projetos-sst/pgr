@@ -46,7 +46,6 @@ export function UserProfilePill() {
 
   return (
     <div ref={popoverRef} className="relative">
-      {/* Botão de Gatilho Limpo no Header */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -64,10 +63,8 @@ export function UserProfilePill() {
         )}
       </button>
 
-      {/* Popover Compacto & Ultra-Elegante (Estilo SaaS Premium) */}
       {open ? (
         <div className="glass-menu animate-dropdown-pop absolute top-full right-0 z-[150] mt-2 w-[230px] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-1.5 text-[#1b1f2e] shadow-xl">
-          {/* Header Horizontal Compacto */}
           <div className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#5b63f5] text-xs font-extrabold text-white shadow-xs">
               {avatarUrl ? (
@@ -89,9 +86,7 @@ export function UserProfilePill() {
 
           <div className="my-1 border-t border-slate-100" />
 
-          {/* Lista de Opções Solicitadas */}
           <div className="flex flex-col gap-0.5 text-xs font-semibold text-[#52576e]">
-            {/* 1. Perfil */}
             <Link
               href="/profile?tab=profile"
               onClick={() => setOpen(false)}
@@ -112,7 +107,6 @@ export function UserProfilePill() {
               <span>Perfil</span>
             </Link>
 
-            {/* 2. Alterar Senha */}
             <Link
               href="/profile?tab=security"
               onClick={() => setOpen(false)}
@@ -132,7 +126,6 @@ export function UserProfilePill() {
               <span>Alterar Senha</span>
             </Link>
 
-            {/* 3. Equipe e Acessos */}
             <Link
               href="/profile?tab=team"
               onClick={() => setOpen(false)}
@@ -157,7 +150,6 @@ export function UserProfilePill() {
 
             <div className="my-1 border-t border-slate-100" />
 
-            {/* 4. Assinatura */}
             <Link
               href="/plans"
               onClick={() => setOpen(false)}
@@ -178,7 +170,6 @@ export function UserProfilePill() {
               <span>Assinatura</span>
             </Link>
 
-            {/* 5. Sair */}
             <button
               type="button"
               onClick={() => {

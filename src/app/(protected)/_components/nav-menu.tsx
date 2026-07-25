@@ -457,7 +457,6 @@ export function NavMenu() {
 
   return (
     <div ref={containerRef} className="flex items-center">
-      {/* Desktop: itens inline na barra (apenas xl: 1280px e acima) */}
       <nav className="hidden items-center gap-1 xl:flex">
         {NAV.map((entry) => {
           if (entry.kind === "link") {
@@ -547,7 +546,6 @@ export function NavMenu() {
                             <span className="text-[12px] text-[#9095ad]">›</span>
                           </button>
 
-                          {/* Flyout Submenu */}
                           {isSubOpen ? (
                             <div className="glass-menu animate-dropdown-pop absolute top-0 left-full z-50 ml-1 flex min-w-[200px] flex-col gap-0.5 p-2 shadow-2xl">
                               {item.children?.map((child) => (
@@ -600,7 +598,6 @@ export function NavMenu() {
         })}
       </nav>
 
-      {/* Mobile e Tablet: Botão de Menu (Apenas Ícone) (< 1280px) */}
       <div className="xl:hidden">
         <button
           type="button"
@@ -633,22 +630,18 @@ export function NavMenu() {
           </svg>
         </button>
 
-        {/* Portal para document.body (impede qualquer corte por backdrop-filter do header) */}
         {mobileOpen && mounted
           ? createPortal(
               <>
-                {/* Backdrop escuro absoluto */}
                 <div
                   className="animate-fade-in fixed inset-0 z-[999] bg-black/60 backdrop-blur-xs xl:hidden"
                   onClick={closeAll}
                 />
 
-                {/* Off-Canvas Side Drawer Sólido no Body com Animação de Entrada */}
                 <div
                   id="nav-mobile-panel"
                   className="animate-drawer-slide-left fixed inset-y-0 left-0 z-[999] flex w-[340px] max-w-[90vw] flex-col overflow-hidden border-r border-slate-200 bg-white text-[#1b1f2e] shadow-2xl sm:w-[380px] xl:hidden"
                 >
-                  {/* Drawer Top Header */}
                   <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5">
                     <Link
                       href="/welcome"
