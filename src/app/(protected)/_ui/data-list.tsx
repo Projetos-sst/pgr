@@ -228,6 +228,26 @@ export function MonoCell({ href, children }: { href?: string; children: ReactNod
   );
 }
 
+/** Avatar quadrado com iniciais (ex.: nome de empresa/funcionário). */
+export function AvatarBadge({ name }: { name: string }) {
+  const initials =
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase() || "?";
+  return (
+    <span
+      aria-hidden="true"
+      className="text-primary flex size-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[rgba(91,99,245,0.12)] text-[13px] font-extrabold"
+    >
+      {initials}
+    </span>
+  );
+}
+
 // ── Badge de status (pill com bolinha) ──────────────────────────────────────
 
 export type StatusTone = "green" | "amber" | "red" | "neutral" | "indigo";
@@ -371,6 +391,27 @@ export function ListFooter({
         </span>
       </div>
     </div>
+  );
+}
+
+// ── Ações de linha ──────────────────────────────────────────────────────────
+
+/** Container das ações da linha (alinhado à direita). */
+export function RowActions({ children }: { children: ReactNode }) {
+  return <span className="flex items-center justify-end gap-1">{children}</span>;
+}
+
+/** Link de ver/editar (ícone olho indigo). */
+export function EditIconLink({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      aria-label="Ver/editar"
+      title="Ver/editar"
+      className="text-primary flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-white/50"
+    >
+      <ViewIcon />
+    </Link>
   );
 }
 
