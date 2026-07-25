@@ -8,7 +8,7 @@ import { NewVersionModal } from "./new-version-modal";
 
 export function DocumentRowActions({ doc }: { doc: DocumentListItem }) {
   return (
-    <div className="flex flex-wrap justify-end gap-2">
+    <div className="flex items-center justify-end gap-1">
       <DownloadDocumentButton documentId={doc.id} />
       <EditDocumentModal doc={doc} />
       <NewVersionModal documentId={doc.id} currentVersion={doc.version} />

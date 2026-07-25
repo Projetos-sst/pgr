@@ -61,17 +61,17 @@ export function DocumentUploadForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex max-w-xl flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex w-full flex-col gap-4">
       <FormError message={formError} />
 
-      <label className="flex flex-col gap-1">
-        <span className="text-text-muted text-sm font-semibold">Arquivo *</span>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-text text-xs font-semibold sm:text-sm">Arquivo *</span>
         <input
           type="file"
           name="file"
           required
           accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
-          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
+          className="glass-input text-text rounded-card file:rounded-card file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer px-3.5 py-2.5 text-sm outline-none file:mr-4 file:border-0 file:px-3 file:py-1 file:text-xs file:font-semibold"
         />
         <span className="text-text-subtle text-xs">
           PDF, PNG, JPG, DOC/DOCX ou XLS/XLSX — até 25 MB.
@@ -90,13 +90,16 @@ export function DocumentUploadForm({
         emptyLabel="— Início (raiz) —"
       />
 
-      <label className="flex items-center gap-2 text-sm">
+      <label className="mt-1 flex items-center gap-2 text-sm">
         <input
           type="checkbox"
           checked={linkToPgr}
           onChange={(e) => setLinkToPgr(e.target.checked)}
+          className="text-primary focus:ring-primary h-4 w-4 rounded border-white/60"
         />
-        <span className="text-text-muted font-semibold">Vincular a um PGR</span>
+        <span className="text-text-muted text-xs font-semibold sm:text-sm">
+          Vincular a um PGR
+        </span>
       </label>
       {linkToPgr ? (
         <>

@@ -232,6 +232,82 @@ async function main() {
     `;
   }
 
+  // Insert Sample Documents for GED
+  const sampleDocs = [
+    {
+      name: "PGR — Kairós Motores 2026",
+      docType: "Programa",
+      version: 2,
+      sizeBytes: 3450000,
+      validUntil: "2027-05-15",
+    },
+    {
+      name: "PCMSO — Ktec 2026",
+      docType: "Programa",
+      version: 1,
+      sizeBytes: 2890000,
+      validUntil: "2027-03-10",
+    },
+    {
+      name: "Laudo Ergonômico — Escritório",
+      docType: "Laudo",
+      version: 1,
+      sizeBytes: 1540000,
+      validUntil: "2026-08-10",
+    },
+    {
+      name: "Procedimento — Trabalho a Quente",
+      docType: "Procedimento",
+      version: 3,
+      sizeBytes: 890000,
+      validUntil: null,
+    },
+    {
+      name: "LTCAT — TCM Engenharia",
+      docType: "Laudo",
+      version: 2,
+      sizeBytes: 4120000,
+      validUntil: "2026-01-20",
+    },
+    {
+      name: "Ficha de EPI — Proteção Auditiva",
+      docType: "Ficha",
+      version: 1,
+      sizeBytes: 450000,
+      validUntil: null,
+    },
+    {
+      name: "Relatório de Inspeção Anual",
+      docType: "Relatório",
+      version: 1,
+      sizeBytes: 5200000,
+      validUntil: "2027-12-01",
+    },
+  ];
+
+  for (const doc of sampleDocs) {
+    const docId = crypto.randomUUID();
+    const groupId = crypto.randomUUID();
+    const path = `${ORG_ID}/${docId}.pdf`;
+    await sql`
+      insert into public.documents (
+        id, org_id, document_group_id, name, doc_type, version, size_bytes, storage_path, folder_id, valid_until
+      ) values (
+        ${docId},
+        ${ORG_ID},
+        ${groupId},
+        ${doc.name},
+        ${doc.docType},
+        ${doc.version},
+        ${doc.sizeBytes},
+        ${path},
+        null,
+        ${doc.validUntil}
+      )
+      on conflict do nothing;
+    `;
+  }
+
   console.log("Seed para sst-manager-development concluído com sucesso!");
   await sql.end();
 }

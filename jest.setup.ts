@@ -1,5 +1,10 @@
 import "@testing-library/jest-dom";
 
+process.env.NEXT_PUBLIC_SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_placeholder";
+
 jest.mock("server-only", () => ({}));
 
 jest.mock("@clerk/nextjs/server", () => ({
