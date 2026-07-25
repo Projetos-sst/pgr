@@ -20,7 +20,13 @@ export function DocumentFilterBar({ folderId }: { folderId: string | null }) {
   const currentSearch = searchParams.get("search") ?? "";
   const currentDocType = searchParams.get("docType") ?? "";
 
+  const [prevSearch, setPrevSearch] = useState(currentSearch);
   const [search, setSearch] = useState(currentSearch);
+
+  if (prevSearch !== currentSearch) {
+    setPrevSearch(currentSearch);
+    setSearch(currentSearch);
+  }
 
   function applyFilters(newDocType?: string, newSearch?: string) {
     const params = new URLSearchParams(searchParams.toString());

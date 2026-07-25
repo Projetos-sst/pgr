@@ -138,12 +138,14 @@ export function Pagination({
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   if (total === 0) return null;
 
-  const startItem = (page - 1) * pageSize + 1;
-  const endItem = Math.min(total, page * pageSize);
+  const clampedPage = Math.min(Math.max(page, 1), totalPages);
+
+  const startItem = (clampedPage - 1) * pageSize + 1;
+  const endItem = Math.min(total, clampedPage * pageSize);
 
   const pages: number[] = [];
   const maxDisplayed = 5;
-  let startPage = Math.max(1, page - Math.floor(maxDisplayed / 2));
+  let startPage = Math.max(1, clampedPage - Math.floor(maxDisplayed / 2));
   const endPage = Math.min(totalPages, startPage + maxDisplayed - 1);
   if (endPage - startPage + 1 < maxDisplayed) {
     startPage = Math.max(1, endPage - maxDisplayed + 1);
@@ -162,9 +164,9 @@ export function Pagination({
 
       {totalPages > 1 ? (
         <div className="flex items-center gap-1.5">
-          {page > 1 ? (
+          {clampedPage > 1 ? (
             <Link
-              href={`${basePath}${buildQuery(params, { page: String(page - 1) })}`}
+              href={`${basePath}${buildQuery(params, { page: String(clampedPage - 1) })}`}
               className="rounded-card glass-panel text-text-muted hover:text-text flex h-8 w-8 items-center justify-center transition-colors"
               aria-label="Página anterior"
             >
@@ -177,7 +179,7 @@ export function Pagination({
           )}
 
           {pages.map((p) =>
-            p === page ? (
+            p === clampedPage ? (
               <span
                 key={p}
                 className="rounded-card bg-primary shadow-primary flex h-8 w-8 items-center justify-center text-xs font-bold text-white"
@@ -195,9 +197,9 @@ export function Pagination({
             ),
           )}
 
-          {page < totalPages ? (
+          {clampedPage < totalPages ? (
             <Link
-              href={`${basePath}${buildQuery(params, { page: String(page + 1) })}`}
+              href={`${basePath}${buildQuery(params, { page: String(clampedPage + 1) })}`}
               className="rounded-card glass-panel text-text-muted hover:text-text flex h-8 w-8 items-center justify-center transition-colors"
               aria-label="Próxima página"
             >
