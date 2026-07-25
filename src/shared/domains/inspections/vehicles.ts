@@ -31,6 +31,13 @@ export function vehicleTypeLabel(value: string | null): string {
   return VEHICLE_TYPE_LABELS[value as VehicleTypeKey] ?? value;
 }
 
+/** Formata a placa para exibição inserindo hífen após os 3 primeiros caracteres
+ *  (AAA0000 → AAA-0000, AAA0A00 → AAA-0A00). Armazenamento continua normalizado. */
+export function formatPlate(plate: string): string {
+  const p = plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return p.length === 7 ? `${p.slice(0, 3)}-${p.slice(3)}` : p;
+}
+
 const PLATE_LEGACY = /^[A-Z]{3}[0-9]{4}$/; // AAA0000
 const PLATE_MERCOSUL = /^[A-Z]{3}[0-9][0-9A-Z][0-9]{2}$/; // AAA0A00
 
