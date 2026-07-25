@@ -162,6 +162,37 @@ body {
     }
   }
 
+  @keyframes drawerSlideLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes dropdownPop {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   .animate-fade-slide-up {
     animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
@@ -172,6 +203,18 @@ body {
 
   .animate-backdrop-fade {
     animation: backdropFadeIn 0.25s ease-out forwards;
+  }
+
+  .animate-drawer-slide-left {
+    animation: drawerSlideLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-dropdown-pop {
+    animation: dropdownPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease-out forwards;
   }
 
   /* Micro-interações de Hover */
