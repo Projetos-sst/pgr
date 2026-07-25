@@ -71,7 +71,7 @@ export default async function ProtectedLayout({
             </svg>
             <TenantSwitcher />
           </div>
-          <div className="hidden md:flex items-center">
+          <div className="hidden items-center md:flex">
             <HeaderActions />
           </div>
           <NotificationsBell />

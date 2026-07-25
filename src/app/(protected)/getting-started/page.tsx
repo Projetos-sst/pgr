@@ -52,11 +52,11 @@ export default async function PrimeirosPassosPage() {
           <span>
             {progress.completed} de {progress.total} passos concluídos
           </span>
-          <span className="text-[#5b63f5] font-extrabold">{progress.percent}%</span>
+          <span className="font-extrabold text-[#5b63f5]">{progress.percent}%</span>
         </div>
         <div className="mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-black/5">
           <div
-            className="h-full rounded-full bg-[#5b63f5] transition-all duration-500 shadow-sm shadow-[#5b63f5]/40"
+            className="h-full rounded-full bg-[#5b63f5] shadow-sm shadow-[#5b63f5]/40 transition-all duration-500"
             style={{ width: `${progress.percent}%` }}
           />
         </div>
@@ -68,9 +68,7 @@ export default async function PrimeirosPassosPage() {
           <div
             key={step.key}
             className={`glass-panel flex flex-col gap-3 rounded-2xl border p-5 shadow-md transition-all sm:flex-row sm:items-center sm:justify-between ${
-              step.done
-                ? "border-[#5b63f5]/20 bg-[#5b63f5]/5"
-                : "border-white/60"
+              step.done ? "border-[#5b63f5]/20 bg-[#5b63f5]/5" : "border-white/60"
             }`}
           >
             <div className="flex items-start gap-4">
@@ -96,7 +94,7 @@ export default async function PrimeirosPassosPage() {
             ) : (
               <Link
                 href={step.href}
-                className="self-start rounded-xl bg-[#5b63f5] px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#5b63f5]/30 transition-all hover:bg-[#4a52e3] hover:scale-[1.02] sm:self-auto"
+                className="self-start rounded-xl bg-[#5b63f5] px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#5b63f5]/30 transition-all hover:scale-[1.02] hover:bg-[#4a52e3] sm:self-auto"
               >
                 Iniciar Guia →
               </Link>

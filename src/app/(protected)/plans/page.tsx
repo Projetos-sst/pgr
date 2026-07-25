@@ -23,7 +23,7 @@ export default async function PlanosPage() {
   return (
     <div className="flex flex-col gap-8 px-6 py-8">
       {/* Top Banner / Header */}
-      <div className="glass-panel flex flex-col items-center gap-3 text-center rounded-3xl border border-white/60 p-8 shadow-xl">
+      <div className="glass-panel flex flex-col items-center gap-3 rounded-3xl border border-white/60 p-8 text-center shadow-xl">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#5b63f5]/15 px-3.5 py-1 text-xs font-extrabold text-[#5b63f5]">
           ✦ Planos de Assinatura SST Manager
         </span>
@@ -31,13 +31,14 @@ export default async function PlanosPage() {
           Escolha o Plano Ideal para a Sua Empresa
         </h1>
         <p className="max-w-2xl text-xs font-medium text-[#7a7f97] sm:text-sm">
-          Tenha acesso completo à gestão de PGR, controle de EPIs, treinamentos com alertas automáticos, IA assistida para riscos e assinaturas digitais ilimitadas.
+          Tenha acesso completo à gestão de PGR, controle de EPIs, treinamentos com
+          alertas automáticos, IA assistida para riscos e assinaturas digitais ilimitadas.
         </p>
 
         {/* Current Plan Badge */}
-        <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-4 py-1.5 backdrop-blur-md shadow-xs">
+        <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-4 py-1.5 shadow-xs backdrop-blur-md">
           <span className="text-xs font-semibold text-[#8c91a8]">Seu plano atual:</span>
-          <span className="text-xs font-extrabold text-[#5b63f5] uppercase tracking-wider">
+          <span className="text-xs font-extrabold tracking-wider text-[#5b63f5] uppercase">
             {PLAN_LABEL[currentPlan] ?? currentPlan}
           </span>
         </div>
@@ -67,19 +68,19 @@ export default async function PlanosPage() {
 
             <div className="mt-6 flex flex-col gap-2.5 border-t border-black/5 pt-4 text-xs font-medium text-[#52576e]">
               <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="font-bold text-emerald-600">✓</span>
                 <span>1 empresa cadastrada</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="font-bold text-emerald-600">✓</span>
                 <span>Até 10 funcionários no PGR</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="font-bold text-emerald-600">✓</span>
                 <span>20 sugestões de riscos por IA /mês</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="font-bold text-emerald-600">✓</span>
                 <span>10 assinaturas digitais por mês</span>
               </div>
               <div className="flex items-center gap-2 text-[#9095ad]">
@@ -97,7 +98,7 @@ export default async function PlanosPage() {
             {currentPlan === "free" ? (
               <button
                 disabled
-                className="w-full rounded-xl border border-slate-300 bg-slate-100 py-2.5 text-xs font-bold text-slate-500 cursor-default"
+                className="w-full cursor-default rounded-xl border border-slate-300 bg-slate-100 py-2.5 text-xs font-bold text-slate-500"
               >
                 Seu Plano Atual
               </button>
@@ -113,8 +114,8 @@ export default async function PlanosPage() {
         </div>
 
         {/* Tier 2: PLANO PRO (Destaque Recomendo) */}
-        <div className="glass-card relative flex flex-col justify-between border-2 border-[#5b63f5] p-6 shadow-2xl shadow-[#5b63f5]/20 transition-all duration-200 hover:-translate-y-1 bg-gradient-to-b from-[#5b63f5]/10 via-white/80 to-white">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#5b63f5] px-3.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-md">
+        <div className="glass-card relative flex flex-col justify-between border-2 border-[#5b63f5] bg-gradient-to-b from-[#5b63f5]/10 via-white/80 to-white p-6 shadow-2xl shadow-[#5b63f5]/20 transition-all duration-200 hover:-translate-y-1">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#5b63f5] px-3.5 py-0.5 text-[10px] font-extrabold tracking-wider text-white uppercase shadow-md">
             ★ MAIS POPULAR & RECOMENDADO
           </div>
 
@@ -138,31 +139,31 @@ export default async function PlanosPage() {
 
             <div className="mt-6 flex flex-col gap-2.5 border-t border-black/5 pt-4 text-xs font-medium text-[#52576e]">
               <div className="flex items-center gap-2 font-bold text-[#1b1f2e]">
-                <span className="text-[#5b63f5] font-black">✓</span>
+                <span className="font-black text-[#5b63f5]">✓</span>
                 <span>Empresas & PGRs ilimitados</span>
               </div>
               <div className="flex items-center gap-2 font-bold text-[#1b1f2e]">
-                <span className="text-[#5b63f5] font-black">✓</span>
+                <span className="font-black text-[#5b63f5]">✓</span>
                 <span>Sugestão de Riscos IA ilimitada</span>
               </div>
               <div className="flex items-center gap-2 font-bold text-[#1b1f2e]">
-                <span className="text-[#5b63f5] font-black">✓</span>
+                <span className="font-black text-[#5b63f5]">✓</span>
                 <span>Assinaturas Digitais ilimitadas</span>
               </div>
               <div className="flex items-center gap-2 font-bold text-[#1b1f2e]">
-                <span className="text-[#5b63f5] font-black">✓</span>
+                <span className="font-black text-[#5b63f5]">✓</span>
                 <span>Gestão de Equipe & Colaboradores</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="font-bold text-emerald-600">✓</span>
                 <span>Estoque, entregas e baixas de EPI</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="font-bold text-emerald-600">✓</span>
                 <span>Treinamentos & controle de vencimento</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="font-bold text-emerald-600">✓</span>
                 <span>Suporte prioritário via WhatsApp</span>
               </div>
             </div>
@@ -171,7 +172,9 @@ export default async function PlanosPage() {
           <div className="mt-6">
             {currentPlan === "pro" ? (
               <div className="flex flex-col gap-2">
-                <p className="text-center text-xs font-bold text-emerald-700">✓ Assinatura Pro Ativa</p>
+                <p className="text-center text-xs font-bold text-emerald-700">
+                  ✓ Assinatura Pro Ativa
+                </p>
                 {ctx.role === "owner" && billingOn ? <ManageBillingButton /> : null}
               </div>
             ) : canUpgrade && billingOn ? (
@@ -213,23 +216,23 @@ export default async function PlanosPage() {
 
             <div className="mt-6 flex flex-col gap-2.5 border-t border-black/5 pt-4 text-xs font-medium text-[#52576e]">
               <div className="flex items-center gap-2 font-bold text-[#1b1f2e]">
-                <span className="text-purple-600 font-bold">✓</span>
+                <span className="font-bold text-purple-600">✓</span>
                 <span>Tudo incluso no Plano Pro</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-purple-600 font-bold">✓</span>
+                <span className="font-bold text-purple-600">✓</span>
                 <span>Múltiplos CNPJs & Grupos de Filiais</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-purple-600 font-bold">✓</span>
+                <span className="font-bold text-purple-600">✓</span>
                 <span>Eventos eSocial (S-2210, S-2220, S-2240)</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-purple-600 font-bold">✓</span>
+                <span className="font-bold text-purple-600">✓</span>
                 <span>Gerente de Sucesso dedicado</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-purple-600 font-bold">✓</span>
+                <span className="font-bold text-purple-600">✓</span>
                 <span>Treinamento de equipe personalizado</span>
               </div>
             </div>
@@ -248,14 +251,18 @@ export default async function PlanosPage() {
 
       {/* Comparison Table */}
       <div className="glass-panel overflow-hidden rounded-2xl border border-white/60 p-6 shadow-xl">
-        <h3 className="text-base font-extrabold text-[#1b1f2e] mb-4">Comparativo Detalhado de Recursos</h3>
+        <h3 className="mb-4 text-base font-extrabold text-[#1b1f2e]">
+          Comparativo Detalhado de Recursos
+        </h3>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead className="border-b border-slate-200 bg-slate-50 text-left font-bold uppercase tracking-wider text-[#52576e]">
+            <thead className="border-b border-slate-200 bg-slate-50 text-left font-bold tracking-wider text-[#52576e] uppercase">
               <tr>
                 <th className="px-4 py-3">Recurso / Módulo</th>
                 <th className="px-4 py-3 text-center">Gratuito</th>
-                <th className="px-4 py-3 text-center text-[#5b63f5]">Pro (Recomendado)</th>
+                <th className="px-4 py-3 text-center text-[#5b63f5]">
+                  Pro (Recomendado)
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-[#1b1f2e]">
@@ -263,7 +270,9 @@ export default async function PlanosPage() {
                 <tr key={row.label} className="hover:bg-slate-50/60">
                   <td className="px-4 py-3 font-semibold">{row.label}</td>
                   <td className="px-4 py-3 text-center text-[#7a7f97]">{row.free}</td>
-                  <td className="px-4 py-3 text-center font-extrabold text-[#5b63f5]">{row.pro}</td>
+                  <td className="px-4 py-3 text-center font-extrabold text-[#5b63f5]">
+                    {row.pro}
+                  </td>
                 </tr>
               ))}
             </tbody>

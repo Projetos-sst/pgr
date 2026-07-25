@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 type SubMenuItem = {
@@ -42,7 +42,11 @@ const NAV: NavEntry[] = [
           { href: "/equipment-inspections", label: "Equipamentos", iconName: "wrench" },
         ],
       },
-      { href: "/work-permits", label: "Permissões de trabalho", iconName: "check-circle" },
+      {
+        href: "/work-permits",
+        label: "Permissões de trabalho",
+        iconName: "check-circle",
+      },
     ],
   },
   {
@@ -57,11 +61,19 @@ const NAV: NavEntry[] = [
       { href: "/employees", label: "Funcionários", iconName: "users" },
       { href: "/categories", label: "Categorias", iconName: "tag" },
       { href: "/training-catalog", label: "Treinamentos", iconName: "book-open" },
-      { href: "/form-controls", label: "Controle de Formulários", iconName: "file-check" },
+      {
+        href: "/form-controls",
+        label: "Controle de Formulários",
+        iconName: "file-check",
+      },
       { href: "/epi-catalog", label: "Equipamentos", iconName: "hardhat" },
       { href: "/incidents", label: "Incidentes", iconName: "alert-circle" },
       { href: "/vehicles", label: "Veículos", iconName: "car" },
-      { href: "/inspection-plans", label: "Planos de Inspeção", iconName: "clipboard-list" },
+      {
+        href: "/inspection-plans",
+        label: "Planos de Inspeção",
+        iconName: "clipboard-list",
+      },
     ],
   },
   {
@@ -69,7 +81,11 @@ const NAV: NavEntry[] = [
     label: "Gestão de Segurança",
     iconName: "shield",
     items: [
-      { href: "/psychosocial/campaigns", label: "Gestão de Riscos Psicossociais", iconName: "heart" },
+      {
+        href: "/psychosocial/campaigns",
+        label: "Gestão de Riscos Psicossociais",
+        iconName: "heart",
+      },
       { href: "/incidents", label: "Gestão de Incidentes", iconName: "alert-circle" },
       { href: "/action-plans", label: "Gestão de Planos de Ação", iconName: "calendar" },
       { href: "/service-orders", label: "Gestão de OS", iconName: "file-edit" },
@@ -83,7 +99,11 @@ const NAV: NavEntry[] = [
     label: "Qualidade",
     iconName: "quality",
     items: [
-      { href: "/documents", label: "GED — Gestão Eletrônica de Documentos", iconName: "folder-archive" },
+      {
+        href: "/documents",
+        label: "GED — Gestão Eletrônica de Documentos",
+        iconName: "folder-archive",
+      },
     ],
   },
 ];
@@ -356,18 +376,42 @@ function isActive(pathname: string, href?: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+const emptySubscribe = () => () => {};
+function useIsMounted() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+}
+
+function isGroupExpanded(
+  entryLabel: string,
+  pathname: string,
+  userState: Record<string, boolean>,
+): boolean {
+  if (userState[entryLabel] !== undefined) {
+    return userState[entryLabel];
+  }
+  const entry = NAV.find((e) => e.kind === "group" && e.label === entryLabel);
+  if (!entry || entry.kind !== "group") return false;
+  return entry.items.some((item) =>
+    item.href
+      ? isActive(pathname, item.href)
+      : item.children?.some((child) => isActive(pathname, child.href)),
+  );
+}
+
 export function NavMenu() {
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mobileExpandedGroups, setMobileExpandedGroups] = useState<Record<string, boolean>>({});
-  const [mounted, setMounted] = useState(false);
+  const [mobileExpandedGroups, setMobileExpandedGroups] = useState<
+    Record<string, boolean>
+  >({});
+  const mounted = useIsMounted();
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   function closeDesktop() {
     setOpenGroup(null);
@@ -379,24 +423,6 @@ export function NavMenu() {
     setActiveSubmenu(null);
     setMobileOpen(false);
   }
-
-  // Pre-expand group containing current active route on mobile
-  useEffect(() => {
-    const initialExpanded: Record<string, boolean> = {};
-    NAV.forEach((entry) => {
-      if (entry.kind === "group") {
-        const hasActive = entry.items.some((item) =>
-          item.href
-            ? isActive(pathname, item.href)
-            : item.children?.some((child) => isActive(pathname, child.href))
-        );
-        if (hasActive) {
-          initialExpanded[entry.label] = true;
-        }
-      }
-    });
-    setMobileExpandedGroups((prev) => ({ ...initialExpanded, ...prev }));
-  }, [pathname]);
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
@@ -416,9 +442,10 @@ export function NavMenu() {
   }, []);
 
   function toggleMobileGroup(label: string) {
+    const current = isGroupExpanded(label, pathname, mobileExpandedGroups);
     setMobileExpandedGroups((prev) => ({
       ...prev,
-      [label]: !prev[label],
+      [label]: !current,
     }));
   }
 
@@ -449,7 +476,7 @@ export function NavMenu() {
           const groupActive = entry.items.some((item) =>
             item.href
               ? isActive(pathname, item.href)
-              : item.children?.some((child) => isActive(pathname, child.href))
+              : item.children?.some((child) => isActive(pathname, child.href)),
           );
 
           return (
@@ -465,7 +492,10 @@ export function NavMenu() {
                   groupActive ? "text-[#5b63f5]" : "text-[#7a7f97] hover:text-[#1b1f2e]"
                 }`}
               >
-                <NavIcon name={entry.iconName} className="h-4 w-4 text-[#7a7f97] group-hover:text-[#5b63f5]" />
+                <NavIcon
+                  name={entry.iconName}
+                  className="h-4 w-4 text-[#7a7f97] group-hover:text-[#5b63f5]"
+                />
                 {entry.label}
                 <span
                   aria-hidden
@@ -480,7 +510,9 @@ export function NavMenu() {
               {open ? (
                 <div className="glass-menu animate-dropdown-pop absolute top-full left-0 z-50 mt-2 flex min-w-[240px] flex-col gap-0.5 p-2 shadow-2xl">
                   {entry.items.map((item) => {
-                    const hasChildren = Boolean(item.children && item.children.length > 0);
+                    const hasChildren = Boolean(
+                      item.children && item.children.length > 0,
+                    );
                     const isSubOpen = activeSubmenu === item.label;
                     const itemActive = item.href
                       ? isActive(pathname, item.href)
@@ -499,14 +531,17 @@ export function NavMenu() {
                             onClick={() =>
                               setActiveSubmenu(isSubOpen ? null : item.label)
                             }
-                            className={`flex w-full items-center justify-between rounded-card px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                            className={`rounded-card flex w-full items-center justify-between px-3 py-2 text-sm font-medium transition-all duration-150 ${
                               itemActive || isSubOpen
-                                ? "bg-primary-ring/60 font-bold text-primary-strong"
-                                : "text-text-muted hover:bg-black/[0.04] hover:text-text"
+                                ? "bg-primary-ring/60 text-primary-strong font-bold"
+                                : "text-text-muted hover:text-text hover:bg-black/[0.04]"
                             }`}
                           >
                             <span className="flex items-center gap-2.5">
-                              <NavIcon name={item.iconName} className="h-4 w-4 text-[#5b63f5]" />
+                              <NavIcon
+                                name={item.iconName}
+                                className="h-4 w-4 text-[#5b63f5]"
+                              />
                               {item.label}
                             </span>
                             <span className="text-[12px] text-[#9095ad]">›</span>
@@ -520,13 +555,16 @@ export function NavMenu() {
                                   key={child.href}
                                   href={child.href}
                                   onClick={closeAll}
-                                  className={`flex items-center gap-2.5 rounded-card px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                                  className={`rounded-card flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-all duration-150 ${
                                     isActive(pathname, child.href)
-                                      ? "bg-primary-ring font-bold text-primary-strong"
-                                      : "text-text-muted hover:translate-x-0.5 hover:bg-black/[0.04] hover:text-text"
+                                      ? "bg-primary-ring text-primary-strong font-bold"
+                                      : "text-text-muted hover:text-text hover:translate-x-0.5 hover:bg-black/[0.04]"
                                   }`}
                                 >
-                                  <NavIcon name={child.iconName} className="h-4 w-4 text-[#5b63f5]" />
+                                  <NavIcon
+                                    name={child.iconName}
+                                    className="h-4 w-4 text-[#5b63f5]"
+                                  />
                                   {child.label}
                                 </Link>
                               ))}
@@ -541,13 +579,16 @@ export function NavMenu() {
                         key={item.href}
                         href={item.href!}
                         onClick={closeAll}
-                        className={`flex items-center gap-2.5 rounded-card px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                        className={`rounded-card flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-all duration-150 ${
                           isActive(pathname, item.href!)
-                            ? "bg-primary-ring font-bold text-primary-strong"
-                            : "text-text-muted hover:translate-x-0.5 hover:bg-black/[0.04] hover:text-text"
+                            ? "bg-primary-ring text-primary-strong font-bold"
+                            : "text-text-muted hover:text-text hover:translate-x-0.5 hover:bg-black/[0.04]"
                         }`}
                       >
-                        <NavIcon name={item.iconName} className="h-4 w-4 text-[#5b63f5]" />
+                        <NavIcon
+                          name={item.iconName}
+                          className="h-4 w-4 text-[#5b63f5]"
+                        />
                         {item.label}
                       </Link>
                     );
@@ -598,17 +639,17 @@ export function NavMenu() {
               <>
                 {/* Backdrop escuro absoluto */}
                 <div
-                  className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-xs xl:hidden animate-fade-in"
+                  className="animate-fade-in fixed inset-0 z-[999] bg-black/60 backdrop-blur-xs xl:hidden"
                   onClick={closeAll}
                 />
 
                 {/* Off-Canvas Side Drawer Sólido no Body com Animação de Entrada */}
                 <div
                   id="nav-mobile-panel"
-                  className="fixed inset-y-0 left-0 z-[999] flex w-[340px] sm:w-[380px] max-w-[90vw] flex-col border-r border-slate-200 bg-white text-[#1b1f2e] shadow-2xl xl:hidden overflow-hidden animate-drawer-slide-left"
+                  className="animate-drawer-slide-left fixed inset-y-0 left-0 z-[999] flex w-[340px] max-w-[90vw] flex-col overflow-hidden border-r border-slate-200 bg-white text-[#1b1f2e] shadow-2xl sm:w-[380px] xl:hidden"
                 >
                   {/* Drawer Top Header */}
-                  <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-slate-100 px-5 bg-white">
+                  <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5">
                     <Link
                       href="/welcome"
                       onClick={closeAll}
@@ -632,10 +673,10 @@ export function NavMenu() {
                   </div>
 
                   {/* Drawer Scrollable Content */}
-                  <div className="flex-1 overflow-y-auto p-4 bg-white">
+                  <div className="flex-1 overflow-y-auto bg-white p-4">
                     {/* Ações Rápidas (Exibidas no celular quando ocultas da barra superior) */}
                     <div className="mb-4 flex flex-col gap-2 border-b border-slate-100 pb-4 md:hidden">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#9095ad]">
+                      <span className="text-[10px] font-extrabold tracking-wider text-[#9095ad] uppercase">
                         Acesso Rápido
                       </span>
                       <Link
@@ -693,7 +734,7 @@ export function NavMenu() {
                     </div>
 
                     <div className="mb-2">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#9095ad]">
+                      <span className="text-[10px] font-extrabold tracking-wider text-[#9095ad] uppercase">
                         Menu de Navegação
                       </span>
                     </div>
@@ -718,11 +759,17 @@ export function NavMenu() {
                           );
                         }
 
-                        const isExpanded = Boolean(mobileExpandedGroups[entry.label]);
+                        const isExpanded = isGroupExpanded(
+                          entry.label,
+                          pathname,
+                          mobileExpandedGroups,
+                        );
                         const groupActive = entry.items.some((item) =>
                           item.href
                             ? isActive(pathname, item.href)
-                            : item.children?.some((child) => isActive(pathname, child.href))
+                            : item.children?.some((child) =>
+                                isActive(pathname, child.href),
+                              ),
                         );
 
                         return (
@@ -740,7 +787,10 @@ export function NavMenu() {
                               }`}
                             >
                               <span className="flex items-center gap-2">
-                                <NavIcon name={entry.iconName} className="h-4 w-4 text-[#5b63f5]" />
+                                <NavIcon
+                                  name={entry.iconName}
+                                  className="h-4 w-4 text-[#5b63f5]"
+                                />
                                 {entry.label}
                               </span>
                               <span
@@ -757,13 +807,22 @@ export function NavMenu() {
                                 {entry.items.map((item) => {
                                   if (item.children) {
                                     return (
-                                      <div key={item.label} className="flex flex-col gap-1 pl-2">
+                                      <div
+                                        key={item.label}
+                                        className="flex flex-col gap-1 pl-2"
+                                      >
                                         <span className="flex items-center gap-1.5 pt-1.5 text-xs font-bold text-[#5b63f5]">
-                                          <NavIcon name={item.iconName} className="h-3.5 w-3.5" />
+                                          <NavIcon
+                                            name={item.iconName}
+                                            className="h-3.5 w-3.5"
+                                          />
                                           {item.label}
                                         </span>
                                         {item.children.map((child) => {
-                                          const childActive = isActive(pathname, child.href);
+                                          const childActive = isActive(
+                                            pathname,
+                                            child.href,
+                                          );
                                           return (
                                             <Link
                                               key={child.href}
@@ -775,7 +834,10 @@ export function NavMenu() {
                                                   : "text-[#646982] hover:bg-slate-100 hover:text-[#1b1f2e]"
                                               }`}
                                             >
-                                              <NavIcon name={child.iconName} className="h-3.5 w-3.5 text-[#5b63f5]" />
+                                              <NavIcon
+                                                name={child.iconName}
+                                                className="h-3.5 w-3.5 text-[#5b63f5]"
+                                              />
                                               {child.label}
                                             </Link>
                                           );
@@ -784,7 +846,9 @@ export function NavMenu() {
                                     );
                                   }
 
-                                  const itemActive = item.href ? isActive(pathname, item.href) : false;
+                                  const itemActive = item.href
+                                    ? isActive(pathname, item.href)
+                                    : false;
                                   return (
                                     <Link
                                       key={item.href}
@@ -796,7 +860,10 @@ export function NavMenu() {
                                           : "text-[#52576e] hover:bg-slate-100 hover:text-[#1b1f2e]"
                                       }`}
                                     >
-                                      <NavIcon name={item.iconName} className="h-4 w-4 text-[#5b63f5]" />
+                                      <NavIcon
+                                        name={item.iconName}
+                                        className="h-4 w-4 text-[#5b63f5]"
+                                      />
                                       {item.label}
                                     </Link>
                                   );
@@ -822,7 +889,7 @@ export function NavMenu() {
                   </div>
                 </div>
               </>,
-              document.body
+              document.body,
             )
           : null}
       </div>
