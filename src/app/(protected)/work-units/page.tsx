@@ -1,21 +1,29 @@
-import Link from "next/link";
-
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
 import { listWorkUnitsAction } from "@/shared/server/actions/pgr/work-units";
 
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  PrimaryLink,
-  SearchForm,
-  Table,
-} from "../_ui/list";
-import { EditRowAction, RowActions } from "../_ui/row-actions";
+  Cell,
+  DataGrid,
+  EditIconLink,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  MonoCell,
+  RowActions,
+  StatusBadge,
+  ToolbarButton,
+  ToolbarSearch,
+} from "../_ui/data-list";
+import { EmptyState, PageHeader } from "../_ui/list";
 import { DeleteWorkUnit } from "./_components/delete-work-unit";
+import { WorkUnitIcon } from "./_components/work-unit-icon";
 
 export const dynamic = "force-dynamic";
+
+const TEMPLATE = "1fr 1.8fr 1.2fr 1fr 1.2fr 1.1fr 84px";
 
 type SearchParams = Promise<{ search?: string; page?: string; companyId?: string }>;
 
@@ -37,55 +45,80 @@ export default async function WorkUnitsPage({
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
+        icon={<WorkUnitIcon />}
         title="Unidades de obra"
-        description="Canteiros, filiais e locais por empresa."
-        action={<PrimaryLink href="/work-units/new">Nova unidade</PrimaryLink>}
-      />
-      <SearchForm
-        basePath="/work-units"
-        placeholder="Buscar por nome, contrato ou objeto"
-        defaultValue={sp.search}
-        hidden={{ companyId: sp.companyId }}
+        description="Canteiros, filiais e locais por empresa"
       />
 
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhuma unidade de obra encontrada." />
-      ) : (
-        <Table headers={["Nome", "Contrato", "Cidade/UF", ""]}>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2">
-                <Link
-                  href={`/work-units/${row.id}/edit`}
-                  className="font-medium hover:underline"
-                >
-                  {row.name}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.contractNumber ?? "—"}</td>
-              <td className="px-4 py-2">
-                {[row.city, row.state].filter(Boolean).join("/") || "—"}
-              </td>
-              <td className="px-4 py-2">
-                <RowActions>
-                  <EditRowAction href={`/work-units/${row.id}/edit`} />
-                  <DeleteWorkUnit id={row.id} />
-                </RowActions>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSearch
+            basePath="/work-units"
+            placeholder="Buscar por nome, contrato ou objeto…"
+            defaultValue={sp.search}
+            hidden={{ companyId: sp.companyId }}
+          />
+          <ToolbarButton href="/work-units/new">Nova Unidade</ToolbarButton>
+        </ListToolbar>
 
-      <Pagination
-        basePath="/work-units"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={{ search: sp.search, companyId: sp.companyId }}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              message={
+                sp.search
+                  ? "Nenhuma unidade de obra encontrada para a busca."
+                  : "Nenhuma unidade de obra cadastrada."
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={920}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Código" },
+                  { header: "Unidade / Obra" },
+                  { header: "Empresa" },
+                  { header: "Cidade / UF" },
+                  { header: "Responsável" },
+                  { header: "Status" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <MonoCell href={`/work-units/${row.id}/edit`}>
+                    {row.contractNumber ?? "—"}
+                  </MonoCell>
+                  <Cell className="text-text font-semibold">{row.name}</Cell>
+                  <Cell className="text-text-subtle">—</Cell>
+                  <Cell>{[row.city, row.state].filter(Boolean).join(" / ") || "—"}</Cell>
+                  <Cell className="text-text-subtle">—</Cell>
+                  <Cell>
+                    <StatusBadge tone="green">Ativa</StatusBadge>
+                  </Cell>
+                  <Cell align="right">
+                    <RowActions>
+                      <EditIconLink href={`/work-units/${row.id}/edit`} />
+                      <DeleteWorkUnit id={row.id} />
+                    </RowActions>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/work-units"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={{ search: sp.search, companyId: sp.companyId }}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }
