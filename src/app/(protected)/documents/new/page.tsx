@@ -23,14 +23,31 @@ export default async function NewDocumentPage({
   const folders = foldersResult.ok ? foldersResult.data.folders : [];
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-4 py-8 sm:px-8">
       <PageHeader
-        title="Novo documento"
+        title="Novo Documento — GED"
         description="Envie um arquivo para o acervo (laudo, contrato, ficha etc.)."
+        icon={
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        }
       />
-      <DocumentUploadForm folders={folders} defaultFolderId={defaultFolderId} />
-      <Link href="/documents" className="text-text-subtle text-sm hover:underline">
-        ← Voltar
+      <div className="glass-card max-w-2xl rounded-[20px] p-6 sm:p-8">
+        <DocumentUploadForm folders={folders} defaultFolderId={defaultFolderId} />
+      </div>
+      <Link
+        href="/documents"
+        className="text-text-subtle hover:text-primary flex w-fit items-center gap-1.5 text-xs font-semibold transition-colors sm:text-sm"
+      >
+        ← Voltar para Documentos
       </Link>
     </div>
   );

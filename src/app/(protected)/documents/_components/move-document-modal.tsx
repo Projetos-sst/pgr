@@ -51,9 +51,22 @@ export function MoveDocumentModal({
       <button
         type="button"
         onClick={openModal}
-        className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
+        title="Mover documento"
+        aria-label="Mover documento"
+        className="text-text-muted hover:text-primary rounded-lg p-1.5 transition-colors hover:bg-white/60"
       >
-        Mover
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        >
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          <polyline points="12 11 15 14 12 17" />
+          <line x1="9" y1="14" x2="15" y2="14" />
+        </svg>
       </button>
 
       {open ? (

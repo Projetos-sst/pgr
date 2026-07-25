@@ -17,6 +17,11 @@ export function formatIsoDateBr(isoDate: string): string {
   return `${day}/${month}/${year}`;
 }
 
+export function formatMonthYearBr(isoDate: string): string {
+  const [year, month] = isoDate.split("-");
+  return `${month}/${year}`;
+}
+
 export function formatDateTimeBr(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR");
 }

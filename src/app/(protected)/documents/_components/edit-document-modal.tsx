@@ -45,14 +45,26 @@ export function EditDocumentModal({ doc }: { doc: DocumentListItem }) {
       <button
         type="button"
         onClick={openModal}
-        className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
+        title="Editar documento"
+        aria-label="Editar documento"
+        className="text-text-muted hover:text-primary rounded-lg p-1.5 transition-colors hover:bg-white/60"
       >
-        Editar
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        >
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="glass-card w-full max-w-md bg-white/90 p-6">
+        <div className="animate-backdrop-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+          <div className="glass-card animate-modal-pop shadow-card w-full max-w-md rounded-[20px] bg-white/95 p-6">
             <h2 className="text-text text-lg font-bold">Editar documento</h2>
             <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
               <label className="flex flex-col gap-1">
