@@ -7,17 +7,43 @@ import { resolvePageParams } from "@/shared/pagination";
 import { listAccidentsAction } from "@/shared/server/actions/safety/accidents";
 
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  PrimaryLink,
-  SearchForm,
-  Table,
-} from "../_ui/list";
-import { RowActions, ViewRowAction } from "../_ui/row-actions";
+  Cell,
+  DataGrid,
+  EditIconLink,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  MonoCell,
+  RowActions,
+  StatusBadge,
+  ToolbarButton,
+  ToolbarSearch,
+  type StatusTone,
+} from "../_ui/data-list";
+import { EmptyState, PageHeader } from "../_ui/list";
 import { DeleteIncident } from "./_components/delete-incident";
+import { IncidentIcon } from "./_components/incident-icon";
 
 export const dynamic = "force-dynamic";
+
+const TEMPLATE = "1fr 1.8fr 1.2fr 1fr 1.2fr 1.1fr 84px";
+
+const SEVERITY_TONE: Record<string, StatusTone> = {
+  minor: "green",
+  moderate: "amber",
+  severe: "red",
+  fatal: "red",
+};
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  registered: "amber",
+  awaiting_planning: "indigo",
+  awaiting_completion: "indigo",
+  completed: "green",
+  cancelled: "neutral",
+};
 
 type SearchParams = Promise<{ page?: string; search?: string; status?: string }>;
 
@@ -43,92 +69,107 @@ export default async function IncidentsPage({
   const params = { search: sp.search, status: sp.status };
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
-        title="Incidentes/Acidentes"
-        description="Registro interno de incidentes e acidentes de trabalho, restrito à equipe do escritório."
-        action={<PrimaryLink href="/incidents/new">Novo registro</PrimaryLink>}
+        icon={<IncidentIcon />}
+        title="Incidentes / Acidentes"
+        description="Registro interno de incidentes e acidentes de trabalho"
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <SearchForm
-          basePath="/incidents"
-          placeholder="Buscar por local, área ou nº CAT"
-          defaultValue={sp.search}
-          hidden={{ status: sp.status }}
-        />
-        <nav className="flex flex-wrap gap-2 text-sm">
-          <Link
-            href="/incidents"
-            className={`glass-panel rounded-card px-3 py-1 font-semibold transition-colors ${
-              !sp.status ? "text-primary-strong" : "text-text-muted hover:text-text"
-            }`}
-          >
-            Todos
-          </Link>
-          {Object.entries(INCIDENT_STATUS_LABELS).map(([value, label]) => (
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSearch
+            basePath="/incidents"
+            placeholder="Buscar por local, área ou nº CAT…"
+            defaultValue={sp.search}
+            hidden={{ status: sp.status }}
+          />
+          <div className="flex flex-wrap items-center gap-1.5">
             <Link
-              key={value}
-              href={`/incidents?status=${value}`}
-              className={`glass-panel rounded-card px-3 py-1 font-semibold transition-colors ${
-                sp.status === value
-                  ? "text-primary-strong"
-                  : "text-text-muted hover:text-text"
+              href="/incidents"
+              className={`rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                !sp.status
+                  ? "btn-primary"
+                  : "text-text-muted hover:text-text border border-white/70 bg-white/50"
               }`}
             >
-              {label}
+              Todos
             </Link>
-          ))}
-        </nav>
-      </div>
+            {Object.entries(INCIDENT_STATUS_LABELS).map(([value, label]) => (
+              <Link
+                key={value}
+                href={`/incidents?status=${value}`}
+                className={`rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                  sp.status === value
+                    ? "btn-primary"
+                    : "text-text-muted hover:text-text border border-white/70 bg-white/50"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+          <ToolbarButton href="/incidents/new">Novo Registro</ToolbarButton>
+        </ListToolbar>
 
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhum incidente/acidente encontrado." />
-      ) : (
-        <Table
-          headers={[
-            "Ocorrência",
-            "Empresa",
-            "Tipo",
-            "Categoria",
-            "Severidade",
-            "Status",
-            "",
-          ]}
-        >
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2 tabular-nums">
-                <Link
-                  href={`/incidents/${row.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {formatDate(row.occurredAt)}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.companyName ?? "—"}</td>
-              <td className="px-4 py-2">{row.typeLabel}</td>
-              <td className="px-4 py-2">{row.categoryLabel}</td>
-              <td className="px-4 py-2">{row.severityLabel}</td>
-              <td className="px-4 py-2">{row.statusLabel}</td>
-              <td className="px-4 py-2">
-                <RowActions>
-                  <ViewRowAction href={`/incidents/${row.id}`} label="Abrir" />
-                  <DeleteIncident id={row.id} />
-                </RowActions>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
-
-      <Pagination
-        basePath="/incidents"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={params}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState message="Nenhum incidente/acidente encontrado." />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={960}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Data" },
+                  { header: "Empresa" },
+                  { header: "Tipo" },
+                  { header: "Categoria" },
+                  { header: "Gravidade" },
+                  { header: "Status" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <MonoCell href={`/incidents/${row.id}`}>
+                    {formatDate(row.occurredAt)}
+                  </MonoCell>
+                  <Cell className="text-text font-semibold">
+                    {row.companyName ?? "—"}
+                  </Cell>
+                  <Cell>{row.typeLabel}</Cell>
+                  <Cell>{row.categoryLabel}</Cell>
+                  <Cell>
+                    <StatusBadge tone={SEVERITY_TONE[row.severity] ?? "neutral"}>
+                      {row.severityLabel}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell>
+                    <StatusBadge tone={STATUS_TONE[row.status] ?? "neutral"}>
+                      {row.statusLabel}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell align="right">
+                    <RowActions>
+                      <EditIconLink href={`/incidents/${row.id}`} />
+                      <DeleteIncident id={row.id} />
+                    </RowActions>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/incidents"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={params}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }
