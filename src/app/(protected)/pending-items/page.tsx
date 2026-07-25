@@ -4,6 +4,7 @@ import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getDashboardSummaryAction } from "@/shared/server/actions/platform/dashboard";
 import { getPendingItemsAction } from "@/shared/server/actions/platform/pending-items";
 import { listTeamMembers } from "@/shared/server/actions/platform/team";
+import { EmptyState, PageHeader } from "../_ui/list";
 
 export const dynamic = "force-dynamic";
 
@@ -35,12 +36,22 @@ export default async function MinhasTarefasPage({
     listTeamMembers(),
   ]);
 
+  // Bug #1: early return when core actions fail — avoids masking errors as "tudo em dia"
+  if (!summaryRes.ok || !itemsRes.ok) {
+    return (
+      <div className="flex flex-col gap-6 px-6 py-8">
+        <PageHeader title="Pendências e vencimentos" />
+        <EmptyState message="Não foi possível carregar as pendências. Tente novamente em instantes." />
+      </div>
+    );
+  }
+
   const teamTotal = teamRes.ok ? teamRes.data.total : 0;
   const hasActiveTeam = teamTotal > 1;
   const activeView = sp.view === "team" && hasActiveTeam ? "team" : "my";
 
-  const p = summaryRes.ok ? summaryRes.data.pending : null;
-  const items = itemsRes.ok ? itemsRes.data : null;
+  const p = summaryRes.data.pending;
+  const items = itemsRes.data;
 
   // Monta a lista unificada de tarefas REAIS vindas do banco de dados
   const allRealTasks: RenderedTask[] = [];
@@ -121,12 +132,30 @@ export default async function MinhasTarefasPage({
     }
   }
 
-  // Contagens por categoria
-  const totalCount = allRealTasks.length;
-  const overdueCount = allRealTasks.filter((t) => t.status === "overdue").length;
-  const dueSoonCount = allRealTasks.filter((t) => t.status === "duesoon").length;
-  const onTimeCount = allRealTasks.filter((t) => t.status === "ontime").length;
+  // Bug #2: KPI counts use aggregate data from dashboard (full counts, not capped list)
+  // allRealTasks.length is capped at 5 per category — use p (summaryRes aggregate) instead
+  const totalCount =
+    p.pgrsExpired + p.controlsOverdue + p.episLowStock +
+    (p.episPendingReturn > 0 ? 1 : 0) +
+    (p.trainingsExpired > 0 ? 1 : 0) +
+    (p.trainingsDueSoon > 0 ? 1 : 0);
+  const overdueCount = p.pgrsExpired + p.controlsOverdue + (p.trainingsExpired > 0 ? 1 : 0);
+  const dueSoonCount = p.episLowStock + (p.trainingsDueSoon > 0 ? 1 : 0);
+  const onTimeCount = p.episPendingReturn > 0 ? 1 : 0;
   const completedCount = 0;
+
+  // Bug #4: helper to build URLs safely with URLSearchParams (preserves all params)
+  function buildUrl(overrides: Record<string, string | undefined>): string {
+    const params = new URLSearchParams();
+    if (overrides.view ?? (activeView !== "my" ? activeView : undefined))
+      params.set("view", overrides.view ?? activeView);
+    const filter = overrides.filter ?? (currentFilter !== "all" ? currentFilter : undefined);
+    if (filter && filter !== "all") params.set("filter", filter);
+    const search = overrides.search ?? (searchQuery || undefined);
+    if (search) params.set("search", search);
+    const qs = params.toString();
+    return `/pending-items${qs ? `?${qs}` : ""}`;
+  }
 
   // Filtragem por busca e por status
   const filteredTasks = allRealTasks.filter((t) => {
@@ -180,7 +209,7 @@ export default async function MinhasTarefasPage({
         {/* Visão da Equipe Toggle Pill */}
         {hasActiveTeam ? (
           <Link
-            href={`/pending-items?view=${activeView === "team" ? "my" : "team"}${currentFilter !== "all" ? `&filter=${currentFilter}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}`}
+            href={buildUrl({ view: activeView === "team" ? "my" : "team" })}
             title={
               activeView === "team"
                 ? "Alternar para minhas tarefas"
@@ -426,7 +455,7 @@ export default async function MinhasTarefasPage({
         {/* Filter Badges */}
         <div className="mt-4 flex flex-wrap items-center gap-2 border-b border-black/5 pb-4">
           <Link
-            href={`/pending-items?filter=all${searchQuery ? `&search=${searchQuery}` : ""}`}
+            href={buildUrl({ filter: "all" })}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
               currentFilter === "all"
                 ? "bg-[#5b63f5] text-white shadow-md shadow-[#5b63f5]/30"
@@ -436,7 +465,7 @@ export default async function MinhasTarefasPage({
             Todas ({totalCount})
           </Link>
           <Link
-            href={`/pending-items?filter=overdue${searchQuery ? `&search=${searchQuery}` : ""}`}
+            href={buildUrl({ filter: "overdue" })}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
               currentFilter === "overdue"
                 ? "bg-red-600 text-white shadow-md shadow-red-500/30"
@@ -446,7 +475,7 @@ export default async function MinhasTarefasPage({
             Vencidas ({overdueCount})
           </Link>
           <Link
-            href={`/pending-items?filter=duesoon${searchQuery ? `&search=${searchQuery}` : ""}`}
+            href={buildUrl({ filter: "duesoon" })}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
               currentFilter === "duesoon"
                 ? "bg-amber-600 text-white shadow-md shadow-amber-500/30"
@@ -456,7 +485,7 @@ export default async function MinhasTarefasPage({
             Próx. Venc. ({dueSoonCount})
           </Link>
           <Link
-            href={`/pending-items?filter=ontime${searchQuery ? `&search=${searchQuery}` : ""}`}
+            href={buildUrl({ filter: "ontime" })}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
               currentFilter === "ontime"
                 ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/30"
@@ -466,7 +495,7 @@ export default async function MinhasTarefasPage({
             No Prazo ({onTimeCount})
           </Link>
           <Link
-            href={`/pending-items?filter=completed${searchQuery ? `&search=${searchQuery}` : ""}`}
+            href={buildUrl({ filter: "completed" })}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
               currentFilter === "completed"
                 ? "bg-teal-600 text-white shadow-md shadow-teal-500/30"

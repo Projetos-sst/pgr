@@ -20,6 +20,8 @@ jest.mock("next/headers", () => ({
 
 jest.mock("@clerk/nextjs", () => ({
   useUser: () => ({ user: { firstName: "Douglas", username: "douglas" } }),
+  // UserProfilePill usa useClerk() para signOut — precisa estar no mock
+  useClerk: () => ({ signOut: jest.fn() }),
   UserButton: () => <div data-testid="user-button" />,
   OrganizationSwitcher: (props: {
     hidePersonal?: boolean;
