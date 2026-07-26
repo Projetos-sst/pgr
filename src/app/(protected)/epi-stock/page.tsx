@@ -155,7 +155,7 @@ export default async function EpiStockPage({
       : "Saldo e reposição de equipamentos de proteção individual";
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="animate-fade-slide-up flex flex-col gap-6 px-6 py-8">
       <PageHeader
         title="Estoque de EPI"
         description={description}
@@ -163,7 +163,7 @@ export default async function EpiStockPage({
         action={
           <Link
             href="/epi-stock/new"
-            className="btn-primary rounded-card shadow-primary flex items-center gap-2 px-4 py-2.5 text-sm font-bold transition-all"
+            className="btn-primary hover-lift rounded-card shadow-primary flex items-center gap-2 px-4 py-2.5 text-sm font-bold transition-all"
           >
             Adicionar ao estoque
           </Link>
@@ -171,7 +171,10 @@ export default async function EpiStockPage({
       />
 
       {/* Card glass principal — contém filtros, busca, tabela e paginação */}
-      <div className="glass-card overflow-hidden" style={{ borderRadius: "20px" }}>
+      <div
+        className="glass-card animate-fade-in overflow-hidden"
+        style={{ borderRadius: "20px" }}
+      >
         {/* Linha 1: Tabs de filtro de status + toggle "Apenas com saldo" */}
         <div
           style={{
@@ -190,6 +193,7 @@ export default async function EpiStockPage({
                 key={tab.value}
                 href={buildTabHref(tab.value)}
                 aria-current={isActive ? "page" : undefined}
+                className="transition-all hover:opacity-90 active:scale-95"
                 style={{
                   height: "38px",
                   display: "inline-flex",
@@ -426,6 +430,7 @@ export default async function EpiStockPage({
           rows.map((row, idx) => (
             <div
               key={row.id}
+              className="transition-all duration-200 hover:bg-white/40"
               style={{
                 display: "grid",
                 gridTemplateColumns: "0.9fr 2fr 0.6fr 1fr 0.8fr 1fr 60px",
@@ -435,7 +440,6 @@ export default async function EpiStockPage({
                 fontSize: "13px",
                 borderBottom: "1px solid rgba(120, 120, 150, 0.08)",
                 background: idx % 2 === 1 ? "rgba(255, 255, 255, 0.2)" : "transparent",
-                transition: "background 0.15s",
               }}
             >
               {/* CA */}

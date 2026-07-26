@@ -106,7 +106,7 @@ export default async function StockHistoryPage({
   }
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="animate-fade-slide-up flex flex-col gap-6 px-6 py-8">
       <PageHeader
         title={`Histórico — ${stock.name}`}
         description={`CA ${stock.ca ?? "—"} · Saldo atual: ${stock.currentBalance} ${stock.unitOfMeasure ?? "un"}`}
@@ -114,7 +114,7 @@ export default async function StockHistoryPage({
         action={
           <Link
             href={`/epi-stock/${id}/edit`}
-            className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
+            className="glass-panel hover-lift text-text-muted hover:text-text rounded-card px-4 py-2 text-sm font-semibold transition-all"
           >
             ← Voltar ao item
           </Link>
@@ -122,7 +122,10 @@ export default async function StockHistoryPage({
       />
 
       {/* Card glass com tabela de movimentações */}
-      <div className="glass-card overflow-hidden" style={{ borderRadius: "20px" }}>
+      <div
+        className="glass-card animate-fade-in overflow-hidden"
+        style={{ borderRadius: "20px" }}
+      >
         {/* Cabeçalho da tabela */}
         <div
           style={{
