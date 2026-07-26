@@ -224,7 +224,7 @@ export function EmployeeForm({
           label="Nome completo"
           name="fullName"
           required
-          full
+          isFullWidth
           placeholder="Ex.: João Ferreira da Silva"
           defaultValue={employee?.fullName}
           error={errors.fullName}
@@ -233,7 +233,7 @@ export function EmployeeForm({
           label="CPF"
           name="cpf"
           required
-          mono
+          isMono
           placeholder="000.000.000-00"
           defaultValue={employee?.cpf}
           error={errors.cpf}
@@ -306,7 +306,7 @@ export function EmployeeForm({
         <TextField
           label="Matrícula"
           name="registration"
-          mono
+          isMono
           placeholder="Ex.: 004821"
           defaultValue={employee?.registration}
         />
@@ -336,7 +336,7 @@ export function EmployeeForm({
         <TextField
           label="Crachá"
           name="badgeNumber"
-          mono
+          isMono
           defaultValue={employee?.badgeNumber}
         />
         <TextField

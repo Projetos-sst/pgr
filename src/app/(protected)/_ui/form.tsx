@@ -38,7 +38,7 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
 /**
  * Bloco de campos do formulário: cartão glass com título em mono/caixa-alta
  * (identidade do redesign). Grade de 2 colunas por padrão — campos individuais
- * pedem a linha inteira via `full`.
+ * pedem a linha inteira via `isFullWidth`.
  */
 export function FormSection({
   title,
@@ -64,6 +64,37 @@ export function FormSection({
 }
 
 export type FormStep = { title: string; hint: string };
+
+type StepState = "current" | "done" | "invalid" | "pending";
+
+function stepStateOf({
+  index,
+  current,
+  invalidSteps,
+}: {
+  index: number;
+  current: number;
+  invalidSteps: number[];
+}): StepState {
+  if (index === current) return "current";
+  if (invalidSteps.includes(index)) return "invalid";
+  if (index < current) return "done";
+  return "pending";
+}
+
+const STEP_CIRCLE_CLASS: Record<StepState, string> = {
+  current: "bg-white/25 text-white",
+  done: "bg-accent-green text-white",
+  invalid: "bg-danger/15 text-danger",
+  pending: "bg-text-subtle/20 text-text-subtle",
+};
+
+const STEP_HINT_CLASS: Record<StepState, string> = {
+  current: "text-white/80",
+  done: "text-accent-green",
+  invalid: "text-danger",
+  pending: "text-text-subtle",
+};
 
 /**
  * Indicador de etapas de um formulário multi-step. Vocabulário visual do
@@ -97,9 +128,8 @@ export function FormSteps({
       </p>
       <ol className="flex gap-1 overflow-x-auto sm:grid sm:auto-cols-fr sm:grid-flow-col sm:overflow-visible">
         {steps.map((step, index) => {
-          const isCurrent = index === current;
-          const hasError = invalidSteps.includes(index);
-          const isDone = index < current && !hasError;
+          const state = stepStateOf({ index, current, invalidSteps });
+          const isCurrent = state === "current";
           return (
             <li
               key={step.title}
@@ -118,19 +148,11 @@ export function FormSteps({
               >
                 <span
                   aria-hidden
-                  className={`flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[13px] font-bold ${
-                    isCurrent
-                      ? "bg-white/25 text-white"
-                      : isDone
-                        ? "bg-accent-green text-white"
-                        : hasError
-                          ? "bg-danger/15 text-danger"
-                          : "bg-text-subtle/20 text-text-subtle"
-                  }`}
+                  className={`flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[13px] font-bold ${STEP_CIRCLE_CLASS[state]}`}
                 >
-                  {hasError && !isCurrent ? (
+                  {state === "invalid" ? (
                     "!"
-                  ) : isDone ? (
+                  ) : state === "done" ? (
                     <svg
                       width="14"
                       height="14"
@@ -147,18 +169,8 @@ export function FormSteps({
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate font-bold">{step.title}</span>
-                  <span
-                    className={`block truncate text-[11px] ${
-                      isCurrent
-                        ? "text-white/80"
-                        : isDone
-                          ? "text-accent-green"
-                          : hasError
-                            ? "text-danger"
-                            : "text-text-subtle"
-                    }`}
-                  >
-                    {hasError && !isCurrent ? "Revise esta etapa" : step.hint}
+                  <span className={`block truncate text-[11px] ${STEP_HINT_CLASS[state]}`}>
+                    {state === "invalid" ? "Revise esta etapa" : step.hint}
                   </span>
                 </span>
               </button>
@@ -183,8 +195,8 @@ export function TextField({
   suggestions,
   error,
   placeholder,
-  mono,
-  full,
+  isMono,
+  isFullWidth,
 }: {
   label: string;
   name: string;
@@ -199,20 +211,20 @@ export function TextField({
   suggestions?: readonly string[];
   error?: string;
   placeholder?: string;
-  mono?: boolean;
-  full?: boolean;
+  isMono?: boolean;
+  isFullWidth?: boolean;
 }) {
   const controlled = value !== undefined;
   const listId = suggestions ? `${name}-suggestions` : undefined;
   return (
-    <label className={`block ${full ? "sm:col-span-full" : ""}`}>
+    <label className={`block ${isFullWidth ? "sm:col-span-full" : ""}`}>
       <FieldLabel label={label} required={required} />
       <input
         name={name}
         type={type}
         placeholder={placeholder}
         aria-invalid={error ? true : undefined}
-        className={`${fieldClass} ${mono ? "font-mono" : ""}`}
+        className={`${fieldClass} ${isMono ? "font-mono" : ""}`}
         readOnly={readOnly}
         list={listId}
         onBlur={onBlur}
@@ -243,7 +255,7 @@ export function SelectField({
   error,
   disabled,
   emptyLabel,
-  full,
+  isFullWidth,
 }: {
   label: string;
   name: string;
@@ -255,11 +267,11 @@ export function SelectField({
   error?: string;
   disabled?: boolean;
   emptyLabel?: string;
-  full?: boolean;
+  isFullWidth?: boolean;
 }) {
   const controlled = value !== undefined;
   return (
-    <label className={`block ${full ? "sm:col-span-full" : ""}`}>
+    <label className={`block ${isFullWidth ? "sm:col-span-full" : ""}`}>
       <FieldLabel label={label} required={required} />
       <span className="relative block">
         <select

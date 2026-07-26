@@ -79,7 +79,7 @@ export function AddressFields({
           onChange={setField("zipCode")}
           onBlur={() => cep.lookup(value.zipCode)}
           placeholder="00000-000"
-          mono
+          isMono
           error={errors.zipCode}
         />
         <CepStatus status={cep.status} />
