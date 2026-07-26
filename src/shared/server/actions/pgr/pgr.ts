@@ -78,3 +78,21 @@ export async function deletePgrAction(id: string): Promise<ActionResult<{ id: st
     { audit: true },
   );
 }
+
+/** Marca o PGR como publicado e persiste `published_at` no banco (idempotente). */
+export async function publishPgrAction(
+  id: string,
+): Promise<ActionResult<{ id: string }>> {
+  return officeAction(
+    "pgr.pgr.publish",
+    async ({ tenantId }) => {
+      const row = await repo.getPgrById(tenantId, id);
+      if (!row) throw new NotFoundError();
+      await repo.publishPgr(tenantId, id);
+      revalidatePath(BASE_PATH);
+      revalidatePath(`${BASE_PATH}/${id}`);
+      return { id };
+    },
+    { audit: true },
+  );
+}

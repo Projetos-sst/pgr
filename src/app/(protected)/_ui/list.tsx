@@ -46,15 +46,15 @@ export function PrimaryLink({ href, children }: { href: string; children: ReactN
 }
 
 export function EmptyState({
-  title = "Nenhum documento encontrado",
+  title = "Nenhum registro encontrado",
   message,
 }: {
   title?: string;
   message: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center sm:p-14">
-      <div className="bg-primary/10 text-primary mb-3 flex h-12 w-12 items-center justify-center rounded-2xl shadow-xs">
+    <div className="glass-card animate-fade-slide-up flex flex-col items-center justify-center rounded-[20px] p-8 text-center sm:p-12">
+      <div className="bg-primary/10 text-primary mb-3.5 flex h-12 w-12 items-center justify-center rounded-2xl shadow-xs">
         <svg
           width="24"
           height="24"
@@ -69,7 +69,7 @@ export function EmptyState({
         </svg>
       </div>
       <h3 className="text-text text-sm font-bold sm:text-base">{title}</h3>
-      <p className="text-text-subtle mt-1 max-w-sm text-xs sm:text-sm">{message}</p>
+      <p className="text-text-subtle mt-1 max-w-md text-xs sm:text-sm">{message}</p>
     </div>
   );
 }

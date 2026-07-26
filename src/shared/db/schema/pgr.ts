@@ -55,6 +55,7 @@ export const pgr = pgTable(
     registrationNumber: text("registration_number"),
     issuedAt: date("issued_at"),
     validUntil: date("valid_until"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

@@ -10,8 +10,6 @@ import { listPgrRevisionsAction } from "@/shared/server/actions/pgr/pgr-revision
 import { getPgrConsolidatedAction } from "@/shared/server/actions/pgr/pgr-consolidated";
 import { getPgrSignatureViewAction } from "@/shared/server/actions/pgr/pgr-signature";
 
-import { PageHeader } from "../../_ui/list";
-import { DeletePgr } from "../_components/delete-pgr";
 import { PgrEditorTabs } from "./_components/pgr-editor-tabs";
 
 export const dynamic = "force-dynamic";
@@ -55,16 +53,11 @@ export default async function PgrDetailPage({
     : [];
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader
-        title="Documento PGR"
-        description={`Empresa: ${companyName}`}
-        action={<DeletePgr id={doc.id} redirectTo="/pgr" />}
-      />
-
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 p-4 sm:p-8">
       <PgrEditorTabs
         pgrId={doc.id}
         pgr={doc}
+        isPublished={!!doc.publishedAt}
         companyName={companyName}
         workUnitName={workUnitName}
         availableGes={availableGes}
