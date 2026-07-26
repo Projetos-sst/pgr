@@ -3,7 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 
-import type { DocumentListItem } from "@/shared/domains/documents/documents";
+import {
+  SUGGESTED_DOC_TYPES,
+  type DocumentListItem,
+} from "@/shared/domains/documents/documents";
 import { updateDocumentAction } from "@/shared/server/actions/documents/documents";
 
 export function EditDocumentModal({ doc }: { doc: DocumentListItem }) {
@@ -80,8 +83,14 @@ export function EditDocumentModal({ doc }: { doc: DocumentListItem }) {
                 <input
                   value={docType}
                   onChange={(e) => setDocType(e.target.value)}
+                  list="edit-doc-type-suggestions"
                   className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
                 />
+                <datalist id="edit-doc-type-suggestions">
+                  {SUGGESTED_DOC_TYPES.map((suggestion) => (
+                    <option key={suggestion} value={suggestion} />
+                  ))}
+                </datalist>
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-text-muted text-sm font-semibold">

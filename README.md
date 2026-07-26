@@ -28,6 +28,23 @@ docker compose logs -f gotenberg    # acompanhar
 docker compose down                 # derrubar
 ```
 
+### Worker de PDF (fila `jobs`)
+
+O botão **"Arquivar no GED"** (etapa _Documentos e PDF_ do editor de PGR) não gera o arquivo na
+hora: ele enfileira um job `pdf_batch` e responde na mesma hora. Quem renderiza e marca o
+documento como `ready` é o worker — **sem ele o documento fica preso em `generating`**. O
+download síncrono ("Baixar agora") não depende do worker, só do Gotenberg.
+
+```bash
+docker compose up -d --build worker   # worker + gotenberg (depends_on healthy)
+docker compose logs -f worker         # {"level":"info","worker":"pdf_batch","msg":"started"}
+```
+
+Os dois serviços vivem no mesmo `docker-compose.yml` e sobem juntos com `docker compose up -d` —
+uma máquina só no deploy. O worker lê os segredos do `.env.local` (`DATABASE_URL`,
+`DATABASE_URL_UNPOOLED`, `SUPABASE_*`) e fala com o Gotenberg pela rede interna do compose
+(`http://gotenberg:3000`, não a porta 3001 do host).
+
 No `.env.local`, aponte o app para o container (a variável ausente **desabilita** a geração —
 `isPdfGenerationEnabled()` fica `false` — sem quebrar o resto):
 

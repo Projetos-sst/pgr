@@ -13,16 +13,19 @@ import type { ActionError } from "@/shared/server/result";
 import { EmptyState, Table } from "../../../_ui/list";
 import { FieldError, FormError } from "../../../_ui/form";
 
-const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
+const inputClass =
+  "glass-input text-text placeholder:text-text-subtle rounded-card px-3.5 py-2.5 text-sm outline-none w-full";
 
 const brDate = (d: string | null) => (d ? d.split("-").reverse().join("/") : "—");
 
 export function PgrRevisionsTab({
   pgrId,
   revisions,
+  readOnly = false,
 }: {
   pgrId: string;
   revisions: PgrRevisionListItem[];
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -46,7 +49,6 @@ export function PgrRevisionsTab({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
-    // O número da revisão é calculado no servidor (MAX+1) — o cliente NÃO o envia.
     const input: PgrRevisionInput = {
       revisedAt: String(fd.get("revisedAt") ?? ""),
       notes: String(fd.get("notes") ?? ""),
@@ -64,51 +66,79 @@ export function PgrRevisionsTab({
   }
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex flex-col gap-6">
+      <div className="glass-card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-text text-base font-bold sm:text-lg">
+            Histórico e Registro de Revisões
+          </h2>
+          <p className="text-text-subtle mt-0.5 text-xs">
+            Acompanhe o histórico de alterações e registre novas revisões do documento PGR
+          </p>
+        </div>
+      </div>
+
       <FormError message={formError} />
 
-      <form
-        onSubmit={handleSubmit}
-        className="glass-card grid max-w-2xl gap-4 p-4 sm:grid-cols-2"
-      >
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-semibold">Data da revisão *</span>
-          <input
-            type="date"
-            name="revisedAt"
-            defaultValue={today}
-            className={inputClass}
-          />
-          <FieldError message={errors.revisedAt} />
-        </label>
-        <p className="text-text-subtle flex items-end text-xs">
-          O número da revisão é atribuído automaticamente pelo sistema.
-        </p>
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-text-muted text-sm font-semibold">Notas</span>
-          <input name="notes" className={inputClass} />
-          <FieldError message={errors.notes} />
-        </label>
-        <div className="sm:col-span-2">
-          <button
-            type="submit"
-            disabled={pending}
-            className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
-          >
-            {pending ? "Salvando…" : "Registrar revisão"}
-          </button>
-        </div>
-      </form>
+      {!readOnly ? (
+        <form
+          onSubmit={handleSubmit}
+          className="glass-card grid gap-4 p-6 sm:grid-cols-2"
+        >
+          <label className="flex flex-col gap-1.5">
+            <span className="text-text-muted text-xs font-bold tracking-wider uppercase">
+              Data da revisão *
+            </span>
+            <input
+              type="date"
+              name="revisedAt"
+              defaultValue={today}
+              className={inputClass}
+            />
+            <FieldError message={errors.revisedAt} />
+          </label>
+          <div className="text-text-subtle flex flex-col justify-end pb-2 text-xs font-medium">
+            O número da revisão é atribuído sequencialmente pelo sistema.
+          </div>
+          <label className="flex flex-col gap-1.5 sm:col-span-2">
+            <span className="text-text-muted text-xs font-bold tracking-wider uppercase">
+              Notas da revisão
+            </span>
+            <input
+              name="notes"
+              placeholder="Descreva as alterações ou motivos desta revisão…"
+              className={inputClass}
+            />
+            <FieldError message={errors.notes} />
+          </label>
+          <div className="pt-2 sm:col-span-2">
+            <button
+              type="submit"
+              disabled={pending}
+              className="btn-primary rounded-card shadow-primary flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white transition-all disabled:opacity-50 sm:text-sm"
+            >
+              {pending ? "Salvando…" : "Registrar revisão"}
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       {revisions.length === 0 ? (
-        <EmptyState message="Nenhuma revisão registrada." />
+        <EmptyState message="Nenhuma revisão registrada para este documento." />
       ) : (
-        <Table headers={["Revisão", "Data", "Notas"]}>
+        <Table headers={["Nº Revisão", "Data de Revisão", "Notas"]}>
           {revisions.map((rev) => (
-            <tr key={rev.id} className="border-t border-white/50">
-              <td className="px-4 py-2 font-medium">{rev.revisionNumber}</td>
-              <td className="px-4 py-2">{brDate(rev.revisedAt)}</td>
-              <td className="px-4 py-2">{rev.notes ?? "—"}</td>
+            <tr
+              key={rev.id}
+              className="border-t border-black/5 transition-colors hover:bg-white/20"
+            >
+              <td className="text-primary px-6 py-3.5 font-mono text-xs font-bold">
+                Rev. {String(rev.revisionNumber).padStart(2, "0")}
+              </td>
+              <td className="text-text px-6 py-3.5 font-mono text-xs font-medium">
+                {brDate(rev.revisedAt)}
+              </td>
+              <td className="text-text-muted px-6 py-3.5 text-sm">{rev.notes ?? "—"}</td>
             </tr>
           ))}
         </Table>

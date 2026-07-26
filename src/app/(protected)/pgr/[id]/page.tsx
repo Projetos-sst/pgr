@@ -9,9 +9,8 @@ import { listPgrGesAction } from "@/shared/server/actions/pgr/pgr-ges";
 import { listPgrRevisionsAction } from "@/shared/server/actions/pgr/pgr-revisions";
 import { getPgrConsolidatedAction } from "@/shared/server/actions/pgr/pgr-consolidated";
 import { getPgrSignatureViewAction } from "@/shared/server/actions/pgr/pgr-signature";
+import { listDocumentsAction } from "@/shared/server/actions/documents/documents";
 
-import { PageHeader } from "../../_ui/list";
-import { DeletePgr } from "../_components/delete-pgr";
 import { PgrEditorTabs } from "./_components/pgr-editor-tabs";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +36,7 @@ export default async function PgrDetailPage({
     consolidated,
     gesOptions,
     signature,
+    linkedDocuments,
   ] = await Promise.all([
     getCompanyAction(doc.companyId),
     doc.workUnitId ? getWorkUnitAction(doc.workUnitId) : Promise.resolve(null),
@@ -45,6 +45,11 @@ export default async function PgrDetailPage({
     getPgrConsolidatedAction(id),
     listGesAction({ companyId: doc.companyId, pageSize: 100 }),
     getPgrSignatureViewAction({ pgrId: id }),
+    listDocumentsAction({
+      relatedEntityType: "pgr",
+      relatedEntityId: id,
+      pageSize: 5,
+    }),
   ]);
 
   const companyName = companyResult.ok ? companyResult.data.razaoSocial : doc.companyId;
@@ -55,16 +60,11 @@ export default async function PgrDetailPage({
     : [];
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader
-        title="Documento PGR"
-        description={`Empresa: ${companyName}`}
-        action={<DeletePgr id={doc.id} redirectTo="/pgr" />}
-      />
-
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 p-4 sm:p-8">
       <PgrEditorTabs
         pgrId={doc.id}
         pgr={doc}
+        isPublished={!!doc.publishedAt}
         companyName={companyName}
         workUnitName={workUnitName}
         availableGes={availableGes}
@@ -72,6 +72,8 @@ export default async function PgrDetailPage({
         revisions={revisions.ok ? revisions.data : []}
         consolidated={consolidated.ok ? consolidated.data : null}
         signature={signature.ok ? signature.data : undefined}
+        linkedDocuments={linkedDocuments.ok ? linkedDocuments.data.rows : []}
+        linkedDocumentsTotal={linkedDocuments.ok ? linkedDocuments.data.total : 0}
       />
     </div>
   );

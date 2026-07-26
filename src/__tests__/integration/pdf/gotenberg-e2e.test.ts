@@ -7,12 +7,27 @@
  *
  * Sem a env, a suíte é pulada (não gateia CI enquanto o serviço não roda no pipeline).
  */
+import type postgres from "postgres";
+
+// O repositório consultado abaixo abre a própria conexão via `getDatabaseUrl()`.
+// Sem este mock ele apontaria para a `DATABASE_URL` do ambiente (dev/homolog) em
+// vez do banco efêmero de teste — mesma convenção das demais suítes.
+jest.mock("@/shared/db/env", () => ({
+  getDatabaseUrl: () => process.env.INTEGRATION_APP_RUNTIME_URL,
+}));
+
 import { htmlToPdf } from "@/shared/integrations/pdf/gotenberg";
 import { buildPgrHtml } from "@/shared/domains/pgr/pgr-pdf-template";
-import type { PgrConsolidated } from "@/shared/domains/pgr/pgr-consolidated";
 
-const RUN = Boolean(process.env.GOTENBERG_URL);
+const RUN =
+  Boolean(process.env.GOTENBERG_URL) &&
+  Boolean(process.env.INTEGRATION_APP_RUNTIME_URL) &&
+  Boolean(process.env.INTEGRATION_DATABASE_URL);
 const describeMaybe = RUN ? describe : describe.skip;
+
+let admin: ReturnType<typeof postgres>;
+let getPgrConsolidated: typeof import("@/shared/db/repositories/pgr-consolidated").getPgrConsolidated;
+let PGR_IDS: typeof import("../_helpers/pgr-seed").PGR_IDS;
 
 function expectPdf(pdf: Buffer): void {
   expect(Buffer.isBuffer(pdf)).toBe(true);
@@ -21,6 +36,24 @@ function expectPdf(pdf: Buffer): void {
 }
 
 describeMaybe("Gotenberg HTML→PDF (serviço local)", () => {
+  beforeAll(async () => {
+    const [dbHelpers, seedHelpers, repo] = await Promise.all([
+      import("../_helpers/db"),
+      import("../_helpers/pgr-seed"),
+      import("@/shared/db/repositories/pgr-consolidated"),
+    ]);
+
+    admin = dbHelpers.adminClient();
+    await dbHelpers.applyMigrations(admin);
+    await seedHelpers.seedPgrBase(admin);
+    PGR_IDS = seedHelpers.PGR_IDS;
+    getPgrConsolidated = repo.getPgrConsolidated;
+  });
+
+  afterAll(async () => {
+    await admin.end({ timeout: 5 });
+  });
+
   it("converte HTML em um PDF válido (assinatura %PDF)", async () => {
     const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
       <title>Smoke</title></head><body><h1>SST Manager — smoke test</h1>
@@ -29,68 +62,10 @@ describeMaybe("Gotenberg HTML→PDF (serviço local)", () => {
   }, 30_000);
 
   it("gera o PDF do PGR (#40) a partir do template real", async () => {
-    const data: PgrConsolidated = {
-      pgr: {
-        id: "pgr-1",
-        companyName: "ACME Ltda",
-        workUnitName: "Obra Central",
-        responsible: "Eng. Fulano",
-        registrationType: "crea",
-        registrationNumber: "12345",
-        issuedAt: "2026-01-10",
-        validUntil: "2027-01-10",
-      },
-      ges: [
-        {
-          id: "g1",
-          name: "Marmoraria",
-          risks: [
-            {
-              id: "r1",
-              agentType: "chemical",
-              description: "Poeira mineral",
-              hazard: null,
-              sources: "Corte de rocha",
-              propagation: null,
-              exposureTime: null,
-              possibleInjuries: null,
-              noxiousAgentCode: null,
-              measurementUnit: null,
-              concentrationIntensity: null,
-              riskLevel: 12,
-              result: "substantial",
-              assessment: {
-                criterion: "quantitative",
-                probability: 4,
-                severity: 3,
-                riskLevel: 12,
-                uncertaintyDegree: 0,
-                toleranceLimit: null,
-                result: "substantial",
-                assessedAt: "2026-06-01",
-              },
-              measures: [
-                {
-                  id: "m1",
-                  controlLevel: "ppe",
-                  applicable: true,
-                  justification: null,
-                  monitoring: null,
-                  actionWhat: "Fornecer respirador PFF2",
-                  actionHow: "Distribuição mensal",
-                  actionTracking: null,
-                  actionMeasurement: null,
-                  actionResponsible: "SESMT",
-                  actionDeadline: "2026-08-01",
-                  state: "planned",
-                },
-              ],
-              epis: [],
-            },
-          ],
-        },
-      ],
-    };
+    const data = await getPgrConsolidated("org_a", PGR_IDS.pgrA);
+    expect(data).not.toBeNull();
+    if (!data) return;
+
     const html = buildPgrHtml(data, {
       generatedAt: "2026-07-19",
       formHeader: { code: "FRM-001", revision: "02", date: "2026-07-19" },

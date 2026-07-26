@@ -24,6 +24,7 @@ import {
   type DocumentValidityFilter,
   type UpdateDocumentValues,
 } from "@/shared/domains/documents/documents";
+import type { DocumentRelatedEntityType } from "@/shared/domains/documents/validity";
 import {
   computeDocumentKpis,
   validityDateBounds,
@@ -47,6 +48,8 @@ export type ListDocumentsParams = PageParams & {
   search?: string;
   docType?: string;
   validity?: DocumentValidityFilter;
+  relatedEntityType?: DocumentRelatedEntityType;
+  relatedEntityId?: string;
 };
 
 export type DocumentListResult = Paginated<DocumentListItem> & { kpis: DocumentKpis };
@@ -90,16 +93,30 @@ export async function listDocuments(
   const today = todayInSaoPaulo();
   const folderId = params.folderId ?? null;
   const search = params.search?.trim();
+  const relatedEntityType = params.relatedEntityType?.trim();
+  const relatedEntityId = params.relatedEntityId?.trim();
+
+  // Navegar pastas e filtrar por vínculo são leituras diferentes do mesmo acervo: a primeira
+  // é hierárquica (sem `folderId` = raiz), a segunda é transversal — "todos os anexos deste
+  // PGR" não pode depender de onde cada anexo foi arquivado. Sem isto, um laudo movido para
+  // uma pasta sumia da etapa "Documentos e PDF" do PGR. `folderId` explícito ainda vence,
+  // para permitir "anexos deste PGR dentro desta pasta".
+  const isRelatedEntityView = Boolean(relatedEntityType && relatedEntityId);
+  const browsesFolders = params.folderId !== undefined || !isRelatedEntityView;
 
   return withOrg(orgId, async (tx) => {
-    const filters = [
-      eq(documents.orgId, orgId),
-      currentVersionPredicate(tx),
-      folderId === null ? isNull(documents.folderId) : eq(documents.folderId, folderId),
-    ];
+    const filters = [eq(documents.orgId, orgId), currentVersionPredicate(tx)];
+    if (browsesFolders) {
+      filters.push(
+        folderId === null ? isNull(documents.folderId) : eq(documents.folderId, folderId),
+      );
+    }
     if (search) filters.push(ilike(documents.name, `%${search}%`));
     if (params.docType) filters.push(eq(documents.docType, params.docType));
     if (params.validity) filters.push(validityPredicate(params.validity, today)!);
+    if (relatedEntityType)
+      filters.push(eq(documents.relatedEntityType, relatedEntityType));
+    if (relatedEntityId) filters.push(eq(documents.relatedEntityId, relatedEntityId));
     const where = and(...filters);
 
     const rows = await tx

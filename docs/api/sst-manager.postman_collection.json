@@ -2769,7 +2769,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/documents?folderId=&search=&docType=&validity=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/documents?folderId=&search=&docType=&validity=&relatedEntityType=&relatedEntityId=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "documents"],
               "query": [
@@ -2790,12 +2790,51 @@
                   "value": ""
                 },
                 {
+                  "key": "relatedEntityType",
+                  "value": ""
+                },
+                {
+                  "key": "relatedEntityId",
+                  "value": ""
+                },
+                {
                   "key": "page",
                   "value": "1"
                 },
                 {
                   "key": "pageSize",
                   "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /documents?relatedEntity (anexos de um PGR)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents?relatedEntityType=pgr&relatedEntityId={{pgrId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"],
+              "query": [
+                {
+                  "key": "relatedEntityType",
+                  "value": "pgr"
+                },
+                {
+                  "key": "relatedEntityId",
+                  "value": "{{pgrId}}"
                 }
               ]
             }

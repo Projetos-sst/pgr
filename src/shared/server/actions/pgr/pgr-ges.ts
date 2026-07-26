@@ -12,6 +12,7 @@ import {
 } from "@/shared/domains/pgr/pgr-ges";
 import { getPgrById } from "@/shared/db/repositories/pgr";
 import * as repo from "@/shared/db/repositories/pgr-ges";
+import { assertPgrEditable } from "@/shared/server/pgr/pgr-lock";
 
 const editPath = (pgrId: string) => `/pgr/${pgrId}`;
 
@@ -31,7 +32,7 @@ export async function addGesToPgrAction(
   return officeAction(
     "pgr.pgr_ges.add",
     async ({ tenantId }) => {
-      if (!(await getPgrById(tenantId, pgrId))) throw new NotFoundError();
+      await assertPgrEditable(tenantId, pgrId); // vale como guard de existência/tenant
       const { gesId } = pgrGesInputSchema.parse(input);
       await repo.addGesToPgr(tenantId, pgrId, gesId);
       revalidatePath(editPath(pgrId));
@@ -48,6 +49,7 @@ export async function removeGesFromPgrAction(
   return officeAction(
     "pgr.pgr_ges.remove",
     async ({ tenantId }) => {
+      await assertPgrEditable(tenantId, pgrId);
       const deleted = await repo.removeGesFromPgr(tenantId, pgrId, gesId);
       if (!deleted) throw new NotFoundError();
       revalidatePath(editPath(pgrId));

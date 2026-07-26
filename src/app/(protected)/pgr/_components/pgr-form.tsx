@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition, type FormEvent } from "react";
 
@@ -11,7 +12,6 @@ import type { ActionError } from "@/shared/server/result";
 
 import {
   FieldError,
-  FormActions,
   FormError,
   SelectField,
   SubmitButton,
@@ -20,9 +20,9 @@ import {
 import { DeclarationModal } from "./declaration-modal";
 
 const REGISTRATION_OPTIONS = [
-  { value: "crm", label: "CRM" },
-  { value: "crea", label: "CREA" },
-  { value: "mte", label: "MTE" },
+  { value: "crm", label: "CRM (Medicina do Trabalho)" },
+  { value: "crea", label: "CREA (Engenharia de Segurança)" },
+  { value: "mte", label: "MTE (Técnico de Segurança)" },
   { value: "not_applicable", label: "Não aplicável" },
 ];
 
@@ -85,7 +85,7 @@ export function PgrForm({ companies, pgr }: { companies: CompanyOption[]; pgr?: 
     startTransition(async () => {
       const result = await updatePgrAction(pgr!.id, input);
       if (result.ok) {
-        router.push("/pgr");
+        router.push(`/pgr/${pgr!.id}`);
         router.refresh();
         return;
       }
@@ -97,7 +97,7 @@ export function PgrForm({ companies, pgr }: { companies: CompanyOption[]; pgr?: 
     startTransition(async () => {
       const result = await createPgrAction({ ...input, declarationAccepted: true });
       if (result.ok) {
-        router.push("/pgr");
+        router.push(`/pgr/${result.data.id}`);
         router.refresh();
         return;
       }
@@ -117,75 +117,109 @@ export function PgrForm({ companies, pgr }: { companies: CompanyOption[]; pgr?: 
     setShowDeclaration(true);
   }
 
+  const cancelHref = pgr ? `/pgr/${pgr.id}` : "/pgr";
+
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <FormError message={formError} />
 
-      <SelectField
-        label="Empresa"
-        name="companyId"
-        required
-        value={companyId}
-        onChange={selectCompany}
-        options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
-        error={errors.companyId}
-      />
-      <SelectField
-        label="Obra/Contrato"
-        name="workUnitId"
-        value={workUnitId}
-        onChange={setWorkUnitId}
-        options={workUnitOptions.map((w) => ({ value: w.id, label: w.name }))}
-        emptyLabel={
-          companyId && workUnitOptions.length === 0 ? "Empresa sem obras" : "— sem obra —"
-        }
-        error={errors.workUnitId}
-      />
-      <TextField
-        label="Responsável pela elaboração"
-        name="responsible"
-        defaultValue={pgr?.responsible}
-        error={errors.responsible}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <SelectField
-          label="Tipo de registro"
-          name="registrationType"
-          required
-          defaultValue={pgr?.registrationType ?? "not_applicable"}
-          options={REGISTRATION_OPTIONS}
-          error={errors.registrationType}
-        />
-        <TextField
-          label="Nº do registro"
-          name="registrationNumber"
-          defaultValue={pgr?.registrationNumber}
-          error={errors.registrationNumber}
-        />
+      {/* Seção 1: Empresa & Obra */}
+      <div className="glass-panel flex flex-col gap-4 rounded-[16px] p-5">
+        <h3 className="text-text border-b border-black/5 pb-2 text-sm font-bold">
+          1. Empresa e Unidade de Trabalho
+        </h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SelectField
+            label="Empresa *"
+            name="companyId"
+            required
+            value={companyId}
+            onChange={selectCompany}
+            options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
+            error={errors.companyId}
+          />
+          <SelectField
+            label="Obra / Unidade de Trabalho"
+            name="workUnitId"
+            value={workUnitId}
+            onChange={setWorkUnitId}
+            options={workUnitOptions.map((w) => ({ value: w.id, label: w.name }))}
+            emptyLabel={
+              companyId && workUnitOptions.length === 0
+                ? "Empresa sem obras cadastradas"
+                : "— Sem obra específica —"
+            }
+            error={errors.workUnitId}
+          />
+        </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+
+      {/* Seção 2: Responsável Técnico */}
+      <div className="glass-panel flex flex-col gap-4 rounded-[16px] p-5">
+        <h3 className="text-text border-b border-black/5 pb-2 text-sm font-bold">
+          2. Responsável Técnico pela Elaboração
+        </h3>
         <TextField
-          label="Data de emissão"
-          name="issuedAt"
-          type="date"
-          required
-          defaultValue={pgr?.issuedAt}
-          error={errors.issuedAt}
+          label="Nome completo do responsável"
+          name="responsible"
+          defaultValue={pgr?.responsible}
+          error={errors.responsible}
         />
-        <TextField
-          label="Data de validade"
-          name="validUntil"
-          type="date"
-          required
-          defaultValue={pgr?.validUntil}
-          error={errors.validUntil}
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SelectField
+            label="Tipo de registro profissional *"
+            name="registrationType"
+            required
+            defaultValue={pgr?.registrationType ?? "not_applicable"}
+            options={REGISTRATION_OPTIONS}
+            error={errors.registrationType}
+          />
+          <TextField
+            label="Número do registro"
+            name="registrationNumber"
+            defaultValue={pgr?.registrationNumber}
+            error={errors.registrationNumber}
+          />
+        </div>
+      </div>
+
+      {/* Seção 3: Vigência do PGR */}
+      <div className="glass-panel flex flex-col gap-4 rounded-[16px] p-5">
+        <h3 className="text-text border-b border-black/5 pb-2 text-sm font-bold">
+          3. Datas de Vigência do Documento
+        </h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField
+            label="Data de emissão *"
+            name="issuedAt"
+            type="date"
+            required
+            defaultValue={pgr?.issuedAt}
+            error={errors.issuedAt}
+          />
+          <TextField
+            label="Data de validade *"
+            name="validUntil"
+            type="date"
+            required
+            defaultValue={pgr?.validUntil}
+            error={errors.validUntil}
+          />
+        </div>
       </div>
 
       <FieldError message={errors._} />
-      <FormActions>
+
+      {/* Ações do Formulário */}
+      <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+        <Link
+          href={cancelHref}
+          className="glass-panel text-text-muted hover:text-text rounded-card px-5 py-2.5 text-xs font-bold transition-colors sm:text-sm"
+        >
+          Cancelar
+        </Link>
         <SubmitButton pending={pending} label={pgr ? "Salvar alterações" : "Criar PGR"} />
-      </FormActions>
+      </div>
 
       {!pgr ? (
         <DeclarationModal

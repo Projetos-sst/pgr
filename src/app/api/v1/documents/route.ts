@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { restHandler, pageParamsFrom } from "@/shared/api/rest";
 import {
   documentMetadataSchema,
+  parseRelatedEntityFilter,
   type DocumentValidityFilter,
 } from "@/shared/domains/documents/documents";
 import { validateFile } from "@/shared/domains/documents/files";
@@ -22,7 +23,9 @@ function paramsFrom(req: NextRequest): repo.ListDocumentsParams {
   return {
     ...pageParamsFrom(req),
     folderId: folderIdRaw && folderIdRaw !== "" ? folderIdRaw : null,
+    search: sp.get("search") ?? undefined,
     docType: sp.get("docType") ?? undefined,
+    ...parseRelatedEntityFilter(sp.get("relatedEntityType"), sp.get("relatedEntityId")),
     validity: VALIDITY_FILTERS.has(validityRaw ?? "")
       ? (validityRaw as DocumentValidityFilter)
       : undefined,

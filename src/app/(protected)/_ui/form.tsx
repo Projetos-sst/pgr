@@ -30,6 +30,8 @@ export function TextField({
   onBlur,
   type = "text",
   required,
+  readOnly,
+  suggestions,
   error,
 }: {
   label: string;
@@ -40,9 +42,13 @@ export function TextField({
   onBlur?: () => void;
   type?: string;
   required?: boolean;
+  readOnly?: boolean;
+  /** Valores sugeridos (datalist) — o campo continua aceitando texto livre. */
+  suggestions?: readonly string[];
   error?: string;
 }) {
   const controlled = value !== undefined;
+  const listId = suggestions ? `${name}-suggestions` : undefined;
   return (
     <label className="flex flex-col gap-1">
       <span className="text-text-muted text-sm font-semibold">
@@ -53,11 +59,20 @@ export function TextField({
         name={name}
         type={type}
         className={inputClass}
+        readOnly={readOnly}
+        list={listId}
         onBlur={onBlur}
         {...(controlled
           ? { value, onChange: (e) => onChange?.(e.target.value) }
           : { defaultValue: defaultValue ?? "" })}
       />
+      {suggestions ? (
+        <datalist id={listId}>
+          {suggestions.map((suggestion) => (
+            <option key={suggestion} value={suggestion} />
+          ))}
+        </datalist>
+      ) : null}
       <FieldError message={error} />
     </label>
   );

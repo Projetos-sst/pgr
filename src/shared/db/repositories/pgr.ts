@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, ilike, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, isNull, sql, type SQL } from "drizzle-orm";
 
 import type { PgrValues, PgrListItem } from "@/shared/domains/pgr/pgr";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
@@ -168,6 +168,20 @@ export async function deletePgr(orgId: string, id: string): Promise<boolean> {
         .where(and(eq(pgr.orgId, orgId), eq(pgr.id, id)))
         .returning({ id: pgr.id });
       return rows.length > 0;
+    }),
+  );
+}
+
+/** Marca o PGR como publicado (idempotente: só atualiza se ainda não publicado). */
+export async function publishPgr(orgId: string, id: string): Promise<Pgr | null> {
+  return auditedTenantWrite(orgId, "pgr.write_rejected", () =>
+    withOrg(orgId, async (tx) => {
+      const [row] = await tx
+        .update(pgr)
+        .set({ publishedAt: new Date(), updatedAt: new Date() })
+        .where(and(eq(pgr.orgId, orgId), eq(pgr.id, id), isNull(pgr.publishedAt)))
+        .returning();
+      return row ?? null;
     }),
   );
 }

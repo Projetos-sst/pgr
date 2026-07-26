@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 
 import type { FolderNode } from "@/shared/domains/documents/folders";
+import { SUGGESTED_DOC_TYPES } from "@/shared/domains/documents/documents";
 import { createDocumentAction } from "@/shared/server/actions/documents/documents";
 
 import {
@@ -20,14 +21,23 @@ type Option = { value: string; label: string };
 export function DocumentUploadForm({
   folders,
   defaultFolderId,
+  defaultRelatedEntityType = null,
+  defaultRelatedEntityId = null,
+  returnTo = null,
+  returnLabel = null,
 }: {
   folders: FolderNode[];
   defaultFolderId: string | null;
+  defaultRelatedEntityType?: string | null;
+  defaultRelatedEntityId?: string | null;
+  returnTo?: string | null;
+  returnLabel?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
-  const [linkToPgr, setLinkToPgr] = useState(false);
+  const isPreLinkedToPgr = defaultRelatedEntityType === "pgr" && !!defaultRelatedEntityId;
+  const [linkToPgr, setLinkToPgr] = useState(isPreLinkedToPgr);
 
   const folderOptions: Option[] = folders.map((f) => ({ value: f.id, label: f.name }));
 
@@ -43,10 +53,13 @@ export function DocumentUploadForm({
         const result = await createDocumentAction(formData);
         if (result.ok) {
           setFormError(null);
+          // Quando o upload nasceu de outra tela (ex.: etapa de Documentos do PGR),
+          // devolve o usuário ao ponto de origem em vez de largá-lo no acervo.
           router.push(
-            result.data.folderId
-              ? `/documents?folderId=${result.data.folderId}`
-              : "/documents",
+            returnTo ??
+              (result.data.folderId
+                ? `/documents?folderId=${result.data.folderId}`
+                : "/documents"),
           );
           router.refresh();
         } else {
@@ -79,7 +92,12 @@ export function DocumentUploadForm({
       </label>
 
       <TextField label="Nome" name="name" required />
-      <TextField label="Tipo do documento" name="docType" required />
+      <TextField
+        label="Tipo do documento"
+        name="docType"
+        required
+        suggestions={SUGGESTED_DOC_TYPES}
+      />
       <TextField label="Validade (opcional)" name="validUntil" type="date" />
 
       <SelectField
@@ -104,7 +122,25 @@ export function DocumentUploadForm({
       {linkToPgr ? (
         <>
           <input type="hidden" name="relatedEntityType" value="pgr" />
-          <TextField label="ID do PGR" name="relatedEntityId" required defaultValue="" />
+          {isPreLinkedToPgr ? (
+            <>
+              <input
+                type="hidden"
+                name="relatedEntityId"
+                value={defaultRelatedEntityId ?? ""}
+              />
+              <p className="glass-panel text-text-muted rounded-card px-3.5 py-2.5 text-xs sm:text-sm">
+                Vinculado a <strong>{returnLabel ?? "este PGR"}</strong>.
+              </p>
+            </>
+          ) : (
+            <TextField
+              label="ID do PGR"
+              name="relatedEntityId"
+              required
+              defaultValue=""
+            />
+          )}
         </>
       ) : null}
 
