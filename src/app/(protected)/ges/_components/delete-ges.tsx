@@ -7,11 +7,11 @@ import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 export function DeleteGes({
   id,
   redirectTo,
-  withLabel,
+  hasLabel,
 }: {
   id: string;
   redirectTo?: string;
-  withLabel?: boolean;
+  hasLabel?: boolean;
 }) {
   return (
     <ConfirmDeleteButton
@@ -24,7 +24,7 @@ export function DeleteGes({
         employees: "Funcionários (ficarão sem GES)",
       }}
       redirectTo={redirectTo}
-      withLabel={withLabel}
+      hasLabel={hasLabel}
     />
   );
 }

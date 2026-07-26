@@ -27,6 +27,7 @@ import {
   TextField,
   type FormStep,
 } from "../../_ui/form";
+import { stepsWithError } from "../../_ui/form-steps";
 import { AddressFields, type AddressValue } from "../../_ui/address-fields";
 
 function addressFrom(source?: Employee | null): AddressValue {
@@ -69,7 +70,7 @@ const STEPS: FormStep[] = [
 ];
 
 /** Campos de cada etapa — usado para abrir a etapa do primeiro erro do servidor. */
-const STEP_FIELDS: string[][] = [
+const STEP_FIELDS: readonly (readonly string[])[] = [
   ["fullName", "cpf", "birthDate", "phone", "email", "sex", "maritalStatus"],
   [
     "companyId",
@@ -83,12 +84,6 @@ const STEP_FIELDS: string[][] = [
   ["rg", "badgeNumber", "badgeValidUntil", "bloodType", "photoPath"],
   ["zipCode", "street", "number", "complement", "district", "city", "state"],
 ];
-
-function stepsWithError(errors: Record<string, string>): number[] {
-  return STEP_FIELDS.flatMap((fields, index) =>
-    fields.some((field) => errors[field]) ? [index] : [],
-  );
-}
 
 export function EmployeeForm({
   companies,
@@ -203,7 +198,7 @@ export function EmployeeForm({
       const fields = result.error.fields ?? {};
       setErrors(fields);
       setFormError(result.error.fields ? null : result.error.message);
-      const [firstInvalid] = stepsWithError(fields);
+      const [firstInvalid] = stepsWithError(STEP_FIELDS, fields);
       if (firstInvalid !== undefined) goToStep(firstInvalid);
     });
   }
@@ -214,7 +209,7 @@ export function EmployeeForm({
         steps={STEPS}
         current={step}
         onSelect={goToStep}
-        invalidSteps={stepsWithError(errors)}
+        invalidSteps={stepsWithError(STEP_FIELDS, errors)}
       />
 
       <FormError message={formError} />
@@ -332,7 +327,7 @@ export function EmployeeForm({
       </FormSection>
 
       <FormSection title="Documentos & crachá" columns={3} hidden={step !== 2}>
-        <TextField label="RG" name="rg" mono defaultValue={employee?.rg} />
+        <TextField label="RG" name="rg" isMono defaultValue={employee?.rg} />
         <TextField
           label="Crachá"
           name="badgeNumber"

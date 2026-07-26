@@ -18,7 +18,7 @@ export function ConfirmDeleteButton({
   dependentLabels,
   description,
   redirectTo,
-  withLabel = false,
+  hasLabel = false,
 }: {
   id: string;
   entityName: string;
@@ -28,7 +28,7 @@ export function ConfirmDeleteButton({
   description?: string;
   redirectTo?: string;
   /** Rótulo textual em vez do ícone — para barras de ação fora de tabela. */
-  withLabel?: boolean;
+  hasLabel?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -74,14 +74,14 @@ export function ConfirmDeleteButton({
         type="button"
         onClick={openDialog}
         aria-label={`Excluir ${entityName}`}
-        title={withLabel ? undefined : `Excluir ${entityName}`}
+        title={hasLabel ? undefined : `Excluir ${entityName}`}
         className={
-          withLabel
+          hasLabel
             ? "rounded-[12px] border border-red-300/50 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-700 transition-all hover:bg-red-500/20 sm:text-sm"
             : rowActionDangerClass
         }
       >
-        {withLabel ? (
+        {hasLabel ? (
           "Excluir"
         ) : (
           <svg

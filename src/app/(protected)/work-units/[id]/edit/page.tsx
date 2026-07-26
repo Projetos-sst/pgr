@@ -30,11 +30,7 @@ export default async function EditWorkUnitPage({
         title={workUnitResult.data.name}
         description="Detalhe e edição da unidade de obra."
         action={
-          <DeleteWorkUnit
-            id={workUnitResult.data.id}
-            redirectTo="/work-units"
-            withLabel
-          />
+          <DeleteWorkUnit id={workUnitResult.data.id} redirectTo="/work-units" hasLabel />
         }
       />
       <WorkUnitForm companies={companies} workUnit={workUnitResult.data} />

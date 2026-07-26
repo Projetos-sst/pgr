@@ -7,11 +7,11 @@ import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 export function DeleteRisk({
   id,
   redirectTo,
-  withLabel,
+  hasLabel,
 }: {
   id: string;
   redirectTo?: string;
-  withLabel?: boolean;
+  hasLabel?: boolean;
 }) {
   return (
     <ConfirmDeleteButton
@@ -20,7 +20,7 @@ export function DeleteRisk({
       deleteAction={deleteRiskAction}
       description="Esta ação é permanente. Avaliações e medidas de controle vinculadas a este risco são removidas em cascata."
       redirectTo={redirectTo}
-      withLabel={withLabel}
+      hasLabel={hasLabel}
     />
   );
 }

@@ -25,7 +25,7 @@ export default async function EditCompanyPage({
       <PageHeader
         title={company.razaoSocial}
         description="Detalhe e edição da empresa."
-        action={<DeleteCompany id={company.id} redirectTo="/companies" withLabel />}
+        action={<DeleteCompany id={company.id} redirectTo="/companies" hasLabel />}
       />
       <CompanyForm company={company} />
     </div>

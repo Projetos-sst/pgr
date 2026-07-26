@@ -17,11 +17,11 @@ const DEPENDENT_LABELS = {
 export function DeleteCompany({
   id,
   redirectTo,
-  withLabel,
+  hasLabel,
 }: {
   id: string;
   redirectTo?: string;
-  withLabel?: boolean;
+  hasLabel?: boolean;
 }) {
   return (
     <ConfirmDeleteButton
@@ -31,7 +31,7 @@ export function DeleteCompany({
       loadDependentsAction={getCompanyDependentsAction}
       dependentLabels={DEPENDENT_LABELS}
       redirectTo={redirectTo}
-      withLabel={withLabel}
+      hasLabel={hasLabel}
     />
   );
 }

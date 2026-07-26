@@ -10,11 +10,11 @@ import { TrashIcon, rowActionDangerClass } from "../../_ui/row-actions";
 export function DeleteActionPlan({
   id,
   redirectTo,
-  withLabel,
+  hasLabel,
 }: {
   id: string;
   redirectTo?: string;
-  withLabel?: boolean;
+  hasLabel?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -40,14 +40,14 @@ export function DeleteActionPlan({
         onClick={onDelete}
         disabled={pending}
         aria-label="Excluir plano de ação"
-        title={withLabel ? undefined : "Excluir plano de ação"}
+        title={hasLabel ? undefined : "Excluir plano de ação"}
         className={
-          withLabel
+          hasLabel
             ? "rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
             : `${rowActionDangerClass} disabled:opacity-50`
         }
       >
-        {withLabel ? "Excluir" : <TrashIcon />}
+        {hasLabel ? "Excluir" : <TrashIcon />}
       </button>
       {error ? <span className="text-xs text-red-600">{error}</span> : null}
     </span>

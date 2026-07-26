@@ -169,7 +169,9 @@ export function FormSteps({
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate font-bold">{step.title}</span>
-                  <span className={`block truncate text-[11px] ${STEP_HINT_CLASS[state]}`}>
+                  <span
+                    className={`block truncate text-[11px] ${STEP_HINT_CLASS[state]}`}
+                  >
                     {state === "invalid" ? "Revise esta etapa" : step.hint}
                   </span>
                 </span>

@@ -10,11 +10,11 @@ import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 export function DeleteWorkUnit({
   id,
   redirectTo,
-  withLabel,
+  hasLabel,
 }: {
   id: string;
   redirectTo?: string;
-  withLabel?: boolean;
+  hasLabel?: boolean;
 }) {
   return (
     <ConfirmDeleteButton
@@ -24,7 +24,7 @@ export function DeleteWorkUnit({
       loadDependentsAction={getWorkUnitDependentsAction}
       dependentLabels={{ ges: "GES vinculados" }}
       redirectTo={redirectTo}
-      withLabel={withLabel}
+      hasLabel={hasLabel}
     />
   );
 }

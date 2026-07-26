@@ -28,7 +28,7 @@ export default async function EditTrainingCatalogPage({
           <DeleteTrainingCatalog
             id={result.data.id}
             redirectTo="/training-catalog"
-            withLabel
+            hasLabel
           />
         }
       />

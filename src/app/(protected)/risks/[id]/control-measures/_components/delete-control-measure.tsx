@@ -8,12 +8,12 @@ export function DeleteControlMeasure({
   riskId,
   id,
   redirectTo,
-  withLabel,
+  hasLabel,
 }: {
   riskId: string;
   id: string;
   redirectTo?: string;
-  withLabel?: boolean;
+  hasLabel?: boolean;
 }) {
   return (
     <ConfirmDeleteButton
@@ -22,7 +22,7 @@ export function DeleteControlMeasure({
       deleteAction={(measureId) => deleteControlMeasureAction(riskId, measureId)}
       description="Esta ação é permanente e remove apenas esta medida de controle do risco, liberando o nível NR-01 para novo cadastro."
       redirectTo={redirectTo}
-      withLabel={withLabel}
+      hasLabel={hasLabel}
     />
   );
 }

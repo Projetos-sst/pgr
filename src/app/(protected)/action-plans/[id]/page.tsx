@@ -63,7 +63,7 @@ export default async function ActionPlanDetailPage({
                 Editar
               </Link>
             )}
-            <DeleteActionPlan id={id} redirectTo="/action-plans" withLabel />
+            <DeleteActionPlan id={id} redirectTo="/action-plans" hasLabel />
           </div>
         }
       />

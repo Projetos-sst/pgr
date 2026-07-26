@@ -6,11 +6,12 @@ import type { ReactNode } from "react";
  * em chip quadrado — o rótulo vive em `aria-label` (leitores de tela) e `title`
  * (tooltip no hover), nunca como texto visível, para manter a coluna compacta.
  */
-export const rowActionClass =
-  "glass-panel rounded-card text-text-muted hover:text-primary flex h-8 w-8 items-center justify-center transition-colors";
+const rowActionBaseClass =
+  "glass-panel rounded-card text-text-muted flex h-8 w-8 items-center justify-center transition-colors";
 
-export const rowActionDangerClass =
-  "glass-panel rounded-card text-text-muted hover:text-danger flex h-8 w-8 items-center justify-center transition-colors";
+export const rowActionClass = `${rowActionBaseClass} hover:text-primary`;
+
+export const rowActionDangerClass = `${rowActionBaseClass} hover:text-danger`;
 
 export function RowActions({ children }: { children: ReactNode }) {
   return <div className="flex items-center justify-end gap-1.5">{children}</div>;
