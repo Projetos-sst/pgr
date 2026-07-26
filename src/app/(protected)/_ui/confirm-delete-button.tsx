@@ -34,6 +34,7 @@ export function ConfirmDeleteButton({
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dependents, setDependents] = useState<Record<string, number> | null>(null);
+  const [loadingDependents, setLoadingDependents] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function openDialog() {
@@ -41,10 +42,12 @@ export function ConfirmDeleteButton({
     setDependents(null);
     setOpen(true);
     if (loadDependentsAction) {
-      startTransition(async () => {
-        const result = await loadDependentsAction(id);
-        if (result.ok) setDependents(result.data);
-      });
+      setLoadingDependents(true);
+      loadDependentsAction(id)
+        .then((result) => {
+          if (result.ok) setDependents(result.data);
+        })
+        .finally(() => setLoadingDependents(false));
     }
   }
 
