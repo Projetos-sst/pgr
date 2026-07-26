@@ -13,6 +13,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { DeleteCategory } from "./_components/delete-category";
 
 export const dynamic = "force-dynamic";
@@ -98,15 +99,10 @@ export default async function CategoriesPage({
               <td className="px-4 py-2">{TYPE_LABELS[row.type]}</td>
               <td className="px-4 py-2">{row.note ?? "—"}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/categories/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/categories/${row.id}/edit`} />
                   <DeleteCategory id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

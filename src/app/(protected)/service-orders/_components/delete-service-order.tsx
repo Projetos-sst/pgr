@@ -5,12 +5,16 @@ import { useState, useTransition } from "react";
 
 import { deleteServiceOrderAction } from "@/shared/server/actions/safety/service-orders";
 
+import { TrashIcon, rowActionDangerClass } from "../../_ui/row-actions";
+
 export function DeleteServiceOrder({
   id,
   redirectTo,
+  withLabel,
 }: {
   id: string;
   redirectTo?: string;
+  withLabel?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -35,9 +39,15 @@ export function DeleteServiceOrder({
         type="button"
         onClick={onDelete}
         disabled={pending}
-        className="rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
+        aria-label="Remover Ordem de Serviço"
+        title={withLabel ? undefined : "Remover Ordem de Serviço"}
+        className={
+          withLabel
+            ? "rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
+            : `${rowActionDangerClass} disabled:opacity-50`
+        }
       >
-        Remover
+        {withLabel ? "Remover" : <TrashIcon />}
       </button>
       {error ? <span className="text-xs text-red-600">{error}</span> : null}
     </span>

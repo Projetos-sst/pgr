@@ -24,7 +24,9 @@ export default async function EditEpiCatalogPage({
       <PageHeader
         title="Editar item de catálogo"
         description="Altere os dados do item ou exclua-o do catálogo."
-        action={<DeleteEpiCatalog id={result.data.id} redirectTo="/epi-catalog" />}
+        action={
+          <DeleteEpiCatalog id={result.data.id} redirectTo="/epi-catalog" withLabel />
+        }
       />
       <EpiCatalogForm item={result.data} />
     </div>

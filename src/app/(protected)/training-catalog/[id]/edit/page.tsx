@@ -25,7 +25,11 @@ export default async function EditTrainingCatalogPage({
         title="Editar treinamento"
         description="Altere os dados do treinamento ou exclua-o do catálogo."
         action={
-          <DeleteTrainingCatalog id={result.data.id} redirectTo="/training-catalog" />
+          <DeleteTrainingCatalog
+            id={result.data.id}
+            redirectTo="/training-catalog"
+            withLabel
+          />
         }
       />
       <TrainingCatalogForm training={result.data} />

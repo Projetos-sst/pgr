@@ -32,7 +32,7 @@ export default async function EditGesPage({
       <PageHeader
         title={gesRow.name}
         description="Detalhe, edição e gestão das funções vinculadas."
-        action={<DeleteGes id={gesRow.id} redirectTo="/ges" />}
+        action={<DeleteGes id={gesRow.id} redirectTo="/ges" withLabel />}
       />
       <GesForm companies={companies} ges={gesRow} exposedWorkers={exposedWorkers} />
       <ManageFunctions gesId={gesRow.id} />

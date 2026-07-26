@@ -119,7 +119,7 @@ export default async function IncidentDetailPage({
                 Editar
               </Link>
             )}
-            <DeleteIncident id={id} redirectTo="/incidents" />
+            <DeleteIncident id={id} redirectTo="/incidents" withLabel />
           </div>
         }
       />

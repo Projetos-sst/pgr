@@ -6,6 +6,7 @@ import { resolvePageParams } from "@/shared/pagination";
 import { listScheduleEventsAction } from "@/shared/server/actions/platform/scheduling";
 
 import { EmptyState, PageHeader, Pagination, PrimaryLink, Table } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { DeleteScheduleEvent } from "./_components/delete-schedule-event";
 
 export const dynamic = "force-dynamic";
@@ -71,15 +72,10 @@ export default async function AgendaPage({
                 </Link>
               </td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/schedule/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/schedule/${row.id}/edit`} />
                   <DeleteScheduleEvent id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

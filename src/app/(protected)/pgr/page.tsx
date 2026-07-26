@@ -6,6 +6,7 @@ import { listPgrAction } from "@/shared/server/actions/pgr/pgr";
 import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies";
 
 import { EmptyState, PageHeader, Pagination, PrimaryLink, Table } from "../_ui/list";
+import { EditRowAction, RowActions, ViewRowAction } from "../_ui/row-actions";
 import { PgrFilters } from "./_components/pgr-filters";
 import { DeletePgr } from "./_components/delete-pgr";
 
@@ -74,21 +75,11 @@ export default async function PgrPage({ searchParams }: { searchParams: SearchPa
               </td>
               <td className="px-4 py-2">{row.responsible ?? "—"}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/pgr/${row.id}`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Detalhe
-                  </Link>
-                  <Link
-                    href={`/pgr/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <ViewRowAction href={`/pgr/${row.id}`} label="Detalhe" />
+                  <EditRowAction href={`/pgr/${row.id}/edit`} />
                   <DeletePgr id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

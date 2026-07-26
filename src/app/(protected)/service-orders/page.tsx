@@ -16,6 +16,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { EditRowAction, RowActions, ViewRowAction } from "../_ui/row-actions";
 import { DeleteServiceOrder } from "./_components/delete-service-order";
 
 export const dynamic = "force-dynamic";
@@ -111,21 +112,11 @@ export default async function ServiceOrdersPage({
               <td className="px-4 py-2 tabular-nums">{row.itemCount}</td>
               <td className="px-4 py-2">{row.statusLabel}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/service-orders/${row.id}`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Abrir
-                  </Link>
-                  <Link
-                    href={`/service-orders/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <ViewRowAction href={`/service-orders/${row.id}`} label="Abrir" />
+                  <EditRowAction href={`/service-orders/${row.id}/edit`} />
                   <DeleteServiceOrder id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

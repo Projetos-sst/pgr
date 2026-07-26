@@ -12,6 +12,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { DeleteGes } from "./_components/delete-ges";
 
 export const dynamic = "force-dynamic";
@@ -76,15 +77,10 @@ export default async function GesPage({ searchParams }: { searchParams: SearchPa
               <td className="px-4 py-2">{row.processDescription ?? "—"}</td>
               <td className="px-4 py-2">{row.exposedWorkers}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/ges/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Gerenciar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/ges/${row.id}/edit`} label="Gerenciar" />
                   <DeleteGes id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

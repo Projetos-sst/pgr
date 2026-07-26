@@ -24,7 +24,7 @@ export default async function EditCategoryPage({
       <PageHeader
         title="Editar categoria"
         description="Altere os dados da categoria ou exclua-a do catálogo."
-        action={<DeleteCategory id={result.data.id} redirectTo="/categories" />}
+        action={<DeleteCategory id={result.data.id} redirectTo="/categories" withLabel />}
       />
       <CategoryForm category={result.data} />
     </div>

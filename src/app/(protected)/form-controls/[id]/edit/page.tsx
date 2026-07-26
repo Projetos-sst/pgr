@@ -37,7 +37,9 @@ export default async function EditFormControlPage({
       <PageHeader
         title={`Editar controle · ${control.frmCode}`}
         description="Altere os dados do cabeçalho ISO ou exclua este controle."
-        action={<DeleteFormControl id={control.id} redirectTo="/form-controls" />}
+        action={
+          <DeleteFormControl id={control.id} redirectTo="/form-controls" withLabel />
+        }
       />
       <FormControlForm
         id={control.id}

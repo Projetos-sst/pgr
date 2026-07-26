@@ -37,7 +37,9 @@ export default async function EditJobRolePage({
       <PageHeader
         title={jobRoleResult.data.title}
         description="Detalhe e edição da função."
-        action={<DeleteJobRole id={jobRoleResult.data.id} redirectTo="/job-roles" />}
+        action={
+          <DeleteJobRole id={jobRoleResult.data.id} redirectTo="/job-roles" withLabel />
+        }
       />
       <JobRoleForm companies={companies} jobRole={jobRoleResult.data} />
       <RequiredTrainings

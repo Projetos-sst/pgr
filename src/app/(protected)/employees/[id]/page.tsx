@@ -115,7 +115,7 @@ export default async function EmployeeDetailPage({
             >
               Editar
             </Link>
-            <DeleteEmployee id={employee.id} redirectTo="/employees" />
+            <DeleteEmployee id={employee.id} redirectTo="/employees" withLabel />
           </div>
         }
       />

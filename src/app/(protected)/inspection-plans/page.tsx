@@ -12,6 +12,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { DeletePlan } from "./_components/delete-plan";
 
 export const dynamic = "force-dynamic";
@@ -61,15 +62,10 @@ export default async function PlanosInspecaoPage({
               <td className="px-4 py-2">{row.typeLabel}</td>
               <td className="px-4 py-2 tabular-nums">{row.itemCount}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/inspection-plans/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/inspection-plans/${row.id}/edit`} />
                   <DeletePlan id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

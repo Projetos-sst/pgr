@@ -15,9 +15,11 @@ const DEPENDENT_LABELS: Record<string, string> = {
 export function DeleteTrainingCatalog({
   id,
   redirectTo,
+  withLabel,
 }: {
   id: string;
   redirectTo?: string;
+  withLabel?: boolean;
 }) {
   return (
     <ConfirmDeleteButton
@@ -28,6 +30,7 @@ export function DeleteTrainingCatalog({
       dependentLabels={DEPENDENT_LABELS}
       description="Esta ação é permanente. Treinamentos com realizações registradas ou vinculados como obrigatórios a funções não podem ser excluídos."
       redirectTo={redirectTo}
+      withLabel={withLabel}
     />
   );
 }

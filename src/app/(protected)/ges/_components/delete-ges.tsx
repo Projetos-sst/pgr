@@ -4,7 +4,15 @@ import { deleteGesAction, getGesDependentsAction } from "@/shared/server/actions
 
 import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 
-export function DeleteGes({ id, redirectTo }: { id: string; redirectTo?: string }) {
+export function DeleteGes({
+  id,
+  redirectTo,
+  withLabel,
+}: {
+  id: string;
+  redirectTo?: string;
+  withLabel?: boolean;
+}) {
   return (
     <ConfirmDeleteButton
       id={id}
@@ -16,6 +24,7 @@ export function DeleteGes({ id, redirectTo }: { id: string; redirectTo?: string 
         employees: "Funcionários (ficarão sem GES)",
       }}
       redirectTo={redirectTo}
+      withLabel={withLabel}
     />
   );
 }

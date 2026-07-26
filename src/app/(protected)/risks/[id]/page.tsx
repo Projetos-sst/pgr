@@ -69,7 +69,7 @@ export default async function RiskDetailPage({
             >
               Editar
             </Link>
-            <DeleteRisk id={risk.id} redirectTo="/risks" />
+            <DeleteRisk id={risk.id} redirectTo="/risks" withLabel />
           </div>
         }
       />

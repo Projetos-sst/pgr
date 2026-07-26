@@ -18,6 +18,7 @@ import {
   PrimaryLink,
   Table,
 } from "../../../_ui/list";
+import { EditRowAction, RowActions } from "../../../_ui/row-actions";
 import { DeleteAssessment } from "./_components/delete-assessment";
 
 export const dynamic = "force-dynamic";
@@ -101,15 +102,10 @@ export default async function RiskAssessmentsPage({
               <td className="px-4 py-2">{classificationText(row.result)}</td>
               <td className="px-4 py-2">{row.uncertaintyDegree}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/risks/${riskId}/assessments/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/risks/${riskId}/assessments/${row.id}/edit`} />
                   <DeleteAssessment riskId={riskId} id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

@@ -13,6 +13,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { DeleteEpiCatalog } from "./_components/delete-epi-catalog";
 
 export const dynamic = "force-dynamic";
@@ -130,15 +131,10 @@ export default async function EpiCatalogPage({
               <td className="px-4 py-2">{row.unitOfMeasure ?? "—"}</td>
               <td className="px-4 py-2">{formatDate(row.caValidUntil)}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/epi-catalog/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/epi-catalog/${row.id}/edit`} />
                   <DeleteEpiCatalog id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

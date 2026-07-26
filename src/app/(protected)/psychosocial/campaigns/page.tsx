@@ -5,6 +5,7 @@ import { resolvePageParams } from "@/shared/pagination";
 import { listCampaignsAction } from "@/shared/server/actions/psychosocial/campaigns";
 
 import { EmptyState, PageHeader, Pagination, PrimaryLink, Table } from "../../_ui/list";
+import { ViewRowAction } from "../../_ui/row-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -53,12 +54,7 @@ export default async function CampanhasPsicossociaisPage({
               <td className="px-4 py-2 tabular-nums">{row.questionCount}</td>
               <td className="px-4 py-2">{row.statusLabel}</td>
               <td className="px-4 py-2 text-right">
-                <Link
-                  href={`/psychosocial/campaigns/${row.id}`}
-                  className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                >
-                  Abrir
-                </Link>
+                <ViewRowAction href={`/psychosocial/campaigns/${row.id}`} label="Abrir" />
               </td>
             </tr>
           ))}
