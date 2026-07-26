@@ -67,6 +67,17 @@ body {
 }
 
 /*
+ * O preflight do Tailwind v4 deixa `button` com `cursor: default`; o projeto
+ * espera mãozinha em todo controle clicável habilitado.
+ */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+label[for] {
+  cursor: pointer;
+}
+
+/*
  * Superfícies "glass/blur" do redesign. Centralizadas aqui (os componentes as
  * consomem por classe) para evitar hex cru espalhado nas primitives (C-TOK-1).
  */
