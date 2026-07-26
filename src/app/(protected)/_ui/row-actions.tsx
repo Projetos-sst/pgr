@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
  * (tooltip no hover), nunca como texto visível, para manter a coluna compacta.
  */
 const rowActionBaseClass =
-  "glass-panel rounded-card text-text-muted flex h-8 w-8 items-center justify-center transition-all duration-200 hover:-translate-y-0.5 hover:scale-110 hover:bg-white/80 hover:shadow-md active:scale-95";
+  "glass-panel rounded-card text-text-muted flex h-8 w-8 items-center justify-center transition-all duration-200 hover:-translate-y-0.5 hover:scale-110 hover:bg-white/80 hover:shadow-md active:scale-95 cursor-pointer";
 
 export const rowActionClass = `${rowActionBaseClass} hover:text-primary`;
 

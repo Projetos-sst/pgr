@@ -481,7 +481,7 @@ export default async function EpiStockPage({
                     href={`/epi-stock/${row.id}/edit`}
                     label={`Editar ${row.name}`}
                   />
-                  <DeleteEpiStock id={row.id} />
+                  <DeleteEpiStock id={row.id} itemName={row.name} />
                 </RowActions>
               </span>
             </div>

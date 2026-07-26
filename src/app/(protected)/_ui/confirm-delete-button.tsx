@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 
 import type { ActionResult } from "@/shared/server/result";
 
@@ -77,7 +78,7 @@ export function ConfirmDeleteButton({
         title={hasLabel ? undefined : `Excluir ${entityName}`}
         className={
           hasLabel
-            ? "rounded-[12px] border border-red-300/50 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-700 transition-all hover:bg-red-500/20 sm:text-sm"
+            ? "cursor-pointer rounded-[12px] border border-red-300/50 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-700 transition-all hover:bg-red-500/20 sm:text-sm"
             : rowActionDangerClass
         }
       >
@@ -100,9 +101,60 @@ export function ConfirmDeleteButton({
         )}
       </button>
 
-      {open ? (
-        <div className="animate-backdrop-fade fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-md">
-          <div className="animate-modal-pop flex w-full max-w-md flex-col gap-4 rounded-[20px] border border-white/80 bg-white/95 p-6 shadow-2xl backdrop-blur-xl">
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <Overlay
+              pending={pending}
+              onClose={() => setOpen(false)}
+              entityName={entityName}
+              description={description}
+              loadingDependents={loadingDependents}
+              dependentEntries={dependentEntries}
+              dependentLabels={dependentLabels}
+              error={error}
+              onConfirm={confirmDelete}
+            />,
+            document.body,
+          )
+        : null}
+    </>
+  );
+}
+
+/*
+ * Overlay em portal no body: o gatilho fica dentro de `.glass-card`, cujo
+ * `backdrop-filter` cria containing block e quebraria o `fixed` do overlay.
+ */
+function Overlay({
+  pending,
+  onClose,
+  entityName,
+  description,
+  loadingDependents,
+  dependentEntries,
+  dependentLabels,
+  error,
+  onConfirm,
+}: {
+  pending: boolean;
+  onClose: () => void;
+  entityName: string;
+  description?: string;
+  loadingDependents: boolean;
+  dependentEntries: [string, number][];
+  dependentLabels?: Record<string, string>;
+  error: string | null;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      onClick={() => !pending && onClose()}
+          className="animate-backdrop-fade fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-md"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="animate-modal-pop flex w-full max-w-md flex-col gap-4 rounded-[20px] border border-white/80 bg-white/95 p-6 shadow-2xl backdrop-blur-xl"
+          >
             <div className="flex items-start gap-3.5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-red-500/15 text-red-600">
                 <svg
@@ -129,7 +181,12 @@ export function ConfirmDeleteButton({
               </div>
             </div>
 
-            {dependentEntries.length > 0 ? (
+            {loadingDependents ? (
+              <div className="flex items-center gap-2 px-1 text-xs text-text-subtle">
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                <span>Verificando vinculações…</span>
+              </div>
+            ) : dependentEntries.length > 0 ? (
               <ul className="rounded-card border border-amber-300/40 bg-amber-500/10 px-5 py-3 text-xs text-amber-900">
                 {dependentEntries.map(([key, count]) => (
                   <li key={key} className="font-semibold">
@@ -144,24 +201,22 @@ export function ConfirmDeleteButton({
             <div className="flex items-center justify-end gap-3 border-t border-black/5 pt-3">
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={onClose}
                 disabled={pending}
-                className="glass-panel text-text-muted hover:text-text rounded-[12px] px-4 py-2 text-xs font-bold transition-all disabled:opacity-50 sm:text-sm"
+                className="glass-panel text-text-muted hover:text-text cursor-pointer rounded-[12px] px-4 py-2 text-xs font-bold transition-all disabled:opacity-50 sm:text-sm"
               >
                 Cancelar
               </button>
               <button
                 type="button"
-                onClick={confirmDelete}
+                onClick={onConfirm}
                 disabled={pending}
-                className="rounded-[12px] bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-red-500/20 transition-all hover:bg-red-700 disabled:opacity-50 sm:text-sm"
+                className="cursor-pointer rounded-[12px] bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-red-500/20 transition-all hover:bg-red-700 disabled:opacity-50 sm:text-sm"
               >
                 {pending ? "Excluindo…" : "Confirmar exclusão"}
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
-    </>
+    </div>
   );
 }

@@ -28,7 +28,7 @@ export default async function EditEpiStockPage({
       <PageHeader
         title={stock.name}
         description="Gerenciar dados do registro de estoque (quantidade mínima)."
-        action={<DeleteEpiStock id={stock.id} redirectTo="/epi-stock" hasLabel />}
+        action={<DeleteEpiStock id={stock.id} itemName={stock.name} redirectTo="/epi-stock" hasLabel />}
       />
 
       <div className="glass-card flex flex-wrap items-center gap-3 px-4 py-3">
