@@ -101,8 +101,8 @@ export function ConfirmDeleteButton({
       </button>
 
       {open ? (
-        <div className="animate-backdrop-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md">
-          <div className="glass-card animate-modal-pop flex w-full max-w-md flex-col gap-4 rounded-[20px] border border-white/50 bg-white/95 p-6 shadow-2xl">
+        <div className="animate-backdrop-fade fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-md">
+          <div className="animate-modal-pop flex w-full max-w-md flex-col gap-4 rounded-[20px] border border-white/80 bg-white/95 p-6 shadow-2xl backdrop-blur-xl">
             <div className="flex items-start gap-3.5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-red-500/15 text-red-600">
                 <svg
