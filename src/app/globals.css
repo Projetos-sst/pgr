@@ -33,10 +33,12 @@
   --color-text-subtle: #8c91a8;
 
   /* acentos de status (badges) */
+  --color-danger: #d33a3f;
   --color-accent-green: #0e9f6e;
   --color-accent-amber: #f5a524;
 
   /* raio */
+  --radius-field: 11px;
   --radius-card: 12px;
   --radius-glass: 18px;
   --radius-pill: 30px;
@@ -111,8 +113,8 @@ body {
   }
 
   .glass-input {
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.75);
   }
   .glass-input:focus,
   .glass-input:focus-visible {

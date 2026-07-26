@@ -6,26 +6,51 @@ export function PageHeader({
   description,
   action,
   icon,
+  backHref,
+  backLabel = "Voltar",
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
   icon?: ReactNode;
+  backHref?: string;
+  backLabel?: string;
 }) {
   return (
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3.5">
+        {backHref ? (
+          <Link
+            href={backHref}
+            aria-label={backLabel}
+            className="glass-input rounded-field text-text-muted hover:text-text flex h-10 w-10 shrink-0 items-center justify-center transition-colors"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden
+            >
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+          </Link>
+        ) : null}
         {icon ? (
-          <div className="bg-primary shadow-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] text-white">
+          <div className="bg-primary shadow-primary flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] text-white">
             {icon}
           </div>
         ) : null}
         <div>
-          <h1 className="text-text text-xl font-extrabold tracking-tight sm:text-2xl">
+          <h1 className="text-text text-xl font-extrabold tracking-[-0.02em] sm:text-[22px]">
             {title}
           </h1>
           {description ? (
-            <p className="text-text-subtle mt-0.5 text-xs sm:text-sm">{description}</p>
+            <p className="text-text-subtle mt-0.5 text-xs sm:text-[13px]">
+              {description}
+            </p>
           ) : null}
         </div>
       </div>
