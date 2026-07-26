@@ -63,7 +63,7 @@ export function PrimaryLink({ href, children }: { href: string; children: ReactN
   return (
     <Link
       href={href}
-      className="btn-primary rounded-card shadow-primary flex items-center gap-2 px-4 py-2.5 text-xs font-bold transition-all sm:text-sm"
+      className="btn-primary hover-lift rounded-card shadow-primary flex items-center gap-2 px-4 py-2.5 text-xs font-bold transition-all sm:text-sm"
     >
       {children}
     </Link>
@@ -250,7 +250,7 @@ export function Pagination({
 
 export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
   return (
-    <div className="glass-card overflow-x-auto rounded-[20px]">
+    <div className="glass-card animate-fade-in overflow-x-auto rounded-[20px]">
       <table className="w-full border-collapse text-xs sm:text-sm">
         <thead className="text-text-subtle border-b border-black/5 bg-transparent font-mono text-[10px] tracking-widest uppercase">
           <tr>
@@ -266,7 +266,9 @@ export function Table({ headers, children }: { headers: string[]; children: Reac
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-black/5">{children}</tbody>
+        <tbody className="divide-y divide-black/5 [&_tr]:transition-colors [&_tr]:duration-200 [&_tr:hover]:bg-white/40">
+          {children}
+        </tbody>
       </table>
     </div>
   );

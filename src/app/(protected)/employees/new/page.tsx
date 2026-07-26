@@ -12,7 +12,7 @@ export default async function NewEmployeePage() {
   const result = await listCompanyOptionsAction();
   const companies = result.ok ? result.data : [];
   return (
-    <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-5 py-7 sm:px-[30px] sm:pb-10">
+    <div className="animate-fade-slide-up mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-5 py-7 sm:px-[30px] sm:pb-10">
       <PageHeader
         title="Novo funcionário"
         description="Cadastro de colaborador vinculado a função e GES"

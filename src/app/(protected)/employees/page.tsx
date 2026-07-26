@@ -54,7 +54,7 @@ export default async function EmployeesPage({
   const companies = companiesResult.ok ? companiesResult.data : [];
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="animate-fade-slide-up flex flex-col gap-6 px-6 py-8">
       <PageHeader
         title="Funcionários"
         description="Pessoas vinculadas às empresas-cliente."
@@ -93,7 +93,7 @@ export default async function EmployeesPage({
         />
         <button
           type="submit"
-          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
+          className="glass-panel hover-lift text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-all"
         >
           Filtrar
         </button>

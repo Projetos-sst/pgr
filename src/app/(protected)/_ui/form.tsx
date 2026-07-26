@@ -7,7 +7,7 @@ const fieldClass =
   "glass-input text-text placeholder:text-text-subtle rounded-field h-[46px] w-full px-3.5 text-[13px] outline-none";
 const labelClass = "text-text-muted mb-1.5 block text-xs font-semibold";
 const actionButtonClass =
-  "flex h-[46px] items-center gap-2 rounded-[12px] text-[13px] font-bold transition-colors";
+  "hover-lift flex h-[46px] items-center gap-2 rounded-[12px] text-[13px] font-bold transition-all active:scale-95";
 
 export function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -53,8 +53,14 @@ export function FormSection({
 }) {
   const columnsClass =
     columns === 1 ? "" : columns === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2";
+  // A animação de entrada reinicia sozinha quando a seção sai de `display:none`
+  // — é o que dá vida à troca de etapa sem remontar os campos (o que apagaria
+  // o que já foi preenchido).
   return (
-    <section className="glass-card rounded-[20px] p-5 sm:p-6" hidden={hidden}>
+    <section
+      className="glass-card animate-fade-slide-up rounded-[20px] p-5 sm:p-6"
+      hidden={hidden}
+    >
       <h2 className="text-primary mb-4 font-mono text-[11px] tracking-[0.14em] uppercase">
         {title}
       </h2>
@@ -122,7 +128,10 @@ export function FormSteps({
   }, [current]);
 
   return (
-    <nav aria-label="Etapas do cadastro" className="glass-card rounded-[20px] p-3">
+    <nav
+      aria-label="Etapas do cadastro"
+      className="glass-card animate-fade-slide-up rounded-[20px] p-3"
+    >
       <p className="text-text-subtle mb-2 px-1 font-mono text-[11px] tracking-[0.14em] uppercase sm:hidden">
         Etapa {current + 1} de {steps.length}
       </p>
@@ -140,7 +149,7 @@ export function FormSteps({
                 type="button"
                 onClick={() => onSelect(index)}
                 aria-current={isCurrent ? "step" : undefined}
-                className={`flex w-full items-center gap-3 rounded-[13px] px-3.5 py-3 text-left text-[13px] transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-[13px] px-3.5 py-3 text-left text-[13px] transition-all duration-200 active:scale-[0.98] ${
                   isCurrent
                     ? "btn-primary"
                     : "text-text-muted hover:text-text hover:bg-white/40"
