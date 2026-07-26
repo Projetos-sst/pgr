@@ -11,7 +11,15 @@ const DEPENDENT_LABELS = {
   movements: "Movimentações que serão excluídas",
 };
 
-export function DeleteEpiStock({ id, redirectTo }: { id: string; redirectTo?: string }) {
+export function DeleteEpiStock({
+  id,
+  redirectTo,
+  withLabel,
+}: {
+  id: string;
+  redirectTo?: string;
+  withLabel?: boolean;
+}) {
   return (
     <ConfirmDeleteButton
       id={id}
@@ -20,6 +28,7 @@ export function DeleteEpiStock({ id, redirectTo }: { id: string; redirectTo?: st
       loadDependentsAction={getEpiStockDependentsAction}
       dependentLabels={DEPENDENT_LABELS}
       redirectTo={redirectTo}
+      withLabel={withLabel}
     />
   );
 }
