@@ -8,7 +8,9 @@ import type { Pgr } from "@/shared/domains/pgr/pgr";
 import type { PgrGesLinkItem } from "@/shared/domains/pgr/pgr-ges";
 import type { PgrRevisionListItem } from "@/shared/domains/pgr/pgr-revision";
 import type { PgrConsolidated } from "@/shared/domains/pgr/pgr-consolidated";
+import { isPgrEditLocked } from "@/shared/domains/pgr/pgr-lock";
 import type { PgrSignatureView } from "@/shared/domains/pgr/pgr-signature";
+import type { DocumentListItem } from "@/shared/domains/documents/documents";
 import { publishPgrAction } from "@/shared/server/actions/pgr/pgr";
 
 import { PgrBasicInfoTab } from "./pgr-basic-info-tab";
@@ -16,8 +18,9 @@ import { PgrGesTab } from "./pgr-ges-tab";
 import { PgrRevisionsTab } from "./pgr-revisions-tab";
 import { PgrConsolidatedTab } from "./pgr-consolidated-tab";
 import { PgrSignaturePanel } from "./pgr-signature-panel";
+import { PgrDocumentsTab } from "./pgr-documents-tab";
 
-type TabKey = "basic" | "ges" | "consolidated" | "revisions" | "signature";
+type TabKey = "basic" | "ges" | "consolidated" | "revisions" | "signature" | "documents";
 
 interface StepItem {
   key: TabKey;
@@ -40,6 +43,8 @@ export function PgrEditorTabs({
   revisions,
   consolidated,
   signature,
+  linkedDocuments,
+  linkedDocumentsTotal,
 }: {
   pgrId: string;
   pgr: Pgr;
@@ -51,6 +56,8 @@ export function PgrEditorTabs({
   revisions: PgrRevisionListItem[];
   consolidated: PgrConsolidated | null;
   signature?: PgrSignatureView;
+  linkedDocuments: DocumentListItem[];
+  linkedDocumentsTotal: number;
 }) {
   const router = useRouter();
   const [active, setActive] = useState<TabKey>("basic");
@@ -60,9 +67,12 @@ export function PgrEditorTabs({
   );
   const [publishPending, startPublishTransition] = useTransition();
 
-  // PGR fica bloqueado para edição quando assinado ou publicado
-  const isSigned = liveSignature?.state === "signed";
-  const isLocked = isSigned || isPublished;
+  // Mesma regra que o servidor impõe em toda escrita (`assertPgrEditable`) — aqui ela só
+  // antecipa o bloqueio na tela; quem garante a invariante é a Server Action / o REST.
+  const isLocked = isPgrEditLocked({
+    signatureState: liveSignature?.state ?? "none",
+    publishedAt: isPublished ? new Date() : null,
+  });
 
   // Métricas de riscos reais derivadas da visão consolidada
   let totalRisks = 0;
@@ -119,6 +129,7 @@ export function PgrEditorTabs({
   const isRisksUnlocked = stepBasicDone && stepGesDone;
   const isRevisionsUnlocked = stepBasicDone;
   const isSignatureUnlocked = stepBasicDone && stepGesDone && stepRisksDone;
+  const isDocumentsUnlocked = stepBasicDone;
 
   let completedStepsCount = 0;
   if (stepBasicDone) completedStepsCount++;
@@ -184,6 +195,16 @@ export function PgrEditorTabs({
       lockReason:
         "Conclua a Identificação, os Vínculos de GES e o Inventário de Riscos para liberar a assinatura.",
     },
+    {
+      key: "documents",
+      label: "Documentos e PDF",
+      subtitle: `${linkedDocumentsTotal} ${linkedDocumentsTotal === 1 ? "anexo no GED" : "anexos no GED"}`,
+      stepNumber: 6,
+      completed: linkedDocumentsTotal > 0,
+      unlocked: isDocumentsUnlocked,
+      lockReason:
+        "Preencha a etapa 1 (Identificação) para gerar o PDF e anexar documentos.",
+    },
   ];
 
   function handlePublish() {
@@ -214,6 +235,7 @@ export function PgrEditorTabs({
     "consolidated",
     "revisions",
     "signature",
+    "documents",
   ];
   const currentStepIdx = playableStepsKeys.indexOf(active);
   const prevKey = currentStepIdx > 0 ? playableStepsKeys[currentStepIdx - 1] : null;
@@ -518,6 +540,14 @@ export function PgrEditorTabs({
               isPublished={isPublished}
               onPublish={handlePublish}
               publishPending={publishPending}
+            />
+          ) : null}
+          {active === "documents" ? (
+            <PgrDocumentsTab
+              pgrId={pgrId}
+              pgrLabel={`PGR — ${companyName}`}
+              linkedDocuments={linkedDocuments}
+              linkedTotal={linkedDocumentsTotal}
             />
           ) : null}
 

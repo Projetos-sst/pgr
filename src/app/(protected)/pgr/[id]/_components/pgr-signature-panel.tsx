@@ -48,10 +48,6 @@ export function PgrSignaturePanel({
   publishPending?: boolean;
 }) {
   const router = useRouter();
-  const [state, setState] = useState<PgrSignatureState>(signature?.state ?? "none");
-  const [signerName, setSignerName] = useState<string | null>(
-    signature?.signerName ?? null,
-  );
   const [fresh, setFresh] = useState<{ publicUrl: string; qrCodeDataUrl: string } | null>(
     null,
   );
@@ -59,29 +55,25 @@ export function PgrSignaturePanel({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const [prevSignature, setPrevSignature] = useState(signature);
-  if (signature !== prevSignature) {
-    setPrevSignature(signature);
-    if (signature) {
-      setState(signature.state);
-      setSignerName(signature.signerName);
-    }
-  }
+  const state = signature?.state ?? "none";
+  const signerName = signature?.signerName ?? null;
 
   // Polling automático enquanto estiver aguardando assinatura (3 em 3 segundos)
   useEffect(() => {
     if (state !== "pending") return;
 
     const interval = setInterval(async () => {
-      const res = await getPgrSignatureViewAction({ pgrId });
-      if (res.ok) {
-        setState(res.data.state);
-        setSignerName(res.data.signerName);
-        onSignatureChange?.(res.data);
-        if (res.data.state === "signed") {
-          setFresh(null);
-          router.refresh();
+      try {
+        const res = await getPgrSignatureViewAction({ pgrId });
+        if (res.ok) {
+          onSignatureChange?.(res.data);
+          if (res.data.state === "signed") {
+            setFresh(null);
+            router.refresh();
+          }
         }
+      } catch {
+        // Falhas transitórias de polling não devem derrubar o fluxo de edição.
       }
     }, 3000);
 
@@ -109,8 +101,6 @@ export function PgrSignaturePanel({
         return;
       }
       setFresh({ publicUrl: res.data.publicUrl, qrCodeDataUrl: res.data.qrCodeDataUrl });
-      setState("pending");
-      setSignerName(null);
       onSignatureChange?.({
         state: "pending",
         requestId: res.data.requestId,
@@ -125,8 +115,6 @@ export function PgrSignaturePanel({
     startTransition(async () => {
       const res = await getPgrSignatureViewAction({ pgrId });
       if (res.ok) {
-        setState(res.data.state);
-        setSignerName(res.data.signerName);
         onSignatureChange?.(res.data);
         if (res.data.state === "signed") {
           setFresh(null);
@@ -239,7 +227,7 @@ export function PgrSignaturePanel({
 
       {/* Se o documento já estiver assinado */}
       {isSigned ? (
-        <div className="glass-panel flex flex-col gap-4 rounded-[16px] border border-emerald-400/40 bg-emerald-500/10 p-5 text-xs text-emerald-950">
+        <div className="glass-panel flex flex-col gap-4 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-5 text-xs text-emerald-950">
           <div className="flex items-start gap-3.5">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
               <svg
@@ -293,7 +281,7 @@ export function PgrSignaturePanel({
         </div>
       ) : fresh ? (
         /* Se houver solicitação pendente recém-criada */
-        <div className="glass-panel flex flex-col gap-3 rounded-[16px] border border-amber-300/50 bg-amber-500/10 p-4">
+        <div className="glass-panel flex flex-col gap-3 rounded-2xl border border-amber-300/50 bg-amber-500/10 p-4">
           <p className="text-xs font-bold text-amber-800">
             Copie este link agora. Por segurança, o token cru não será reexibido após
             atualizar a página.

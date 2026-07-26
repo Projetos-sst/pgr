@@ -8,7 +8,19 @@ import { DocumentUploadForm } from "../_components/document-upload-form";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ folderId?: string }>;
+type SearchParams = Promise<{
+  folderId?: string;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
+  returnTo?: string;
+  returnLabel?: string;
+}>;
+
+/** Só aceita retorno interno — `returnTo` vem da URL e não pode virar open redirect. */
+function safeReturnTo(value: string | undefined): string | null {
+  if (!value) return null;
+  return value.startsWith("/") && !value.startsWith("//") ? value : null;
+}
 
 export default async function NewDocumentPage({
   searchParams,
@@ -41,7 +53,14 @@ export default async function NewDocumentPage({
         }
       />
       <div className="glass-card max-w-2xl rounded-[20px] p-6 sm:p-8">
-        <DocumentUploadForm folders={folders} defaultFolderId={defaultFolderId} />
+        <DocumentUploadForm
+          folders={folders}
+          defaultFolderId={defaultFolderId}
+          defaultRelatedEntityType={sp.relatedEntityType ?? null}
+          defaultRelatedEntityId={sp.relatedEntityId ?? null}
+          returnTo={safeReturnTo(sp.returnTo)}
+          returnLabel={sp.returnLabel ?? null}
+        />
       </div>
       <Link
         href="/documents"

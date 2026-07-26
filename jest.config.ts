@@ -59,6 +59,12 @@ const config: Config = {
     {
       displayName: "integration",
       testEnvironment: "node",
+      // O default do Jest (5s) é calibrado para teste unitário. Aqui cada `beforeEach`
+      // trunca e resemeia a cadeia inteira de fixtures no Postgres; sob carga isso passa
+      // de 5s, o hook estoura no meio do seed e o teste SEGUINTE quebra com `orgs_pkey`
+      // duplicado — falha que se manifesta só no run completo e some quando a suíte roda
+      // isolada. O limite maior não mascara bug: só reconhece o custo real de I/O.
+      testTimeout: 30_000,
       testMatch: ["<rootDir>/src/__tests__/integration/**/*.test.ts?(x)"],
       testPathIgnorePatterns: [
         "/node_modules/",

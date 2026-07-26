@@ -20,6 +20,7 @@ import {
   createPgrAction,
   updatePgrAction,
   deletePgrAction,
+  publishPgrAction,
 } from "@/shared/server/actions/pgr/pgr";
 import type { PgrCreateInput } from "@/shared/domains/pgr/pgr";
 
@@ -123,6 +124,18 @@ function createInput(overrides: Partial<PgrCreateInput> = {}): PgrCreateInput {
     expect(result.ok).toBe(true);
     const after = await getPgrAction(PGR_IDS.pgrA);
     expect(after.ok && after.data.responsible).toBe("Eng. Atualizado");
+  });
+
+  // Publicar um PGR não assinado produziria documento travado que ninguém assinou.
+  // A UI só mostra o botão quando assinado, mas a action é chamável direto.
+  // O caminho feliz (assinar → publicar → idempotência) vive em `pgr-signature.test.ts`,
+  // única suíte com a máquina de assinatura.
+  it("publish sem assinatura → VALIDATION e publishedAt segue nulo", async () => {
+    const res = await publishPgrAction(PGR_IDS.pgrA);
+    expect(!res.ok && res.error.code).toBe("VALIDATION");
+
+    const after = await getPgrAction(PGR_IDS.pgrA);
+    expect(after.ok && after.data.publishedAt).toBeNull();
   });
 
   it("delete remove e getById seguinte → NOT_FOUND", async () => {

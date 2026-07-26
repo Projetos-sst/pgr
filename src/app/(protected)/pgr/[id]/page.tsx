@@ -9,6 +9,7 @@ import { listPgrGesAction } from "@/shared/server/actions/pgr/pgr-ges";
 import { listPgrRevisionsAction } from "@/shared/server/actions/pgr/pgr-revisions";
 import { getPgrConsolidatedAction } from "@/shared/server/actions/pgr/pgr-consolidated";
 import { getPgrSignatureViewAction } from "@/shared/server/actions/pgr/pgr-signature";
+import { listDocumentsAction } from "@/shared/server/actions/documents/documents";
 
 import { PgrEditorTabs } from "./_components/pgr-editor-tabs";
 
@@ -35,6 +36,7 @@ export default async function PgrDetailPage({
     consolidated,
     gesOptions,
     signature,
+    linkedDocuments,
   ] = await Promise.all([
     getCompanyAction(doc.companyId),
     doc.workUnitId ? getWorkUnitAction(doc.workUnitId) : Promise.resolve(null),
@@ -43,6 +45,11 @@ export default async function PgrDetailPage({
     getPgrConsolidatedAction(id),
     listGesAction({ companyId: doc.companyId, pageSize: 100 }),
     getPgrSignatureViewAction({ pgrId: id }),
+    listDocumentsAction({
+      relatedEntityType: "pgr",
+      relatedEntityId: id,
+      pageSize: 5,
+    }),
   ]);
 
   const companyName = companyResult.ok ? companyResult.data.razaoSocial : doc.companyId;
@@ -65,6 +72,8 @@ export default async function PgrDetailPage({
         revisions={revisions.ok ? revisions.data : []}
         consolidated={consolidated.ok ? consolidated.data : null}
         signature={signature.ok ? signature.data : undefined}
+        linkedDocuments={linkedDocuments.ok ? linkedDocuments.data.rows : []}
+        linkedDocumentsTotal={linkedDocuments.ok ? linkedDocuments.data.total : 0}
       />
     </div>
   );

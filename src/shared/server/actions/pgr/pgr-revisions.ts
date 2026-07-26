@@ -13,6 +13,7 @@ import {
 } from "@/shared/domains/pgr/pgr-revision";
 import { getPgrById } from "@/shared/db/repositories/pgr";
 import * as repo from "@/shared/db/repositories/pgr-revisions";
+import { assertPgrEditable } from "@/shared/server/pgr/pgr-lock";
 
 const editPath = (pgrId: string) => `/pgr/${pgrId}`;
 
@@ -34,6 +35,7 @@ export async function createPgrRevisionAction(
     async ({ tenantId }) => {
       // Schema estrito: `revisionNumber` enviado pelo cliente → VALIDATION/422.
       const values = pgrRevisionInputSchema.parse(input);
+      await assertPgrEditable(tenantId, pgrId);
       // O número é calculado no repo (MAX+1 sob lock); o próprio SELECT … FOR UPDATE
       // é o guard de existência/tenant (PGR inexistente/cross-tenant → NOT_FOUND/404).
       const row = await repo.createPgrRevision(tenantId, pgrId, values);

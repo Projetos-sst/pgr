@@ -3,7 +3,10 @@ import Link from "next/link";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
 import { listDocumentsAction } from "@/shared/server/actions/documents/documents";
-import type { DocumentValidityFilter } from "@/shared/domains/documents/documents";
+import {
+  parseRelatedEntityFilter,
+  type DocumentValidityFilter,
+} from "@/shared/domains/documents/documents";
 
 import { EmptyState, PageHeader, Pagination, Table } from "../_ui/list";
 import { BreadcrumbNav } from "./_components/breadcrumb-nav";
@@ -28,6 +31,8 @@ type SearchParams = Promise<{
   search?: string;
   docType?: string;
   validity?: string;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
   page?: string;
 }>;
 
@@ -49,6 +54,7 @@ export default async function DocumentsPage({
     search: sp.search,
     docType: sp.docType,
     validity,
+    ...parseRelatedEntityFilter(sp.relatedEntityType, sp.relatedEntityId),
     page,
   });
 
@@ -62,10 +68,20 @@ export default async function DocumentsPage({
         breadcrumb: [{ id: null, name: "Início" }],
       };
 
-  const hiddenParams = {
-    folderId: sp.folderId,
-    docType: sp.docType,
-    validity: sp.validity,
+  const relatedLabel =
+    sp.relatedEntityType === "pgr" && sp.relatedEntityId
+      ? `PGR ${sp.relatedEntityId.slice(0, 8).toUpperCase()}`
+      : null;
+
+  const buildQuery = (validityValue?: string) => {
+    const query = new URLSearchParams();
+    if (sp.folderId) query.set("folderId", sp.folderId);
+    if (sp.search) query.set("search", sp.search);
+    if (sp.docType) query.set("docType", sp.docType);
+    if (validityValue) query.set("validity", validityValue);
+    if (sp.relatedEntityType) query.set("relatedEntityType", sp.relatedEntityType);
+    if (sp.relatedEntityId) query.set("relatedEntityId", sp.relatedEntityId);
+    return query.toString();
   };
 
   return (
@@ -88,18 +104,27 @@ export default async function DocumentsPage({
         }
       />
 
+      {relatedLabel ? (
+        <div className="glass-panel flex flex-wrap items-center justify-between gap-3 rounded-[16px] px-4 py-3 text-xs sm:text-sm">
+          <div>
+            <p className="text-text font-bold">GED filtrado por vínculo</p>
+            <p className="text-text-subtle mt-0.5">
+              Mostrando documentos vinculados a {relatedLabel}.
+            </p>
+          </div>
+          <Link href="/documents" className="text-primary font-bold hover:underline">
+            Limpar filtro
+          </Link>
+        </div>
+      ) : null}
+
       <DocumentKpisRow kpis={view.kpis} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {VALIDITY_FILTER_OPTIONS.map((option) => {
             const active = (sp.validity ?? "") === option.value;
-            const query = new URLSearchParams();
-            if (option.value) query.set("validity", option.value);
-            if (sp.folderId) query.set("folderId", sp.folderId);
-            if (sp.search) query.set("search", sp.search);
-            if (sp.docType) query.set("docType", sp.docType);
-            const qs = query.toString();
+            const qs = buildQuery(option.value);
             return (
               <Link
                 key={option.label}
@@ -231,7 +256,14 @@ export default async function DocumentsPage({
           page={page}
           pageSize={pageSize}
           total={view.total}
-          params={hiddenParams}
+          params={{
+            folderId: sp.folderId,
+            search: sp.search,
+            docType: sp.docType,
+            validity: sp.validity,
+            relatedEntityType: sp.relatedEntityType,
+            relatedEntityId: sp.relatedEntityId,
+          }}
         />
       </div>
     </div>

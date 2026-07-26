@@ -24,6 +24,7 @@ import {
   type DocumentValidityFilter,
   type UpdateDocumentValues,
 } from "@/shared/domains/documents/documents";
+import type { DocumentRelatedEntityType } from "@/shared/domains/documents/validity";
 import {
   computeDocumentKpis,
   validityDateBounds,
@@ -47,6 +48,8 @@ export type ListDocumentsParams = PageParams & {
   search?: string;
   docType?: string;
   validity?: DocumentValidityFilter;
+  relatedEntityType?: DocumentRelatedEntityType;
+  relatedEntityId?: string;
 };
 
 export type DocumentListResult = Paginated<DocumentListItem> & { kpis: DocumentKpis };
@@ -90,6 +93,8 @@ export async function listDocuments(
   const today = todayInSaoPaulo();
   const folderId = params.folderId ?? null;
   const search = params.search?.trim();
+  const relatedEntityType = params.relatedEntityType?.trim();
+  const relatedEntityId = params.relatedEntityId?.trim();
 
   return withOrg(orgId, async (tx) => {
     const filters = [
@@ -100,6 +105,9 @@ export async function listDocuments(
     if (search) filters.push(ilike(documents.name, `%${search}%`));
     if (params.docType) filters.push(eq(documents.docType, params.docType));
     if (params.validity) filters.push(validityPredicate(params.validity, today)!);
+    if (relatedEntityType)
+      filters.push(eq(documents.relatedEntityType, relatedEntityType));
+    if (relatedEntityId) filters.push(eq(documents.relatedEntityId, relatedEntityId));
     const where = and(...filters);
 
     const rows = await tx

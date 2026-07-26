@@ -14,6 +14,7 @@ import {
   type PgrListItem,
 } from "@/shared/domains/pgr/pgr";
 import * as repo from "@/shared/db/repositories/pgr";
+import { assertPgrEditable, assertPgrPublishable } from "@/shared/server/pgr/pgr-lock";
 import type { Pgr } from "@/shared/db/schema/pgr";
 
 const BASE_PATH = "/pgr";
@@ -55,6 +56,7 @@ export async function updatePgrAction(
     "pgr.pgr.update",
     async ({ tenantId }) => {
       const values = pgrInputSchema.parse(input);
+      await assertPgrEditable(tenantId, id);
       const row = await repo.updatePgr(tenantId, id, values);
       if (!row) throw new NotFoundError();
       revalidatePath(BASE_PATH);
@@ -86,8 +88,7 @@ export async function publishPgrAction(
   return officeAction(
     "pgr.pgr.publish",
     async ({ tenantId }) => {
-      const row = await repo.getPgrById(tenantId, id);
-      if (!row) throw new NotFoundError();
+      await assertPgrPublishable(tenantId, id);
       await repo.publishPgr(tenantId, id);
       revalidatePath(BASE_PATH);
       revalidatePath(`${BASE_PATH}/${id}`);

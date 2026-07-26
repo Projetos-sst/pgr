@@ -16,7 +16,7 @@ import { requireOfficeStaff } from "@/shared/auth/require-office-staff";
 import { listDocumentsAction } from "@/shared/server/actions/documents/documents";
 
 import { adminClient, applyMigrations } from "../_helpers/db";
-import { seedPgrBase } from "../_helpers/pgr-seed";
+import { PGR_IDS, seedPgrBase } from "../_helpers/pgr-seed";
 
 const APP_RUNTIME_URL = process.env.INTEGRATION_APP_RUNTIME_URL;
 const ADMIN_URL = process.env.INTEGRATION_DATABASE_URL;
@@ -29,6 +29,7 @@ const asOwner = (tenantId: string) =>
 const GROUP_A1 = "aaaaaaaa-0000-0000-0000-000000000001";
 const GROUP_A2 = "aaaaaaaa-0000-0000-0000-000000000002";
 const GROUP_A3 = "aaaaaaaa-0000-0000-0000-000000000003";
+const GROUP_A4 = "aaaaaaaa-0000-0000-0000-000000000004";
 const GROUP_B1 = "bbbbbbbb-0000-0000-0000-000000000001";
 const FOLDER_A_ROOT_CHILD = "aaaaaaaa-1111-0000-0000-000000000001";
 
@@ -61,6 +62,11 @@ async function seedDocuments(admin: ReturnType<typeof postgres>) {
     insert into public.documents
       (org_id, folder_id, document_group_id, name, doc_type, version, storage_path, size_bytes, valid_until) values
       ('org_a', '${FOLDER_A_ROOT_CHILD}', '${GROUP_A3}', 'Nota Fiscal', 'Fatura', 1, 'org_a/documentos/${GROUP_A3}/v1-nf.pdf', 150, null);
+
+    -- Grupo A4: 1 versão vinculada ao PGR A — usado no filtro de GED por relação.
+    insert into public.documents
+      (org_id, folder_id, document_group_id, name, doc_type, version, storage_path, size_bytes, valid_until, related_entity_type, related_entity_id) values
+      ('org_a', null, '${GROUP_A4}', 'PGR anexado', 'Programa', 1, 'org_a/documentos/${GROUP_A4}/v1-pgr.pdf', 120, null, 'pgr', '${PGR_IDS.pgrA}');
 
     -- Grupo B1: dado de outro tenant — nunca deve aparecer nas consultas de org_a.
     insert into public.documents
@@ -105,8 +111,8 @@ async function seedDocuments(admin: ReturnType<typeof postgres>) {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    // 3 grupos lógicos em org_a (A1, A2, A3) mesmo com 4 linhas físicas.
-    expect(result.data.kpis.documents).toBe(3);
+    // 4 grupos lógicos em org_a (A1, A2, A3, A4) mesmo com 5 linhas físicas.
+    expect(result.data.kpis.documents).toBe(4);
     expect(result.data.kpis.folders).toBe(1);
     expect(result.data.kpis.expired).toBe(1); // A2
   });
@@ -149,6 +155,19 @@ async function seedDocuments(admin: ReturnType<typeof postgres>) {
     expect(expired.ok).toBe(true);
     if (expired.ok) {
       expect(expired.data.rows.map((r) => r.documentGroupId)).toEqual([GROUP_A2]);
+    }
+  });
+
+  it("filtro por vínculo: relatedEntityType/relatedEntityId isola documentos do PGR", async () => {
+    asOwner("org_a");
+    const linked = await listDocumentsAction({
+      relatedEntityType: "pgr",
+      relatedEntityId: PGR_IDS.pgrA,
+    });
+    expect(linked.ok).toBe(true);
+    if (linked.ok) {
+      expect(linked.data.rows).toHaveLength(1);
+      expect(linked.data.rows[0].documentGroupId).toBe(GROUP_A4);
     }
   });
 

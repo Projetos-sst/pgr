@@ -19,6 +19,12 @@ import {
   getPgrSignatureViewAction,
 } from "@/shared/server/actions/pgr/pgr-signature";
 import { submitPublicSignature } from "@/shared/server/actions/public-signatures";
+import { publishPgrAction, updatePgrAction } from "@/shared/server/actions/pgr/pgr";
+import {
+  addGesToPgrAction,
+  removeGesFromPgrAction,
+} from "@/shared/server/actions/pgr/pgr-ges";
+import { createPgrRevisionAction } from "@/shared/server/actions/pgr/pgr-revisions";
 
 import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS } from "../_helpers/pgr-seed";
@@ -128,8 +134,85 @@ const ALLOWED_KEYS = [
 
   it("o `pgr` permanece intacto (sem coluna de status/assinatura)", async () => {
     await createPgrSignatureRequestAction({ pgrId: PGR_IDS.pgrA });
-    const [{ n }] = await admin<{ n: string }[]>`
-      select count(*)::text as n from information_schema.columns where table_name='pgr'`;
-    expect(n).toBe("11");
+    // O estado de assinatura vive só em `signature_requests`/`signature_captures`.
+    // Asserção sobre a INTENÇÃO (nenhuma coluna de assinatura no `pgr`) em vez de
+    // contagem total de colunas — esta última quebra a cada coluna nova legítima
+    // (foi o que aconteceu com `published_at`, migration 0028).
+    const columns = await admin<{ column_name: string }[]>`
+      select column_name from information_schema.columns where table_name='pgr'`;
+    const names = columns.map((c) => c.column_name);
+    expect(names).toEqual(
+      expect.not.arrayContaining([
+        "signature_status",
+        "signed_at",
+        "signer_name",
+        "auth_token",
+        "status",
+      ]),
+    );
+  });
+
+  describe("trava de edição após assinatura (enforcement de servidor)", () => {
+    async function signPgrA(): Promise<void> {
+      const created = await createPgrSignatureRequestAction({ pgrId: PGR_IDS.pgrA });
+      if (!created.ok) throw new Error("falha ao criar solicitação de assinatura");
+      const submitted = await submitPublicSignature(tokenOf(created.data.publicUrl), {
+        signerName: "Assinante",
+        imageDataUrl: PNG,
+      });
+      if (!submitted.ok) throw new Error("falha ao assinar");
+    }
+
+    it("assinado: update/GES/revisão são recusados com ALREADY_SIGNED", async () => {
+      await signPgrA();
+
+      const update = await updatePgrAction(PGR_IDS.pgrA, {
+        companyId: PGR_IDS.companyA,
+        registrationType: "not_applicable",
+        issuedAt: "2026-01-10",
+        validUntil: "2027-01-10",
+      });
+      expect(!update.ok && update.error.code).toBe("ALREADY_SIGNED");
+
+      const addGes = await addGesToPgrAction(PGR_IDS.pgrA, { gesId: PGR_IDS.gesA });
+      expect(!addGes.ok && addGes.error.code).toBe("ALREADY_SIGNED");
+
+      const removeGes = await removeGesFromPgrAction(PGR_IDS.pgrA, PGR_IDS.gesA);
+      expect(!removeGes.ok && removeGes.error.code).toBe("ALREADY_SIGNED");
+
+      const revision = await createPgrRevisionAction(PGR_IDS.pgrA, {
+        revisedAt: "2026-03-01",
+        notes: "tentativa pós-assinatura",
+      });
+      expect(!revision.ok && revision.error.code).toBe("ALREADY_SIGNED");
+    });
+
+    it("assinado: publish grava publishedAt e republicar não troca a data", async () => {
+      await signPgrA();
+
+      const first = await publishPgrAction(PGR_IDS.pgrA);
+      expect(first.ok).toBe(true);
+
+      const [afterFirst] = await admin<{ published_at: Date | null }[]>`
+        select published_at from public.pgr where org_id='org_a' and id=${PGR_IDS.pgrA}`;
+      expect(afterFirst.published_at).not.toBeNull();
+
+      const second = await publishPgrAction(PGR_IDS.pgrA);
+      expect(second.ok).toBe(true);
+
+      const [afterSecond] = await admin<{ published_at: Date | null }[]>`
+        select published_at from public.pgr where org_id='org_a' and id=${PGR_IDS.pgrA}`;
+      expect(afterSecond.published_at).toEqual(afterFirst.published_at);
+    });
+
+    it("sem assinatura o PGR segue editável (a trava não vaza para rascunho)", async () => {
+      const update = await updatePgrAction(PGR_IDS.pgrA, {
+        companyId: PGR_IDS.companyA,
+        registrationType: "not_applicable",
+        issuedAt: "2026-02-10",
+        validUntil: "2027-02-10",
+      });
+      expect(update.ok).toBe(true);
+    });
   });
 });
