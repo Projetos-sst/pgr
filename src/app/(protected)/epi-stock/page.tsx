@@ -10,6 +10,7 @@ import {
 import { listEpiStockAction } from "@/shared/server/actions/pgr/epi-stock";
 
 import { EmptyState, PageHeader } from "../_ui/list";
+import { EditRowAction, RowActions, ViewRowAction } from "../_ui/row-actions";
 import { DeleteEpiStock } from "./_components/delete-epi-stock";
 
 export const dynamic = "force-dynamic";
@@ -466,62 +467,18 @@ export default async function EpiStockPage({
               </span>
 
               {/* Ações */}
-              <span
-                style={{
-                  textAlign: "right",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-end",
-                  gap: "8px",
-                }}
-              >
-                {/* Ícone "olho" → histórico */}
-                <Link
-                  href={`/epi-stock/${row.id}/history`}
-                  aria-label={`Ver histórico de ${row.name}`}
-                  style={{
-                    color: "#5b63f5",
-                    display: "inline-flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <svg
-                    width="17"
-                    height="17"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    aria-hidden="true"
-                  >
-                    <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" />
-                    <circle cx="12" cy="12" r="2.5" />
-                  </svg>
-                </Link>
-                {/* Gerenciar (edit) */}
-                <Link
-                  href={`/epi-stock/${row.id}/edit`}
-                  aria-label={`Editar ${row.name}`}
-                  style={{
-                    color: "#9095ad",
-                    display: "inline-flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    aria-hidden="true"
-                  >
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </Link>
-                <DeleteEpiStock id={row.id} />
+              <span className="flex items-center justify-end">
+                <RowActions>
+                  <ViewRowAction
+                    href={`/epi-stock/${row.id}/history`}
+                    label={`Ver histórico de ${row.name}`}
+                  />
+                  <EditRowAction
+                    href={`/epi-stock/${row.id}/edit`}
+                    label={`Editar ${row.name}`}
+                  />
+                  <DeleteEpiStock id={row.id} />
+                </RowActions>
               </span>
             </div>
           ))
