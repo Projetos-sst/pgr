@@ -74,7 +74,7 @@ export function ConfirmDeleteButton({
         title={withLabel ? undefined : `Excluir ${entityName}`}
         className={
           withLabel
-            ? "rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
+            ? "rounded-[12px] border border-red-300/50 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-700 transition-all hover:bg-red-500/20 sm:text-sm"
             : rowActionDangerClass
         }
       >
@@ -98,32 +98,52 @@ export function ConfirmDeleteButton({
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="glass-card w-full max-w-md bg-white/90 p-6">
-            <h2 className="text-text text-lg font-bold">Excluir {entityName}?</h2>
-            <p className="text-text-muted mt-2 text-sm">
-              {description ??
-                "Esta ação é permanente. Os registros vinculados são removidos em cascata (ou desvinculados), conforme a integridade do banco."}
-            </p>
+        <div className="animate-backdrop-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md">
+          <div className="glass-card animate-modal-pop flex w-full max-w-md flex-col gap-4 rounded-[20px] border border-white/50 bg-white/95 p-6 shadow-2xl">
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-red-500/15 text-red-600">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-text text-base font-extrabold sm:text-lg">
+                  Excluir {entityName}?
+                </h3>
+                <p className="text-text-subtle mt-1 text-xs leading-relaxed sm:text-sm">
+                  {description ??
+                    "Esta ação é permanente. Os registros vinculados são removidos em cascata."}
+                </p>
+              </div>
+            </div>
 
             {dependentEntries.length > 0 ? (
-              <ul className="rounded-card mt-3 list-disc bg-amber-50 px-6 py-3 text-sm text-amber-800">
+              <ul className="rounded-card border border-amber-300/40 bg-amber-500/10 px-5 py-3 text-xs text-amber-900">
                 {dependentEntries.map(([key, count]) => (
-                  <li key={key}>
+                  <li key={key} className="font-semibold">
                     {dependentLabels?.[key] ?? key}: {count}
                   </li>
                 ))}
               </ul>
             ) : null}
 
-            {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+            {error ? <p className="text-xs font-semibold text-red-600">{error}</p> : null}
 
-            <div className="mt-5 flex justify-end gap-3">
+            <div className="flex items-center justify-end gap-3 border-t border-black/5 pt-3">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={pending}
-                className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
+                className="glass-panel text-text-muted hover:text-text rounded-[12px] px-4 py-2 text-xs font-bold transition-all disabled:opacity-50 sm:text-sm"
               >
                 Cancelar
               </button>
@@ -131,7 +151,7 @@ export function ConfirmDeleteButton({
                 type="button"
                 onClick={confirmDelete}
                 disabled={pending}
-                className="rounded-card bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                className="rounded-[12px] bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-red-500/20 transition-all hover:bg-red-700 disabled:opacity-50 sm:text-sm"
               >
                 {pending ? "Excluindo…" : "Confirmar exclusão"}
               </button>
