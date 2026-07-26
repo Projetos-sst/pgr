@@ -403,7 +403,7 @@ export default async function EpiStockPage({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "0.9fr 2fr 0.6fr 1fr 0.8fr 1fr 60px",
+            gridTemplateColumns: "0.9fr 2fr 0.6fr 1fr 0.8fr 1fr 120px",
             gap: "14px",
             padding: "14px 24px",
             fontFamily: "var(--font-jetbrains-mono, monospace)",
@@ -433,9 +433,9 @@ export default async function EpiStockPage({
               className="transition-all duration-200 hover:bg-white/40"
               style={{
                 display: "grid",
-                gridTemplateColumns: "0.9fr 2fr 0.6fr 1fr 0.8fr 1fr 60px",
+                gridTemplateColumns: "0.9fr 2fr 0.6fr 1fr 0.8fr 1fr 120px",
                 gap: "14px",
-                padding: "15px 24px",
+                padding: "18px 24px",
                 alignItems: "center",
                 fontSize: "13px",
                 borderBottom: "1px solid rgba(120, 120, 150, 0.08)",
