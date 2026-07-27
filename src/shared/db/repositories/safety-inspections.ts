@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, sql, type SQL } from "drizzle-orm";
 
 import type {
   OccurrencesValues,
@@ -12,7 +12,12 @@ import { toSafetyInspectionListItem } from "@/shared/domains/inspections/safety-
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { companies } from "../schema";
-import { inspectionOccurrences, inspections } from "../schema";
+import {
+  inspectionCategory,
+  inspectionOccurrences,
+  inspectionStatus,
+  inspections,
+} from "../schema";
 import { withOrg, type TenantTransaction } from "../with-org";
 import { auditedTenantWrite } from "./audited-write";
 
@@ -26,7 +31,26 @@ const occurrenceCountExpr = sql<number>`(
 export type ListSafetyInspectionsParams = PageParams & {
   status?: string;
   category?: string;
+  companyId?: string;
+  /** Busca livre por área/setor (case-insensitive). */
+  search?: string;
 };
+
+type InspectionStatusValue = (typeof inspectionStatus.enumValues)[number];
+type InspectionCategoryValue = (typeof inspectionCategory.enumValues)[number];
+
+/*
+ * `status` e `category` chegam de query string. Comparar direto com as colunas
+ * faria o Postgres abortar a consulta inteira num valor fora do enum (22P02) —
+ * o que a tela leria como "nenhum registro". Valor desconhecido é tratado como
+ * ausência de filtro.
+ */
+function toEnumValue<T extends string>(
+  allowed: readonly T[],
+  value: string | undefined,
+): T | null {
+  return value && (allowed as readonly string[]).includes(value) ? (value as T) : null;
+}
 
 export async function listSafetyInspections(
   orgId: string,
@@ -34,10 +58,19 @@ export async function listSafetyInspections(
 ): Promise<Paginated<SafetyInspectionListItem>> {
   const { limit, offset } = resolvePageParams(params);
   const filters: SQL[] = [eq(inspections.orgId, orgId), eq(inspections.type, "safety")];
-  if (params.status) filters.push(eq(inspections.status, params.status as "pending"));
-  if (params.category) {
-    filters.push(eq(inspections.category, params.category as "safety"));
-  }
+  const status = toEnumValue<InspectionStatusValue>(
+    inspectionStatus.enumValues,
+    params.status,
+  );
+  if (status) filters.push(eq(inspections.status, status));
+  const category = toEnumValue<InspectionCategoryValue>(
+    inspectionCategory.enumValues,
+    params.category,
+  );
+  if (category) filters.push(eq(inspections.category, category));
+  if (params.companyId) filters.push(eq(inspections.companyId, params.companyId));
+  const search = params.search?.trim();
+  if (search) filters.push(ilike(inspections.area, `%${search}%`));
   const where = and(...filters);
   return withOrg(orgId, async (tx) => {
     const rows = await tx

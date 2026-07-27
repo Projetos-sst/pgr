@@ -119,4 +119,40 @@ const COMPANY_B = "22222222-2222-2222-2222-222222222222"; // companyB org_b
     expect(await deleteSafetyInspection("org_b", created!.id)).toBe(false);
     expect(await deleteSafetyInspection("org_a", created!.id)).toBe(true);
   });
+
+  it("filtros da listagem: busca por área, empresa e enum inválido", async () => {
+    const created = await createSafetyInspection("org_a", {
+      category: "environment",
+      inspectedAt: "2026-07-18",
+      planned: true,
+      area: "Subestação Elétrica Norte",
+      companyId: COMPANY_A,
+    });
+
+    const byArea = await listSafetyInspections("org_a", { search: "subestação" });
+    expect(byArea.rows.map((row) => row.id)).toContain(created!.id);
+    expect(byArea.total).toBe(byArea.rows.length);
+    expect((await listSafetyInspections("org_a", { search: "zzz" })).total).toBe(0);
+    expect((await listSafetyInspections("org_b", { search: "subestação" })).total).toBe(
+      0,
+    );
+
+    const byCompany = await listSafetyInspections("org_a", { companyId: COMPANY_A });
+    expect(byCompany.rows.map((row) => row.id)).toContain(created!.id);
+    // Empresa de outro tenant não devolve nada (RLS + filtro por org).
+    expect((await listSafetyInspections("org_a", { companyId: COMPANY_B })).total).toBe(
+      0,
+    );
+
+    // Valores fora do enum são ignorados em vez de abortar a consulta (22P02).
+    const all = await listSafetyInspections("org_a");
+    expect((await listSafetyInspections("org_a", { status: "nao-existe" })).total).toBe(
+      all.total,
+    );
+    expect((await listSafetyInspections("org_a", { category: "nao-existe" })).total).toBe(
+      all.total,
+    );
+
+    await deleteSafetyInspection("org_a", created!.id);
+  });
 });
