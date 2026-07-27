@@ -137,6 +137,8 @@ export async function listAccidents(
         severity: accidents.severity,
         status: accidents.status,
         companyName: companies.razaoSocial,
+        location: accidents.location,
+        catNumber: accidents.catNumber,
       })
       .from(accidents)
       .leftJoin(companies, eq(companies.id, accidents.companyId))

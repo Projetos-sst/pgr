@@ -110,9 +110,9 @@ export function GesForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
       <FormError message={formError} />
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
         <SelectField
           label="Empresa"
           name="companyId"
@@ -133,7 +133,7 @@ export function GesForm({
         />
       </div>
       {noWorkUnits ? (
-        <p className="rounded-card border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="rounded-card border border-amber-300/60 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-800 dark:text-amber-300">
           Esta empresa não possui unidades de obra. Cadastre uma unidade antes de criar um
           GES.
         </p>
@@ -148,18 +148,18 @@ export function GesForm({
       />
 
       {exposedWorkers !== undefined ? (
-        <div className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-text-subtle text-xs font-semibold">
             Nº de trabalhadores expostos (derivado)
           </span>
-          <output className="glass-panel text-text rounded-card px-3 py-2 text-sm">
+          <output className="glass-panel text-text rounded-card px-4 py-2.5 text-sm font-bold">
             {exposedWorkers}
           </output>
         </div>
       ) : null}
 
-      <fieldset className="glass-card grid gap-4 p-4">
-        <legend className="text-text-muted px-1 text-sm font-medium">
+      <fieldset className="glass-panel flex flex-col gap-4 rounded-[16px] p-5 sm:p-6">
+        <legend className="text-text px-2 text-sm font-bold">
           Caracterização do ambiente
         </legend>
         <FieldHint>{GES_FIELD_HINTS.processDescription}</FieldHint>

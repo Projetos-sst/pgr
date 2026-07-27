@@ -36,6 +36,8 @@
   --color-danger: #d33a3f;
   --color-accent-green: #0e9f6e;
   --color-accent-amber: #f5a524;
+  /* O âmbar puro não atinge contraste AA como texto sobre fundo claro. */
+  --color-accent-amber-strong: #c9820a;
 
   /* raio */
   --radius-field: 11px;

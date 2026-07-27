@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 
 import {
   resolveExposedTotal,
@@ -11,13 +11,16 @@ import {
   type GesListItem,
   type GesValues,
 } from "@/shared/domains/pgr/ges";
+import type { RiskAgentType } from "@/shared/domains/pgr/risks";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { withOrg, type TenantTransaction } from "../with-org";
 import { ges, type Ges } from "../schema/ges";
+import { companies } from "../schema/companies";
 import { workUnits } from "../schema/work-units";
 import { gesJobRoles } from "../schema/ges-job-roles";
+import { risks } from "../schema/risks";
 import { employees } from "../schema/employees";
 import { auditedTenantWrite } from "./audited-write";
 
@@ -86,18 +89,44 @@ export async function listGes(
         id: ges.id,
         name: ges.name,
         processDescription: ges.processDescription,
+        companyName: sql<
+          string | null
+        >`coalesce(${companies.nomeFantasia}, ${companies.razaoSocial})`,
         exposed: sql<number>`coalesce(sum(${gesJobRoles.workerCount}), 0)::int`,
       })
       .from(ges)
+      .leftJoin(
+        companies,
+        and(eq(companies.id, ges.companyId), eq(companies.orgId, orgId)),
+      )
       .leftJoin(
         gesJobRoles,
         and(eq(gesJobRoles.gesId, ges.id), eq(gesJobRoles.orgId, orgId)),
       )
       .where(where)
-      .groupBy(ges.id)
+      .groupBy(ges.id, companies.id)
       .orderBy(desc(ges.createdAt))
       .limit(limit)
       .offset(offset);
+
+    const gesIds = rows.map((r) => r.id);
+    const gesRisksMap: Record<string, RiskAgentType[]> = {};
+    if (gesIds.length > 0) {
+      const riskRows = await tx
+        .select({
+          gesId: risks.gesId,
+          agentType: risks.agentType,
+        })
+        .from(risks)
+        .where(and(eq(risks.orgId, orgId), inArray(risks.gesId, gesIds)));
+
+      for (const r of riskRows) {
+        if (!gesRisksMap[r.gesId]) gesRisksMap[r.gesId] = [];
+        if (!gesRisksMap[r.gesId].includes(r.agentType)) {
+          gesRisksMap[r.gesId].push(r.agentType);
+        }
+      }
+    }
 
     const [{ total }] = await tx
       .select({ total: sql<number>`count(*)::int` })
@@ -113,7 +142,14 @@ export async function listGes(
       .where(and(eq(gesJobRoles.orgId, orgId), where));
 
     return {
-      rows: rows.map((row) => toGesListItem(row, { total: row.exposed })),
+      rows: rows.map((row) =>
+        toGesListItem(
+          row,
+          { total: row.exposed },
+          row.companyName,
+          gesRisksMap[row.id] ?? [],
+        ),
+      ),
       total,
       totalWorkers,
     };

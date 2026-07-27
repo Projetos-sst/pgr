@@ -39,12 +39,12 @@ export function PageHeader({
           </Link>
         ) : null}
         {icon ? (
-          <div className="bg-primary shadow-primary flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] text-white">
+          <div className="bg-primary shadow-primary flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[15px] text-white">
             {icon}
           </div>
         ) : null}
         <div>
-          <h1 className="text-text text-xl font-extrabold tracking-[-0.02em] sm:text-[22px]">
+          <h1 className="text-text text-xl font-extrabold tracking-[-0.02em] sm:text-2xl">
             {title}
           </h1>
           {description ? (
@@ -96,6 +96,148 @@ export function EmptyState({
       <h3 className="text-text text-sm font-bold sm:text-base">{title}</h3>
       <p className="text-text-subtle mt-1 max-w-md text-xs sm:text-sm">{message}</p>
     </div>
+  );
+}
+
+/**
+ * Card único que envolve barra de filtros + tabela + paginação (padrão das telas
+ * de listagem dos mockups do redesign). `overflow-hidden` faz as bordas internas
+ * respeitarem o raio do card.
+ */
+export function ListCard({ children }: { children: ReactNode }) {
+  return (
+    <div className="glass-card animate-fade-in overflow-hidden rounded-[20px]">
+      {children}
+    </div>
+  );
+}
+
+const LIST_TOOLBAR_CLASS =
+  "flex flex-col gap-3 border-b border-black/10 p-4 sm:flex-row sm:items-center sm:gap-3.5 sm:px-5 sm:py-[18px]";
+
+/**
+ * Faixa de filtros/ações no topo do `ListCard`. Com `action`, a própria faixa é
+ * o `<form>` GET dos filtros — assim busca e selects compartilham um submit só,
+ * sem `display: contents` (que apaga a semântica de formulário em alguns AT).
+ */
+export function ListToolbar({
+  action,
+  children,
+}: {
+  action?: string;
+  children: ReactNode;
+}) {
+  if (!action) return <div className={LIST_TOOLBAR_CLASS}>{children}</div>;
+  return (
+    <form action={action} method="get" className={LIST_TOOLBAR_CLASS}>
+      {children}
+    </form>
+  );
+}
+
+const TOOLBAR_CONTROL_CLASS =
+  "glass-input rounded-card flex h-11 items-center gap-2 px-4 text-[13px]";
+
+/** Campo de busca da toolbar, com ícone de lupa embutido (submete no Enter). */
+export function ToolbarSearch({
+  name = "search",
+  placeholder,
+  defaultValue,
+  label,
+}: {
+  name?: string;
+  placeholder: string;
+  defaultValue?: string;
+  label: string;
+}) {
+  return (
+    <div className={`${TOOLBAR_CONTROL_CLASS} flex-1`}>
+      <svg
+        width="17"
+        height="17"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        className="text-text-subtle shrink-0"
+        aria-hidden
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-4-4" />
+      </svg>
+      <input
+        type="search"
+        name={name}
+        aria-label={label}
+        defaultValue={defaultValue ?? ""}
+        placeholder={placeholder}
+        className="text-text placeholder:text-text-subtle h-full w-full min-w-0 bg-transparent outline-none"
+      />
+    </div>
+  );
+}
+
+/** Classe compartilhada com o `ToolbarSelect` (client component). */
+export const toolbarControlClass = TOOLBAR_CONTROL_CLASS;
+
+/** Botão primário com a mesma altura dos demais controles da toolbar. */
+export function ToolbarPrimaryLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="btn-primary hover-lift rounded-card shadow-primary flex h-11 shrink-0 items-center justify-center gap-2 px-[18px] text-[13px] font-bold transition-all"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        aria-hidden
+      >
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      {children}
+    </Link>
+  );
+}
+
+export type StatusTone = "primary" | "amber" | "green" | "danger" | "neutral";
+
+const STATUS_TONE_CLASS: Record<StatusTone, { pill: string; dot: string }> = {
+  primary: { pill: "bg-primary/12 text-primary", dot: "bg-primary" },
+  amber: {
+    pill: "bg-accent-amber/16 text-accent-amber-strong",
+    dot: "bg-accent-amber-strong",
+  },
+  green: { pill: "bg-accent-green/14 text-accent-green", dot: "bg-accent-green" },
+  danger: { pill: "bg-danger/12 text-danger", dot: "bg-danger" },
+  neutral: { pill: "bg-text-subtle/14 text-text-muted", dot: "bg-text-subtle" },
+};
+
+/** Etiqueta de status com ponto colorido (padrão das tabelas do redesign). */
+export function StatusPill({
+  tone,
+  children,
+}: {
+  tone: StatusTone;
+  children: ReactNode;
+}) {
+  const { pill, dot } = STATUS_TONE_CLASS[tone];
+  return (
+    <span
+      className={`rounded-pill inline-flex w-fit items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold ${pill}`}
+    >
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} aria-hidden />
+      {children}
+    </span>
   );
 }
 
@@ -248,10 +390,28 @@ export function Pagination({
   );
 }
 
-export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
+export function Table({
+  headers,
+  embedded = false,
+  children,
+}: {
+  headers: string[];
+  /**
+   * Quando a tabela já vive dentro de um `ListCard`, o card externo é quem
+   * desenha o vidro/raio/sombra — repetir aqui criaria uma borda dupla.
+   */
+  embedded?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <div className="glass-card animate-fade-in overflow-x-auto rounded-[20px]">
-      <table className="w-full border-collapse text-xs sm:text-sm">
+    <div
+      className={
+        embedded
+          ? "overflow-x-auto"
+          : "glass-card animate-fade-in overflow-x-auto rounded-[20px]"
+      }
+    >
+      <table className="w-full border-collapse text-xs sm:text-[13px]">
         <thead className="text-text-subtle border-b border-black/5 bg-transparent font-mono text-[10px] tracking-widest uppercase">
           <tr>
             {headers.map((h, idx) => (
@@ -266,7 +426,9 @@ export function Table({ headers, children }: { headers: string[]; children: Reac
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-black/5 [&_tr]:transition-colors [&_tr]:duration-200 [&_tr:hover]:bg-white/40">
+        {/* `:not(:hover)` na faixa zebrada para o hover vencer sem depender da
+            ordem em que o Tailwind emite as duas regras (mesma especificidade). */}
+        <tbody className="divide-y divide-black/5 [&_tr]:transition-colors [&_tr]:duration-200 [&_tr:hover]:bg-white/40 [&_tr:nth-child(even):not(:hover)]:bg-white/20">
           {children}
         </tbody>
       </table>

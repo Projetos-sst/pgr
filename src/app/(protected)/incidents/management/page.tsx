@@ -3,34 +3,67 @@ import Link from "next/link";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { accidentTypeLabel } from "@/shared/domains/safety/accident";
 import {
+  INCIDENT_STATUS_LABELS,
   incidentStatusLabel,
+  incidentStatusSchema,
   type IncidentStatus,
 } from "@/shared/domains/safety/incident-lifecycle";
 import { resolvePageParams } from "@/shared/pagination";
 import { listIncidentsManagementAction } from "@/shared/server/actions/safety/accidents";
 
-import { EmptyState, PageHeader, Pagination, Table } from "../../_ui/list";
+import {
+  EmptyState,
+  ListCard,
+  ListToolbar,
+  PageHeader,
+  Pagination,
+  StatusPill,
+  Table,
+  ToolbarPrimaryLink,
+  ToolbarSearch,
+  type StatusTone,
+} from "../../_ui/list";
+import { RowActions, ViewRowAction } from "../../_ui/row-actions";
+import { ToolbarSelect } from "../../_ui/toolbar-select";
 import { IncidentStatusActions } from "../_components/incident-status-actions";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ page?: string; stage?: string; hideDone?: string }>;
+const BASE = "/incidents/management";
 
-// Filtros da tela central de gestão (FR-030).
-const STAGES: { value: string; label: string; status?: IncidentStatus }[] = [
-  { value: "all", label: "Todos" },
-  {
-    value: "awaiting_planning",
-    label: "Aguardando planejamento",
-    status: "awaiting_planning",
-  },
-  {
-    value: "awaiting_completion",
-    label: "Aguardando conclusão",
-    status: "awaiting_completion",
-  },
-  { value: "completed", label: "Concluídos", status: "completed" },
+type SearchParams = Promise<{ page?: string; search?: string; status?: string }>;
+
+const STATUS_TONES: Record<IncidentStatus, StatusTone> = {
+  registered: "neutral",
+  awaiting_planning: "primary",
+  awaiting_completion: "amber",
+  completed: "green",
+  cancelled: "danger",
+};
+
+const STATUS_OPTIONS = [
+  { value: "", label: "Todos os status" },
+  ...Object.entries(INCIDENT_STATUS_LABELS).map(([value, label]) => ({ value, label })),
 ];
+
+function ShieldAlertIcon() {
+  return (
+    <svg
+      width="25"
+      height="25"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z" />
+      <path d="M12 9v4M12 16h.01" />
+    </svg>
+  );
+}
 
 export default async function IncidentsManagementPage({
   searchParams,
@@ -42,100 +75,122 @@ export default async function IncidentsManagementPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const stage = STAGES.find((s) => s.value === sp.stage) ?? STAGES[0];
-  const hideDone = sp.hideDone === "1";
+  const parsedStatus = incidentStatusSchema.safeParse(sp.status);
+  const status = parsedStatus.success ? parsedStatus.data : undefined;
 
-  const result = await listIncidentsManagementAction({ page, status: stage.status });
-  let rows = result.ok ? result.data.rows : [];
-  const total = result.ok ? result.data.total : 0;
-  if (hideDone)
-    rows = rows.filter((r) => r.status !== "completed" && r.status !== "cancelled");
+  const result = await listIncidentsManagementAction({ page, q: sp.search, status });
+  const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-[22px] px-6 pt-8 pb-10 sm:px-[30px]">
       <PageHeader
+        icon={<ShieldAlertIcon />}
         title="Gestão de incidentes"
-        description="Acompanhe o ciclo de vida: planejamento, conclusão e planos de ação por incidente."
+        description="Tratativa, investigação e ações corretivas de incidentes."
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <nav className="flex flex-wrap gap-2 text-sm">
-          {STAGES.map((s) => (
-            <Link
-              key={s.value}
-              href={`/incidents/management?stage=${s.value}${hideDone ? "&hideDone=1" : ""}`}
-              className={`glass-panel rounded-card px-3 py-1 font-semibold transition-colors ${
-                stage.value === s.value
-                  ? "text-primary-strong"
-                  : "text-text-muted hover:text-text"
-              }`}
-            >
-              {s.label}
-            </Link>
-          ))}
-        </nav>
-        <Link
-          href={`/incidents/management?stage=${stage.value}${hideDone ? "" : "&hideDone=1"}`}
-          className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
+      {result.ok ? null : (
+        <p
+          role="alert"
+          className="glass-card text-danger rounded-[20px] px-5 py-4 text-sm font-semibold"
         >
-          {hideDone ? "Mostrar concluídos" : "Ocultar concluídos"}
-        </Link>
-      </div>
-
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhum incidente neste estágio." />
-      ) : (
-        <Table
-          headers={["Ocorrência", "Empresa", "Tipo", "Estágio", "Planos ativos", "Ações"]}
-        >
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2 tabular-nums">
-                <Link
-                  href={`/incidents/${row.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {new Date(row.occurredAt).toLocaleDateString("pt-BR")}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.companyName ?? "—"}</td>
-              <td className="px-4 py-2">{accidentTypeLabel(row.type)}</td>
-              <td className="px-4 py-2">{incidentStatusLabel(row.status)}</td>
-              <td className="px-4 py-2 tabular-nums">
-                {row.activePlanCount > 0 ? (
-                  <span className="rounded-pill bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                    {row.activePlanCount} pendente(s)
-                  </span>
-                ) : (
-                  <span className="text-text-subtle">0</span>
-                )}
-              </td>
-              <td className="px-4 py-2">
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Link
-                    href="/action-plans/new"
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Iniciar plano
-                  </Link>
-                  <IncidentStatusActions
-                    id={row.id}
-                    current={row.status as IncidentStatus}
-                  />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </Table>
+          Não foi possível carregar os incidentes: {result.error.message}
+        </p>
       )}
 
-      <Pagination
-        basePath="/incidents/management"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={{ stage: stage.value, hideDone: hideDone ? "1" : undefined }}
-      />
+      <ListCard>
+        <ListToolbar action={BASE}>
+          <ToolbarSearch
+            label="Buscar incidentes"
+            placeholder="Buscar por nº CAT, local ou área…"
+            defaultValue={sp.search}
+          />
+          <ToolbarSelect
+            name="status"
+            label="Filtrar por status"
+            value={status}
+            options={STATUS_OPTIONS}
+          />
+          <ToolbarPrimaryLink href="/incidents/new">Novo registro</ToolbarPrimaryLink>
+        </ListToolbar>
+
+        {rows.length === 0 ? (
+          <div className="p-4 sm:p-6">
+            <EmptyState
+              title="Nenhum incidente neste estágio"
+              message="Ajuste a busca ou o filtro de status, ou registre um novo incidente para acompanhar a tratativa."
+            />
+          </div>
+        ) : (
+          <>
+            <Table
+              embedded
+              headers={[
+                "Nº CAT",
+                "Data",
+                "Tipo",
+                "Local",
+                "Planos ativos",
+                "Status",
+                "Opções",
+              ]}
+            >
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td
+                    className={`px-4 py-3.5 font-mono font-semibold sm:px-6 ${
+                      row.catNumber ? "text-primary" : "text-text-subtle"
+                    }`}
+                  >
+                    {row.catNumber ?? "—"}
+                  </td>
+                  <td className="text-text-muted px-4 py-3.5 font-semibold tabular-nums sm:px-6">
+                    <Link href={`/incidents/${row.id}`} className="hover:underline">
+                      {new Date(row.occurredAt).toLocaleDateString("pt-BR")}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3.5 font-semibold sm:px-6">
+                    {accidentTypeLabel(row.type)}
+                  </td>
+                  <td className="px-4 py-3.5 sm:px-6">{row.location ?? "—"}</td>
+                  <td className="px-4 py-3.5 tabular-nums sm:px-6">
+                    {row.activePlanCount > 0 ? (
+                      <StatusPill tone="amber">
+                        {row.activePlanCount} pendente(s)
+                      </StatusPill>
+                    ) : (
+                      <span className="text-text-subtle">0</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3.5 sm:px-6">
+                    <StatusPill tone={STATUS_TONES[row.status as IncidentStatus]}>
+                      {incidentStatusLabel(row.status)}
+                    </StatusPill>
+                  </td>
+                  <td className="px-4 py-3.5 sm:px-6">
+                    <RowActions>
+                      <ViewRowAction href={`/incidents/${row.id}`} label="Abrir" />
+                      <IncidentStatusActions
+                        id={row.id}
+                        current={row.status as IncidentStatus}
+                        variant="icons"
+                      />
+                    </RowActions>
+                  </td>
+                </tr>
+              ))}
+            </Table>
+
+            <Pagination
+              basePath={BASE}
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={{ search: sp.search, status }}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }

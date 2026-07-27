@@ -210,7 +210,7 @@ function Overlay({
           <button
             type="button"
             onClick={onConfirm}
-            disabled={pending}
+            disabled={pending || loadingDependents}
             className="cursor-pointer rounded-[12px] bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-red-500/20 transition-all hover:bg-red-700 disabled:opacity-50 sm:text-sm"
           >
             {pending ? "Excluindo…" : "Confirmar exclusão"}

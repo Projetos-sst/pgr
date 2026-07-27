@@ -3,6 +3,7 @@ import { z } from "zod";
 import { optionalString, requiredString, requiredUuid } from "./form-fields";
 import { workerCountSchema } from "./validation";
 import { resolveExposedTotal } from "./exposed-workers";
+import type { RiskAgentType } from "./risks";
 
 export type { Ges } from "@/shared/db/schema/ges";
 
@@ -49,7 +50,9 @@ export type GesListItem = {
   id: string;
   name: string;
   processDescription: string | null;
+  companyName: string | null;
   exposedWorkers: number;
+  risks: RiskAgentType[];
 };
 
 export type GesJobRoleItem = {
@@ -65,11 +68,15 @@ export type JobRoleOption = { jobRoleId: string; title: string };
 export function toGesListItem(
   row: { id: string; name: string; processDescription: string | null },
   exposed: { total: number | null } | undefined,
+  companyName?: string | null,
+  risks?: RiskAgentType[],
 ): GesListItem {
   return {
     id: row.id,
     name: row.name,
     processDescription: row.processDescription,
+    companyName: companyName ?? null,
     exposedWorkers: resolveExposedTotal(exposed),
+    risks: risks ?? [],
   };
 }

@@ -83,24 +83,29 @@ export function ManageFunctions({ gesId }: { gesId: string }) {
   }
 
   return (
-    <section className="glass-card flex flex-col gap-4 p-4">
-      <header className="flex items-center justify-between">
-        <h2 className="text-text text-lg font-semibold">Funções vinculadas</h2>
-        <span className="text-text-muted text-sm">
-          Expostos (soma): <strong>{exposedWorkers}</strong>
+    <section className="glass-card flex flex-col gap-5 rounded-[20px] p-6 sm:p-8">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-black/5 pb-4">
+        <div>
+          <h2 className="text-text text-lg font-bold">Funções vinculadas</h2>
+          <p className="text-text-subtle text-xs">
+            Associação de funções do catálogo ao perfil de exposição deste GES.
+          </p>
+        </div>
+        <span className="glass-panel text-text rounded-pill px-4 py-1.5 text-xs font-semibold">
+          Expostos (soma): <strong className="text-primary">{exposedWorkers}</strong>
         </span>
       </header>
 
       <FieldHint>{GES_FIELD_HINTS.functions}</FieldHint>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm font-semibold text-red-600">{error}</p> : null}
 
       {linked.length === 0 ? (
-        <p className="text-text-subtle text-sm">
-          Nenhuma função vinculada (expostos = 0).
-        </p>
+        <div className="glass-panel text-text-subtle rounded-card flex items-center justify-center p-6 text-center text-sm">
+          Nenhuma função vinculada (trabalhadores expostos = 0).
+        </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-2.5">
           {linked.map((item) => (
             <LinkedRow
               key={item.id}
@@ -113,13 +118,13 @@ export function ManageFunctions({ gesId }: { gesId: string }) {
         </ul>
       )}
 
-      <div className="flex flex-wrap items-end gap-3 border-t border-white/50 pt-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">Adicionar função</span>
+      <div className="flex flex-wrap items-end gap-3.5 border-t border-black/5 pt-5">
+        <label className="flex min-w-[220px] flex-1 flex-col gap-1.5">
+          <span className="text-text-subtle text-xs font-semibold">Adicionar função</span>
           <select
             value={newJobRoleId}
             onChange={(e) => setNewJobRoleId(e.target.value)}
-            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
+            className="glass-input text-text rounded-card w-full px-3.5 py-2 text-sm outline-none"
           >
             <option value="">— selecione —</option>
             {available.map((opt) => (
@@ -129,21 +134,23 @@ export function ManageFunctions({ gesId }: { gesId: string }) {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">Nº de trabalhadores</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-text-subtle text-xs font-semibold">
+            Nº de trabalhadores
+          </span>
           <input
             type="number"
             min={1}
             value={newWorkerCount}
             onChange={(e) => setNewWorkerCount(e.target.value)}
-            className="glass-input text-text rounded-card w-32 px-3 py-2 text-sm outline-none"
+            className="glass-input text-text rounded-card w-32 px-3.5 py-2 text-sm outline-none"
           />
         </label>
         <button
           type="button"
           onClick={addLink}
           disabled={pending || !newJobRoleId}
-          className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold disabled:opacity-50"
+          className="btn-primary hover-lift rounded-card shadow-primary px-5 py-2 text-xs font-bold text-white transition-all disabled:opacity-50 sm:text-sm"
         >
           Adicionar
         </button>

@@ -200,6 +200,8 @@ export type AccidentListItem = {
   status: string;
   statusLabel: string;
   companyName: string | null;
+  location: string | null;
+  catNumber: string | null;
 };
 
 export function toAccidentListItem(row: {
@@ -210,6 +212,8 @@ export function toAccidentListItem(row: {
   severity: string;
   status: string;
   companyName: string | null;
+  location: string | null;
+  catNumber: string | null;
 }): AccidentListItem {
   return {
     id: row.id,
@@ -223,6 +227,8 @@ export function toAccidentListItem(row: {
     status: row.status,
     statusLabel: incidentStatusLabel(row.status),
     companyName: row.companyName,
+    location: row.location,
+    catNumber: row.catNumber,
   };
 }
 
