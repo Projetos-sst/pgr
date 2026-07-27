@@ -136,6 +136,15 @@ const VEH_B = "bbbbbbbb-1111-0000-0000-0000000000b1";
     expect(await deleteVehicularInspection("org_a", created!.id)).toBe(true);
   });
 
+  it("status fora do enum é ignorado em vez de quebrar a consulta", async () => {
+    const all = await listVehicularInspections("org_a");
+    const invalid = await listVehicularInspections("org_a", { status: "nao-existe" });
+    expect(invalid.total).toBe(all.total);
+
+    const completed = await listVehicularInspections("org_a", { status: "completed" });
+    expect(completed.rows.every((row) => row.status === "completed")).toBe(true);
+  });
+
   it("busca por placa e por responsável, sem vazar entre tenants", async () => {
     const created = await createVehicularInspection("org_a", {
       vehicleId: VEH_A,

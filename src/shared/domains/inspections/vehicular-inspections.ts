@@ -54,6 +54,17 @@ export function inspectionStatusLabel(value: string): string {
   return INSPECTION_STATUS_LABELS[value as InspectionStatus] ?? value;
 }
 
+/**
+ * Identificador curto e estável exibido na listagem. `inspections` não tem
+ * número sequencial, então o rótulo é derivado do uuid — 6 dígitos hex (~16,7
+ * milhões de combinações) mantêm o formato compacto do design sem que dois
+ * registros apareçam com o mesmo "Nº" numa base realista. Só para leitura
+ * humana: links e chamadas continuam usando o uuid completo.
+ */
+export function vehicularInspectionNumber(id: string): string {
+  return `IV-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}
+
 export type VehicularInspectionListItem = {
   id: string;
   inspectedAt: string;

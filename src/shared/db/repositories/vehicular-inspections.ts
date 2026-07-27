@@ -15,6 +15,7 @@ import {
   inspectionItemResponses,
   inspectionPlanItems,
   inspectionPlans,
+  inspectionStatus,
   inspections,
   vehicles,
 } from "../schema";
@@ -30,6 +31,19 @@ export type ListVehicularInspectionsParams = PageParams & {
   search?: string;
 };
 
+type InspectionStatusValue = (typeof inspectionStatus.enumValues)[number];
+
+/*
+ * `status` chega de query string (página e REST). Comparar direto com a coluna
+ * faria o Postgres abortar a consulta inteira em um valor fora do enum
+ * (22P02) — o que a tela leria como "nenhum registro". Valor desconhecido é
+ * tratado como ausência de filtro.
+ */
+function toInspectionStatus(value: string | undefined): InspectionStatusValue | null {
+  const allowed = inspectionStatus.enumValues as readonly string[];
+  return value && allowed.includes(value) ? (value as InspectionStatusValue) : null;
+}
+
 export async function listVehicularInspections(
   orgId: string,
   params: ListVehicularInspectionsParams = {},
@@ -39,9 +53,8 @@ export async function listVehicularInspections(
     eq(inspections.orgId, orgId),
     eq(inspections.type, "vehicular"),
   ];
-  if (params.status) {
-    filters.push(eq(inspections.status, params.status as "pending"));
-  }
+  const status = toInspectionStatus(params.status);
+  if (status) filters.push(eq(inspections.status, status));
   const search = params.search?.trim();
   if (search) {
     // EXISTS na placa (em vez de filtrar pelo join) para que a contagem total

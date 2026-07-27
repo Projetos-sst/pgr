@@ -5,6 +5,7 @@ import {
   itemResponseSchema,
   toVehicularInspectionListItem,
   vehicularInspectionHeaderSchema,
+  vehicularInspectionNumber,
 } from "@/shared/domains/inspections/vehicular-inspections";
 
 const UUID = "11111111-1111-4111-8111-111111111111";
@@ -70,6 +71,17 @@ describe("labels e projeção", () => {
     );
     expect(inspectionStatusLabel("completed")).toBe("Concluída");
     expect(inspectionStatusLabel("xyz")).toBe("xyz");
+  });
+
+  it("número curto: prefixo IV-, 6 hex em caixa alta e estável para o mesmo id", () => {
+    expect(vehicularInspectionNumber("3f9k2d7q-1111-4111-8111-111111111111")).toBe(
+      "IV-3F9K2D",
+    );
+    expect(vehicularInspectionNumber(UUID)).toBe(vehicularInspectionNumber(UUID));
+    // ids que só divergem depois do 4º dígito deixam de colidir.
+    expect(vehicularInspectionNumber("aaaabbbb-1111-4111-8111-111111111111")).not.toBe(
+      vehicularInspectionNumber("aaaacccc-1111-4111-8111-111111111111"),
+    );
   });
 
   it("projeta linha da listagem", () => {

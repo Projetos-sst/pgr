@@ -1,7 +1,10 @@
 import Link from "next/link";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
-import { INSPECTION_STATUS_LABELS } from "@/shared/domains/inspections/vehicular-inspections";
+import {
+  INSPECTION_STATUS_LABELS,
+  vehicularInspectionNumber,
+} from "@/shared/domains/inspections/vehicular-inspections";
 import { resolvePageParams } from "@/shared/pagination";
 import { listVehicularInspectionsAction } from "@/shared/server/actions/inspections/vehicular-inspections";
 
@@ -33,12 +36,6 @@ const STATUS_TONES: Record<string, StatusTone> = {
 
 function formatIsoDate(isoDate: string): string {
   return new Date(`${isoDate}T00:00:00`).toLocaleDateString("pt-BR");
-}
-
-// Identificador curto e estável derivado do uuid — mesma convenção da tela de
-// inspeções de segurança (`IS-…`). Não há número sequencial em `inspections`.
-function shortNumber(id: string): string {
-  return `IV-${id.replace(/-/g, "").slice(0, 4).toUpperCase()}`;
 }
 
 type SearchParams = Promise<{ page?: string; status?: string; search?: string }>;
@@ -164,7 +161,7 @@ export default async function InspecoesVeicularesPage({
                       href={`${BASE}/${row.id}`}
                       className="text-primary font-mono font-semibold hover:underline"
                     >
-                      {shortNumber(row.id)}
+                      {vehicularInspectionNumber(row.id)}
                     </Link>
                   </td>
                   <td className="text-text px-4 py-[11px] font-semibold sm:px-6">
