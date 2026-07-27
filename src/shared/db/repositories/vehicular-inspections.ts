@@ -24,7 +24,11 @@ import { auditedTenantWrite } from "./audited-write";
 const WRITE_EVENT = "inspections.vehicular.write_rejected";
 const countExpr = sql<number>`count(*)::int`;
 
-export type ListVehicularInspectionsParams = PageParams & { status?: string };
+export type ListVehicularInspectionsParams = PageParams & {
+  status?: string;
+  /** Busca livre por placa do veículo ou responsável (case-insensitive). */
+  search?: string;
+};
 
 export async function listVehicularInspections(
   orgId: string,
@@ -37,6 +41,18 @@ export async function listVehicularInspections(
   ];
   if (params.status) {
     filters.push(eq(inspections.status, params.status as "pending"));
+  }
+  const search = params.search?.trim();
+  if (search) {
+    // EXISTS na placa (em vez de filtrar pelo join) para que a contagem total
+    // use exatamente o mesmo predicado, sem replicar o LEFT JOIN.
+    const pattern = `%${search}%`;
+    filters.push(
+      sql`(${inspections.responsible} ilike ${pattern} or exists (
+        select 1 from ${vehicles} v
+        where v.id = ${inspections.vehicleId} and v.plate ilike ${pattern}
+      ))`,
+    );
   }
   const where = and(...filters);
   return withOrg(orgId, async (tx) => {

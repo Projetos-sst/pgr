@@ -39,12 +39,12 @@ export function PageHeader({
           </Link>
         ) : null}
         {icon ? (
-          <div className="bg-primary shadow-primary flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] text-white">
+          <div className="bg-primary shadow-primary flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[15px] text-white">
             {icon}
           </div>
         ) : null}
         <div>
-          <h1 className="text-text text-xl font-extrabold tracking-[-0.02em] sm:text-[22px]">
+          <h1 className="text-text text-xl font-extrabold tracking-[-0.02em] sm:text-2xl">
             {title}
           </h1>
           {description ? (
@@ -73,12 +73,19 @@ export function PrimaryLink({ href, children }: { href: string; children: ReactN
 export function EmptyState({
   title = "Nenhum registro encontrado",
   message,
+  isFlat,
 }: {
   title?: string;
   message: string;
+  /** Sem a moldura glass — para uso dentro de um `ListCard`. */
+  isFlat?: boolean;
 }) {
   return (
-    <div className="glass-card animate-fade-slide-up flex flex-col items-center justify-center rounded-[20px] p-8 text-center sm:p-12">
+    <div
+      className={`animate-fade-slide-up flex flex-col items-center justify-center p-8 text-center sm:p-12 ${
+        isFlat ? "" : "glass-card rounded-[20px]"
+      }`}
+    >
       <div className="bg-primary/10 text-primary mb-3.5 flex h-12 w-12 items-center justify-center rounded-2xl shadow-xs">
         <svg
           width="24"
@@ -180,7 +187,7 @@ export function Pagination({
   }
 
   return (
-    <nav className="text-text-subtle flex flex-wrap items-center justify-between gap-4 border-t border-black/5 px-6 py-4 text-xs sm:text-sm">
+    <nav className="text-text-subtle flex flex-wrap items-center justify-between gap-4 border-t border-black/5 px-6 py-4 text-xs">
       <span>
         Mostrando <strong className="text-text font-semibold">{startItem}</strong> a{" "}
         <strong className="text-text font-semibold">{endItem}</strong> de{" "}
@@ -192,13 +199,13 @@ export function Pagination({
           {clampedPage > 1 ? (
             <Link
               href={`${basePath}${buildQuery(params, { page: String(clampedPage - 1) })}`}
-              className="rounded-card glass-panel text-text-muted hover:text-text flex h-8 w-8 items-center justify-center transition-colors"
+              className="text-text-muted hover:text-text flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-white/50"
               aria-label="Página anterior"
             >
               ‹
             </Link>
           ) : (
-            <span className="rounded-card text-text-subtle/50 flex h-8 w-8 cursor-not-allowed items-center justify-center">
+            <span className="text-text-subtle/50 flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-[9px]">
               ‹
             </span>
           )}
@@ -207,7 +214,7 @@ export function Pagination({
             p === clampedPage ? (
               <span
                 key={p}
-                className="rounded-card bg-primary shadow-primary flex h-8 w-8 items-center justify-center text-xs font-bold text-white"
+                className="bg-primary shadow-primary flex h-8 w-8 items-center justify-center rounded-[9px] text-[13px] font-bold text-white"
               >
                 {p}
               </span>
@@ -215,7 +222,7 @@ export function Pagination({
               <Link
                 key={p}
                 href={`${basePath}${buildQuery(params, { page: String(p) })}`}
-                className="rounded-card glass-panel text-text-muted hover:text-text flex h-8 w-8 items-center justify-center text-xs font-medium transition-colors"
+                className="text-text-muted hover:text-text flex h-8 w-8 items-center justify-center rounded-[9px] text-[13px] font-medium transition-colors hover:bg-white/50"
               >
                 {p}
               </Link>
@@ -225,13 +232,13 @@ export function Pagination({
           {clampedPage < totalPages ? (
             <Link
               href={`${basePath}${buildQuery(params, { page: String(clampedPage + 1) })}`}
-              className="rounded-card glass-panel text-text-muted hover:text-text flex h-8 w-8 items-center justify-center transition-colors"
+              className="text-text-muted hover:text-text flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-white/50"
               aria-label="Próxima página"
             >
               ›
             </Link>
           ) : (
-            <span className="rounded-card text-text-subtle/50 flex h-8 w-8 cursor-not-allowed items-center justify-center">
+            <span className="text-text-subtle/50 flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-[9px]">
               ›
             </span>
           )}
@@ -248,28 +255,72 @@ export function Pagination({
   );
 }
 
-export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
+/**
+ * Cartão glass que agrupa barra de filtros + tabela + paginação numa única
+ * superfície (forma padrão de listagem do redesign). Opt-in: as telas que ainda
+ * usam blocos soltos seguem funcionando sem mudança.
+ */
+export function ListCard({ children }: { children: ReactNode }) {
+  return (
+    <div className="glass-card animate-fade-in overflow-hidden rounded-[20px]">
+      {children}
+    </div>
+  );
+}
+
+/** Faixa superior do `ListCard`: busca, filtros e ação primária. */
+export function ListToolbar({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3.5 border-b border-black/5 px-5 py-[18px]">
+      {children}
+    </div>
+  );
+}
+
+export function Table({
+  headers,
+  children,
+  isBare,
+  isZebra,
+}: {
+  headers: string[];
+  children: ReactNode;
+  /** Sem a moldura glass — para uso dentro de um `ListCard`. */
+  isBare?: boolean;
+  /** Linhas alternadas em branco translúcido (padrão do mockup). */
+  isZebra?: boolean;
+}) {
+  const table = (
+    <table className="w-full border-collapse text-xs sm:text-[13px]">
+      <thead className="text-text-subtle border-b border-black/5 bg-transparent font-mono text-[10px] tracking-widest uppercase">
+        <tr>
+          {headers.map((h, idx) => (
+            <th
+              key={h}
+              className={`px-4 py-3.5 font-medium sm:px-6 ${
+                idx === headers.length - 1 ? "text-right" : "text-left"
+              }`}
+            >
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody
+        className={`divide-y divide-black/5 [&_tr]:transition-colors [&_tr]:duration-200 [&_tr:hover]:bg-white/40 ${
+          isZebra ? "[&_tr:nth-child(even)]:bg-white/20" : ""
+        }`}
+      >
+        {children}
+      </tbody>
+    </table>
+  );
+
+  if (isBare) return <div className="overflow-x-auto">{table}</div>;
+
   return (
     <div className="glass-card animate-fade-in overflow-x-auto rounded-[20px]">
-      <table className="w-full border-collapse text-xs sm:text-sm">
-        <thead className="text-text-subtle border-b border-black/5 bg-transparent font-mono text-[10px] tracking-widest uppercase">
-          <tr>
-            {headers.map((h, idx) => (
-              <th
-                key={h}
-                className={`px-4 py-3.5 font-medium sm:px-6 ${
-                  idx === headers.length - 1 ? "text-right" : "text-left"
-                }`}
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-black/5 [&_tr]:transition-colors [&_tr]:duration-200 [&_tr:hover]:bg-white/40">
-          {children}
-        </tbody>
-      </table>
+      {table}
     </div>
   );
 }
