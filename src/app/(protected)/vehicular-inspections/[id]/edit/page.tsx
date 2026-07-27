@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
@@ -9,6 +8,7 @@ import {
 
 import { PageHeader } from "../../../_ui/list";
 import { HeaderForm } from "../../_components/header-form";
+import { VehicleIcon } from "../../_components/vehicle-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +28,14 @@ export default async function EditarInspecaoVeicularPage({
     : { vehicles: [], plans: [] };
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Editar cabeçalho da inspeção" />
+    <div className="animate-fade-slide-up mx-auto flex w-full max-w-[1320px] flex-col gap-[22px] px-5 py-8 sm:px-[30px]">
+      <PageHeader
+        title="Editar Cabeçalho da Inspeção"
+        description="Veículo, plano e dados da rota."
+        icon={<VehicleIcon />}
+        backHref={`/vehicular-inspections/${id}`}
+        backLabel="Voltar ao checklist"
+      />
       <HeaderForm
         id={id}
         vehicles={vehicles}
@@ -46,12 +52,6 @@ export default async function EditarInspecaoVeicularPage({
           notes: inspection.notes,
         }}
       />
-      <Link
-        href={`/vehicular-inspections/${id}`}
-        className="text-text-subtle text-sm hover:underline"
-      >
-        ← Voltar ao checklist
-      </Link>
     </div>
   );
 }

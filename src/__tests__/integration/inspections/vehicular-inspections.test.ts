@@ -135,4 +135,38 @@ const VEH_B = "bbbbbbbb-1111-0000-0000-0000000000b1";
     expect(await deleteVehicularInspection("org_b", created!.id)).toBe(false);
     expect(await deleteVehicularInspection("org_a", created!.id)).toBe(true);
   });
+
+  it("status fora do enum é ignorado em vez de quebrar a consulta", async () => {
+    const all = await listVehicularInspections("org_a");
+    const invalid = await listVehicularInspections("org_a", { status: "nao-existe" });
+    expect(invalid.total).toBe(all.total);
+
+    const completed = await listVehicularInspections("org_a", { status: "completed" });
+    expect(completed.rows.every((row) => row.status === "completed")).toBe(true);
+  });
+
+  it("busca por placa e por responsável, sem vazar entre tenants", async () => {
+    const created = await createVehicularInspection("org_a", {
+      vehicleId: VEH_A,
+      planId: planAId,
+      inspectedAt: "2026-07-20",
+      responsible: "Marina Toledo",
+    });
+
+    // Placa do veículo associado (case-insensitive, substring).
+    const byPlate = await listVehicularInspections("org_a", { search: "flw2a" });
+    expect(byPlate.rows.some((row) => row.id === created!.id)).toBe(true);
+    expect(byPlate.total).toBe(byPlate.rows.length);
+
+    const byResponsible = await listVehicularInspections("org_a", {
+      search: "marina",
+    });
+    expect(byResponsible.rows.map((row) => row.id)).toContain(created!.id);
+
+    // A mesma busca no outro tenant não encontra nada.
+    expect((await listVehicularInspections("org_b", { search: "marina" })).total).toBe(0);
+    expect((await listVehicularInspections("org_a", { search: "zzz" })).total).toBe(0);
+
+    await deleteVehicularInspection("org_a", created!.id);
+  });
 });

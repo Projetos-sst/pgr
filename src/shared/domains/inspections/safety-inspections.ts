@@ -3,7 +3,43 @@ import { z } from "zod";
 import { optionalString, requiredString } from "@/shared/domains/pgr/form-fields";
 import type { Inspection, InspectionOccurrence } from "@/shared/db/schema";
 
+import { inspectionNumber } from "./inspection-number";
 import { inspectionStatusLabel } from "./vehicular-inspections";
+
+export function safetyInspectionNumber(id: string): string {
+  return inspectionNumber("IS", id);
+}
+
+/**
+ * Resultado exibido na listagem. Diferente do `status` (andamento do trabalho),
+ * o desfecho responde "a área está conforme?" e por isso deriva da contagem de
+ * ocorrências abertas: inspeção ainda em andamento não tem desfecho, e a partir
+ * de {@link CRITICAL_OCCURRENCE_THRESHOLD} ocorrências ela é crítica.
+ */
+export const CRITICAL_OCCURRENCE_THRESHOLD = 4;
+
+export type SafetyInspectionOutcome =
+  | "in_progress"
+  | "compliant"
+  | "pending_items"
+  | "critical";
+
+export const SAFETY_OUTCOME_LABELS: Record<SafetyInspectionOutcome, string> = {
+  in_progress: "Em andamento",
+  compliant: "Conforme",
+  pending_items: "Com pendências",
+  critical: "Crítica",
+};
+
+export function classifySafetyInspection(input: {
+  status: string;
+  occurrenceCount: number;
+}): SafetyInspectionOutcome {
+  if (input.status === "in_progress") return "in_progress";
+  if (input.occurrenceCount === 0) return "compliant";
+  if (input.occurrenceCount >= CRITICAL_OCCURRENCE_THRESHOLD) return "critical";
+  return "pending_items";
+}
 
 export const inspectionCategorySchema = z.enum([
   "safety",

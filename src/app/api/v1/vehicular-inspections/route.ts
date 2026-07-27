@@ -14,6 +14,7 @@ export function GET(req: NextRequest) {
     return repo.listVehicularInspections(tenantId, {
       ...pageParamsFrom(req),
       status: sp.get("status") ?? undefined,
+      search: sp.get("search") ?? undefined,
     });
   });
 }
