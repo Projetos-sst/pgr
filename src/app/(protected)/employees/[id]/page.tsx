@@ -103,7 +103,7 @@ export default async function EmployeeDetailPage({
   const jobRoleTitle = jobRoleResult?.ok ? jobRoleResult.data.title : null;
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="animate-fade-slide-up flex flex-col gap-6 px-6 py-8">
       <PageHeader
         title={employee.fullName}
         description={`Status: ${STATUS_LABEL[employee.status] ?? employee.status}`}
@@ -115,12 +115,12 @@ export default async function EmployeeDetailPage({
             >
               Editar
             </Link>
-            <DeleteEmployee id={employee.id} redirectTo="/employees" />
+            <DeleteEmployee id={employee.id} redirectTo="/employees" hasLabel />
           </div>
         }
       />
 
-      <section className="glass-card grid gap-4 p-4 sm:grid-cols-3">
+      <section className="glass-card animate-fade-in grid gap-4 p-4 sm:grid-cols-3">
         <Field label="CPF" value={employee.cpf} />
         <Field label="Nascimento" value={employee.birthDate} />
         <Field label="Admissão" value={employee.admissionDate} />
@@ -129,13 +129,13 @@ export default async function EmployeeDetailPage({
         <Field label="Tipo sanguíneo" value={employee.bloodType} />
       </section>
 
-      <section className="glass-card grid gap-4 p-4 sm:grid-cols-3">
+      <section className="glass-card animate-fade-in grid gap-4 p-4 sm:grid-cols-3">
         <Field label="Empresa" value={companyName} />
         <Field label="GES" value={gesName} />
         <Field label="Função" value={jobRoleTitle} />
       </section>
 
-      <section className="glass-card grid gap-4 p-4 sm:grid-cols-3">
+      <section className="glass-card animate-fade-in grid gap-4 p-4 sm:grid-cols-3">
         <Field label="Telefone" value={employee.phone} />
         <Field label="E-mail" value={employee.email} />
         <Field
@@ -146,7 +146,7 @@ export default async function EmployeeDetailPage({
         />
       </section>
 
-      <section className="glass-card flex flex-col gap-4 p-4">
+      <section className="glass-card animate-fade-in flex flex-col gap-4 p-4">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-text text-lg font-semibold">Entregas de EPI</h2>
           <DeliverEpi employeeId={employee.id} />
@@ -216,7 +216,7 @@ export default async function EmployeeDetailPage({
         )}
       </section>
 
-      <section className="glass-card flex flex-col gap-4 p-4">
+      <section className="glass-card animate-fade-in flex flex-col gap-4 p-4">
         <h2 className="text-text text-lg font-semibold">Ficha de EPI</h2>
         <EpiRecordTable
           employeeId={employee.id}
@@ -225,7 +225,7 @@ export default async function EmployeeDetailPage({
         />
       </section>
 
-      <section className="glass-card flex flex-col gap-4 p-4">
+      <section className="glass-card animate-fade-in flex flex-col gap-4 p-4">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-text text-lg font-semibold">Treinamentos</h2>
         </div>
@@ -267,7 +267,7 @@ export default async function EmployeeDetailPage({
         )}
       </section>
 
-      <section className="glass-card flex flex-col gap-4 p-4">
+      <section className="glass-card animate-fade-in flex flex-col gap-4 p-4">
         <h2 className="text-text text-lg font-semibold">Treinamentos obrigatórios</h2>
         {complianceRows.length === 0 ? (
           <p className="glass-card text-text-subtle px-4 py-6 text-center text-sm">

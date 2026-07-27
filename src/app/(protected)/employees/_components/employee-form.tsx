@@ -14,13 +14,20 @@ import type { JobRoleOption } from "@/shared/domains/pgr/ges";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 
 import {
+  CancelLink,
   FieldError,
   FormActions,
   FormError,
+  FormSection,
+  FormSteps,
   SelectField,
+  StepBackButton,
+  StepNextButton,
   SubmitButton,
   TextField,
+  type FormStep,
 } from "../../_ui/form";
+import { stepsWithError } from "../../_ui/form-steps";
 import { AddressFields, type AddressValue } from "../../_ui/address-fields";
 
 function addressFrom(source?: Employee | null): AddressValue {
@@ -55,6 +62,29 @@ const STATUS_OPTIONS = [
 
 type Option = { id: string; name: string };
 
+const STEPS: FormStep[] = [
+  { title: "Dados pessoais", hint: "Nome, CPF e contato" },
+  { title: "Vínculo & função", hint: "Empresa, GES e função" },
+  { title: "Documentos & crachá", hint: "RG, crachá e foto" },
+  { title: "Endereço", hint: "CEP e logradouro" },
+];
+
+/** Campos de cada etapa — usado para abrir a etapa do primeiro erro do servidor. */
+const STEP_FIELDS: readonly (readonly string[])[] = [
+  ["fullName", "cpf", "birthDate", "phone", "email", "sex", "maritalStatus"],
+  [
+    "companyId",
+    "gesId",
+    "jobRoleId",
+    "registration",
+    "admissionDate",
+    "dismissalDate",
+    "status",
+  ],
+  ["rg", "badgeNumber", "badgeValidUntil", "bloodType", "photoPath"],
+  ["zipCode", "street", "number", "complement", "district", "city", "state"],
+];
+
 export function EmployeeForm({
   companies,
   employee,
@@ -73,6 +103,14 @@ export function EmployeeForm({
   const [gesOptions, setGesOptions] = useState<Option[]>([]);
   const [functionOptions, setFunctionOptions] = useState<JobRoleOption[]>([]);
   const [address, setAddress] = useState<AddressValue>(addressFrom(employee));
+  const [step, setStep] = useState(0);
+
+  const isLastStep = step === STEPS.length - 1;
+
+  function goToStep(next: number) {
+    setStep(next);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   useEffect(() => {
     if (!companyId) return;
@@ -118,6 +156,11 @@ export function EmployeeForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // Enter em um campo submete o form nativo — nas etapas iniciais isso avança.
+    if (!isLastStep) {
+      goToStep(step + 1);
+      return;
+    }
     const fd = new FormData(event.currentTarget);
     const value = (key: string) => String(fd.get(key) ?? "");
     const input: EmployeeInput = {
@@ -152,40 +195,80 @@ export function EmployeeForm({
         router.refresh();
         return;
       }
-      setErrors(result.error.fields ?? {});
+      const fields = result.error.fields ?? {};
+      setErrors(fields);
       setFormError(result.error.fields ? null : result.error.message);
+      const [firstInvalid] = stepsWithError(STEP_FIELDS, fields);
+      if (firstInvalid !== undefined) goToStep(firstInvalid);
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-3xl flex-col gap-6">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <FormSteps
+        steps={STEPS}
+        current={step}
+        onSelect={goToStep}
+        invalidSteps={stepsWithError(STEP_FIELDS, errors)}
+      />
+
       <FormError message={formError} />
 
-      <fieldset className="glass-card grid gap-4 p-4">
-        <legend className="text-text-muted px-1 text-sm font-medium">Geral</legend>
+      <FormSection title="Dados pessoais" hidden={step !== 0}>
         <TextField
           label="Nome completo"
           name="fullName"
           required
+          isFullWidth
+          placeholder="Ex.: João Ferreira da Silva"
           defaultValue={employee?.fullName}
           error={errors.fullName}
         />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField
-            label="CPF"
-            name="cpf"
-            required
-            defaultValue={employee?.cpf}
-            error={errors.cpf}
-          />
-          <SelectField
-            label="Status"
-            name="status"
-            defaultValue={employee?.status ?? "active"}
-            options={STATUS_OPTIONS}
-            error={errors.status}
-          />
-        </div>
+        <TextField
+          label="CPF"
+          name="cpf"
+          required
+          isMono
+          placeholder="000.000.000-00"
+          defaultValue={employee?.cpf}
+          error={errors.cpf}
+        />
+        <TextField
+          label="Data de nascimento"
+          name="birthDate"
+          type="date"
+          defaultValue={employee?.birthDate}
+        />
+        <TextField
+          label="Telefone"
+          name="phone"
+          placeholder="(00) 00000-0000"
+          defaultValue={employee?.phone}
+        />
+        <TextField
+          label="E-mail"
+          name="email"
+          type="email"
+          placeholder="nome@empresa.com"
+          defaultValue={employee?.email}
+        />
+        <SelectField
+          label="Sexo"
+          name="sex"
+          defaultValue={employee?.sex}
+          options={SEX_OPTIONS}
+          emptyLabel="— não informado —"
+        />
+        <SelectField
+          label="Estado civil"
+          name="maritalStatus"
+          defaultValue={employee?.maritalStatus}
+          options={MARITAL_OPTIONS}
+          emptyLabel="— não informado —"
+        />
+      </FormSection>
+
+      <FormSection title="Vínculo & função" hidden={step !== 1}>
         <SelectField
           label="Empresa"
           name="companyId"
@@ -195,113 +278,103 @@ export function EmployeeForm({
           options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
           error={errors.companyId}
         />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <SelectField
-            label="GES"
-            name="gesId"
-            value={gesId}
-            onChange={selectGes}
-            options={gesOptions.map((g) => ({ value: g.id, label: g.name }))}
-            emptyLabel="— sem GES —"
-            error={errors.gesId}
-          />
-          <SelectField
-            label="Função (do GES)"
-            name="jobRoleId"
-            value={jobRoleId}
-            onChange={setJobRoleId}
-            options={functionOptions.map((f) => ({ value: f.jobRoleId, label: f.title }))}
-            emptyLabel={
-              gesId && functionOptions.length === 0 ? "GES sem funções" : "— sem função —"
-            }
-            error={errors.jobRoleId}
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TextField
-            label="Data de nascimento"
-            name="birthDate"
-            type="date"
-            defaultValue={employee?.birthDate}
-          />
-          <SelectField
-            label="Sexo"
-            name="sex"
-            defaultValue={employee?.sex}
-            options={SEX_OPTIONS}
-            emptyLabel="— não informado —"
-          />
-          <SelectField
-            label="Estado civil"
-            name="maritalStatus"
-            defaultValue={employee?.maritalStatus}
-            options={MARITAL_OPTIONS}
-            emptyLabel="— não informado —"
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TextField
-            label="Admissão"
-            name="admissionDate"
-            type="date"
-            defaultValue={employee?.admissionDate}
-          />
-          <TextField
-            label="Desligamento"
-            name="dismissalDate"
-            type="date"
-            defaultValue={employee?.dismissalDate}
-          />
-          <TextField
-            label="Matrícula"
-            name="registration"
-            defaultValue={employee?.registration}
-          />
-        </div>
-      </fieldset>
+        <SelectField
+          label="GES"
+          name="gesId"
+          value={gesId}
+          onChange={selectGes}
+          options={gesOptions.map((g) => ({ value: g.id, label: g.name }))}
+          emptyLabel="— sem GES —"
+          error={errors.gesId}
+        />
+        <SelectField
+          label="Função (do GES)"
+          name="jobRoleId"
+          value={jobRoleId}
+          onChange={setJobRoleId}
+          options={functionOptions.map((f) => ({ value: f.jobRoleId, label: f.title }))}
+          emptyLabel={
+            gesId && functionOptions.length === 0 ? "GES sem funções" : "— sem função —"
+          }
+          error={errors.jobRoleId}
+        />
+        <TextField
+          label="Matrícula"
+          name="registration"
+          isMono
+          placeholder="Ex.: 004821"
+          defaultValue={employee?.registration}
+        />
+        <TextField
+          label="Data de admissão"
+          name="admissionDate"
+          type="date"
+          defaultValue={employee?.admissionDate}
+        />
+        <TextField
+          label="Data de desligamento"
+          name="dismissalDate"
+          type="date"
+          defaultValue={employee?.dismissalDate}
+        />
+        <SelectField
+          label="Situação"
+          name="status"
+          defaultValue={employee?.status ?? "active"}
+          options={STATUS_OPTIONS}
+          error={errors.status}
+        />
+      </FormSection>
 
-      <fieldset className="glass-card grid gap-4 p-4">
-        <legend className="text-text-muted px-1 text-sm font-medium">Contato</legend>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Telefone" name="phone" defaultValue={employee?.phone} />
-          <TextField label="E-mail" name="email" defaultValue={employee?.email} />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TextField label="RG" name="rg" defaultValue={employee?.rg} />
-          <TextField
-            label="Crachá"
-            name="badgeNumber"
-            defaultValue={employee?.badgeNumber}
-          />
-          <TextField
-            label="Validade do crachá"
-            name="badgeValidUntil"
-            type="date"
-            defaultValue={employee?.badgeValidUntil}
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField
-            label="Tipo sanguíneo"
-            name="bloodType"
-            defaultValue={employee?.bloodType}
-          />
-          <TextField
-            label="Foto (caminho)"
-            name="photoPath"
-            defaultValue={employee?.photoPath}
-          />
-        </div>
-      </fieldset>
+      <FormSection title="Documentos & crachá" columns={3} hidden={step !== 2}>
+        <TextField label="RG" name="rg" isMono defaultValue={employee?.rg} />
+        <TextField
+          label="Crachá"
+          name="badgeNumber"
+          isMono
+          defaultValue={employee?.badgeNumber}
+        />
+        <TextField
+          label="Validade do crachá"
+          name="badgeValidUntil"
+          type="date"
+          defaultValue={employee?.badgeValidUntil}
+        />
+        <TextField
+          label="Tipo sanguíneo"
+          name="bloodType"
+          placeholder="Ex.: O+"
+          defaultValue={employee?.bloodType}
+        />
+        <TextField
+          label="Foto (caminho)"
+          name="photoPath"
+          defaultValue={employee?.photoPath}
+        />
+      </FormSection>
 
-      <AddressFields value={address} onChange={setAddress} errors={errors} />
+      <AddressFields
+        value={address}
+        onChange={setAddress}
+        errors={errors}
+        hidden={step !== 3}
+      />
 
       <FieldError message={errors._} />
       <FormActions>
-        <SubmitButton
-          pending={pending}
-          label={employee ? "Salvar alterações" : "Criar funcionário"}
-        />
+        {step === 0 ? (
+          <CancelLink href={employee ? `/employees/${employee.id}` : "/employees"} />
+        ) : (
+          <StepBackButton onClick={() => goToStep(step - 1)} />
+        )}
+        {isLastStep ? (
+          <SubmitButton
+            pending={pending}
+            label={employee ? "Salvar alterações" : "Salvar funcionário"}
+          />
+        ) : (
+          <StepNextButton onClick={() => goToStep(step + 1)} />
+        )}
       </FormActions>
     </form>
   );

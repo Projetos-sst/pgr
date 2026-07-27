@@ -13,6 +13,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { DeleteTrainingCatalog } from "./_components/delete-training-catalog";
 
 export const dynamic = "force-dynamic";
@@ -64,15 +65,10 @@ export default async function TrainingCatalogPage({
               <td className="px-4 py-2">{row.workloadHours}h</td>
               <td className="px-4 py-2">{trainingPeriodicityLabel(row.periodicity)}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/training-catalog/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/training-catalog/${row.id}/edit`} />
                   <DeleteTrainingCatalog id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

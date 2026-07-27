@@ -6,6 +6,7 @@ import { listEmployeesAction } from "@/shared/server/actions/pgr/employees";
 import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies";
 
 import { EmptyState, PageHeader, Pagination, PrimaryLink, Table } from "../_ui/list";
+import { EditRowAction, RowActions, ViewRowAction } from "../_ui/row-actions";
 import { DeleteEmployee } from "./_components/delete-employee";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +54,7 @@ export default async function EmployeesPage({
   const companies = companiesResult.ok ? companiesResult.data : [];
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="animate-fade-slide-up flex flex-col gap-6 px-6 py-8">
       <PageHeader
         title="Funcionários"
         description="Pessoas vinculadas às empresas-cliente."
@@ -92,7 +93,7 @@ export default async function EmployeesPage({
         />
         <button
           type="submit"
-          className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
+          className="glass-panel hover-lift text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-all"
         >
           Filtrar
         </button>
@@ -116,15 +117,11 @@ export default async function EmployeesPage({
               <td className="px-4 py-2">{row.gesName ?? "—"}</td>
               <td className="px-4 py-2">{STATUS_LABEL[row.status] ?? row.status}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/employees/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <ViewRowAction href={`/employees/${row.id}`} />
+                  <EditRowAction href={`/employees/${row.id}/edit`} />
                   <DeleteEmployee id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

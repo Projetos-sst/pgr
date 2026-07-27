@@ -12,6 +12,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { DeleteWorkUnit } from "./_components/delete-work-unit";
 
 export const dynamic = "force-dynamic";
@@ -68,15 +69,10 @@ export default async function WorkUnitsPage({
                 {[row.city, row.state].filter(Boolean).join("/") || "—"}
               </td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/work-units/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/work-units/${row.id}/edit`} />
                   <DeleteWorkUnit id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

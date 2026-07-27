@@ -4,7 +4,15 @@ import { deleteCategoryAction } from "@/shared/server/actions/pgr/categories";
 
 import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 
-export function DeleteCategory({ id, redirectTo }: { id: string; redirectTo?: string }) {
+export function DeleteCategory({
+  id,
+  redirectTo,
+  hasLabel,
+}: {
+  id: string;
+  redirectTo?: string;
+  hasLabel?: boolean;
+}) {
   return (
     <ConfirmDeleteButton
       id={id}
@@ -12,6 +20,7 @@ export function DeleteCategory({ id, redirectTo }: { id: string; redirectTo?: st
       deleteAction={deleteCategoryAction}
       description="Esta ação é permanente. A categoria será removida do catálogo do escritório."
       redirectTo={redirectTo}
+      hasLabel={hasLabel}
     />
   );
 }

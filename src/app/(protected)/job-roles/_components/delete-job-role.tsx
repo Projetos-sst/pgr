@@ -7,7 +7,15 @@ import {
 
 import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 
-export function DeleteJobRole({ id, redirectTo }: { id: string; redirectTo?: string }) {
+export function DeleteJobRole({
+  id,
+  redirectTo,
+  hasLabel,
+}: {
+  id: string;
+  redirectTo?: string;
+  hasLabel?: boolean;
+}) {
   return (
     <ConfirmDeleteButton
       id={id}
@@ -16,6 +24,7 @@ export function DeleteJobRole({ id, redirectTo }: { id: string; redirectTo?: str
       loadDependentsAction={getJobRoleDependentsAction}
       dependentLabels={{ gesLinks: "Vínculos com GES", employees: "Funcionários" }}
       redirectTo={redirectTo}
+      hasLabel={hasLabel}
     />
   );
 }

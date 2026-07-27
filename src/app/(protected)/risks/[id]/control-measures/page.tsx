@@ -12,6 +12,7 @@ import {
 } from "@/shared/domains/pgr/control-measure";
 
 import { EmptyState, PageHeader, PrimaryLink, Table } from "../../../_ui/list";
+import { EditRowAction, RowActions } from "../../../_ui/row-actions";
 import { DeleteControlMeasure } from "./_components/delete-control-measure";
 import { MeasureStateBadge } from "./_components/measure-state-badge";
 import { RiskContext } from "./_components/risk-context";
@@ -81,15 +82,12 @@ export default async function ControlMeasuresPage({
               <td className="px-4 py-2">{row.actionResponsible ?? "—"}</td>
               <td className="px-4 py-2">{row.actionDeadline ?? "—"}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
+                <RowActions>
+                  <EditRowAction
                     href={`/risks/${riskId}/control-measures/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                  />
                   <DeleteControlMeasure riskId={riskId} id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

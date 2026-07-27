@@ -12,6 +12,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { DeletePermit } from "./_components/delete-permit";
 
 export const dynamic = "force-dynamic";
@@ -65,15 +66,10 @@ export default async function PermissoesTrabalhoPage({
               </td>
               <td className="px-4 py-2">{row.statusLabel}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/work-permits/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/work-permits/${row.id}/edit`} />
                   <DeletePermit id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

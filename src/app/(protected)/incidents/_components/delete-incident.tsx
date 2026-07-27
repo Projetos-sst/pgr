@@ -5,7 +5,17 @@ import { useState, useTransition } from "react";
 
 import { deleteAccidentAction } from "@/shared/server/actions/safety/accidents";
 
-export function DeleteIncident({ id, redirectTo }: { id: string; redirectTo?: string }) {
+import { TrashIcon, rowActionDangerClass } from "../../_ui/row-actions";
+
+export function DeleteIncident({
+  id,
+  redirectTo,
+  hasLabel,
+}: {
+  id: string;
+  redirectTo?: string;
+  hasLabel?: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -29,9 +39,15 @@ export function DeleteIncident({ id, redirectTo }: { id: string; redirectTo?: st
         type="button"
         onClick={onDelete}
         disabled={pending}
-        className="rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
+        aria-label="Remover incidente"
+        title={hasLabel ? undefined : "Remover incidente"}
+        className={
+          hasLabel
+            ? "rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
+            : `${rowActionDangerClass} disabled:opacity-50`
+        }
       >
-        Remover
+        {hasLabel ? "Remover" : <TrashIcon />}
       </button>
       {error ? <span className="text-xs text-red-600">{error}</span> : null}
     </span>

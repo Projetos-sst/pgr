@@ -14,6 +14,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { RowActions, ViewRowAction } from "../_ui/row-actions";
 import { DeleteIncident } from "./_components/delete-incident";
 
 export const dynamic = "force-dynamic";
@@ -111,15 +112,10 @@ export default async function IncidentsPage({
               <td className="px-4 py-2">{row.severityLabel}</td>
               <td className="px-4 py-2">{row.statusLabel}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/incidents/${row.id}`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Abrir
-                  </Link>
+                <RowActions>
+                  <ViewRowAction href={`/incidents/${row.id}`} label="Abrir" />
                   <DeleteIncident id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

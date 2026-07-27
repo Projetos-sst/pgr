@@ -12,6 +12,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { DeleteVehicle } from "./_components/delete-vehicle";
 
 export const dynamic = "force-dynamic";
@@ -67,15 +68,10 @@ export default async function VeiculosPage({
               <td className="px-4 py-2">{row.owner ?? "—"}</td>
               <td className="px-4 py-2 tabular-nums">{row.initialKm}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/vehicles/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/vehicles/${row.id}/edit`} />
                   <DeleteVehicle id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

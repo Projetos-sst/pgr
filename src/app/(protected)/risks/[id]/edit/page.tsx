@@ -49,7 +49,7 @@ export default async function EditRiskPage({
       <PageHeader
         title="Editar risco"
         description="Detalhe e edição do risco do GES."
-        action={<DeleteRisk id={risk.id} redirectTo="/risks" />}
+        action={<DeleteRisk id={risk.id} redirectTo="/risks" hasLabel />}
       />
       <RiskForm companies={companies} riskId={risk.id} initial={initial} />
       <EpiRiscoSection riskId={risk.id} />

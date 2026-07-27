@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import type { EventListItem } from "@/shared/domains/esocial/events";
+import { ViewRowAction } from "../../_ui/row-actions";
 import {
   generateReportAction,
   queryBatchReturnAction,
@@ -138,12 +138,7 @@ export function EventsTable({
                   <td className="px-3 py-2">{e.statusLabel}</td>
                   <td className="px-3 py-2 tabular-nums">{e.createdAt.slice(0, 10)}</td>
                   <td className="px-3 py-2 text-right">
-                    <Link
-                      href={`/esocial/detail/${e.id}`}
-                      className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                    >
-                      Detalhe
-                    </Link>
+                    <ViewRowAction href={`/esocial/detail/${e.id}`} label="Detalhe" />
                   </td>
                 </tr>
               ))

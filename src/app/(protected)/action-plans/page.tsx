@@ -16,6 +16,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { RowActions, ViewRowAction } from "../_ui/row-actions";
 import { DeleteActionPlan } from "./_components/delete-action-plan";
 
 export const dynamic = "force-dynamic";
@@ -116,15 +117,10 @@ export default async function ActionPlansPage({
               </td>
               <td className="px-4 py-2">{row.statusLabel}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/action-plans/${row.id}`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Abrir
-                  </Link>
+                <RowActions>
+                  <ViewRowAction href={`/action-plans/${row.id}`} label="Abrir" />
                   <DeleteActionPlan id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

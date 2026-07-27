@@ -12,6 +12,7 @@ import {
   SearchForm,
   Table,
 } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { DeleteCompany } from "./_components/delete-company";
 
 export const dynamic = "force-dynamic";
@@ -63,15 +64,10 @@ export default async function CompaniesPage({
                 {[row.city, row.state].filter(Boolean).join("/") || "—"}
               </td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/companies/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/companies/${row.id}/edit`} />
                   <DeleteCompany id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

@@ -5,6 +5,7 @@ import { resolvePageParams } from "@/shared/pagination";
 import { listSafetyInspectionsAction } from "@/shared/server/actions/inspections/safety-inspections";
 
 import { EmptyState, PageHeader, Pagination, PrimaryLink, Table } from "../_ui/list";
+import { EditRowAction, RowActions, ViewRowAction } from "../_ui/row-actions";
 import { DeleteInspection } from "./_components/delete-inspection";
 
 export const dynamic = "force-dynamic";
@@ -52,21 +53,11 @@ export default async function InspecoesSegurancaPage({
               <td className="px-4 py-2 tabular-nums">{row.occurrenceCount}</td>
               <td className="px-4 py-2">{row.statusLabel}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/safety-inspections/${row.id}`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Abrir
-                  </Link>
-                  <Link
-                    href={`/safety-inspections/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <ViewRowAction href={`/safety-inspections/${row.id}`} label="Abrir" />
+                  <EditRowAction href={`/safety-inspections/${row.id}/edit`} />
                   <DeleteInspection id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

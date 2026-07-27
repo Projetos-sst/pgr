@@ -1,5 +1,7 @@
 "use client";
 
+import { createPortal } from "react-dom";
+
 export function ConfirmModal({
   open,
   title,
@@ -21,11 +23,21 @@ export function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
-    <div className="animate-backdrop-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md">
-      <div className="glass-card animate-modal-pop flex w-full max-w-md flex-col gap-4 rounded-[20px] border border-white/50 bg-white/95 p-6 shadow-2xl">
+  /*
+   * Portal no body: os gatilhos ficam dentro de `.glass-card`, cujo
+   * `backdrop-filter` cria containing block e quebraria o `fixed` do overlay.
+   */
+  return createPortal(
+    <div
+      onClick={() => !pending && onCancel()}
+      className="animate-backdrop-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="glass-card animate-modal-pop flex w-full max-w-md flex-col gap-4 rounded-[20px] border border-white/50 bg-white/95 p-6 shadow-2xl"
+      >
         <div className="flex items-start gap-3.5">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
@@ -72,7 +84,7 @@ export function ConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={pending}
-            className="glass-panel text-text-muted hover:text-text rounded-[12px] px-4 py-2 text-xs font-bold transition-all disabled:opacity-50 sm:text-sm"
+            className="glass-panel text-text-muted hover:text-text cursor-pointer rounded-[12px] px-4 py-2 text-xs font-bold transition-all disabled:opacity-50 sm:text-sm"
           >
             {cancelLabel}
           </button>
@@ -80,7 +92,7 @@ export function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={pending}
-            className={`rounded-[12px] px-4 py-2 text-xs font-bold text-white transition-all disabled:opacity-50 sm:text-sm ${
+            className={`cursor-pointer rounded-[12px] px-4 py-2 text-xs font-bold text-white transition-all disabled:opacity-50 sm:text-sm ${
               variant === "danger"
                 ? "bg-red-600 shadow-md shadow-red-500/20 hover:bg-red-700"
                 : "btn-primary shadow-primary"
@@ -90,6 +102,7 @@ export function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
