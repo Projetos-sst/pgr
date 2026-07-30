@@ -86,7 +86,7 @@ export function VehicleForm({
             label="Placa"
             name="plate"
             required
-            mono
+            isMono
             placeholder="AAA-0A00"
             defaultValue={initial?.plate}
             error={errors.plate}
