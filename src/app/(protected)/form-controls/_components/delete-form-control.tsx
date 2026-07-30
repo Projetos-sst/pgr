@@ -7,11 +7,11 @@ import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 export function DeleteFormControl({
   id,
   redirectTo,
-  variant = "icon",
+  hasLabel = false,
 }: {
   id: string;
   redirectTo?: string;
-  variant?: "text" | "icon";
+  hasLabel?: boolean;
 }) {
   return (
     <ConfirmDeleteButton
@@ -20,7 +20,7 @@ export function DeleteFormControl({
       deleteAction={deleteFormControlAction}
       description="Esta ação é permanente. A configuração de cabeçalho ISO será removida."
       redirectTo={redirectTo}
-      variant={variant}
+      hasLabel={hasLabel}
     />
   );
 }
