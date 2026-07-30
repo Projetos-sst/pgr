@@ -29,7 +29,7 @@ export function DeleteEpiCatalog({
       }}
       description="A exclusão é bloqueada se o item tiver estoque, vínculo de risco ou item de entrega. Itens em uso não podem ser removidos."
       redirectTo={redirectTo}
-      variant={variant}
+      hasLabel={variant === "text"}
     />
   );
 }
