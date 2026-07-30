@@ -6,7 +6,7 @@ import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies"
 import { listRequiredTrainingsAction } from "@/shared/server/actions/pgr/job-role-required-trainings";
 import { listTrainingCatalogOptionsAction } from "@/shared/server/actions/pgr/training-catalog";
 
-import { FormPageHeader } from "../../../_ui/list";
+import { PageHeader } from "../../../_ui/list";
 import { JobRoleForm } from "../../_components/job-role-form";
 import { JobRoleIcon } from "../../_components/job-role-icon";
 import { DeleteJobRole } from "../../_components/delete-job-role";
@@ -35,7 +35,7 @@ export default async function EditJobRolePage({
 
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
-      <FormPageHeader
+      <PageHeader
         backHref="/job-roles"
         icon={<JobRoleIcon />}
         title={jobRoleResult.data.title}

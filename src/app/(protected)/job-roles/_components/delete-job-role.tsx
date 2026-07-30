@@ -24,7 +24,7 @@ export function DeleteJobRole({
       loadDependentsAction={getJobRoleDependentsAction}
       dependentLabels={{ gesLinks: "Vínculos com GES", employees: "Funcionários" }}
       redirectTo={redirectTo}
-      variant={variant}
+      hasLabel={variant === "text"}
     />
   );
 }

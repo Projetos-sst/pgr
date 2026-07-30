@@ -1,17 +1,17 @@
+/** Ícone do módulo de funcionários (cabeçalho das telas de cadastro). */
 export function EmployeeIcon() {
   return (
     <svg
-      width="25"
-      height="25"
+      width="23"
+      height="23"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.6"
-      aria-hidden="true"
+      aria-hidden
     >
-      <circle cx="9" cy="8" r="3" />
-      <path d="M3 20a6 6 0 0 1 12 0" />
-      <path d="M16 6a3 3 0 0 1 0 6M21 20a6 6 0 0 0-4-5.6" />
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
     </svg>
   );
 }

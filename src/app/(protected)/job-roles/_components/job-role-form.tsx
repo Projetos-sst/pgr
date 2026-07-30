@@ -83,7 +83,7 @@ export function JobRoleForm({
           <TextField
             label="CBO"
             name="cbo"
-            mono
+            isMono
             placeholder="0000-00"
             defaultValue={jobRole?.cbo}
             error={errors.cbo}

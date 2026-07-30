@@ -1,7 +1,7 @@
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies";
 
-import { FormPageHeader } from "../../_ui/list";
+import { PageHeader } from "../../_ui/list";
 import { JobRoleForm } from "../_components/job-role-form";
 import { JobRoleIcon } from "../_components/job-role-icon";
 
@@ -13,7 +13,7 @@ export default async function NewJobRolePage() {
   const companies = result.ok ? result.data : [];
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
-      <FormPageHeader
+      <PageHeader
         backHref="/job-roles"
         icon={<JobRoleIcon />}
         title="Nova função"
