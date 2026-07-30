@@ -8,11 +8,11 @@ import { deleteAccidentAction } from "@/shared/server/actions/safety/accidents";
 export function DeleteIncident({
   id,
   redirectTo,
-  variant = "icon",
+  hasLabel = false,
 }: {
   id: string;
   redirectTo?: string;
-  variant?: "text" | "icon";
+  hasLabel?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -31,7 +31,7 @@ export function DeleteIncident({
     });
   }
 
-  if (variant === "icon") {
+  if (!hasLabel) {
     return (
       <button
         type="button"
