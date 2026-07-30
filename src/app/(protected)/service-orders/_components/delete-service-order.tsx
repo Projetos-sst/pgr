@@ -8,11 +8,11 @@ import { deleteServiceOrderAction } from "@/shared/server/actions/safety/service
 export function DeleteServiceOrder({
   id,
   redirectTo,
-  variant = "icon",
+  hasLabel = false,
 }: {
   id: string;
   redirectTo?: string;
-  variant?: "text" | "icon";
+  hasLabel?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -31,7 +31,7 @@ export function DeleteServiceOrder({
     });
   }
 
-  if (variant === "icon") {
+  if (!hasLabel) {
     return (
       <button
         type="button"
