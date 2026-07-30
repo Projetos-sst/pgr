@@ -4,7 +4,7 @@ import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getWorkUnitAction } from "@/shared/server/actions/pgr/work-units";
 import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies";
 
-import { FormPageHeader } from "../../../_ui/list";
+import { PageHeader } from "../../../_ui/list";
 import { WorkUnitForm } from "../../_components/work-unit-form";
 import { WorkUnitIcon } from "../../_components/work-unit-icon";
 import { DeleteWorkUnit } from "../../_components/delete-work-unit";
@@ -27,7 +27,7 @@ export default async function EditWorkUnitPage({
 
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
-      <FormPageHeader
+      <PageHeader
         backHref="/work-units"
         icon={<WorkUnitIcon />}
         title={workUnitResult.data.name}

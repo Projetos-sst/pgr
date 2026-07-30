@@ -130,7 +130,7 @@ export function WorkUnitForm({
           <TextField
             label="Nº do contrato"
             name="contractNumber"
-            mono
+            isMono
             defaultValue={workUnit?.contractNumber}
             error={errors.contractNumber}
           />

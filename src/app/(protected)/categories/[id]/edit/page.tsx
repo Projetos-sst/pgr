@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getCategoryAction } from "@/shared/server/actions/pgr/categories";
 
-import { FormPageHeader } from "../../../_ui/list";
+import { PageHeader } from "../../../_ui/list";
 import { CategoryForm } from "../../_components/category-form";
 import { CategoryIcon } from "../../_components/category-icon";
 import { DeleteCategory } from "../../_components/delete-category";
@@ -22,7 +22,7 @@ export default async function EditCategoryPage({
 
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
-      <FormPageHeader
+      <PageHeader
         backHref="/categories"
         icon={<CategoryIcon />}
         title="Editar categoria"

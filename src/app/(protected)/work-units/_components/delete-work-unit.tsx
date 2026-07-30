@@ -24,7 +24,7 @@ export function DeleteWorkUnit({
       loadDependentsAction={getWorkUnitDependentsAction}
       dependentLabels={{ ges: "GES vinculados" }}
       redirectTo={redirectTo}
-      variant={variant}
+      hasLabel={variant === "text"}
     />
   );
 }

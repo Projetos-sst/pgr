@@ -140,7 +140,7 @@ export function CompanyForm({ company }: { company?: Company }) {
             <TextField
               label="CNPJ"
               name="cnpj"
-              mono
+              isMono
               placeholder="00.000.000/0000-00"
               value={fields.cnpj}
               onChange={setField("cnpj")}

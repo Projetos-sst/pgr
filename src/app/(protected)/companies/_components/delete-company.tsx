@@ -31,7 +31,7 @@ export function DeleteCompany({
       loadDependentsAction={getCompanyDependentsAction}
       dependentLabels={DEPENDENT_LABELS}
       redirectTo={redirectTo}
-      variant={variant}
+      hasLabel={variant === "text"}
     />
   );
 }

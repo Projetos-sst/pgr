@@ -20,7 +20,7 @@ export function DeleteCategory({
       deleteAction={deleteCategoryAction}
       description="Esta ação é permanente. A categoria será removida do catálogo do escritório."
       redirectTo={redirectTo}
-      variant={variant}
+      hasLabel={variant === "text"}
     />
   );
 }
