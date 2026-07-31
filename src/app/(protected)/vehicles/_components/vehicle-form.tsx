@@ -81,74 +81,69 @@ export function VehicleForm({
       <FormError message={formError} />
 
       <FormSection title="Identificação">
-        <div className="grid gap-3.5 sm:grid-cols-2">
-          <TextField
-            label="Placa"
-            name="plate"
-            required
-            isMono
-            placeholder="AAA-0A00"
-            defaultValue={initial?.plate}
-            error={errors.plate}
-          />
-          <SelectField
-            label="Tipo"
-            name="type"
-            defaultValue={initial?.type ?? ""}
-            options={TYPE_OPTIONS}
-            error={errors.type}
-          />
-          <TextField
-            label="Marca"
-            name="brand"
-            placeholder="Ex.: Mercedes-Benz"
-            defaultValue={initial?.brand}
-            error={errors.brand}
-          />
-          <TextField
-            label="Modelo"
-            name="model"
-            placeholder="Ex.: Actros 2651"
-            defaultValue={initial?.model}
-            error={errors.model}
-          />
-          <TextField
-            label="Cor"
-            name="color"
-            placeholder="Ex.: Branco"
-            defaultValue={initial?.color}
-            error={errors.color}
-          />
-        </div>
+        <TextField
+          label="Placa"
+          name="plate"
+          required
+          isMono
+          placeholder="AAA-0A00"
+          defaultValue={initial?.plate}
+          error={errors.plate}
+        />
+        <SelectField
+          label="Tipo"
+          name="type"
+          defaultValue={initial?.type ?? ""}
+          options={TYPE_OPTIONS}
+          error={errors.type}
+        />
+        <TextField
+          label="Marca"
+          name="brand"
+          placeholder="Ex.: Mercedes-Benz"
+          defaultValue={initial?.brand}
+          error={errors.brand}
+        />
+        <TextField
+          label="Modelo"
+          name="model"
+          placeholder="Ex.: Actros 2651"
+          defaultValue={initial?.model}
+          error={errors.model}
+        />
+        <TextField
+          label="Cor"
+          name="color"
+          placeholder="Ex.: Branco"
+          defaultValue={initial?.color}
+          error={errors.color}
+        />
       </FormSection>
 
       <FormSection title="Dados operacionais">
-        <div className="grid gap-3.5 sm:grid-cols-2">
-          <TextField
-            label="Proprietário"
-            name="owner"
-            placeholder="Ex.: Frota própria"
-            defaultValue={initial?.owner}
-            error={errors.owner}
-          />
-          <TextField
-            label="KM inicial"
-            name="initialKm"
-            type="number"
-            placeholder="0"
-            defaultValue={initial ? String(initial.initialKm) : "0"}
-            error={errors.initialKm}
-          />
-          <div className="sm:col-span-2">
-            <TextField
-              label="Observações"
-              name="notes"
-              placeholder="Anotações internas sobre o veículo"
-              defaultValue={initial?.notes}
-              error={errors.notes}
-            />
-          </div>
-        </div>
+        <TextField
+          label="Proprietário"
+          name="owner"
+          placeholder="Ex.: Frota própria"
+          defaultValue={initial?.owner}
+          error={errors.owner}
+        />
+        <TextField
+          label="KM inicial"
+          name="initialKm"
+          type="number"
+          placeholder="0"
+          defaultValue={initial ? String(initial.initialKm) : "0"}
+          error={errors.initialKm}
+        />
+        <TextField
+          label="Observações"
+          name="notes"
+          isFullWidth
+          placeholder="Anotações internas sobre o veículo"
+          defaultValue={initial?.notes}
+          error={errors.notes}
+        />
       </FormSection>
 
       <FormActions>

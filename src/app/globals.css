@@ -268,3 +268,16 @@ label[for] {
     }
   }
 }
+
+@layer utilities {
+  /*
+   * O Tailwind v4 não materializou o utilitário `rounded-field` a partir de
+   * `--radius-field` no `@theme inline` (as demais chaves `--radius-*` geram
+   * normalmente). Sem esta regra os inputs e botões que usam `rounded-field`
+   * ficavam com canto reto (border-radius 0), destoando do design. Fixamos o
+   * raio de 11px do token aqui.
+   */
+  .rounded-field {
+    border-radius: var(--radius-field, 11px);
+  }
+}
