@@ -10,8 +10,10 @@ import {
 } from "@/shared/server/actions/inspections/vehicles";
 
 import {
+  CancelLink,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
@@ -75,68 +77,79 @@ export function VehicleForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid max-w-2xl gap-4 sm:grid-cols-2">
-      <div className="sm:col-span-2">
-        <FormError message={formError} />
-      </div>
-      <TextField
-        label="Placa"
-        name="plate"
-        required
-        defaultValue={initial?.plate}
-        error={errors.plate}
-      />
-      <SelectField
-        label="Tipo"
-        name="type"
-        defaultValue={initial?.type ?? ""}
-        options={TYPE_OPTIONS}
-        error={errors.type}
-      />
-      <TextField
-        label="Marca"
-        name="brand"
-        defaultValue={initial?.brand}
-        error={errors.brand}
-      />
-      <TextField
-        label="Modelo"
-        name="model"
-        defaultValue={initial?.model}
-        error={errors.model}
-      />
-      <TextField
-        label="Cor"
-        name="color"
-        defaultValue={initial?.color}
-        error={errors.color}
-      />
-      <TextField
-        label="Proprietário"
-        name="owner"
-        defaultValue={initial?.owner}
-        error={errors.owner}
-      />
-      <TextField
-        label="KM inicial"
-        name="initialKm"
-        type="number"
-        defaultValue={initial ? String(initial.initialKm) : "0"}
-        error={errors.initialKm}
-      />
-      <div className="sm:col-span-2">
+    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+      <FormError message={formError} />
+
+      <FormSection title="Identificação">
+        <TextField
+          label="Placa"
+          name="plate"
+          required
+          isMono
+          placeholder="AAA-0A00"
+          defaultValue={initial?.plate}
+          error={errors.plate}
+        />
+        <SelectField
+          label="Tipo"
+          name="type"
+          defaultValue={initial?.type ?? ""}
+          options={TYPE_OPTIONS}
+          error={errors.type}
+        />
+        <TextField
+          label="Marca"
+          name="brand"
+          placeholder="Ex.: Mercedes-Benz"
+          defaultValue={initial?.brand}
+          error={errors.brand}
+        />
+        <TextField
+          label="Modelo"
+          name="model"
+          placeholder="Ex.: Actros 2651"
+          defaultValue={initial?.model}
+          error={errors.model}
+        />
+        <TextField
+          label="Cor"
+          name="color"
+          placeholder="Ex.: Branco"
+          defaultValue={initial?.color}
+          error={errors.color}
+        />
+      </FormSection>
+
+      <FormSection title="Dados operacionais">
+        <TextField
+          label="Proprietário"
+          name="owner"
+          placeholder="Ex.: Frota própria"
+          defaultValue={initial?.owner}
+          error={errors.owner}
+        />
+        <TextField
+          label="KM inicial"
+          name="initialKm"
+          type="number"
+          placeholder="0"
+          defaultValue={initial ? String(initial.initialKm) : "0"}
+          error={errors.initialKm}
+        />
         <TextField
           label="Observações"
           name="notes"
+          isFullWidth
+          placeholder="Anotações internas sobre o veículo"
           defaultValue={initial?.notes}
           error={errors.notes}
         />
-      </div>
-      <div className="sm:col-span-2">
-        <FormActions>
-          <SubmitButton pending={pending} label={id ? "Salvar" : "Criar veículo"} />
-        </FormActions>
-      </div>
+      </FormSection>
+
+      <FormActions>
+        <CancelLink href="/vehicles" />
+        <SubmitButton pending={pending} label={id ? "Salvar veículo" : "Criar veículo"} />
+      </FormActions>
     </form>
   );
 }

@@ -1,21 +1,29 @@
-import Link from "next/link";
-
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
+import { formatPlate } from "@/shared/domains/inspections/vehicles";
 import { listVehiclesAction } from "@/shared/server/actions/inspections/vehicles";
 
+import { EmptyState, PageHeader } from "../_ui/list";
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  PrimaryLink,
-  SearchForm,
-  Table,
-} from "../_ui/list";
-import { EditRowAction, RowActions } from "../_ui/row-actions";
+  Cell,
+  DataGrid,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  MonoCell,
+  StatusBadge,
+  ToolbarButton,
+  ToolbarSearch,
+  ViewIcon,
+} from "../_ui/data-list";
 import { DeleteVehicle } from "./_components/delete-vehicle";
+import { VehicleIcon } from "./_components/vehicle-icon";
 
 export const dynamic = "force-dynamic";
+
+const TEMPLATE = "1fr 1.8fr 1.2fr 1fr 1.2fr 1.1fr 84px";
 
 type SearchParams = Promise<{ search?: string; page?: string }>;
 
@@ -33,58 +41,88 @@ export default async function VeiculosPage({
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
+        icon={<VehicleIcon />}
         title="Veículos"
-        description="Frota do escritório — base das inspeções veiculares."
-        action={<PrimaryLink href="/vehicles/new">Novo veículo</PrimaryLink>}
-      />
-      <SearchForm
-        basePath="/vehicles"
-        placeholder="Buscar por placa, modelo ou marca"
-        defaultValue={sp.search}
+        description="Frota cadastrada para inspeções veiculares e OS"
       />
 
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhum veículo cadastrado." />
-      ) : (
-        <Table
-          headers={["Placa", "Tipo", "Marca/Modelo", "Proprietário", "KM inicial", ""]}
-        >
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2 font-mono">
-                <Link
-                  href={`/vehicles/${row.id}/edit`}
-                  className="font-medium hover:underline"
-                >
-                  {row.plate}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.typeLabel}</td>
-              <td className="px-4 py-2">
-                {[row.brand, row.model].filter(Boolean).join(" ") || "—"}
-              </td>
-              <td className="px-4 py-2">{row.owner ?? "—"}</td>
-              <td className="px-4 py-2 tabular-nums">{row.initialKm}</td>
-              <td className="px-4 py-2">
-                <RowActions>
-                  <EditRowAction href={`/vehicles/${row.id}/edit`} />
-                  <DeleteVehicle id={row.id} />
-                </RowActions>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSearch
+            basePath="/vehicles"
+            placeholder="Buscar por placa ou modelo…"
+            defaultValue={sp.search}
+          />
+          <ToolbarButton href="/vehicles/new">Novo Veículo</ToolbarButton>
+        </ListToolbar>
 
-      <Pagination
-        basePath="/vehicles"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={{ search: sp.search }}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              message={
+                sp.search
+                  ? "Nenhum veículo encontrado para a busca."
+                  : "Nenhum veículo cadastrado."
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={900}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Placa" },
+                  { header: "Veículo" },
+                  { header: "Tipo" },
+                  { header: "Empresa" },
+                  { header: "Últ. Inspeção" },
+                  { header: "Status" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <MonoCell href={`/vehicles/${row.id}/edit`}>
+                    {formatPlate(row.plate)}
+                  </MonoCell>
+                  <Cell className="text-text font-semibold">
+                    {[row.brand, row.model].filter(Boolean).join(" ") || "—"}
+                  </Cell>
+                  <Cell>{row.typeLabel}</Cell>
+                  <Cell className="text-text-subtle">—</Cell>
+                  <Cell className="text-text-subtle">—</Cell>
+                  <Cell>
+                    <StatusBadge tone="neutral">Sem inspeção</StatusBadge>
+                  </Cell>
+                  <Cell align="right">
+                    <span className="flex items-center justify-end gap-1">
+                      <a
+                        href={`/vehicles/${row.id}/edit`}
+                        aria-label="Ver/editar veículo"
+                        title="Ver/editar"
+                        className="text-primary flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-white/50"
+                      >
+                        <ViewIcon />
+                      </a>
+                      <DeleteVehicle id={row.id} />
+                    </span>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/vehicles"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={{ search: sp.search }}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }

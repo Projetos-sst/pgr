@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { formatPlate } from "@/shared/domains/inspections/vehicles";
 import { getVehicleAction } from "@/shared/server/actions/inspections/vehicles";
 
 import { PageHeader } from "../../../_ui/list";
 import { VehicleForm } from "../../_components/vehicle-form";
+import { VehicleIcon } from "../../_components/vehicle-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +22,13 @@ export default async function EditVehiclePage({
   const v = result.data;
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Editar veículo" />
+    <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
+      <PageHeader
+        backHref="/vehicles"
+        icon={<VehicleIcon />}
+        title="Editar veículo"
+        description={`Placa ${formatPlate(v.plate)}`}
+      />
       <VehicleForm
         id={v.id}
         initial={{
