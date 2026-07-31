@@ -39,6 +39,14 @@ const STATUS_TONE: Record<string, StatusTone> = {
   cancelled: "red",
 };
 
+// "Dias aberta" como pílula colorida (espelha o mockup): quanto mais tempo em
+// aberto, mais urgente — verde recente, âmbar intermediário, vermelho longo.
+function daysOpenTone(days: number): StatusTone {
+  if (days <= 10) return "green";
+  if (days <= 20) return "amber";
+  return "red";
+}
+
 type SearchParams = Promise<{ page?: string; search?: string; status?: string }>;
 
 export default async function ServiceOrdersPage({
@@ -136,7 +144,11 @@ export default async function ServiceOrdersPage({
                   </Cell>
                   <Cell>{row.title}</Cell>
                   <Cell className="text-text-muted font-mono">{row.openedAt}</Cell>
-                  <Cell className="tabular-nums">{row.daysOpen}</Cell>
+                  <Cell>
+                    <StatusBadge tone={daysOpenTone(row.daysOpen)}>
+                      {row.daysOpen} {row.daysOpen === 1 ? "dia" : "dias"}
+                    </StatusBadge>
+                  </Cell>
                   <Cell>
                     <StatusBadge tone={STATUS_TONE[row.status] ?? "neutral"}>
                       {row.statusLabel}
