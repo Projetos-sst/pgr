@@ -98,9 +98,7 @@ export default async function GesPage({ searchParams }: { searchParams: SearchPa
                       <span className="text-text font-semibold">{row.name}</span>
                     </span>
                   </Cell>
-                  <Cell className="text-text-muted">
-                    {row.processDescription ?? "—"}
-                  </Cell>
+                  <Cell className="text-text-muted">{row.processDescription ?? "—"}</Cell>
                   <Cell className="text-text-subtle">{row.exposedWorkers}</Cell>
                   <Cell align="right">
                     <RowActions>
