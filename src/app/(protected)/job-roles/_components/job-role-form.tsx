@@ -64,47 +64,44 @@ export function JobRoleForm({
       <FormError message={formError} />
 
       <FormSection title="Função">
-        <div className="grid gap-3.5 sm:grid-cols-2">
-          <SelectField
-            label="Empresa"
-            name="companyId"
-            required
-            defaultValue={jobRole?.companyId}
-            options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
-            error={errors.companyId}
-          />
-          <TextField
-            label="Título"
-            name="title"
-            required
-            defaultValue={jobRole?.title}
-            error={errors.title}
-          />
-          <TextField
-            label="CBO"
-            name="cbo"
-            isMono
-            placeholder="0000-00"
-            defaultValue={jobRole?.cbo}
-            error={errors.cbo}
-          />
-          <TextField
-            label="Jornada"
-            name="workSchedule"
-            placeholder="Ex.: 44h semanais"
-            defaultValue={jobRole?.workSchedule}
-            error={errors.workSchedule}
-          />
-          <div className="sm:col-span-2">
-            <TextField
-              label="Descrição"
-              name="description"
-              placeholder="Atribuições e responsabilidades do cargo"
-              defaultValue={jobRole?.description}
-              error={errors.description}
-            />
-          </div>
-        </div>
+        <SelectField
+          label="Empresa"
+          name="companyId"
+          required
+          defaultValue={jobRole?.companyId}
+          options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
+          error={errors.companyId}
+        />
+        <TextField
+          label="Título"
+          name="title"
+          required
+          defaultValue={jobRole?.title}
+          error={errors.title}
+        />
+        <TextField
+          label="CBO"
+          name="cbo"
+          isMono
+          placeholder="0000-00"
+          defaultValue={jobRole?.cbo}
+          error={errors.cbo}
+        />
+        <TextField
+          label="Jornada"
+          name="workSchedule"
+          placeholder="Ex.: 44h semanais"
+          defaultValue={jobRole?.workSchedule}
+          error={errors.workSchedule}
+        />
+        <TextField
+          label="Descrição"
+          name="description"
+          isFullWidth
+          placeholder="Atribuições e responsabilidades do cargo"
+          defaultValue={jobRole?.description}
+          error={errors.description}
+        />
       </FormSection>
 
       <FieldError message={errors._} />
