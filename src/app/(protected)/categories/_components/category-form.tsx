@@ -60,32 +60,29 @@ export function CategoryForm({ category }: { category?: Category }) {
       <FormError message={formError} />
 
       <FormSection title="Categoria">
-        <div className="grid gap-3.5 sm:grid-cols-2">
-          <SelectField
-            label="Tipo"
-            name="type"
-            required
-            defaultValue={category?.type}
-            options={TYPE_OPTIONS}
-            error={errors.type}
-          />
-          <TextField
-            label="Nome"
-            name="name"
-            required
-            defaultValue={category?.name}
-            error={errors.name}
-          />
-          <div className="sm:col-span-2">
-            <TextField
-              label="Observação"
-              name="note"
-              placeholder="Descrição opcional da categoria"
-              defaultValue={category?.note}
-              error={errors.note}
-            />
-          </div>
-        </div>
+        <SelectField
+          label="Tipo"
+          name="type"
+          required
+          defaultValue={category?.type}
+          options={TYPE_OPTIONS}
+          error={errors.type}
+        />
+        <TextField
+          label="Nome"
+          name="name"
+          required
+          defaultValue={category?.name}
+          error={errors.name}
+        />
+        <TextField
+          label="Observação"
+          name="note"
+          isFullWidth
+          placeholder="Descrição opcional da categoria"
+          defaultValue={category?.note}
+          error={errors.note}
+        />
       </FormSection>
 
       <FieldError message={errors._} />

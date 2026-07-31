@@ -110,40 +110,37 @@ export function WorkUnitForm({
       <FormError message={formError} />
 
       <FormSection title="Identificação">
-        <div className="grid gap-3.5 sm:grid-cols-2">
-          <SelectField
-            label="Empresa"
-            name="companyId"
-            required
-            value={companyId}
-            onChange={setCompanyId}
-            options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
-            error={errors.companyId}
-          />
-          <TextField
-            label="Nome"
-            name="name"
-            required
-            defaultValue={workUnit?.name}
-            error={errors.name}
-          />
-          <TextField
-            label="Nº do contrato"
-            name="contractNumber"
-            isMono
-            defaultValue={workUnit?.contractNumber}
-            error={errors.contractNumber}
-          />
-          <div className="sm:col-span-2">
-            <TextField
-              label="Objeto/descrição"
-              name="description"
-              required
-              defaultValue={workUnit?.description}
-              error={errors.description}
-            />
-          </div>
-        </div>
+        <SelectField
+          label="Empresa"
+          name="companyId"
+          required
+          value={companyId}
+          onChange={setCompanyId}
+          options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
+          error={errors.companyId}
+        />
+        <TextField
+          label="Nome"
+          name="name"
+          required
+          defaultValue={workUnit?.name}
+          error={errors.name}
+        />
+        <TextField
+          label="Nº do contrato"
+          name="contractNumber"
+          isMono
+          defaultValue={workUnit?.contractNumber}
+          error={errors.contractNumber}
+        />
+        <TextField
+          label="Objeto/descrição"
+          name="description"
+          required
+          isFullWidth
+          defaultValue={workUnit?.description}
+          error={errors.description}
+        />
       </FormSection>
 
       <AddressFields
