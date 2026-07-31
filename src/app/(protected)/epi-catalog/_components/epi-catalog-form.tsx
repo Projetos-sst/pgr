@@ -129,109 +129,100 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
       <FormError message={formError} />
 
       <FormSection title="Classificação">
-        <div className="grid gap-3.5 sm:grid-cols-2">
-          <SelectField
-            label="Tipo"
-            name="type"
-            required
-            value={type}
-            onChange={handleTypeChange}
-            options={TYPE_OPTIONS}
-            error={errors.type}
-          />
-          <SelectField
-            label="Categoria"
-            name="categoryId"
-            required
-            value={categoryId}
-            onChange={setCategoryId}
-            options={categories}
-            error={errors.categoryId}
-            disabled={categories.length === 0}
-            emptyLabel={
-              type === "" ? "— selecione o tipo primeiro —" : "— selecione a categoria —"
-            }
-          />
-        </div>
+        <SelectField
+          label="Tipo"
+          name="type"
+          required
+          value={type}
+          onChange={handleTypeChange}
+          options={TYPE_OPTIONS}
+          error={errors.type}
+        />
+        <SelectField
+          label="Categoria"
+          name="categoryId"
+          required
+          value={categoryId}
+          onChange={setCategoryId}
+          options={categories}
+          error={errors.categoryId}
+          disabled={categories.length === 0}
+          emptyLabel={
+            type === "" ? "— selecione o tipo primeiro —" : "— selecione a categoria —"
+          }
+        />
       </FormSection>
 
       <FormSection title="Identificação & CA">
-        <div className="grid gap-3.5 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <TextField
-              label="Nome"
-              name="name"
-              required
-              placeholder="Ex.: Capacete de segurança aba frontal"
-              defaultValue={item?.name}
-              error={errors.name}
-            />
-          </div>
-          <CaField
-            label="CA"
-            value={ca}
-            onChange={setCa}
-            onFound={handleCaFound}
-            onNotFound={handleCaNotFound}
-            error={errors.ca}
-          />
-          <TextField
-            label="Validade do CA"
-            name="caValidUntil"
-            type="date"
-            value={caValidUntil}
-            onChange={setCaValidUntil}
-            error={errors.caValidUntil}
-          />
-          <TextField
-            label="Fabricante"
-            name="manufacturer"
-            value={manufacturer}
-            onChange={setManufacturer}
-            error={errors.manufacturer}
-          />
-          <TextField
-            label="Norma"
-            name="norm"
-            value={norm}
-            onChange={setNorm}
-            error={errors.norm}
-          />
-        </div>
+        <TextField
+          label="Nome"
+          name="name"
+          required
+          isFullWidth
+          placeholder="Ex.: Capacete de segurança aba frontal"
+          defaultValue={item?.name}
+          error={errors.name}
+        />
+        <CaField
+          label="CA"
+          value={ca}
+          onChange={setCa}
+          onFound={handleCaFound}
+          onNotFound={handleCaNotFound}
+          error={errors.ca}
+        />
+        <TextField
+          label="Validade do CA"
+          name="caValidUntil"
+          type="date"
+          value={caValidUntil}
+          onChange={setCaValidUntil}
+          error={errors.caValidUntil}
+        />
+        <TextField
+          label="Fabricante"
+          name="manufacturer"
+          value={manufacturer}
+          onChange={setManufacturer}
+          error={errors.manufacturer}
+        />
+        <TextField
+          label="Norma"
+          name="norm"
+          value={norm}
+          onChange={setNorm}
+          error={errors.norm}
+        />
       </FormSection>
 
       <FormSection title="Especificações">
-        <div className="grid gap-3.5 sm:grid-cols-2">
-          <TextField
-            label="Tamanho"
-            name="size"
-            defaultValue={item?.size}
-            error={errors.size}
-          />
-          <TextField
-            label="Unidade de medida"
-            name="unitOfMeasure"
-            placeholder="Ex.: par, unidade"
-            defaultValue={item?.unitOfMeasure}
-            error={errors.unitOfMeasure}
-          />
-          <div className="sm:col-span-2">
-            <TextField
-              label="Descrição"
-              name="description"
-              defaultValue={item?.description}
-              error={errors.description}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <TextField
-              label="Caminho da foto"
-              name="photoPath"
-              defaultValue={item?.photoPath}
-              error={errors.photoPath}
-            />
-          </div>
-        </div>
+        <TextField
+          label="Tamanho"
+          name="size"
+          defaultValue={item?.size}
+          error={errors.size}
+        />
+        <TextField
+          label="Unidade de medida"
+          name="unitOfMeasure"
+          placeholder="Ex.: par, unidade"
+          defaultValue={item?.unitOfMeasure}
+          error={errors.unitOfMeasure}
+        />
+        <TextField
+          label="Descrição"
+          name="description"
+          isFullWidth
+          defaultValue={item?.description}
+          error={errors.description}
+        />
+        <TextField
+          label="Caminho da foto"
+          name="photoPath"
+          isFullWidth
+          defaultValue={item?.photoPath}
+          error={errors.photoPath}
+        />
       </FormSection>
 
       <FieldError message={errors._} />
