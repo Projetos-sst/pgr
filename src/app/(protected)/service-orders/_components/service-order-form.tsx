@@ -16,7 +16,15 @@ import {
   updateServiceOrderAction,
 } from "@/shared/server/actions/safety/service-orders";
 
-import { FormActions, FormError, SubmitButton, TextField } from "../../_ui/form";
+import {
+  CancelLink,
+  FormActions,
+  FormError,
+  FormSection,
+  SelectField,
+  SubmitButton,
+  TextField,
+} from "../../_ui/form";
 
 type Option = { value: string; label: string };
 
@@ -89,7 +97,6 @@ export function ServiceOrderForm({
         return;
       }
       setFormError(null);
-      // Evita duplicar sugestões já presentes (por sourceType+sourceId).
       const existing = new Set(items.map((i) => `${i.sourceType}:${i.sourceId ?? ""}`));
       const fresh = result.data.filter(
         (s) => !existing.has(`${s.sourceType}:${s.sourceId ?? ""}`),
@@ -139,31 +146,27 @@ export function ServiceOrderForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <FormError message={formError} />
 
-      <TextField label="Título" name="title" required defaultValue={initial?.title} />
-
-      <label className="flex flex-col gap-1">
-        <span className="text-text-muted text-sm font-semibold">
-          Funcionário (opcional)
-        </span>
-        <select
+      <FormSection title="Identificação">
+        <TextField
+          label="Título"
+          name="title"
+          required
+          isFullWidth
+          placeholder="Ex.: Entrega de EPIs — NR-06"
+          defaultValue={initial?.title}
+        />
+        <SelectField
+          label="Funcionário"
           name="assignedEmployeeId"
+          isFullWidth
           value={employeeId}
-          onChange={(e) => setEmployeeId(e.target.value)}
-          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
-        >
-          <option value="">— sem funcionário —</option>
-          {employees.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          onChange={setEmployeeId}
+          options={employees}
+          emptyLabel="— sem funcionário —"
+        />
         <TextField
           label="Data de abertura"
           name="openedAt"
@@ -172,54 +175,45 @@ export function ServiceOrderForm({
           defaultValue={initial?.openedAt}
         />
         <TextField
-          label="Prazo (opcional)"
+          label="Prazo"
           name="dueDate"
           type="date"
           defaultValue={initial?.dueDate}
         />
-      </div>
-
-      {id ? (
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-semibold">Status *</span>
-          <select
+        {id ? (
+          <SelectField
+            label="Status"
             name="status"
+            isFullWidth
             defaultValue={initial?.status ?? "open"}
-            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
+            options={STATUS_OPTIONS}
+          />
+        ) : null}
+      </FormSection>
 
-      {/* Checklist de itens (snapshots textuais) */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="text-text-muted text-sm font-semibold">
-            Checklist ({items.length}/{MAX_ITEMS_PER_ORDER})
-          </span>
+      <FormSection
+        title={`Checklist da OS (${items.length}/${MAX_ITEMS_PER_ORDER})`}
+        columns={1}
+      >
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={loadSuggested}
             disabled={loadingSuggested || !employeeId}
-            className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-50"
+            className="glass-input text-text-muted hover:text-text rounded-field px-4 py-2 text-[13px] font-semibold transition-colors disabled:opacity-50"
           >
             {loadingSuggested ? "Sugerindo…" : "Sugerir do GES"}
           </button>
         </div>
 
         {items.length === 0 ? (
-          <p className="text-text-subtle text-sm">Nenhum item no checklist.</p>
+          <p className="text-text-subtle text-[13px]">Nenhum item no checklist.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {items.map((item, index) => (
               <li
                 key={`${item.sourceType}-${item.sourceId ?? "manual"}-${index}`}
-                className="glass-panel rounded-card flex items-center justify-between gap-3 px-3 py-2 text-sm"
+                className="glass-input rounded-field flex items-center justify-between gap-3 px-3.5 py-2.5 text-[13px]"
               >
                 <span className="flex-1">
                   <span className="text-text-subtle font-mono text-[10px] tracking-wide uppercase">
@@ -230,9 +224,21 @@ export function ServiceOrderForm({
                 <button
                   type="button"
                   onClick={() => removeItem(index)}
-                  className="text-red-600 hover:underline"
+                  aria-label="Remover item"
+                  title="Remover"
+                  className="text-text-subtle flex h-7 w-7 items-center justify-center rounded-[8px] transition-colors hover:bg-red-50 hover:text-[#d33a3f]"
                 >
-                  Remover
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+                  </svg>
                 </button>
               </li>
             ))}
@@ -245,7 +251,7 @@ export function ServiceOrderForm({
             onChange={(e) => setNewItem(e.target.value)}
             maxLength={MAX_ITEM_DESCRIPTION}
             placeholder="Novo item manual…"
-            className="glass-input text-text placeholder:text-text-subtle rounded-card flex-1 px-3 py-2 text-sm"
+            className="glass-input text-text placeholder:text-text-subtle rounded-field h-[46px] flex-1 px-3.5 text-[13px] outline-none"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -256,15 +262,16 @@ export function ServiceOrderForm({
           <button
             type="button"
             onClick={addManualItem}
-            className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
+            className="glass-input text-text-muted hover:text-text rounded-field px-5 text-[13px] font-semibold transition-colors"
           >
             Adicionar
           </button>
         </div>
-      </div>
+      </FormSection>
 
       <FormActions>
-        <SubmitButton pending={pending} label={id ? "Salvar" : "Criar OS"} />
+        <CancelLink href="/service-orders" />
+        <SubmitButton pending={pending} label={id ? "Salvar OS" : "Criar OS"} />
       </FormActions>
     </form>
   );
