@@ -233,3 +233,10 @@ export {
   type NewFormControl,
 } from "./form-controls";
 export { medicos, medicoStatus, type Medico, type NewMedico } from "./medicos";
+export {
+  healthExams,
+  examType,
+  examAptitude,
+  type HealthExam,
+  type NewHealthExam,
+} from "./health-exams";
