@@ -112,10 +112,12 @@ export async function seedPgrBase(admin: ReturnType<typeof postgres>): Promise<v
       ('org_a','${I.epiCatalogA}','${I.riskA}','neutralizes'),
       ('org_b','${I.epiCatalogB}','${I.riskB}','does_not_neutralize');
 
+    -- assessed_at fixo (não defaultNow()): mantém o seed determinístico e evita
+    -- que a data "de hoje" fique mais recente que datas de teste (flake de calendário).
     insert into public.risk_assessments
-      (id, org_id, risk_id, criterion, probability, severity, risk_level) values
-      ('${I.riskAssessmentA}','org_a','${I.riskA}','qualitative',3,3,9),
-      ('${I.riskAssessmentB}','org_b','${I.riskB}','quantitative',2,4,8);
+      (id, org_id, risk_id, criterion, probability, severity, risk_level, assessed_at) values
+      ('${I.riskAssessmentA}','org_a','${I.riskA}','qualitative',3,3,9,'2024-01-01'),
+      ('${I.riskAssessmentB}','org_b','${I.riskB}','quantitative',2,4,8,'2024-01-01');
 
     insert into public.control_measures
       (id, org_id, risk_id, control_level, applicable) values
