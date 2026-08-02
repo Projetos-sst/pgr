@@ -11,9 +11,11 @@ import type { WorkUnitInput, WorkUnit } from "@/shared/domains/pgr/work-units";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 
 import {
+  CancelLink,
   FieldError,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
@@ -104,37 +106,42 @@ export function WorkUnitForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <FormError message={formError} />
-      <SelectField
-        label="Empresa"
-        name="companyId"
-        required
-        value={companyId}
-        onChange={setCompanyId}
-        options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
-        error={errors.companyId}
-      />
-      <TextField
-        label="Nome"
-        name="name"
-        required
-        defaultValue={workUnit?.name}
-        error={errors.name}
-      />
-      <TextField
-        label="Objeto/descrição"
-        name="description"
-        required
-        defaultValue={workUnit?.description}
-        error={errors.description}
-      />
-      <TextField
-        label="Nº do contrato"
-        name="contractNumber"
-        defaultValue={workUnit?.contractNumber}
-        error={errors.contractNumber}
-      />
+
+      <FormSection title="Identificação">
+        <SelectField
+          label="Empresa"
+          name="companyId"
+          required
+          value={companyId}
+          onChange={setCompanyId}
+          options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
+          error={errors.companyId}
+        />
+        <TextField
+          label="Nome"
+          name="name"
+          required
+          defaultValue={workUnit?.name}
+          error={errors.name}
+        />
+        <TextField
+          label="Nº do contrato"
+          name="contractNumber"
+          isMono
+          defaultValue={workUnit?.contractNumber}
+          error={errors.contractNumber}
+        />
+        <TextField
+          label="Objeto/descrição"
+          name="description"
+          required
+          isFullWidth
+          defaultValue={workUnit?.description}
+          error={errors.description}
+        />
+      </FormSection>
 
       <AddressFields
         value={address}
@@ -145,7 +152,7 @@ export function WorkUnitForm({
             type="button"
             onClick={copyCompanyAddress}
             disabled={!canCopyAddress}
-            className="glass-panel text-text-muted rounded-card hover:text-text self-start px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-40"
+            className="text-text-muted hover:text-text mb-4 self-start rounded-[11px] border border-white/70 bg-white/50 px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-40"
           >
             Preencher com endereço da empresa
           </button>
@@ -154,6 +161,7 @@ export function WorkUnitForm({
 
       <FieldError message={errors._} />
       <FormActions>
+        <CancelLink href="/work-units" />
         <SubmitButton
           pending={pending}
           label={workUnit ? "Salvar alterações" : "Criar unidade"}

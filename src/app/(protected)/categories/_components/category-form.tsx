@@ -10,9 +10,11 @@ import {
 import type { Category, CategoryInput } from "@/shared/domains/pgr/categories";
 
 import {
+  CancelLink,
   FieldError,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
@@ -54,31 +56,38 @@ export function CategoryForm({ category }: { category?: Category }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <FormError message={formError} />
-      <SelectField
-        label="Tipo"
-        name="type"
-        required
-        defaultValue={category?.type}
-        options={TYPE_OPTIONS}
-        error={errors.type}
-      />
-      <TextField
-        label="Nome"
-        name="name"
-        required
-        defaultValue={category?.name}
-        error={errors.name}
-      />
-      <TextField
-        label="Observação"
-        name="note"
-        defaultValue={category?.note}
-        error={errors.note}
-      />
+
+      <FormSection title="Categoria">
+        <SelectField
+          label="Tipo"
+          name="type"
+          required
+          defaultValue={category?.type}
+          options={TYPE_OPTIONS}
+          error={errors.type}
+        />
+        <TextField
+          label="Nome"
+          name="name"
+          required
+          defaultValue={category?.name}
+          error={errors.name}
+        />
+        <TextField
+          label="Observação"
+          name="note"
+          isFullWidth
+          placeholder="Descrição opcional da categoria"
+          defaultValue={category?.note}
+          error={errors.note}
+        />
+      </FormSection>
+
       <FieldError message={errors._} />
       <FormActions>
+        <CancelLink href="/categories" />
         <SubmitButton
           pending={pending}
           label={category ? "Salvar alterações" : "Criar categoria"}

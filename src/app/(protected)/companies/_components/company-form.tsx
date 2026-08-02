@@ -11,9 +11,11 @@ import type { CompanyInput, Company } from "@/shared/domains/pgr/companies";
 import { useCnpjLookup } from "@/shared/integrations/client/use-cnpj-lookup";
 
 import {
+  CancelLink,
   FieldError,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
@@ -119,21 +121,25 @@ export function CompanyForm({ company }: { company?: Company }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <FormError message={formError} />
-      <TextField
-        label="Razão social"
-        name="razaoSocial"
-        required
-        value={fields.razaoSocial}
-        onChange={setField("razaoSocial")}
-        error={errors.razaoSocial}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1">
+
+      <FormSection title="Identificação">
+        <TextField
+          label="Razão social"
+          name="razaoSocial"
+          required
+          isFullWidth
+          value={fields.razaoSocial}
+          onChange={setField("razaoSocial")}
+          error={errors.razaoSocial}
+        />
+        <div>
           <TextField
             label="CNPJ"
             name="cnpj"
+            isMono
+            placeholder="00.000.000/0000-00"
             value={fields.cnpj}
             onChange={setField("cnpj")}
             onBlur={() => cnpjLookup.lookup(fields.cnpj)}
@@ -148,8 +154,6 @@ export function CompanyForm({ company }: { company?: Company }) {
           onChange={setField("nomeFantasia")}
           error={errors.nomeFantasia}
         />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
           label="Grau de Risco (NR-04)"
           name="riskGrade"
@@ -165,15 +169,17 @@ export function CompanyForm({ company }: { company?: Company }) {
           onChange={setField("cnae")}
           error={errors.cnae}
         />
-      </div>
-      <TextField
-        label="Atividade principal"
-        name="mainActivity"
-        value={fields.mainActivity}
-        onChange={setField("mainActivity")}
-        error={errors.mainActivity}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          label="Atividade principal"
+          name="mainActivity"
+          isFullWidth
+          value={fields.mainActivity}
+          onChange={setField("mainActivity")}
+          error={errors.mainActivity}
+        />
+      </FormSection>
+
+      <FormSection title="Contato & marca">
         <TextField
           label="Telefone"
           name="phone"
@@ -183,22 +189,25 @@ export function CompanyForm({ company }: { company?: Company }) {
         <TextField
           label="E-mail"
           name="email"
+          type="email"
           defaultValue={company?.email}
           error={errors.email}
         />
-      </div>
+        <TextField
+          label="Logo (caminho)"
+          name="logoPath"
+          isFullWidth
+          defaultValue={company?.logoPath}
+          error={errors.logoPath}
+        />
+      </FormSection>
 
       <AddressFields value={address} onChange={setAddress} errors={errors} />
 
-      <TextField
-        label="Logo (caminho)"
-        name="logoPath"
-        defaultValue={company?.logoPath}
-        error={errors.logoPath}
-      />
       <FieldError message={errors._} />
 
       <FormActions>
+        <CancelLink href="/companies" />
         <SubmitButton
           pending={pending}
           label={company ? "Salvar alterações" : "Criar empresa"}
@@ -214,18 +223,18 @@ function CnpjStatus({
   status: "idle" | "loading" | "success" | "error" | "invalid";
 }) {
   if (status === "loading") {
-    return <span className="text-text-subtle text-xs">Buscando…</span>;
+    return <span className="text-text-subtle mt-1 block text-xs">Buscando…</span>;
   }
   if (status === "error") {
     return (
-      <span className="text-xs text-amber-600">
+      <span className="mt-1 block text-xs text-amber-600">
         CNPJ não encontrado. Preencha manualmente.
       </span>
     );
   }
   if (status === "invalid") {
     return (
-      <span className="text-xs text-amber-600 dark:text-amber-400">
+      <span className="mt-1 block text-xs text-amber-600">
         CNPJ inválido — confira os dígitos.
       </span>
     );

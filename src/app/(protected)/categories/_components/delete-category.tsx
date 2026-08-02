@@ -7,11 +7,11 @@ import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 export function DeleteCategory({
   id,
   redirectTo,
-  hasLabel,
+  variant = "icon",
 }: {
   id: string;
   redirectTo?: string;
-  hasLabel?: boolean;
+  variant?: "text" | "icon";
 }) {
   return (
     <ConfirmDeleteButton
@@ -20,7 +20,7 @@ export function DeleteCategory({
       deleteAction={deleteCategoryAction}
       description="Esta ação é permanente. A categoria será removida do catálogo do escritório."
       redirectTo={redirectTo}
-      hasLabel={hasLabel}
+      hasLabel={variant === "text"}
     />
   );
 }

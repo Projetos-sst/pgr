@@ -5,6 +5,7 @@ import { getCompanyAction } from "@/shared/server/actions/pgr/companies";
 
 import { PageHeader } from "../../../_ui/list";
 import { CompanyForm } from "../../_components/company-form";
+import { CompanyIcon } from "../../_components/company-icon";
 import { DeleteCompany } from "../../_components/delete-company";
 
 export const dynamic = "force-dynamic";
@@ -21,11 +22,13 @@ export default async function EditCompanyPage({
   const company = result.data;
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
       <PageHeader
+        backHref="/companies"
+        icon={<CompanyIcon />}
         title={company.razaoSocial}
-        description="Detalhe e edição da empresa."
-        action={<DeleteCompany id={company.id} redirectTo="/companies" hasLabel />}
+        description="Detalhe e edição da empresa"
+        action={<DeleteCompany id={company.id} redirectTo="/companies" variant="text" />}
       />
       <CompanyForm company={company} />
     </div>
