@@ -59,6 +59,7 @@ const NAV: NavEntry[] = [
       { href: "/job-roles", label: "Funções", iconName: "briefcase-user" },
       { href: "/ges", label: "GES", iconName: "layers" },
       { href: "/employees", label: "Funcionários", iconName: "users" },
+      { href: "/medicos", label: "Médicos", iconName: "stethoscope" },
       { href: "/categories", label: "Categorias", iconName: "tag" },
       { href: "/training-catalog", label: "Treinamentos", iconName: "book-open" },
       {
@@ -260,6 +261,20 @@ function NavIcon({ name, className = "w-4 h-4" }: { name?: string; className?: s
         <svg {...props}>
           <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
           <line x1="7" y1="7" x2="7.01" y2="7" />
+        </svg>
+      );
+    case "stethoscope":
+      return (
+        <svg {...props}>
+          <path d="M4 3v6a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3" />
+          <path d="M11 15v2a5 5 0 0 0 10 0v-2" />
+          <circle cx="20" cy="12" r="2" />
+        </svg>
+      );
+    case "activity":
+      return (
+        <svg {...props}>
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
         </svg>
       );
     case "book-open":

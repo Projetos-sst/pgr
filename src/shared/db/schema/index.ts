@@ -232,3 +232,4 @@ export {
   type FormControl,
   type NewFormControl,
 } from "./form-controls";
+export { medicos, medicoStatus, type Medico, type NewMedico } from "./medicos";
