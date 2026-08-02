@@ -7,7 +7,7 @@ import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 export function DeleteFormControl({
   id,
   redirectTo,
-  hasLabel,
+  hasLabel = false,
 }: {
   id: string;
   redirectTo?: string;
