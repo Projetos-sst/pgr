@@ -15,6 +15,7 @@ import {
   type ActionPlanFilters,
   type ActionPlanListItem,
   type ActionPlanStatusTransitionInput,
+  type ActionPlanSummary,
   type ActionPlanUpdateInput,
 } from "@/shared/domains/safety/action-plan";
 import { accidentTypeLabel } from "@/shared/domains/safety/accident";
@@ -56,6 +57,14 @@ export async function listActionPlansAction(
 ): Promise<ActionResult<Paginated<ActionPlanListItem>>> {
   return officeAction("safety.action_plans.list", ({ tenantId }) =>
     repo.listActionPlans(tenantId, actionPlanFiltersSchema.parse(input)),
+  );
+}
+
+export async function getActionPlanSummaryAction(): Promise<
+  ActionResult<ActionPlanSummary>
+> {
+  return officeAction("safety.action_plans.summary", ({ tenantId }) =>
+    repo.getActionPlanSummary(tenantId),
   );
 }
 

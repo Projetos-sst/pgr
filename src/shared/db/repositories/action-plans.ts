@@ -14,6 +14,7 @@ import {
   type ActionPlanFilters,
   type ActionPlanListItem,
   type ActionPlanStatus,
+  type ActionPlanSummary,
   type ActionPlanUpdateValues,
 } from "@/shared/domains/safety/action-plan";
 import type {
@@ -182,6 +183,23 @@ export async function listActionPlans(
       origin: snapshots.get(`${r.originType}:${r.originId}`)!,
     }));
     return { rows: items, total };
+  });
+}
+
+/** KPIs derivados (contagem por status + atrasados) — sem tabela nova. */
+export async function getActionPlanSummary(orgId: string): Promise<ActionPlanSummary> {
+  const today = todayInSaoPaulo();
+  return withOrg(orgId, async (tx) => {
+    const [row] = await tx
+      .select({
+        planned: sql<number>`count(*) filter (where ${actionPlans.status} = 'planned')::int`,
+        inProgress: sql<number>`count(*) filter (where ${actionPlans.status} = 'in_progress')::int`,
+        completed: sql<number>`count(*) filter (where ${actionPlans.status} = 'completed')::int`,
+        overdue: sql<number>`count(*) filter (where ${actionPlans.when} is not null and ${actionPlans.when} < ${today} and ${actionPlans.status} not in ('completed','cancelled'))::int`,
+      })
+      .from(actionPlans)
+      .where(eq(actionPlans.orgId, orgId));
+    return row;
   });
 }
 
