@@ -5,6 +5,7 @@ import { getEpiCatalogAction } from "@/shared/server/actions/pgr/epi-catalog";
 
 import { PageHeader } from "../../../_ui/list";
 import { EpiCatalogForm } from "../../_components/epi-catalog-form";
+import { EpiIcon } from "../../_components/epi-icon";
 import { DeleteEpiCatalog } from "../../_components/delete-epi-catalog";
 
 export const dynamic = "force-dynamic";
@@ -20,12 +21,18 @@ export default async function EditEpiCatalogPage({
   if (!result.ok) notFound();
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
       <PageHeader
+        backHref="/epi-catalog"
+        icon={<EpiIcon />}
         title="Editar item de catálogo"
-        description="Altere os dados do item ou exclua-o do catálogo."
+        description={result.data.name}
         action={
-          <DeleteEpiCatalog id={result.data.id} redirectTo="/epi-catalog" hasLabel />
+          <DeleteEpiCatalog
+            id={result.data.id}
+            redirectTo="/epi-catalog"
+            variant="text"
+          />
         }
       />
       <EpiCatalogForm item={result.data} />
