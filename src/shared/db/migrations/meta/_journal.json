@@ -211,6 +211,13 @@
       "when": 1785693659214,
       "tag": "0029_medicos",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1785699227221,
+      "tag": "0030_health_exams",
+      "breakpoints": true
     }
   ]
 }

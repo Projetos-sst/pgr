@@ -51,6 +51,10 @@
       "value": ""
     },
     {
+      "key": "healthExamId",
+      "value": ""
+    },
+    {
       "key": "formControlId",
       "value": ""
     },
@@ -2717,6 +2721,150 @@
               "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "medicos", "{{medicoId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Saude Ocupacional (ASO)",
+      "item": [
+        {
+          "name": "GET /health-exams (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams?search=&examType=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "examType",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /health-exams (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"doctorId\": \"{{medicoId}}\",\n  \"examType\": \"admissional\",\n  \"performedAt\": \"2026-01-14\",\n  \"validUntil\": \"2027-01-14\",\n  \"aptitude\": \"fit\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /health-exams/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /health-exams/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"examType\": \"periodic\",\n  \"performedAt\": \"2026-02-03\",\n  \"aptitude\": \"fit_with_restrictions\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /health-exams/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}"]
             }
           }
         }
