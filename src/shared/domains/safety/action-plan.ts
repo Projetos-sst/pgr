@@ -30,6 +30,14 @@ export const actionPlanStatusSchema = z.enum([
 ]);
 export type ActionPlanStatus = z.infer<typeof actionPlanStatusSchema>;
 
+/** KPIs derivados da lista de planos de ação (contagem por status + atrasados). */
+export type ActionPlanSummary = {
+  planned: number;
+  inProgress: number;
+  completed: number;
+  overdue: number;
+};
+
 export const ACTION_PLAN_STATUS_LABELS: Record<ActionPlanStatus, string> = {
   planned: "Planejado",
   in_progress: "Em andamento",
