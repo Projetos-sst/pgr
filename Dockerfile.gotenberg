@@ -4,6 +4,11 @@
 # CMD/args. Consumido por `src/shared/integrations/pdf/gotenberg.ts` via
 # `GOTENBERG_URL` (+ `GOTENBERG_TOKEN`, validado pelo proxy reverso na frente
 # dele — o Gotenberg em si não tem auth).
+#
+# --api-port=43217: porta não-padrão — o Easypanel do VPS já ocupa a 3000 com
+# outro serviço, então o Gotenberg passa a escutar em 43217 (dentro do
+# container). Mantenha em sincronia com o healthcheck do docker-compose.homolog.yml
+# e com o Caddyfile em ./gotenberg-proxy/ (cenário B).
 FROM gotenberg/gotenberg:8
 
-CMD ["gotenberg", "--api-timeout=120s", "--chromium-max-queue-size=0"]
+CMD ["gotenberg", "--api-timeout=120s", "--chromium-max-queue-size=0", "--api-port=43217"]
