@@ -1,6 +1,7 @@
 import "server-only";
 
 import { and, eq, isNull, lt, ne, sql } from "drizzle-orm";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 
 import { todayInSaoPaulo } from "@/shared/dates";
 
@@ -9,6 +10,7 @@ import {
   companies,
   controlMeasures,
   employees,
+  epiCatalog,
   epiDeliveries,
   epiDeliveryItems,
   epiStock,
@@ -23,10 +25,59 @@ import { getTrainingDueSummary } from "./training-compliance";
 import {
   fillActionPlansByLevel,
   fillRisksByAgentType,
+  type DashboardKpis,
   type DashboardSummary,
 } from "@/shared/domains/platform/dashboard";
+import type { OnboardingCounts } from "@/shared/domains/platform/onboarding";
 
 const countExpr = sql<number>`count(*)::int`;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Tx = PgTransaction<any, any, any>;
+
+async function computeCoreKpis(tx: Tx, orgId: string): Promise<DashboardKpis> {
+  const [[companyRow], [employeeRow], [workUnitRow], [gesRow], [riskRow], [pgrRow]] =
+    await Promise.all([
+      tx.select({ n: countExpr }).from(companies).where(eq(companies.orgId, orgId)),
+      tx.select({ n: countExpr }).from(employees).where(eq(employees.orgId, orgId)),
+      tx.select({ n: countExpr }).from(workUnits).where(eq(workUnits.orgId, orgId)),
+      tx.select({ n: countExpr }).from(ges).where(eq(ges.orgId, orgId)),
+      tx.select({ n: countExpr }).from(risks).where(eq(risks.orgId, orgId)),
+      tx.select({ n: countExpr }).from(pgr).where(eq(pgr.orgId, orgId)),
+    ]);
+
+  return {
+    companies: companyRow?.n ?? 0,
+    employees: employeeRow?.n ?? 0,
+    workUnits: workUnitRow?.n ?? 0,
+    ges: gesRow?.n ?? 0,
+    risks: riskRow?.n ?? 0,
+    pgrs: pgrRow?.n ?? 0,
+  };
+}
+
+/**
+ * Contagens usadas pela Trilha de Sucesso (`/getting-started` + badge de
+ * onboarding no header): os 6 KPIs núcleo + os 2 módulos "bônus" — só
+ * `count(*)` simples, sem as agregações pesadas do dashboard completo, para
+ * não pagar esse custo em toda navegação autenticada.
+ */
+export async function getOnboardingCounts(orgId: string): Promise<OnboardingCounts> {
+  return withOrg(orgId, async (tx) => {
+    const t = tx as Tx;
+    const [core, [epiCatalogRow], [serviceOrderRow]] = await Promise.all([
+      computeCoreKpis(t, orgId),
+      t.select({ n: countExpr }).from(epiCatalog).where(eq(epiCatalog.orgId, orgId)),
+      t.select({ n: countExpr }).from(serviceOrders).where(eq(serviceOrders.orgId, orgId)),
+    ]);
+
+    return {
+      ...core,
+      epiCatalogItems: epiCatalogRow?.n ?? 0,
+      serviceOrders: serviceOrderRow?.n ?? 0,
+    };
+  });
+}
 
 /**
  * Read-model do dashboard: agregações escopadas ao tenant (todas as queries
@@ -36,15 +87,15 @@ export async function getDashboardSummary(orgId: string): Promise<DashboardSumma
   const today = todayInSaoPaulo();
 
   const summary = await withOrg(orgId, async (tx) => {
-    const [[companyRow], [employeeRow], [workUnitRow], [gesRow], [riskRow], [pgrRow]] =
-      await Promise.all([
-        tx.select({ n: countExpr }).from(companies).where(eq(companies.orgId, orgId)),
-        tx.select({ n: countExpr }).from(employees).where(eq(employees.orgId, orgId)),
-        tx.select({ n: countExpr }).from(workUnits).where(eq(workUnits.orgId, orgId)),
-        tx.select({ n: countExpr }).from(ges).where(eq(ges.orgId, orgId)),
-        tx.select({ n: countExpr }).from(risks).where(eq(risks.orgId, orgId)),
-        tx.select({ n: countExpr }).from(pgr).where(eq(pgr.orgId, orgId)),
-      ]);
+    const kpis = await computeCoreKpis(tx as Tx, orgId);
+
+    const employeeStatusRows = await tx
+      .select({ status: employees.status, count: countExpr })
+      .from(employees)
+      .where(eq(employees.orgId, orgId))
+      .groupBy(employees.status);
+    const activeEmployees =
+      employeeStatusRows.find((r) => r.status === "active")?.count ?? 0;
 
     const risksByAgent = await tx
       .select({ key: risks.agentType, count: countExpr })
@@ -124,13 +175,10 @@ export async function getDashboardSummary(orgId: string): Promise<DashboardSumma
       );
 
     return {
-      kpis: {
-        companies: companyRow?.n ?? 0,
-        employees: employeeRow?.n ?? 0,
-        workUnits: workUnitRow?.n ?? 0,
-        ges: gesRow?.n ?? 0,
-        risks: riskRow?.n ?? 0,
-        pgrs: pgrRow?.n ?? 0,
+      kpis,
+      employeesBreakdown: {
+        active: activeEmployees,
+        inactive: Math.max(kpis.employees - activeEmployees, 0),
       },
       risksByAgentType: fillRisksByAgentType(risksByAgent),
       actionPlansByLevel: fillActionPlansByLevel(plansByLevel),

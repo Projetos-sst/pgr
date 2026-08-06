@@ -54,6 +54,10 @@ export function DashboardClientWrapper({
   const companyCount = data.kpis.companies;
   const employeeCount = data.kpis.employees;
   const gesCount = data.kpis.ges;
+  const activeEmployees = data.employeesBreakdown.active;
+  const inactiveEmployees = data.employeesBreakdown.inactive;
+  const serviceOrdersTotal = data.serviceOrdersSummary?.total ?? 0;
+  const serviceOrdersSigned = data.serviceOrdersSummary?.signed ?? 0;
 
   return (
     <>
@@ -96,8 +100,7 @@ export function DashboardClientWrapper({
           <StatCard
             eyebrow="PGRS"
             label="PGRs"
-            value={pgrCount > 0 ? pgrCount : 12}
-            subtext={<span className="font-semibold text-[#0e9f6e]">▲ 3 este mês</span>}
+            value={pgrCount}
             href="/pgr"
             icon={
               <svg
@@ -116,8 +119,8 @@ export function DashboardClientWrapper({
           <StatCard
             eyebrow="EMPRESAS"
             label="Empresas"
-            value={companyCount > 0 ? companyCount : 8}
-            subtext={`${gesCount > 0 ? gesCount : 14} GES ativos`}
+            value={companyCount}
+            subtext={`${gesCount} GES ativos`}
             href="/companies"
             icon={
               <svg
@@ -136,16 +139,18 @@ export function DashboardClientWrapper({
           <StatCard
             eyebrow="EQUIPE"
             label="Funcionários"
-            value={employeeCount > 0 ? employeeCount : 47}
+            value={employeeCount}
             subtext={
-              <div className="mt-0.5 flex items-center gap-1.5">
-                <span className="rounded-full bg-[#10b981]/12 px-2.5 py-0.5 text-[10px] font-bold text-[#0e9f6e]">
-                  {employeeCount > 0 ? Math.max(employeeCount - 5, 1) : 42} ativos
-                </span>
-                <span className="rounded-full bg-white/60 px-2.5 py-0.5 text-[10px] font-bold text-[#797e96]">
-                  5 inativos
-                </span>
-              </div>
+              employeeCount > 0 ? (
+                <div className="mt-0.5 flex items-center gap-1.5">
+                  <span className="rounded-full bg-[#10b981]/12 px-2.5 py-0.5 text-[10px] font-bold text-[#0e9f6e]">
+                    {activeEmployees} ativos
+                  </span>
+                  <span className="rounded-full bg-white/60 px-2.5 py-0.5 text-[10px] font-bold text-[#797e96]">
+                    {inactiveEmployees} inativos
+                  </span>
+                </div>
+              ) : undefined
             }
             href="/employees"
             icon={
@@ -166,9 +171,11 @@ export function DashboardClientWrapper({
           <StatCard
             eyebrow="OS FUNCIONAL"
             label="OS Funcional"
-            value={23}
-            subtext="9 emitidas hoje"
-            href="/risks"
+            value={serviceOrdersTotal}
+            subtext={
+              serviceOrdersTotal > 0 ? `${serviceOrdersSigned} assinadas` : "Ordens de serviço"
+            }
+            href="/service-orders"
             highlight
             icon={
               <svg

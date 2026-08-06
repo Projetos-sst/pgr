@@ -43,8 +43,11 @@ export type AccidentsSummary = {
   total: number;
 };
 
+export type EmployeesBreakdown = { active: number; inactive: number };
+
 export type DashboardSummary = {
   kpis: DashboardKpis;
+  employeesBreakdown: EmployeesBreakdown;
   risksByAgentType: CountByKey[];
   actionPlansByLevel: CountByKey[];
   pending: DashboardPending;
