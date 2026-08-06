@@ -1,4 +1,4 @@
-# SST Manager
+# PGR-e
 
 Plataforma multiempresa de Segurança e Medicina do Trabalho (Next.js 16 App Router + Clerk).
 

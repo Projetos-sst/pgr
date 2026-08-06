@@ -39,10 +39,10 @@ export default async function ProtectedLayout({
             className="group flex shrink-0 items-center gap-2.5 transition-transform duration-200 active:scale-95"
           >
             <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-[#5b63f5] text-sm font-extrabold text-white shadow-[0_4px_14px_rgba(91,99,245,0.4)] transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_6px_20px_rgba(91,99,245,0.6)]">
-              S
+              P
             </span>
             <span className="hidden text-base font-extrabold tracking-tight text-[#1b1f2e] transition-colors duration-200 group-hover:text-[#5b63f5] sm:inline">
-              SST Manager
+              PGR-e
             </span>
           </Link>
           <NavMenu />

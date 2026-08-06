@@ -1,4 +1,4 @@
-# Roadmap de Arquitetura — SST Manager
+# Roadmap de Arquitetura — PGR-e
 
 Este diretório é o **norte técnico** do projeto. Ele descreve _como_ a aplicação
 deve ser construída: estrutura de pastas, modelagem de dados, design de API,

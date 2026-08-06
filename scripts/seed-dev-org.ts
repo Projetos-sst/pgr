@@ -15,8 +15,8 @@ async function main() {
   // Ensure organization exists with pro plan
   await sql`
     insert into public.orgs (id, name, slug, plan)
-    values (${ORG_ID}, 'sst-manager-development', 'sst-manager-development', 'pro')
-    on conflict (id) do update set name = 'sst-manager-development', plan = 'pro';
+    values (${ORG_ID}, 'pgr-e-development', 'pgr-e-development', 'pro')
+    on conflict (id) do update set name = 'pgr-e-development', plan = 'pro';
   `;
 
   // Get existing companies or create sample companies
@@ -619,7 +619,7 @@ async function main() {
     `;
   }
 
-  console.log("Seed para sst-manager-development concluído com sucesso!");
+  console.log("Seed para pgr-e-development concluído com sucesso!");
   await sql.end();
 }
 

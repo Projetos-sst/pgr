@@ -6,7 +6,7 @@ export default function Home() {
     <div className="flex flex-1 flex-col items-center justify-center">
       <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-8 py-24 text-center sm:items-start sm:text-left">
         <h1 className="text-text max-w-xl text-4xl font-semibold tracking-tight sm:text-5xl">
-          SST Manager
+          PGR-e
         </h1>
         <p className="text-text-muted max-w-md text-lg leading-8">
           Plataforma multiempresa de Segurança e Medicina do Trabalho. Acesse com sua

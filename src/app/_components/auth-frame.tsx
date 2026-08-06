@@ -51,9 +51,9 @@ export function AuthFrame({
 
         <div className="relative flex items-center gap-3">
           <span className="flex h-[38px] w-[38px] items-center justify-center rounded-[12px] border border-white/35 bg-white/20 text-base font-extrabold backdrop-blur">
-            S
+            P
           </span>
-          <span className="text-lg font-extrabold tracking-tight">SST Manager</span>
+          <span className="text-lg font-extrabold tracking-tight">PGR-e</span>
         </div>
 
         <div className="relative">

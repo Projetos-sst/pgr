@@ -24,7 +24,7 @@ export default async function PlanosPage() {
     <div className="flex flex-col gap-8 px-6 py-8">
       <div className="glass-panel flex flex-col items-center gap-3 rounded-3xl border border-white/60 p-8 text-center shadow-xl">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#5b63f5]/15 px-3.5 py-1 text-xs font-extrabold text-[#5b63f5]">
-          ✦ Planos de Assinatura SST Manager
+          ✦ Planos de Assinatura PGR-e
         </span>
         <h1 className="text-3xl font-black tracking-tight text-[#1b1f2e] sm:text-4xl">
           Escolha o Plano Ideal para a Sua Empresa

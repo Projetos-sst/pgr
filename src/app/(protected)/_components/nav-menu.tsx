@@ -665,10 +665,10 @@ export function NavMenu() {
                       className="flex items-center gap-2.5 transition-transform hover:scale-105"
                     >
                       <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-[#5b63f5] text-sm font-extrabold text-white shadow-[0_4px_14px_rgba(91,99,245,0.4)]">
-                        S
+                        P
                       </span>
                       <span className="text-base font-extrabold tracking-tight text-[#1b1f2e]">
-                        SST Manager
+                        PGR-e
                       </span>
                     </Link>
                     <button
@@ -712,7 +712,7 @@ export function NavMenu() {
                           <line x1="8" y1="2" x2="8" y2="18" />
                           <line x1="16" y1="6" x2="16" y2="22" />
                         </svg>
-                        <span>Trilha do Sucesso — SST Manager</span>
+                        <span>Trilha do Sucesso — PGR-e</span>
                       </Link>
 
                       <Link
@@ -886,7 +886,7 @@ export function NavMenu() {
                       onClick={closeAll}
                       className="flex items-center justify-between text-xs font-medium text-[#7a7f97] hover:text-[#5b63f5]"
                     >
-                      <span>SST Manager System v0.2</span>
+                      <span>PGR-e System v0.2</span>
                       <span>Boas-vindas →</span>
                     </Link>
                   </div>

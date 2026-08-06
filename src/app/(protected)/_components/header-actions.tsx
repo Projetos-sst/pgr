@@ -11,10 +11,10 @@ export function HeaderActions() {
 
   return (
     <div className="flex items-center gap-2">
-      {/* Ícone de Mapa / Trilha do Sucesso — SST Manager */}
+      {/* Ícone de Mapa / Trilha do Sucesso — PGR-e */}
       <Link
         href="/getting-started"
-        title="Trilha do Sucesso — SST Manager"
+        title="Trilha do Sucesso — PGR-e"
         className={`flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/50 bg-white/34 text-[#52576e] shadow-xs backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:scale-105 hover:bg-white/60 hover:text-[#5b63f5] active:scale-95 ${
           isGettingStarted ? "border-[#5b63f5] bg-[#5b63f5]/10 text-[#5b63f5]" : ""
         }`}
