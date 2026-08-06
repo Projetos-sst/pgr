@@ -39,10 +39,14 @@ function checkSandboxBasicAuth(request: NextRequest): NextResponse | null {
 
   const authHeader = request.headers.get("authorization");
   if (authHeader?.startsWith("Basic ")) {
-    const decoded = Buffer.from(authHeader.slice("Basic ".length), "base64").toString("utf-8");
+    const decoded = Buffer.from(authHeader.slice("Basic ".length), "base64").toString(
+      "utf-8",
+    );
     const separatorIndex = decoded.indexOf(":");
-    const providedUser = separatorIndex === -1 ? decoded : decoded.slice(0, separatorIndex);
-    const providedPassword = separatorIndex === -1 ? "" : decoded.slice(separatorIndex + 1);
+    const providedUser =
+      separatorIndex === -1 ? decoded : decoded.slice(0, separatorIndex);
+    const providedPassword =
+      separatorIndex === -1 ? "" : decoded.slice(separatorIndex + 1);
     if (
       timingSafeEqual(providedUser, expectedUser) &&
       timingSafeEqual(providedPassword, expectedPassword)
