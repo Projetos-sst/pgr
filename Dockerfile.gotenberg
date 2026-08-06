@@ -1,0 +1,9 @@
+# Imagem própria do Gotenberg para homolog/prod (Constituição, emenda 1.4.0).
+# Mesma base usada em local (docker-compose.yml), com os flags de execução já
+# fixados na imagem — não depende da plataforma de deploy suportar override de
+# CMD/args. Consumido por `src/shared/integrations/pdf/gotenberg.ts` via
+# `GOTENBERG_URL` (+ `GOTENBERG_TOKEN`, validado pelo proxy reverso na frente
+# dele — o Gotenberg em si não tem auth).
+FROM gotenberg/gotenberg:8
+
+CMD ["gotenberg", "--api-timeout=120s", "--chromium-max-queue-size=0"]
