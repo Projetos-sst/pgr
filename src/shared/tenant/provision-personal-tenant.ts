@@ -5,6 +5,7 @@ import {
   ensureOwnerMembership,
   listTenantMembershipsByUser,
 } from "@/shared/db/repositories/org-memberships";
+import { upsertUser } from "@/shared/db/repositories/users";
 
 import { logTenantEvent } from "./audit-log";
 
@@ -18,6 +19,8 @@ export async function provisionPersonalTenant(
   if (existingTenantId) {
     return { tenantId: existingTenantId, created: false };
   }
+
+  await upsertUser({ id: input.userId });
 
   const tenant = await createTenant({ name: input.name ?? null });
   await ensureOwnerMembership({ orgId: tenant.id, userId: input.userId });
