@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { NoTenantContextError, UnauthorizedError } from "@/shared/auth/errors";
 import { requireTenantContext } from "@/shared/auth/require-tenant-context";
+import { getOnboardingProgressAction } from "@/shared/server/actions/platform/onboarding";
 
 import { TenantSwitcher } from "../_components/tenant-switcher";
 import { UserProfilePill } from "./_components/user-profile-pill";
@@ -30,6 +31,11 @@ export default async function ProtectedLayout({
     throw err;
   }
 
+  // Badge da Trilha de Sucesso: some sozinha quando os passos reais forem
+  // concluídos (sem flag persistida — `client` role recebe `ok:false`, sem badge).
+  const onboarding = await getOnboardingProgressAction();
+  const showOnboardingBadge = onboarding.ok && !onboarding.data.allDone;
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-40 flex h-[72px] w-full max-w-full items-center justify-between gap-1.5 border-b border-white/55 bg-white/42 px-2.5 saturate-[180%] backdrop-blur-[34px] sm:gap-4 sm:px-6 xl:gap-6 xl:px-8">
@@ -45,7 +51,7 @@ export default async function ProtectedLayout({
               PGR-e
             </span>
           </Link>
-          <NavMenu />
+          <NavMenu showOnboardingBadge={showOnboardingBadge} />
         </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           <div className="flex items-center gap-1">
@@ -72,7 +78,7 @@ export default async function ProtectedLayout({
             <TenantSwitcher />
           </div>
           <div className="hidden items-center md:flex">
-            <HeaderActions />
+            <HeaderActions showOnboardingBadge={showOnboardingBadge} />
           </div>
           <NotificationsBell />
           <UserProfilePill />

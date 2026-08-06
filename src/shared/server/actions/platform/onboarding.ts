@@ -12,7 +12,7 @@ export async function getOnboardingProgressAction(): Promise<
   ActionResult<OnboardingProgress>
 > {
   return officeAction("platform.onboarding.progress", async ({ tenantId }) => {
-    const summary = await dashboardRepo.getDashboardSummary(tenantId);
-    return deriveOnboardingProgress(summary.kpis);
+    const counts = await dashboardRepo.getOnboardingCounts(tenantId);
+    return deriveOnboardingProgress(counts);
   });
 }

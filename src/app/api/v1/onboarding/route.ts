@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export function GET(req: NextRequest) {
   return restHandler(req, async ({ tenantId }) => {
-    const summary = await dashboardRepo.getDashboardSummary(tenantId);
-    return deriveOnboardingProgress(summary.kpis);
+    const counts = await dashboardRepo.getOnboardingCounts(tenantId);
+    return deriveOnboardingProgress(counts);
   });
 }

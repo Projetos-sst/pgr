@@ -3,13 +3,23 @@ import { listEmployeeOptionsAction } from "@/shared/server/actions/safety/servic
 import { todayInSaoPaulo } from "@/shared/dates";
 
 import { PageHeader } from "../../_ui/list";
+import { OnboardingTip } from "../../_components/onboarding-tip";
 import { ServiceOrderForm } from "../_components/service-order-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewServiceOrderPage() {
+type SearchParams = Promise<{ onboarding?: string }>;
+
+export default async function NewServiceOrderPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   await requireOfficeStaffPage();
-  const employeesResult = await listEmployeeOptionsAction();
+  const [employeesResult, sp] = await Promise.all([
+    listEmployeeOptionsAction(),
+    searchParams,
+  ]);
   const employees = employeesResult.ok ? employeesResult.data : [];
 
   return (
@@ -18,6 +28,7 @@ export default async function NewServiceOrderPage() {
         title="Nova Ordem de Serviço"
         description="O número é gerado automaticamente por escritório ao salvar."
       />
+      <OnboardingTip stepKey="serviceOrders" show={sp.onboarding === "1"} />
       <ServiceOrderForm
         employees={employees}
         initial={{

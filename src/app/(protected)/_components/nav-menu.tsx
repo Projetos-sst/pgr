@@ -424,7 +424,11 @@ function isGroupExpanded(
   return entry.items.some((item) => isMenuItemActive(item, pathname));
 }
 
-export function NavMenu() {
+export function NavMenu({
+  showOnboardingBadge = false,
+}: {
+  showOnboardingBadge?: boolean;
+}) {
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
@@ -713,6 +717,12 @@ export function NavMenu() {
                           <line x1="16" y1="6" x2="16" y2="22" />
                         </svg>
                         <span>Trilha do Sucesso — PGR-e</span>
+                        {showOnboardingBadge ? (
+                          <span
+                            className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[#f5a524]"
+                            aria-label="Trilha de Sucesso pendente"
+                          />
+                        ) : null}
                       </Link>
 
                       <Link

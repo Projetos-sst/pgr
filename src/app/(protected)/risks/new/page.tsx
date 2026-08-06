@@ -5,11 +5,12 @@ import { getGesAction } from "@/shared/server/actions/pgr/ges";
 import type { Risk } from "@/shared/domains/pgr/risk";
 
 import { PageHeader } from "../../_ui/list";
+import { OnboardingTip } from "../../_components/onboarding-tip";
 import { RiskForm, type RiskFormInitial } from "../_components/risk-form";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ from?: string }>;
+type SearchParams = Promise<{ from?: string; onboarding?: string }>;
 
 /**
  * Reutilização por prefill: com `?from=<id>`, lê o risco de origem (mesmo tenant) e o
@@ -60,6 +61,7 @@ export default async function NewRiskPage({
             : "Cadastro de risco de um Grupo de Exposição Similar (NR-01/GRO / eSocial S-2240)."
         }
       />
+      <OnboardingTip stepKey="risks" show={sp.onboarding === "1"} />
       <RiskForm companies={companies} initial={initial} />
     </div>
   );

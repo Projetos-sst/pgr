@@ -2,6 +2,7 @@ import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
 
 import { getTenantSwitcher } from "@/shared/tenant/switcher";
+import { getOnboardingProgressAction } from "@/shared/server/actions/platform/onboarding";
 
 export const dynamic = "force-dynamic";
 
@@ -13,11 +14,16 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 export default async function BoasVindasPage() {
-  const [user, switcher] = await Promise.all([currentUser(), getTenantSwitcher()]);
+  const [user, switcher, onboarding] = await Promise.all([
+    currentUser(),
+    getTenantSwitcher(),
+    getOnboardingProgressAction(),
+  ]);
   const firstName = user?.firstName?.trim();
   const activeOrg = switcher?.options.find((option) => option.isActive);
   const orgName = activeOrg?.name ?? "sua organização";
   const today = dateFormatter.format(new Date());
+  const showOnboardingBadge = onboarding.ok && !onboarding.data.allDone;
 
   return (
     <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-8">
@@ -66,9 +72,15 @@ export default async function BoasVindasPage() {
           </Link>
           <Link
             href="/getting-started"
-            className="text-text-muted hover:text-text inline-flex items-center justify-center px-4 py-3 text-sm font-semibold transition-colors"
+            className="text-text-muted hover:text-text inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
           >
             Ver primeiros passos
+            {showOnboardingBadge ? (
+              <span
+                className="h-2 w-2 shrink-0 rounded-full bg-[#f5a524]"
+                aria-label="Trilha de Sucesso pendente"
+              />
+            ) : null}
           </Link>
         </div>
       </div>

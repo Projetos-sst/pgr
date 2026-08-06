@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export function HeaderActions() {
+export function HeaderActions({
+  showOnboardingBadge = false,
+}: {
+  showOnboardingBadge?: boolean;
+}) {
   const pathname = usePathname();
 
   const isGettingStarted = pathname === "/getting-started";
@@ -15,7 +19,7 @@ export function HeaderActions() {
       <Link
         href="/getting-started"
         title="Trilha do Sucesso — PGR-e"
-        className={`flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/50 bg-white/34 text-[#52576e] shadow-xs backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:scale-105 hover:bg-white/60 hover:text-[#5b63f5] active:scale-95 ${
+        className={`relative flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/50 bg-white/34 text-[#52576e] shadow-xs backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:scale-105 hover:bg-white/60 hover:text-[#5b63f5] active:scale-95 ${
           isGettingStarted ? "border-[#5b63f5] bg-[#5b63f5]/10 text-[#5b63f5]" : ""
         }`}
       >
@@ -33,6 +37,12 @@ export function HeaderActions() {
           <line x1="8" y1="2" x2="8" y2="18" />
           <line x1="16" y1="6" x2="16" y2="22" />
         </svg>
+        {showOnboardingBadge ? (
+          <span
+            className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#f5a524] ring-2 ring-white"
+            aria-label="Trilha de Sucesso pendente"
+          />
+        ) : null}
       </Link>
 
       {/* Ícone de Check / Minhas Tarefas / Pendências */}
