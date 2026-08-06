@@ -7,7 +7,7 @@
 	}
 
 	handle @authorized {
-		reverse_proxy gotenberg:3000
+		reverse_proxy gotenberg:43217
 	}
 
 	handle {
