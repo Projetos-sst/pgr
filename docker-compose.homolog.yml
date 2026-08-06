@@ -1,0 +1,56 @@
+# Gotenberg em homolog — VPS com Docker.
+#
+# Cenário A (padrão, recomendado): o app Next roda NO MESMO VPS (ou em outro
+# container que compartilha a rede docker). O serviço `gotenberg` não publica
+# porta nenhuma no host — só é alcançável dentro da rede `homolog-internal`.
+# Aponte GOTENBERG_URL=http://gotenberg:3000 no ambiente do app.
+#
+# Cenário B: o app roda em outro host (Vercel/Railway/etc) e precisa alcançar
+# o Gotenberg pela internet. Nesse caso descomente o serviço `proxy` abaixo —
+# ele expõe :8080, valida `Authorization: Bearer $GOTENBERG_TOKEN` (Caddyfile
+# em ./gotenberg-proxy/Caddyfile) e só então repassa pro Gotenberg, que segue
+# sem porta publicada. Coloque TLS na frente disso (domínio próprio + Caddy
+# automatic HTTPS, ou o reverse proxy que já existe no VPS).
+#
+# Imagem publicada em https://hub.docker.com/r/dougladmo/sst-gotenberg (build
+# feito localmente a partir de ./Dockerfile.gotenberg e push manual — sem CI).
+#
+# Subir:      docker compose -f docker-compose.homolog.yml pull && \
+#             docker compose -f docker-compose.homolog.yml up -d
+# Atualizar:  docker compose -f docker-compose.homolog.yml pull && \
+#             docker compose -f docker-compose.homolog.yml up -d --force-recreate
+# Logs:       docker compose -f docker-compose.homolog.yml logs -f gotenberg
+# Derrubar:   docker compose -f docker-compose.homolog.yml down
+services:
+  gotenberg:
+    image: dougladmo/sst-gotenberg:homolog
+    container_name: sst-gotenberg-homolog
+    restart: unless-stopped
+    networks:
+      - homolog-internal
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # proxy:
+  #   image: caddy:2-alpine
+  #   container_name: sst-gotenberg-proxy-homolog
+  #   restart: unless-stopped
+  #   depends_on:
+  #     gotenberg:
+  #       condition: service_healthy
+  #   environment:
+  #     GOTENBERG_TOKEN: ${GOTENBERG_TOKEN:?defina GOTENBERG_TOKEN no .env do VPS}
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./gotenberg-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+  #   networks:
+  #     - homolog-internal
+
+networks:
+  homolog-internal:
+    driver: bridge

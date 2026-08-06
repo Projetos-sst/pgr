@@ -13,14 +13,20 @@ const CLERK_HOSTS = [
   "https://clerk-telemetry.com",
 ];
 
+// Bot-protection do Clerk (sign-up/sign-in) roda o desafio via Cloudflare Turnstile,
+// que carrega script + iframe de challenges.cloudflare.com. Sem isso na CSP, o
+// desafio falha silenciosamente e o Clerk devolve "falhas nas validações de
+// seguranca" no cadastro (reproduzido em qualquer ambiente, nao so producao).
+const TURNSTILE_HOST = "https://challenges.cloudflare.com";
+
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${CLERK_HOSTS.join(" ")}`,
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${CLERK_HOSTS.join(" ")} ${TURNSTILE_HOST}`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${CLERK_HOSTS.join(" ")}`,
   "font-src 'self' data:",
-  `connect-src 'self' ${CLERK_HOSTS.join(" ")}`,
-  `frame-src 'self' ${CLERK_HOSTS.join(" ")}`,
+  `connect-src 'self' ${CLERK_HOSTS.join(" ")} ${TURNSTILE_HOST}`,
+  `frame-src 'self' ${CLERK_HOSTS.join(" ")} ${TURNSTILE_HOST}`,
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",

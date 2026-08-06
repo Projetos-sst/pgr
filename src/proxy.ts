@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 import { NO_STORE_HEADERS } from "@/shared/http/no-store";
@@ -7,6 +7,59 @@ import { NO_STORE_HEADERS } from "@/shared/http/no-store";
 // e com flag explicita. Em producao (APP_ENV=production) nunca e publico.
 const devApiBypass =
   process.env.APP_ENV !== "production" && process.env.DEV_API_AUTH_BYPASS === "true";
+
+// Basic auth de sandbox: quando APP_ENV=sandbox, protege o ambiente inteiro (antes
+// de qualquer logica do Clerk) com um prompt HTTP Basic nativo do navegador, para
+// evitar indexacao/acesso publico de um ambiente que ainda nao e producao. Nunca
+// entra em producao (kill-switch e o proprio valor de APP_ENV).
+const SANDBOX_BASIC_AUTH_REALM = "Sandbox";
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
+function checkSandboxBasicAuth(request: NextRequest): NextResponse | null {
+  if (process.env.APP_ENV !== "sandbox") return null;
+  // Webhooks sao autenticados por assinatura propria (Clerk/Stripe), nao por sessao
+  // de navegador: exigir Basic auth ali quebraria a integracao server-to-server.
+  if (request.nextUrl.pathname.startsWith("/api/webhooks/")) return null;
+
+  const expectedUser = process.env.SANDBOX_BASIC_AUTH_USER;
+  const expectedPassword = process.env.SANDBOX_BASIC_AUTH_PASSWORD;
+  if (!expectedUser || !expectedPassword) {
+    throw new Error(
+      "APP_ENV=sandbox exige SANDBOX_BASIC_AUTH_USER e SANDBOX_BASIC_AUTH_PASSWORD definidos.",
+    );
+  }
+
+  const authHeader = request.headers.get("authorization");
+  if (authHeader?.startsWith("Basic ")) {
+    const decoded = Buffer.from(authHeader.slice("Basic ".length), "base64").toString(
+      "utf-8",
+    );
+    const separatorIndex = decoded.indexOf(":");
+    const providedUser =
+      separatorIndex === -1 ? decoded : decoded.slice(0, separatorIndex);
+    const providedPassword =
+      separatorIndex === -1 ? "" : decoded.slice(separatorIndex + 1);
+    if (
+      timingSafeEqual(providedUser, expectedUser) &&
+      timingSafeEqual(providedPassword, expectedPassword)
+    ) {
+      return null;
+    }
+  }
+
+  return new NextResponse("Autenticacao necessaria", {
+    status: 401,
+    headers: { "WWW-Authenticate": `Basic realm="${SANDBOX_BASIC_AUTH_REALM}"` },
+  });
+}
 
 const isPublicRoute = createRouteMatcher([
   "/",
@@ -37,6 +90,9 @@ const NO_STORE_PATH_PREFIXES = [
 ];
 
 export default clerkMiddleware(async (auth, request) => {
+  const sandboxAuthResponse = checkSandboxBasicAuth(request);
+  if (sandboxAuthResponse) return sandboxAuthResponse;
+
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
 
