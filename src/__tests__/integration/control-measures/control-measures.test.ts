@@ -223,7 +223,7 @@ function createInput(overrides: Partial<ControlMeasureInput> = {}): ControlMeasu
           when: string | null;
         }[]
       >`
-        select id, status, what, how, who, "where", "when"
+        select id, status, what, how, who, "where", "when"::text as "when"
         from public.action_plans
         where org_id = 'org_a' and origin_type = 'control_measure' and origin_id = ${created.data.id}
       `;
