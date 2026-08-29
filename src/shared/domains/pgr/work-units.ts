@@ -7,7 +7,7 @@ export type { WorkUnit } from "@/shared/db/schema/work-units";
 export const workUnitInputSchema = z.object({
   companyId: requiredUuid("Empresa é obrigatória"),
   name: requiredString("Nome é obrigatório"),
-  description: requiredString("Objeto/descrição é obrigatório"),
+  description: requiredString("Escopo do Contrato é obrigatório"),
   contractNumber: optionalString,
   zipCode: optionalString,
   street: optionalString,

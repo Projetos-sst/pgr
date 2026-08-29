@@ -67,7 +67,7 @@ const NAV: NavEntry[] = [
         label: "Controle de Formulários",
         iconName: "file-check",
       },
-      { href: "/epi-catalog", label: "Equipamentos", iconName: "hardhat" },
+      { href: "/epi-catalog", label: "EPI", iconName: "hardhat" },
       { href: "/incidents", label: "Incidentes", iconName: "alert-circle" },
       { href: "/vehicles", label: "Veículos", iconName: "car" },
       {

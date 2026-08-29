@@ -73,7 +73,7 @@ export function JobRoleForm({
           error={errors.companyId}
         />
         <TextField
-          label="Título"
+          label="Função"
           name="title"
           required
           defaultValue={jobRole?.title}
