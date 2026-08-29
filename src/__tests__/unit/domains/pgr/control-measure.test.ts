@@ -159,7 +159,7 @@ describe("isModeratePlusClassification / defaultMeasureStatusForClassification (
   it("labels pt-BR do status", () => {
     expect(measureStatusLabel("maintain")).toBe("Manter");
     expect(measureStatusLabel("introduced")).toBe("Introduzida");
-    expect(measureStatusLabel("improved")).toBe("Melhorada");
+    expect(measureStatusLabel("improved")).toBe("Aprimorada");
   });
 });
 

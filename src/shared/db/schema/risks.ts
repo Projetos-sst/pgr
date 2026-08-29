@@ -87,7 +87,7 @@ export const controlLevel = pgEnum("control_level", [
 ]);
 
 /**
- * Status da medida de controle (#42): mantida / introduzida / melhorada. Preenchido
+ * Status da medida de controle (#42): mantida / introduzida / aprimorada. Preenchido
  * pela regra de negócio a partir do nível de risco (fatia seguinte) — nullable aqui,
  * sem default forçado.
  */

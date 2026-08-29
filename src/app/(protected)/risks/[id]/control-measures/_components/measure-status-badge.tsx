@@ -10,7 +10,7 @@ const STATUS_CLASS: Record<ControlMeasureStatus, string> = {
 };
 
 /**
- * Badge do status da medida (Manter/Introduzida/Melhorada, issue #42) — apresentação apenas.
+ * Badge do status da medida (Manter/Introduzida/Aprimorada, issue #42) — apresentação apenas.
  * `null` quando o risco nunca foi avaliado (regra de status ainda não tem nível pra basear).
  */
 export function MeasureStatusBadge({ status }: { status: ControlMeasureStatus | null }) {

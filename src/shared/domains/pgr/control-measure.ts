@@ -33,7 +33,8 @@ const applicableField = z.preprocess((value) => {
 }, z.boolean());
 
 // ---------------------------------------------------------------------------
-// Status da medida (issue #42): mantida/introduzida/melhorada. Opcional na entrada — quando
+// Status da medida (issue #42): mantida/introduzida/aprimorada (vocabulário exato do doc de
+// avaliação: MANTER / INTRODUZIDA / APRIMORADA). Opcional na entrada — quando
 // ausente, o repositório (`db/repositories/control-measures.ts`) preenche um default a partir
 // da classificação vigente do risco pai (ver `defaultMeasureStatusForClassification` abaixo).
 // Fica FORA do superRefine porque depende de dado externo (avaliação de risco), que o Zod puro
@@ -52,7 +53,7 @@ const optionalStatusField = z.preprocess(
 const MEASURE_STATUS_LABELS: Record<ControlMeasureStatus, string> = {
   maintain: "Manter",
   introduced: "Introduzida",
-  improved: "Melhorada",
+  improved: "Aprimorada",
 };
 
 export function measureStatusLabel(status: ControlMeasureStatus): string {
