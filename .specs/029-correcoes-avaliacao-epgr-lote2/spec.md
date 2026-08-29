@@ -124,6 +124,7 @@ os grupos 2-7, após o Grupo 1 bloqueante). Commits nesta ordem: `d496259` (Grup
 respectivas issues no GitHub.
 
 **Pendências que sobrevivem ao lote:**
+
 - 2 buckets novos do Supabase Storage precisam ser criados manualmente antes do deploy:
   `company-logos` (issue #4) e `employee-photos` (issue #16) — a foto de EPI (#30) reaproveitou o
   bucket `documents` já existente, sem bucket novo.
