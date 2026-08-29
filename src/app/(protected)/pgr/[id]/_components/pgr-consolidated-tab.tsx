@@ -14,6 +14,11 @@ import {
   type MeasureState,
   type PgrConsolidated,
 } from "@/shared/domains/pgr/pgr-consolidated";
+import {
+  riskClassificationLabel,
+  riskClassificationGuidance,
+  type RiskClassification,
+} from "@/shared/domains/pgr/methodology";
 
 const STATE_CLASS: Record<MeasureState, string> = {
   without_plan: "bg-black/5 text-text-muted",
@@ -105,6 +110,21 @@ function RiskDetailPanel({ risk }: { risk: ConsolidatedRisk }) {
 
   return (
     <div className="glass-panel my-2 flex flex-col gap-3 rounded-[14px] border border-black/5 bg-white/40 p-4">
+      {/* Classificação e Orientação do Risco */}
+      {risk.result ? (
+        <div className="flex flex-col gap-1 border-b border-black/5 pb-3">
+          <div className="flex flex-col">
+            <span className="text-text-subtle text-xs font-medium">Classificação</span>
+            <span className="text-text font-semibold">
+              {riskClassificationLabel(risk.result as RiskClassification)}
+            </span>
+          </div>
+          <p className="text-text-subtle text-xs">
+            {riskClassificationGuidance(risk.result as RiskClassification)}
+          </p>
+        </div>
+      ) : null}
+
       {shown.length > 0 ? (
         <dl className="grid gap-x-6 gap-y-2 text-xs sm:grid-cols-2 lg:grid-cols-3">
           {shown.map(([label, value]) => (

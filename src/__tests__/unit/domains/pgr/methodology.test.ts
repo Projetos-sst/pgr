@@ -3,6 +3,7 @@ import {
   classify,
   buildMatrix,
   riskClassificationLabel,
+  riskClassificationGuidance,
   methodologyBaseLabel,
   riskClassificationSchema,
   methodologyBaseSchema,
@@ -164,5 +165,14 @@ describe("rótulos pt-BR", () => {
     expect(riskClassificationLabel("intolerable")).toBe("Intolerável");
     expect(methodologyBaseLabel("as_nzs_4360")).toBe("AS/NZS 4360");
     expect(methodologyBaseLabel("custom")).toBe("Personalizada");
+  });
+
+  it("fornece orientação para cada nível de classificação", () => {
+    for (const classification of RISK_CLASSIFICATION_ORDER) {
+      const guidance = riskClassificationGuidance(classification);
+      expect(guidance).toBeTruthy();
+      expect(typeof guidance).toBe("string");
+      expect(guidance.length).toBeGreaterThan(0);
+    }
   });
 });

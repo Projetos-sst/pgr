@@ -19,6 +19,7 @@ import {
   type RiskAssessmentInput,
   type ClassificationBand,
 } from "@/shared/domains/pgr/risk-assessment";
+import { riskClassificationGuidance } from "@/shared/domains/pgr/methodology";
 import type { ActionError } from "@/shared/server/result";
 
 import { FieldError, FormActions, FormError, SubmitButton } from "../../../../_ui/form";
@@ -235,13 +236,18 @@ export function AssessmentForm({
             {preview ? preview.riskLevel : "—"}
           </span>
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1">
           <span className="text-text-subtle text-xs tracking-wide uppercase">
             Classificação (prevista)
           </span>
           <span className="text-text text-lg font-semibold">
             {preview ? riskClassificationLabel(preview.result) : "—"}
           </span>
+          {preview ? (
+            <p className="text-text-subtle text-sm">
+              {riskClassificationGuidance(preview.result)}
+            </p>
+          ) : null}
         </div>
       </div>
 
