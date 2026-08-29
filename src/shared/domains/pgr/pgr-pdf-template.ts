@@ -88,12 +88,18 @@ function coverBlock(
     pgr.registrationType === "not_applicable"
       ? pgrRegistrationTypeLabel(pgr.registrationType)
       : `${pgrRegistrationTypeLabel(pgr.registrationType)} ${text(pgr.registrationNumber, "")}`;
+  // Site/portal da empresa (issue #5) — linha condicional, some do cabeçalho
+  // quando a empresa não preencheu `website`.
+  const websiteRow = pgr.companyWebsite?.trim()
+    ? `<tr><td>Site</td><td>${escapeHtml(pgr.companyWebsite.trim())}</td></tr>`
+    : "";
   return `<section class="cover">
     <div class="cover-band"></div>
     ${logo}
     <h1>Programa de Gerenciamento de Riscos</h1>
     <table class="cover-meta">
       <tr><td>Empresa</td><td>${text(pgr.companyName)}</td></tr>
+      ${websiteRow}
       <tr><td>Unidade</td><td>${text(pgr.workUnitName)}</td></tr>
       <tr><td>Responsável técnico</td><td>${text(pgr.responsible)}</td></tr>
       <tr><td>Registro</td><td>${registration}</td></tr>

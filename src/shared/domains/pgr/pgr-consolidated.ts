@@ -117,6 +117,8 @@ export type PgrConsolidated = {
   pgr: {
     id: string;
     companyName: string;
+    /** Site/portal da empresa (issue #5) — `null`/ausente = não exibe no PDF. */
+    companyWebsite?: string | null;
     workUnitName: string | null;
     responsible: string | null;
     registrationType: PgrRegistrationType;

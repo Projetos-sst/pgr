@@ -28,3 +28,10 @@ export const optionalIsoDate = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
   z.iso.date("Data inválida (use AAAA-MM-DD)").optional(),
 );
+
+// URL opcional: string vazia → undefined; senão exige formato de URL válido
+// (http/https). Para campos textuais como site/portal (ex.: companies.website).
+export const optionalUrl = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z.url("URL inválida (ex.: https://empresa.com.br)").optional(),
+);

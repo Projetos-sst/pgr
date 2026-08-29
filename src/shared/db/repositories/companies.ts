@@ -34,6 +34,7 @@ function toCompanyColumns(input: CompanyValues) {
     mainActivity: input.mainActivity ?? null,
     riskGrade: input.riskGrade,
     logoPath: input.logoPath ?? null,
+    website: input.website ?? null,
     zipCode: input.zipCode ?? null,
     street: input.street ?? null,
     number: input.number ?? null,

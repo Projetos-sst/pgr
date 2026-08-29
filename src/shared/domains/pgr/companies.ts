@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Company } from "@/shared/db/schema";
 
 import { cnpjSchema, riskGradeSchema } from "./validation";
-import { optionalString, requiredString } from "./form-fields";
+import { optionalString, optionalUrl, requiredString } from "./form-fields";
 
 export type { Company } from "@/shared/db/schema";
 export type { CompanyOption } from "@/shared/db/repositories/companies";
@@ -27,6 +27,7 @@ export const companyInputSchema = z.object({
   mainActivity: optionalString,
   riskGrade: riskGradeInput,
   logoPath: optionalString,
+  website: optionalUrl,
   zipCode: optionalString,
   street: optionalString,
   number: optionalString,

@@ -66,6 +66,7 @@ export async function getPgrConsolidated(
       .select({
         id: pgr.id,
         companyName: companies.razaoSocial,
+        companyWebsite: companies.website,
         workUnitName: workUnits.name,
         responsible: pgr.responsible,
         registrationType: pgr.registrationType,
@@ -89,6 +90,7 @@ export async function getPgrConsolidated(
     const pgrHead: PgrConsolidated["pgr"] = {
       id: head.id,
       companyName: head.companyName,
+      companyWebsite: head.companyWebsite ?? null,
       workUnitName: head.workUnitName ?? null,
       responsible: head.responsible,
       registrationType: head.registrationType as PgrRegistrationType,

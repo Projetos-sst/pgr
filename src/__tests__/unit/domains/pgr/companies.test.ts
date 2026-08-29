@@ -38,6 +38,22 @@ describe("companyInputSchema (US1)", () => {
     expect(parsed.city).toBeUndefined();
     expect(parsed.state).toBe("SP");
   });
+
+  it("aceita website vazio (opcional) → undefined", () => {
+    expect(companyInputSchema.parse({ ...base, website: "" }).website).toBeUndefined();
+  });
+
+  it("aceita URL válida em website", () => {
+    expect(
+      companyInputSchema.parse({ ...base, website: "https://www.acme.com.br" }).website,
+    ).toBe("https://www.acme.com.br");
+  });
+
+  it("rejeita website com formato inválido", () => {
+    expect(() =>
+      companyInputSchema.parse({ ...base, website: "não é uma url" }),
+    ).toThrow();
+  });
 });
 
 describe("toCompanyListItem", () => {
