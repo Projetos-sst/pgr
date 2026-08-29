@@ -93,6 +93,11 @@ function coverBlock(
   const websiteRow = pgr.companyWebsite?.trim()
     ? `<tr><td>Site</td><td>${escapeHtml(pgr.companyWebsite.trim())}</td></tr>`
     : "";
+  // ART anexada ao responsável técnico (issue #36) — linha condicional, some quando
+  // não há documento de ART com status "ready" vinculado a este PGR.
+  const artRow = pgr.artDocumentName?.trim()
+    ? `<tr><td>ART</td><td>${escapeHtml(pgr.artDocumentName.trim())}</td></tr>`
+    : "";
   return `<section class="cover">
     <div class="cover-band"></div>
     ${logo}
@@ -102,6 +107,7 @@ function coverBlock(
       ${websiteRow}
       <tr><td>Unidade</td><td>${text(pgr.workUnitName)}</td></tr>
       <tr><td>Responsável técnico</td><td>${text(pgr.responsible)}</td></tr>
+      ${artRow}
       <tr><td>Registro</td><td>${registration}</td></tr>
       <tr><td>Emitido em</td><td>${text(pgr.issuedAt)}</td></tr>
       <tr><td>Válido até</td><td>${text(pgr.validUntil)}</td></tr>

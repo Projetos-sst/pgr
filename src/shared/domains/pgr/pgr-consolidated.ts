@@ -119,6 +119,8 @@ export type PgrConsolidated = {
     companyName: string;
     /** Site/portal da empresa (issue #5) — `null`/ausente = não exibe no PDF. */
     companyWebsite?: string | null;
+    /** Nome do documento de ART anexado ao responsável técnico (issue #36) — `null` = não anexado, não exibe no PDF. */
+    artDocumentName?: string | null;
     workUnitName: string | null;
     responsible: string | null;
     registrationType: PgrRegistrationType;
