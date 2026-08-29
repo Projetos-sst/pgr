@@ -38,6 +38,20 @@ async function freshCatalog(admin: ReturnType<typeof postgres>): Promise<string>
   return row.id;
 }
 
+// cria um item de catálogo em org_a com categoria/validade de CA customizadas
+// (usados pelos testes de filtro de categoria e de validade de CA, #28).
+async function freshCatalogWith(
+  admin: ReturnType<typeof postgres>,
+  opts: { categoryId?: string; caValidUntil?: string | null; name?: string },
+): Promise<string> {
+  const categoryId = opts.categoryId ?? I.categoryA;
+  const [row] = await admin<{ id: string }[]>`
+    insert into public.epi_catalog (org_id, type, category_id, name, ca_valid_until)
+    values ('org_a', 'epi', ${categoryId}, ${opts.name ?? "Item filtro"}, ${opts.caValidUntil ?? null})
+    returning id`;
+  return row.id;
+}
+
 (shouldRun ? describe : describe.skip)("Server Actions — epi_stock CRUD (009)", () => {
   let admin: ReturnType<typeof postgres>;
 
@@ -187,6 +201,63 @@ async function freshCatalog(admin: ReturnType<typeof postgres>): Promise<string>
 
     const comSaldo = await listEpiStockAction({ withBalanceOnly: true });
     expect(comSaldo.ok && comSaldo.data.total).toBe(1); // só epiStockA tem saldo
+  });
+
+  it("sem filtro de categoria/CA, mantém o comportamento atual (#28)", async () => {
+    const result = await listEpiStockAction({});
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.total).toBe(1); // epiStockA, sem alteração
+  });
+
+  it("filtro por categoria retorna só itens daquela categoria (#28)", async () => {
+    // nova categoria em org_a, distinta de categoryA (que já tem epiStockA)
+    const [otherCategory] = await admin<{ id: string }[]>`
+      insert into public.categories (org_id, type, name)
+      values ('org_a', 'epi', 'Categoria filtro') returning id`;
+
+    const catalogId = await freshCatalogWith(admin, { categoryId: otherCategory.id });
+    await createEpiStockAction({ catalogId, minimumQuantity: "0" });
+
+    const byOtherCategory = await listEpiStockAction({ categoryId: otherCategory.id });
+    expect(byOtherCategory.ok && byOtherCategory.data.total).toBe(1);
+    expect(byOtherCategory.ok && byOtherCategory.data.rows[0].catalogId).toBe(catalogId);
+
+    const byCategoryA = await listEpiStockAction({ categoryId: I.categoryA });
+    expect(byCategoryA.ok && byCategoryA.data.total).toBe(1); // só epiStockA
+    expect(byCategoryA.ok && byCategoryA.data.rows[0].catalogId).toBe(I.epiCatalogA);
+
+    const noFilter = await listEpiStockAction({});
+    expect(noFilter.ok && noFilter.data.total).toBe(2); // ambos, sem filtro
+  });
+
+  it("filtro caStatus='expired' retorna só itens com CA vencido (#28)", async () => {
+    const expiredCatalogId = await freshCatalogWith(admin, {
+      caValidUntil: "2020-01-01",
+      name: "CA vencido",
+    });
+    await createEpiStockAction({ catalogId: expiredCatalogId, minimumQuantity: "0" });
+
+    const futureCatalogId = await freshCatalogWith(admin, {
+      caValidUntil: "2099-01-01",
+      name: "CA válido futuro",
+    });
+    await createEpiStockAction({ catalogId: futureCatalogId, minimumQuantity: "0" });
+
+    // epiStockA (seed) tem ca_valid_until NULL — não deve ser escondido pelo filtro "valid"
+    const expired = await listEpiStockAction({ caStatus: "expired" });
+    expect(expired.ok && expired.data.total).toBe(1);
+    expect(expired.ok && expired.data.rows[0].catalogId).toBe(expiredCatalogId);
+
+    const valid = await listEpiStockAction({ caStatus: "valid" });
+    expect(valid.ok && valid.data.total).toBe(2); // epiStockA (CA nulo) + futureCatalogId
+    const validCatalogIds = valid.ok ? valid.data.rows.map((r) => r.catalogId) : [];
+    expect(validCatalogIds).toEqual(
+      expect.arrayContaining([I.epiCatalogA, futureCatalogId]),
+    );
+    expect(validCatalogIds).not.toContain(expiredCatalogId);
+
+    const noFilter = await listEpiStockAction({});
+    expect(noFilter.ok && noFilter.data.total).toBe(3); // sem filtro, todos aparecem
   });
 
   it("papel client → FORBIDDEN", async () => {

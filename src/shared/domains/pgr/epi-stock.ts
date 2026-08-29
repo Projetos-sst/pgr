@@ -75,10 +75,18 @@ export type EpiCatalogOption = {
   ca: string | null;
 };
 
+/** Status de validade do CA (derivado na leitura, nunca persistido). */
+export const EPI_STOCK_CA_STATUSES = ["expired", "valid"] as const;
+export const epiStockCaStatusSchema = z.enum(EPI_STOCK_CA_STATUSES);
+export type EpiStockCaStatus = (typeof EPI_STOCK_CA_STATUSES)[number];
+
 export type EpiStockListFilters = {
   search?: string;
   withBalanceOnly?: boolean;
   status?: EpiStockStatus;
+  categoryId?: string;
+  /** `"expired"` = CA vencido (`caValidUntil < hoje`); `"valid"` = sem validade OU `>= hoje`. */
+  caStatus?: EpiStockCaStatus;
 };
 
 type EpiStockRow = {

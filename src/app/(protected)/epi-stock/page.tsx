@@ -1,13 +1,15 @@
 import Link from "next/link";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
-import { resolvePageParams } from "@/shared/pagination";
+import { resolvePageParams, PAGE_SIZE_MAX } from "@/shared/pagination";
 import {
   epiStockStatusSchema,
+  epiStockCaStatusSchema,
   type EpiStockStatus,
   type EpiStockListItem,
 } from "@/shared/domains/pgr/epi-stock";
 import { listEpiStockAction } from "@/shared/server/actions/pgr/epi-stock";
+import { listCategoriesAction } from "@/shared/server/actions/pgr/categories";
 
 import { EmptyState, PageHeader } from "../_ui/list";
 import { EditRowAction, RowActions, ViewRowAction } from "../_ui/row-actions";
@@ -20,6 +22,8 @@ type SearchParams = Promise<{
   page?: string;
   status?: string;
   withBalanceOnly?: string;
+  categoryId?: string;
+  caStatus?: string;
 }>;
 
 const STATUS_TABS: { value: "" | EpiStockStatus; label: string; icon?: string }[] = [
@@ -117,14 +121,23 @@ export default async function EpiStockPage({
   const status = epiStockStatusSchema.safeParse(sp.status);
   const withBalanceOnly = sp.withBalanceOnly === "true";
   const activeStatus = status.success ? status.data : "";
+  const caStatusParsed = epiStockCaStatusSchema.safeParse(sp.caStatus);
+  const onlyExpiredCa = caStatusParsed.success && caStatusParsed.data === "expired";
+  const categoryId = sp.categoryId?.trim() || undefined;
 
-  const result = await listEpiStockAction({
-    search: sp.search,
-    status: status.success ? status.data : undefined,
-    withBalanceOnly,
-    page,
-  });
+  const [result, categoriesResult] = await Promise.all([
+    listEpiStockAction({
+      search: sp.search,
+      status: status.success ? status.data : undefined,
+      withBalanceOnly,
+      categoryId,
+      caStatus: onlyExpiredCa ? "expired" : undefined,
+      page,
+    }),
+    listCategoriesAction({ type: "epi", pageSize: PAGE_SIZE_MAX }),
+  ]);
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
+  const categories = categoriesResult.ok ? categoriesResult.data.rows : [];
 
   // Monta query string preservando filtros ativos
   function buildTabHref(tabStatus: "" | EpiStockStatus) {
@@ -132,6 +145,8 @@ export default async function EpiStockPage({
     if (tabStatus) params.set("status", tabStatus);
     if (sp.search) params.set("search", sp.search);
     if (withBalanceOnly) params.set("withBalanceOnly", "true");
+    if (categoryId) params.set("categoryId", categoryId);
+    if (onlyExpiredCa) params.set("caStatus", "expired");
     const qs = params.toString();
     return `/epi-stock${qs ? `?${qs}` : ""}`;
   }
@@ -141,6 +156,19 @@ export default async function EpiStockPage({
     if (activeStatus) params.set("status", activeStatus);
     if (sp.search) params.set("search", sp.search);
     if (!withBalanceOnly) params.set("withBalanceOnly", "true");
+    if (categoryId) params.set("categoryId", categoryId);
+    if (onlyExpiredCa) params.set("caStatus", "expired");
+    const qs = params.toString();
+    return `/epi-stock${qs ? `?${qs}` : ""}`;
+  }
+
+  function buildCaToggleHref() {
+    const params = new URLSearchParams();
+    if (activeStatus) params.set("status", activeStatus);
+    if (sp.search) params.set("search", sp.search);
+    if (withBalanceOnly) params.set("withBalanceOnly", "true");
+    if (categoryId) params.set("categoryId", categoryId);
+    if (!onlyExpiredCa) params.set("caStatus", "expired");
     const qs = params.toString();
     return `/epi-stock${qs ? `?${qs}` : ""}`;
   }
@@ -301,6 +329,42 @@ export default async function EpiStockPage({
               />
             </Link>
             Apenas com saldo
+            {/* Toggle "Só CA vencido" */}
+            <Link
+              href={buildCaToggleHref()}
+              aria-pressed={onlyExpiredCa}
+              aria-label={
+                onlyExpiredCa
+                  ? "Mostrar itens com CA vencido ou não"
+                  : "Mostrar apenas itens com CA vencido"
+              }
+              style={{
+                width: "34px",
+                height: "20px",
+                borderRadius: "20px",
+                background: onlyExpiredCa ? "#5b63f5" : "rgba(0,0,0,0.12)",
+                position: "relative",
+                display: "inline-block",
+                transition: "background 0.2s",
+                flexShrink: 0,
+                marginLeft: "8px",
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  top: "2px",
+                  right: onlyExpiredCa ? "2px" : undefined,
+                  left: onlyExpiredCa ? undefined : "2px",
+                  width: "16px",
+                  height: "16px",
+                  borderRadius: "50%",
+                  background: "#fff",
+                  transition: "left 0.2s, right 0.2s",
+                }}
+              />
+            </Link>
+            Só CA vencido
           </div>
         </div>
 
@@ -319,6 +383,7 @@ export default async function EpiStockPage({
           {/* Preservar filtros ativos como hidden inputs */}
           {activeStatus && <input type="hidden" name="status" value={activeStatus} />}
           {withBalanceOnly && <input type="hidden" name="withBalanceOnly" value="true" />}
+          {onlyExpiredCa && <input type="hidden" name="caStatus" value="expired" />}
 
           {/* Busca */}
           <div
@@ -362,6 +427,50 @@ export default async function EpiStockPage({
               }}
             />
           </div>
+
+          {/* Filtro por categoria */}
+          <select
+            name="categoryId"
+            defaultValue={categoryId ?? ""}
+            aria-label="Filtrar por categoria"
+            style={{
+              height: "44px",
+              padding: "0 14px",
+              borderRadius: "12px",
+              background: "rgba(255, 255, 255, 0.5)",
+              border: "1px solid rgba(255, 255, 255, 0.7)",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#52576e",
+              fontFamily: "inherit",
+              outline: "none",
+            }}
+          >
+            <option value="">Todas as categorias</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="submit"
+            style={{
+              height: "44px",
+              padding: "0 16px",
+              borderRadius: "12px",
+              background: "rgba(255, 255, 255, 0.5)",
+              border: "1px solid rgba(255, 255, 255, 0.7)",
+              fontSize: "13px",
+              fontWeight: 700,
+              color: "#52576e",
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+            }}
+          >
+            Filtrar
+          </button>
 
           {/* Botão Gerenciar Dados → Adicionar ao estoque */}
           <Link
@@ -498,6 +607,8 @@ export default async function EpiStockPage({
             search: sp.search,
             status: activeStatus || undefined,
             withBalanceOnly: withBalanceOnly ? "true" : undefined,
+            categoryId,
+            caStatus: onlyExpiredCa ? "expired" : undefined,
           }}
         />
       </div>

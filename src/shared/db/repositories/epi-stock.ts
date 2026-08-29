@@ -1,6 +1,18 @@
 import "server-only";
 
-import { and, desc, eq, ilike, notInArray, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  ilike,
+  isNull,
+  lt,
+  notInArray,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 
 import {
   toEpiStockListItem,
@@ -11,6 +23,7 @@ import {
   type EpiStockDetail,
   type EpiCatalogOption,
 } from "@/shared/domains/pgr/epi-stock";
+import { todayInSaoPaulo } from "@/shared/dates";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { withOrg } from "../with-org";
@@ -46,6 +59,23 @@ function statusFilter(status: EpiStockListFilters["status"]): SQL | undefined {
   }
 }
 
+/**
+ * Condição SQL do filtro de validade de CA (derivado na leitura, espelha
+ * `EpiStockCaStatus`). CA sem validade cadastrada (`caValidUntil` nulo) conta
+ * como válido — não deve ser escondido pelo filtro `"valid"`.
+ */
+function caStatusFilter(caStatus: EpiStockListFilters["caStatus"]): SQL | undefined {
+  const today = todayInSaoPaulo();
+  switch (caStatus) {
+    case "expired":
+      return lt(epiCatalog.caValidUntil, today);
+    case "valid":
+      return or(isNull(epiCatalog.caValidUntil), gte(epiCatalog.caValidUntil, today));
+    default:
+      return undefined;
+  }
+}
+
 export async function listEpiStock(
   orgId: string,
   params: ListEpiStockParams = {},
@@ -56,6 +86,9 @@ export async function listEpiStock(
   if (params.withBalanceOnly) filters.push(sql`${epiStock.balance} > 0`);
   const byStatus = statusFilter(params.status);
   if (byStatus) filters.push(byStatus);
+  if (params.categoryId) filters.push(eq(epiCatalog.categoryId, params.categoryId));
+  const byCaStatus = caStatusFilter(params.caStatus);
+  if (byCaStatus) filters.push(byCaStatus);
 
   const search = params.search?.trim();
   if (search) {
