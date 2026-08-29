@@ -12,6 +12,7 @@ import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pag
 import { withOrg, type TenantTransaction } from "../with-org";
 import { controlMeasures, risks, type ControlMeasure } from "../schema/risks";
 import { auditedTenantWrite } from "./audited-write";
+import { bridgeControlMeasureToActionPlanTx } from "./control-measure-bridge";
 
 export type ListControlMeasuresParams = PageParams;
 
@@ -121,6 +122,8 @@ export async function createControlMeasure(
           ...toWriteColumns(values),
         })
         .returning();
+      // Issue #51: espelha a medida no Plano de Ação, na mesma transação.
+      await bridgeControlMeasureToActionPlanTx(tx, orgId, row);
       return row;
     }),
   );
@@ -139,7 +142,10 @@ export async function updateControlMeasure(
         .set({ ...toWriteColumns(values), updatedAt: new Date() })
         .where(and(eq(controlMeasures.orgId, orgId), eq(controlMeasures.id, id)))
         .returning();
-      return row ?? null;
+      if (!row) return null;
+      // Issue #51: espelha a medida no Plano de Ação, na mesma transação.
+      await bridgeControlMeasureToActionPlanTx(tx, orgId, row);
+      return row;
     }),
   );
 }

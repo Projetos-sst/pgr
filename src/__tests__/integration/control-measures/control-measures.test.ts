@@ -21,7 +21,11 @@ import {
   updateControlMeasureAction,
   deleteControlMeasureAction,
 } from "@/shared/server/actions/pgr/control-measures";
-import type { ControlMeasureInput } from "@/shared/domains/pgr/control-measure";
+import { createControlMeasure } from "@/shared/db/repositories/control-measures";
+import type {
+  ControlMeasureInput,
+  ControlMeasureWriteValues,
+} from "@/shared/domains/pgr/control-measure";
 
 import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS } from "../_helpers/pgr-seed";
@@ -189,5 +193,126 @@ function createInput(overrides: Partial<ControlMeasureInput> = {}): ControlMeasu
     mockedGate.mockRejectedValue(new ForbiddenError());
     const result = await listControlMeasuresAction(PGR_IDS.riskA, {});
     expect(!result.ok && result.error.code).toBe("FORBIDDEN");
+  });
+
+  // ── Issue #51 — ponte control_measures → action_plans ──────────────────────
+  describe("bridge para o Plano de Ação (issue #51)", () => {
+    it("a. applicable=true com 5W2H mínimo gera 1 action_plan com origin correto", async () => {
+      const created = await createControlMeasureAction(
+        PGR_IDS.riskA,
+        createInput({
+          controlLevel: "administrative",
+          applicable: true,
+          actionWhat: "Treinar equipe",
+          actionHow: "Curso NR-01",
+          actionResponsible: "Ana Lima",
+          actionDeadline: "2026-10-01",
+        }),
+      );
+      expect(created.ok).toBe(true);
+      if (!created.ok) throw new Error("setup falhou");
+
+      const plans = await admin<
+        {
+          id: string;
+          status: string;
+          what: string;
+          how: string;
+          who: string;
+          where: string;
+          when: string | null;
+        }[]
+      >`
+        select id, status, what, how, who, "where", "when"
+        from public.action_plans
+        where org_id = 'org_a' and origin_type = 'control_measure' and origin_id = ${created.data.id}
+      `;
+      expect(plans).toHaveLength(1);
+      expect(plans[0].status).toBe("planned");
+      expect(plans[0].what).toBe("Treinar equipe");
+      expect(plans[0].how).toBe("Curso NR-01");
+      expect(plans[0].who).toBe("Ana Lima");
+      expect(plans[0].where).toBe("GES A");
+      expect(plans[0].when).toBe("2026-10-01");
+    });
+
+    it("b. atualizar a mesma medida atualiza o MESMO plano (não duplica)", async () => {
+      const created = await createControlMeasureAction(
+        PGR_IDS.riskA,
+        createInput({
+          controlLevel: "administrative",
+          applicable: true,
+          actionWhat: "Treinar equipe",
+          actionHow: "Curso NR-01",
+        }),
+      );
+      if (!created.ok) throw new Error("setup falhou");
+
+      const updated = await updateControlMeasureAction(
+        PGR_IDS.riskA,
+        created.data.id,
+        createInput({
+          controlLevel: "administrative",
+          applicable: true,
+          actionWhat: "Treinar equipe (revisado)",
+          actionHow: "Curso NR-01 turma B",
+        }),
+      );
+      expect(updated.ok).toBe(true);
+
+      const plans = await admin<{ id: string; what: string; how: string }[]>`
+        select id, what, how from public.action_plans
+        where org_id = 'org_a' and origin_type = 'control_measure' and origin_id = ${created.data.id}
+      `;
+      expect(plans).toHaveLength(1);
+      expect(plans[0].what).toBe("Treinar equipe (revisado)");
+      expect(plans[0].how).toBe("Curso NR-01 turma B");
+    });
+
+    it("c. marcar applicable=false cancela o plano bridged", async () => {
+      const created = await createControlMeasureAction(
+        PGR_IDS.riskA,
+        createInput({
+          controlLevel: "administrative",
+          applicable: true,
+          actionWhat: "Treinar equipe",
+          actionHow: "Curso NR-01",
+        }),
+      );
+      if (!created.ok) throw new Error("setup falhou");
+
+      const updated = await updateControlMeasureAction(
+        PGR_IDS.riskA,
+        created.data.id,
+        createInput({ controlLevel: "administrative", applicable: false }),
+      );
+      expect(updated.ok).toBe(true);
+
+      const plans = await admin<{ status: string; cancelled_at: Date | null }[]>`
+        select status, cancelled_at from public.action_plans
+        where org_id = 'org_a' and origin_type = 'control_measure' and origin_id = ${created.data.id}
+      `;
+      expect(plans).toHaveLength(1);
+      expect(plans[0].status).toBe("cancelled");
+      expect(plans[0].cancelled_at).not.toBeNull();
+    });
+
+    it("d. applicable=true sem actionWhat NÃO gera plano (defesa no bridge)", async () => {
+      // Chama o repositório diretamente (não a Server Action) para exercer a defesa do
+      // bridge mesmo quando o 5W2H mínimo não veio preenchido — na prática o schema de
+      // entrada já bloqueia isso antes (VALIDATION), mas o bridge não deve confiar só nisso.
+      const values: ControlMeasureWriteValues = {
+        controlLevel: "ppe",
+        applicable: true,
+        actionHow: "Como sem o quê",
+      };
+      const row = await createControlMeasure("org_a", PGR_IDS.riskA, values);
+
+      const plans = await admin<{ id: string }[]>`
+        select id from public.action_plans
+        where org_id = 'org_a' and origin_type = 'control_measure' and origin_id = ${row.id}
+      `;
+      expect(plans).toHaveLength(0);
+    });
   });
 });
