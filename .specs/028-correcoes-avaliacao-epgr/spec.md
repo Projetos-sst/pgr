@@ -19,6 +19,7 @@ Agrupadas por tipo de mudança para minimizar nº de migrations e reaproveitar p
 no código (nenhuma dessas precisa de tabela nova — só coluna nova em tabela existente ou lógica).
 
 **Grupo A — campos novos em cadastros existentes (1 migration só, ver Tarefa 1):**
+
 - #26 — `stock_movements.invoiceDate` (data da nota fiscal; já existe `invoiceNumber`).
 - #29 — `epi_catalog.material` (falta só este campo; CA/validade/norma já existem).
 - #46 — flag ARQUIVAR em `pgr_revisions` (append-only hoje, sem status).
@@ -27,6 +28,7 @@ no código (nenhuma dessas precisa de tabela nova — só coluna nova em tabela 
   anexos em outras entidades do PGR.
 
 **Grupo B — lógica/regra de negócio sobre schema já existente (sem migration):**
+
 - #22 — `createEpiStock` força `balance=0`; deve aceitar saldo inicial informado no cadastro.
 - #51 — salvar uma `control_measure` deve gerar/atualizar automaticamente a entrada correspondente
   em `action_plans`.
@@ -43,6 +45,7 @@ no código (nenhuma dessas precisa de tabela nova — só coluna nova em tabela 
 - #2 — máscara de digitação `XX.XXX.XXX/XXXX-XX` no campo CNPJ + validação de dígito verificador.
 
 **Grupo C — deliverable é documento, não código:**
+
 - #44 — proposta técnica (comentário na issue) de como estender `ai-risk-suggestion-core` para
   sugerir também a classificação de risco, mantendo o fluxo de revisão humana. Não implementar
   agora — é "avaliar viabilidade" por definição da própria issue.
@@ -72,24 +75,41 @@ no código (nenhuma dessas precisa de tabela nova — só coluna nova em tabela 
       dessas 5 mudanças precisa de GRANT/policy novo — são colunas em tabelas já cobertas por RLS).
 - [ ] Nenhuma issue do Grupo C vira código nesta fatia — só comentário/proposta registrada.
 
-## Tarefas
+## Tarefas (status final)
 
-1. **Migration única do Grupo A** (schema + `npm run db:generate` + revisão do SQL gerado) — as 5
-   colunas/enum listadas acima, num commit só.
-2. **#22** — saldo inicial no cadastro de EPI.
-3. **#2** — máscara + validação de CNPJ.
-4. **#18** — botão "Emitir Ordem de Serviço" no GES.
-5. **#50** — ação esperada por nível de risco.
-6. **#28** — filtros de categoria/validade no relatório de estoque.
-7. **#34** — alerta de validade de CA.
-8. **#51 + #42 (regra)** — ponte `control_measure` → `action_plan` + status da medida por nível de
-   risco (mesma área de domínio, um commit só).
-9. **#46** — UI de arquivamento de revisão do PGR (a coluna já sai pronta da Tarefa 1).
-10. **#45** — habilitar os novos tipos de entidade no formulário de anexos (a coluna/enum já sai
-    pronta da Tarefa 1).
-11. **#44** — comentário de proposta técnica na issue (sem código).
+1. ✅ **Migration única do Grupo A** (`0031_epgr_correcoes_grupo_a.sql`) — 4 colunas + 1 enum.
+   `#45` não precisou de CHECK no banco (`related_entity_type` é texto livre por design — ver
+   ruling no commit do schema).
+2. ✅ **#22** — saldo inicial no cadastro de EPI, via movimentação `purchase` (não escreve
+   `balance` direto — preserva a trilha de auditoria).
+3. ✅ **#2** — máscara + validação de CNPJ (+ máscara de CPF em Funcionários/Perfil, pedido à
+   parte na mesma sessão).
+4. ✅ **#18** — botão "Emitir Ordem de Serviço" no GES.
+5. ✅ **#50** — ação esperada por nível de risco.
+6. ✅ **#28** — filtros de categoria/validade no relatório de estoque (filtro de lote confirmado
+   fora, depende da #23).
+7. ✅ **#34** — alerta de validade de CA (espelha `trainingsExpired`/`trainingsDueSoon`).
+8. ⚠️ **#51 + #42 — só #51 entregue.** A ponte `control_measure → action_plan` está completa
+   (origem polimórfica nova `control_measure`, upsert idempotente, cancela ao desmarcar
+   `applicable`). **A regra de status do #42 (maintain/introduced/improved por nível de risco +
+   garantir entrada de plano para todo risco do inventário) ficou fora**: exigiria classificar o
+   risco via bandas de metodologia (plumbing cross-domínio, `risk_assessments` → `classify()`) e
+   decidir que conteúdo de 5W2H entra num plano "placeholder" pra risco trivial sem ação real —
+   isso é decisão de produto, não só engenharia. A coluna `control_measures.status` (migration
+   0031) existe mas fica sem uso até essa decisão ser tomada.
+9. ✅ **#46** — arquivar revisão do PGR (Server Action + REST mirror + UI + docs/Postman).
+10. ✅ **#45** — anexos habilitados em GES e Risco. `responsible_technician` fica sem consumidor
+    de UI — não existe cadastro de Responsável Técnico ainda (issue #36, fora de escopo).
+11. ✅ **#44** — proposta técnica postada como comentário na issue (sem código), com estimativa de
+    esforço e por que não implementar já.
 
-Cada tarefa acima = 1 dispatch de subagent implementador + revisão do diff pelo orquestrador antes
-do commit, seguindo o loop de `subagent-driven-development`. Migrations (Tarefa 1) e tarefas que
-tocam regra de negócio cross-tenant usam modelo com mais raciocínio (não haiku); tarefas de
-UI/wiring pontual usam o modelo mais barato que resolver.
+**Pendências que sobrevivem ao lote:**
+- A regra de status do #42 (ver Tarefa 8) — precisa de decisão de produto antes de codar.
+- Nenhum teste de integração deste lote rodou de fato (sem Postgres efêmero neste ambiente) — só
+  foram escritos seguindo o padrão do projeto. Rodar `npm run test:integration` antes do merge.
+- `/documents` com filtro `relatedEntityType=ges|risk` não tem um rótulo de "banner" dedicado como
+  o de PGR (`PGR {id}`) — cosmético, o filtro funciona, só a legenda da tela fica genérica.
+
+Branch: `fix/correcoes-avaliacao-epgr`. Cada tarefa = 1 commit próprio, revisado pelo orquestrador
+antes de commitar (subagent-driven-development enxuto: sem worktree/ledger formal, review feita
+pelo próprio orquestrador em vez de um segundo subagent revisor).
