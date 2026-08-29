@@ -1,12 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition, type FormEvent } from "react";
+import {
+  useEffect,
+  useState,
+  useTransition,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 
 import {
   createEmployeeAction,
   updateEmployeeAction,
   listGesFunctionsAction,
+  uploadEmployeePhotoAction,
 } from "@/shared/server/actions/pgr/employees";
 import { listGesAction } from "@/shared/server/actions/pgr/ges";
 import type { EmployeeInput, Employee } from "@/shared/domains/pgr/employees";
@@ -89,9 +96,12 @@ const STEP_FIELDS: readonly (readonly string[])[] = [
 export function EmployeeForm({
   companies,
   employee,
+  photoUrl = null,
 }: {
   companies: CompanyOption[];
   employee?: Employee;
+  /** URL assinada da foto já persistida (calculada no server, ver edit/page.tsx). */
+  photoUrl?: string | null;
 }) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -106,6 +116,38 @@ export function EmployeeForm({
   const [functionOptions, setFunctionOptions] = useState<JobRoleOption[]>([]);
   const [address, setAddress] = useState<AddressValue>(addressFrom(employee));
   const [step, setStep] = useState(0);
+
+  // Foto (issue #16) — mesmo padrão do logo de empresa (issue #4): sobe ao
+  // Storage assim que o arquivo é escolhido, não no submit do form.
+  const [photoPath, setPhotoPath] = useState(employee?.photoPath ?? "");
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(photoUrl);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  async function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    // Permite reenviar o mesmo arquivo depois de um erro.
+    event.target.value = "";
+    if (!file) return;
+
+    setPhotoError(null);
+    setPhotoUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const result = await uploadEmployeePhotoAction(formData);
+      if (result.ok) {
+        setPhotoPath(result.data.storagePath);
+        setPhotoPreviewUrl(result.data.url);
+      } else {
+        setPhotoError(result.error.message);
+      }
+    } catch {
+      setPhotoError("Falha ao enviar a imagem. Tente novamente.");
+    } finally {
+      setPhotoUploading(false);
+    }
+  }
 
   const isLastStep = step === STEPS.length - 1;
 
@@ -185,7 +227,7 @@ export function EmployeeForm({
       admissionDate: value("admissionDate"),
       dismissalDate: value("dismissalDate"),
       ...address,
-      photoPath: value("photoPath"),
+      photoPath,
     };
 
     startTransition(async () => {
@@ -349,11 +391,33 @@ export function EmployeeForm({
           placeholder="Ex.: O+"
           defaultValue={employee?.bloodType}
         />
-        <TextField
-          label="Foto (caminho)"
-          name="photoPath"
-          defaultValue={employee?.photoPath}
-        />
+        <div className="block sm:col-span-full">
+          <span className="text-text-muted mb-1.5 block text-xs font-semibold">
+            Foto do funcionário
+          </span>
+          {photoPreviewUrl ? (
+            <img
+              src={photoPreviewUrl}
+              alt="Foto do funcionário"
+              className="glass-panel rounded-card mb-2 h-24 w-24 object-cover p-1"
+            />
+          ) : null}
+          <input
+            type="file"
+            name="photoFile"
+            accept="image/png,image/jpeg"
+            onChange={handlePhotoChange}
+            disabled={photoUploading}
+            className="glass-input text-text rounded-card file:rounded-card file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer px-3.5 py-2.5 text-sm outline-none file:mr-4 file:border-0 file:px-3 file:py-1 file:text-xs file:font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+          />
+          <span className="text-text-subtle mt-1 block text-xs">
+            PNG ou JPG — até 5 MB.
+          </span>
+          {photoUploading ? (
+            <span className="text-text-subtle mt-1 block text-xs">Enviando…</span>
+          ) : null}
+          <FieldError message={photoError ?? errors.photoPath} />
+        </div>
       </FormSection>
 
       <AddressFields

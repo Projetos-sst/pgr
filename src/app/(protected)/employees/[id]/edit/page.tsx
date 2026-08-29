@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getEmployeeAction } from "@/shared/server/actions/pgr/employees";
 import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies";
+import { getSignedEmployeePhotoUrl } from "@/shared/integrations/storage/employee-photo-storage";
 
 import { PageHeader } from "../../../_ui/list";
 import { EmployeeForm } from "../../_components/employee-form";
@@ -24,6 +25,13 @@ export default async function EditEmployeePage({
   if (!employeeResult.ok) notFound();
   const companies = companiesResult.ok ? companiesResult.data : [];
 
+  // `employee.photoPath` já vem escopado pelo tenant (getEmployeeAction ->
+  // getEmployeeById com withOrg) — seguro assinar direto, sem passar o path
+  // pelo cliente antes.
+  const photoUrl = employeeResult.data.photoPath
+    ? await getSignedEmployeePhotoUrl(employeeResult.data.photoPath).catch(() => null)
+    : null;
+
   return (
     <div className="animate-fade-slide-up mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-5 py-7 sm:px-[30px] sm:pb-10">
       <PageHeader
@@ -33,7 +41,11 @@ export default async function EditEmployeePage({
         backHref={`/employees/${id}`}
         backLabel="Voltar para o funcionário"
       />
-      <EmployeeForm companies={companies} employee={employeeResult.data} />
+      <EmployeeForm
+        companies={companies}
+        employee={employeeResult.data}
+        photoUrl={photoUrl}
+      />
     </div>
   );
 }
