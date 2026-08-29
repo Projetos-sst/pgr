@@ -79,7 +79,7 @@ function asOwner(tenantId: string) {
     const result = await createCompanyAction({
       razaoSocial: "Clone",
       riskGrade: "1",
-      cnpj: "11111111000111",
+      cnpj: "11222333000181",
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("DUPLICATE");

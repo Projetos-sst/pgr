@@ -57,7 +57,7 @@ export async function seedPgrBase(admin: ReturnType<typeof postgres>): Promise<v
     insert into public.orgs (id, plan) values ('org_a','free'), ('org_b','pro');
 
     insert into public.companies (id, org_id, cnpj, razao_social) values
-      ('${I.companyA}','org_a','11111111000111','A Ltda'),
+      ('${I.companyA}','org_a','11222333000181','A Ltda'),
       ('${I.companyB}','org_b','22222222000122','B Ltda');
 
     insert into public.work_units (id, org_id, company_id, name, description) values
