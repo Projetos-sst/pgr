@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type {
   PgrRevisionListItem,
@@ -26,6 +26,7 @@ export async function listPgrRevisions(
         revisionNumber: pgrRevisions.revisionNumber,
         revisedAt: pgrRevisions.revisedAt,
         notes: pgrRevisions.notes,
+        archivedAt: pgrRevisions.archivedAt,
         createdAt: pgrRevisions.createdAt,
       })
       .from(pgrRevisions)
@@ -92,6 +93,50 @@ export async function createPgrRevision(
         })
         .returning();
       return row;
+    }),
+  );
+}
+
+/**
+ * Arquiva uma revisão (issue #46) — `archived_at` fica `null` até aqui; sem máquina de estados,
+ * só `null → now()`. **Idempotente**: arquivar uma revisão já arquivada não é erro nem sobrescreve
+ * o timestamp original — o `UPDATE` só afeta linhas com `archived_at IS NULL`; se nada foi afetado,
+ * um `SELECT` de fallback distingue "já arquivada" (devolve a linha como está) de "não existe no
+ * tenant" (`null`, guard de existência/isolamento).
+ */
+export async function archivePgrRevision(
+  orgId: string,
+  pgrId: string,
+  id: string,
+): Promise<PgrRevision | null> {
+  return auditedTenantWrite(orgId, AUDIT_OP, () =>
+    withOrg(orgId, async (tx) => {
+      const [updated] = await tx
+        .update(pgrRevisions)
+        .set({ archivedAt: new Date(), updatedAt: new Date() })
+        .where(
+          and(
+            eq(pgrRevisions.orgId, orgId),
+            eq(pgrRevisions.pgrId, pgrId),
+            eq(pgrRevisions.id, id),
+            isNull(pgrRevisions.archivedAt),
+          ),
+        )
+        .returning();
+      if (updated) return updated;
+
+      const [current] = await tx
+        .select()
+        .from(pgrRevisions)
+        .where(
+          and(
+            eq(pgrRevisions.orgId, orgId),
+            eq(pgrRevisions.pgrId, pgrId),
+            eq(pgrRevisions.id, id),
+          ),
+        )
+        .limit(1);
+      return current ?? null;
     }),
   );
 }

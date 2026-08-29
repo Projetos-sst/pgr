@@ -45,3 +45,20 @@ export async function createPgrRevisionAction(
     { audit: true },
   );
 }
+
+export async function archivePgrRevisionAction(
+  pgrId: string,
+  revisionId: string,
+): Promise<ActionResult<PgrRevision>> {
+  return officeAction(
+    "pgr.pgr_revisions.archive",
+    async ({ tenantId }) => {
+      await assertPgrEditable(tenantId, pgrId);
+      const row = await repo.archivePgrRevision(tenantId, pgrId, revisionId);
+      if (!row) throw new NotFoundError();
+      revalidatePath(editPath(pgrId));
+      return row;
+    },
+    { audit: true },
+  );
+}
