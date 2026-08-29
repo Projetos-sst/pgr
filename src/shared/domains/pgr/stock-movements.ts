@@ -26,6 +26,8 @@ export const stockEntrySchema = z.object({
   quantity: quantitySchema,
   movementDate: movementDateSchema,
   invoiceNumber: optionalString,
+  // Lote de rastreabilidade (issue #23) — opcional, mesmo padrão de `invoiceNumber`.
+  batch: optionalString,
 });
 
 export type StockEntryInput = z.input<typeof stockEntrySchema>;
@@ -104,6 +106,7 @@ export type StockMovementRow = {
   signedQuantity: number;
   movementDate: string;
   invoiceNumber: string | null;
+  batch: string | null;
   employeeName: string | null;
   runningBalance: number;
   createdAt: Date;

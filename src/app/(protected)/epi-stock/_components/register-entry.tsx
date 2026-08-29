@@ -34,6 +34,7 @@ export function RegisterEntry({ stockId }: { stockId: string }) {
         quantity: String(fd.get("quantity") ?? ""),
         movementDate: String(fd.get("movementDate") ?? ""),
         invoiceNumber: String(fd.get("invoiceNumber") ?? ""),
+        batch: String(fd.get("batch") ?? ""),
       });
       if (result.ok) {
         close();
@@ -83,6 +84,12 @@ export function RegisterEntry({ stockId }: { stockId: string }) {
                 label="Nº da nota fiscal"
                 name="invoiceNumber"
                 error={errors.invoiceNumber}
+              />
+              <TextField
+                label="Lote"
+                name="batch"
+                placeholder="Nº do lote (rastreabilidade)"
+                error={errors.batch}
               />
               <FieldError message={errors._} />
               <div className="flex items-center justify-end gap-3 pt-2">
