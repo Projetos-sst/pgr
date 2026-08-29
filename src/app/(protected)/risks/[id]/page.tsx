@@ -12,8 +12,18 @@ import {
 
 import { PageHeader } from "../../_ui/list";
 import { DeleteRisk } from "../_components/delete-risk";
+import { DocumentAttachmentsSection } from "../../documents/_components/document-attachments-section";
 
 export const dynamic = "force-dynamic";
+
+const RISK_LABEL_MAX_LENGTH = 60;
+
+/** Rótulo curto do risco para telas de retorno/vínculo (ex.: anexo do GED). */
+function riskShortLabel(description: string): string {
+  return description.length > RISK_LABEL_MAX_LENGTH
+    ? `${description.slice(0, RISK_LABEL_MAX_LENGTH - 1)}…`
+    : description;
+}
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
@@ -93,6 +103,17 @@ export default async function RiskDetailPage({
         />
         <Field label="Concentração/intensidade" value={risk.concentrationIntensity} />
       </section>
+
+      <DocumentAttachmentsSection
+        relatedEntityType="risk"
+        relatedEntityId={risk.id}
+        attachHref={
+          `/documents/new?relatedEntityType=risk&relatedEntityId=${risk.id}` +
+          `&returnTo=${encodeURIComponent(`/risks/${risk.id}`)}` +
+          `&returnLabel=${encodeURIComponent(riskShortLabel(risk.description))}`
+        }
+        description="Documentos vinculados a este risco — laudos técnicos, evidências, ARTs."
+      />
     </div>
   );
 }

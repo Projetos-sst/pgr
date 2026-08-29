@@ -18,6 +18,12 @@ import { UPLOAD_TRANSPORT_ERROR_MESSAGE } from "./format";
 
 type Option = { value: string; label: string };
 
+const LINK_CHECKBOX_LABEL: Record<string, string> = {
+  pgr: "Vincular a um PGR",
+  ges: "Vincular a este GES",
+  risk: "Vincular a este risco",
+};
+
 export function DocumentUploadForm({
   folders,
   defaultFolderId,
@@ -36,15 +42,18 @@ export function DocumentUploadForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
-  const isPreLinkedToPgr = defaultRelatedEntityType === "pgr" && !!defaultRelatedEntityId;
-  const [linkToPgr, setLinkToPgr] = useState(isPreLinkedToPgr);
+  // Pré-vinculado cobre qualquer entidade do enum (pgr/ges/risk) que chegue via
+  // query string (ex.: "Anexar Documento" do GES/Risco); o fluxo manual — checkbox +
+  // ID digitado — continua exclusivo de PGR (ver comentário no botão abaixo).
+  const isPreLinked = !!defaultRelatedEntityType && !!defaultRelatedEntityId;
+  const [linkToEntity, setLinkToEntity] = useState(isPreLinked);
 
   const folderOptions: Option[] = folders.map((f) => ({ value: f.id, label: f.name }));
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    if (!linkToPgr) {
+    if (!linkToEntity) {
       formData.delete("relatedEntityType");
       formData.delete("relatedEntityId");
     }
@@ -111,18 +120,25 @@ export function DocumentUploadForm({
       <label className="mt-1 flex items-center gap-2 text-sm">
         <input
           type="checkbox"
-          checked={linkToPgr}
-          onChange={(e) => setLinkToPgr(e.target.checked)}
+          checked={linkToEntity}
+          onChange={(e) => setLinkToEntity(e.target.checked)}
           className="text-primary focus:ring-primary h-4 w-4 rounded border-white/60"
         />
         <span className="text-text-muted text-xs font-semibold sm:text-sm">
-          Vincular a um PGR
+          {isPreLinked
+            ? (LINK_CHECKBOX_LABEL[defaultRelatedEntityType ?? "pgr"] ??
+              LINK_CHECKBOX_LABEL.pgr)
+            : LINK_CHECKBOX_LABEL.pgr}
         </span>
       </label>
-      {linkToPgr ? (
+      {linkToEntity ? (
         <>
-          <input type="hidden" name="relatedEntityType" value="pgr" />
-          {isPreLinkedToPgr ? (
+          <input
+            type="hidden"
+            name="relatedEntityType"
+            value={isPreLinked ? (defaultRelatedEntityType ?? "pgr") : "pgr"}
+          />
+          {isPreLinked ? (
             <>
               <input
                 type="hidden"
