@@ -83,6 +83,43 @@ async function freshCatalog(admin: ReturnType<typeof postgres>): Promise<string>
     expect(detail.ok && detail.data.status).toBe("sem_saldo");
   });
 
+  it("create com initialQuantity lança um movimento `purchase` e o balance reflete o saldo inicial (#22)", async () => {
+    const catalogId = await freshCatalog(admin);
+    const created = await createEpiStockAction({
+      catalogId,
+      minimumQuantity: "0",
+      initialQuantity: "10",
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    expect(created.data.balance).toBe(10); // reflete o saldo pós-movimento, não 0
+
+    const detail = await getEpiStockAction(created.data.id);
+    expect(detail.ok && detail.data.currentBalance).toBe(10);
+
+    const movements = await admin<{ type: string; quantity: number }[]>`
+      select type, quantity from public.stock_movements where stock_id = ${created.data.id}`;
+    expect(movements).toHaveLength(1);
+    expect(movements[0].type).toBe("purchase");
+    expect(movements[0].quantity).toBe(10);
+  });
+
+  it("create sem initialQuantity (ou zero) não lança movimentação — comportamento anterior preservado", async () => {
+    const catalogId = await freshCatalog(admin);
+    const created = await createEpiStockAction({
+      catalogId,
+      minimumQuantity: "0",
+      initialQuantity: "0",
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    expect(created.data.balance).toBe(0);
+
+    const movements = await admin<{ id: string }[]>`
+      select id from public.stock_movements where stock_id = ${created.data.id}`;
+    expect(movements).toHaveLength(0);
+  });
+
   it("create de item já no estoque → DUPLICATE (UNIQUE org,catalog)", async () => {
     const dup = await createEpiStockAction({
       catalogId: I.epiCatalogA,

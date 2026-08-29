@@ -16,6 +16,7 @@ import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pag
 import { withOrg } from "../with-org";
 import { epiStock, epiCatalog, stockMovements, type EpiStock } from "../schema/epis";
 import { auditedTenantWrite } from "./audited-write";
+import { applyStockEntry } from "./stock-movements";
 
 export type ListEpiStockParams = PageParams & EpiStockListFilters;
 
@@ -123,6 +124,21 @@ export async function createEpiStock(
         .insert(epiStock)
         .values({ orgId, catalogId: input.catalogId, minQuantity: input.minimumQuantity })
         .returning();
+
+      // Saldo inicial (opcional, #22): lançado como movimentação `purchase` na MESMA
+      // transação, nunca escrito direto em `balance` — preserva a trilha de auditoria de
+      // `stock_movements`. `applyStockEntry` já atualiza `epi_stock.balance`; refletimos o
+      // resultado no retorno para quem chamou ver o saldo correto de imediato.
+      if (input.initialQuantity && input.initialQuantity > 0) {
+        const { newBalance } = await applyStockEntry(tx, {
+          orgId,
+          stockId: row.id,
+          quantity: input.initialQuantity,
+          type: "purchase",
+        });
+        return { ...row, balance: newBalance };
+      }
+
       return row;
     }),
   );
