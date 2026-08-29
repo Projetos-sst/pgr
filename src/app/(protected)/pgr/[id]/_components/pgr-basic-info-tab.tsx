@@ -1,6 +1,10 @@
 import Link from "next/link";
 
 import { pgrRegistrationTypeLabel, type Pgr } from "@/shared/domains/pgr/pgr";
+import type { DocumentListItem } from "@/shared/domains/documents/documents";
+
+import { formatBytes, formatIsoDateBr } from "../../../documents/_components/format";
+import { ValidityBadge } from "../../../documents/_components/validity-badge";
 
 function Field({
   label,
@@ -28,6 +32,96 @@ function Field({
 const brDate = (d: string | null) => (d ? d.split("-").reverse().join("/") : "—");
 
 /**
+ * Anexo da ART do Responsável Técnico (issue #36). `responsible_technician` não é uma
+ * entidade própria — é um grupo de colunas na própria tabela `pgr` — então o vínculo
+ * polimórfico usa o **id do próprio PGR** como `relatedEntityId` (mesmo mecanismo do
+ * acervo geral do PGR em `pgr-documents-tab.tsx`, só trocando `relatedEntityType`).
+ */
+function ResponsibleTechnicianDocumentsPanel({
+  pgrId,
+  technicianLabel,
+  documents,
+  total,
+}: {
+  pgrId: string;
+  technicianLabel: string;
+  documents: DocumentListItem[];
+  total: number;
+}) {
+  const relatedQuery = `relatedEntityType=responsible_technician&relatedEntityId=${pgrId}`;
+  const attachQuery =
+    `${relatedQuery}` +
+    `&returnTo=${encodeURIComponent(`/pgr/${pgrId}`)}` +
+    `&returnLabel=${encodeURIComponent(technicianLabel)}`;
+
+  return (
+    <div className="glass-card flex flex-col gap-5 p-6">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-text text-base font-bold sm:text-lg">
+            ART do Responsável Técnico
+          </h2>
+          <p className="text-text-subtle mt-1.5 max-w-2xl text-xs sm:text-sm">
+            Anotação de Responsabilidade Técnica e outros anexos do responsável pela
+            elaboração deste PGR.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/documents/new?${attachQuery}`}
+            className="btn-primary rounded-card px-4 py-2 text-xs font-bold text-white"
+          >
+            Anexar ART
+          </Link>
+          <Link
+            href={`/documents?${relatedQuery}`}
+            className="glass-panel text-text-muted hover:text-text rounded-card px-4 py-2 text-xs font-bold transition-colors"
+          >
+            Abrir no GED
+          </Link>
+        </div>
+      </div>
+
+      {documents.length > 0 ? (
+        <ul className="grid gap-2">
+          {documents.map((document) => (
+            <li
+              key={document.id}
+              className="glass-panel flex flex-col gap-2 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="text-text truncate text-sm font-bold">{document.name}</p>
+                <p className="text-text-subtle mt-0.5 font-mono text-[11px] tracking-wide uppercase">
+                  {document.docType} · v{document.version} ·{" "}
+                  {formatBytes(document.sizeBytes)}
+                  {document.validUntil
+                    ? ` · vence em ${formatIsoDateBr(document.validUntil)}`
+                    : ""}
+                </p>
+              </div>
+              <ValidityBadge status={document.validityStatus} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-text-subtle rounded-2xl border border-dashed border-black/10 px-4 py-6 text-center text-xs">
+          Nenhuma ART anexada ainda.
+        </p>
+      )}
+
+      {total > documents.length ? (
+        <Link
+          href={`/documents?${relatedQuery}`}
+          className="text-primary w-fit text-xs font-bold hover:underline"
+        >
+          Ver todos os {total} documentos vinculados →
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * Aba Informações básicas: exibe os campos cadastrais reais do `pgr`.
  */
 export function PgrBasicInfoTab({
@@ -35,12 +129,16 @@ export function PgrBasicInfoTab({
   pgr,
   companyName,
   workUnitName,
+  technicianDocuments,
+  technicianDocumentsTotal,
   readOnly = false,
 }: {
   pgrId: string;
   pgr: Pgr;
   companyName: string;
   workUnitName: string | null;
+  technicianDocuments: DocumentListItem[];
+  technicianDocumentsTotal: number;
   readOnly?: boolean;
 }) {
   return (
@@ -87,6 +185,15 @@ export function PgrBasicInfoTab({
         <Field label="Data de emissão" value={brDate(pgr.issuedAt)} isMono />
         <Field label="Data de validade" value={brDate(pgr.validUntil)} isMono />
       </div>
+
+      <ResponsibleTechnicianDocumentsPanel
+        pgrId={pgrId}
+        technicianLabel={
+          pgr.responsible ? `RT ${pgr.responsible}` : "o Responsável Técnico"
+        }
+        documents={technicianDocuments}
+        total={technicianDocumentsTotal}
+      />
     </section>
   );
 }

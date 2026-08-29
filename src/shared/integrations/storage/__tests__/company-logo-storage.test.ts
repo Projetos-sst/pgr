@@ -31,9 +31,7 @@ function storageClient(
 
 describe("buildCompanyLogoPath", () => {
   it("particiona por org_id/logos/fileId.extensão", () => {
-    expect(buildCompanyLogoPath("org_a", "file-1", "png")).toBe(
-      "org_a/logos/file-1.png",
-    );
+    expect(buildCompanyLogoPath("org_a", "file-1", "png")).toBe("org_a/logos/file-1.png");
   });
 });
 
@@ -86,10 +84,7 @@ describe("getSignedCompanyLogoUrl", () => {
 
     const url = await getSignedCompanyLogoUrl("org_a/logos/file-1.png");
     expect(url).toBe("https://signed.example/x");
-    expect(client.createSignedUrl).toHaveBeenCalledWith(
-      "org_a/logos/file-1.png",
-      3600,
-    );
+    expect(client.createSignedUrl).toHaveBeenCalledWith("org_a/logos/file-1.png", 3600);
   });
 
   it("lança quando o provedor falha ao assinar", async () => {

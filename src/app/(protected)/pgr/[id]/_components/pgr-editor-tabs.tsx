@@ -45,6 +45,8 @@ export function PgrEditorTabs({
   signature,
   linkedDocuments,
   linkedDocumentsTotal,
+  technicianDocuments,
+  technicianDocumentsTotal,
 }: {
   pgrId: string;
   pgr: Pgr;
@@ -58,6 +60,8 @@ export function PgrEditorTabs({
   signature?: PgrSignatureView;
   linkedDocuments: DocumentListItem[];
   linkedDocumentsTotal: number;
+  technicianDocuments: DocumentListItem[];
+  technicianDocumentsTotal: number;
 }) {
   const router = useRouter();
   const [active, setActive] = useState<TabKey>("basic");
@@ -515,6 +519,8 @@ export function PgrEditorTabs({
               pgr={pgr}
               companyName={companyName}
               workUnitName={workUnitName}
+              technicianDocuments={technicianDocuments}
+              technicianDocumentsTotal={technicianDocumentsTotal}
               readOnly={isLocked}
             />
           ) : null}

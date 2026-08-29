@@ -37,6 +37,7 @@ export default async function PgrDetailPage({
     gesOptions,
     signature,
     linkedDocuments,
+    technicianDocuments,
   ] = await Promise.all([
     getCompanyAction(doc.companyId),
     doc.workUnitId ? getWorkUnitAction(doc.workUnitId) : Promise.resolve(null),
@@ -47,6 +48,13 @@ export default async function PgrDetailPage({
     getPgrSignatureViewAction({ pgrId: id }),
     listDocumentsAction({
       relatedEntityType: "pgr",
+      relatedEntityId: id,
+      pageSize: 5,
+    }),
+    // Anexos da ART do Responsável Técnico (issue #36) — mesmo id do PGR, entidade sem
+    // tabela própria (grupo de colunas em `pgr`).
+    listDocumentsAction({
+      relatedEntityType: "responsible_technician",
       relatedEntityId: id,
       pageSize: 5,
     }),
@@ -74,6 +82,10 @@ export default async function PgrDetailPage({
         signature={signature.ok ? signature.data : undefined}
         linkedDocuments={linkedDocuments.ok ? linkedDocuments.data.rows : []}
         linkedDocumentsTotal={linkedDocuments.ok ? linkedDocuments.data.total : 0}
+        technicianDocuments={technicianDocuments.ok ? technicianDocuments.data.rows : []}
+        technicianDocumentsTotal={
+          technicianDocuments.ok ? technicianDocuments.data.total : 0
+        }
       />
     </div>
   );

@@ -50,6 +50,7 @@ export default async function EditControlMeasurePage({
         initial={{
           controlLevel: measure.controlLevel,
           applicable: measure.applicable,
+          status: measure.status,
           justification: measure.justification,
           monitoring: measure.monitoring,
           actionWhat: measure.actionWhat,

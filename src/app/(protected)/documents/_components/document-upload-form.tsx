@@ -20,6 +20,7 @@ type Option = { value: string; label: string };
 
 const LINK_CHECKBOX_LABEL: Record<string, string> = {
   pgr: "Vincular a um PGR",
+  responsible_technician: "Vincular à ART do Responsável Técnico",
   ges: "Vincular a este GES",
   risk: "Vincular a este risco",
 };
