@@ -33,6 +33,7 @@ export const companies = pgTable(
     mainActivity: text("main_activity"),
     riskGrade: smallint("risk_grade"),
     logoPath: text("logo_path"),
+    website: text("website"),
     ...addressColumns(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

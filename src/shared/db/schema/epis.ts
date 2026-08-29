@@ -75,6 +75,8 @@ export const epiCatalog = pgTable(
     unitOfMeasure: text("unit_of_measure"),
     description: text("description"),
     photoPath: text("photo_path"),
+    replacementDate: date("replacement_date"),
+    createdBy: text("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -155,6 +157,7 @@ export const stockMovements = pgTable(
     movementDate: date("movement_date").notNull().defaultNow(),
     invoiceNumber: text("invoice_number"),
     invoiceDate: date("invoice_date"),
+    batch: text("batch"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -286,6 +289,37 @@ export const epiRisk = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * Log de auditoria (append-only) das alterações do catálogo de EPI (#25).
+ * Cada create/update de `epi_catalog` grava uma linha aqui com um resumo
+ * textual do diff; sem update/delete pela aplicação (histórico imutável).
+ */
+export const epiCatalogAuditLog = pgTable(
+  "epi_catalog_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    epiCatalogId: uuid("epi_catalog_id")
+      .notNull()
+      .references(() => epiCatalog.id, { onDelete: "cascade" }),
+    changedBy: text("changed_by"),
+    changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+    summary: text("summary").notNull(),
+  },
+  (table) => [
+    index("idx_epi_catalog_audit_log_org_id").on(table.orgId),
+    index("idx_epi_catalog_audit_log_epi_catalog_id").on(table.epiCatalogId),
+    pgPolicy("epi_catalog_audit_log_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+  ],
+).enableRLS();
+
 export type EpiCatalog = InferSelectModel<typeof epiCatalog>;
 export type NewEpiCatalog = InferInsertModel<typeof epiCatalog>;
 export type EpiStock = InferSelectModel<typeof epiStock>;
@@ -298,3 +332,5 @@ export type EpiDeliveryItem = InferSelectModel<typeof epiDeliveryItems>;
 export type NewEpiDeliveryItem = InferInsertModel<typeof epiDeliveryItems>;
 export type EpiRisk = InferSelectModel<typeof epiRisk>;
 export type NewEpiRisk = InferInsertModel<typeof epiRisk>;
+export type EpiCatalogAuditLog = InferSelectModel<typeof epiCatalogAuditLog>;
+export type NewEpiCatalogAuditLog = InferInsertModel<typeof epiCatalogAuditLog>;
