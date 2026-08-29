@@ -8,7 +8,7 @@ import { ServiceOrderForm } from "../_components/service-order-form";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ onboarding?: string }>;
+type SearchParams = Promise<{ onboarding?: string; employeeId?: string }>;
 
 export default async function NewServiceOrderPage({
   searchParams,
@@ -33,7 +33,7 @@ export default async function NewServiceOrderPage({
         employees={employees}
         initial={{
           title: "",
-          assignedEmployeeId: null,
+          assignedEmployeeId: sp.employeeId ?? null,
           openedAt: todayInSaoPaulo(),
           dueDate: null,
           status: "open",

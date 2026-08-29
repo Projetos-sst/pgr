@@ -87,6 +87,17 @@ export const controlLevel = pgEnum("control_level", [
 ]);
 
 /**
+ * Status da medida de controle (#42): mantida / introduzida / melhorada. Preenchido
+ * pela regra de negócio a partir do nível de risco (fatia seguinte) — nullable aqui,
+ * sem default forçado.
+ */
+export const controlMeasureStatus = pgEnum("control_measure_status", [
+  "maintain",
+  "introduced",
+  "improved",
+]);
+
+/**
  * Inventário de riscos (NR-01/GRO + eSocial S-2240). Cada risco pertence a um GES
  * (a cadeia é GES → riscos → avaliação → controles). Campos descritivos são texto
  * livre; `agent_type` e `description` são obrigatórios.
@@ -197,6 +208,7 @@ export const controlMeasures = pgTable(
       .references(() => risks.id, { onDelete: "cascade" }),
     controlLevel: controlLevel("control_level").notNull(),
     applicable: boolean("applicable").notNull().default(false),
+    status: controlMeasureStatus("status"),
     justification: text("justification"),
     monitoring: text("monitoring"),
     // Plano de ação 5W2H.

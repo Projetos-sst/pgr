@@ -24,11 +24,16 @@ const base = {
   how: "Enclausuramento acústico",
 };
 
-describe("action-plan-origin (US6)", () => {
-  it("aceita apenas risk|incident na V1", () => {
-    expect([...ACTION_PLAN_ORIGIN_TYPES]).toEqual(["risk", "incident"]);
+describe("action-plan-origin (US6 + issue #51)", () => {
+  it("aceita risk|incident|control_measure", () => {
+    expect([...ACTION_PLAN_ORIGIN_TYPES]).toEqual([
+      "risk",
+      "incident",
+      "control_measure",
+    ]);
     expect(actionPlanOriginTypeSchema.safeParse("risk").success).toBe(true);
     expect(actionPlanOriginTypeSchema.safeParse("incident").success).toBe(true);
+    expect(actionPlanOriginTypeSchema.safeParse("control_measure").success).toBe(true);
     expect(actionPlanOriginTypeSchema.safeParse("inspection").success).toBe(false);
     expect(actionPlanOriginTypeSchema.safeParse("non_conformity").success).toBe(false);
     expect(actionPlanOriginTypeSchema.safeParse("qualquer").success).toBe(false);

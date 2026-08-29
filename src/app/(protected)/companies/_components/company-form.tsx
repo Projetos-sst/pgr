@@ -8,6 +8,7 @@ import {
   updateCompanyAction,
 } from "@/shared/server/actions/pgr/companies";
 import type { CompanyInput, Company } from "@/shared/domains/pgr/companies";
+import { maskCnpjInput } from "@/shared/domains/pgr/companies";
 import { useCnpjLookup } from "@/shared/integrations/client/use-cnpj-lookup";
 
 import {
@@ -141,7 +142,7 @@ export function CompanyForm({ company }: { company?: Company }) {
             isMono
             placeholder="00.000.000/0000-00"
             value={fields.cnpj}
-            onChange={setField("cnpj")}
+            onChange={(value) => setField("cnpj")(maskCnpjInput(value))}
             onBlur={() => cnpjLookup.lookup(fields.cnpj)}
             error={errors.cnpj}
           />

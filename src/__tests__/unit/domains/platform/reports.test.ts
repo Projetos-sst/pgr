@@ -20,6 +20,8 @@ const summary: DashboardSummary = {
     episPendingReturn: 0,
     trainingsExpired: 0,
     trainingsDueSoon: 5,
+    episCaExpired: 0,
+    episCaDueSoon: 0,
   },
 };
 

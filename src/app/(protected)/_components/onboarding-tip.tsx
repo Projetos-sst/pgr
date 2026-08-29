@@ -1,6 +1,9 @@
 import Link from "next/link";
 
-import { ONBOARDING_STEPS, type OnboardingStep } from "@/shared/domains/platform/onboarding";
+import {
+  ONBOARDING_STEPS,
+  type OnboardingStep,
+} from "@/shared/domains/platform/onboarding";
 
 /**
  * Instrução contextual injetada na própria tela de ação (ex: `/companies/new`)

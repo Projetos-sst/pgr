@@ -121,7 +121,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     tips: [
       "O número da OS é gerado automaticamente pelo escritório ao salvar.",
       "Associe um funcionário para poder coletar a assinatura depois.",
-      "OS assinadas aparecem no card \"OS Funcional\" do dashboard.",
+      'OS assinadas aparecem no card "OS Funcional" do dashboard.',
     ],
     href: "/service-orders/new?onboarding=1",
   },

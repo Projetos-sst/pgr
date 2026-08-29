@@ -32,6 +32,7 @@ export {
   epiDeliveries,
   epiDeliveryItems,
   epiRisk,
+  epiCatalogAuditLog,
   stockMovementType,
   epiSignatureStatus,
   epiNeutralization,
@@ -47,6 +48,8 @@ export {
   type NewEpiDeliveryItem,
   type EpiRisk,
   type NewEpiRisk,
+  type EpiCatalogAuditLog,
+  type NewEpiCatalogAuditLog,
 } from "./epis";
 export {
   signatureRequests,

@@ -106,7 +106,7 @@ function req(
         body: JSON.stringify({
           razaoSocial: "Clone",
           riskGrade: 1,
-          cnpj: "11111111000111",
+          cnpj: "11222333000181",
         }),
       }),
     );

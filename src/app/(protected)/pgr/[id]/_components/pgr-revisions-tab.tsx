@@ -3,7 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 
-import { createPgrRevisionAction } from "@/shared/server/actions/pgr/pgr-revisions";
+import {
+  archivePgrRevisionAction,
+  createPgrRevisionAction,
+} from "@/shared/server/actions/pgr/pgr-revisions";
 import type {
   PgrRevisionInput,
   PgrRevisionListItem,
@@ -44,6 +47,18 @@ export function PgrRevisionsTab({
     }
     setErrors(error.fields ?? {});
     setFormError(error.fields ? null : error.message);
+  }
+
+  function handleArchive(revisionId: string) {
+    setFormError(null);
+    startTransition(async () => {
+      const res = await archivePgrRevisionAction(pgrId, revisionId);
+      if (res.ok) {
+        router.refresh();
+        return;
+      }
+      setFormError(res.error.message);
+    });
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -126,7 +141,13 @@ export function PgrRevisionsTab({
       {revisions.length === 0 ? (
         <EmptyState message="Nenhuma revisão registrada para este documento." />
       ) : (
-        <Table headers={["Nº Revisão", "Data de Revisão", "Notas"]}>
+        <Table
+          headers={
+            readOnly
+              ? ["Nº Revisão", "Data de Revisão", "Notas", "Status"]
+              : ["Nº Revisão", "Data de Revisão", "Notas", "Status", "Ações"]
+          }
+        >
           {revisions.map((rev) => (
             <tr
               key={rev.id}
@@ -139,6 +160,33 @@ export function PgrRevisionsTab({
                 {brDate(rev.revisedAt)}
               </td>
               <td className="text-text-muted px-6 py-3.5 text-sm">{rev.notes ?? "—"}</td>
+              <td className="px-6 py-3.5">
+                {rev.archivedAt ? (
+                  <span className="text-text-subtle bg-text-subtle/10 rounded-[6px] px-2 py-0.5 font-mono text-xs font-bold">
+                    Arquivada
+                  </span>
+                ) : (
+                  <span className="rounded-[6px] bg-green-500/10 px-2 py-0.5 font-mono text-xs font-bold text-green-700">
+                    Ativa
+                  </span>
+                )}
+              </td>
+              {!readOnly ? (
+                <td className="px-6 py-3.5">
+                  {!rev.archivedAt ? (
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleArchive(rev.id)}
+                        disabled={pending}
+                        className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-50"
+                      >
+                        Arquivar
+                      </button>
+                    </div>
+                  ) : null}
+                </td>
+              ) : null}
             </tr>
           ))}
         </Table>

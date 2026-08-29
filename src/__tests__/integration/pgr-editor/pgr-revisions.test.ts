@@ -16,6 +16,7 @@ import { ForbiddenError } from "@/shared/auth/errors";
 import {
   listPgrRevisionsAction,
   createPgrRevisionAction,
+  archivePgrRevisionAction,
 } from "@/shared/server/actions/pgr/pgr-revisions";
 import type { PgrRevisionInput } from "@/shared/domains/pgr/pgr-revision";
 
@@ -134,5 +135,46 @@ function rev(overrides: Partial<PgrRevisionInput> = {}): PgrRevisionInput {
     mockedGate.mockRejectedValue(new ForbiddenError());
     const result = await createPgrRevisionAction(PGR_IDS.pgrA, rev());
     expect(!result.ok && result.error.code).toBe("FORBIDDEN");
+  });
+
+  // ── Arquivamento (#46) ──────────────────────────────────────────────────────
+
+  it("archive marca archivedAt (era null no seed)", async () => {
+    const before = await listPgrRevisionsAction(PGR_IDS.pgrA);
+    expect(before.ok && before.data[0].archivedAt).toBeNull();
+
+    const result = await archivePgrRevisionAction(PGR_IDS.pgrA, PGR_IDS.pgrRevisionA);
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.data.archivedAt).not.toBeNull();
+
+    const after = await listPgrRevisionsAction(PGR_IDS.pgrA);
+    expect(after.ok && after.data[0].archivedAt).not.toBeNull();
+  });
+
+  it("archive é idempotente: repetir não muda o timestamp original", async () => {
+    const first = await archivePgrRevisionAction(PGR_IDS.pgrA, PGR_IDS.pgrRevisionA);
+    expect(first.ok).toBe(true);
+    const firstTimestamp = first.ok ? first.data.archivedAt : null;
+
+    const second = await archivePgrRevisionAction(PGR_IDS.pgrA, PGR_IDS.pgrRevisionA);
+    expect(second.ok).toBe(true);
+    expect(second.ok && second.data.archivedAt?.getTime()).toBe(
+      firstTimestamp?.getTime(),
+    );
+  });
+
+  it("archive de revisão inexistente/cross-tenant → NOT_FOUND", async () => {
+    const missing = await archivePgrRevisionAction(
+      PGR_IDS.pgrA,
+      "99999999-9999-9999-9999-999999999999",
+    );
+    expect(!missing.ok && missing.error.code).toBe("NOT_FOUND");
+
+    // pgrRevisionB pertence a org_b; sessão está como org_a.
+    const crossTenant = await archivePgrRevisionAction(
+      PGR_IDS.pgrA,
+      PGR_IDS.pgrRevisionB,
+    );
+    expect(!crossTenant.ok && crossTenant.error.code).toBe("NOT_FOUND");
   });
 });

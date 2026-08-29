@@ -21,12 +21,16 @@ export function deriveStockStatus(balance: number, minQuantity: number): EpiStoc
   return "acima_minima";
 }
 
-// Criar: associa um item do catálogo ao estoque e define a mínima. `balance` NUNCA entra aqui.
+// Criar: associa um item do catálogo ao estoque e define a mínima. `balance` NUNCA entra
+// aqui — é sempre derivado de `stock_movements` (ver `createEpiStock`). `initialQuantity`
+// é só um atalho de UX: quando informado e > 0, o repositório lança uma movimentação
+// `purchase` (via `applyStockEntry`) na mesma transação, preservando a trilha de auditoria.
 export const epiStockCreateSchema = z.object({
   catalogId: requiredUuid("Item do catálogo é obrigatório"),
   minimumQuantity: z.coerce
     .number({ error: "Quantidade mínima é obrigatória" })
     .pipe(epiMinQuantitySchema),
+  initialQuantity: z.coerce.number().pipe(epiMinQuantitySchema).optional(),
 });
 
 export type EpiStockCreateInput = z.input<typeof epiStockCreateSchema>;
@@ -71,10 +75,18 @@ export type EpiCatalogOption = {
   ca: string | null;
 };
 
+/** Status de validade do CA (derivado na leitura, nunca persistido). */
+export const EPI_STOCK_CA_STATUSES = ["expired", "valid"] as const;
+export const epiStockCaStatusSchema = z.enum(EPI_STOCK_CA_STATUSES);
+export type EpiStockCaStatus = (typeof EPI_STOCK_CA_STATUSES)[number];
+
 export type EpiStockListFilters = {
   search?: string;
   withBalanceOnly?: boolean;
   status?: EpiStockStatus;
+  categoryId?: string;
+  /** `"expired"` = CA vencido (`caValidUntil < hoje`); `"valid"` = sem validade OU `>= hoje`. */
+  caStatus?: EpiStockCaStatus;
 };
 
 type EpiStockRow = {

@@ -1,4 +1,8 @@
-import { companyInputSchema, toCompanyListItem } from "@/shared/domains/pgr/companies";
+import {
+  companyInputSchema,
+  toCompanyListItem,
+  maskCnpjInput,
+} from "@/shared/domains/pgr/companies";
 import type { Company } from "@/shared/db/schema";
 
 describe("companyInputSchema (US1)", () => {
@@ -53,5 +57,51 @@ describe("toCompanyListItem", () => {
       city: "São Paulo",
       state: "SP",
     });
+  });
+});
+
+describe("maskCnpjInput", () => {
+  it("returns empty string for empty input", () => {
+    expect(maskCnpjInput("")).toBe("");
+  });
+
+  it("applies progressive mask for partial digits", () => {
+    expect(maskCnpjInput("1")).toBe("1");
+    expect(maskCnpjInput("11")).toBe("11");
+    expect(maskCnpjInput("112")).toBe("11.2");
+    expect(maskCnpjInput("1122")).toBe("11.22");
+    expect(maskCnpjInput("11222")).toBe("11.222");
+    expect(maskCnpjInput("112223")).toBe("11.222.3");
+    expect(maskCnpjInput("1122233")).toBe("11.222.33");
+    expect(maskCnpjInput("11222333")).toBe("11.222.333");
+    expect(maskCnpjInput("112223330")).toBe("11.222.333/0");
+    expect(maskCnpjInput("1122233300")).toBe("11.222.333/00");
+    expect(maskCnpjInput("11222333000")).toBe("11.222.333/000");
+    expect(maskCnpjInput("112223330001")).toBe("11.222.333/0001");
+    expect(maskCnpjInput("1122233300018")).toBe("11.222.333/0001-8");
+    expect(maskCnpjInput("11222333000181")).toBe("11.222.333/0001-81");
+  });
+
+  it("removes non-digit characters before applying mask", () => {
+    expect(maskCnpjInput("11.222.333/0001-81")).toBe("11.222.333/0001-81");
+    expect(maskCnpjInput("11222333000181")).toBe("11.222.333/0001-81");
+    expect(maskCnpjInput("11-222-333-0001-81")).toBe("11.222.333/0001-81");
+  });
+
+  it("is idempotent — applying mask to already masked input returns same output", () => {
+    const masked = "11.222.333/0001-81";
+    expect(maskCnpjInput(masked)).toBe(masked);
+    // applying again
+    expect(maskCnpjInput(maskCnpjInput(masked))).toBe(masked);
+  });
+
+  it("ignores letters and special characters mixed with digits", () => {
+    expect(maskCnpjInput("11a2b2c2d333000e1f81")).toBe("11.222.333/0001-81");
+    expect(maskCnpjInput("11@222#333$0001%81")).toBe("11.222.333/0001-81");
+  });
+
+  it("truncates to 14 digits maximum", () => {
+    expect(maskCnpjInput("112223330001819999")).toBe("11.222.333/0001-81");
+    expect(maskCnpjInput("1122233300018123456")).toBe("11.222.333/0001-81");
   });
 });

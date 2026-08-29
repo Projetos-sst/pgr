@@ -3,6 +3,7 @@ import {
   riskClassificationLabel,
   type RiskClassification,
 } from "@/shared/domains/pgr/risk-assessment";
+import { riskClassificationGuidance } from "@/shared/domains/pgr/methodology";
 import type { Risk, RiskAssessment } from "@/shared/domains/pgr/control-measure";
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
@@ -47,14 +48,21 @@ export function RiskContext({
               label="Nível de risco (avaliação vigente)"
               value={String(assessment.riskLevel)}
             />
-            <Field
-              label="Classificação vigente"
-              value={
-                assessment.result
-                  ? riskClassificationLabel(assessment.result as RiskClassification)
-                  : "—"
-              }
-            />
+            <div className="flex flex-col gap-2">
+              <Field
+                label="Classificação vigente"
+                value={
+                  assessment.result
+                    ? riskClassificationLabel(assessment.result as RiskClassification)
+                    : "—"
+                }
+              />
+              {assessment.result ? (
+                <p className="text-text-subtle text-sm">
+                  {riskClassificationGuidance(assessment.result as RiskClassification)}
+                </p>
+              ) : null}
+            </div>
           </>
         ) : (
           <Field label="Avaliação de risco" value="Sem avaliação vigente" />

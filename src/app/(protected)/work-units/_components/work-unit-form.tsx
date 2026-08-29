@@ -134,7 +134,7 @@ export function WorkUnitForm({
           error={errors.contractNumber}
         />
         <TextField
-          label="Objeto/descrição"
+          label="Escopo do Contrato"
           name="description"
           required
           isFullWidth

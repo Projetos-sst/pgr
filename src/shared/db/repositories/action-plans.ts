@@ -25,8 +25,10 @@ import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-erro
 import { ValidationError } from "@/shared/errors/validation-error";
 import { resolvePageParams, type Paginated } from "@/shared/pagination";
 import { todayInSaoPaulo } from "@/shared/dates";
+import { controlLevelLabel } from "@/shared/domains/pgr/risks";
 
 import { accidents, actionPlans, risks, type ActionPlan } from "../schema";
+import { controlMeasures } from "../schema/risks";
 import { withOrg, type TenantTransaction } from "../with-org";
 import { auditedTenantWrite } from "./audited-write";
 import { advanceIncidentOnFirstPlanTx } from "./accidents";
@@ -43,7 +45,12 @@ export async function assertOriginInTenant(
   originType: ActionPlanOriginType,
   originId: string,
 ): Promise<void> {
-  const table = originType === "risk" ? risks : accidents;
+  const table =
+    originType === "risk"
+      ? risks
+      : originType === "control_measure"
+        ? controlMeasures
+        : accidents;
   const [row] = await tx
     .select({ id: table.id })
     .from(table)
@@ -68,6 +75,9 @@ export async function loadOriginSnapshots(
   const riskIds = refs.filter((r) => r.originType === "risk").map((r) => r.originId);
   const incidentIds = refs
     .filter((r) => r.originType === "incident")
+    .map((r) => r.originId);
+  const controlMeasureIds = refs
+    .filter((r) => r.originType === "control_measure")
     .map((r) => r.originId);
 
   if (riskIds.length > 0) {
@@ -99,6 +109,31 @@ export async function loadOriginSnapshots(
         type: "incident",
         id: r.id,
         title: `${accidentTypeLabel(r.type)} — ${date}`,
+        removed: false,
+      });
+    }
+  }
+
+  if (controlMeasureIds.length > 0) {
+    const rows = await tx
+      .select({
+        id: controlMeasures.id,
+        controlLevel: controlMeasures.controlLevel,
+        riskDescription: risks.description,
+      })
+      .from(controlMeasures)
+      .innerJoin(risks, eq(risks.id, controlMeasures.riskId))
+      .where(
+        and(
+          eq(controlMeasures.orgId, orgId),
+          inArray(controlMeasures.id, controlMeasureIds),
+        ),
+      );
+    for (const r of rows) {
+      result.set(key("control_measure", r.id), {
+        type: "control_measure",
+        id: r.id,
+        title: `Medida de controle (${controlLevelLabel(r.controlLevel)}) — ${r.riskDescription}`,
         removed: false,
       });
     }

@@ -47,6 +47,41 @@ describe("epiStockCreateSchema", () => {
       epiStockCreateSchema.parse({ catalogId: "x", minimumQuantity: 1 }),
     ).toThrow();
   });
+
+  describe("initialQuantity (saldo inicial opcional, #22)", () => {
+    it("aceita ausente (undefined)", () => {
+      const parsed = epiStockCreateSchema.parse({ catalogId: UUID, minimumQuantity: 0 });
+      expect(parsed.initialQuantity).toBeUndefined();
+    });
+
+    it("aceita zero", () => {
+      const parsed = epiStockCreateSchema.parse({
+        catalogId: UUID,
+        minimumQuantity: 0,
+        initialQuantity: "0",
+      });
+      expect(parsed.initialQuantity).toBe(0);
+    });
+
+    it("aceita positivo (coerce de string)", () => {
+      const parsed = epiStockCreateSchema.parse({
+        catalogId: UUID,
+        minimumQuantity: 0,
+        initialQuantity: "10",
+      });
+      expect(parsed.initialQuantity).toBe(10);
+    });
+
+    it.each([-1, 2.5])("rejeita quantidade inicial inválida %p", (qty) => {
+      expect(() =>
+        epiStockCreateSchema.parse({
+          catalogId: UUID,
+          minimumQuantity: 0,
+          initialQuantity: qty,
+        }),
+      ).toThrow();
+    });
+  });
 });
 
 describe("epiStockUpdateSchema", () => {

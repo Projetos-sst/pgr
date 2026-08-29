@@ -173,7 +173,9 @@ export function DashboardClientWrapper({
             label="OS Funcional"
             value={serviceOrdersTotal}
             subtext={
-              serviceOrdersTotal > 0 ? `${serviceOrdersSigned} assinadas` : "Ordens de serviço"
+              serviceOrdersTotal > 0
+                ? `${serviceOrdersSigned} assinadas`
+                : "Ordens de serviço"
             }
             href="/service-orders"
             highlight

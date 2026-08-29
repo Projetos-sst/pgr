@@ -53,7 +53,7 @@ const shouldRun = !!APP_RUNTIME_URL && !!ADMIN_URL;
           runtime,
           "org_a",
           (tx) =>
-            tx`insert into public.companies (org_id, cnpj, razao_social) values ('org_a','11111111000111','Duplicado')`,
+            tx`insert into public.companies (org_id, cnpj, razao_social) values ('org_a','11222333000181','Duplicado')`,
         ),
       ).rejects.toThrow();
     });

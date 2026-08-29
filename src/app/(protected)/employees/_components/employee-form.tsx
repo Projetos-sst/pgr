@@ -10,6 +10,7 @@ import {
 } from "@/shared/server/actions/pgr/employees";
 import { listGesAction } from "@/shared/server/actions/pgr/ges";
 import type { EmployeeInput, Employee } from "@/shared/domains/pgr/employees";
+import { maskCpfInput } from "@/shared/domains/pgr/employees";
 import type { JobRoleOption } from "@/shared/domains/pgr/ges";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 
@@ -98,6 +99,7 @@ export function EmployeeForm({
   const [pending, startTransition] = useTransition();
 
   const [companyId, setCompanyId] = useState(employee?.companyId ?? "");
+  const [cpf, setCpf] = useState(employee?.cpf ?? "");
   const [gesId, setGesId] = useState(employee?.gesId ?? "");
   const [jobRoleId, setJobRoleId] = useState(employee?.jobRoleId ?? "");
   const [gesOptions, setGesOptions] = useState<Option[]>([]);
@@ -168,7 +170,7 @@ export function EmployeeForm({
       gesId,
       jobRoleId,
       fullName: value("fullName"),
-      cpf: value("cpf"),
+      cpf,
       birthDate: value("birthDate"),
       sex: value("sex"),
       maritalStatus: value("maritalStatus"),
@@ -230,7 +232,8 @@ export function EmployeeForm({
           required
           isMono
           placeholder="000.000.000-00"
-          defaultValue={employee?.cpf}
+          value={cpf}
+          onChange={(value) => setCpf(maskCpfInput(value))}
           error={errors.cpf}
         />
         <TextField

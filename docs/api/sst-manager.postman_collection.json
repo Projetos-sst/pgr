@@ -71,6 +71,10 @@
       "value": ""
     },
     {
+      "key": "pgrRevisionId",
+      "value": ""
+    },
+    {
       "key": "riskId",
       "value": ""
     },
@@ -1356,6 +1360,35 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"revisedAt\": \"2026-07-14\",\n  \"notes\": \"Cliente antigo\",\n  \"revisionNumber\": 99\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT /pgr/:id/revisions/:revisionId/archive (arquiva, #46 → 200, idempotente)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions/{{pgrRevisionId}}/archive",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "revisions",
+                    "{{pgrRevisionId}}",
+                    "archive"
+                  ]
                 }
               }
             }

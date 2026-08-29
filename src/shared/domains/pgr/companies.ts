@@ -64,3 +64,26 @@ export function formatCnpj(cnpj: string | null): string {
   if (d.length !== 14) return cnpj;
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
+
+/**
+ * Aplica máscara de digitação progressiva ao CNPJ.
+ * Remove tudo que não for dígito, trunca para 14 dígitos máximo,
+ * e aplica a máscara 00.000.000/0000-00 conforme a quantidade de dígitos.
+ * Funciona com qualquer quantidade de dígitos de 0 a 14 (idempotente).
+ */
+export function maskCnpjInput(value: string): string {
+  // Remove tudo que não for dígito
+  const digits = value.replace(/\D/g, "");
+
+  // Trunca para máximo 14 dígitos
+  if (digits.length === 0) return "";
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 8)
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  if (digits.length <= 12) {
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  }
+  // 13 ou 14 dígitos
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`;
+}

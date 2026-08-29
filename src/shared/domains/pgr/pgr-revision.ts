@@ -26,11 +26,15 @@ export const pgrRevisionInputSchema = z
 export type PgrRevisionInput = z.input<typeof pgrRevisionInputSchema>;
 export type PgrRevisionValues = z.output<typeof pgrRevisionInputSchema>;
 
-/** Projeção da aba Revisões. `revisedAt` string ("AAAA-MM-DD"); `createdAt` Date. */
+/**
+ * Projeção da aba Revisões. `revisedAt` string ("AAAA-MM-DD"); `createdAt`/`archivedAt` Date.
+ * `archivedAt: null` = revisão ativa; preenchido = arquivada (issue #46).
+ */
 export type PgrRevisionListItem = {
   id: string;
   revisionNumber: number;
   revisedAt: string;
   notes: string | null;
+  archivedAt: Date | null;
   createdAt: Date;
 };

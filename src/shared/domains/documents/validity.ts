@@ -26,7 +26,14 @@ export function classifyDocumentValidity(
 /**
  * Conjunto fechado dos tipos de entidade vinculável a um documento (FR-005).
  * Ampliar = adicionar o literal aqui — sem migration (o banco guarda texto).
+ * Ampliado em #45 (028-correcoes-avaliacao-epgr) com `responsible_technician`/
+ * `ges`/`risk`, permitindo anexos nessas 3 entidades do PGR.
  */
-export const documentRelatedEntityTypeSchema = z.enum(["pgr"]);
+export const documentRelatedEntityTypeSchema = z.enum([
+  "pgr",
+  "responsible_technician",
+  "ges",
+  "risk",
+]);
 
 export type DocumentRelatedEntityType = z.infer<typeof documentRelatedEntityTypeSchema>;

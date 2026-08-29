@@ -6,7 +6,7 @@ export type { JobRole } from "@/shared/db/schema/job-roles";
 
 export const jobRoleInputSchema = z.object({
   companyId: requiredUuid("Empresa é obrigatória"),
-  title: requiredString("Título é obrigatório"),
+  title: requiredString("Função é obrigatório"),
   cbo: optionalString,
   workSchedule: optionalString,
   description: optionalString,
