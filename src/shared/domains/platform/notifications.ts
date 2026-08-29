@@ -79,6 +79,22 @@ export function buildNotifications(pending: DashboardPending): AppNotification[]
     "/epi-returns",
     "medium",
   );
+  add(
+    pending.episCaExpired,
+    "epis_ca_expired",
+    `${pending.episCaExpired} EPI(s) com CA vencido`,
+    "Itens de EPI em uso com Certificado de Aprovação vencido.",
+    "/epi-stock?caStatus=expired",
+    "high",
+  );
+  add(
+    pending.episCaDueSoon,
+    "epis_ca_due_soon",
+    `${pending.episCaDueSoon} EPI(s) com CA a vencer`,
+    "Itens de EPI em uso com Certificado de Aprovação próximo do vencimento.",
+    "/epi-stock",
+    "medium",
+  );
 
   return list;
 }

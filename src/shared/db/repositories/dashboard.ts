@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, eq, gt, gte, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 
 import { todayInSaoPaulo } from "@/shared/dates";
@@ -31,6 +31,17 @@ import {
 import type { OnboardingCounts } from "@/shared/domains/platform/onboarding";
 
 const countExpr = sql<number>`count(*)::int`;
+
+// Espelha a janela fixa de 30 dias de `SUMMARY_DUE_WINDOW_DAYS`
+// (training-compliance.ts) — duplicado aqui por ser um valor pequeno e local
+// ao contador de CA de EPI, sem depender de export cruzado entre repositórios.
+const EPI_CA_DUE_WINDOW_DAYS = 30;
+
+/** "Hoje + N dias" (`YYYY-MM-DD`) — mesmo cálculo do `addDays` privado de `domains/pgr/trainings.ts`. */
+function addDaysIso(isoDate: string, days: number): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Tx = PgTransaction<any, any, any>;
@@ -174,6 +185,40 @@ export async function getDashboardSummary(orgId: string): Promise<DashboardSumma
         ),
       );
 
+    // CA de EPI vencido/a vencer (#34, espelha getTrainingDueSummary): só itens
+    // com saldo em uso (`balance > 0`, mesma lógica de `episLowStock`); sem
+    // validade cadastrada (`caValidUntil` nulo) não entra em nenhuma contagem.
+    const [{ n: episCaExpired }] = await tx
+      .select({ n: countExpr })
+      .from(epiStock)
+      .innerJoin(
+        epiCatalog,
+        and(eq(epiCatalog.id, epiStock.catalogId), eq(epiCatalog.orgId, orgId)),
+      )
+      .where(
+        and(
+          eq(epiStock.orgId, orgId),
+          gt(epiStock.balance, 0),
+          lt(epiCatalog.caValidUntil, today),
+        ),
+      );
+
+    const [{ n: episCaDueSoon }] = await tx
+      .select({ n: countExpr })
+      .from(epiStock)
+      .innerJoin(
+        epiCatalog,
+        and(eq(epiCatalog.id, epiStock.catalogId), eq(epiCatalog.orgId, orgId)),
+      )
+      .where(
+        and(
+          eq(epiStock.orgId, orgId),
+          gt(epiStock.balance, 0),
+          gte(epiCatalog.caValidUntil, today),
+          lte(epiCatalog.caValidUntil, addDaysIso(today, EPI_CA_DUE_WINDOW_DAYS)),
+        ),
+      );
+
     return {
       kpis,
       employeesBreakdown: {
@@ -182,7 +227,14 @@ export async function getDashboardSummary(orgId: string): Promise<DashboardSumma
       },
       risksByAgentType: fillRisksByAgentType(risksByAgent),
       actionPlansByLevel: fillActionPlansByLevel(plansByLevel),
-      pending: { pgrsExpired, controlsOverdue, episLowStock, episPendingReturn },
+      pending: {
+        pgrsExpired,
+        controlsOverdue,
+        episLowStock,
+        episPendingReturn,
+        episCaExpired,
+        episCaDueSoon,
+      },
       serviceOrdersSummary: {
         signed: signedSO,
         pending: pendingSO,

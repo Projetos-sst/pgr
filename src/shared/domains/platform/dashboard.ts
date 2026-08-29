@@ -26,6 +26,8 @@ export type DashboardPending = {
   episPendingReturn: number;
   trainingsExpired: number;
   trainingsDueSoon: number;
+  episCaExpired: number;
+  episCaDueSoon: number;
 };
 
 export type ServiceOrdersSummary = {
