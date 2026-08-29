@@ -27,6 +27,8 @@ export const epiCatalogInputSchema = z.object({
   caValidUntil: optionalIsoDate,
   manufacturer: optionalString,
   norm: optionalString,
+  // Material do item (issue #29) — complementa CA/norma nas especificações técnicas.
+  material: optionalString,
   size: optionalString,
   unitOfMeasure: optionalString,
   description: optionalString,
@@ -64,6 +66,7 @@ const AUDIT_FIELD_LABELS = {
   caValidUntil: "validade do CA",
   manufacturer: "fabricante",
   norm: "norma",
+  material: "material",
   size: "tamanho",
   unitOfMeasure: "unidade de medida",
   description: "descrição",

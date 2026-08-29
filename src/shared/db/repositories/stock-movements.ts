@@ -34,6 +34,7 @@ export type ApplyStockMovementParams = {
   deliveryId?: string;
   movementDate?: string;
   invoiceNumber?: string | null;
+  invoiceDate?: string | null;
   batch?: string | null;
 };
 
@@ -67,6 +68,7 @@ async function persistMovement(
       quantity: params.quantity,
       ...(params.movementDate ? { movementDate: params.movementDate } : {}),
       invoiceNumber: params.invoiceNumber ?? null,
+      invoiceDate: params.invoiceDate ?? null,
       batch: params.batch ?? null,
     })
     .returning();
@@ -173,6 +175,7 @@ export async function registerStockEntry(
         type: "purchase",
         movementDate: input.movementDate,
         invoiceNumber: input.invoiceNumber ?? null,
+        invoiceDate: input.invoiceDate ?? null,
         batch: input.batch ?? null,
       }),
     ),
@@ -205,6 +208,7 @@ type StockMovementQueryRow = {
   quantity: number;
   movementDate: string;
   invoiceNumber: string | null;
+  invoiceDate: string | null;
   batch: string | null;
   createdAt: Date;
   employeeName: string | null;
@@ -220,6 +224,7 @@ function toStockMovementRow(row: StockMovementQueryRow): StockMovementRow {
     signedQuantity: signedQuantity(row.type, row.quantity),
     movementDate: row.movementDate,
     invoiceNumber: row.invoiceNumber,
+    invoiceDate: row.invoiceDate,
     batch: row.batch,
     employeeName: row.employeeName,
     runningBalance: Number(row.runningBalance),
@@ -265,6 +270,7 @@ export async function listStockMovements(
         quantity: stockMovements.quantity,
         movementDate: stockMovements.movementDate,
         invoiceNumber: stockMovements.invoiceNumber,
+        invoiceDate: stockMovements.invoiceDate,
         batch: stockMovements.batch,
         createdAt: stockMovements.createdAt,
         employeeName: employees.fullName,

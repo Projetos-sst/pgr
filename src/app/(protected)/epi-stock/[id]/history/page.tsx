@@ -190,8 +190,11 @@ export default async function StockHistoryPage({
                 {row.runningBalance}
               </span>
 
-              {/* Nº NF */}
-              <span style={{ color: "#797e96" }}>{row.invoiceNumber ?? "—"}</span>
+              {/* Nº NF (+ data da NF, quando informada) */}
+              <span style={{ color: "#797e96" }}>
+                {row.invoiceNumber ?? "—"}
+                {row.invoiceDate ? ` (${formatDate(row.invoiceDate)})` : ""}
+              </span>
 
               {/* Lote */}
               <span style={{ color: "#797e96" }}>{row.batch ?? "—"}</span>

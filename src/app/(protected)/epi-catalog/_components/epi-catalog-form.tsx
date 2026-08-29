@@ -216,6 +216,7 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
         caValidUntil,
         manufacturer,
         norm,
+        material: value("material"),
         size: value("size"),
         unitOfMeasure: value("unitOfMeasure"),
         description: value("description"),
@@ -363,6 +364,13 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
       </FormSection>
 
       <FormSection title="Especificações">
+        <TextField
+          label="Material"
+          name="material"
+          placeholder="Ex.: couro, PVC, policarbonato"
+          defaultValue={item?.material}
+          error={errors.material}
+        />
         <TextField
           label="Tamanho"
           name="size"

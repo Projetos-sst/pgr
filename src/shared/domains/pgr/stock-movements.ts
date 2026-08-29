@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { StockMovement } from "@/shared/db/schema/epis";
 
-import { requiredUuid, optionalString } from "./form-fields";
+import { requiredUuid, optionalString, optionalIsoDate } from "./form-fields";
 import { epiQuantitySchema, type StockMovementType } from "./validation";
 
 export type { StockMovement } from "@/shared/db/schema/epis";
@@ -26,6 +26,8 @@ export const stockEntrySchema = z.object({
   quantity: quantitySchema,
   movementDate: movementDateSchema,
   invoiceNumber: optionalString,
+  // Data da nota fiscal (issue #26) — distinta de `movementDate` (nem sempre coincidem).
+  invoiceDate: optionalIsoDate,
   // Lote de rastreabilidade (issue #23) — opcional, mesmo padrão de `invoiceNumber`.
   batch: optionalString,
 });
@@ -106,6 +108,7 @@ export type StockMovementRow = {
   signedQuantity: number;
   movementDate: string;
   invoiceNumber: string | null;
+  invoiceDate: string | null;
   batch: string | null;
   employeeName: string | null;
   runningBalance: number;

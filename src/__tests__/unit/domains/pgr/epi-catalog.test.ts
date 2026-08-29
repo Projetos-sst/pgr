@@ -105,6 +105,7 @@ describe("summarizeEpiCatalogChanges (US1/issue #25)", () => {
     caValidUntil: "2026-12-31",
     manufacturer: "ACME",
     norm: "NR-6",
+    material: null,
     size: "G",
     unitOfMeasure: "unidade",
     description: null,

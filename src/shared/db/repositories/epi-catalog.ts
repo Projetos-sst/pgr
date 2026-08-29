@@ -58,6 +58,7 @@ function toEpiCatalogColumns(input: EpiCatalogValues) {
     caValidUntil: input.caValidUntil ?? null,
     manufacturer: input.manufacturer ?? null,
     norm: input.norm ?? null,
+    material: input.material ?? null,
     size: input.size ?? null,
     unitOfMeasure: input.unitOfMeasure ?? null,
     description: input.description ?? null,

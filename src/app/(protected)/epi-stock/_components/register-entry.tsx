@@ -34,6 +34,7 @@ export function RegisterEntry({ stockId }: { stockId: string }) {
         quantity: String(fd.get("quantity") ?? ""),
         movementDate: String(fd.get("movementDate") ?? ""),
         invoiceNumber: String(fd.get("invoiceNumber") ?? ""),
+        invoiceDate: String(fd.get("invoiceDate") ?? ""),
         batch: String(fd.get("batch") ?? ""),
       });
       if (result.ok) {
@@ -84,6 +85,12 @@ export function RegisterEntry({ stockId }: { stockId: string }) {
                 label="Nº da nota fiscal"
                 name="invoiceNumber"
                 error={errors.invoiceNumber}
+              />
+              <TextField
+                label="Data da nota fiscal"
+                name="invoiceDate"
+                type="date"
+                error={errors.invoiceDate}
               />
               <TextField
                 label="Lote"
