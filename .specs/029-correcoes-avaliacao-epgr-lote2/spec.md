@@ -99,15 +99,41 @@ primeiro e bloqueia os demais, porque eles dependem das colunas novas existirem.
 
 ## Critérios de aceite
 
-- [ ] `npm run check` (lint + typecheck + testes unitários) passando após cada grupo.
-- [ ] Migration do Grupo 1 segue o padrão de custom SQL do projeto (GRANT/policy só para a tabela
+- [x] `npm run check` (lint + typecheck + testes unitários) passando — rodado no final, sobre a
+      integração de todos os grupos: 0 erros de lint (3 warnings pré-existentes de `<img>`, mesmo
+      padrão em Empresas/Funcionários/EPI), typecheck limpo, 1028/1028 testes unitários passando.
+- [x] Migration do Grupo 1 segue o padrão de custom SQL do projeto (GRANT/policy só para a tabela
       nova `epi_catalog_audit_log`; colunas novas em tabelas existentes já cobertas por RLS).
-- [ ] Grupos 2-7 fazem 1 commit próprio cada, só depois do Grupo 1 estar commitado.
-- [ ] #3, #10, #33 recebem comentário técnico na issue (sem código) — não contam como "closed" no
-      board, ficam como decisão registrada.
+- [x] Grupos 2-7 fazem 1 commit próprio cada, só depois do Grupo 1 estar commitado.
+- [x] #3, #10, #33 recebem comentário técnico na issue (sem código) — verificado via
+      `gh issue view --json comments`, 1 comentário em cada uma. Issues mantidas abertas.
 - [ ] Sem teste de integração real rodado neste ambiente (mesma ressalva do lote 028) — escritos
       seguindo o padrão do projeto; rodar `npm run test:integration` antes do merge do PR #63.
 
 ## Status de execução
 
-(preenchido ao final de cada grupo)
+Todos os 7 grupos + #10 executados via subagent-driven-development (6 subagents em paralelo para
+os grupos 2-7, após o Grupo 1 bloqueante). Commits nesta ordem: `d496259` (Grupo 1),
+`c2cb1aa` (Grupo 3), `ce23963` (Grupo 4), `84c1286` (Grupo 2), `635bf17` (Grupo 5),
+`f21d870` (Grupo 7), `3f78313`+`93c081a` (Grupo 6).
+
+**Issues fechadas por código nesta rodada:** #4, #5, #7, #8, #12, #13, #15, #16, #21, #23, #24,
+#25, #27, #30, #36, #42.
+
+**Issues com decisão registrada (comentário, sem código):** #3, #10, #33 — ver comentários nas
+respectivas issues no GitHub.
+
+**Pendências que sobrevivem ao lote:**
+- 2 buckets novos do Supabase Storage precisam ser criados manualmente antes do deploy:
+  `company-logos` (issue #4) e `employee-photos` (issue #16) — a foto de EPI (#30) reaproveitou o
+  bucket `documents` já existente, sem bucket novo.
+- `/categories/new` ainda não lê a query string `?type=` — o CTA do #21 linka para lá mas não
+  pré-seleciona o tipo; ajuste pequeno fora do escopo de arquivos deste lote (tela de Categorias).
+- `createdBy`/`changedBy` (#27, #25) exibem o `userId` bruto do Clerk — não há tabela de usuários
+  no projeto para resolver nome de exibição; mesma limitação em qualquer tela futura que precise
+  disso.
+- Nenhum teste de integração rodou de fato neste ambiente (sem Postgres efêmero) — rodar
+  `npm run test:integration` antes do merge do PR #63.
+- Nota de processo: o subagent do Grupo 6 (EPI Catálogo) commitou seu próprio trabalho
+  (`3f78313`) apesar da instrução de deixar para o orquestrador revisar — o conteúdo foi
+  auditado depois do fato e está correto, mas o desvio de instrução foi registrado aqui.
