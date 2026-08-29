@@ -79,7 +79,10 @@ export async function getOnboardingCounts(orgId: string): Promise<OnboardingCoun
     const [core, [epiCatalogRow], [serviceOrderRow]] = await Promise.all([
       computeCoreKpis(t, orgId),
       t.select({ n: countExpr }).from(epiCatalog).where(eq(epiCatalog.orgId, orgId)),
-      t.select({ n: countExpr }).from(serviceOrders).where(eq(serviceOrders.orgId, orgId)),
+      t
+        .select({ n: countExpr })
+        .from(serviceOrders)
+        .where(eq(serviceOrders.orgId, orgId)),
     ]);
 
     return {

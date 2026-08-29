@@ -26,7 +26,11 @@ const base = {
 
 describe("action-plan-origin (US6 + issue #51)", () => {
   it("aceita risk|incident|control_measure", () => {
-    expect([...ACTION_PLAN_ORIGIN_TYPES]).toEqual(["risk", "incident", "control_measure"]);
+    expect([...ACTION_PLAN_ORIGIN_TYPES]).toEqual([
+      "risk",
+      "incident",
+      "control_measure",
+    ]);
     expect(actionPlanOriginTypeSchema.safeParse("risk").success).toBe(true);
     expect(actionPlanOriginTypeSchema.safeParse("incident").success).toBe(true);
     expect(actionPlanOriginTypeSchema.safeParse("control_measure").success).toBe(true);

@@ -95,8 +95,7 @@ no código (nenhuma dessas precisa de tabela nova — só coluna nova em tabela 
    garantir entrada de plano para todo risco do inventário) ficou fora**: exigiria classificar o
    risco via bandas de metodologia (plumbing cross-domínio, `risk_assessments` → `classify()`) e
    decidir que conteúdo de 5W2H entra num plano "placeholder" pra risco trivial sem ação real —
-   isso é decisão de produto, não só engenharia. A coluna `control_measures.status` (migration
-   0031) existe mas fica sem uso até essa decisão ser tomada.
+   isso é decisão de produto, não só engenharia. A coluna `control_measures.status` (migration 0031) existe mas fica sem uso até essa decisão ser tomada.
 9. ✅ **#46** — arquivar revisão do PGR (Server Action + REST mirror + UI + docs/Postman).
 10. ✅ **#45** — anexos habilitados em GES e Risco. `responsible_technician` fica sem consumidor
     de UI — não existe cadastro de Responsável Técnico ainda (issue #36, fora de escopo).
@@ -104,6 +103,7 @@ no código (nenhuma dessas precisa de tabela nova — só coluna nova em tabela 
     esforço e por que não implementar já.
 
 **Pendências que sobrevivem ao lote:**
+
 - A regra de status do #42 (ver Tarefa 8) — precisa de decisão de produto antes de codar.
 - Nenhum teste de integração deste lote rodou de fato (sem Postgres efêmero neste ambiente) — só
   foram escritos seguindo o padrão do projeto. Rodar `npm run test:integration` antes do merge.

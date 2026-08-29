@@ -57,7 +57,11 @@ describe("buildNotifications", () => {
   });
 
   it("CA de EPI zerado (vencido e a vencer) não gera alerta", () => {
-    const out = buildNotifications({ ...zeroPending, episCaExpired: 0, episCaDueSoon: 0 });
+    const out = buildNotifications({
+      ...zeroPending,
+      episCaExpired: 0,
+      episCaDueSoon: 0,
+    });
     expect(out.map((n) => n.key)).not.toContain("epis_ca_expired");
     expect(out.map((n) => n.key)).not.toContain("epis_ca_due_soon");
   });

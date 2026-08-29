@@ -19,8 +19,8 @@ export async function ExposedEmployeesSection({ gesId }: { gesId: string }) {
           Funcionários expostos e Ordens de Serviço
         </h2>
         <p className="text-text-subtle text-sm">
-          Funcionários vinculados a este GES, prontos para emissão da Ordem de Serviço
-          com os riscos já cadastrados.
+          Funcionários vinculados a este GES, prontos para emissão da Ordem de Serviço com
+          os riscos já cadastrados.
         </p>
       </header>
 
