@@ -10,6 +10,9 @@ import {
 import type { JobRoleInput, JobRole } from "@/shared/domains/pgr/job-roles";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 
+/** Opção de GES para o select (id + nome) — evita importar o repositório no client. */
+type GesOption = { id: string; name: string };
+
 import {
   CancelLink,
   FieldError,
@@ -18,14 +21,22 @@ import {
   FormSection,
   SelectField,
   SubmitButton,
+  TextAreaField,
   TextField,
 } from "../../_ui/form";
 
+const STATUS_OPTIONS = [
+  { value: "true", label: "Ativa" },
+  { value: "false", label: "Inativa" },
+];
+
 export function JobRoleForm({
   companies,
+  gesOptions,
   jobRole,
 }: {
   companies: CompanyOption[];
+  gesOptions: GesOption[];
   jobRole?: JobRole;
 }) {
   const router = useRouter();
@@ -41,8 +52,11 @@ export function JobRoleForm({
       companyId: value("companyId"),
       title: value("title"),
       cbo: value("cbo"),
+      sector: value("sector"),
       workSchedule: value("workSchedule"),
       description: value("description"),
+      isActive: value("isActive"),
+      gesId: value("gesId") || undefined,
     };
 
     startTransition(async () => {
@@ -88,16 +102,36 @@ export function JobRoleForm({
           error={errors.cbo}
         />
         <TextField
+          label="Setor"
+          name="sector"
+          placeholder="Ex.: Obra Civil, SESMT, Logística"
+          defaultValue={jobRole?.sector}
+          error={errors.sector}
+        />
+        <SelectField
+          label="GES (vincular)"
+          name="gesId"
+          options={gesOptions.map((g) => ({ value: g.id, label: g.name }))}
+          emptyLabel="— nenhum —"
+          error={errors.gesId}
+        />
+        <SelectField
+          label="Situação"
+          name="isActive"
+          defaultValue={jobRole ? String(jobRole.isActive) : "true"}
+          options={STATUS_OPTIONS}
+          error={errors.isActive}
+        />
+        <TextField
           label="Jornada"
           name="workSchedule"
           placeholder="Ex.: 44h semanais"
           defaultValue={jobRole?.workSchedule}
           error={errors.workSchedule}
         />
-        <TextField
-          label="Descrição"
+        <TextAreaField
+          label="Descrição das atividades"
           name="description"
-          isFullWidth
           placeholder="Atribuições e responsabilidades do cargo"
           defaultValue={jobRole?.description}
           error={errors.description}

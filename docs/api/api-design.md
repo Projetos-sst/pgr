@@ -450,16 +450,21 @@ eSocial fica para fatia futura (credencial — exige armazenamento seguro). Migr
 
 ## Função (Cargo) — `actions/pgr/job-roles.ts`
 
-| Action                       | Entrada                                     | Retorno                                         |
-| ---------------------------- | ------------------------------------------- | ----------------------------------------------- |
-| `listJobRolesAction`         | `{ companyId?, search?, page?, pageSize? }` | `{ rows: JobRole[]; total }`                    |
-| `getJobRoleAction`           | `id`                                        | `JobRole`                                       |
-| `createJobRoleAction`        | `JobRoleInput`                              | `JobRole` (título dup na empresa → `DUPLICATE`) |
-| `updateJobRoleAction`        | `id, JobRoleInput`                          | `JobRole`                                       |
-| `deleteJobRoleAction`        | `id`                                        | `{ id }`                                        |
-| `getJobRoleDependentsAction` | `id`                                        | `{ gesLinks, employees }`                       |
+| Action                       | Entrada                                                        | Retorno                                         |
+| ---------------------------- | -------------------------------------------------------------- | ----------------------------------------------- |
+| `listJobRolesAction`         | `{ companyId?, gesId?, isActive?, search?, page?, pageSize? }` | `{ rows: JobRoleListItem[]; total }`            |
+| `getJobRoleAction`           | `id`                                                           | `JobRole`                                       |
+| `createJobRoleAction`        | `JobRoleInput`                                                 | `JobRole` (título dup na empresa → `DUPLICATE`) |
+| `updateJobRoleAction`        | `id, JobRoleInput`                                             | `JobRole`                                       |
+| `deleteJobRoleAction`        | `id`                                                           | `{ id }`                                        |
+| `getJobRoleDependentsAction` | `id`                                                           | `{ gesLinks, employees }`                       |
 
-**`JobRoleInput`**: `companyId*`, `title*`, `cbo?`, `workSchedule?`, `description?`.
+**`JobRoleInput`**: `companyId*`, `title*`, `cbo?`, `sector?` (texto livre, #193), `workSchedule?`,
+`description?`, `isActive` (default `true`), e **GES-inline** `gesId?` + `workerCount?` (default 1) —
+cria/atualiza o vínculo `ges_job_roles` de forma **aditiva** (nunca remove; a gestão M:N completa fica
+em `/ges`). **`JobRoleListItem`** = `JobRole` + `gesNames` (nomes de GES agregados) + `employeeCount`
+(derivados). Filtros do GET: `?companyId=`, `?gesId=` (EXISTS), `?isActive=`, `?search=`. Migration
+`0037_job_roles_status_sector` (colunas `sector` + `is_active`).
 
 ## GES + vínculos — `actions/pgr/ges.ts`
 

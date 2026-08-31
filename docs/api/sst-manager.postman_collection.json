@@ -575,13 +575,22 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/job-roles?companyId={{companyId}}&search=&page=1",
+              "raw": "{{baseUrl}}/api/v1/job-roles?companyId={{companyId}}&gesId=&isActive=&search=&page=1",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "job-roles"],
               "query": [
                 {
                   "key": "companyId",
                   "value": "{{companyId}}"
+                },
+                {
+                  "key": "gesId",
+                  "value": ""
+                },
+                {
+                  "key": "isActive",
+                  "value": "",
+                  "description": "true | false"
                 },
                 {
                   "key": "search",
