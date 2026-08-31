@@ -1,8 +1,11 @@
 import {
   controlMeasureInputSchema,
+  defaultMeasureStatusForClassification,
   deriveMeasureState,
+  isModeratePlusClassification,
   isOverdue,
   measureStateLabel,
+  measureStatusLabel,
 } from "@/shared/domains/pgr/control-measure";
 
 const TODAY = "2026-07-09";
@@ -101,13 +104,62 @@ describe("controlMeasureInputSchema", () => {
     expect(dated.success && dated.data.actionDeadline).toBe("2026-09-30");
   });
 
-  it("não aceita/expõe nenhum campo de status persistido", () => {
-    const parsed = controlMeasureInputSchema.safeParse(
-      base({ status: "completed", applicable: false }),
-    );
-    // Campo extra é ignorado; o schema não tem `status`.
-    expect(parsed.success).toBe(true);
-    if (parsed.success) expect("status" in parsed.data).toBe(false);
+  it("status aceita os 3 valores do enum (#42)", () => {
+    for (const status of ["maintain", "introduced", "improved"]) {
+      const parsed = controlMeasureInputSchema.safeParse(base({ status }));
+      expect(parsed.success).toBe(true);
+      if (parsed.success) expect(parsed.data.status).toBe(status);
+    }
+  });
+
+  it("status rejeita valor fora do enum", () => {
+    const parsed = controlMeasureInputSchema.safeParse(base({ status: "completed" }));
+    expect(parsed.success).toBe(false);
+  });
+
+  it("status vazio/ausente vira undefined (default fica a cargo do repositório)", () => {
+    const empty = controlMeasureInputSchema.safeParse(base({ status: "" }));
+    expect(empty.success && empty.data.status).toBeUndefined();
+    const absent = controlMeasureInputSchema.safeParse(base());
+    expect(absent.success && absent.data.status).toBeUndefined();
+  });
+});
+
+describe("isModeratePlusClassification / defaultMeasureStatusForClassification (#42)", () => {
+  it("trivial/tolerável não são moderado+", () => {
+    expect(isModeratePlusClassification("trivial")).toBe(false);
+    expect(isModeratePlusClassification("tolerable")).toBe(false);
+  });
+
+  it("moderado/substancial/intolerável são moderado+", () => {
+    expect(isModeratePlusClassification("moderate")).toBe(true);
+    expect(isModeratePlusClassification("substantial")).toBe(true);
+    expect(isModeratePlusClassification("intolerable")).toBe(true);
+  });
+
+  it("classification null não é moderado+ (sem avaliação vigente)", () => {
+    expect(isModeratePlusClassification(null)).toBe(false);
+  });
+
+  it("default de status: trivial/tolerável → maintain", () => {
+    expect(defaultMeasureStatusForClassification("trivial")).toBe("maintain");
+    expect(defaultMeasureStatusForClassification("tolerable")).toBe("maintain");
+  });
+
+  it("default de status: moderado+ → introduced", () => {
+    expect(defaultMeasureStatusForClassification("moderate")).toBe("introduced");
+    expect(defaultMeasureStatusForClassification("substantial")).toBe("introduced");
+    expect(defaultMeasureStatusForClassification("intolerable")).toBe("introduced");
+  });
+
+  it("sem avaliação vigente (classification null) → sem default", () => {
+    expect(defaultMeasureStatusForClassification(null)).toBeNull();
+  });
+
+  it("labels pt-BR do status", () => {
+    expect(measureStatusLabel("maintain")).toBe("Manter");
+    expect(measureStatusLabel("introduced")).toBe("Introduzida");
+    expect(measureStatusLabel("improved")).toBe("Aprimorada");
   });
 });
 

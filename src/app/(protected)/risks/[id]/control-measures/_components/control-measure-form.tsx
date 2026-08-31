@@ -10,6 +10,8 @@ import {
 import {
   controlLevelSchema,
   controlLevelLabel,
+  controlMeasureStatusSchema,
+  measureStatusLabel,
   type ControlMeasureInput,
 } from "@/shared/domains/pgr/control-measure";
 import type { ActionError } from "@/shared/server/result";
@@ -21,11 +23,17 @@ const CONTROL_LEVEL_OPTIONS = controlLevelSchema.options.map((v) => ({
   label: controlLevelLabel(v),
 }));
 
+const MEASURE_STATUS_OPTIONS = controlMeasureStatusSchema.options.map((v) => ({
+  value: v,
+  label: measureStatusLabel(v),
+}));
+
 const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
 
 export type ControlMeasureFormInitial = {
   controlLevel?: string;
   applicable?: boolean;
+  status?: string | null;
   justification?: string | null;
   monitoring?: string | null;
   actionWhat?: string | null;
@@ -88,6 +96,7 @@ export function ControlMeasureForm({
     initial.controlLevel ?? CONTROL_LEVEL_OPTIONS[0].value,
   );
   const [applicable, setApplicable] = useState(initial.applicable ?? false);
+  const [status, setStatus] = useState(initial.status ?? "");
 
   function applyError(error: ActionError) {
     if (error.code === "DUPLICATE") {
@@ -106,6 +115,7 @@ export function ControlMeasureForm({
     const input: ControlMeasureInput = {
       controlLevel: controlLevel as ControlMeasureInput["controlLevel"],
       applicable,
+      status: status === "" ? undefined : (status as ControlMeasureInput["status"]),
       justification: str("justification"),
       monitoring: str("monitoring"),
       actionWhat: str("actionWhat"),
@@ -165,6 +175,27 @@ export function ControlMeasureForm({
           <span className="text-text-muted text-sm font-medium">
             Medida aplicável a este risco
           </span>
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-text-muted text-sm font-medium">Status da medida</span>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">— Automático pelo nível do risco —</option>
+            {MEASURE_STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <span className="text-text-subtle text-xs">
+            Deixe em automático para aplicar a regra padrão (trivial/tolerável → Manter;
+            moderado ou superior → Introduzida).
+          </span>
+          <FieldError message={errors.status} />
         </label>
       </div>
 

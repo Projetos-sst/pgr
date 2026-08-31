@@ -130,7 +130,7 @@ export default async function StockHistoryPage({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1.5fr",
+            gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr 1.5fr",
             gap: "14px",
             padding: "14px 24px",
             fontFamily: "var(--font-jetbrains-mono, monospace)",
@@ -146,6 +146,7 @@ export default async function StockHistoryPage({
           <span>Quantidade</span>
           <span>Saldo Resultante</span>
           <span>Nº NF</span>
+          <span>Lote</span>
           <span>Funcionário</span>
         </div>
 
@@ -158,7 +159,7 @@ export default async function StockHistoryPage({
               key={row.id}
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1.5fr",
+                gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr 1.5fr",
                 gap: "14px",
                 padding: "15px 24px",
                 alignItems: "center",
@@ -189,8 +190,14 @@ export default async function StockHistoryPage({
                 {row.runningBalance}
               </span>
 
-              {/* Nº NF */}
-              <span style={{ color: "#797e96" }}>{row.invoiceNumber ?? "—"}</span>
+              {/* Nº NF (+ data da NF, quando informada) */}
+              <span style={{ color: "#797e96" }}>
+                {row.invoiceNumber ?? "—"}
+                {row.invoiceDate ? ` (${formatDate(row.invoiceDate)})` : ""}
+              </span>
+
+              {/* Lote */}
+              <span style={{ color: "#797e96" }}>{row.batch ?? "—"}</span>
 
               {/* Funcionário */}
               <span style={{ color: "#797e96" }}>{row.employeeName ?? "—"}</span>

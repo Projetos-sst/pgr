@@ -137,6 +137,19 @@ describe("buildPgrHtml", () => {
     expect(html).toContain("N.C.:");
   });
 
+  it("não renderiza a linha de site quando companyWebsite ausente", () => {
+    const html = buildPgrHtml(makePgr([]), baseOptions);
+    expect(html).not.toContain("<td>Site</td>");
+  });
+
+  it("renderiza a linha de site quando companyWebsite preenchido", () => {
+    const pgrWithWebsite = makePgr([]);
+    pgrWithWebsite.pgr.companyWebsite = "https://www.acme.com.br";
+    const html = buildPgrHtml(pgrWithWebsite, baseOptions);
+    expect(html).toContain("<td>Site</td>");
+    expect(html).toContain("https://www.acme.com.br");
+  });
+
   it("não renderiza logo quando ausente e renderiza quando data URL fornecida", () => {
     const withoutLogo = buildPgrHtml(makePgr([]), baseOptions);
     expect(withoutLogo).not.toContain('<img class="logo"');

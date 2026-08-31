@@ -96,7 +96,9 @@ export default async function WorkUnitsPage({
                   <Cell className="text-text font-semibold">{row.name}</Cell>
                   <Cell className="text-text-subtle">—</Cell>
                   <Cell>{[row.city, row.state].filter(Boolean).join(" / ") || "—"}</Cell>
-                  <Cell className="text-text-subtle">—</Cell>
+                  <Cell className={row.managerName ? undefined : "text-text-subtle"}>
+                    {row.managerName ?? "—"}
+                  </Cell>
                   <Cell>
                     <StatusBadge tone="green">Ativa</StatusBadge>
                   </Cell>

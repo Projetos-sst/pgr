@@ -15,6 +15,7 @@ primeiro e bloqueia os demais, porque eles dependem das colunas novas existirem.
 ## Escopo (issues incluídas neste lote)
 
 **Grupo 1 — schema + migration única (bloqueante, roda primeiro):**
+
 - #5 — `companies.website` (text, URL validada no Zod).
 - #7, #8 — `work_units.managerName`, `managerRole`, `professionalTitle`, `professionalRegistration`
   (todas opcionais).
@@ -25,6 +26,7 @@ primeiro e bloqueia os demais, porque eles dependem das colunas novas existirem.
   CASCADE, `changed_by`, `changed_at`, `summary` text) + RLS igual ao padrão de `tenant_probe`.
 
 **Grupo 2 — Empresas** (`company-form.tsx`, `companies.ts` domínio/repo):
+
 - #4 — corrigir upload do logo (hoje `TextField` puro) → upload real com preview, padrão de
   `document-upload-form.tsx:82-88`.
 - #5 — campo de site/portal (usa coluna do Grupo 1), validação de URL no Zod, exibir na seção
@@ -34,10 +36,12 @@ primeiro e bloqueia os demais, porque eles dependem das colunas novas existirem.
   CNPJ; autocomplete por busca livre de CNAE exigiria integração nova sem padrão pronto no projeto.
 
 **Grupo 3 — Unidades de Obra** (`work-unit-form.tsx`, `work-units.ts` domínio/repo):
+
 - #7 — campos `managerName`/`managerRole` (gestor/preposto).
 - #8 — campos `professionalTitle`/`professionalRegistration` (formação profissional do responsável).
 
 **Grupo 4 — GES** (`ges-form.tsx`, `ges.ts` schema/domínio):
+
 - #12 — `ceilingHeight` aceitar vírgula E ponto decimal (`z.coerce` com normalização
   `,`→`.` antes do parse) + opção "Não aplicável".
 - #13 — campo `roof` (Cobertura) definido como `SelectField` com 3 opções fechadas: **sem
@@ -47,9 +51,11 @@ primeiro e bloqueia os demais, porque eles dependem das colunas novas existirem.
   inválidos").
 
 **Grupo 5 — Funcionários** (`employee-form.tsx`, `employees.ts` domínio):
+
 - #16 — trocar `TextField` de foto por upload real com preview (mesmo padrão do Grupo 2/#4).
 
 **Grupo 6 — EPI Catálogo** (`epi-catalog-form.tsx`, `epi-catalog.ts` domínio/repo, `register-entry.tsx`):
+
 - #21 — corrigir `SelectField` "Categoria" (hoje trava `disabled` em lista vazia sem feedback) →
   mostrar erro + CTA para `/categories/new?type=...`.
 - #24 — campo "Data de substituição" (usa coluna do Grupo 1).
@@ -65,6 +71,7 @@ primeiro e bloqueia os demais, porque eles dependem das colunas novas existirem.
 
 **Grupo 7 — PGR / Plano de Ação** (`pgr-basic-info-tab.tsx`, `pgr-documents-tab.tsx`,
 `action-plan-origin.ts`, `server/actions/safety/action-plans.ts`, `control-measure.ts`):
+
 - #36 — anexar ART ao Responsável Técnico: entidade `responsible_technician` já existe no enum
   `documentRelatedEntityTypeSchema` desde o lote 028 (#45) — falta só ligar a UI (seção de upload
   na aba de dados básicos do PGR, filtrando `relatedEntityType=responsible_technician`).
@@ -76,6 +83,7 @@ primeiro e bloqueia os demais, porque eles dependem das colunas novas existirem.
   trivial sem ação real, por decisão de produto já registrada no lote 028.
 
 **Grupo 10 — CBO (comentário, sem código):**
+
 - #10 — postar comentário técnico avaliando integração de CBO (mesmo racional do #3): não existe
   API pública gratuita e estável de CBO tão direta quanto BrasilAPI/ViaCEP; campo `cbo` já existe
   como texto livre, recomendo manter manual até achar uma fonte confiável.
@@ -91,15 +99,42 @@ primeiro e bloqueia os demais, porque eles dependem das colunas novas existirem.
 
 ## Critérios de aceite
 
-- [ ] `npm run check` (lint + typecheck + testes unitários) passando após cada grupo.
-- [ ] Migration do Grupo 1 segue o padrão de custom SQL do projeto (GRANT/policy só para a tabela
+- [x] `npm run check` (lint + typecheck + testes unitários) passando — rodado no final, sobre a
+      integração de todos os grupos: 0 erros de lint (3 warnings pré-existentes de `<img>`, mesmo
+      padrão em Empresas/Funcionários/EPI), typecheck limpo, 1028/1028 testes unitários passando.
+- [x] Migration do Grupo 1 segue o padrão de custom SQL do projeto (GRANT/policy só para a tabela
       nova `epi_catalog_audit_log`; colunas novas em tabelas existentes já cobertas por RLS).
-- [ ] Grupos 2-7 fazem 1 commit próprio cada, só depois do Grupo 1 estar commitado.
-- [ ] #3, #10, #33 recebem comentário técnico na issue (sem código) — não contam como "closed" no
-      board, ficam como decisão registrada.
+- [x] Grupos 2-7 fazem 1 commit próprio cada, só depois do Grupo 1 estar commitado.
+- [x] #3, #10, #33 recebem comentário técnico na issue (sem código) — verificado via
+      `gh issue view --json comments`, 1 comentário em cada uma. Issues mantidas abertas.
 - [ ] Sem teste de integração real rodado neste ambiente (mesma ressalva do lote 028) — escritos
       seguindo o padrão do projeto; rodar `npm run test:integration` antes do merge do PR #63.
 
 ## Status de execução
 
-(preenchido ao final de cada grupo)
+Todos os 7 grupos + #10 executados via subagent-driven-development (6 subagents em paralelo para
+os grupos 2-7, após o Grupo 1 bloqueante). Commits nesta ordem: `d496259` (Grupo 1),
+`c2cb1aa` (Grupo 3), `ce23963` (Grupo 4), `84c1286` (Grupo 2), `635bf17` (Grupo 5),
+`f21d870` (Grupo 7), `3f78313`+`93c081a` (Grupo 6).
+
+**Issues fechadas por código nesta rodada:** #4, #5, #7, #8, #12, #13, #15, #16, #21, #23, #24,
+#25, #27, #30, #36, #42.
+
+**Issues com decisão registrada (comentário, sem código):** #3, #10, #33 — ver comentários nas
+respectivas issues no GitHub.
+
+**Pendências que sobrevivem ao lote:**
+
+- 2 buckets novos do Supabase Storage precisam ser criados manualmente antes do deploy:
+  `company-logos` (issue #4) e `employee-photos` (issue #16) — a foto de EPI (#30) reaproveitou o
+  bucket `documents` já existente, sem bucket novo.
+- `/categories/new` ainda não lê a query string `?type=` — o CTA do #21 linka para lá mas não
+  pré-seleciona o tipo; ajuste pequeno fora do escopo de arquivos deste lote (tela de Categorias).
+- `createdBy`/`changedBy` (#27, #25) exibem o `userId` bruto do Clerk — não há tabela de usuários
+  no projeto para resolver nome de exibição; mesma limitação em qualquer tela futura que precise
+  disso.
+- Nenhum teste de integração rodou de fato neste ambiente (sem Postgres efêmero) — rodar
+  `npm run test:integration` antes do merge do PR #63.
+- Nota de processo: o subagent do Grupo 6 (EPI Catálogo) commitou seu próprio trabalho
+  (`3f78313`) apesar da instrução de deixar para o orquestrador revisar — o conteúdo foi
+  auditado depois do fato e está correto, mas o desvio de instrução foi registrado aqui.

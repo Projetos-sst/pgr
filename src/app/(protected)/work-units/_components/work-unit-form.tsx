@@ -88,6 +88,10 @@ export function WorkUnitForm({
       name: value("name"),
       description: value("description"),
       contractNumber: value("contractNumber"),
+      managerName: value("managerName"),
+      managerRole: value("managerRole"),
+      professionalTitle: value("professionalTitle"),
+      professionalRegistration: value("professionalRegistration"),
       ...address,
     };
 
@@ -140,6 +144,36 @@ export function WorkUnitForm({
           isFullWidth
           defaultValue={workUnit?.description}
           error={errors.description}
+        />
+      </FormSection>
+
+      <FormSection title="Responsável Técnico">
+        <TextField
+          label="Gestor/Preposto"
+          name="managerName"
+          defaultValue={workUnit?.managerName}
+          error={errors.managerName}
+        />
+        <TextField
+          label="Cargo do gestor/preposto"
+          name="managerRole"
+          defaultValue={workUnit?.managerRole}
+          error={errors.managerRole}
+        />
+        <TextField
+          label="Título profissional"
+          name="professionalTitle"
+          placeholder="Ex.: Engenheiro Civil, Técnico de Segurança do Trabalho"
+          defaultValue={workUnit?.professionalTitle}
+          error={errors.professionalTitle}
+        />
+        <TextField
+          label="Registro no conselho de classe"
+          name="professionalRegistration"
+          placeholder="Ex.: CREA/CAU"
+          isMono
+          defaultValue={workUnit?.professionalRegistration}
+          error={errors.professionalRegistration}
         />
       </FormSection>
 

@@ -87,6 +87,8 @@ export type EpiStockListFilters = {
   categoryId?: string;
   /** `"expired"` = CA vencido (`caValidUntil < hoje`); `"valid"` = sem validade OU `>= hoje`. */
   caStatus?: EpiStockCaStatus;
+  /** Filtra itens com ao menos uma movimentação (#23) no lote informado (match parcial). */
+  batch?: string;
 };
 
 type EpiStockRow = {

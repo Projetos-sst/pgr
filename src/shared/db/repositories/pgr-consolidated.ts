@@ -28,6 +28,7 @@ import { workUnits } from "../schema/work-units";
 import { ges } from "../schema/ges";
 import { risks, controlMeasures } from "../schema/risks";
 import { epiRisk, epiCatalog } from "../schema/epis";
+import { documents } from "../schema/documents";
 
 /** Data local do negócio (America/Sao_Paulo) em AAAA-MM-DD, para o estado derivado. */
 function todaySaoPaulo(): string {
@@ -66,6 +67,7 @@ export async function getPgrConsolidated(
       .select({
         id: pgr.id,
         companyName: companies.razaoSocial,
+        companyWebsite: companies.website,
         workUnitName: workUnits.name,
         responsible: pgr.responsible,
         registrationType: pgr.registrationType,
@@ -86,9 +88,26 @@ export async function getPgrConsolidated(
       .limit(1);
     if (!head) return null;
 
+    // ART anexada ao responsável técnico (issue #36) — referenciada no PDF quando existir.
+    const [artDocument] = await tx
+      .select({ name: documents.name })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.orgId, orgId),
+          eq(documents.relatedEntityType, "responsible_technician"),
+          eq(documents.relatedEntityId, pgrId),
+          eq(documents.status, "ready"),
+        ),
+      )
+      .orderBy(sql`${documents.createdAt} desc`)
+      .limit(1);
+
     const pgrHead: PgrConsolidated["pgr"] = {
       id: head.id,
       companyName: head.companyName,
+      companyWebsite: head.companyWebsite ?? null,
+      artDocumentName: artDocument?.name ?? null,
       workUnitName: head.workUnitName ?? null,
       responsible: head.responsible,
       registrationType: head.registrationType as PgrRegistrationType,

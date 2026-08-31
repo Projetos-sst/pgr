@@ -25,7 +25,13 @@ const TYPE_OPTIONS = [
   { value: "machine", label: "Máquina" },
 ];
 
-export function CategoryForm({ category }: { category?: Category }) {
+export function CategoryForm({
+  category,
+  initialType,
+}: {
+  category?: Category;
+  initialType?: CategoryInput["type"];
+}) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -64,7 +70,7 @@ export function CategoryForm({ category }: { category?: Category }) {
           label="Tipo"
           name="type"
           required
-          defaultValue={category?.type}
+          defaultValue={category?.type ?? initialType}
           options={TYPE_OPTIONS}
           error={errors.type}
         />

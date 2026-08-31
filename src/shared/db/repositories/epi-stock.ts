@@ -4,6 +4,7 @@ import {
   and,
   desc,
   eq,
+  exists,
   gte,
   ilike,
   isNull,
@@ -81,23 +82,40 @@ export async function listEpiStock(
   params: ListEpiStockParams = {},
 ): Promise<Paginated<EpiStockListItem>> {
   const { limit, offset } = resolvePageParams(params);
-  const filters: SQL[] = [eq(epiStock.orgId, orgId)];
-
-  if (params.withBalanceOnly) filters.push(sql`${epiStock.balance} > 0`);
-  const byStatus = statusFilter(params.status);
-  if (byStatus) filters.push(byStatus);
-  if (params.categoryId) filters.push(eq(epiCatalog.categoryId, params.categoryId));
-  const byCaStatus = caStatusFilter(params.caStatus);
-  if (byCaStatus) filters.push(byCaStatus);
-
-  const search = params.search?.trim();
-  if (search) {
-    const term = `%${search}%`;
-    filters.push(or(ilike(epiCatalog.name, term), ilike(epiCatalog.ca, term))!);
-  }
-  const where = and(...filters);
 
   return withOrg(orgId, async (tx) => {
+    const filters: SQL[] = [eq(epiStock.orgId, orgId)];
+
+    if (params.withBalanceOnly) filters.push(sql`${epiStock.balance} > 0`);
+    const byStatus = statusFilter(params.status);
+    if (byStatus) filters.push(byStatus);
+    if (params.categoryId) filters.push(eq(epiCatalog.categoryId, params.categoryId));
+    const byCaStatus = caStatusFilter(params.caStatus);
+    if (byCaStatus) filters.push(byCaStatus);
+    const batch = params.batch?.trim();
+    if (batch) {
+      filters.push(
+        exists(
+          tx
+            .select({ id: stockMovements.id })
+            .from(stockMovements)
+            .where(
+              and(
+                eq(stockMovements.stockId, epiStock.id),
+                ilike(stockMovements.batch, `%${batch}%`),
+              ),
+            ),
+        ),
+      );
+    }
+
+    const search = params.search?.trim();
+    if (search) {
+      const term = `%${search}%`;
+      filters.push(or(ilike(epiCatalog.name, term), ilike(epiCatalog.ca, term))!);
+    }
+    const where = and(...filters);
+
     const rows = await tx
       .select(listColumns)
       .from(epiStock)

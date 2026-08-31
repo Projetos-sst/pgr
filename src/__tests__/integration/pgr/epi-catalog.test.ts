@@ -15,6 +15,7 @@ import {
   createEpiCatalogAction,
   updateEpiCatalogAction,
   deleteEpiCatalogAction,
+  listEpiCatalogAuditAction,
 } from "@/shared/server/actions/pgr/epi-catalog";
 
 import { adminClient, applyMigrations } from "../_helpers/db";
@@ -156,5 +157,56 @@ const { categoryA } = PGR_IDS;
       caValidUntil: "2026-13-45",
     });
     expect(!badDate.ok && badDate.error.code).toBe("VALIDATION");
+  });
+
+  it("preenche createdBy da sessão no create; nunca muda no update (#27); persiste replacementDate (#24)", async () => {
+    const created = await createEpiCatalogAction({
+      type: "epi",
+      categoryId: categoryA,
+      name: "Óculos de proteção",
+      replacementDate: "2027-05-01",
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    expect(created.data.createdBy).toBe("u");
+    expect(created.data.replacementDate).toBe("2027-05-01");
+
+    const updated = await updateEpiCatalogAction(created.data.id, {
+      type: "epi",
+      categoryId: categoryA,
+      name: "Óculos de proteção V2",
+      replacementDate: "2027-06-01",
+    });
+    expect(updated.ok).toBe(true);
+    if (!updated.ok) return;
+    // createdBy é imutável — o update não sobrescreve com o userId do editor.
+    expect(updated.data.createdBy).toBe("u");
+    expect(updated.data.replacementDate).toBe("2027-06-01");
+  });
+
+  it("grava auditoria (#25) no create e no update, com resumo do diff", async () => {
+    const created = await createEpiCatalogAction({
+      type: "epi",
+      categoryId: categoryA,
+      name: "Protetor auricular",
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const afterCreate = await listEpiCatalogAuditAction(created.data.id);
+    expect(afterCreate.ok && afterCreate.data).toHaveLength(1);
+    expect(afterCreate.ok && afterCreate.data[0].summary).toBe("Item cadastrado.");
+    expect(afterCreate.ok && afterCreate.data[0].changedBy).toBe("u");
+
+    await updateEpiCatalogAction(created.data.id, {
+      type: "epi",
+      categoryId: categoryA,
+      name: "Protetor auricular tipo concha",
+    });
+
+    const afterUpdate = await listEpiCatalogAuditAction(created.data.id);
+    expect(afterUpdate.ok && afterUpdate.data).toHaveLength(2);
+    // Mais recente primeiro.
+    expect(afterUpdate.ok && afterUpdate.data[0].summary).toContain("nome de");
   });
 });

@@ -27,9 +27,11 @@ export function GET(req: NextRequest) {
 export function POST(req: NextRequest) {
   return restHandler(
     req,
-    async ({ tenantId }) => {
+    async ({ tenantId, userId }) => {
       const input = epiCatalogInputSchema.parse(await req.json());
-      return repo.createEpiCatalog(tenantId, input);
+      // `createdBy` (issue #27) vem sempre do contexto autenticado, nunca do
+      // corpo da requisição — mesma regra da Server Action.
+      return repo.createEpiCatalog(tenantId, input, { createdBy: userId });
     },
     { status: 201 },
   );

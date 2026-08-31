@@ -6,15 +6,57 @@ import { resolveExposedTotal } from "./exposed-workers";
 
 export type { Ges } from "@/shared/db/schema/ges";
 
+/**
+ * Enum opcional: `""` → `undefined`; senão valida contra o enum. Espelha o helper
+ * homônimo de `employees.ts`/`risk.ts` (ainda não extraído para `form-fields.ts`).
+ */
+function optionalEnum<T extends z.ZodTypeAny>(schema: T) {
+  return z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    schema.optional(),
+  );
+}
+
+export const roofSchema = z.enum(["none", "partial", "total"], {
+  error: "Cobertura deve ser uma das opções da lista",
+});
+export type Roof = z.infer<typeof roofSchema>;
+
+export const roofLabel: Record<Roof, string> = {
+  none: "Sem cobertura",
+  partial: "Cobertura parcial",
+  total: "Cobertura total",
+};
+
+/**
+ * Pé-direito: string decimal opcional (`""` → `undefined`, sem erro — cobre o caso
+ * "não aplicável"). Aceita vírgula OU ponto como separador decimal (normaliza `,`→`.`
+ * antes de validar); a coluna `ceiling_height` é `numeric` (Drizzle/postgres-js expõem
+ * como string), então persistimos a string já normalizada. Espelha `optionalDecimal`
+ * de `risk.ts` (concentração/intensidade), acrescentando a normalização de vírgula e a
+ * checagem de valor positivo.
+ */
+const ceilingHeightSchema = z
+  .string()
+  .trim()
+  .transform((value) => (value === "" ? undefined : value.replace(",", ".")))
+  .optional()
+  .refine((value) => value === undefined || /^\d+(\.\d+)?$/.test(value), {
+    message: "Pé-direito deve ser um número válido (ex: 2.50 ou 2,50)",
+  })
+  .refine((value) => value === undefined || Number(value) > 0, {
+    message: "Pé-direito deve ser maior que zero",
+  });
+
 export const gesInputSchema = z.object({
   companyId: requiredUuid("Empresa é obrigatória"),
   workUnitId: requiredUuid("Unidade de obra é obrigatória"),
   name: requiredString("Nome é obrigatório"),
   processDescription: optionalString,
   constructionType: optionalString,
-  ceilingHeight: optionalString,
+  ceilingHeight: ceilingHeightSchema,
   floor: optionalString,
-  roof: optionalString,
+  roof: optionalEnum(roofSchema),
   lighting: optionalString,
   ventilation: optionalString,
   otherCharacteristics: optionalString,

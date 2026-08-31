@@ -15,6 +15,7 @@ import { EmptyState, PageHeader, PrimaryLink, Table } from "../../../_ui/list";
 import { EditRowAction, RowActions } from "../../../_ui/row-actions";
 import { DeleteControlMeasure } from "./_components/delete-control-measure";
 import { MeasureStateBadge } from "./_components/measure-state-badge";
+import { MeasureStatusBadge } from "./_components/measure-status-badge";
 import { RiskContext } from "./_components/risk-context";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +71,7 @@ export default async function ControlMeasuresPage({
       {rows.length === 0 ? (
         <EmptyState message="Nenhuma medida de controle registrada. Crie a primeira medida por nível NR-01." />
       ) : (
-        <Table headers={["Nível NR-01", "Estado", "Responsável", "Prazo", ""]}>
+        <Table headers={["Nível NR-01", "Estado", "Status", "Responsável", "Prazo", ""]}>
           {rows.map((row) => (
             <tr key={row.id} className="border-t border-white/50">
               <td className="px-4 py-2 font-medium">
@@ -78,6 +79,9 @@ export default async function ControlMeasuresPage({
               </td>
               <td className="px-4 py-2">
                 <MeasureStateBadge state={deriveMeasureState(row, today)} />
+              </td>
+              <td className="px-4 py-2">
+                <MeasureStatusBadge status={row.status} />
               </td>
               <td className="px-4 py-2">{row.actionResponsible ?? "—"}</td>
               <td className="px-4 py-2">{row.actionDeadline ?? "—"}</td>

@@ -5,7 +5,7 @@ import { useEffect, useState, useTransition, type FormEvent } from "react";
 
 import { createGesAction, updateGesAction } from "@/shared/server/actions/pgr/ges";
 import { listWorkUnitsAction } from "@/shared/server/actions/pgr/work-units";
-import type { GesInput, Ges } from "@/shared/domains/pgr/ges";
+import { roofLabel, type GesInput, type Ges } from "@/shared/domains/pgr/ges";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 
 import { GES_FIELD_HINTS } from "@/shared/domains/pgr/field-hints";
@@ -22,12 +22,18 @@ import { FieldHint } from "../../_ui/field-hint";
 
 type WorkUnitOption = { id: string; name: string };
 
+const ROOF_OPTIONS = [
+  { value: "none", label: roofLabel.none },
+  { value: "partial", label: roofLabel.partial },
+  { value: "total", label: roofLabel.total },
+];
+
+// `ceilingHeight` e `roof` têm renderização própria (input com dica de formato e
+// select fechado, respectivamente) — os demais são texto livre genérico.
 const ENV_FIELDS: { name: keyof Ges; label: string }[] = [
   { name: "processDescription", label: "Descrição do processo" },
   { name: "constructionType", label: "Tipo de construção" },
-  { name: "ceilingHeight", label: "Pé-direito" },
   { name: "floor", label: "Piso" },
-  { name: "roof", label: "Cobertura" },
   { name: "lighting", label: "Iluminação" },
   { name: "ventilation", label: "Ventilação" },
   { name: "otherCharacteristics", label: "Outras características" },
@@ -165,12 +171,40 @@ export function GesForm({
         <FieldHint>{GES_FIELD_HINTS.processDescription}</FieldHint>
         <FieldHint>{GES_FIELD_HINTS.environment}</FieldHint>
         <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <TextField
+              label="Pé-direito"
+              name="ceilingHeight"
+              defaultValue={ges?.ceilingHeight ?? ""}
+              error={errors.ceilingHeight}
+            />
+            <p className="text-text-subtle mt-1 text-xs">
+              Utilize ponto ou vírgula para separar decimais: 2.50 ou 2,50. Deixe em
+              branco se não for aplicável.
+            </p>
+          </div>
+          <div>
+            <SelectField
+              label="Cobertura"
+              name="roof"
+              defaultValue={ges?.roof ?? ""}
+              options={ROOF_OPTIONS}
+              emptyLabel="— não informado —"
+              error={errors.roof}
+            />
+            <p className="text-text-subtle mt-1 text-xs">
+              Indica se o ambiente tem estrutura/telhado sobre a área de trabalho —
+              relevante para avaliar exposição a agentes ambientais (chuva, sol,
+              ventilação).
+            </p>
+          </div>
           {ENV_FIELDS.map((field) => (
             <TextField
               key={field.name}
               label={field.label}
               name={field.name}
               defaultValue={(ges?.[field.name] as string | null | undefined) ?? ""}
+              error={errors[field.name]}
             />
           ))}
         </div>

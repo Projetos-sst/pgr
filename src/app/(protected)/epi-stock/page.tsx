@@ -24,6 +24,7 @@ type SearchParams = Promise<{
   withBalanceOnly?: string;
   categoryId?: string;
   caStatus?: string;
+  batch?: string;
 }>;
 
 const STATUS_TABS: { value: "" | EpiStockStatus; label: string; icon?: string }[] = [
@@ -124,6 +125,7 @@ export default async function EpiStockPage({
   const caStatusParsed = epiStockCaStatusSchema.safeParse(sp.caStatus);
   const onlyExpiredCa = caStatusParsed.success && caStatusParsed.data === "expired";
   const categoryId = sp.categoryId?.trim() || undefined;
+  const batch = sp.batch?.trim() || undefined;
 
   const [result, categoriesResult] = await Promise.all([
     listEpiStockAction({
@@ -132,6 +134,7 @@ export default async function EpiStockPage({
       withBalanceOnly,
       categoryId,
       caStatus: onlyExpiredCa ? "expired" : undefined,
+      batch,
       page,
     }),
     listCategoriesAction({ type: "epi", pageSize: PAGE_SIZE_MAX }),
@@ -147,6 +150,7 @@ export default async function EpiStockPage({
     if (withBalanceOnly) params.set("withBalanceOnly", "true");
     if (categoryId) params.set("categoryId", categoryId);
     if (onlyExpiredCa) params.set("caStatus", "expired");
+    if (batch) params.set("batch", batch);
     const qs = params.toString();
     return `/epi-stock${qs ? `?${qs}` : ""}`;
   }
@@ -158,6 +162,7 @@ export default async function EpiStockPage({
     if (!withBalanceOnly) params.set("withBalanceOnly", "true");
     if (categoryId) params.set("categoryId", categoryId);
     if (onlyExpiredCa) params.set("caStatus", "expired");
+    if (batch) params.set("batch", batch);
     const qs = params.toString();
     return `/epi-stock${qs ? `?${qs}` : ""}`;
   }
@@ -169,6 +174,7 @@ export default async function EpiStockPage({
     if (withBalanceOnly) params.set("withBalanceOnly", "true");
     if (categoryId) params.set("categoryId", categoryId);
     if (!onlyExpiredCa) params.set("caStatus", "expired");
+    if (batch) params.set("batch", batch);
     const qs = params.toString();
     return `/epi-stock${qs ? `?${qs}` : ""}`;
   }
@@ -454,6 +460,27 @@ export default async function EpiStockPage({
             ))}
           </select>
 
+          {/* Filtro por lote (#28) */}
+          <input
+            name="batch"
+            defaultValue={batch ?? ""}
+            placeholder="Lote"
+            aria-label="Filtrar por lote"
+            style={{
+              width: "120px",
+              height: "44px",
+              padding: "0 14px",
+              borderRadius: "12px",
+              background: "rgba(255, 255, 255, 0.5)",
+              border: "1px solid rgba(255, 255, 255, 0.7)",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#52576e",
+              fontFamily: "inherit",
+              outline: "none",
+            }}
+          />
+
           <button
             type="submit"
             style={{
@@ -609,6 +636,7 @@ export default async function EpiStockPage({
             withBalanceOnly: withBalanceOnly ? "true" : undefined,
             categoryId,
             caStatus: onlyExpiredCa ? "expired" : undefined,
+            batch,
           }}
         />
       </div>
