@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
+import { AutoSubmitSelect } from "./auto-submit-select";
+import { avatarColor, initialsOf } from "./avatar-color";
 
 /*
  * Kit de lista do redesign — replica o padrão visual dos mockups `*.dc.html`
@@ -78,6 +80,91 @@ export function ToolbarFilterPill({ children }: { children: ReactNode }) {
   return (
     <div className="text-text-muted flex h-11 items-center gap-2 rounded-xl border border-white/70 bg-white/50 px-4 text-[13px] font-semibold">
       {children}
+    </div>
+  );
+}
+
+/**
+ * Filtro `<select>` funcional integrado à toolbar (ex.: "Todas as Empresas ▾").
+ * Submete via GET ao mudar (`AutoSubmitSelect`); `hidden` preserva os demais
+ * filtros ativos e omite `page` (troca de filtro volta à página 1).
+ */
+export function ToolbarSelect({
+  basePath,
+  name,
+  defaultValue,
+  options,
+  emptyLabel,
+  hidden,
+}: {
+  basePath: string;
+  name: string;
+  defaultValue?: string;
+  options: { value: string; label: string }[];
+  emptyLabel: string;
+  hidden?: Record<string, string | undefined>;
+}) {
+  return (
+    <form action={basePath} method="get" className="contents">
+      {hidden
+        ? Object.entries(hidden)
+            .filter(([, v]) => v !== undefined && v !== "")
+            .map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)
+        : null}
+      <AutoSubmitSelect
+        id={name}
+        name={name}
+        defaultValue={defaultValue}
+        options={options}
+        emptyLabel={emptyLabel}
+      />
+    </form>
+  );
+}
+
+/**
+ * Filtro segmentado (pills) para poucos estados mutuamente exclusivos — ex.:
+ * Todos / Ativos / Inativos (#195). Server-friendly: cada pill é um link GET que
+ * troca `param` preservando os demais e reinicia a paginação. A pill ativa herda
+ * o `tone` (indigo por padrão).
+ */
+export function SegmentedFilter({
+  basePath,
+  param,
+  current,
+  options,
+  params,
+}: {
+  basePath: string;
+  param: string;
+  current?: string;
+  options: { value: string; label: string }[];
+  params: Record<string, string | undefined>;
+}) {
+  const rest = { ...params };
+  delete rest[param];
+  delete rest.page;
+  const active = current ?? "";
+  return (
+    <div className="flex h-11 items-center gap-1 rounded-xl border border-white/70 bg-white/50 p-1">
+      {options.map((opt) => {
+        const isActive = active === opt.value;
+        const href = `${basePath}${buildQuery(rest, opt.value ? { [param]: opt.value } : {})}`;
+        return (
+          <Link
+            key={opt.value || "all"}
+            href={href}
+            aria-current={isActive ? "true" : undefined}
+            className={`flex h-full items-center rounded-[9px] px-3.5 text-[12px] font-bold transition-colors ${
+              isActive
+                ? "btn-primary"
+                : "text-text-muted hover:text-text hover:bg-white/60"
+            }`}
+          >
+            {opt.label}
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -228,29 +315,23 @@ export function MonoCell({ href, children }: { href?: string; children: ReactNod
   );
 }
 
-/** Avatar quadrado com iniciais (ex.: nome de empresa/funcionário). */
+/** Avatar quadrado com iniciais, cor por hash do nome. */
 export function AvatarBadge({ name }: { name: string }) {
-  const initials =
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase() || "?";
+  const color = avatarColor(name);
   return (
     <span
       aria-hidden="true"
-      className="text-primary flex size-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[rgba(91,99,245,0.12)] text-[13px] font-extrabold"
+      className="flex size-[34px] shrink-0 items-center justify-center rounded-[10px] text-[13px] font-extrabold"
+      style={{ background: color.bg, color: color.fg }}
     >
-      {initials}
+      {initialsOf(name)}
     </span>
   );
 }
 
 // ── Badge de status (pill com bolinha) ──────────────────────────────────────
 
-export type StatusTone = "green" | "amber" | "red" | "neutral" | "indigo";
+export type StatusTone = "green" | "amber" | "red" | "neutral" | "indigo" | "blue";
 
 const TONE: Record<StatusTone, { bg: string; fg: string; dot: string }> = {
   green: { bg: "rgba(16,185,129,0.14)", fg: "#0e9f6e", dot: "#0e9f6e" },
@@ -258,6 +339,7 @@ const TONE: Record<StatusTone, { bg: string; fg: string; dot: string }> = {
   red: { bg: "rgba(229,72,77,0.14)", fg: "#d33a3f", dot: "#d33a3f" },
   neutral: { bg: "rgba(120,120,150,0.12)", fg: "#8c91a8", dot: "#8c91a8" },
   indigo: { bg: "rgba(91,99,245,0.12)", fg: "#5b63f5", dot: "#5b63f5" },
+  blue: { bg: "rgba(14,165,233,0.14)", fg: "#0284c7", dot: "#0ea5e9" },
 };
 
 export function StatusBadge({

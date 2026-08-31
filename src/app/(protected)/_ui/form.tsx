@@ -255,6 +255,51 @@ export function TextField({
   );
 }
 
+export function TextAreaField({
+  label,
+  name,
+  defaultValue,
+  value,
+  onChange,
+  required,
+  readOnly,
+  error,
+  placeholder,
+  rows = 4,
+  isFullWidth = true,
+}: {
+  label: string;
+  name: string;
+  defaultValue?: string | null;
+  value?: string;
+  onChange?: (value: string) => void;
+  required?: boolean;
+  readOnly?: boolean;
+  error?: string;
+  placeholder?: string;
+  rows?: number;
+  isFullWidth?: boolean;
+}) {
+  const controlled = value !== undefined;
+  return (
+    <label className={`block ${isFullWidth ? "sm:col-span-full" : ""}`}>
+      <FieldLabel label={label} required={required} />
+      <textarea
+        name={name}
+        rows={rows}
+        placeholder={placeholder}
+        readOnly={readOnly}
+        aria-invalid={error ? true : undefined}
+        className="glass-input text-text placeholder:text-text-subtle rounded-field min-h-[88px] w-full resize-y px-3.5 py-3 text-[13px] outline-none"
+        {...(controlled
+          ? { value, onChange: (e) => onChange?.(e.target.value) }
+          : { defaultValue: defaultValue ?? "" })}
+      />
+      <FieldError message={error} />
+    </label>
+  );
+}
+
 export function SelectField({
   label,
   name,
