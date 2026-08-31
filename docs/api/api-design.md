@@ -507,16 +507,16 @@ sem coluna). Zero migration.
 
 ## Categoria — `actions/pgr/categories.ts`
 
-Catálogo de categorias de `epi`/`machine` (fatia 009). Sem `/dependents` (catálogo sem FK de
-entrada). REST espelho em `/api/v1/categories` (GET, POST) · `/api/v1/categories/{id}` (GET, PUT, DELETE).
+Catálogo de categorias de `epi`/`machine`/`supply` (Insumo, #192). Sem `/dependents` (catálogo sem FK
+de entrada). REST espelho em `/api/v1/categories` (GET, POST) · `/api/v1/categories/{id}` (GET, PUT, DELETE).
 
-| Action                 | Entrada                                | Retorno (`data`)                            |
-| ---------------------- | -------------------------------------- | ------------------------------------------- |
-| `listCategoriesAction` | `{ search?, type?, page?, pageSize? }` | `{ rows: Category[]; total }`               |
-| `getCategoryAction`    | `id`                                   | `Category` (null → `NOT_FOUND`)             |
-| `createCategoryAction` | `CategoryInput`                        | `Category` (nome dup no tipo → `DUPLICATE`) |
-| `updateCategoryAction` | `id, CategoryInput`                    | `Category`                                  |
-| `deleteCategoryAction` | `id`                                   | `{ id }`                                    |
+| Action                 | Entrada                                           | Retorno (`data`)                            |
+| ---------------------- | ------------------------------------------------- | ------------------------------------------- |
+| `listCategoriesAction` | `{ search?, type?, isActive?, page?, pageSize? }` | `{ rows: CategoryListItem[]; total }`       |
+| `getCategoryAction`    | `id`                                              | `Category` (null → `NOT_FOUND`)             |
+| `createCategoryAction` | `CategoryInput`                                   | `Category` (nome dup no tipo → `DUPLICATE`) |
+| `updateCategoryAction` | `id, CategoryInput`                               | `Category`                                  |
+| `deleteCategoryAction` | `id`                                              | `{ id }`                                    |
 
 ## Médico — `actions/pgr/medicos.ts`
 
@@ -542,9 +542,12 @@ default `active`). Filtro de listagem por **Empresa/clínica** (`?clinic=`, valo
 `clinic` é texto livre (empregador do médico), não a empresa-cliente do tenant. `?status=` continua
 suportado no backend/REST.
 
-**`CategoryInput`**: `type*` (`epi`|`machine`), `name*`, `note?`. Unicidade por
-`UNIQUE(org_id, type, name)` → duplicidade no mesmo escritório+tipo vira `DUPLICATE`; o mesmo nome
-é aceito entre tipos distintos. **PUT (REST) exige corpo completo** (sem `.partial()`).
+**`CategoryInput`**: `type*` (`epi`|`machine`|`supply`), `name*`, `note?`, `isActive` (default `true`).
+Unicidade por `UNIQUE(org_id, type, name)` → duplicidade no mesmo escritório+tipo vira `DUPLICATE`; o
+mesmo nome é aceito entre tipos distintos. **PUT (REST) exige corpo completo** (sem `.partial()`).
+**`CategoryListItem`** = `Category` + `itemCount` (nº de itens `epi_catalog` vinculados, derivado por
+COUNT, sem coluna). Filtros do GET: `?search=`, `?type=`, `?isActive=`. Migration
+`0036_category_supply_status` (enum `ADD VALUE 'supply'` + coluna `is_active`).
 
 ---
 

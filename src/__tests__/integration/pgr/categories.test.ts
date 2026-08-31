@@ -79,6 +79,38 @@ const asOwner = (tenantId: string) =>
     expect(byName.ok && byName.data.total).toBe(1);
   });
 
+  it("expõe itemCount (nº de EPIs vinculados) derivado", async () => {
+    // seed: categoria "Capacete" (categoryA) tem 1 item de catálogo (epiCatalogA)
+    const list = await listCategoriesAction({});
+    expect(list.ok).toBe(true);
+    if (list.ok) {
+      const capacete = list.data.rows.find((r) => r.name === "Capacete");
+      expect(capacete?.itemCount).toBe(1);
+    }
+  });
+
+  it("aceita tipo 'supply' (Insumo) e filtra por ele", async () => {
+    const created = await createCategoryAction({ type: "supply", name: "Cimento" });
+    expect(created.ok && created.data.type).toBe("supply");
+    const supplyOnly = await listCategoriesAction({ type: "supply" });
+    expect(supplyOnly.ok && supplyOnly.data.total).toBe(1);
+    expect(supplyOnly.ok && supplyOnly.data.rows[0].name).toBe("Cimento");
+  });
+
+  it("status default active; persiste e filtra por isActive", async () => {
+    const created = await createCategoryAction({
+      type: "epi",
+      name: "Óculos",
+      isActive: "false",
+    });
+    expect(created.ok && created.data.isActive).toBe(false);
+    const inactive = await listCategoriesAction({ isActive: false });
+    expect(inactive.ok && inactive.data.rows.every((r) => r.isActive === false)).toBe(
+      true,
+    );
+    expect(inactive.ok && inactive.data.total).toBe(1);
+  });
+
   it("tipo inválido → VALIDATION", async () => {
     const result = await createCategoryAction({ type: "ppe" as never, name: "X" });
     expect(result.ok).toBe(false);

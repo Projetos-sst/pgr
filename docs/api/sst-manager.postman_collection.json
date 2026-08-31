@@ -2513,7 +2513,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/categories?search=&type=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/categories?search=&type=&isActive=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "categories"],
               "query": [
@@ -2523,7 +2523,13 @@
                 },
                 {
                   "key": "type",
-                  "value": ""
+                  "value": "",
+                  "description": "epi | machine | supply"
+                },
+                {
+                  "key": "isActive",
+                  "value": "",
+                  "description": "true | false"
                 },
                 {
                   "key": "page",

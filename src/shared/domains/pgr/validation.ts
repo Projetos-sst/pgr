@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const categoryTypeSchema = z.enum(["epi", "machine"]);
+export const categoryTypeSchema = z.enum(["epi", "machine", "supply"]);
 export const employeeSexSchema = z.enum(["male", "female", "not_informed"]);
 export const maritalStatusSchema = z.enum([
   "single",

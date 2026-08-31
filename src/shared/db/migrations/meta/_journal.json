@@ -253,6 +253,13 @@
       "when": 1788188901668,
       "tag": "0035_work_units_type_status_dates",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1788197331831,
+      "tag": "0036_category_supply_status",
+      "breakpoints": true
     }
   ]
 }
