@@ -16,7 +16,7 @@ const NEW_TABLES = [
 ] as const;
 
 const ENUMS: Record<string, string[]> = {
-  category_type: ["epi", "machine"],
+  category_type: ["epi", "machine", "supply"],
   employee_sex: ["male", "female", "not_informed"],
   marital_status: ["single", "married", "divorced", "widowed", "stable_union"],
   employee_status: ["active", "on_leave", "dismissed"],
