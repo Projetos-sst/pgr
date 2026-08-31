@@ -88,4 +88,6 @@ export type PgrListItem = {
   registrationNumber: string | null;
   issuedAt: string | null;
   validUntil: string | null;
+  /** Clerk userId do autor (nullable; linhas antigas sem autor). */
+  createdBy: string | null;
 };

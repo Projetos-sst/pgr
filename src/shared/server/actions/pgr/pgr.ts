@@ -36,11 +36,11 @@ export async function getPgrAction(id: string): Promise<ActionResult<Pgr>> {
 export async function createPgrAction(input: PgrCreateInput): Promise<ActionResult<Pgr>> {
   return officeAction(
     "pgr.pgr.create",
-    async ({ tenantId }) => {
+    async ({ tenantId, userId }) => {
       const parsed = pgrCreateSchema.parse(input);
       // O aceite é um gate de servidor e NÃO é persistido (a tabela `pgr` não tem coluna).
       const { declarationAccepted: _accepted, ...values } = parsed;
-      const row = await repo.createPgr(tenantId, values);
+      const row = await repo.createPgr(tenantId, values, userId);
       revalidatePath(BASE_PATH);
       return row;
     },
