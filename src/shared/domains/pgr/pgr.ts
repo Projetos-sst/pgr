@@ -88,4 +88,15 @@ export type PgrListItem = {
   registrationNumber: string | null;
   issuedAt: string | null;
   validUntil: string | null;
+  /** Clerk userId do autor (nullable; linhas antigas sem autor). */
+  createdBy: string | null;
+};
+
+/**
+ * Item da listagem enriquecido com o nome do autor (coluna "Usuário" do mockup).
+ * O nome é resolvido na camada de action via roster do time (admin client), pois
+ * `users` tem RLS própria e não é lida pelo `app_runtime`. `null` → célula "—".
+ */
+export type PgrListItemWithCreator = PgrListItem & {
+  createdByName: string | null;
 };

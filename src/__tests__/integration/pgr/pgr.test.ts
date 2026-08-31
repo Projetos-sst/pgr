@@ -78,6 +78,41 @@ function createInput(overrides: Partial<PgrCreateInput> = {}): PgrCreateInput {
     }
   });
 
+  it("busca ampla: por razão social da empresa e por responsável", async () => {
+    await createPgrAction(createInput({ responsible: "Eng. Fulano Busca" }));
+    const byCompany = await listPgrAction({ search: "A Ltda" });
+    expect(byCompany.ok && byCompany.data.total >= 1).toBe(true);
+    const byResp = await listPgrAction({ search: "Fulano Busca" });
+    expect(byResp.ok && byResp.data.total).toBe(1);
+    const none = await listPgrAction({ search: "inexistente-zzz" });
+    expect(none.ok && none.data.total).toBe(0);
+  });
+
+  it("filtra por tipo de registro", async () => {
+    await createPgrAction(
+      createInput({ registrationType: "crea", registrationNumber: "SP-1" }),
+    );
+    const crea = await listPgrAction({ registrationType: "crea" });
+    expect(crea.ok && crea.data.rows.every((r) => r.registrationType === "crea")).toBe(
+      true,
+    );
+    expect(crea.ok && crea.data.total).toBe(1);
+    const mte = await listPgrAction({ registrationType: "mte" });
+    expect(mte.ok && mte.data.total).toBe(0);
+  });
+
+  it("persiste o autor (created_by) e a listagem o expõe", async () => {
+    const created = await createPgrAction(createInput());
+    expect(created.ok).toBe(true);
+    const list = await listPgrAction({});
+    const mine = list.ok
+      ? list.data.rows.find((r) => r.createdBy === "u")
+      : undefined;
+    expect(mine).toBeDefined();
+    // nome do autor degrada para null no ambiente de teste (sem admin client)
+    expect(mine?.createdByName ?? null).toBeNull();
+  });
+
   it("getById do PGR do tenant retorna o registro", async () => {
     const result = await getPgrAction(PGR_IDS.pgrA);
     expect(result.ok).toBe(true);

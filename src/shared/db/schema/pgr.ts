@@ -56,6 +56,9 @@ export const pgr = pgTable(
     issuedAt: date("issued_at"),
     validUntil: date("valid_until"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
+    // Autor do documento (Clerk userId; sem FK — `users` tem RLS própria e é lido
+    // via admin client fora do app_runtime). Nullable: linhas antigas ficam sem autor.
+    createdBy: text("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

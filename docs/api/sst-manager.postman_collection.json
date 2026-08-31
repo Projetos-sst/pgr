@@ -1157,10 +1157,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/pgr?companyId=&workUnitId=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/pgr?search=&registrationType=&companyId=&workUnitId=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "pgr"],
               "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "registrationType",
+                  "value": "",
+                  "description": "crm | crea | mte | not_applicable"
+                },
                 {
                   "key": "companyId",
                   "value": ""
