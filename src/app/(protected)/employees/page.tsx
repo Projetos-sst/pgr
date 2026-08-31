@@ -24,7 +24,7 @@ import { EmployeeIcon } from "./_components/employee-icon";
 
 export const dynamic = "force-dynamic";
 
-const TEMPLATE = "2fr 1.6fr 1.6fr 1fr 84px";
+const TEMPLATE = "2fr 1.5fr 1.5fr 1.2fr 1fr 84px";
 
 const STATUS_FILTER = [
   { value: "", label: "Todos os status" },
@@ -76,7 +76,7 @@ export default async function EmployeesPage({
       <PageHeader
         icon={<EmployeeIcon />}
         title="Funcionários"
-        description="Pessoas vinculadas às empresas-cliente"
+        description={`Pessoas vinculadas às empresas-cliente — ${total} colaborador(es)`}
       />
 
       <ListCard>
@@ -150,8 +150,9 @@ export default async function EmployeesPage({
                 template={TEMPLATE}
                 columns={[
                   { header: "Nome" },
-                  { header: "GES" },
+                  { header: "GES / Obra" },
                   { header: "Empresa" },
+                  { header: "Ordens de Serviço" },
                   { header: "Status" },
                   { header: "Opções", align: "right" },
                 ]}
@@ -166,11 +167,25 @@ export default async function EmployeesPage({
                     <Cell>
                       <span className="flex items-center gap-3">
                         <AvatarBadge name={row.fullName} />
-                        <span className="text-text font-semibold">{row.fullName}</span>
+                        <span className="flex min-w-0 flex-col">
+                          <span className="text-text font-semibold">{row.fullName}</span>
+                          {row.jobRoleTitle ? (
+                            <span className="text-text-subtle text-[11px]">
+                              {row.jobRoleTitle}
+                            </span>
+                          ) : null}
+                        </span>
                       </span>
                     </Cell>
                     <Cell className="text-text-muted">{row.gesName ?? "—"}</Cell>
                     <Cell className="text-text-muted">{row.companyName}</Cell>
+                    <Cell
+                      className={row.serviceOrderCount ? undefined : "text-text-subtle"}
+                    >
+                      {row.serviceOrderCount
+                        ? `${row.serviceOrderCount} emitida(s)`
+                        : "—"}
+                    </Cell>
                     <Cell>
                       <StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>
                     </Cell>
