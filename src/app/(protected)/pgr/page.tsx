@@ -10,6 +10,7 @@ import {
   pgrRegistrationTypeLabel,
 } from "@/shared/domains/pgr/pgr";
 import { listPgrAction } from "@/shared/server/actions/pgr/pgr";
+import { listTeamMembers } from "@/shared/server/actions/platform/team";
 
 import Link from "next/link";
 
@@ -105,12 +106,21 @@ export default async function PgrPage({ searchParams }: { searchParams: SearchPa
   const registrationType = pgrRegistrationTypeSchema.safeParse(sp.registrationType);
   const today = todayInSaoPaulo();
 
-  const listResult = await listPgrAction({
-    search: sp.search,
-    registrationType: registrationType.success ? registrationType.data : undefined,
-    page,
-  });
+  const [listResult, teamResult] = await Promise.all([
+    listPgrAction({
+      search: sp.search,
+      registrationType: registrationType.success ? registrationType.data : undefined,
+      page,
+    }),
+    // Nomes dos autores (coluna "Usuário") — resolvidos na página via roster do time
+    // (action gated; `users` tem RLS própria). Fora do `listPgrAction` para não
+    // acoplar a listagem ao admin client. Se falhar, a coluna mostra "—".
+    listTeamMembers({ pageSize: 1000 }),
+  ]);
   const { rows, total } = listResult.ok ? listResult.data : { rows: [], total: 0 };
+  const nameById = new Map<string, string>(
+    teamResult.ok ? teamResult.data.rows.map((m) => [m.userId, m.name]) : [],
+  );
   const params = { search: sp.search, registrationType: sp.registrationType };
 
   return (
@@ -194,8 +204,14 @@ export default async function PgrPage({ searchParams }: { searchParams: SearchPa
                     <Cell className={row.responsible ? undefined : "text-text-subtle"}>
                       {row.responsible ?? "—"}
                     </Cell>
-                    <Cell className={row.createdByName ? undefined : "text-text-subtle"}>
-                      {row.createdByName ?? "—"}
+                    <Cell
+                      className={
+                        row.createdBy && nameById.has(row.createdBy)
+                          ? undefined
+                          : "text-text-subtle"
+                      }
+                    >
+                      {(row.createdBy && nameById.get(row.createdBy)) ?? "—"}
                     </Cell>
                     <Cell align="right">
                       <span className="flex items-center justify-end gap-1">

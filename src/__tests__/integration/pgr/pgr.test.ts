@@ -107,8 +107,6 @@ function createInput(overrides: Partial<PgrCreateInput> = {}): PgrCreateInput {
     const list = await listPgrAction({});
     const mine = list.ok ? list.data.rows.find((r) => r.createdBy === "u") : undefined;
     expect(mine).toBeDefined();
-    // nome do autor degrada para null no ambiente de teste (sem admin client)
-    expect(mine?.createdByName ?? null).toBeNull();
   });
 
   it("getById do PGR do tenant retorna o registro", async () => {

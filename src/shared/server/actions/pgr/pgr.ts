@@ -11,10 +11,9 @@ import {
   pgrCreateSchema,
   type PgrInput,
   type PgrCreateInput,
-  type PgrListItemWithCreator,
+  type PgrListItem,
 } from "@/shared/domains/pgr/pgr";
 import * as repo from "@/shared/db/repositories/pgr";
-import { listMembershipsByOrg } from "@/shared/db/repositories/org-memberships";
 import { assertPgrEditable, assertPgrPublishable } from "@/shared/server/pgr/pgr-lock";
 import type { Pgr } from "@/shared/db/schema/pgr";
 
@@ -22,37 +21,8 @@ const BASE_PATH = "/pgr";
 
 export async function listPgrAction(
   params: repo.ListPgrParams = {},
-): Promise<ActionResult<Paginated<PgrListItemWithCreator>>> {
-  return officeAction("pgr.pgr.list", async ({ tenantId }) => {
-    const { rows, total } = await repo.listPgr(tenantId, params);
-    // Coluna "Usuário": resolve o nome do autor via roster do time (admin client,
-    // fora do app_runtime), pois `users` tem RLS própria. Uma consulta por página.
-    const creatorIds = new Set(
-      rows.map((r) => r.createdBy).filter((id): id is string => Boolean(id)),
-    );
-    const nameById = new Map<string, string>();
-    if (creatorIds.size > 0) {
-      // Enriquecimento best-effort: se o roster (admin client) falhar, a coluna
-      // "Usuário" degrada para "—" em vez de quebrar a listagem.
-      try {
-        const roster = await listMembershipsByOrg(tenantId, { pageSize: 1000 });
-        for (const m of roster.rows) {
-          const name =
-            [m.firstName, m.lastName].filter(Boolean).join(" ") || m.email || null;
-          if (name) nameById.set(m.userId, name);
-        }
-      } catch {
-        // ignora — nomes ficam nulos (coluna "Usuário" mostra "—")
-      }
-    }
-    return {
-      rows: rows.map((r) => ({
-        ...r,
-        createdByName: r.createdBy ? (nameById.get(r.createdBy) ?? null) : null,
-      })),
-      total,
-    };
-  });
+): Promise<ActionResult<Paginated<PgrListItem>>> {
+  return officeAction("pgr.pgr.list", ({ tenantId }) => repo.listPgr(tenantId, params));
 }
 
 export async function getPgrAction(id: string): Promise<ActionResult<Pgr>> {
