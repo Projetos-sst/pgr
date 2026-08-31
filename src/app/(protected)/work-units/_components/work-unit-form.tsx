@@ -8,6 +8,12 @@ import {
   updateWorkUnitAction,
 } from "@/shared/server/actions/pgr/work-units";
 import type { WorkUnitInput, WorkUnit } from "@/shared/domains/pgr/work-units";
+import {
+  WORK_UNIT_TYPES,
+  WORK_UNIT_TYPE_LABELS,
+  WORK_UNIT_STATUSES,
+  WORK_UNIT_STATUS_LABELS,
+} from "@/shared/domains/pgr/work-units";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 
 import {
@@ -21,6 +27,15 @@ import {
   TextField,
 } from "../../_ui/form";
 import { AddressFields, type AddressValue } from "../../_ui/address-fields";
+
+const TYPE_OPTIONS = WORK_UNIT_TYPES.map((t) => ({
+  value: t,
+  label: WORK_UNIT_TYPE_LABELS[t],
+}));
+const STATUS_OPTIONS = WORK_UNIT_STATUSES.map((s) => ({
+  value: s,
+  label: WORK_UNIT_STATUS_LABELS[s],
+}));
 
 function addressFrom(source?: WorkUnit | null): AddressValue {
   return {
@@ -88,6 +103,10 @@ export function WorkUnitForm({
       name: value("name"),
       description: value("description"),
       contractNumber: value("contractNumber"),
+      type: (value("type") || undefined) as WorkUnitInput["type"],
+      status: value("status") as WorkUnitInput["status"],
+      startDate: value("startDate"),
+      expectedEndDate: value("expectedEndDate"),
       managerName: value("managerName"),
       managerRole: value("managerRole"),
       professionalTitle: value("professionalTitle"),
@@ -137,6 +156,21 @@ export function WorkUnitForm({
           defaultValue={workUnit?.contractNumber}
           error={errors.contractNumber}
         />
+        <SelectField
+          label="Tipo"
+          name="type"
+          defaultValue={workUnit?.type ?? ""}
+          options={TYPE_OPTIONS}
+          emptyLabel="— selecione —"
+          error={errors.type}
+        />
+        <SelectField
+          label="Situação"
+          name="status"
+          defaultValue={workUnit?.status ?? "active"}
+          options={STATUS_OPTIONS}
+          error={errors.status}
+        />
         <TextField
           label="Escopo do Contrato"
           name="description"
@@ -144,6 +178,23 @@ export function WorkUnitForm({
           isFullWidth
           defaultValue={workUnit?.description}
           error={errors.description}
+        />
+      </FormSection>
+
+      <FormSection title="Vigência da obra">
+        <TextField
+          label="Início da obra"
+          name="startDate"
+          type="date"
+          defaultValue={workUnit?.startDate ?? ""}
+          error={errors.startDate}
+        />
+        <TextField
+          label="Previsão de término"
+          name="expectedEndDate"
+          type="date"
+          defaultValue={workUnit?.expectedEndDate ?? ""}
+          error={errors.expectedEndDate}
         />
       </FormSection>
 

@@ -24,4 +24,32 @@ describe("workUnitInputSchema (US2)", () => {
   it("normaliza endereço vazio para undefined", () => {
     expect(workUnitInputSchema.parse({ ...base, city: "" }).city).toBeUndefined();
   });
+
+  it("status ausente assume 'active'; aceita tipo e datas", () => {
+    expect(workUnitInputSchema.parse(base).status).toBe("active");
+    const parsed = workUnitInputSchema.parse({
+      ...base,
+      type: "branch",
+      status: "closed",
+      startDate: "2026-01-01",
+      expectedEndDate: "2026-06-30",
+    });
+    expect(parsed.type).toBe("branch");
+    expect(parsed.status).toBe("closed");
+    expect(parsed.startDate).toBe("2026-01-01");
+  });
+
+  it("datas vazias → undefined; data inválida → erro", () => {
+    expect(
+      workUnitInputSchema.parse({ ...base, startDate: "" }).startDate,
+    ).toBeUndefined();
+    expect(() =>
+      workUnitInputSchema.parse({ ...base, startDate: "2026-13-45" }),
+    ).toThrow();
+  });
+
+  it("rejeita tipo/status inválidos", () => {
+    expect(() => workUnitInputSchema.parse({ ...base, type: "x" })).toThrow();
+    expect(() => workUnitInputSchema.parse({ ...base, status: "x" })).toThrow();
+  });
 });
