@@ -1,6 +1,11 @@
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
+import {
+  WORK_UNIT_STATUS_LABELS,
+  WORK_UNIT_STATUS_TONE,
+} from "@/shared/domains/pgr/work-units";
 import { listWorkUnitsAction } from "@/shared/server/actions/pgr/work-units";
+import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies";
 
 import {
   Cell,
@@ -16,6 +21,7 @@ import {
   StatusBadge,
   ToolbarButton,
   ToolbarSearch,
+  ToolbarSelect,
 } from "../_ui/data-list";
 import { EmptyState, PageHeader } from "../_ui/list";
 import { DeleteWorkUnit } from "./_components/delete-work-unit";
@@ -37,12 +43,12 @@ export default async function WorkUnitsPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const result = await listWorkUnitsAction({
-    search: sp.search,
-    companyId: sp.companyId,
-    page,
-  });
+  const [result, companyOptions] = await Promise.all([
+    listWorkUnitsAction({ search: sp.search, companyId: sp.companyId, page }),
+    listCompanyOptionsAction(),
+  ]);
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
+  const companies = companyOptions.ok ? companyOptions.data : [];
 
   return (
     <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
@@ -60,6 +66,14 @@ export default async function WorkUnitsPage({
             defaultValue={sp.search}
             hidden={{ companyId: sp.companyId }}
           />
+          <ToolbarSelect
+            basePath="/work-units"
+            name="companyId"
+            defaultValue={sp.companyId}
+            options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
+            emptyLabel="Todas as Empresas"
+            hidden={{ search: sp.search }}
+          />
           <ToolbarButton href="/work-units/new">Nova Unidade</ToolbarButton>
         </ListToolbar>
 
@@ -67,8 +81,8 @@ export default async function WorkUnitsPage({
           <div className="p-6">
             <EmptyState
               message={
-                sp.search
-                  ? "Nenhuma unidade de obra encontrada para a busca."
+                sp.search || sp.companyId
+                  ? "Nenhuma unidade de obra encontrada para os filtros."
                   : "Nenhuma unidade de obra cadastrada."
               }
             />
@@ -94,13 +108,15 @@ export default async function WorkUnitsPage({
                     {row.contractNumber ?? "—"}
                   </MonoCell>
                   <Cell className="text-text font-semibold">{row.name}</Cell>
-                  <Cell className="text-text-subtle">—</Cell>
+                  <Cell>{row.companyName}</Cell>
                   <Cell>{[row.city, row.state].filter(Boolean).join(" / ") || "—"}</Cell>
                   <Cell className={row.managerName ? undefined : "text-text-subtle"}>
                     {row.managerName ?? "—"}
                   </Cell>
                   <Cell>
-                    <StatusBadge tone="green">Ativa</StatusBadge>
+                    <StatusBadge tone={WORK_UNIT_STATUS_TONE[row.status]}>
+                      {WORK_UNIT_STATUS_LABELS[row.status]}
+                    </StatusBadge>
                   </Cell>
                   <Cell align="right">
                     <RowActions>

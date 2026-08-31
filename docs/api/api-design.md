@@ -432,16 +432,21 @@ eSocial fica para fatia futura (credencial — exige armazenamento seguro). Migr
 
 ## Unidade de Obra — `actions/pgr/work-units.ts`
 
-| Action                        | Entrada                                     | Retorno                                              |
-| ----------------------------- | ------------------------------------------- | ---------------------------------------------------- |
-| `listWorkUnitsAction`         | `{ companyId?, search?, page?, pageSize? }` | `{ rows: WorkUnit[]; total }`                        |
-| `getWorkUnitAction`           | `id`                                        | `WorkUnit`                                           |
-| `createWorkUnitAction`        | `WorkUnitInput`                             | `WorkUnit` (empresa fora do tenant → `FK_NOT_FOUND`) |
-| `updateWorkUnitAction`        | `id, WorkUnitInput`                         | `WorkUnit`                                           |
-| `deleteWorkUnitAction`        | `id`                                        | `{ id }`                                             |
-| `getWorkUnitDependentsAction` | `id`                                        | `{ ges }`                                            |
+| Action                        | Entrada                                              | Retorno                                              |
+| ----------------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
+| `listWorkUnitsAction`         | `{ companyId?, status?, search?, page?, pageSize? }` | `{ rows: WorkUnitListItem[]; total }`                |
+| `getWorkUnitAction`           | `id`                                                 | `WorkUnit`                                           |
+| `createWorkUnitAction`        | `WorkUnitInput`                                      | `WorkUnit` (empresa fora do tenant → `FK_NOT_FOUND`) |
+| `updateWorkUnitAction`        | `id, WorkUnitInput`                                  | `WorkUnit`                                           |
+| `deleteWorkUnitAction`        | `id`                                                 | `{ id }`                                             |
+| `getWorkUnitDependentsAction` | `id`                                                 | `{ ges }`                                            |
 
-**`WorkUnitInput`**: `companyId*`, `name*`, `description*`, `contractNumber?`, endereço (`zipCode?…state?`).
+**`WorkUnitInput`**: `companyId*`, `name*`, `description*`, `contractNumber?`, `type?`
+(`site|branch|workfront`), `status` (`active|suspended|closed`, default `active`), `startDate?`,
+`expectedEndDate?` (datas ISO AAAA-MM-DD), responsável técnico (`managerName?`, `managerRole?`,
+`professionalTitle?`, `professionalRegistration?`), endereço (`zipCode?…state?`). **`WorkUnitListItem`**
+= `WorkUnit` + `companyName` (join). Filtros do GET: `?companyId=`, `?status=`, `?search=`
+(nome/contrato/objeto). Migration `0035_work_units_type_status_dates` (2 enums + 4 colunas).
 
 ## Função (Cargo) — `actions/pgr/job-roles.ts`
 

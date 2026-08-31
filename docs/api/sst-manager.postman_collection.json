@@ -409,13 +409,18 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/work-units?companyId={{companyId}}&search=&page=1",
+              "raw": "{{baseUrl}}/api/v1/work-units?companyId={{companyId}}&status=&search=&page=1",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "work-units"],
               "query": [
                 {
                   "key": "companyId",
                   "value": "{{companyId}}"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "active | suspended | closed"
                 },
                 {
                   "key": "search",

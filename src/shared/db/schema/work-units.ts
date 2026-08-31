@@ -1,4 +1,13 @@
-import { pgTable, text, uuid, timestamp, index, pgPolicy } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  pgEnum,
+  text,
+  uuid,
+  date,
+  timestamp,
+  index,
+  pgPolicy,
+} from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 
 import { appRuntimeRole } from "../roles";
@@ -7,6 +16,16 @@ import { companies } from "./companies";
 import { addressColumns } from "./address-columns";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
+
+/** Situação da unidade de obra (badge da listagem #190). */
+export const workUnitStatus = pgEnum("work_unit_status", [
+  "active",
+  "suspended",
+  "closed",
+]);
+
+/** Tipo da unidade (#191): obra/canteiro, filial, frente de trabalho. */
+export const workUnitType = pgEnum("work_unit_type", ["site", "branch", "workfront"]);
 
 export const workUnits = pgTable(
   "work_units",
@@ -21,6 +40,10 @@ export const workUnits = pgTable(
     name: text("name").notNull(),
     contractNumber: text("contract_number"),
     description: text("description").notNull(),
+    type: workUnitType("type"),
+    status: workUnitStatus("status").notNull().default("active"),
+    startDate: date("start_date"),
+    expectedEndDate: date("expected_end_date"),
     managerName: text("manager_name"),
     managerRole: text("manager_role"),
     professionalTitle: text("professional_title"),

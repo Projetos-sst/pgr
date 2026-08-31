@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
-import { workUnitInputSchema, type WorkUnitInput } from "@/shared/domains/pgr/work-units";
+import {
+  workUnitInputSchema,
+  type WorkUnitInput,
+  type WorkUnitListItem,
+} from "@/shared/domains/pgr/work-units";
 import type { Paginated } from "@/shared/pagination";
 import * as repo from "@/shared/db/repositories/work-units";
 import type { WorkUnit } from "@/shared/db/schema/work-units";
@@ -14,7 +18,7 @@ const BASE_PATH = "/work-units";
 
 export async function listWorkUnitsAction(
   params: repo.ListWorkUnitsParams = {},
-): Promise<ActionResult<Paginated<WorkUnit>>> {
+): Promise<ActionResult<Paginated<WorkUnitListItem>>> {
   return officeAction("pgr.work_units.list", ({ tenantId }) =>
     repo.listWorkUnits(tenantId, params),
   );
