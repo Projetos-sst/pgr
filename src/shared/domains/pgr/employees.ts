@@ -60,6 +60,10 @@ export type EmployeeListItem = {
   status: string;
   companyName: string;
   gesName: string | null;
+  /** Função (subtítulo do Nome no #195) — join `job_roles.title`. */
+  jobRoleTitle: string | null;
+  /** Nº de OS emitidas para o funcionário — derivado (COUNT), sem coluna. */
+  serviceOrderCount: number;
 };
 
 export function toEmployeeListItem(row: EmployeeListItem): EmployeeListItem {
@@ -69,6 +73,8 @@ export function toEmployeeListItem(row: EmployeeListItem): EmployeeListItem {
     status: row.status,
     companyName: row.companyName,
     gesName: row.gesName,
+    jobRoleTitle: row.jobRoleTitle,
+    serviceOrderCount: row.serviceOrderCount,
   };
 }
 

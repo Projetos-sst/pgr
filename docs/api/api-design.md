@@ -486,14 +486,14 @@ ceilingHeight? floor? roof? lighting? ventilation? otherCharacteristics?`.
 
 ## Funcionário — `actions/pgr/employees.ts`
 
-| Action                   | Entrada                                              | Retorno                                                  |
-| ------------------------ | ---------------------------------------------------- | -------------------------------------------------------- |
-| `listEmployeesAction`    | `{ companyId?, status?, search?, page?, pageSize? }` | `{ rows: EmployeeListItem[]; total }`                    |
-| `getEmployeeAction`      | `id`                                                 | `Employee`                                               |
-| `createEmployeeAction`   | `EmployeeInput`                                      | `Employee` (CPF dup → `DUPLICATE`)                       |
-| `updateEmployeeAction`   | `id, EmployeeInput`                                  | `Employee`                                               |
-| `deleteEmployeeAction`   | `id`                                                 | `{ id }`                                                 |
-| `listGesFunctionsAction` | `gesId`                                              | `JobRoleOption[]` (picker: só funções vinculadas ao GES) |
+| Action                   | Entrada                                                      | Retorno                                                  |
+| ------------------------ | ------------------------------------------------------------ | -------------------------------------------------------- |
+| `listEmployeesAction`    | `{ companyId?, gesId?, status?, search?, page?, pageSize? }` | `{ rows: EmployeeListItem[]; total }`                    |
+| `getEmployeeAction`      | `id`                                                         | `Employee`                                               |
+| `createEmployeeAction`   | `EmployeeInput`                                              | `Employee` (CPF dup → `DUPLICATE`)                       |
+| `updateEmployeeAction`   | `id, EmployeeInput`                                          | `Employee`                                               |
+| `deleteEmployeeAction`   | `id`                                                         | `{ id }`                                                 |
+| `listGesFunctionsAction` | `gesId`                                                      | `JobRoleOption[]` (picker: só funções vinculadas ao GES) |
 
 **`EmployeeInput`**: `companyId*`, `fullName*`, `cpf*` (11 díg.), `gesId?`, `jobRoleId?`
 (exige `gesId` e vínculo existente no GES), `status?` (`active`|`on_leave`|`dismissed`, default
@@ -501,7 +501,9 @@ ceilingHeight? floor? roof? lighting? ventilation? otherCharacteristics?`.
 (`single`|`married`|`divorced`|`widowed`|`stable_union`), `birthDate? admissionDate?
 dismissalDate? badgeValidUntil?` (datas), `phone? email? rg? badgeNumber? registration?
 bloodType? photoPath?`, endereço (`zipCode?…state?`).
-**`EmployeeListItem`**: `{ id, fullName, status, companyName, gesName }`.
+**`EmployeeListItem`**: `{ id, fullName, status, companyName, gesName, jobRoleTitle, serviceOrderCount }`
+(`jobRoleTitle` = função por join; `serviceOrderCount` = nº de OS do funcionário, derivado por COUNT,
+sem coluna). Zero migration.
 
 ## Categoria — `actions/pgr/categories.ts`
 

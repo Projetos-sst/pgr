@@ -126,6 +126,14 @@ export async function listEmployees(
         status: employees.status,
         companyName: companies.razaoSocial,
         gesName: ges.name,
+        jobRoleTitle: jobRoles.title,
+        // Nº de OS do funcionário — subquery correlacionada QUALIFICADA (nomes com
+        // prefixo de tabela; ver lição do #188) escopada ao tenant.
+        serviceOrderCount: sql<number>`(
+          select count(*)::int from "service_orders"
+          where "service_orders"."assigned_employee_id" = "employees"."id"
+            and "service_orders"."org_id" = ${orgId}
+        )`,
       })
       .from(employees)
       .innerJoin(companies, eq(companies.id, employees.companyId))

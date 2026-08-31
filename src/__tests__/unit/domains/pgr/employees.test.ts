@@ -48,6 +48,8 @@ describe("toEmployeeListItem", () => {
       status: "active",
       companyName: "Acme",
       gesName: null,
+      jobRoleTitle: "Soldador",
+      serviceOrderCount: 3,
     };
     expect(toEmployeeListItem(item)).toEqual(item);
   });
