@@ -1,7 +1,10 @@
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
 import { MEDICO_STATUS_LABELS } from "@/shared/domains/pgr/medicos";
-import { listMedicosAction } from "@/shared/server/actions/pgr/medicos";
+import {
+  listMedicosAction,
+  listMedicoClinicsAction,
+} from "@/shared/server/actions/pgr/medicos";
 
 import { EmptyState, PageHeader } from "../_ui/list";
 import {
@@ -25,7 +28,7 @@ export const dynamic = "force-dynamic";
 
 const TEMPLATE = "1.1fr 1.7fr 1.1fr 1.2fr 1.1fr 1fr 84px";
 
-type SearchParams = Promise<{ search?: string; status?: string; page?: string }>;
+type SearchParams = Promise<{ search?: string; clinic?: string; page?: string }>;
 
 export default async function MedicosPage({
   searchParams,
@@ -37,10 +40,12 @@ export default async function MedicosPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const status =
-    sp.status === "active" || sp.status === "inactive" ? sp.status : undefined;
-  const result = await listMedicosAction({ search: sp.search, status, page });
+  const [result, clinicsResult] = await Promise.all([
+    listMedicosAction({ search: sp.search, clinic: sp.clinic, page }),
+    listMedicoClinicsAction(),
+  ]);
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
+  const clinics = clinicsResult.ok ? clinicsResult.data : [];
 
   return (
     <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
@@ -52,7 +57,12 @@ export default async function MedicosPage({
 
       <ListCard>
         <ListToolbar>
-          <MedicoFilters basePath="/medicos" search={sp.search} status={sp.status} />
+          <MedicoFilters
+            basePath="/medicos"
+            search={sp.search}
+            clinic={sp.clinic}
+            clinics={clinics}
+          />
           <ToolbarButton href="/medicos/new">Novo Médico</ToolbarButton>
         </ListToolbar>
 
@@ -61,7 +71,7 @@ export default async function MedicosPage({
             <EmptyState
               isFlat
               message={
-                sp.search || status
+                sp.search || sp.clinic
                   ? "Nenhum médico encontrado para os filtros."
                   : "Nenhum médico cadastrado."
               }
@@ -121,7 +131,7 @@ export default async function MedicosPage({
               page={page}
               pageSize={pageSize}
               total={total}
-              params={{ search: sp.search, status: sp.status }}
+              params={{ search: sp.search, clinic: sp.clinic }}
             />
           </>
         )}
