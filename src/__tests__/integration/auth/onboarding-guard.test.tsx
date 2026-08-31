@@ -33,6 +33,15 @@ jest.mock("@/shared/auth/require-tenant-context", () => ({
   requireTenantContext: jest.fn(),
 }));
 
+// Badge da Trilha de Sucesso: a Server Action importa a cadeia de DB;
+// mockar evita carregar o driver postgres no jsdom (mesmo motivo dos mocks acima).
+jest.mock("@/shared/server/actions/platform/onboarding", () => ({
+  getOnboardingProgressAction: jest.fn(async () => ({
+    ok: true,
+    data: { allDone: true },
+  })),
+}));
+
 import { requireTenantContext } from "@/shared/auth/require-tenant-context";
 import { NoTenantContextError } from "@/shared/auth/errors";
 import ProtectedLayout from "@/app/(protected)/layout";
