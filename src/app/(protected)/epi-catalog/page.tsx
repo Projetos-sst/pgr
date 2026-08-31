@@ -2,6 +2,11 @@ import Link from "next/link";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
+import { todayInSaoPaulo } from "@/shared/dates";
+import {
+  classifyDocumentValidity,
+  type DocumentValidityStatus,
+} from "@/shared/domains/documents/validity";
 import { listEpiCatalogAction } from "@/shared/server/actions/pgr/epi-catalog";
 import type { CategoryType } from "@/shared/domains/pgr/epi-catalog";
 
@@ -38,10 +43,20 @@ function parseType(value?: string): CategoryType | undefined {
   return value === "epi" || value === "machine" ? value : undefined;
 }
 
-function formatDate(value: string | null): string {
+/** Validade do CA em MM/AAAA (granularidade do certificado), fiel ao mockup. */
+function formatMonthYear(value: string | null): string {
   if (!value) return "—";
-  return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR");
+  const [year, month] = value.split("-");
+  return `${month}/${year}`;
 }
+
+/** Cor semântica da Validade derivada na leitura (verde/âmbar/vermelho/cinza). */
+const VALIDITY_COLOR: Record<DocumentValidityStatus, string> = {
+  ok: "text-accent-green font-semibold",
+  due_soon: "text-accent-amber-strong font-semibold",
+  expired: "text-danger font-semibold",
+  no_expiry: "text-text-subtle",
+};
 
 type SearchParams = Promise<{ search?: string; page?: string; type?: string }>;
 
@@ -59,6 +74,7 @@ export default async function EpiCatalogPage({
   });
   const result = await listEpiCatalogAction({ search: sp.search, type, page });
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
+  const today = todayInSaoPaulo();
 
   return (
     <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
@@ -72,7 +88,7 @@ export default async function EpiCatalogPage({
         <ListToolbar>
           <ToolbarSearch
             basePath="/epi-catalog"
-            placeholder="Buscar por nome, CA ou categoria…"
+            placeholder="Buscar por CA, nome ou fabricante…"
             defaultValue={sp.search}
             hidden={{ type: sp.type }}
           />
@@ -139,7 +155,18 @@ export default async function EpiCatalogPage({
                       {row.categoryName}
                     </StatusBadge>
                   </Cell>
-                  <Cell className="text-text-muted">{formatDate(row.caValidUntil)}</Cell>
+                  <Cell
+                    className={
+                      VALIDITY_COLOR[
+                        classifyDocumentValidity(row.caValidUntil, {
+                          today,
+                          dueWindowDays: 30,
+                        })
+                      ]
+                    }
+                  >
+                    {formatMonthYear(row.caValidUntil)}
+                  </Cell>
                   <Cell align="right">
                     <RowActions>
                       <EditIconLink href={`/epi-catalog/${row.id}/edit`} />

@@ -24,6 +24,7 @@ import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pag
 
 import { withOrg, type TenantTransaction } from "../with-org";
 import { categories } from "../schema/categories";
+import { companies } from "../schema/companies";
 import {
   epiCatalog,
   epiDeliveryItems,
@@ -37,6 +38,7 @@ import { recordEpiCatalogAudit } from "./epi-catalog-audit";
 export type ListEpiCatalogParams = PageParams & {
   search?: string;
   type?: CategoryType;
+  categoryId?: string;
 };
 
 export type EpiCatalogListItem = EpiCatalog & { categoryName: string };
@@ -53,6 +55,8 @@ function toEpiCatalogColumns(input: EpiCatalogValues) {
   return {
     type: input.type,
     categoryId: input.categoryId,
+    companyId: input.companyId ?? null,
+    usefulLifeMonths: input.usefulLifeMonths ?? null,
     name: input.name,
     ca: input.ca ?? null,
     caValidUntil: input.caValidUntil ?? null,
@@ -123,6 +127,20 @@ async function assertCategoryInTenant(
   if (!row) throw new ReferenceNotFoundError("category");
 }
 
+/** Empresa (opcional) do EPI deve existir no tenant (senão FK_NOT_FOUND). */
+async function assertCompanyInTenant(
+  tx: TenantTransaction,
+  orgId: string,
+  companyId: string,
+): Promise<void> {
+  const [row] = await tx
+    .select({ id: companies.id })
+    .from(companies)
+    .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId)))
+    .limit(1);
+  if (!row) throw new ReferenceNotFoundError("company");
+}
+
 async function countDependentsTx(
   tx: TenantTransaction,
   orgId: string,
@@ -163,11 +181,13 @@ export async function listEpiCatalog(
       or(
         ilike(epiCatalog.name, term),
         ilike(epiCatalog.ca, term),
+        ilike(epiCatalog.manufacturer, term),
         ilike(categories.name, term),
       )!,
     );
   }
   if (params.type) filters.push(eq(epiCatalog.type, params.type));
+  if (params.categoryId) filters.push(eq(epiCatalog.categoryId, params.categoryId));
   const where = and(...filters);
 
   return withOrg(orgId, async (tx) => {
@@ -210,6 +230,7 @@ export async function createEpiCatalog(
   return auditedTenantWrite(orgId, AUDIT_OP, () =>
     withOrg(orgId, async (tx) => {
       await assertCategoryInTenant(tx, orgId, input.categoryId, input.type);
+      if (input.companyId) await assertCompanyInTenant(tx, orgId, input.companyId);
       const [row] = await tx
         .insert(epiCatalog)
         .values({
@@ -239,6 +260,7 @@ export async function updateEpiCatalog(
   return auditedTenantWrite(orgId, AUDIT_OP, () =>
     withOrg(orgId, async (tx) => {
       await assertCategoryInTenant(tx, orgId, input.categoryId, input.type);
+      if (input.companyId) await assertCompanyInTenant(tx, orgId, input.companyId);
 
       const [before] = await tx
         .select()

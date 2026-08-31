@@ -5,12 +5,19 @@ import type { EpiCatalog } from "@/shared/db/schema/epis";
 import {
   optionalIsoDate,
   optionalString,
+  optionalUuid,
   requiredString,
   requiredUuid,
 } from "./form-fields";
 import { categoryTypeSchema, type CategoryType } from "./validation";
 
 export type { EpiCatalog, CategoryType };
+
+/** Inteiro positivo opcional vindo de form (string vazia → undefined). Vida útil (meses). */
+const optionalPositiveInt = z.preprocess(
+  (v) => (v === "" || v === undefined || v === null ? undefined : v),
+  z.coerce.number().int().positive().optional(),
+);
 
 /**
  * Entrada do CRUD de `epi_catalog`. `type` e `categoryId` definem a referência à
@@ -22,6 +29,9 @@ export type { EpiCatalog, CategoryType };
 export const epiCatalogInputSchema = z.object({
   type: categoryTypeSchema,
   categoryId: requiredUuid("Categoria é obrigatória"),
+  // Empresa do EPI (#201, R1) — opcional (nullable no banco).
+  companyId: optionalUuid,
+  usefulLifeMonths: optionalPositiveInt,
   name: requiredString("Nome é obrigatório"),
   ca: optionalString,
   caValidUntil: optionalIsoDate,

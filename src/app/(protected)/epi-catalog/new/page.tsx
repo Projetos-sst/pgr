@@ -1,4 +1,5 @@
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies";
 
 import { PageHeader } from "../../_ui/list";
 import { OnboardingTip } from "../../_components/onboarding-tip";
@@ -14,6 +15,8 @@ export default async function NewEpiCatalogPage({
 }) {
   await requireOfficeStaffPage();
   const sp = await searchParams;
+  const companiesResult = await listCompanyOptionsAction();
+  const companies = companiesResult.ok ? companiesResult.data : [];
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
       <PageHeader
@@ -23,7 +26,7 @@ export default async function NewEpiCatalogPage({
         description="Item de EPI ou de máquina/equipamento"
       />
       <OnboardingTip stepKey="epiCatalogItems" show={sp.onboarding === "1"} />
-      <EpiCatalogForm />
+      <EpiCatalogForm companies={companies} />
     </div>
   );
 }

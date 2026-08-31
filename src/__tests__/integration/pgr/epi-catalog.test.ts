@@ -85,6 +85,54 @@ const { categoryA } = PGR_IDS;
     expect(after.ok && after.data.total).toBe(1);
   });
 
+  it("persiste company_id (Empresa) e useful_life_months; cross-tenant → FK_NOT_FOUND", async () => {
+    const created = await createEpiCatalogAction({
+      type: "epi",
+      categoryId: categoryA,
+      name: "Óculos de proteção",
+      companyId: PGR_IDS.companyA,
+      usefulLifeMonths: "12",
+    });
+    expect(created.ok && created.data.companyId).toBe(PGR_IDS.companyA);
+    expect(created.ok && created.data.usefulLifeMonths).toBe(12);
+
+    // empresa de outro tenant → FK_NOT_FOUND
+    const crossTenant = await createEpiCatalogAction({
+      type: "epi",
+      categoryId: categoryA,
+      name: "X",
+      companyId: PGR_IDS.companyB,
+    });
+    expect(crossTenant.ok).toBe(false);
+    if (!crossTenant.ok) expect(crossTenant.error.code).toBe("FK_NOT_FOUND");
+
+    // vida útil inválida (0) → VALIDATION
+    const badLife = await createEpiCatalogAction({
+      type: "epi",
+      categoryId: categoryA,
+      name: "Y",
+      usefulLifeMonths: "0",
+    });
+    expect(badLife.ok).toBe(false);
+    if (!badLife.ok) expect(badLife.error.code).toBe("VALIDATION");
+  });
+
+  it("busca por fabricante e filtra por categoryId", async () => {
+    await createEpiCatalogAction({
+      type: "epi",
+      categoryId: categoryA,
+      name: "Respirador PFF2",
+      manufacturer: "3M do Brasil",
+    });
+    const byManufacturer = await listEpiCatalogAction({ search: "3M do Brasil" });
+    expect(byManufacturer.ok && byManufacturer.data.total).toBe(1);
+
+    const byCategory = await listEpiCatalogAction({ categoryId: categoryA });
+    expect(
+      byCategory.ok && byCategory.data.rows.every((r) => r.categoryName === "Capacete"),
+    ).toBe(true);
+  });
+
   it("busca por nome, CA e nome da categoria; filtra por tipo", async () => {
     // categoryA = epi "Capacete"; item do seed tem ca "Capacete CA-123" (no nome) e ca null
     await createEpiCatalogAction({

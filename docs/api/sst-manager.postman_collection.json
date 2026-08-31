@@ -3999,7 +3999,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/epi-catalog?search=&type=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/epi-catalog?search=&type=&categoryId=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "epi-catalog"],
               "query": [
@@ -4010,7 +4010,11 @@
                 {
                   "key": "type",
                   "value": "",
-                  "description": "epi|machine"
+                  "description": "epi|machine|supply"
+                },
+                {
+                  "key": "categoryId",
+                  "value": ""
                 },
                 {
                   "key": "page",

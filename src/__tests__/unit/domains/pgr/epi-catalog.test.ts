@@ -21,6 +21,24 @@ describe("epiCatalogInputSchema (US1)", () => {
     expect(parsed.photoPath).toBeUndefined();
   });
 
+  it("companyId opcional + usefulLifeMonths coage e exige > 0", () => {
+    const COMPANY = "22222222-2222-2222-2222-2222222222aa";
+    const parsed = epiCatalogInputSchema.parse({
+      ...base,
+      companyId: COMPANY,
+      usefulLifeMonths: "12",
+    });
+    expect(parsed.companyId).toBe(COMPANY);
+    expect(parsed.usefulLifeMonths).toBe(12);
+    expect(epiCatalogInputSchema.parse(base).companyId).toBeUndefined();
+    expect(
+      epiCatalogInputSchema.parse({ ...base, usefulLifeMonths: "" }).usefulLifeMonths,
+    ).toBeUndefined();
+    expect(() =>
+      epiCatalogInputSchema.parse({ ...base, usefulLifeMonths: "0" }),
+    ).toThrow();
+  });
+
   it("aceita todos os opcionais preenchidos, incluindo caValidUntil ISO", () => {
     const parsed = epiCatalogInputSchema.parse({
       ...base,

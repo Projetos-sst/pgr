@@ -5,6 +5,7 @@ import {
   getEpiCatalogAction,
   listEpiCatalogAuditAction,
 } from "@/shared/server/actions/pgr/epi-catalog";
+import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies";
 
 import { EmptyState, PageHeader } from "../../../_ui/list";
 import { FormSection } from "../../../_ui/form";
@@ -28,12 +29,14 @@ export default async function EditEpiCatalogPage({
 }) {
   await requireOfficeStaffPage();
   const { id } = await params;
-  const [result, auditResult] = await Promise.all([
+  const [result, auditResult, companiesResult] = await Promise.all([
     getEpiCatalogAction(id),
     listEpiCatalogAuditAction(id),
+    listCompanyOptionsAction(),
   ]);
   if (!result.ok) notFound();
   const auditEntries = auditResult.ok ? auditResult.data : [];
+  const companies = companiesResult.ok ? companiesResult.data : [];
 
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
@@ -50,7 +53,7 @@ export default async function EditEpiCatalogPage({
           />
         }
       />
-      <EpiCatalogForm item={result.data} />
+      <EpiCatalogForm item={result.data} companies={companies} />
 
       {/* Histórico de alterações (issue #25): resumo do diff a cada create/update. */}
       <FormSection title="Histórico de alterações" columns={1}>
