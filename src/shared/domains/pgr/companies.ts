@@ -8,6 +8,27 @@ import { optionalString, optionalUrl, requiredString } from "./form-fields";
 export type { Company } from "@/shared/db/schema";
 export type { CompanyOption } from "@/shared/db/repositories/companies";
 
+export const COMPANY_STATUSES = ["active", "pending", "inactive"] as const;
+export type CompanyStatus = (typeof COMPANY_STATUSES)[number];
+
+export const companyStatusSchema = z.enum(COMPANY_STATUSES, {
+  error: "Situação inválida",
+});
+
+/** Rótulos pt-BR da situação cadastral (enum em inglês no banco → UI pt-BR). */
+export const COMPANY_STATUS_LABELS: Record<CompanyStatus, string> = {
+  active: "Ativa",
+  pending: "Pendente",
+  inactive: "Inativa",
+};
+
+/** Tom do badge por situação (verde/âmbar/cinza), fiel ao mockup #188. */
+export const COMPANY_STATUS_TONE: Record<CompanyStatus, "green" | "amber" | "neutral"> = {
+  active: "green",
+  pending: "amber",
+  inactive: "neutral",
+};
+
 const cnpjOptional = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
   cnpjSchema.optional(),
@@ -28,6 +49,8 @@ export const companyInputSchema = z.object({
   riskGrade: riskGradeInput,
   logoPath: optionalString,
   website: optionalUrl,
+  status: companyStatusSchema.default("active"),
+  taxClassification: optionalString,
   zipCode: optionalString,
   street: optionalString,
   number: optionalString,
@@ -46,17 +69,11 @@ export type CompanyListItem = {
   cnpj: string | null;
   city: string | null;
   state: string | null;
+  status: CompanyStatus;
+  /** Contagens derivadas na leitura (sem coluna) — colunas Funcion./GES do #188. */
+  employeeCount: number;
+  gesCount: number;
 };
-
-export function toCompanyListItem(row: Company): CompanyListItem {
-  return {
-    id: row.id,
-    razaoSocial: row.razaoSocial,
-    cnpj: row.cnpj,
-    city: row.city,
-    state: row.state,
-  };
-}
 
 /** Formata CNPJ (14 dígitos) para exibição: 00.000.000/0000-00. */
 export function formatCnpj(cnpj: string | null): string {

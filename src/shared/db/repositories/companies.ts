@@ -2,8 +2,11 @@ import "server-only";
 
 import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 
-import type { CompanyValues, CompanyListItem } from "@/shared/domains/pgr/companies";
-import { toCompanyListItem } from "@/shared/domains/pgr/companies";
+import type {
+  CompanyValues,
+  CompanyListItem,
+  CompanyStatus,
+} from "@/shared/domains/pgr/companies";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { withOrg } from "../with-org";
@@ -14,7 +17,11 @@ import { jobRoles } from "../schema/job-roles";
 import { employees } from "../schema/employees";
 import { auditedTenantWrite } from "./audited-write";
 
-export type ListCompaniesParams = PageParams & { search?: string };
+export type ListCompaniesParams = PageParams & {
+  search?: string;
+  state?: string;
+  status?: CompanyStatus;
+};
 
 export type CompanyDependents = {
   workUnits: number;
@@ -35,6 +42,8 @@ function toCompanyColumns(input: CompanyValues) {
     riskGrade: input.riskGrade,
     logoPath: input.logoPath ?? null,
     website: input.website ?? null,
+    status: input.status,
+    taxClassification: input.taxClassification ?? null,
     zipCode: input.zipCode ?? null,
     street: input.street ?? null,
     number: input.number ?? null,
@@ -56,11 +65,35 @@ export async function listCompanies(
     const term = `%${search}%`;
     filters.push(or(ilike(companies.razaoSocial, term), ilike(companies.cnpj, term))!);
   }
+  if (params.state) filters.push(eq(companies.state, params.state));
+  if (params.status) filters.push(eq(companies.status, params.status));
   const where = and(...filters);
+
+  // Contagens correlacionadas (Funcion./GES do #188) — derivadas na leitura, sem
+  // coluna. Nomes de tabela/coluna são qualificados manualmente: o `sql` do drizzle
+  // renderia `${column}` SEM prefixo de tabela, e dentro da subquery `"id"`/`"company_id"`
+  // colidiriam com a própria `employees`/`ges` (correlação quebrada → sempre 0).
+  const employeeCount = sql<number>`(
+    select count(*)::int from "employees"
+    where "employees"."company_id" = "companies"."id" and "employees"."org_id" = ${orgId}
+  )`;
+  const gesCount = sql<number>`(
+    select count(*)::int from "ges"
+    where "ges"."company_id" = "companies"."id" and "ges"."org_id" = ${orgId}
+  )`;
 
   return withOrg(orgId, async (tx) => {
     const rows = await tx
-      .select()
+      .select({
+        id: companies.id,
+        razaoSocial: companies.razaoSocial,
+        cnpj: companies.cnpj,
+        city: companies.city,
+        state: companies.state,
+        status: companies.status,
+        employeeCount,
+        gesCount,
+      })
       .from(companies)
       .where(where)
       .orderBy(desc(companies.createdAt))
@@ -70,7 +103,7 @@ export async function listCompanies(
       .select({ total: sql<number>`count(*)::int` })
       .from(companies)
       .where(where);
-    return { rows: rows.map(toCompanyListItem), total };
+    return { rows, total };
   });
 }
 

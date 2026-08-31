@@ -239,6 +239,13 @@
       "when": 1788182040977,
       "tag": "0033_pgr_created_by",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1788186099229,
+      "tag": "0034_companies_status_esocial",
+      "breakpoints": true
     }
   ]
 }

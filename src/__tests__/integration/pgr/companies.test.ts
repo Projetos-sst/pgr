@@ -75,6 +75,52 @@ function asOwner(tenantId: string) {
     expect(list.ok && list.data.total).toBe(1);
   });
 
+  it("expõe contagens derivadas de funcionários e GES por empresa", async () => {
+    const result = await listCompaniesAction({});
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const a = result.data.rows.find((r) => r.razaoSocial === "A Ltda");
+      // seed: companyA tem 1 funcionário e 1 GES
+      expect(a?.employeeCount).toBe(1);
+      expect(a?.gesCount).toBe(1);
+    }
+  });
+
+  it("filtra por estado (UF)", async () => {
+    await createCompanyAction({ razaoSocial: "SP Co", riskGrade: "2", state: "SP" });
+    await createCompanyAction({ razaoSocial: "RJ Co", riskGrade: "2", state: "RJ" });
+    const sp = await listCompaniesAction({ state: "SP" });
+    expect(sp.ok && sp.data.rows.every((r) => r.state === "SP")).toBe(true);
+    expect(sp.ok && sp.data.rows.some((r) => r.razaoSocial === "SP Co")).toBe(true);
+    expect(sp.ok && sp.data.rows.some((r) => r.razaoSocial === "RJ Co")).toBe(false);
+  });
+
+  it("persiste status (default active) e filtra por situação", async () => {
+    const pendente = await createCompanyAction({
+      razaoSocial: "Pendente Co",
+      riskGrade: "2",
+      status: "pending",
+    });
+    expect(pendente.ok && pendente.data.status).toBe("pending");
+    const def = await createCompanyAction({ razaoSocial: "Default Co", riskGrade: "2" });
+    expect(def.ok && def.data.status).toBe("active");
+
+    const onlyPending = await listCompaniesAction({ status: "pending" });
+    expect(onlyPending.ok && onlyPending.data.total).toBe(1);
+    expect(
+      onlyPending.ok && onlyPending.data.rows.every((r) => r.status === "pending"),
+    ).toBe(true);
+  });
+
+  it("persiste classificação tributária (eSocial)", async () => {
+    const created = await createCompanyAction({
+      razaoSocial: "eSocial Co",
+      riskGrade: "2",
+      taxClassification: "01",
+    });
+    expect(created.ok && created.data.taxClassification).toBe("01");
+  });
+
   it("create com CNPJ duplicado no mesmo tenant → DUPLICATE", async () => {
     const result = await createCompanyAction({
       razaoSocial: "Clone",

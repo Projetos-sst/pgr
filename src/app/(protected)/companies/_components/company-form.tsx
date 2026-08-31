@@ -9,7 +9,11 @@ import {
   uploadCompanyLogoAction,
 } from "@/shared/server/actions/pgr/companies";
 import type { CompanyInput, Company } from "@/shared/domains/pgr/companies";
-import { maskCnpjInput } from "@/shared/domains/pgr/companies";
+import {
+  maskCnpjInput,
+  COMPANY_STATUSES,
+  COMPANY_STATUS_LABELS,
+} from "@/shared/domains/pgr/companies";
 import { useCnpjLookup } from "@/shared/integrations/client/use-cnpj-lookup";
 
 import {
@@ -28,6 +32,31 @@ const RISK_GRADE_OPTIONS = [1, 2, 3, 4].map((n) => ({
   value: String(n),
   label: `Grau ${n}`,
 }));
+
+const STATUS_OPTIONS = COMPANY_STATUSES.map((s) => ({
+  value: s,
+  label: COMPANY_STATUS_LABELS[s],
+}));
+
+// Códigos mais comuns de classificação tributária do eSocial (S-1000 `classTrib`).
+// Texto livre com sugestões — não bloqueia outros códigos.
+const TAX_CLASSIFICATION_SUGGESTIONS = [
+  "00",
+  "01",
+  "02",
+  "03",
+  "04",
+  "06",
+  "07",
+  "08",
+  "09",
+  "10",
+  "11",
+  "60",
+  "70",
+  "80",
+  "99",
+] as const;
 
 // Campos preenchidos pela consulta de CNPJ — controlados para permitir o autofill.
 type CnpjFields = {
@@ -140,6 +169,8 @@ export function CompanyForm({
       cnae: fields.cnae,
       mainActivity: fields.mainActivity,
       riskGrade: value("riskGrade"),
+      status: value("status") as CompanyInput["status"],
+      taxClassification: value("taxClassification"),
       logoPath,
       website: value("website"),
       ...address,
@@ -200,6 +231,13 @@ export function CompanyForm({
           defaultValue={company?.riskGrade != null ? String(company.riskGrade) : ""}
           options={RISK_GRADE_OPTIONS}
           error={errors.riskGrade}
+        />
+        <SelectField
+          label="Situação"
+          name="status"
+          defaultValue={company?.status ?? "active"}
+          options={STATUS_OPTIONS}
+          error={errors.status}
         />
         <TextField
           label="CNAE"
@@ -266,6 +304,26 @@ export function CompanyForm({
             <span className="text-text-subtle mt-1 block text-xs">Enviando…</span>
           ) : null}
           <FieldError message={logoError ?? errors.logoPath} />
+        </div>
+      </FormSection>
+
+      <FormSection title="eSocial">
+        <TextField
+          label="Classificação tributária (S-1000)"
+          name="taxClassification"
+          isMono
+          placeholder="Ex.: 01"
+          suggestions={TAX_CLASSIFICATION_SUGGESTIONS}
+          defaultValue={company?.taxClassification}
+          error={errors.taxClassification}
+        />
+        <div className="block">
+          <span className="text-text-muted mb-1.5 block text-xs font-semibold">
+            Certificado digital A1 (.pfx)
+          </span>
+          <span className="glass-input rounded-field text-text-subtle flex h-[46px] items-center px-3.5 text-[13px]">
+            Em breve — envio seguro do certificado
+          </span>
         </div>
       </FormSection>
 
