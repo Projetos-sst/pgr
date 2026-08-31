@@ -27,6 +27,12 @@ export async function listMedicoOptionsAction(): Promise<ActionResult<MedicoOpti
   );
 }
 
+export async function listMedicoClinicsAction(): Promise<ActionResult<string[]>> {
+  return officeAction("pgr.medicos.clinics", ({ tenantId }) =>
+    repo.listMedicoClinics(tenantId),
+  );
+}
+
 export async function getMedicoAction(id: string): Promise<ActionResult<Medico>> {
   return officeAction("pgr.medicos.get", async ({ tenantId }) => {
     const medico = await repo.getMedicoById(tenantId, id);

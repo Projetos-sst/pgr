@@ -3,18 +3,21 @@
 import { useRef } from "react";
 
 /**
- * Busca + filtro de status na toolbar (GET). `display: contents` no form deixa
+ * Busca + filtro de empresa (clínica) na toolbar (GET), fiel ao mockup
+ * (`medicos.dc.html`: "Todas as Empresas ▾"). `display: contents` no form deixa
  * os filhos participarem do flex da `ListToolbar`. A busca envia no Enter; o
- * status envia ao mudar — sem botão extra, fiel ao mockup.
+ * filtro de empresa envia ao mudar — sem botão extra.
  */
 export function MedicoFilters({
   basePath,
   search,
-  status,
+  clinic,
+  clinics,
 }: {
   basePath: string;
   search?: string;
-  status?: string;
+  clinic?: string;
+  clinics: string[];
 }) {
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -44,15 +47,18 @@ export function MedicoFilters({
 
       <span className="relative">
         <select
-          name="status"
-          defaultValue={status ?? ""}
+          name="clinic"
+          defaultValue={clinic ?? ""}
           onChange={() => formRef.current?.submit()}
-          aria-label="Filtrar por status"
+          aria-label="Filtrar por empresa"
           className="text-text-muted h-11 cursor-pointer appearance-none rounded-xl border border-white/70 bg-white/50 pr-9 pl-4 text-[13px] font-semibold outline-none"
         >
-          <option value="">Todos os status</option>
-          <option value="active">Ativos</option>
-          <option value="inactive">Inativos</option>
+          <option value="">Todas as Empresas</option>
+          {clinics.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </select>
         <span
           aria-hidden

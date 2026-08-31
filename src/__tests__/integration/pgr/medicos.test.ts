@@ -9,8 +9,10 @@ jest.mock("@/shared/auth/require-office-staff", () => ({
 }));
 
 import { requireOfficeStaff } from "@/shared/auth/require-office-staff";
+import { ForbiddenError } from "@/shared/auth/errors";
 import {
   listMedicosAction,
+  listMedicoClinicsAction,
   getMedicoAction,
   createMedicoAction,
   updateMedicoAction,
@@ -92,6 +94,56 @@ const asOwner = (tenantId: string) =>
 
     const active = await listMedicosAction({ status: "active" });
     expect(active.ok && active.data.rows.every((r) => r.status === "active")).toBe(true);
+  });
+
+  it("filtra por empresa/clínica e lista clínicas distintas do tenant", async () => {
+    await createMedicoAction({
+      name: "Dra. Ana",
+      crm: "CRM 20.001/MA",
+      clinic: "Clínica SanaVida",
+    });
+    await createMedicoAction({
+      name: "Dr. Bruno",
+      crm: "CRM 20.002/MA",
+      clinic: "Clínica SanaVida",
+    });
+    await createMedicoAction({
+      name: "Dr. Caio",
+      crm: "CRM 20.003/MA",
+      clinic: "Autônomo",
+    });
+    await createMedicoAction({ name: "Dr. Davi", crm: "CRM 20.004/MA" }); // sem clínica
+
+    const byClinic = await listMedicosAction({ clinic: "Clínica SanaVida" });
+    expect(byClinic.ok && byClinic.data.total).toBe(2);
+    expect(
+      byClinic.ok && byClinic.data.rows.every((r) => r.clinic === "Clínica SanaVida"),
+    ).toBe(true);
+
+    const clinics = await listMedicoClinicsAction();
+    // distintas, não-nulas, ordenadas — não inclui o médico sem clínica
+    expect(clinics.ok && clinics.data).toEqual(["Autônomo", "Clínica SanaVida"]);
+  });
+
+  it("clínicas não vazam entre tenants", async () => {
+    await createMedicoAction({
+      name: "Dra. Ana",
+      crm: "CRM 21.001/MA",
+      clinic: "Clínica A",
+    });
+    asOwner("org_b");
+    const clinics = await listMedicoClinicsAction();
+    expect(clinics.ok && clinics.data).toEqual([]);
+  });
+
+  it("papel client → FORBIDDEN", async () => {
+    mockedGate.mockRejectedValue(new ForbiddenError());
+    const res = await listMedicosAction({});
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.code).toBe("FORBIDDEN");
+    const clinics = await listMedicoClinicsAction();
+    expect(clinics.ok).toBe(false);
+    if (!clinics.ok) expect(clinics.error.code).toBe("FORBIDDEN");
   });
 
   it("CRM duplicado no mesmo tenant → DUPLICATE", async () => {

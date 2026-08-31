@@ -2633,12 +2633,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/medicos?search=&status=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/medicos?search=&clinic=&status=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "medicos"],
               "query": [
                 {
                   "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "clinic",
                   "value": ""
                 },
                 {

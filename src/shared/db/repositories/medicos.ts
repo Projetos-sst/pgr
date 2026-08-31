@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, ilike, isNotNull, or, sql, type SQL } from "drizzle-orm";
 
 import type {
   MedicoStatus,
@@ -16,6 +16,8 @@ import { auditedTenantWrite } from "./audited-write";
 export type ListMedicosParams = PageParams & {
   search?: string;
   status?: MedicoStatus;
+  /** Filtro por empresa/clínica (coluna `clinic`, texto livre). */
+  clinic?: string;
 };
 
 export async function listMedicos(
@@ -31,6 +33,8 @@ export async function listMedicos(
     );
   }
   if (params.status) filters.push(eq(medicos.status, params.status));
+  const clinic = params.clinic?.trim();
+  if (clinic) filters.push(eq(medicos.clinic, clinic));
   const where = and(...filters);
 
   return withOrg(orgId, async (tx) => {
@@ -58,6 +62,18 @@ export async function listMedicoOptions(orgId: string): Promise<MedicoOption[]> 
       .where(and(eq(medicos.orgId, orgId), eq(medicos.status, "active")))
       .orderBy(asc(medicos.name)),
   );
+}
+
+/** Clínicas/empresas distintas (não nulas) do tenant — popula o filtro da lista. */
+export async function listMedicoClinics(orgId: string): Promise<string[]> {
+  return withOrg(orgId, async (tx) => {
+    const rows = await tx
+      .selectDistinct({ clinic: medicos.clinic })
+      .from(medicos)
+      .where(and(eq(medicos.orgId, orgId), isNotNull(medicos.clinic)))
+      .orderBy(asc(medicos.clinic));
+    return rows.map((r) => r.clinic).filter((c): c is string => c !== null);
+  });
 }
 
 export async function getMedicoById(orgId: string, id: string): Promise<Medico | null> {

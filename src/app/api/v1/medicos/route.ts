@@ -21,6 +21,7 @@ export function GET(req: NextRequest) {
       ...pageParamsFrom(req),
       search: req.nextUrl.searchParams.get("search") ?? undefined,
       status: statusFrom(req),
+      clinic: req.nextUrl.searchParams.get("clinic") ?? undefined,
     }),
   );
 }
