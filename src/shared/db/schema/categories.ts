@@ -3,6 +3,7 @@ import {
   pgEnum,
   text,
   uuid,
+  boolean,
   timestamp,
   index,
   uniqueIndex,
@@ -14,7 +15,8 @@ import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 
-export const categoryType = pgEnum("category_type", ["epi", "machine"]);
+// `supply` (Insumo) adicionado no redesign (#192) — ver migration 0036.
+export const categoryType = pgEnum("category_type", ["epi", "machine", "supply"]);
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -28,6 +30,7 @@ export const categories = pgTable(
     type: categoryType("type").notNull(),
     name: text("name").notNull(),
     note: text("note"),
+    isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

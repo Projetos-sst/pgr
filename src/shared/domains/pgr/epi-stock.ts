@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { requiredUuid } from "./form-fields";
-import { epiMinQuantitySchema } from "./validation";
+import { epiMinQuantitySchema, type CategoryType } from "./validation";
 
 export type { EpiStock } from "@/shared/db/schema/epis";
 
@@ -64,7 +64,7 @@ export type EpiStockListItem = {
 };
 
 export type EpiStockDetail = EpiStockListItem & {
-  type: "epi" | "machine";
+  type: CategoryType;
   categoryId: string;
 };
 

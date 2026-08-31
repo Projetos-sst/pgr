@@ -55,6 +55,7 @@ export type EpiCatalogValues = z.output<typeof epiCatalogInputSchema>;
 const TYPE_LABELS: Record<CategoryType, string> = {
   epi: "EPI",
   machine: "Máquinas e Equipamentos",
+  supply: "Insumo",
 };
 
 /** Campos de negócio auditados, na ordem em que aparecem no resumo. */

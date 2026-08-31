@@ -23,6 +23,12 @@ import {
 const TYPE_OPTIONS = [
   { value: "epi", label: "EPI" },
   { value: "machine", label: "Máquina" },
+  { value: "supply", label: "Insumo" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "true", label: "Ativa" },
+  { value: "false", label: "Inativa" },
 ];
 
 export function CategoryForm({
@@ -45,6 +51,7 @@ export function CategoryForm({
       type: value("type") as CategoryInput["type"],
       name: value("name"),
       note: value("note"),
+      isActive: value("isActive"),
     };
 
     startTransition(async () => {
@@ -80,6 +87,13 @@ export function CategoryForm({
           required
           defaultValue={category?.name}
           error={errors.name}
+        />
+        <SelectField
+          label="Situação"
+          name="isActive"
+          defaultValue={category ? String(category.isActive) : "true"}
+          options={STATUS_OPTIONS}
+          error={errors.isActive}
         />
         <TextField
           label="Observação"

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
 import { listCategoriesAction } from "@/shared/server/actions/pgr/categories";
-import type { CategoryType } from "@/shared/domains/pgr/categories";
+import { CATEGORY_TYPE_LABELS, type CategoryType } from "@/shared/domains/pgr/categories";
 
 import {
   AvatarBadge,
@@ -26,18 +26,17 @@ import { DeleteCategory } from "./_components/delete-category";
 
 export const dynamic = "force-dynamic";
 
-const TYPE_LABELS: Record<CategoryType, string> = { epi: "EPI", machine: "Máquina" };
-
 const TYPE_FILTERS: { value: string; label: string }[] = [
   { value: "", label: "Todos" },
   { value: "epi", label: "EPI" },
   { value: "machine", label: "Máquina" },
+  { value: "supply", label: "Insumo" },
 ];
 
 const TEMPLATE = "1fr 2fr 1.2fr 1.3fr 1.1fr 84px";
 
 function parseType(value?: string): CategoryType | undefined {
-  return value === "epi" || value === "machine" ? value : undefined;
+  return value === "epi" || value === "machine" || value === "supply" ? value : undefined;
 }
 
 type SearchParams = Promise<{ search?: string; page?: string; type?: string }>;
@@ -132,12 +131,16 @@ export default async function CategoriesPage({
                   </Cell>
                   <Cell>
                     <StatusBadge tone={row.type === "epi" ? "indigo" : "neutral"}>
-                      {TYPE_LABELS[row.type]}
+                      {CATEGORY_TYPE_LABELS[row.type]}
                     </StatusBadge>
                   </Cell>
-                  <Cell className="text-text-subtle">—</Cell>
+                  <Cell className={row.itemCount ? undefined : "text-text-subtle"}>
+                    {row.itemCount ? `${row.itemCount} item(ns)` : "—"}
+                  </Cell>
                   <Cell>
-                    <StatusBadge tone="green">Ativa</StatusBadge>
+                    <StatusBadge tone={row.isActive ? "green" : "neutral"}>
+                      {row.isActive ? "Ativa" : "Inativa"}
+                    </StatusBadge>
                   </Cell>
                   <Cell align="right">
                     <RowActions>
