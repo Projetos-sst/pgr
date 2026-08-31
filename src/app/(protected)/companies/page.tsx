@@ -1,5 +1,9 @@
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
-import { formatCnpj } from "@/shared/domains/pgr/companies";
+import {
+  formatCnpj,
+  COMPANY_STATUS_LABELS,
+  COMPANY_STATUS_TONE,
+} from "@/shared/domains/pgr/companies";
 import { resolvePageParams } from "@/shared/pagination";
 import { listCompaniesAction } from "@/shared/server/actions/pgr/companies";
 
@@ -17,6 +21,7 @@ import {
   StatusBadge,
   ToolbarButton,
   ToolbarSearch,
+  ToolbarSelect,
 } from "../_ui/data-list";
 import { EmptyState, PageHeader } from "../_ui/list";
 import { CompanyIcon } from "./_components/company-icon";
@@ -26,7 +31,38 @@ export const dynamic = "force-dynamic";
 
 const TEMPLATE = "2.2fr 1.4fr 1.3fr 0.9fr 0.7fr 100px 84px";
 
-type SearchParams = Promise<{ search?: string; page?: string }>;
+// UFs brasileiras — opções do filtro "Todos os Estados" (#188).
+const UF_OPTIONS = [
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
+].map((uf) => ({ value: uf, label: uf }));
+
+type SearchParams = Promise<{ search?: string; state?: string; page?: string }>;
 
 export default async function CompaniesPage({
   searchParams,
@@ -38,7 +74,11 @@ export default async function CompaniesPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const result = await listCompaniesAction({ search: sp.search, page });
+  const result = await listCompaniesAction({
+    search: sp.search,
+    state: sp.state,
+    page,
+  });
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
 
   return (
@@ -46,7 +86,7 @@ export default async function CompaniesPage({
       <PageHeader
         icon={<CompanyIcon />}
         title="Empresas"
-        description="Empresas-cliente do escritório — raiz da cadeia do PGR"
+        description={`Empresas-cliente do escritório — ${total} cadastrada(s)`}
       />
 
       <ListCard>
@@ -55,6 +95,15 @@ export default async function CompaniesPage({
             basePath="/companies"
             placeholder="Buscar por razão social ou CNPJ…"
             defaultValue={sp.search}
+            hidden={{ state: sp.state }}
+          />
+          <ToolbarSelect
+            basePath="/companies"
+            name="state"
+            defaultValue={sp.state}
+            options={UF_OPTIONS}
+            emptyLabel="Todos os Estados"
+            hidden={{ search: sp.search }}
           />
           <ToolbarButton href="/companies/new">Nova Empresa</ToolbarButton>
         </ListToolbar>
@@ -63,8 +112,8 @@ export default async function CompaniesPage({
           <div className="p-6">
             <EmptyState
               message={
-                sp.search
-                  ? "Nenhuma empresa encontrada para a busca."
+                sp.search || sp.state
+                  ? "Nenhuma empresa encontrada para os filtros."
                   : "Nenhuma empresa cadastrada."
               }
             />
@@ -94,10 +143,16 @@ export default async function CompaniesPage({
                   </Cell>
                   <Cell className="text-text-muted">{formatCnpj(row.cnpj)}</Cell>
                   <Cell>{[row.city, row.state].filter(Boolean).join(" / ") || "—"}</Cell>
-                  <Cell className="text-text-subtle">—</Cell>
-                  <Cell className="text-text-subtle">—</Cell>
+                  <Cell className={row.employeeCount ? undefined : "text-text-subtle"}>
+                    {row.employeeCount}
+                  </Cell>
+                  <Cell className={row.gesCount ? undefined : "text-text-subtle"}>
+                    {row.gesCount}
+                  </Cell>
                   <Cell>
-                    <StatusBadge tone="green">Ativa</StatusBadge>
+                    <StatusBadge tone={COMPANY_STATUS_TONE[row.status]}>
+                      {COMPANY_STATUS_LABELS[row.status]}
+                    </StatusBadge>
                   </Cell>
                   <Cell align="right">
                     <RowActions>
@@ -113,7 +168,7 @@ export default async function CompaniesPage({
               page={page}
               pageSize={pageSize}
               total={total}
-              params={{ search: sp.search }}
+              params={{ search: sp.search, state: sp.state }}
             />
           </>
         )}

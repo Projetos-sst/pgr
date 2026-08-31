@@ -1,9 +1,8 @@
 import {
   companyInputSchema,
-  toCompanyListItem,
+  companyStatusSchema,
   maskCnpjInput,
 } from "@/shared/domains/pgr/companies";
-import type { Company } from "@/shared/db/schema";
 
 describe("companyInputSchema (US1)", () => {
   const base = { razaoSocial: "Acme Ltda", riskGrade: "2" };
@@ -56,23 +55,31 @@ describe("companyInputSchema (US1)", () => {
   });
 });
 
-describe("toCompanyListItem", () => {
-  it("projeta apenas as colunas da lista", () => {
-    const row = {
-      id: "c1",
-      razaoSocial: "Acme",
-      cnpj: "11222333000181",
-      city: "São Paulo",
-      state: "SP",
-      nomeFantasia: "Acme",
-    } as unknown as Company;
-    expect(toCompanyListItem(row)).toEqual({
-      id: "c1",
-      razaoSocial: "Acme",
-      cnpj: "11222333000181",
-      city: "São Paulo",
-      state: "SP",
-    });
+describe("companyStatusSchema / status no input", () => {
+  const base = { razaoSocial: "Acme Ltda", riskGrade: "2" };
+
+  it("status ausente assume 'active' (default)", () => {
+    expect(companyInputSchema.parse(base).status).toBe("active");
+  });
+
+  it("aceita os três status válidos", () => {
+    for (const s of ["active", "pending", "inactive"] as const) {
+      expect(companyStatusSchema.parse(s)).toBe(s);
+      expect(companyInputSchema.parse({ ...base, status: s }).status).toBe(s);
+    }
+  });
+
+  it("rejeita status inválido", () => {
+    expect(() => companyStatusSchema.parse("archived")).toThrow();
+  });
+
+  it("aceita classificação tributária (texto livre opcional)", () => {
+    expect(
+      companyInputSchema.parse({ ...base, taxClassification: "01" }).taxClassification,
+    ).toBe("01");
+    expect(
+      companyInputSchema.parse({ ...base, taxClassification: "" }).taxClassification,
+    ).toBeUndefined();
   });
 });
 

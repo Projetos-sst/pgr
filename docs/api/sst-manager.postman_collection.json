@@ -238,13 +238,23 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/companies?search=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/companies?search=&state=&status=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "companies"],
               "query": [
                 {
                   "key": "search",
                   "value": ""
+                },
+                {
+                  "key": "state",
+                  "value": "",
+                  "description": "UF (ex.: SP)"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "active | pending | inactive"
                 },
                 {
                   "key": "page",

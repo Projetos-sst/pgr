@@ -410,19 +410,24 @@ Resolve o usuário autenticado e a org ativa da sessão (Clerk). Envelope própr
 
 ## Empresa — `actions/pgr/companies.ts`
 
-| Action                       | Entrada                         | Retorno (`data`)                              |
-| ---------------------------- | ------------------------------- | --------------------------------------------- |
-| `listCompaniesAction`        | `{ search?, page?, pageSize? }` | `{ rows: CompanyListItem[]; total }`          |
-| `listCompanyOptionsAction`   | —                               | `CompanyOption[]` (id, razaoSocial, endereço) |
-| `getCompanyAction`           | `id`                            | `Company` (null → `NOT_FOUND`)                |
-| `createCompanyAction`        | `CompanyInput`                  | `Company` (CNPJ dup → `DUPLICATE`)            |
-| `updateCompanyAction`        | `id, CompanyInput`              | `Company`                                     |
-| `deleteCompanyAction`        | `id`                            | `{ id }` (cascata pelo banco)                 |
-| `getCompanyDependentsAction` | `id`                            | `{ workUnits, ges, jobRoles, employees }`     |
+| Action                       | Entrada                                          | Retorno (`data`)                              |
+| ---------------------------- | ------------------------------------------------ | --------------------------------------------- |
+| `listCompaniesAction`        | `{ search?, state?, status?, page?, pageSize? }` | `{ rows: CompanyListItem[]; total }`          |
+| `listCompanyOptionsAction`   | —                                                | `CompanyOption[]` (id, razaoSocial, endereço) |
+| `getCompanyAction`           | `id`                                             | `Company` (null → `NOT_FOUND`)                |
+| `createCompanyAction`        | `CompanyInput`                                   | `Company` (CNPJ dup → `DUPLICATE`)            |
+| `updateCompanyAction`        | `id, CompanyInput`                               | `Company`                                     |
+| `deleteCompanyAction`        | `id`                                             | `{ id }` (cascata pelo banco)                 |
+| `getCompanyDependentsAction` | `id`                                             | `{ workUnits, ges, jobRoles, employees }`     |
 
 **`CompanyInput`**: `razaoSocial*`, `riskGrade*` (1–4), `cnpj?` (14 díg. se preenchido),
-`nomeFantasia?`, `phone?`, `email?`, `cnae?`, `mainActivity?`, `logoPath?`,
-`zipCode? street? number? complement? district? city? state?`.
+`nomeFantasia?`, `phone?`, `email?`, `cnae?`, `mainActivity?`, `status` (`active|pending|inactive`,
+default `active`), `taxClassification?` (código eSocial S-1000 `classTrib`, texto livre), `logoPath?`,
+`zipCode? street? number? complement? district? city? state?`. **`CompanyListItem`** inclui `status` +
+contagens derivadas `employeeCount`/`gesCount` (COUNT por tenant, sem coluna). Filtros do GET:
+`?search=` (razão social/CNPJ), `?state=` (UF), `?status=`. Certificado digital A1 (.pfx) do card
+eSocial fica para fatia futura (credencial — exige armazenamento seguro). Migration
+`0034_companies_status_esocial` (enum `company_status` + `status` + `tax_classification`).
 **`CompanyListItem`**: `{ id, razaoSocial, cnpj, city, state }`.
 
 ## Unidade de Obra — `actions/pgr/work-units.ts`
