@@ -10,6 +10,7 @@ import {
   type ServiceOrderItemSource,
   type ServiceOrderStatus,
 } from "@/shared/domains/safety/service-order";
+import { EXAM_TYPE_LABELS, type ExamType } from "@/shared/domains/pgr/health-exams";
 import {
   createServiceOrderAction,
   getSuggestedItemsAction,
@@ -28,7 +29,9 @@ type ChecklistItem = {
 
 export type ServiceOrderFormInitial = {
   title: string;
+  osType: ExamType | null;
   assignedEmployeeId: string | null;
+  workUnitId: string | null;
   openedAt: string;
   dueDate: string | null;
   status: ServiceOrderStatus;
@@ -39,6 +42,11 @@ const STATUS_OPTIONS = Object.entries(SERVICE_ORDER_STATUS_LABELS).map(
   ([value, label]) => ({ value, label }),
 );
 
+const OS_TYPE_OPTIONS = Object.entries(EXAM_TYPE_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
+
 const SOURCE_LABELS: Record<ServiceOrderItemSource, string> = {
   manual: "Manual",
   risk: "Risco",
@@ -48,10 +56,12 @@ const SOURCE_LABELS: Record<ServiceOrderItemSource, string> = {
 export function ServiceOrderForm({
   id,
   employees,
+  workUnits,
   initial,
 }: {
   id?: string;
   employees: Option[];
+  workUnits: Option[];
   initial?: ServiceOrderFormInitial;
 }) {
   const router = useRouter();
@@ -104,6 +114,10 @@ export function ServiceOrderForm({
     const title = (fd.get("title") as string) ?? "";
     const openedAt = (fd.get("openedAt") as string) ?? "";
     const dueDate = (fd.get("dueDate") as string)?.trim() || undefined;
+    const osType = ((fd.get("osType") as string)?.trim() || undefined) as
+      | ExamType
+      | undefined;
+    const workUnitId = (fd.get("workUnitId") as string)?.trim() || null;
     const assignedEmployeeId = employeeId ? employeeId : null;
     const payloadItems = items.map((i) => ({
       description: i.description,
@@ -115,7 +129,9 @@ export function ServiceOrderForm({
       const result = id
         ? await updateServiceOrderAction(id, {
             title,
+            osType,
             assignedEmployeeId,
+            workUnitId,
             openedAt,
             dueDate,
             status: (fd.get("status") as ServiceOrderStatus) ?? "open",
@@ -123,7 +139,9 @@ export function ServiceOrderForm({
           })
         : await createServiceOrderAction({
             title,
+            osType,
             assignedEmployeeId,
+            workUnitId,
             openedAt,
             dueDate,
             items: payloadItems,
@@ -162,6 +180,40 @@ export function ServiceOrderForm({
           ))}
         </select>
       </label>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label className="flex flex-col gap-1">
+          <span className="text-text-muted text-sm font-semibold">Tipo de OS</span>
+          <select
+            name="osType"
+            defaultValue={initial?.osType ?? ""}
+            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
+          >
+            <option value="">— selecione —</option>
+            {OS_TYPE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-text-muted text-sm font-semibold">Unidade / Obra</span>
+          <select
+            name="workUnitId"
+            defaultValue={initial?.workUnitId ?? ""}
+            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
+          >
+            <option value="">— sem unidade —</option>
+            {workUnits.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TextField

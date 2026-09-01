@@ -209,12 +209,20 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 - **Download de documento — URL assinada (fatia 024, issue #35)**: **`GET /documents/{id}/download`** — devolve `{ url, expiresInSeconds }` (mesmo padrão de `POST /pgr/{id}/signature`/`POST /service-orders/{id}/signature`: JSON com a URL, nunca `302`, o cliente decide o que fazer — abrir aba, `<a download>`, etc). O tenant é resolvido via `getDocumentById` (mesmo caminho do `GET /documents/{id}`) **antes** de assinar; `storage_path` nunca vem do cliente — documento de outro escritório → `404` (nunca revela o path nem chega a assinar). URL expira em **60s** (`SIGNED_DOWNLOAD_URL_TTL_SECONDS`, `createSignedUrl` do Supabase Storage com `download` = nome de exibição do documento + extensão real do arquivo). Bucket `documents` permanece privado (sem acesso público permanente).
 - **Riscos psicossociais (Fase 09)**: **`/psychosocial-campaigns`** — campanha de mapeamento (NR-01/GRO). CRUD da campanha + **sub-entidade `questions`** (add/update/remove/reorder, sempre escopada ao `campaign_id`). `POST` body `{ name, companyId, workUnitId, startsAt?, endsAt?, themeColor?, coverPath?, workerDescription? }`; empresa/obra cross-tenant → `422 FK_NOT_FOUND`; ativar sem perguntas → `422 VALIDATION`. `/{id}/status` transiciona (`draft→active→closed`, `archived` terminal). Dashboard: `/{id}/stats` (média Likert + participação). Riscos: `POST /{id}/risks` **deriva** (upsert idempotente); `POST /{id}/risks/{rid}/register` cria risco no inventário/PGR (agente `psychosocial`) no GES informado. **Rota pública anônima** `/psychosocial-response/{campaignId}/{token}` (fora de `/api/v1`, sem sessão): resolve a campanha pela **policy de capability** do token; respostas gravadas sem vínculo nominal; campanha fechada/fora do período → mensagem amigável. **Migration `0021_psychosocial`** (5 tabelas + 2 enums, tenant-isoladas).
 - **eSocial SST (Fase 10)**: **`/esocial-events`** — eventos S-2190..S-2300. `POST` `{ type, input, referenceId? }` valida o `input` pelo schema do tipo (builder), monta o **XML** (`ambientePadrao="Producao"` fixo) e persiste com status `pending`. Geração a partir de fontes existentes via Server Action (`generateS2200FromEmployee`, `generateS2240FromRisk` — usa código do agente nocivo + unidade do inventário de riscos); origem cross-tenant → `422 FK_NOT_FOUND`. **`/esocial-batches`**: `POST { eventIds }` agrupa os `pending` do tenant num lote (protocolo persistido) e marca `sent` (ids não-pending/cross-tenant são ignorados); `POST /{id}/return` consulta o retorno (**simulado** — sem transmissão externa real) e atualiza cada evento (`accepted`). UI `/esocial` (lista+filtros+seleção múltipla+lote) e `/esocial/detalhe/{id}`. **Migration `0022_esocial`** (2 tabelas + 3 enums; `reference_id` polimórfico; payload XML como texto).
-- **Fase 06 — Ordens de Serviço (fatia 023)**: **`/service-orders`** — OS de SST com itens. `POST`
-  `{ title, openedAt (AAAA-MM-DD), assignedEmployeeId?, dueDate?, items?: [{ description, done? }] }`;
+- **Fase 06 — Ordens de Serviço (fatia 023; redesign fatia 040 — migration `0039_service_order_type`)**:
+  **`/service-orders`** — OS de SST com itens. `POST`
+  `{ title, osType?, openedAt (AAAA-MM-DD), assignedEmployeeId?, workUnitId?, dueDate?, items?: [{ description, done? }] }`;
+  `osType` reusa o enum **`exam_type`** (`admissional|periodic|change_of_function|return_to_work|dismissal`)
+  para o "Tipo de OS" do mockup; `workUnitId` é a unidade/obra (FK `work_units`, `ON DELETE SET NULL`).
   `status` inicial é sempre `open` (não configurável); o **número** é gerado no servidor (`FOR UPDATE` na
   linha do tenant + `max+1`, `UNIQUE(org,number)` backstop) e OS+itens gravam na **mesma transação**.
-  `assignedEmployeeId` cross-tenant → `422 FK_NOT_FOUND`; OS cross-tenant → `404`. `PUT /{id}` (corpo
-  completo `{ title, openedAt, status, items, … }`) bloqueia edição de itens se a OS estiver assinada
+  `assignedEmployeeId`/`workUnitId` cross-tenant → `422 FK_NOT_FOUND`; OS cross-tenant → `404`.
+  **`GET /service-orders`** aceita `?search=` (nome do funcionário, empresa/razão social, título ou nº exato),
+  `?status=` (workflow) e **`?signed=true|false`** (abas "OS Assinadas"/"OS Abertas" — assinatura concluída).
+  A lista deriva `companyName` (funcionário → empresa) e `signatureState`
+  (`none|pending|signed|…` da última solicitação, exibido como Pendente/Enviada/Assinada), sem colunas novas
+  para isso. `PUT /{id}` (corpo completo `{ title, osType?, workUnitId?, openedAt, status, items, … }`)
+  bloqueia edição de itens se a OS estiver assinada
   (imutável); `DELETE` só se **não** assinada e status ∈ {open, in_progress}, senão erro de estado. `PUT
 /{id}/status` transiciona (terminal não volta). **Assinatura**: `POST /{id}/signature` monta o payload
   público **no servidor** e delega a `createSignatureRequestCore` (cota de assinatura compartilhada →

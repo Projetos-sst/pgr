@@ -16,6 +16,11 @@ import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { employees } from "./employees";
+import { workUnits } from "./work-units";
+// Reuso do enum de tipo de exame ocupacional (health-exams): os valores do mockup
+// de "Tipo de OS" (Admissional/Periódico/Mudança de Função/Retorno/Demissional) são
+// exatamente os tipos de ASO — evita um enum duplicado.
+import { examType } from "./health-exams";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -36,7 +41,14 @@ export const serviceOrders = pgTable(
     // Número calculado no servidor (max+1 por tenant, sob lock da linha de orgs).
     number: integer("number").notNull(),
     title: text("title").notNull(),
+    // Tipo da OS de Segurança (NR-01 1.4.1) — reusa o enum exam_type. Nullable:
+    // OSs antigas não têm tipo e o rascunho pode ser salvo antes de defini-lo.
+    osType: examType("os_type"),
     assignedEmployeeId: uuid("assigned_employee_id").references(() => employees.id, {
+      onDelete: "set null",
+    }),
+    // Unidade/obra à qual a OS se refere (escolha do usuário no formulário).
+    workUnitId: uuid("work_unit_id").references(() => workUnits.id, {
       onDelete: "set null",
     }),
     openedAt: date("opened_at").notNull(),
@@ -50,6 +62,7 @@ export const serviceOrders = pgTable(
     index("idx_service_orders_org_id").on(table.orgId),
     index("idx_service_orders_org_status").on(table.orgId, table.status),
     index("idx_service_orders_assigned").on(table.orgId, table.assignedEmployeeId),
+    index("idx_service_orders_work_unit").on(table.orgId, table.workUnitId),
     uniqueIndex("uq_service_orders_org_id_number").on(table.orgId, table.number),
     pgPolicy("service_orders_isolation", {
       for: "all",

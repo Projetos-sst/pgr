@@ -138,6 +138,25 @@ describe("serviceOrderCreateSchema (US2)", () => {
     }));
     expect(() => serviceOrderCreateSchema.parse({ ...base, items })).toThrow();
   });
+
+  it("aceita osType (reuso exam_type) e workUnitId opcionais", () => {
+    const parsed = serviceOrderCreateSchema.parse({
+      ...base,
+      osType: "admissional",
+      workUnitId: "11111111-1111-1111-1111-1111111111a5",
+    });
+    expect(parsed.osType).toBe("admissional");
+    expect(parsed.workUnitId).toBe("11111111-1111-1111-1111-1111111111a5");
+    // ausentes → undefined
+    expect(serviceOrderCreateSchema.parse(base).osType).toBeUndefined();
+  });
+
+  it("rejeita osType fora do enum exam_type e workUnitId não-uuid", () => {
+    expect(() => serviceOrderCreateSchema.parse({ ...base, osType: "bogus" })).toThrow();
+    expect(() =>
+      serviceOrderCreateSchema.parse({ ...base, workUnitId: "nao-uuid" }),
+    ).toThrow();
+  });
 });
 
 describe("serviceOrderUpdateSchema (US2)", () => {
@@ -166,11 +185,14 @@ describe("toServiceOrderListItem (US2)", () => {
         id: "id-1",
         number: 3,
         title: "OS",
+        osType: "admissional",
         status: "open",
         openedAt: "2026-07-10",
         dueDate: null,
         closedAt: null,
         employeeName: "Fulano",
+        companyName: "ACME LTDA",
+        signatureState: "none",
         itemCount: 2,
       },
       "2026-07-16",
@@ -178,5 +200,35 @@ describe("toServiceOrderListItem (US2)", () => {
     expect(item.daysOpen).toBe(6);
     expect(item.statusLabel).toBe("Aberta");
     expect(item.itemCount).toBe(2);
+    expect(item.osTypeLabel).toBe("Admissional");
+    expect(item.companyName).toBe("ACME LTDA");
+    // "none" (nenhuma solicitação) → rótulo "Pendente" na lista.
+    expect(item.signatureLabel).toBe("Pendente");
+  });
+
+  it("mapeia estado de assinatura para os rótulos do mockup", () => {
+    const make = (signatureState: "none" | "pending" | "signed") =>
+      toServiceOrderListItem(
+        {
+          id: "id",
+          number: 1,
+          title: "OS",
+          osType: null,
+          status: "open",
+          openedAt: "2026-07-10",
+          dueDate: null,
+          closedAt: null,
+          employeeName: null,
+          companyName: null,
+          signatureState,
+          itemCount: 0,
+        },
+        "2026-07-16",
+      );
+    expect(make("none").signatureLabel).toBe("Pendente");
+    expect(make("pending").signatureLabel).toBe("Enviada");
+    expect(make("signed").signatureLabel).toBe("Assinada");
+    // osType nulo → sem rótulo (célula "—").
+    expect(make("none").osTypeLabel).toBeNull();
   });
 });
