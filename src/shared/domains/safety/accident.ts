@@ -28,7 +28,13 @@ export type AccidentType = z.infer<typeof accidentTypeSchema>;
 export const accidentCategorySchema = z.enum(["with_leave", "without_leave", "fatal"]);
 export type AccidentCategory = z.infer<typeof accidentCategorySchema>;
 
-export const accidentSeveritySchema = z.enum(["minor", "moderate", "severe", "fatal"]);
+export const accidentSeveritySchema = z.enum([
+  "no_injury",
+  "minor",
+  "moderate",
+  "severe",
+  "fatal",
+]);
 export type AccidentSeverity = z.infer<typeof accidentSeveritySchema>;
 
 export const ACCIDENT_TYPE_LABELS: Record<AccidentType, string> = {
@@ -44,11 +50,27 @@ export const ACCIDENT_CATEGORY_LABELS: Record<AccidentCategory, string> = {
 };
 
 export const ACCIDENT_SEVERITY_LABELS: Record<AccidentSeverity, string> = {
+  no_injury: "Sem lesão",
   minor: "Leve",
   moderate: "Moderada",
   severe: "Grave",
   fatal: "Fatal",
 };
+
+/**
+ * Próximo número do incidente no escopo do tenant: `max(number)+1`, começando em 1.
+ * O lock (`SELECT ... FOR UPDATE` na linha de `orgs`) e o backstop `UNIQUE(org_id, number)`
+ * vivem no repositório; esta função só encapsula a aritmética.
+ */
+export function nextAccidentNumber(currentMax: number | null | undefined): number {
+  if (currentMax == null || !Number.isFinite(currentMax) || currentMax < 0) return 1;
+  return Math.floor(currentMax) + 1;
+}
+
+/** Rótulo de exibição do número do incidente: `INC-0001`. */
+export function formatIncidentNumber(n: number): string {
+  return `INC-${String(n).padStart(4, "0")}`;
+}
 
 export function accidentTypeLabel(value: string | null): string {
   if (!value) return "—";
@@ -190,6 +212,8 @@ export type AccidentFilters = z.infer<typeof accidentFiltersSchema>;
  */
 export type AccidentListItem = {
   id: string;
+  number: number;
+  numberLabel: string;
   occurredAt: string;
   type: string;
   typeLabel: string;
@@ -204,6 +228,7 @@ export type AccidentListItem = {
 
 export function toAccidentListItem(row: {
   id: string;
+  number: number;
   occurredAt: Date;
   type: string;
   category: string;
@@ -213,6 +238,8 @@ export function toAccidentListItem(row: {
 }): AccidentListItem {
   return {
     id: row.id,
+    number: row.number,
+    numberLabel: formatIncidentNumber(row.number),
     occurredAt: row.occurredAt.toISOString(),
     type: row.type,
     typeLabel: accidentTypeLabel(row.type),

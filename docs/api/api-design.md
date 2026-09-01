@@ -231,10 +231,17 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
   `companyName` no payload). `GET /{id}/signature` devolve o estado derivado
   (`none|pending|signed|expired|cancelled`), **nunca** token/URL. Só office staff; `client` → `403`.
   **Zero** upload/base64 aqui.
-- **Fase 06 — Incidentes/Acidentes (fatia 023)**: **`/incidents`** (tabela canônica `accidents`, rótulo de
+- **Fase 06 — Incidentes/Acidentes (fatia 023; redesign fatia 041 — migration
+  `0040_accidents_number_severity`)**: **`/incidents`** (tabela canônica `accidents`, rótulo de
   UI "Incidentes/Acidentes") — registro com enums fechados (`type`, `category`, `severity`) e campos CAT
-  **textuais opcionais** (registro **interno**; **sem** S-2210/`esocial_events`). Dado de saúde é **P0**:
-  só office staff (`client` → `403 FORBIDDEN`), nunca em log/audit/erro. Cross-tenant → `404`. `PUT
+  **textuais opcionais** (registro **interno**; **sem** S-2210/`esocial_events`). Cada incidente tem um
+  **número sequencial por tenant** (`number`, `max+1` sob lock da linha de `orgs`, `UNIQUE(org_id,number)`),
+  exibido como `INC-0001`; `number` é **server-side** (nunca aceito do cliente). `severity` ganhou o nível
+  **`no_injury`** ("Sem lesão") para quase-acidentes. Dado de saúde é **P0**: só office staff (`client` →
+  `403 FORBIDDEN`), nunca em log/audit/erro. **`GET /incidents`** aceita `?search=` (busca **apenas** em
+  campos não-sensíveis: número do incidente, `location`, `responsible_area`, `cat_number` — **nunca** por
+  nome de funcionário/PII, por privacidade) e os filtros `?status`, `?type`, `?category`, `?severity`,
+  `?company_id`, `?employee_id`, `?occurred_from`/`?occurred_to`. Cross-tenant → `404`. `PUT
 /{id}/status` aplica a state machine (`incident-lifecycle`, fonte única); **conclusão** exige justificativa
   e é **bloqueada** enquanto houver plano de ação ativo (→ `422 VALIDATION`). Sem upload de fotos (a aba
   "Fotos" da UI é placeholder).

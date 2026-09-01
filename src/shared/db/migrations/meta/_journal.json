@@ -281,6 +281,13 @@
 			"when": 1788224898050,
 			"tag": "0039_service_order_type",
 			"breakpoints": true
+		},
+		{
+			"idx": 40,
+			"version": "7",
+			"when": 1788226202820,
+			"tag": "0040_accidents_number_severity",
+			"breakpoints": true
 		}
 	]
 }
