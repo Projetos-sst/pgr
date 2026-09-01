@@ -15,7 +15,16 @@ export function GET(req: NextRequest) {
     const { page, pageSize, search } = pageParamsFrom(req);
     const statusParam = req.nextUrl.searchParams.get("status");
     const status = statusParam ? serviceOrderStatusSchema.parse(statusParam) : undefined;
-    return repo.listServiceOrders(tenantId, { page, pageSize, q: search, status });
+    const signedParam = req.nextUrl.searchParams.get("signed");
+    const signed =
+      signedParam == null ? undefined : signedParam === "true" || signedParam === "1";
+    return repo.listServiceOrders(tenantId, {
+      page,
+      pageSize,
+      q: search,
+      status,
+      signed,
+    });
   });
 }
 

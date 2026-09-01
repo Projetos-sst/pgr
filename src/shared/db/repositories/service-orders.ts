@@ -21,9 +21,12 @@ import {
   nextServiceOrderNumber,
 } from "@/shared/domains/safety/service-order-number";
 import {
+  deriveServiceOrderSignatureState,
   SERVICE_ORDER_SIGNED_DELETE_MESSAGE,
   SERVICE_ORDER_SIGNED_EDIT_MESSAGE,
+  SERVICE_ORDER_TARGET_TYPE,
 } from "@/shared/domains/safety/service-order-signature";
+import type { SignatureStatusValue } from "@/shared/domains/signatures/types";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
@@ -31,6 +34,7 @@ import { resolvePageParams, type Paginated } from "@/shared/pagination";
 import { todayInSaoPaulo } from "@/shared/dates";
 
 import {
+  companies,
   employees,
   epiCatalog,
   epiRisk,
@@ -38,6 +42,7 @@ import {
   risks,
   serviceOrderItems,
   serviceOrders,
+  workUnits,
   type ServiceOrder,
   type ServiceOrderItem,
 } from "../schema";
@@ -50,6 +55,31 @@ const countExpr = sql<number>`count(*)::int`;
 const itemCountExpr = sql<number>`(
   select count(*)::int from service_order_items soi
   where soi.service_order_id = "service_orders"."id"
+)`;
+
+// Estado de assinatura derivado da ÚLTIMA solicitação da OS (infra genérica,
+// sem coluna na OS). Dois campos da mesma linha mais recente por created_at.
+const latestSigStatusExpr = sql<SignatureStatusValue | null>`(
+  select sr.status from signature_requests sr
+  where sr.target_type = ${SERVICE_ORDER_TARGET_TYPE}
+    and sr.target_id = "service_orders"."id"
+    and sr.org_id = "service_orders"."org_id"
+  order by sr.created_at desc limit 1
+)`;
+const latestSigExpiresExpr = sql<Date | null>`(
+  select sr.expires_at from signature_requests sr
+  where sr.target_type = ${SERVICE_ORDER_TARGET_TYPE}
+    and sr.target_id = "service_orders"."id"
+    and sr.org_id = "service_orders"."org_id"
+  order by sr.created_at desc limit 1
+)`;
+// EXISTS de captura concluída (usado pelas abas OS Abertas/Assinadas).
+const hasSignedExpr = sql`exists (
+  select 1 from signature_requests sr
+  where sr.target_type = ${SERVICE_ORDER_TARGET_TYPE}
+    and sr.target_id = "service_orders"."id"
+    and sr.org_id = "service_orders"."org_id"
+    and sr.status = 'signed'
 )`;
 
 /** Empregado deve existir no tenant ativo (barreira real de isolamento sob RLS). */
@@ -65,6 +95,21 @@ async function assertEmployeeInTenant(
     .where(and(eq(employees.orgId, orgId), eq(employees.id, employeeId)))
     .limit(1);
   if (!row) throw new ReferenceNotFoundError("employee");
+}
+
+/** Unidade/obra deve existir no tenant ativo (barreira real sob RLS; FK ignora RLS). */
+async function assertWorkUnitInTenant(
+  tx: TenantTransaction,
+  orgId: string,
+  workUnitId: string | null | undefined,
+): Promise<void> {
+  if (!workUnitId) return; // unidade é opcional
+  const [row] = await tx
+    .select({ id: workUnits.id })
+    .from(workUnits)
+    .where(and(eq(workUnits.orgId, orgId), eq(workUnits.id, workUnitId)))
+    .limit(1);
+  if (!row) throw new ReferenceNotFoundError("work_unit");
 }
 
 /** Normaliza os itens recebidos em linhas prontas para inserir, com sort_order determinístico. */
@@ -91,14 +136,21 @@ export async function listServiceOrders(
   const { limit, offset } = resolvePageParams(filters);
   const conditions: SQL[] = [eq(serviceOrders.orgId, orgId)];
   if (filters.status) conditions.push(eq(serviceOrders.status, filters.status));
+  // Abas OS Abertas (não assinadas) / OS Assinadas (assinatura concluída).
+  if (filters.signed === true) conditions.push(hasSignedExpr as SQL);
+  if (filters.signed === false) conditions.push(sql`not ${hasSignedExpr}` as SQL);
   const q = filters.q?.trim();
   if (q) {
     const term = `%${q}%`;
     const numeric = /^\d+$/.test(q) ? Number(q) : null;
+    // Busca por nome do funcionário, empresa (razão social) ou título; nº exato.
+    const textMatch = or(
+      ilike(serviceOrders.title, term),
+      ilike(employees.fullName, term),
+      ilike(companies.razaoSocial, term),
+    )!;
     conditions.push(
-      numeric != null
-        ? or(ilike(serviceOrders.title, term), eq(serviceOrders.number, numeric))!
-        : ilike(serviceOrders.title, term),
+      numeric != null ? or(textMatch, eq(serviceOrders.number, numeric))! : textMatch,
     );
   }
   const where = and(...conditions);
@@ -109,15 +161,20 @@ export async function listServiceOrders(
         id: serviceOrders.id,
         number: serviceOrders.number,
         title: serviceOrders.title,
+        osType: serviceOrders.osType,
         status: serviceOrders.status,
         openedAt: serviceOrders.openedAt,
         dueDate: serviceOrders.dueDate,
         closedAt: serviceOrders.closedAt,
         employeeName: employees.fullName,
+        companyName: companies.razaoSocial,
+        sigStatus: latestSigStatusExpr,
+        sigExpiresAt: latestSigExpiresExpr,
         itemCount: itemCountExpr,
       })
       .from(serviceOrders)
       .leftJoin(employees, eq(employees.id, serviceOrders.assignedEmployeeId))
+      .leftJoin(companies, eq(companies.id, employees.companyId))
       .where(where)
       .orderBy(desc(serviceOrders.number))
       .limit(limit)
@@ -125,8 +182,26 @@ export async function listServiceOrders(
     const [{ total }] = await tx
       .select({ total: countExpr })
       .from(serviceOrders)
+      .leftJoin(employees, eq(employees.id, serviceOrders.assignedEmployeeId))
+      .leftJoin(companies, eq(companies.id, employees.companyId))
       .where(where);
-    return { rows: rows.map((r) => toServiceOrderListItem(r, today)), total };
+    return {
+      rows: rows.map((r) =>
+        toServiceOrderListItem(
+          {
+            ...r,
+            signatureState: deriveServiceOrderSignatureState(
+              r.sigStatus != null && r.sigExpiresAt != null
+                ? // subquery raw devolve timestamp como string → normaliza para Date.
+                  { status: r.sigStatus, expiresAt: new Date(r.sigExpiresAt) }
+                : null,
+            ),
+          },
+          today,
+        ),
+      ),
+      total,
+    };
   });
 }
 
@@ -248,6 +323,7 @@ export async function createServiceOrder(
   return auditedTenantWrite(orgId, WRITE_EVENT, () =>
     withOrg(orgId, async (tx) => {
       await assertEmployeeInTenant(tx, orgId, values.assignedEmployeeId);
+      await assertWorkUnitInTenant(tx, orgId, values.workUnitId);
 
       // Lock da linha do tenant em `orgs`: serializa a numeração POR tenant sem
       // lock global — dois creates concorrentes no mesmo org ganham números
@@ -266,7 +342,9 @@ export async function createServiceOrder(
           orgId,
           number,
           title: values.title,
+          osType: values.osType ?? null,
           assignedEmployeeId: values.assignedEmployeeId ?? null,
+          workUnitId: values.workUnitId ?? null,
           openedAt: values.openedAt,
           dueDate: values.dueDate ?? null,
           status: "open",
@@ -314,11 +392,15 @@ export async function updateServiceOrder(
       const closingNow =
         isServiceOrderTerminal(values.status) && !isServiceOrderTerminal(current.status);
 
+      await assertWorkUnitInTenant(tx, orgId, values.workUnitId);
+
       await tx
         .update(serviceOrders)
         .set({
           title: values.title,
+          osType: values.osType ?? null,
           assignedEmployeeId: values.assignedEmployeeId ?? null,
+          workUnitId: values.workUnitId ?? null,
           openedAt: values.openedAt,
           dueDate: values.dueDate ?? null,
           closedAt: values.closedAt ?? (closingNow ? todayInSaoPaulo() : null),

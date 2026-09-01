@@ -218,6 +218,90 @@ const CREATE = { title: "OS de teste", openedAt: "2026-07-10" };
     expect(done.ok && done.data.total).toBe(0);
   });
 
+  it("persiste osType (exam_type) e workUnitId; detalhe e lista os expõem", async () => {
+    const created = await createServiceOrderAction({
+      ...CREATE,
+      osType: "admissional",
+      assignedEmployeeId: PGR_IDS.employeeA,
+      workUnitId: PGR_IDS.workUnitA,
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const detail = await getServiceOrderAction(created.data.id);
+    if (!detail.ok) return;
+    expect(detail.data.order.osType).toBe("admissional");
+    expect(detail.data.order.workUnitId).toBe(PGR_IDS.workUnitA);
+
+    const list = await listServiceOrdersAction({});
+    if (!list.ok) return;
+    const row = list.data.rows.find((r) => r.id === created.data.id);
+    expect(row?.osTypeLabel).toBe("Admissional");
+    expect(row?.companyName).toBe("A Ltda"); // derivado employee → company
+    expect(row?.employeeName).toBe("Func A");
+  });
+
+  it("workUnit cross-tenant no create → FK_NOT_FOUND (422)", async () => {
+    const result = await createServiceOrderAction({
+      ...CREATE,
+      workUnitId: PGR_IDS.workUnitB, // pertence a org_b
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("FK_NOT_FOUND");
+  });
+
+  it("busca por nome do funcionário e por empresa (razão social)", async () => {
+    await createServiceOrderAction({
+      ...CREATE,
+      title: "Sem funcionário",
+    });
+    await createServiceOrderAction({
+      ...CREATE,
+      title: "Com funcionário",
+      assignedEmployeeId: PGR_IDS.employeeA,
+    });
+
+    const byEmployee = await listServiceOrdersAction({ q: "Func A" });
+    expect(byEmployee.ok && byEmployee.data.rows).toHaveLength(1);
+
+    const byCompany = await listServiceOrdersAction({ q: "A Ltda" });
+    expect(byCompany.ok && byCompany.data.rows).toHaveLength(1);
+  });
+
+  it("estado de assinatura derivado + abas Abertas/Assinadas", async () => {
+    const pendingOs = await createServiceOrderAction({ ...CREATE, title: "Pendente" });
+    const signedOs = await createServiceOrderAction({ ...CREATE, title: "Assinada" });
+    if (!pendingOs.ok || !signedOs.ok) return;
+
+    // Solicitação pendente ativa (não expirada) → "Enviada".
+    await admin`insert into public.signature_requests
+      (org_id, target_type, target_id, token_hash, payload, status, expires_at)
+      values ('org_a','service_order',${pendingOs.data.id},'tok-pending','{}'::jsonb,'pending', now() + interval '3 days')`;
+    // Solicitação assinada → "Assinada".
+    await admin`insert into public.signature_requests
+      (org_id, target_type, target_id, token_hash, payload, status, expires_at)
+      values ('org_a','service_order',${signedOs.data.id},'tok-signed','{}'::jsonb,'signed', now() + interval '3 days')`;
+
+    const all = await listServiceOrdersAction({});
+    if (!all.ok) return;
+    const byId = (id: string) => all.data.rows.find((r) => r.id === id);
+    expect(byId(pendingOs.data.id)?.signatureLabel).toBe("Enviada");
+    expect(byId(signedOs.data.id)?.signatureLabel).toBe("Assinada");
+
+    // Aba "OS Assinadas" (signed=true) só traz a assinada.
+    const signedTab = await listServiceOrdersAction({ signed: true });
+    expect(signedTab.ok && signedTab.data.rows).toHaveLength(1);
+    if (signedTab.ok) expect(signedTab.data.rows[0].id).toBe(signedOs.data.id);
+
+    // Aba "OS Abertas" (signed=false) exclui a assinada.
+    const openTab = await listServiceOrdersAction({ signed: false });
+    if (openTab.ok) {
+      const ids = openTab.data.rows.map((r) => r.id);
+      expect(ids).toContain(pendingOs.data.id);
+      expect(ids).not.toContain(signedOs.data.id);
+    }
+  });
+
   it("atualização substitui a coleção de itens transacionalmente", async () => {
     const created = await createServiceOrderAction({
       ...CREATE,

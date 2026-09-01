@@ -1,279 +1,286 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1779688977439,
-      "tag": "0000_initial_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1779688977440,
-      "tag": "0001_set_updated_at",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1779688977441,
-      "tag": "0002_app_runtime_role",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1781669619411,
-      "tag": "0003_numerous_king_bedlam",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1781845632882,
-      "tag": "0004_modelo_tenant_gate_pro",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1781899271669,
-      "tag": "0005_cadastros_base_pgr",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1782086792789,
-      "tag": "0006_close_data_api_anon_authenticated",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1782104790998,
-      "tag": "0007_epi_data_model",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1782158650494,
-      "tag": "0008_epi_catalog_type_fk",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1782999441246,
-      "tag": "0009_caepi_certificates",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1783271172593,
-      "tag": "0010_digital_signature_infra",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1783271698852,
-      "tag": "0011_epi_delivery_return",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1783293221440,
-      "tag": "0012_pgr_risk_data_model",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1783480147463,
-      "tag": "0013_risk_methodology",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1783489340701,
-      "tag": "0014_epi_risk_link",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1783558609262,
-      "tag": "0015_ai_usage_events",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1783558609263,
-      "tag": "0016_training_module",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1784008554710,
-      "tag": "0017_user_profile_fields",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "7",
-      "when": 1784041870437,
-      "tag": "0018_schedule_events",
-      "breakpoints": true
-    },
-    {
-      "idx": 19,
-      "version": "7",
-      "when": 1784133647554,
-      "tag": "0019_inspections_data_model",
-      "breakpoints": true
-    },
-    {
-      "idx": 20,
-      "version": "7",
-      "when": 1784136699585,
-      "tag": "0020_work_permits",
-      "breakpoints": true
-    },
-    {
-      "idx": 21,
-      "version": "7",
-      "when": 1784161580170,
-      "tag": "0021_psychosocial",
-      "breakpoints": true
-    },
-    {
-      "idx": 22,
-      "version": "7",
-      "when": 1784163996178,
-      "tag": "0022_esocial",
-      "breakpoints": true
-    },
-    {
-      "idx": 23,
-      "version": "7",
-      "when": 1784169526133,
-      "tag": "0023_schedule_events",
-      "breakpoints": true
-    },
-    {
-      "idx": 24,
-      "version": "7",
-      "when": 1784183773612,
-      "tag": "0024_phase_06_safety_workflows",
-      "breakpoints": true
-    },
-    {
-      "idx": 25,
-      "version": "7",
-      "when": 1784427486899,
-      "tag": "0025_documents_data_model",
-      "breakpoints": true
-    },
-    {
-      "idx": 26,
-      "version": "7",
-      "when": 1784600000000,
-      "tag": "0026_user_is_master",
-      "breakpoints": true
-    },
-    {
-      "idx": 27,
-      "version": "7",
-      "when": 1784448304145,
-      "tag": "0027_form_controls",
-      "breakpoints": true
-    },
-    {
-      "idx": 28,
-      "version": "7",
-      "when": 1785079625695,
-      "tag": "0028_pgr_published_at",
-      "breakpoints": true
-    },
-    {
-      "idx": 29,
-      "version": "7",
-      "when": 1785693659214,
-      "tag": "0029_medicos",
-      "breakpoints": true
-    },
-    {
-      "idx": 30,
-      "version": "7",
-      "when": 1785699227221,
-      "tag": "0030_health_exams",
-      "breakpoints": true
-    },
-    {
-      "idx": 31,
-      "version": "7",
-      "when": 1788017775967,
-      "tag": "0031_epgr_correcoes_grupo_a",
-      "breakpoints": true
-    },
-    {
-      "idx": 32,
-      "version": "7",
-      "when": 1788025472481,
-      "tag": "0032_epgr_correcoes_lote2_grupo_1",
-      "breakpoints": true
-    },
-    {
-      "idx": 33,
-      "version": "7",
-      "when": 1788182040977,
-      "tag": "0033_pgr_created_by",
-      "breakpoints": true
-    },
-    {
-      "idx": 34,
-      "version": "7",
-      "when": 1788186099229,
-      "tag": "0034_companies_status_esocial",
-      "breakpoints": true
-    },
-    {
-      "idx": 35,
-      "version": "7",
-      "when": 1788188901668,
-      "tag": "0035_work_units_type_status_dates",
-      "breakpoints": true
-    },
-    {
-      "idx": 36,
-      "version": "7",
-      "when": 1788197331831,
-      "tag": "0036_category_supply_status",
-      "breakpoints": true
-    },
-    {
-      "idx": 37,
-      "version": "7",
-      "when": 1788201426941,
-      "tag": "0037_job_roles_status_sector",
-      "breakpoints": true
-    },
-    {
-      "idx": 38,
-      "version": "7",
-      "when": 1788205173801,
-      "tag": "0038_epi_company_useful_life",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "postgresql",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "7",
+			"when": 1779688977439,
+			"tag": "0000_initial_schema",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1779688977440,
+			"tag": "0001_set_updated_at",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1779688977441,
+			"tag": "0002_app_runtime_role",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1781669619411,
+			"tag": "0003_numerous_king_bedlam",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1781845632882,
+			"tag": "0004_modelo_tenant_gate_pro",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "7",
+			"when": 1781899271669,
+			"tag": "0005_cadastros_base_pgr",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "7",
+			"when": 1782086792789,
+			"tag": "0006_close_data_api_anon_authenticated",
+			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "7",
+			"when": 1782104790998,
+			"tag": "0007_epi_data_model",
+			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "7",
+			"when": 1782158650494,
+			"tag": "0008_epi_catalog_type_fk",
+			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "7",
+			"when": 1782999441246,
+			"tag": "0009_caepi_certificates",
+			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "7",
+			"when": 1783271172593,
+			"tag": "0010_digital_signature_infra",
+			"breakpoints": true
+		},
+		{
+			"idx": 11,
+			"version": "7",
+			"when": 1783271698852,
+			"tag": "0011_epi_delivery_return",
+			"breakpoints": true
+		},
+		{
+			"idx": 12,
+			"version": "7",
+			"when": 1783293221440,
+			"tag": "0012_pgr_risk_data_model",
+			"breakpoints": true
+		},
+		{
+			"idx": 13,
+			"version": "7",
+			"when": 1783480147463,
+			"tag": "0013_risk_methodology",
+			"breakpoints": true
+		},
+		{
+			"idx": 14,
+			"version": "7",
+			"when": 1783489340701,
+			"tag": "0014_epi_risk_link",
+			"breakpoints": true
+		},
+		{
+			"idx": 15,
+			"version": "7",
+			"when": 1783558609262,
+			"tag": "0015_ai_usage_events",
+			"breakpoints": true
+		},
+		{
+			"idx": 16,
+			"version": "7",
+			"when": 1783558609263,
+			"tag": "0016_training_module",
+			"breakpoints": true
+		},
+		{
+			"idx": 17,
+			"version": "7",
+			"when": 1784008554710,
+			"tag": "0017_user_profile_fields",
+			"breakpoints": true
+		},
+		{
+			"idx": 18,
+			"version": "7",
+			"when": 1784041870437,
+			"tag": "0018_schedule_events",
+			"breakpoints": true
+		},
+		{
+			"idx": 19,
+			"version": "7",
+			"when": 1784133647554,
+			"tag": "0019_inspections_data_model",
+			"breakpoints": true
+		},
+		{
+			"idx": 20,
+			"version": "7",
+			"when": 1784136699585,
+			"tag": "0020_work_permits",
+			"breakpoints": true
+		},
+		{
+			"idx": 21,
+			"version": "7",
+			"when": 1784161580170,
+			"tag": "0021_psychosocial",
+			"breakpoints": true
+		},
+		{
+			"idx": 22,
+			"version": "7",
+			"when": 1784163996178,
+			"tag": "0022_esocial",
+			"breakpoints": true
+		},
+		{
+			"idx": 23,
+			"version": "7",
+			"when": 1784169526133,
+			"tag": "0023_schedule_events",
+			"breakpoints": true
+		},
+		{
+			"idx": 24,
+			"version": "7",
+			"when": 1784183773612,
+			"tag": "0024_phase_06_safety_workflows",
+			"breakpoints": true
+		},
+		{
+			"idx": 25,
+			"version": "7",
+			"when": 1784427486899,
+			"tag": "0025_documents_data_model",
+			"breakpoints": true
+		},
+		{
+			"idx": 26,
+			"version": "7",
+			"when": 1784600000000,
+			"tag": "0026_user_is_master",
+			"breakpoints": true
+		},
+		{
+			"idx": 27,
+			"version": "7",
+			"when": 1784448304145,
+			"tag": "0027_form_controls",
+			"breakpoints": true
+		},
+		{
+			"idx": 28,
+			"version": "7",
+			"when": 1785079625695,
+			"tag": "0028_pgr_published_at",
+			"breakpoints": true
+		},
+		{
+			"idx": 29,
+			"version": "7",
+			"when": 1785693659214,
+			"tag": "0029_medicos",
+			"breakpoints": true
+		},
+		{
+			"idx": 30,
+			"version": "7",
+			"when": 1785699227221,
+			"tag": "0030_health_exams",
+			"breakpoints": true
+		},
+		{
+			"idx": 31,
+			"version": "7",
+			"when": 1788017775967,
+			"tag": "0031_epgr_correcoes_grupo_a",
+			"breakpoints": true
+		},
+		{
+			"idx": 32,
+			"version": "7",
+			"when": 1788025472481,
+			"tag": "0032_epgr_correcoes_lote2_grupo_1",
+			"breakpoints": true
+		},
+		{
+			"idx": 33,
+			"version": "7",
+			"when": 1788182040977,
+			"tag": "0033_pgr_created_by",
+			"breakpoints": true
+		},
+		{
+			"idx": 34,
+			"version": "7",
+			"when": 1788186099229,
+			"tag": "0034_companies_status_esocial",
+			"breakpoints": true
+		},
+		{
+			"idx": 35,
+			"version": "7",
+			"when": 1788188901668,
+			"tag": "0035_work_units_type_status_dates",
+			"breakpoints": true
+		},
+		{
+			"idx": 36,
+			"version": "7",
+			"when": 1788197331831,
+			"tag": "0036_category_supply_status",
+			"breakpoints": true
+		},
+		{
+			"idx": 37,
+			"version": "7",
+			"when": 1788201426941,
+			"tag": "0037_job_roles_status_sector",
+			"breakpoints": true
+		},
+		{
+			"idx": 38,
+			"version": "7",
+			"when": 1788205173801,
+			"tag": "0038_epi_company_useful_life",
+			"breakpoints": true
+		},
+		{
+			"idx": 39,
+			"version": "7",
+			"when": 1788224898050,
+			"tag": "0039_service_order_type",
+			"breakpoints": true
+		}
+	]
 }

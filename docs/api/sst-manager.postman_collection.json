@@ -6486,7 +6486,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-orders?page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/service-orders?page=1&pageSize=20&search=&signed=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "service-orders"],
               "query": [
@@ -6497,6 +6497,16 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Nome do funcionário, empresa (razão social), título ou nº exato"
+                },
+                {
+                  "key": "signed",
+                  "value": "",
+                  "description": "true = OS Assinadas · false = OS Abertas (abas)"
                 }
               ]
             }
@@ -6527,7 +6537,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"OS manutencao prensa\",\n  \"openedAt\": \"2026-07-15\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
+              "raw": "{\n  \"title\": \"OS manutencao prensa\",\n  \"osType\": \"admissional\",\n  \"openedAt\": \"2026-07-15\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
             }
           }
         },
@@ -6577,7 +6587,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"OS manutencao prensa (rev)\",\n  \"openedAt\": \"2026-07-15\",\n  \"status\": \"in_progress\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
+              "raw": "{\n  \"title\": \"OS manutencao prensa (rev)\",\n  \"osType\": \"periodic\",\n  \"openedAt\": \"2026-07-15\",\n  \"status\": \"in_progress\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
             }
           }
         },

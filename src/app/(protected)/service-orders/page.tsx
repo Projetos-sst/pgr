@@ -1,10 +1,7 @@
 import Link from "next/link";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
-import {
-  serviceOrderStatusSchema,
-  SERVICE_ORDER_STATUS_LABELS,
-} from "@/shared/domains/safety/service-order";
+import type { ServiceOrderSignatureState } from "@/shared/domains/safety/service-order-signature";
 import { resolvePageParams } from "@/shared/pagination";
 import { listServiceOrdersAction } from "@/shared/server/actions/safety/service-orders";
 
@@ -32,13 +29,6 @@ export const dynamic = "force-dynamic";
 
 const TEMPLATE = "1.6fr 1.4fr 1.2fr 1fr 0.9fr 1.4fr 84px";
 
-const STATUS_TONE: Record<string, StatusTone> = {
-  open: "amber",
-  in_progress: "indigo",
-  completed: "green",
-  cancelled: "red",
-};
-
 // "Dias aberta" como pílula colorida (espelha o mockup): quanto mais tempo em
 // aberto, mais urgente — verde recente, âmbar intermediário, vermelho longo.
 function daysOpenTone(days: number): StatusTone {
@@ -47,7 +37,16 @@ function daysOpenTone(days: number): StatusTone {
   return "red";
 }
 
-type SearchParams = Promise<{ page?: string; search?: string; status?: string }>;
+// Status de assinatura → tom (mockup: Pendente âmbar, Enviada azul, Assinada verde).
+const SIGNATURE_TONE: Record<ServiceOrderSignatureState, StatusTone> = {
+  none: "amber",
+  pending: "indigo",
+  signed: "green",
+  expired: "amber",
+  cancelled: "amber",
+};
+
+type SearchParams = Promise<{ page?: string; search?: string; tab?: string }>;
 
 export default async function ServiceOrdersPage({
   searchParams,
@@ -59,51 +58,46 @@ export default async function ServiceOrdersPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const parsedStatus = serviceOrderStatusSchema.safeParse(sp.status);
-  const status = parsedStatus.success ? parsedStatus.data : undefined;
+  // Abas do mockup: "OS Abertas" (não assinadas, padrão) e "OS Assinadas".
+  const signed = sp.tab === "assinadas";
 
-  const result = await listServiceOrdersAction({ page, q: sp.search, status });
+  const result = await listServiceOrdersAction({ page, q: sp.search, signed });
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
-  const params = { search: sp.search, status: sp.status };
+  const params = { search: sp.search, tab: sp.tab };
+
+  const TABS = [
+    { key: undefined, label: "OS Abertas", active: !signed },
+    { key: "assinadas", label: "OS Assinadas", active: signed },
+  ] as const;
 
   return (
     <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
         icon={<ServiceOrderIcon />}
-        title="Ordens de Serviço"
-        description="Entrega de EPIs e instruções ao trabalhador, com checklist e número por escritório"
+        title="Gestão de OS"
+        description="Acompanhe o progresso e gerencie as Ordens de Serviço registradas."
       />
 
       <ListCard>
         <ListToolbar>
           <ToolbarSearch
             basePath="/service-orders"
-            placeholder="Buscar por título ou número…"
+            placeholder="Buscar por nome, empresa ou tipo de OS…"
             defaultValue={sp.search}
-            hidden={{ status: sp.status }}
+            hidden={{ tab: sp.tab }}
           />
           <div className="flex flex-wrap items-center gap-1.5">
-            <Link
-              href="/service-orders"
-              className={`rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-colors ${
-                !sp.status
-                  ? "btn-primary"
-                  : "text-text-muted hover:text-text border border-white/70 bg-white/50"
-              }`}
-            >
-              Todas
-            </Link>
-            {Object.entries(SERVICE_ORDER_STATUS_LABELS).map(([value, label]) => (
+            {TABS.map((tab) => (
               <Link
-                key={value}
-                href={`/service-orders?status=${value}`}
+                key={tab.label}
+                href={tab.key ? `/service-orders?tab=${tab.key}` : "/service-orders"}
                 className={`rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-colors ${
-                  sp.status === value
+                  tab.active
                     ? "btn-primary"
                     : "text-text-muted hover:text-text border border-white/70 bg-white/50"
                 }`}
               >
-                {label}
+                {tab.label}
               </Link>
             ))}
           </div>
@@ -121,11 +115,11 @@ export default async function ServiceOrdersPage({
                 template={TEMPLATE}
                 columns={[
                   { header: "Funcionário" },
-                  { header: "OS" },
+                  { header: "Empresa" },
                   { header: "Tipo OS" },
                   { header: "Data Emissão" },
                   { header: "Dias Aberta" },
-                  { header: "Status" },
+                  { header: "Status Assinatura" },
                   { header: "Opções", align: "right" },
                 ]}
               />
@@ -139,10 +133,8 @@ export default async function ServiceOrdersPage({
                       </span>
                     </span>
                   </Cell>
-                  <Cell className="text-primary font-mono font-semibold">
-                    #{row.number}
-                  </Cell>
-                  <Cell>{row.title}</Cell>
+                  <Cell>{row.companyName ?? "—"}</Cell>
+                  <Cell>{row.osTypeLabel ?? "—"}</Cell>
                   <Cell className="text-text-muted font-mono">{row.openedAt}</Cell>
                   <Cell>
                     <StatusBadge tone={daysOpenTone(row.daysOpen)}>
@@ -150,8 +142,8 @@ export default async function ServiceOrdersPage({
                     </StatusBadge>
                   </Cell>
                   <Cell>
-                    <StatusBadge tone={STATUS_TONE[row.status] ?? "neutral"}>
-                      {row.statusLabel}
+                    <StatusBadge tone={SIGNATURE_TONE[row.signatureState] ?? "neutral"}>
+                      {row.signatureLabel}
                     </StatusBadge>
                   </Cell>
                   <Cell align="right">

@@ -3,9 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import type { ServiceOrderStatus } from "@/shared/domains/safety/service-order";
 import { isServiceOrderSigned } from "@/shared/domains/safety/service-order-signature";
+import type { ExamType } from "@/shared/domains/pgr/health-exams";
 import {
   getServiceOrderAction,
   listEmployeeOptionsAction,
+  listWorkUnitOptionsAction,
 } from "@/shared/server/actions/safety/service-orders";
 import { getServiceOrderSignatureViewAction } from "@/shared/server/actions/safety/service-order-signature";
 
@@ -21,13 +23,15 @@ export default async function EditServiceOrderPage({
 }) {
   await requireOfficeStaffPage();
   const { id } = await params;
-  const [result, employeesResult] = await Promise.all([
+  const [result, employeesResult, workUnitsResult] = await Promise.all([
     getServiceOrderAction(id),
     listEmployeeOptionsAction(),
+    listWorkUnitOptionsAction(),
   ]);
   if (!result.ok) notFound();
   const { order, items } = result.data;
   const employees = employeesResult.ok ? employeesResult.data : [];
+  const workUnits = workUnitsResult.ok ? workUnitsResult.data : [];
 
   // OS assinada é imutável: a UI apenas antecipa o bloqueio que o repositório aplica de fato.
   const signatureResult = await getServiceOrderSignatureViewAction({
@@ -46,9 +50,12 @@ export default async function EditServiceOrderPage({
       <ServiceOrderForm
         id={id}
         employees={employees}
+        workUnits={workUnits}
         initial={{
           title: order.title,
+          osType: (order.osType as ExamType | null) ?? null,
           assignedEmployeeId: order.assignedEmployeeId,
+          workUnitId: order.workUnitId,
           openedAt: order.openedAt,
           dueDate: order.dueDate,
           status: order.status as ServiceOrderStatus,

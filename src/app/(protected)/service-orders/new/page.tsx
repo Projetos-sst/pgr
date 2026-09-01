@@ -1,5 +1,8 @@
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
-import { listEmployeeOptionsAction } from "@/shared/server/actions/safety/service-orders";
+import {
+  listEmployeeOptionsAction,
+  listWorkUnitOptionsAction,
+} from "@/shared/server/actions/safety/service-orders";
 import { todayInSaoPaulo } from "@/shared/dates";
 
 import { PageHeader } from "../../_ui/list";
@@ -16,11 +19,13 @@ export default async function NewServiceOrderPage({
   searchParams: SearchParams;
 }) {
   await requireOfficeStaffPage();
-  const [employeesResult, sp] = await Promise.all([
+  const [employeesResult, workUnitsResult, sp] = await Promise.all([
     listEmployeeOptionsAction(),
+    listWorkUnitOptionsAction(),
     searchParams,
   ]);
   const employees = employeesResult.ok ? employeesResult.data : [];
+  const workUnits = workUnitsResult.ok ? workUnitsResult.data : [];
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
@@ -31,9 +36,12 @@ export default async function NewServiceOrderPage({
       <OnboardingTip stepKey="serviceOrders" show={sp.onboarding === "1"} />
       <ServiceOrderForm
         employees={employees}
+        workUnits={workUnits}
         initial={{
           title: "",
+          osType: null,
           assignedEmployeeId: sp.employeeId ?? null,
+          workUnitId: null,
           openedAt: todayInSaoPaulo(),
           dueDate: null,
           status: "open",

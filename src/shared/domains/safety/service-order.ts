@@ -1,9 +1,12 @@
 import { z } from "zod";
 
 import { optionalIsoDate, optionalUuid } from "@/shared/domains/pgr/form-fields";
+import { EXAM_TYPE_LABELS, examTypeSchema } from "@/shared/domains/pgr/health-exams";
+import type { ExamType } from "@/shared/domains/pgr/health-exams";
 import type { ServiceOrder, ServiceOrderItem } from "@/shared/db/schema";
 
 import { computeDaysOpen } from "./service-order-number";
+import type { ServiceOrderSignatureState } from "./service-order-signature";
 
 // ── Status ────────────────────────────────────────────────────────────────────
 
@@ -111,7 +114,9 @@ const titleField = z
 export const serviceOrderCreateSchema = z
   .object({
     title: titleField,
+    osType: examTypeSchema.optional(),
     assignedEmployeeId: optionalUuid.nullable().optional(),
+    workUnitId: optionalUuid.nullable().optional(),
     openedAt: z.iso.date("Data de abertura inválida (use AAAA-MM-DD)"),
     dueDate: optionalIsoDate,
     items: itemsField,
@@ -128,7 +133,9 @@ export type ServiceOrderCreateValues = z.output<typeof serviceOrderCreateSchema>
 export const serviceOrderUpdateSchema = z
   .object({
     title: titleField,
+    osType: examTypeSchema.optional(),
     assignedEmployeeId: optionalUuid.nullable().optional(),
+    workUnitId: optionalUuid.nullable().optional(),
     openedAt: z.iso.date("Data de abertura inválida (use AAAA-MM-DD)"),
     dueDate: optionalIsoDate,
     closedAt: optionalIsoDate,
@@ -144,12 +151,45 @@ export type ServiceOrderUpdateValues = z.output<typeof serviceOrderUpdateSchema>
 export const serviceOrderFiltersSchema = z
   .object({
     status: serviceOrderStatusSchema.optional(),
+    // Abas do mockup "OS Abertas" / "OS Assinadas": filtra por assinatura concluída.
+    signed: z.coerce.boolean().optional(),
     q: z.string().trim().optional(),
     page: z.coerce.number().int().min(1).optional(),
     pageSize: z.coerce.number().int().min(1).optional(),
   })
   .strict();
 export type ServiceOrderFilters = z.infer<typeof serviceOrderFiltersSchema>;
+
+// ── Tipo de OS (reusa rótulos de exam_type) ─────────────────────────────────────
+
+export function serviceOrderTypeLabel(value: string | null): string | null {
+  if (!value) return null;
+  return EXAM_TYPE_LABELS[value as ExamType] ?? value;
+}
+
+// ── Status de assinatura (view da lista) ────────────────────────────────────────
+
+/**
+ * Mapeia o estado derivado de assinatura para os 3 rótulos do mockup:
+ * "Pendente" (nada enviado ainda / expirado / cancelado), "Enviada" (solicitação
+ * pendente ativa) e "Assinada" (captura concluída).
+ */
+export const SERVICE_ORDER_SIGNATURE_LIST_LABELS: Record<
+  ServiceOrderSignatureState,
+  string
+> = {
+  none: "Pendente",
+  pending: "Enviada",
+  signed: "Assinada",
+  expired: "Pendente",
+  cancelled: "Pendente",
+};
+
+export function serviceOrderSignatureListLabel(
+  state: ServiceOrderSignatureState,
+): string {
+  return SERVICE_ORDER_SIGNATURE_LIST_LABELS[state];
+}
 
 // ── View models ──────────────────────────────────────────────────────────────
 
@@ -163,6 +203,8 @@ export type ServiceOrderListItem = {
   id: string;
   number: number;
   title: string;
+  osType: string | null;
+  osTypeLabel: string | null;
   status: string;
   statusLabel: string;
   openedAt: string;
@@ -170,6 +212,9 @@ export type ServiceOrderListItem = {
   closedAt: string | null;
   daysOpen: number;
   employeeName: string | null;
+  companyName: string | null;
+  signatureState: ServiceOrderSignatureState;
+  signatureLabel: string;
   itemCount: number;
 };
 
@@ -186,11 +231,14 @@ export function toServiceOrderListItem(
     id: string;
     number: number;
     title: string;
+    osType: string | null;
     status: string;
     openedAt: string;
     dueDate: string | null;
     closedAt: string | null;
     employeeName: string | null;
+    companyName: string | null;
+    signatureState: ServiceOrderSignatureState;
     itemCount: number;
   },
   today: string,
@@ -199,6 +247,8 @@ export function toServiceOrderListItem(
     id: row.id,
     number: row.number,
     title: row.title,
+    osType: row.osType,
+    osTypeLabel: serviceOrderTypeLabel(row.osType),
     status: row.status,
     statusLabel: serviceOrderStatusLabel(row.status),
     openedAt: row.openedAt,
@@ -206,6 +256,9 @@ export function toServiceOrderListItem(
     closedAt: row.closedAt,
     daysOpen: computeDaysOpen(row.openedAt, row.closedAt, today),
     employeeName: row.employeeName,
+    companyName: row.companyName,
+    signatureState: row.signatureState,
+    signatureLabel: serviceOrderSignatureListLabel(row.signatureState),
     itemCount: row.itemCount,
   };
 }
