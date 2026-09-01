@@ -45,8 +45,16 @@ const TYPE_LABELS: Record<string, string> = {
 
 type CategoryOption = { value: string; label: string };
 type CategoriesStatus = "idle" | "loading" | "loaded" | "error";
+/** Empresa para o select — tipo local (evita importar o repositório no client). */
+type CompanyPick = { id: string; razaoSocial: string };
 
-export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
+export function EpiCatalogForm({
+  item,
+  companies = [],
+}: {
+  item?: EpiCatalog;
+  companies?: CompanyPick[];
+}) {
   const router = useRouter();
   const [type, setType] = useState<string>(item?.type ?? "");
   const [categoryId, setCategoryId] = useState<string>(item?.categoryId ?? "");
@@ -219,6 +227,8 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
         material: value("material"),
         size: value("size"),
         unitOfMeasure: value("unitOfMeasure"),
+        companyId: value("companyId") || undefined,
+        usefulLifeMonths: value("usefulLifeMonths"),
         description: value("description"),
         photoPath: finalPhotoPath,
         replacementDate,
@@ -384,8 +394,26 @@ export function EpiCatalogForm({ item }: { item?: EpiCatalog }) {
           defaultValue={item?.unitOfMeasure}
           error={errors.unitOfMeasure}
         />
+        <SelectField
+          label="Empresa"
+          name="companyId"
+          defaultValue={item?.companyId ?? ""}
+          options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
+          emptyLabel="— escritório (todas) —"
+          error={errors.companyId}
+        />
         <TextField
-          label="Descrição"
+          label="Vida útil (meses)"
+          name="usefulLifeMonths"
+          type="number"
+          placeholder="Ex.: 12"
+          defaultValue={
+            item?.usefulLifeMonths != null ? String(item.usefulLifeMonths) : ""
+          }
+          error={errors.usefulLifeMonths}
+        />
+        <TextField
+          label="Observações"
           name="description"
           isFullWidth
           defaultValue={item?.description}

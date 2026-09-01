@@ -3,8 +3,10 @@
 import { useCaepiValidation, type CaFound } from "./use-caepi-validation";
 import type { CaepiValidationStatus } from "./use-caepi-validation";
 
+// Tokens do design system (espelha o `fieldClass` de `_ui/form.tsx`) — antes usava
+// `rounded-md border-black/15`, fora do padrão glass/indigo do PGR (#201).
 const inputClass =
-  "rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:bg-zinc-900";
+  "glass-input text-text placeholder:text-text-subtle rounded-field h-[46px] w-full px-3.5 text-[13px] font-mono outline-none";
 
 /**
  * Campo de CA plugável no formulário de EPI (#18): lookup no blur contra o
@@ -33,8 +35,8 @@ export function CaField({
   const caepi = useCaepiValidation(onFound, onNotFound);
 
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium">{label}</span>
+    <label className="block">
+      <span className="text-text-muted mb-1.5 block text-xs font-semibold">{label}</span>
       <input
         name={name}
         type="text"
@@ -44,11 +46,13 @@ export function CaField({
         onChange={(e) => onChange(e.target.value)}
         onBlur={() => caepi.lookup(value)}
       />
-      <CaStatus
-        status={caepi.status}
-        baseUnsynced={caepi.data?.status === "not_found" && caepi.data.baseUnsynced}
-      />
-      {error ? <p className="mt-1 text-sm text-red-600">{error}</p> : null}
+      <span className="mt-1 block">
+        <CaStatus
+          status={caepi.status}
+          baseUnsynced={caepi.data?.status === "not_found" && caepi.data.baseUnsynced}
+        />
+      </span>
+      {error ? <p className="text-danger mt-1 text-xs">{error}</p> : null}
     </label>
   );
 }
