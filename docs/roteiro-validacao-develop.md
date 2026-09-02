@@ -38,10 +38,11 @@ curl -s -o /dev/null -w "%{http_code}\n" https://openrouter.ai/api/v1/key \
   -H "Authorization: Bearer $OPENROUTER_API_KEY"   # espera-se 200
 ```
 
-Demais variáveis já têm default medido — só mexam se forem testar troca de modelo:
-`AI_SUGGESTION_MODEL` (`minimax/minimax-m3:free`), `AI_FALLBACK_MODELS` (dois fallbacks em
-ordem), `AI_MAX_RETRIES_PER_MODEL` (`2`). São lidas **a cada execução**: trocar de modelo
-não pede rebuild, só reinício do processo.
+Só há duas variáveis de modelo, ambas com default medido — mexam nelas apenas para testar
+troca de modelo: `AI_SUGGESTION_MODEL` (primário, `minimax/minimax-m3:free`) e
+`AI_FALLBACK_MODEL` (`cohere/north-mini-code:free`, usado quando o primário esgota as
+tentativas). São lidas **a cada execução**: trocar de modelo não pede rebuild, só reinício
+do processo.
 
 ### 2. Migration dos buckets (bloqueia o Bloco B)
 

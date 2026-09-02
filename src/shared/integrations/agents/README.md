@@ -77,8 +77,7 @@ funcionar de fato no tier gratuito.
 | --------------------------- | ------------------------------------------------------------------- |
 | `OPENROUTER_API_KEY`        | Chave do provedor. **Server-only**; ausente → `AI_UNAVAILABLE`.     |
 | `AI_SUGGESTION_MODEL`       | Modelo primário (id do catálogo da OpenRouter).                     |
-| `AI_FALLBACK_MODELS`        | Fallbacks separados por vírgula, na ordem de tentativa.             |
-| `AI_MAX_RETRIES_PER_MODEL`  | Tentativas por modelo antes de cair para o próximo.                 |
+| `AI_FALLBACK_MODEL`         | Modelo usado quando o primário esgota os retries.                   |
 | `OPENROUTER_BASE_URL`       | Override da base URL. Só em teste/E2E, apontando ao mock local.     |
 | `MASTRA_TELEMETRY_DISABLED` | `1` — a plataforma trata dado de saúde e não exporta para terceiro. |
 
