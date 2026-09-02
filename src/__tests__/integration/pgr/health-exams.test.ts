@@ -104,6 +104,29 @@ const asOwner = (tenantId: string) =>
 
     const byName = await listHealthExamsAction({ search: "Func A" });
     expect(byName.ok && byName.data.total).toBe(2);
+
+    // Busca por "exame" (rótulo do tipo): "periód" casa só os periódicos.
+    const byExam = await listHealthExamsAction({ search: "periód" });
+    expect(byExam.ok && byExam.data.total).toBe(1);
+    if (byExam.ok) expect(byExam.data.rows[0].examType).toBe("periodic");
+  });
+
+  it("médico cross-tenant → FK_NOT_FOUND", async () => {
+    asOwner("org_b");
+    const docB = await createMedicoAction({ name: "Dr. B", crm: "CRM 99/PA" });
+    expect(docB.ok).toBe(true);
+    if (!docB.ok) return;
+
+    asOwner("org_a");
+    const result = await createHealthExamAction({
+      employeeId: PGR_IDS.employeeA,
+      doctorId: docB.data.id, // médico de org_b
+      examType: "admissional",
+      performedAt: "2026-01-14",
+      aptitude: "fit",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("FK_NOT_FOUND");
   });
 
   it("funcionário inexistente/cross-tenant → FK_NOT_FOUND", async () => {

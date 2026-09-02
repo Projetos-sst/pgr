@@ -2826,7 +2826,8 @@
               "query": [
                 {
                   "key": "search",
-                  "value": ""
+                  "value": "",
+                  "description": "Nome do funcionário ou rótulo do tipo de exame (ex.: periód)"
                 },
                 {
                   "key": "examType",

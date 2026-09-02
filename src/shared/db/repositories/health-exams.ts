@@ -1,11 +1,13 @@
 import "server-only";
 
-import { and, desc, eq, ilike, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 
-import type {
-  ExamType,
-  HealthExamListItem,
-  HealthExamValues,
+import {
+  EXAM_TYPES,
+  EXAM_TYPE_LABELS,
+  type ExamType,
+  type HealthExamListItem,
+  type HealthExamValues,
 } from "@/shared/domains/pgr/health-exams";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
@@ -54,7 +56,23 @@ export async function listHealthExams(
   const { limit, offset } = resolvePageParams(params);
   const search = params.search?.trim();
   const filters: SQL[] = [eq(healthExams.orgId, orgId)];
-  if (search) filters.push(ilike(employees.fullName, `%${search}%`));
+  if (search) {
+    // "Buscar por funcionário ou exame": nome do funcionário OU rótulo do tipo de
+    // exame (ex.: "periódico" → exames periodic). Sem PII adicional exposta.
+    const term = `%${search}%`;
+    const needle = search.toLowerCase();
+    const matchedTypes = EXAM_TYPES.filter((t) =>
+      EXAM_TYPE_LABELS[t].toLowerCase().includes(needle),
+    );
+    filters.push(
+      matchedTypes.length > 0
+        ? or(
+            ilike(employees.fullName, term),
+            inArray(healthExams.examType, [...matchedTypes]),
+          )!
+        : ilike(employees.fullName, term),
+    );
+  }
   if (params.examType) filters.push(eq(healthExams.examType, params.examType));
   const where = and(...filters);
 
