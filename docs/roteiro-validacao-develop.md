@@ -144,25 +144,120 @@ visual é bug.
 
 # Bloco B — Issues da avaliação e-PGR
 
-## B1 · Upload de binários — #4 (logo), #16 (foto do empregado), #30 (foto do EPI)
+## B1 · Storage / buckets — #4 (logo), #16 (foto do empregado), #30 (foto do EPI), #35 (GED), #39 (PDF em lote)
 
-**A parte mais frágil da leva** e a que só se valida com o Supabase real. As três issues
-já tinham sido fechadas antes com o código certo; o que faltava era o bucket existir.
+**Testem esta seção inteira, sem pular.** Integração com bucket é onde mais escapa erro:
+o código compila, o teste unitário passa com o cliente mockado, e a falha só aparece
+contra o Storage real — nome de bucket errado, path fora da partição do tenant, URL
+assinada que expira antes do uso, objeto órfão quando a gravação no banco falha depois do
+upload. As issues #4 e #16 são exatamente esse caso: foram fechadas com o código correto e
+o upload continuou quebrado por meses porque **o bucket não existia**.
 
-| Onde                            | Bucket                | Limite        |
-| ------------------------------- | --------------------- | ------------- |
-| `/companies/{id}/edit` — logo   | `company-logos`       | 5 MB, PNG/JPG |
-| `/employees/{id}/edit` — foto   | `employee-photos`     | 5 MB, PNG/JPG |
-| `/epi-catalog/{id}/edit` — foto | `documents` (reusado) | idem          |
+### Mapa do que existe hoje
 
-- [ ] Upload nas três telas, com **preview** aparecendo depois de gravar
-- [ ] Reabrir a tela: o preview volta (URL assinada, TTL 1h) — não pode ficar quebrado
-- [ ] **PNG e JPG** passam; **PDF, SVG, WEBP e GIF** são recusados com mensagem clara
-- [ ] Arquivo **acima de 5 MB** recusado
-- [ ] Arquivo de 0 byte recusado
-- [ ] **Isolamento (obrigatório):** o path é particionado por `org_id` **da sessão**. Confirmem em `storage.objects` que o objeto nasceu sob o `org_id` certo e que usuário de outro tenant não alcança o binário
-- [ ] Substituir a imagem: o preview novo aparece. O objeto antigo fica órfão no bucket **de propósito** (custo desprezível, sem job de limpeza nesta correção) — **não é bug**
-- [ ] Logo da empresa aparece no **PDF do PGR** consolidado
+| Uso                       | Bucket                | Path                                     | Sobrescreve?                         | Validação de tipo/tamanho        |
+| ------------------------- | --------------------- | ---------------------------------------- | ------------------------------------ | -------------------------------- |
+| Logo da empresa (#4)      | `company-logos`       | `<org>/logos/<uuid>.<ext>`               | não (`upsert:false`)                 | app **e** bucket (5 MB, PNG/JPG) |
+| Foto do empregado (#16)   | `employee-photos`     | `<org>/fotos/<uuid>.<ext>`               | não                                  | app **e** bucket (5 MB, PNG/JPG) |
+| Foto do item de EPI (#30) | `documents` (reusado) | `<org>/epi-catalog/<uuid>/foto.<ext>`    | **sim** (`upsert:true`)              | **só o app**                     |
+| Documento do GED (#35)    | `documents`           | `<org>/documentos/<grupo>/v<n>-<slug>`   | não                                  | app (25 MB)                      |
+| PDF gerado em lote (#39)  | `documents`           | `<org>/documentos/generated/<docId>.pdf` | **sim** — é a idempotência do worker | n/a (gerado no servidor)         |
+
+Três fatos que orientam o teste: o app fala com o Storage pela **service key**, que ignora
+RLS — o isolamento vem **do path**, particionado por `org_id` **da sessão**; todos os
+buckets são **privados**, então todo acesso é por **URL assinada**; e o bucket `documents`
+**não tem limite nem allowlist no nível do bucket**, então para a foto do EPI a validação
+da aplicação é a **única** barreira.
+
+### B1.1 — Provisionamento (faça antes de tudo)
+
+- [ ] `npm run db:migrate` aplicou a `0045` no Supabase de develop
+- [ ] Os três buckets existem, **privados**, e com a configuração certa:
+
+```sql
+select id, public, file_size_limit, allowed_mime_types from storage.buckets;
+-- documents        | false | null    | null
+-- company-logos    | false | 5242880 | {image/png,image/jpeg}
+-- employee-photos  | false | 5242880 | {image/png,image/jpeg}
+```
+
+- [ ] **Armadilha do `ON CONFLICT DO NOTHING`:** se alguém já tinha criado `company-logos`
+      ou `employee-photos` à mão no painel — público, ou com limite diferente —, a migration
+      **preserva a linha existente e não corrige nada**. Confiram os valores acima um a um.
+      Se divergirem, ajustem no painel e registrem: é dado de ambiente, não código
+- [ ] `public = false` nos três. Bucket público quebraria todo o isolamento de uma vez
+
+### B1.2 — Upload (nas 4 telas)
+
+`/companies/{id}/edit` · `/employees/{id}/edit` · `/epi-catalog/{id}/edit` · `/documents`
+
+- [ ] Upload grava e o **preview aparece** logo depois
+- [ ] Reabrir a tela: o preview volta (URL assinada nova). Preview quebrado ao reabrir é o
+      sintoma clássico de path errado ou de URL persistida em vez de reassinada
+- [ ] **PNG e JPG** passam nas três telas de imagem; **PDF, SVG, WEBP e GIF** recusados com
+      mensagem clara — não com erro cru do provedor
+- [ ] Acima de **5 MB** recusado; arquivo de **0 byte** recusado
+- [ ] **Extensão vem do MIME, não do nome:** renomeie um PNG para `foto.jpg` e envie. Deve
+      gravar coerente com o conteúdo, sem erro
+- [ ] Nome com acento, espaço e caractere especial (`Relatório final (v2).pdf` no GED) vira
+      slug no path e **não** quebra o download
+- [ ] **Dupla barreira nos dois buckets dedicados:** o bucket também recusa MIME fora da
+      allowlist. Vale um teste por fora da UI (SDK/cURL com a service key) enviando `text/plain`
+      para `company-logos` — tem de ser recusado **pelo bucket**, mesmo passando pelo app
+
+### B1.3 — URL assinada, download e expiração
+
+- [ ] `GET /api/v1/documents/{id}/download` devolve `{ url, expiresInSeconds }` e a URL baixa
+      o arquivo com o **nome de exibição** do documento, não o slug do path
+- [ ] O TTL do download é **60s** de propósito. Esperem passar e confirmem que a URL antiga
+      **deixa de funcionar** — expiração que não expira é falha de segurança
+- [ ] Preview de logo/foto usa TTL de 1h — reabrir a tela depois disso tem de reassinar,
+      não servir URL velha
+- [ ] **Acesso direto sem assinatura é negado:** peguem o path do objeto e tentem baixar com
+      a chave publicável/anon ou sem chave. Tem de falhar
+
+### B1.4 — Isolamento por tenant (o mais importante)
+
+- [ ] O objeto nasce sob o `org_id` **da sessão**. Confiram em `storage.objects` que o
+      prefixo do path é o tenant certo:
+
+```sql
+select bucket_id, name from storage.objects order by created_at desc limit 20;
+```
+
+- [ ] **O path nunca vem do cliente.** `GET /api/v1/documents/{id}/download` com id de
+      **outro tenant** → **404**, sem assinar nada e sem revelar o path
+- [ ] Mesmo teste na foto do EPI e no preview de logo/foto: id de outro tenant → 404
+- [ ] Tentem forjar um path com `../` ou com o `org_id` de outro tenant nos payloads de
+      upload. O `org_id` e o identificador do objeto são **gerados no servidor** — nenhum
+      valor do cliente pode influenciar o path
+- [ ] Usuário com papel `client` não consegue subir nem baixar
+
+### B1.5 — Falha no meio do caminho e compensação
+
+O ponto que mais escapa: upload e gravação no banco são **dois sistemas**, e não há
+transação entre eles.
+
+- [ ] **Upload OK + banco falha → objeto órfão é removido.** Force um erro no insert (ex.:
+      violar uma constraint no formulário do GED) e confirme que o binário **não** ficou no
+      bucket
+- [ ] **Exclusão do documento remove o binário.** Apague um documento com várias versões e
+      confirme que **todos** os objetos do grupo sumiram do bucket
+- [ ] **Falha ao remover o objeto não desfaz a exclusão:** a linha sai do banco e o erro vai
+      para o log (`documents.documents.delete_object`). Comportamento correto — o inverso
+      (documento fantasma na tela) seria pior
+- [ ] **Worker de PDF em lote (#39):** reprocessar o mesmo job **sobrescreve** o mesmo objeto
+      (`upsert:true`, path determinístico). Rodem duas vezes e confirmem **um** objeto, não dois
+
+### B1.6 — Órfãos por decisão (não abram bug)
+
+- [ ] Trocar logo, foto do empregado ou documento **não** apaga o objeto anterior — o path
+      novo é aleatório e não há job de limpeza. Decisão registrada em código: custo
+      desprezível para um ícone
+- [ ] Apagar **empresa, funcionário ou item de EPI** também não apaga a imagem no bucket. Só
+      o GED faz limpeza. Se o time achar que isso deveria mudar, é **backlog**, não bug desta
+      leva
+- [ ] A foto do EPI é a exceção: reenviar sobrescreve o mesmo path, então não acumula
 
 ## B2 · Medidas de controle: status por nível e ponte com o Plano de Ação — #42, #50, #51
 
@@ -247,8 +342,9 @@ estão assim**. O 5W2H responde "A origem desta auditoria não existe mais…", 
 correto. **Decisão de produto pendente:** limpar as órfãs, ou impedir excluir risco com
 auditoria ativa.
 
-**Objeto órfão no Storage.** Trocar a imagem não apaga a anterior — decisão registrada, não
-esquecimento.
+**Objeto órfão no Storage.** Trocar a imagem não apaga a anterior, e apagar empresa,
+funcionário ou item de EPI também não apaga o binário — só o GED faz limpeza. Decisão
+registrada em código, não esquecimento. Ver B1.6.
 
 **`roof` legado.** GES antigos com texto livre no campo cobertura: é dado, não código.
 
@@ -278,7 +374,7 @@ O "sempre ou às vezes" é o que mais economiza tempo: separa incompatibilidade 
 - [ ] Migration `0045` aplicada e os 3 buckets conferidos
 - [ ] Bloco A: agentes 1 e 2 sem regressão (A, B e C); 3, 4 e 5 ponta a ponta
 - [ ] Agente 5 validado ao vivo com chave nova — **é o único sem verificação prévia**
-- [ ] Bloco B: B1 (upload nos 3 módulos) e B2 (regra #42 + ponte #51) validados pelos dois caminhos, UI e REST
-- [ ] Isolamento multi-tenant conferido em Storage, histórico de EPI e anexos de PGR
+- [ ] Bloco B: **B1 inteiro** (provisionamento, upload, URL assinada, isolamento, compensação de falha) e B2 (regra #42 + ponte #51) validados pelos dois caminhos, UI e REST
+- [ ] Isolamento multi-tenant conferido em Storage (path por `org_id` da sessão, 404 cross-tenant, bucket privado), histórico de EPI e anexos de PGR
 - [ ] Nenhum vazamento de provedor/modelo/variável nas mensagens
 - [ ] Testes de integração, se o ambiente tiver `INTEGRATION_DATABASE_URL`
