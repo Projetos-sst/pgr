@@ -1,77 +1,80 @@
+import { z } from "zod";
+
 import type { SuggestionInput } from "@/shared/domains/safety/action-plan-suggestion";
 
-import { readToolCallArguments, type ToolCall, type ToolDefinition } from "../tool-call";
-
 /**
- * Construção do prompt e leitura da resposta da sugestão 5W2H — **puro** (sem `server-only`,
- * sem cliente HTTP). O input já vem sanitizado (allowlist não-PII); aqui ele vira mensagens e a
- * saída do tool call vira o objeto 5W2H cru (validado por Zod no core). Testável isoladamente:
- * garante que só campos da allowlist entram no prompt.
+ * Instruções, schema de saída e montagem da mensagem do agente 5W2H — **puro** (sem
+ * `server-only`, sem rede). O input já vem sanitizado (allowlist não-PII); aqui ele vira a
+ * mensagem enviada ao modelo. Testável isoladamente: garante que só campos da allowlist
+ * entram no prompt.
  */
 
-export const ACTION_PLAN_TOOL_NAME = "record_action_plan";
+/**
+ * Schema **tolerante** de propósito: aceita o que o modelo costuma emitir (número como
+ * texto, prazo ausente) e deixa a validação estrita para `actionPlanSuggestionSchema` no
+ * core. `.describe()` importa: com `jsonPromptInjection` o schema vira parte do prompt.
+ */
+export const actionPlanOutputSchema = z.object({
+  what: z.string().describe("O que será feito — a ação corretiva, no infinitivo."),
+  why: z.string().describe("Por que a ação é necessária, ligando ao risco/incidente."),
+  who: z
+    .string()
+    .describe(
+      "Área ou função responsável. NUNCA nome de pessoa (ex.: 'SESMT', 'Manutenção').",
+    ),
+  where: z.string().describe("Onde a ação será executada."),
+  how: z.string().describe("Como executar — passos concretos, na ordem."),
+  when: z
+    .string()
+    .nullish()
+    .describe(
+      "Prazo sugerido no formato AAAA-MM-DD. Omita se não houver base para estimar.",
+    ),
+  howMuch: z
+    .union([z.number(), z.string()])
+    .nullish()
+    .describe(
+      "Custo estimado em reais, apenas o número. Omita se não houver base para estimar.",
+    ),
+  priority: z
+    .union([z.number(), z.string()])
+    .nullish()
+    .describe("Prioridade: 1 baixa, 2 média, 3 alta."),
+});
 
-/** Definição da ferramenta (structured output via tool call) enviada ao modelo. */
-export function buildActionPlanTool(): ToolDefinition {
-  return {
-    type: "function",
-    function: {
-      name: ACTION_PLAN_TOOL_NAME,
-      description:
-        "Registra um plano de ação 5W2H sugerido para tratar a origem informada (NR-01/GRO).",
-      parameters: {
-        type: "object",
-        properties: {
-          what: { type: "string", description: "O que será feito (ação corretiva)." },
-          why: { type: "string", description: "Por que a ação é necessária." },
-          who: {
-            type: "string",
-            description: "Área/função responsável (sem nome de pessoa).",
-          },
-          where: { type: "string", description: "Onde a ação será executada." },
-          when: {
-            type: "string",
-            description: "Prazo sugerido no formato AAAA-MM-DD (opcional).",
-          },
-          how: { type: "string", description: "Como a ação será executada." },
-          howMuch: { type: "number", description: "Custo estimado em R$ (opcional)." },
-          priority: {
-            type: "integer",
-            description: "Prioridade 1 (baixa) a 3 (alta).",
-            minimum: 1,
-            maximum: 3,
-          },
-        },
-        required: ["what", "why", "who", "where", "how"],
-      },
-    },
-  };
-}
+export type ActionPlanOutput = z.infer<typeof actionPlanOutputSchema>;
+
+/**
+ * Papel e regras do agente. As regras estão numeradas porque modelos pequenos (os
+ * gratuitos que usamos) seguem instrução enumerada melhor do que parágrafo corrido.
+ */
+export const ACTION_PLAN_INSTRUCTIONS = [
+  "Você é um especialista em Segurança e Saúde do Trabalho (SST) no Brasil, com domínio da NR-01 e do Gerenciamento de Riscos Ocupacionais (GRO).",
+  "Sua tarefa é propor UM plano de ação 5W2H para tratar a origem (risco ou incidente) que o usuário descreve.",
+  "",
+  "Regras:",
+  "1. Baseie-se APENAS no contexto técnico fornecido. Não invente equipamento, norma, valor ou circunstância que não esteja no texto.",
+  "2. Priorize a hierarquia de controle da NR-01: eliminar > substituir > controle de engenharia > controle administrativo > EPI. Só recorra a EPI quando as anteriores não couberem.",
+  "3. Em 'Quem', informe a área ou função responsável. NUNCA cite nome de pessoa.",
+  "4. NUNCA cite CPF, dados médicos, nome de hospital, testemunhas ou identificadores internos.",
+  "5. 'Como' deve ser acionável: passos concretos e verificáveis, não intenção genérica.",
+  "6. Só estime prazo e custo quando o contexto der base para isso; caso contrário, omita o campo.",
+  "7. Escreva em português do Brasil, em linguagem técnica de SST, objetiva e sem rodeios.",
+].join("\n");
 
 function line(label: string, value: string | undefined | null): string | null {
   return value && value.trim() !== "" ? `- ${label}: ${value.trim()}` : null;
 }
 
 /**
- * Monta as mensagens a partir **exclusivamente** do input sanitizado. Para incidente, usa
+ * Monta a mensagem a partir **exclusivamente** do input sanitizado. Para incidente, usa
  * apenas a versão anônima (tipo/categoria/severidade/circunstâncias técnicas) — nunca PII.
  */
-export function buildActionPlanPrompt(input: SuggestionInput): {
-  system: string;
-  user: string;
-} {
-  const system = [
-    "Você é um especialista em Segurança e Saúde do Trabalho (SST) no Brasil, com domínio da NR-01/GRO.",
-    "Sua tarefa é sugerir UM plano de ação 5W2H para tratar a origem (risco ou incidente) descrita pelo usuário.",
-    "Baseie-se APENAS no contexto técnico fornecido. Não invente dados que não estão no contexto.",
-    "NUNCA cite nomes de pessoas, CPF, dados médicos ou identificadores internos. Em 'Quem', use área/função responsável.",
-    "Retorne o plano exclusivamente pela ferramenta record_action_plan.",
-  ].join("\n");
-
+export function buildActionPlanPrompt(input: SuggestionInput): string {
   const lines: (string | null)[] =
     input.kind === "risk"
       ? [
-          "Sugira um plano de ação 5W2H para tratar o risco ocupacional abaixo.",
+          "Proponha um plano de ação 5W2H para tratar o risco ocupacional abaixo.",
           "",
           line("Grupo do agente", input.agentType),
           line("Descrição do risco", input.description),
@@ -86,7 +89,7 @@ export function buildActionPlanPrompt(input: SuggestionInput): {
             : null,
         ]
       : [
-          "Sugira um plano de ação 5W2H para tratar o incidente/acidente (versão anônima) abaixo.",
+          "Proponha um plano de ação 5W2H para tratar o incidente/acidente (versão anônima) abaixo.",
           "",
           line("Tipo", input.type),
           line("Categoria", input.category),
@@ -100,23 +103,32 @@ export function buildActionPlanPrompt(input: SuggestionInput): {
           line("Perdas materiais", input.materialLoss),
         ];
 
-  const user = lines.filter((l): l is string => l !== null).join("\n");
-  return { system, user };
+  return lines.filter((l): l is string => l !== null).join("\n");
 }
 
 /**
- * Extrai o objeto 5W2H cru do tool call e **normaliza** a chave de custo: alguns modelos
- * emitem `how_much` (snake_case) apesar do tool schema camelCase — mapeamos para `howMuch` para o
- * validador (que é `.strict()`). Sem tool call válido → `null`.
+ * Normaliza a saída do modelo para o schema estrito do domínio. Três desvios observados em
+ * respostas reais:
+ *
+ * 1. `how_much` em snake_case, apesar do schema pedir camelCase;
+ * 2. "sem valor" expresso como `undefined`, `null` **ou string vazia**, conforme o modelo;
+ * 3. números como texto (`"1500"`), resolvidos pela coerção do schema do domínio.
+ *
+ * Os dois primeiros precisam virar **chave ausente**: `when: ""` reprova em `z.iso.date()`
+ * e derrubava o plano inteiro, e `howMuch: ""` é pior — a coerção numérica o transformaria
+ * num custo de R$ 0 silenciosamente errado. Um campo opcional mal preenchido não pode
+ * custar uma sugestão boa.
  */
-export function extractActionPlan(calls: ToolCall[]): unknown {
-  const args = readToolCallArguments(calls, ACTION_PLAN_TOOL_NAME);
-  if (!args || typeof args !== "object" || Array.isArray(args)) return args ?? null;
+export function normalizeActionPlanOutput(raw: ActionPlanOutput): unknown {
+  const obj: Record<string, unknown> = { ...raw };
 
-  const obj = args as Record<string, unknown>;
-  if ("how_much" in obj && !("howMuch" in obj)) {
-    const { how_much, ...rest } = obj;
-    return { ...rest, howMuch: how_much };
+  if ("how_much" in obj && obj.howMuch == null) {
+    obj.howMuch = obj.how_much;
+    delete obj.how_much;
+  }
+  for (const [key, value] of Object.entries(obj)) {
+    const vazio = value == null || (typeof value === "string" && value.trim() === "");
+    if (vazio) delete obj[key];
   }
   return obj;
 }

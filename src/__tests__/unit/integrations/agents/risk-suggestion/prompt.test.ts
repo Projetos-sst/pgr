@@ -1,10 +1,9 @@
 import {
-  SUGGESTION_TOOL_NAME,
+  RISK_SUGGESTION_INSTRUCTIONS,
   buildRiskSuggestionPrompt,
-  buildSuggestionTool,
-  extractSuggestions,
+  riskSuggestionOutputSchema,
 } from "@/shared/integrations/agents/risk-suggestion/prompt";
-import type { ToolCall } from "@/shared/integrations/agents/tool-call";
+import { RiskSuggestionAgent } from "@/shared/integrations/agents/risk-suggestion/agent";
 import type { GesRiskContext } from "@/shared/domains/pgr/ai-risk-suggestion";
 
 const CTX: GesRiskContext = {
@@ -22,76 +21,76 @@ const CTX: GesRiskContext = {
 
 describe("buildRiskSuggestionPrompt", () => {
   it("inclui os campos do GES e os títulos das funções", () => {
-    const { system, user } = buildRiskSuggestionPrompt(CTX);
-    expect(user).toContain("Marcenaria");
-    expect(user).toContain("Corte e lixamento de peças de madeira");
-    expect(user).toContain("Marceneiro");
-    expect(user).toContain("Exaustão local");
-    expect(system).toContain("NR-01");
+    const prompt = buildRiskSuggestionPrompt(CTX);
+    expect(prompt).toContain("Marcenaria");
+    expect(prompt).toContain("Corte e lixamento de peças de madeira");
+    expect(prompt).toContain("Marceneiro");
+    expect(prompt).toContain("Exaustão local");
   });
 
   it("omite as linhas de campos ausentes (null)", () => {
-    const { user } = buildRiskSuggestionPrompt(CTX);
-    expect(user).not.toContain("Outras características");
+    expect(buildRiskSuggestionPrompt(CTX)).not.toContain("Outras características");
   });
 
   it("não introduz PII (o contexto não tem funcionários/CPF)", () => {
-    const { user } = buildRiskSuggestionPrompt(CTX);
-    expect(user).not.toMatch(/CPF|funcion[aá]rio/i);
+    expect(buildRiskSuggestionPrompt(CTX)).not.toMatch(/CPF|funcion[aá]rio/i);
   });
 
   it("sem funções → 'não informadas'", () => {
-    const { user } = buildRiskSuggestionPrompt({ ...CTX, roles: [] });
-    expect(user).toContain("não informadas");
+    expect(buildRiskSuggestionPrompt({ ...CTX, roles: [] })).toContain("não informadas");
   });
 });
 
-/** Tool call no formato da OpenRouter/OpenAI: argumentos são **string JSON**. */
-function toolCall(name: string, args: unknown): ToolCall {
-  return { type: "function", function: { name, arguments: JSON.stringify(args) } };
-}
-
-describe("extractSuggestions", () => {
-  it("extrai do tool call correto (ignora tool calls alheios)", () => {
-    const out = extractSuggestions([
-      toolCall("outra_tool", { risks: [] }),
-      toolCall(SUGGESTION_TOOL_NAME, {
-        risks: [{ agentType: "physical", description: "Ruído" }],
-      }),
-    ]);
-    expect(out).toHaveLength(1);
+describe("RISK_SUGGESTION_INSTRUCTIONS", () => {
+  it("ancora o agente na NR-01 e no conjunto fechado de grupos de agente", () => {
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toContain("NR-01");
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toContain("physical");
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toContain("psychosocial");
   });
 
-  it("sem tool call → lista vazia", () => {
-    expect(extractSuggestions([])).toEqual([]);
-  });
-
-  it("ignora tool call de outro nome", () => {
-    expect(
-      extractSuggestions([
-        toolCall("outra_tool", {
-          risks: [{ agentType: "physical", description: "x" }],
-        }),
-      ]),
-    ).toEqual([]);
-  });
-
-  it("argumentos com JSON inválido → lista vazia (não estoura)", () => {
-    expect(
-      extractSuggestions([
-        { type: "function", function: { name: SUGGESTION_TOOL_NAME, arguments: "{" } },
-      ]),
-    ).toEqual([]);
+  it("proíbe inventar risco e permite explicitamente a lista vazia", () => {
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/Lista vazia é uma resposta correta/);
   });
 });
 
-describe("buildSuggestionTool", () => {
-  it("expõe o nome e o enum completo de grupos de agente", () => {
-    const tool = buildSuggestionTool();
-    expect(tool.type).toBe("function");
-    expect(tool.function.name).toBe(SUGGESTION_TOOL_NAME);
-    const json = JSON.stringify(tool);
-    expect(json).toContain("physical");
-    expect(json).toContain("psychosocial");
+/**
+ * O schema enviado ao modelo é tolerante de propósito: quem reprova item inválido é o
+ * domínio, em `parseOutput`. Um schema estrito aqui derrubaria o lote inteiro por causa
+ * de um item ruim — o oposto do que a feature precisa.
+ */
+describe("riskSuggestionOutputSchema", () => {
+  it("aceita item com grupo de agente fora do enum (a triagem é do domínio)", () => {
+    const parsed = riskSuggestionOutputSchema.safeParse({
+      risks: [{ agentType: "inventado", description: "x" }],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("aceita lista vazia", () => {
+    expect(riskSuggestionOutputSchema.safeParse({ risks: [] }).success).toBe(true);
+  });
+
+  it("rejeita resposta sem o envelope esperado", () => {
+    expect(riskSuggestionOutputSchema.safeParse({ outra: [] }).success).toBe(false);
+  });
+});
+
+describe("RiskSuggestionAgent.parseOutput", () => {
+  const agent = new RiskSuggestionAgent();
+
+  it("descarta item inválido sem derrubar os válidos", () => {
+    const out = agent.parseOutput({
+      risks: [
+        { agentType: "physical", description: "Ruído" },
+        { agentType: "inventado", description: "descartado" },
+        { agentType: "chemical", description: "Poeira", sources: "Lixadeira" },
+      ],
+    });
+    expect(out).toHaveLength(2);
+    expect(out.map((r) => r.agentType)).toEqual(["physical", "chemical"]);
+  });
+
+  it("lista vazia do modelo → lista vazia (contexto vago não vira invenção)", () => {
+    expect(agent.parseOutput({ risks: [] })).toEqual([]);
   });
 });

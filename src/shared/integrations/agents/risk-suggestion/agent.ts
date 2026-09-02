@@ -1,37 +1,44 @@
-import "server-only";
-
-import type {
-  GesRiskContext,
-  SuggestedRisk,
+import {
+  parseModelSuggestions,
+  type GesRiskContext,
+  type SuggestedRisk,
 } from "@/shared/domains/pgr/ai-risk-suggestion";
 
-import { runToolCall } from "../openrouter-client";
+import { SstAgent } from "../core/sst-agent";
 import {
+  RISK_SUGGESTION_INSTRUCTIONS,
   buildRiskSuggestionPrompt,
-  buildSuggestionTool,
-  extractSuggestions,
+  riskSuggestionOutputSchema,
+  type RiskSuggestionOutput,
 } from "./prompt";
 
 /**
  * **Agente "sugestão de riscos" (NR-01/GRO).** Recebe o contexto **não-PII** de um GES
  * (processo, ambiente, títulos de função) e devolve riscos ocupacionais candidatos, que o
- * usuário revisa e aceita antes de virarem rascunho em `risks`. Falha do provedor vira
- * `AiUnavailableError` no transporte — nunca bloqueia o cadastro manual.
- *
- * Teto de tempo maior que o default: um GES bem descrito rende ~12 riscos e a resposta
- * medida chegou a ~20s. É o agente que mais escreve, e o mais lento.
+ * usuário revisa e aceita antes de virarem rascunho em `risks`.
  */
-const RISK_SUGGESTION_TIMEOUT_MS = 45_000;
-export async function requestRiskSuggestions(
-  ctx: GesRiskContext,
-): Promise<SuggestedRisk[]> {
-  const { system, user } = buildRiskSuggestionPrompt(ctx);
-  const calls = await runToolCall({
-    system,
-    user,
-    tool: buildSuggestionTool(),
-    maxTokens: 2048,
-    timeoutMs: RISK_SUGGESTION_TIMEOUT_MS,
-  });
-  return extractSuggestions(calls);
+export class RiskSuggestionAgent extends SstAgent<
+  GesRiskContext,
+  RiskSuggestionOutput,
+  SuggestedRisk[]
+> {
+  readonly id = "risk-suggestion";
+  readonly name = "Sugestão de riscos ocupacionais";
+  readonly instructions = RISK_SUGGESTION_INSTRUCTIONS;
+  readonly outputSchema = riskSuggestionOutputSchema;
+
+  /** É o agente que mais escreve: um GES bem descrito rende ~12 riscos com 4 campos cada. */
+  readonly maxOutputTokens = 2048;
+  readonly timeoutMs = 60_000;
+
+  buildPrompt(ctx: GesRiskContext): string {
+    return buildRiskSuggestionPrompt(ctx);
+  }
+
+  /** O domínio descarta item inválido sem derrubar o lote e aplica o teto de sugestões. */
+  parseOutput(raw: RiskSuggestionOutput): SuggestedRisk[] {
+    return parseModelSuggestions(raw);
+  }
 }
+
+export const riskSuggestionAgent = new RiskSuggestionAgent();

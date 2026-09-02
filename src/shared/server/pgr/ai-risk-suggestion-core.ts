@@ -14,7 +14,7 @@ import {
   type AcceptSuggestedRisksInput,
   type SuggestedRisk,
 } from "@/shared/domains/pgr/ai-risk-suggestion";
-import { requestRiskSuggestions } from "@/shared/integrations/agents/risk-suggestion/agent";
+import { requestRiskSuggestions } from "@/shared/integrations/agents";
 import * as aiRepo from "@/shared/db/repositories/ai-risk-suggestion";
 import { createRisk } from "@/shared/db/repositories/risks";
 
