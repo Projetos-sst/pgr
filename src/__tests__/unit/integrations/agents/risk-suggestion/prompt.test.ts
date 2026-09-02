@@ -2,8 +2,9 @@ import {
   SUGGESTION_TOOL_NAME,
   buildRiskSuggestionPrompt,
   buildSuggestionTool,
-  extractSuggestionsFromContent,
-} from "@/shared/integrations/ai/prompt";
+  extractSuggestions,
+} from "@/shared/integrations/agents/risk-suggestion/prompt";
+import type { ToolCall } from "@/shared/integrations/agents/tool-call";
 import type { GesRiskContext } from "@/shared/domains/pgr/ai-risk-suggestion";
 
 const CTX: GesRiskContext = {
@@ -45,31 +46,40 @@ describe("buildRiskSuggestionPrompt", () => {
   });
 });
 
-describe("extractSuggestionsFromContent", () => {
-  it("extrai do bloco tool_use correto (ignora blocos de texto)", () => {
-    const out = extractSuggestionsFromContent([
-      { type: "text" },
-      {
-        type: "tool_use",
-        name: SUGGESTION_TOOL_NAME,
-        input: { risks: [{ agentType: "physical", description: "Ruído" }] },
-      },
+/** Tool call no formato da OpenRouter/OpenAI: argumentos são **string JSON**. */
+function toolCall(name: string, args: unknown): ToolCall {
+  return { type: "function", function: { name, arguments: JSON.stringify(args) } };
+}
+
+describe("extractSuggestions", () => {
+  it("extrai do tool call correto (ignora tool calls alheios)", () => {
+    const out = extractSuggestions([
+      toolCall("outra_tool", { risks: [] }),
+      toolCall(SUGGESTION_TOOL_NAME, {
+        risks: [{ agentType: "physical", description: "Ruído" }],
+      }),
     ]);
     expect(out).toHaveLength(1);
   });
 
-  it("sem bloco tool_use → lista vazia", () => {
-    expect(extractSuggestionsFromContent([{ type: "text" }])).toEqual([]);
+  it("sem tool call → lista vazia", () => {
+    expect(extractSuggestions([])).toEqual([]);
   });
 
-  it("ignora tool_use de outro nome", () => {
+  it("ignora tool call de outro nome", () => {
     expect(
-      extractSuggestionsFromContent([
-        {
-          type: "tool_use",
-          name: "outra_tool",
-          input: { risks: [{ agentType: "physical", description: "x" }] },
-        },
+      extractSuggestions([
+        toolCall("outra_tool", {
+          risks: [{ agentType: "physical", description: "x" }],
+        }),
+      ]),
+    ).toEqual([]);
+  });
+
+  it("argumentos com JSON inválido → lista vazia (não estoura)", () => {
+    expect(
+      extractSuggestions([
+        { type: "function", function: { name: SUGGESTION_TOOL_NAME, arguments: "{" } },
       ]),
     ).toEqual([]);
   });
@@ -78,7 +88,8 @@ describe("extractSuggestionsFromContent", () => {
 describe("buildSuggestionTool", () => {
   it("expõe o nome e o enum completo de grupos de agente", () => {
     const tool = buildSuggestionTool();
-    expect(tool.name).toBe(SUGGESTION_TOOL_NAME);
+    expect(tool.type).toBe("function");
+    expect(tool.function.name).toBe(SUGGESTION_TOOL_NAME);
     const json = JSON.stringify(tool);
     expect(json).toContain("physical");
     expect(json).toContain("psychosocial");

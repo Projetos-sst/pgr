@@ -102,7 +102,7 @@ backstop; itens são **snapshot imutável** pós-emissão, não reescrevem com m
 nunca em log/IA/fixture; CAT é campo texto interno, sem emissão S-2210 na V1); `action_plans`
 (5W2H **multiorigem**, `origin_type` texto validado na aplicação, V1 = `risk|incident`,
 `inspection`/`non_conformity` plugam depois com zero migration); `risk_audits` (kanban de
-auditorias/análises com sugestão de IA reusando a infra Anthropic da 016/017, `kind
+auditorias/análises com sugestão de IA reusando a infra de IA da 016/017, `kind
 'action_plan_suggestion'` zero migration). Migration `0024_phase_06_safety_workflows`, precedida de
 reconciliação de um histórico de migrations corrompido por merge (arquivos órfãos `0018_*`). RLS
 com `USING`+`WITH CHECK` nas 5 tabelas. **É esta fatia que introduziu `action_plans`,
@@ -172,7 +172,7 @@ Fatia anterior (`016` — ai-risk-suggestion, mergeada em `develop`) — **Suges
 por IA** (primeira feature que chama um LLM externo). Plan:
 `.specs/016-ai-risk-suggestion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
 diretório). 2 user stories: US1 (P1) botão "Sugerir Riscos com IA" no GES → contexto **não-PII** do GES
-(processo/ambiente/**títulos** de função, nunca `employees`) → LLM Anthropic (`@anthropic-ai/sdk`,
+(processo/ambiente/**títulos** de função, nunca `employees`) → LLM via OpenRouter (`fetch`, Chat Completions,
 saída estruturada por tool use validada por Zod, chave **server-only**) → modal de revisão/aceite →
 aceitos viram **rascunho** em `risks` via `createRisk` (zero migration de risco); US2 (P2) dicas
 estáticas NR-01 nos campos de GES/risco. Rate limiting por org: **migration nova

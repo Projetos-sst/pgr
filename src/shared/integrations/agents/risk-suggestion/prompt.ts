@@ -5,9 +5,11 @@ import {
 } from "@/shared/domains/pgr/ai-risk-suggestion";
 import { riskAgentTypeLabel, type RiskAgentType } from "@/shared/domains/pgr/risks";
 
+import { readToolCallArguments, type ToolCall, type ToolDefinition } from "../tool-call";
+
 /**
  * Construção do prompt e leitura da resposta — **puro** (sem `server-only`, sem
- * SDK): o contexto do GES vira mensagens e a saída do tool_use vira sugestões
+ * cliente HTTP): o contexto do GES vira mensagens e a saída do tool call vira sugestões
  * validadas. Testável isoladamente (garante que só campos do GES entram no prompt
  * e que a extração descarta itens inválidos).
  */
@@ -24,40 +26,43 @@ const AGENT_TYPES: RiskAgentType[] = [
   "psychosocial",
 ];
 
-/** Definição da ferramenta (structured output via tool use) enviada ao modelo. */
-export function buildSuggestionTool() {
+/** Definição da ferramenta (structured output via tool call) enviada ao modelo. */
+export function buildSuggestionTool(): ToolDefinition {
   return {
-    name: SUGGESTION_TOOL_NAME,
-    description:
-      "Registra a lista de riscos ocupacionais sugeridos para o GES analisado (NR-01).",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        risks: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              agentType: {
-                type: "string",
-                enum: AGENT_TYPES,
-                description: "Grupo do agente de risco (NR-01).",
+    type: "function" as const,
+    function: {
+      name: SUGGESTION_TOOL_NAME,
+      description:
+        "Registra a lista de riscos ocupacionais sugeridos para o GES analisado (NR-01).",
+      parameters: {
+        type: "object" as const,
+        properties: {
+          risks: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                agentType: {
+                  type: "string",
+                  enum: AGENT_TYPES,
+                  description: "Grupo do agente de risco (NR-01).",
+                },
+                hazard: { type: "string", description: "Perigo associado ao risco." },
+                description: {
+                  type: "string",
+                  description: "Descrição objetiva do risco ocupacional.",
+                },
+                sources: {
+                  type: "string",
+                  description: "Fontes geradoras do agente de risco.",
+                },
               },
-              hazard: { type: "string", description: "Perigo associado ao risco." },
-              description: {
-                type: "string",
-                description: "Descrição objetiva do risco ocupacional.",
-              },
-              sources: {
-                type: "string",
-                description: "Fontes geradoras do agente de risco.",
-              },
+              required: ["agentType", "description"],
             },
-            required: ["agentType", "description"],
           },
         },
+        required: ["risks"],
       },
-      required: ["risks"],
     },
   };
 }
@@ -108,19 +113,10 @@ export function buildRiskSuggestionPrompt(ctx: GesRiskContext): {
   return { system, user };
 }
 
-type ContentBlockLike = { type: string; name?: string; input?: unknown };
-
 /**
- * Extrai as sugestões do bloco `tool_use` da resposta do modelo. Sem bloco válido
+ * Extrai as sugestões do tool call da resposta do modelo. Sem tool call válido
  * → lista vazia. Delega a validação item-a-item a `parseModelSuggestions`.
  */
-export function extractSuggestionsFromContent(
-  content: ContentBlockLike[],
-): SuggestedRisk[] {
-  for (const block of content) {
-    if (block.type === "tool_use" && block.name === SUGGESTION_TOOL_NAME) {
-      return parseModelSuggestions(block.input);
-    }
-  }
-  return [];
+export function extractSuggestions(calls: ToolCall[]): SuggestedRisk[] {
+  return parseModelSuggestions(readToolCallArguments(calls, SUGGESTION_TOOL_NAME));
 }

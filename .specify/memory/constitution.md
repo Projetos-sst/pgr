@@ -93,7 +93,7 @@ Storage), Clerk (autenticação e organizações) e Cloudflare na borda.
   serviços externos pagos, novo banco) MUST exigir emenda formal a esta
   constituição antes da implementação.
 - **Provedores de LLM (AUTORIZADO — emenda 1.3.0)**: usar um provedor de IA/LLM
-  gerenciado (ex.: Anthropic) é infraestrutura PERMITIDA para features de
+  gerenciado (ex.: OpenRouter) é infraestrutura PERMITIDA para features de
   assistência por IA, desde que TODAS as salvaguardas sejam atendidas: (a) a
   chave/segredo reside SÓ no servidor; (b) NENHUM dado sensível/PII (ex.:
   funcionários/CPF) é enviado além do contexto estritamente necessário; (c) há
@@ -193,7 +193,7 @@ de dados que, neste domínio, pode ter consequências regulatórias.
   é o `orgs.id` do nosso banco, resolvido pela sessão via `org_memberships` (não a org do
   Clerk). Organizações do Clerk, quando existirem, são a camada de UI B2B do plano PRO
   (`orgs.clerk_org_id`).
-- **IA/LLM**: provedor gerenciado (ex.: Anthropic) para features de assistência por
+- **IA/LLM**: provedor gerenciado (ex.: OpenRouter) para features de assistência por
   IA, sob as salvaguardas do Princípio II (chave server-only, zero-PII, cota por
   tenant, degradação não-bloqueante).
 - **Geração de PDF**: serviço auxiliar stateless de renderização HTML→PDF fora da

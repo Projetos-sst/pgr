@@ -1,44 +1,49 @@
 import type { SuggestionInput } from "@/shared/domains/safety/action-plan-suggestion";
 
+import { readToolCallArguments, type ToolCall, type ToolDefinition } from "../tool-call";
+
 /**
  * Construção do prompt e leitura da resposta da sugestão 5W2H — **puro** (sem `server-only`,
- * sem SDK). O input já vem sanitizado (allowlist não-PII); aqui ele vira mensagens e a saída
- * do `tool_use` vira o objeto 5W2H cru (validado por Zod no core). Testável isoladamente:
+ * sem cliente HTTP). O input já vem sanitizado (allowlist não-PII); aqui ele vira mensagens e a
+ * saída do tool call vira o objeto 5W2H cru (validado por Zod no core). Testável isoladamente:
  * garante que só campos da allowlist entram no prompt.
  */
 
 export const ACTION_PLAN_TOOL_NAME = "record_action_plan";
 
-/** Definição da ferramenta (structured output via tool use) enviada ao modelo. */
-export function buildActionPlanTool() {
+/** Definição da ferramenta (structured output via tool call) enviada ao modelo. */
+export function buildActionPlanTool(): ToolDefinition {
   return {
-    name: ACTION_PLAN_TOOL_NAME,
-    description:
-      "Registra um plano de ação 5W2H sugerido para tratar a origem informada (NR-01/GRO).",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        what: { type: "string", description: "O que será feito (ação corretiva)." },
-        why: { type: "string", description: "Por que a ação é necessária." },
-        who: {
-          type: "string",
-          description: "Área/função responsável (sem nome de pessoa).",
+    type: "function",
+    function: {
+      name: ACTION_PLAN_TOOL_NAME,
+      description:
+        "Registra um plano de ação 5W2H sugerido para tratar a origem informada (NR-01/GRO).",
+      parameters: {
+        type: "object",
+        properties: {
+          what: { type: "string", description: "O que será feito (ação corretiva)." },
+          why: { type: "string", description: "Por que a ação é necessária." },
+          who: {
+            type: "string",
+            description: "Área/função responsável (sem nome de pessoa).",
+          },
+          where: { type: "string", description: "Onde a ação será executada." },
+          when: {
+            type: "string",
+            description: "Prazo sugerido no formato AAAA-MM-DD (opcional).",
+          },
+          how: { type: "string", description: "Como a ação será executada." },
+          howMuch: { type: "number", description: "Custo estimado em R$ (opcional)." },
+          priority: {
+            type: "integer",
+            description: "Prioridade 1 (baixa) a 3 (alta).",
+            minimum: 1,
+            maximum: 3,
+          },
         },
-        where: { type: "string", description: "Onde a ação será executada." },
-        when: {
-          type: "string",
-          description: "Prazo sugerido no formato AAAA-MM-DD (opcional).",
-        },
-        how: { type: "string", description: "Como a ação será executada." },
-        howMuch: { type: "number", description: "Custo estimado em R$ (opcional)." },
-        priority: {
-          type: "integer",
-          description: "Prioridade 1 (baixa) a 3 (alta).",
-          minimum: 1,
-          maximum: 3,
-        },
+        required: ["what", "why", "who", "where", "how"],
       },
-      required: ["what", "why", "who", "where", "how"],
     },
   };
 }
@@ -99,26 +104,19 @@ export function buildActionPlanPrompt(input: SuggestionInput): {
   return { system, user };
 }
 
-type ContentBlockLike = { type: string; name?: string; input?: unknown };
-
 /**
- * Extrai o objeto 5W2H cru do bloco `tool_use` e **normaliza** a chave de custo: alguns modelos
+ * Extrai o objeto 5W2H cru do tool call e **normaliza** a chave de custo: alguns modelos
  * emitem `how_much` (snake_case) apesar do tool schema camelCase — mapeamos para `howMuch` para o
- * validador (que é `.strict()`). Sem bloco válido → `null`.
+ * validador (que é `.strict()`). Sem tool call válido → `null`.
  */
-export function extractActionPlanFromContent(content: ContentBlockLike[]): unknown {
-  for (const block of content) {
-    if (block.type === "tool_use" && block.name === ACTION_PLAN_TOOL_NAME) {
-      const input = block.input;
-      if (input && typeof input === "object" && !Array.isArray(input)) {
-        const obj = input as Record<string, unknown>;
-        if ("how_much" in obj && !("howMuch" in obj)) {
-          const { how_much, ...rest } = obj;
-          return { ...rest, howMuch: how_much };
-        }
-      }
-      return input;
-    }
+export function extractActionPlan(calls: ToolCall[]): unknown {
+  const args = readToolCallArguments(calls, ACTION_PLAN_TOOL_NAME);
+  if (!args || typeof args !== "object" || Array.isArray(args)) return args ?? null;
+
+  const obj = args as Record<string, unknown>;
+  if ("how_much" in obj && !("howMuch" in obj)) {
+    const { how_much, ...rest } = obj;
+    return { ...rest, howMuch: how_much };
   }
-  return null;
+  return obj;
 }

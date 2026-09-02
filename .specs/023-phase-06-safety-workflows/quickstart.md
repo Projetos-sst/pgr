@@ -94,7 +94,7 @@ curl -s "${H[@]}" -X POST  $BASE/api/v1/risk-audits/<id>/suggest-action-plan -d 
 ```
 
 **Evidência executada (T074)**: cURLs rodados **ao vivo** contra `npm run dev` apontado ao **Postgres
-efêmero** (bypass DEV; IA no **mock local** via `ANTHROPIC_BASE_URL`, nunca Anthropic real; sem tocar o
+efêmero** (bypass DEV; IA no **mock local** via `OPENROUTER_BASE_URL`, nunca OpenRouter real; sem tocar o
 banco real). Códigos observados (sanitizados — sem tokens/URLs/PII):
 
 ```txt

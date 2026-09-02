@@ -16,7 +16,7 @@ import {
   type ActionPlanSuggestion,
 } from "@/shared/domains/safety/action-plan-suggestion";
 import type { ActionPlanOriginType } from "@/shared/domains/safety/action-plan-origin";
-import { requestActionPlanSuggestion } from "@/shared/integrations/ai/anthropic";
+import { requestActionPlanSuggestion } from "@/shared/integrations/agents/action-plan/agent";
 import {
   countAiUsageInCurrentMonth,
   recordAiUsage,

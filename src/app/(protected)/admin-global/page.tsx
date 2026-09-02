@@ -36,7 +36,7 @@ export default async function AdminGlobalPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-text text-sm font-semibold tracking-tight">
-          Uso de IA (Anthropic) por organização
+          Uso da IA pgr-e por organização
         </h2>
         {!usageRes.ok ? (
           <EmptyState message="Não foi possível carregar o uso de IA." />
