@@ -28,6 +28,7 @@ export default async function NewActionPlanPage() {
         riskOptions={riskOptions}
         incidentOptions={incidentOptions}
         initial={{
+          type: null,
           what: "",
           why: "",
           who: "",

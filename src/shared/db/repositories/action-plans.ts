@@ -4,14 +4,17 @@ import { and, desc, eq, gte, ilike, inArray, lte, or, sql, type SQL } from "driz
 
 import { accidentTypeLabel } from "@/shared/domains/safety/accident";
 import {
+  ACTION_PLAN_DUE_SOON_DAYS,
   actionPlanPriorityLabel,
   actionPlanStatusLabel,
+  actionPlanTypeLabel,
   canTransitionActionPlan,
   computeActionPlanOverdue,
   isActionPlanTerminal,
   type ActionPlanCreateValues,
   type ActionPlanDetail,
   type ActionPlanFilters,
+  type ActionPlanKpis,
   type ActionPlanListItem,
   type ActionPlanStatus,
   type ActionPlanUpdateValues,
@@ -27,7 +30,14 @@ import { resolvePageParams, type Paginated } from "@/shared/pagination";
 import { todayInSaoPaulo } from "@/shared/dates";
 import { controlLevelLabel } from "@/shared/domains/pgr/risks";
 
-import { accidents, actionPlans, risks, type ActionPlan } from "../schema";
+import {
+  accidents,
+  actionPlans,
+  companies,
+  ges,
+  risks,
+  type ActionPlan,
+} from "../schema";
 import { controlMeasures } from "../schema/risks";
 import { withOrg, type TenantTransaction } from "../with-org";
 import { auditedTenantWrite } from "./audited-write";
@@ -80,16 +90,24 @@ export async function loadOriginSnapshots(
     .filter((r) => r.originType === "control_measure")
     .map((r) => r.originId);
 
+  // Empresa é derivada: risco→GES→empresa; incidente→empresa; medida→risco→GES→empresa.
   if (riskIds.length > 0) {
     const rows = await tx
-      .select({ id: risks.id, description: risks.description })
+      .select({
+        id: risks.id,
+        description: risks.description,
+        company: companies.razaoSocial,
+      })
       .from(risks)
+      .leftJoin(ges, eq(ges.id, risks.gesId))
+      .leftJoin(companies, eq(companies.id, ges.companyId))
       .where(and(eq(risks.orgId, orgId), inArray(risks.id, riskIds)));
     for (const r of rows) {
       result.set(key("risk", r.id), {
         type: "risk",
         id: r.id,
         title: r.description,
+        company: r.company,
         removed: false,
       });
     }
@@ -100,8 +118,10 @@ export async function loadOriginSnapshots(
         id: accidents.id,
         type: accidents.type,
         occurredAt: accidents.occurredAt,
+        company: companies.razaoSocial,
       })
       .from(accidents)
+      .leftJoin(companies, eq(companies.id, accidents.companyId))
       .where(and(eq(accidents.orgId, orgId), inArray(accidents.id, incidentIds)));
     for (const r of rows) {
       const date = r.occurredAt.toISOString().slice(0, 10);
@@ -109,6 +129,7 @@ export async function loadOriginSnapshots(
         type: "incident",
         id: r.id,
         title: `${accidentTypeLabel(r.type)} — ${date}`,
+        company: r.company,
         removed: false,
       });
     }
@@ -120,9 +141,12 @@ export async function loadOriginSnapshots(
         id: controlMeasures.id,
         controlLevel: controlMeasures.controlLevel,
         riskDescription: risks.description,
+        company: companies.razaoSocial,
       })
       .from(controlMeasures)
       .innerJoin(risks, eq(risks.id, controlMeasures.riskId))
+      .leftJoin(ges, eq(ges.id, risks.gesId))
+      .leftJoin(companies, eq(companies.id, ges.companyId))
       .where(
         and(
           eq(controlMeasures.orgId, orgId),
@@ -134,6 +158,7 @@ export async function loadOriginSnapshots(
         type: "control_measure",
         id: r.id,
         title: `Medida de controle (${controlLevelLabel(r.controlLevel)}) — ${r.riskDescription}`,
+        company: r.company,
         removed: false,
       });
     }
@@ -147,6 +172,7 @@ export async function loadOriginSnapshots(
         type: ref.originType as ActionPlanOriginType,
         id: ref.originId,
         title: null,
+        company: null,
         removed: true,
       });
     }
@@ -164,6 +190,7 @@ export async function listActionPlans(
   const today = todayInSaoPaulo();
   const conditions: SQL[] = [eq(actionPlans.orgId, orgId)];
   if (filters.status) conditions.push(eq(actionPlans.status, filters.status));
+  if (filters.type) conditions.push(eq(actionPlans.type, filters.type));
   if (filters.priority != null)
     conditions.push(eq(actionPlans.priority, filters.priority));
   if (filters.originType) conditions.push(eq(actionPlans.originType, filters.originType));
@@ -188,6 +215,9 @@ export async function listActionPlans(
       .select({
         id: actionPlans.id,
         what: actionPlans.what,
+        who: actionPlans.who,
+        where: actionPlans.where,
+        type: actionPlans.type,
         status: actionPlans.status,
         priority: actionPlans.priority,
         when: actionPlans.when,
@@ -205,18 +235,57 @@ export async function listActionPlans(
       .where(where);
 
     const snapshots = await loadOriginSnapshots(tx, orgId, rows);
-    const items: ActionPlanListItem[] = rows.map((r) => ({
-      id: r.id,
-      what: r.what,
-      status: r.status,
-      statusLabel: actionPlanStatusLabel(r.status),
-      priority: r.priority,
-      priorityLabel: actionPlanPriorityLabel(r.priority),
-      when: r.when,
-      overdue: computeActionPlanOverdue(r.when, r.status, today),
-      origin: snapshots.get(`${r.originType}:${r.originId}`)!,
-    }));
+    const items: ActionPlanListItem[] = rows.map((r) => {
+      const origin = snapshots.get(`${r.originType}:${r.originId}`)!;
+      return {
+        id: r.id,
+        what: r.what,
+        who: r.who,
+        where: r.where,
+        type: r.type,
+        typeLabel: actionPlanTypeLabel(r.type),
+        companyName: origin.company,
+        status: r.status,
+        statusLabel: actionPlanStatusLabel(r.status),
+        priority: r.priority,
+        priorityLabel: actionPlanPriorityLabel(r.priority),
+        when: r.when,
+        overdue: computeActionPlanOverdue(r.when, r.status, today),
+        origin,
+      };
+    });
     return { rows: items, total };
+  });
+}
+
+/** KPIs do topo: contagens por status + planos ativos a vencer em ≤30 dias. */
+export async function listActionPlanKpis(orgId: string): Promise<ActionPlanKpis> {
+  const today = todayInSaoPaulo();
+  return withOrg(orgId, async (tx) => {
+    const [row] = await tx
+      .select({
+        planned: sql<number>`count(*) filter (where ${actionPlans.status} = 'planned')::int`,
+        inProgress: sql<number>`count(*) filter (where ${actionPlans.status} = 'in_progress')::int`,
+        completed: sql<number>`count(*) filter (where ${actionPlans.status} = 'completed')::int`,
+        cancelled: sql<number>`count(*) filter (where ${actionPlans.status} = 'cancelled')::int`,
+        total: countExpr,
+        dueSoon: sql<number>`count(*) filter (
+          where ${actionPlans.status} in ('planned','in_progress')
+            and ${actionPlans.when} is not null
+            and ${actionPlans.when} >= ${today}
+            and ${actionPlans.when} <= (${today}::date + ${ACTION_PLAN_DUE_SOON_DAYS}::int)
+        )::int`,
+      })
+      .from(actionPlans)
+      .where(eq(actionPlans.orgId, orgId));
+    return {
+      planned: row?.planned ?? 0,
+      inProgress: row?.inProgress ?? 0,
+      completed: row?.completed ?? 0,
+      cancelled: row?.cancelled ?? 0,
+      total: row?.total ?? 0,
+      dueSoon: row?.dueSoon ?? 0,
+    };
   });
 }
 
@@ -256,6 +325,7 @@ export async function createActionPlan(
           orgId,
           originType: values.originType,
           originId: values.originId,
+          type: values.type ?? null,
           what: values.what,
           why: values.why,
           who: values.who,
@@ -297,6 +367,7 @@ export async function updateActionPlan(
       const [row] = await tx
         .update(actionPlans)
         .set({
+          type: values.type ?? null,
           what: values.what,
           why: values.why,
           who: values.who,
