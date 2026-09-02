@@ -1,4 +1,5 @@
 import {
+  acceptSuggestedMeasuresInputSchema,
   dropExistingLevels,
   normalizeControlLevel,
   parseModelMeasures,
@@ -97,5 +98,51 @@ describe("toControlMeasureValuesFromSuggestion", () => {
     const v = toControlMeasureValuesFromSuggestion(s);
     expect(v.actionResponsible).toBeUndefined();
     expect(v.actionDeadline).toBeUndefined();
+  });
+});
+
+/**
+ * Regra da issue #42: risco moderado+ com medida aplicável exige responsável e prazo, e
+ * `createControlMeasure` recusa com `VALIDATION` quem não os traz. A IA não preenche
+ * esses dois de propósito — então eles precisam atravessar o aceite vindos da tela, ou o
+ * usuário perde o lote inteiro de sugestões num erro do servidor.
+ */
+describe("aceite de medida sugerida — responsável e prazo", () => {
+  const base = {
+    controlLevel: "collective_protection" as const,
+    actionWhat: "Enclausurar a fonte de ruído",
+    actionHow: "Instalar cabine acústica e verificar por dosimetria",
+  };
+
+  it("preserva responsável e prazo informados na revisão", () => {
+    const parsed = acceptSuggestedMeasuresInputSchema.parse({
+      suggestions: [
+        { ...base, actionResponsible: "SESMT", actionDeadline: "2026-12-31" },
+      ],
+    });
+    const values = toControlMeasureValuesFromSuggestion(parsed.suggestions[0]!);
+    expect(values.actionResponsible).toBe("SESMT");
+    expect(values.actionDeadline).toBe("2026-12-31");
+  });
+
+  it("aceita sem os dois campos (risco trivial/tolerável não os exige)", () => {
+    const parsed = acceptSuggestedMeasuresInputSchema.parse({ suggestions: [base] });
+    const values = toControlMeasureValuesFromSuggestion(parsed.suggestions[0]!);
+    expect(values.actionResponsible).toBeUndefined();
+    expect(values.actionDeadline).toBeUndefined();
+  });
+
+  it("recusa prazo em formato inválido antes de chegar ao banco", () => {
+    expect(() =>
+      acceptSuggestedMeasuresInputSchema.parse({
+        suggestions: [{ ...base, actionDeadline: "31/12/2026" }],
+      }),
+    ).toThrow();
+  });
+
+  it("a medida aceita continua entrando como aplicável e sem status fixado", () => {
+    const values = toControlMeasureValuesFromSuggestion({ ...base });
+    expect(values.applicable).toBe(true);
+    expect(values.status).toBeUndefined();
   });
 });

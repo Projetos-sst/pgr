@@ -19,6 +19,7 @@ import { requestControlMeasureSuggestions } from "@/shared/integrations/agents";
 import * as aiRepo from "@/shared/db/repositories/ai-risk-suggestion";
 import { fetchRiskControlContext } from "@/shared/db/repositories/ai-control-measures";
 import { createControlMeasure } from "@/shared/db/repositories/control-measures";
+import { isModeratePlusClassification } from "@/shared/domains/pgr/control-measure";
 
 /**
  * Núcleo de orquestração da **sugestão de medidas de controle por IA**, compartilhado
@@ -27,7 +28,15 @@ import { createControlMeasure } from "@/shared/db/repositories/control-measures"
  * níveis já cadastrados. Nada é persistido até o usuário aceitar.
  */
 
-export type SuggestControlMeasuresResult = { suggestions: SuggestedControlMeasure[] };
+export type SuggestControlMeasuresResult = {
+  suggestions: SuggestedControlMeasure[];
+  /**
+   * Risco moderado ou superior: a regra da issue #42 exige responsável e prazo em toda
+   * medida aplicável. Vai no retorno para a tela poder cobrar os dois **antes** do aceite,
+   * em vez de deixar o usuário perder o lote num `VALIDATION` do servidor.
+   */
+  requiresResponsibleAndDeadline: boolean;
+};
 export type AcceptSuggestedMeasuresResult = { created: number };
 
 export async function runSuggestControlMeasures(
@@ -57,7 +66,10 @@ export async function runSuggestControlMeasures(
   if (suggestions.length > 0) {
     await aiRepo.recordAiUsage(ctx.tenantId, AI_CONTROL_MEASURE_KIND);
   }
-  return { suggestions };
+  return {
+    suggestions,
+    requiresResponsibleAndDeadline: isModeratePlusClassification(context.classification),
+  };
 }
 
 /**

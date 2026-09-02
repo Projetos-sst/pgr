@@ -4045,7 +4045,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"suggestions\": [\n    {\n      \"controlLevel\": \"engineering\",\n      \"actionWhat\": \"Enclausurar a fonte de ruido\",\n      \"actionHow\": \"Instalar cabine acustica na esmerilhadeira e verificar a atenuacao com dosimetria\",\n      \"monitoring\": \"Dosimetria semestral\",\n      \"justification\": \"Controle de engenharia precede o EPI na hierarquia da NR-01\"\n    }\n  ]\n}",
+              "raw": "{\n  \"suggestions\": [\n    {\n      \"controlLevel\": \"engineering\",\n      \"actionWhat\": \"Enclausurar a fonte de ruido\",\n      \"actionHow\": \"Instalar cabine acustica na esmerilhadeira e verificar a atenuacao com dosimetria\",\n      \"monitoring\": \"Dosimetria semestral\",\n      \"justification\": \"Controle de engenharia precede o EPI na hierarquia da NR-01\",\n      \"actionResponsible\": \"SESMT\",\n      \"actionDeadline\": \"2026-12-31\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"

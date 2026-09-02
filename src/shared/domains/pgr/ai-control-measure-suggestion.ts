@@ -4,6 +4,7 @@ import { aliasPreprocessor } from "./enum-aliases";
 
 import { riskClassificationLabel, type RiskClassification } from "./methodology";
 import { controlLevelSchema, controlLevelLabel, type ControlLevel } from "./risks";
+import { optionalIsoDate } from "./form-fields";
 import type { ControlMeasureValues } from "./control-measure";
 
 /**
@@ -72,9 +73,22 @@ export const suggestedControlMeasureSchema = z.object({
 
 export type SuggestedControlMeasure = z.infer<typeof suggestedControlMeasureSchema>;
 
+/**
+ * Medida no momento do aceite: a proposta da IA **mais** o que só o usuário pode
+ * decidir. Responsável e prazo entram aqui porque a regra da issue #42 os exige quando o
+ * risco é moderado ou superior — sem estes dois campos, `createControlMeasure` recusa a
+ * medida aceita com `VALIDATION` e o usuário perde o lote inteiro de sugestões.
+ */
+export const acceptedControlMeasureSchema = suggestedControlMeasureSchema.extend({
+  actionResponsible: optionalText,
+  actionDeadline: optionalIsoDate,
+});
+
+export type AcceptedControlMeasure = z.infer<typeof acceptedControlMeasureSchema>;
+
 /** Entrada da ação de aceite: as medidas selecionadas/revisadas pelo usuário. */
 export const acceptSuggestedMeasuresInputSchema = z.object({
-  suggestions: z.array(suggestedControlMeasureSchema).min(1).max(MAX_MEASURE_SUGGESTIONS),
+  suggestions: z.array(acceptedControlMeasureSchema).min(1).max(MAX_MEASURE_SUGGESTIONS),
 });
 
 export type AcceptSuggestedMeasuresInput = z.input<
@@ -149,11 +163,12 @@ function ordenarPelaHierarquia(
  * Mapeia uma medida aceita para `ControlMeasureValues`. Toda medida sugerida entra como
  * **aplicável** (a IA só propõe o que cabe) e `status` fica indefinido: quem decide é a
  * regra do servidor, pela classificação vigente do risco (`applyMeasureStatusRule`).
- * Responsável e prazo ficam em branco de propósito — são compromisso de pessoa, não
- * palpite de modelo.
+ *
+ * Responsável e prazo nunca vêm do modelo — são compromisso de pessoa, não palpite. Mas
+ * chegam do formulário de revisão, porque risco moderado+ os torna obrigatórios (#42).
  */
 export function toControlMeasureValuesFromSuggestion(
-  s: SuggestedControlMeasure,
+  s: AcceptedControlMeasure,
 ): ControlMeasureValues {
   return {
     controlLevel: s.controlLevel,
@@ -165,8 +180,8 @@ export function toControlMeasureValuesFromSuggestion(
     actionHow: s.actionHow,
     actionTracking: undefined,
     actionMeasurement: undefined,
-    actionResponsible: undefined,
-    actionDeadline: undefined,
+    actionResponsible: s.actionResponsible,
+    actionDeadline: s.actionDeadline,
   };
 }
 

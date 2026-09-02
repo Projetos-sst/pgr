@@ -184,7 +184,11 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
   níveis já cadastrados) e devolve `{ suggestions: [{ controlLevel, actionWhat, actionHow, monitoring?,
 justification? }] }`, ordenadas pela hierarquia da NR-01 — **nada é persistido**. No máximo **uma
   medida por nível** (`uq_control_measures_org_risk_level`), e os níveis que o risco já tem são
-  descartados antes de responder. `POST /accept` grava as aceitas reusando `createControlMeasure`
+  descartados antes de responder. A resposta traz `requiresResponsibleAndDeadline`: risco
+  **moderado ou superior** exige `actionResponsible` + `actionDeadline` em cada medida
+  aplicável (regra da issue #42) — a IA não os preenche (são compromisso de pessoa), então
+  o aceite tem de trazê-los ou o servidor recusa com `422 VALIDATION`.
+  `POST /accept` grava as aceitas reusando `createControlMeasure`
   (que aplica a regra de status pela classificação e espelha no Plano de Ação), `201` com `{ created }`.
   Risco de outra org → `422 FK_NOT_FOUND`; cota → `402`; falha do LLM → `502 AI_UNAVAILABLE`.
 - **`/job-roles/{id}/training-suggestions`** (treinamentos obrigatórios por IA): `POST` envia cargo,

@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 
 import { AgentProgress } from "@/app/(protected)/_ui/agent-progress";
 import { Skeleton } from "@/app/(protected)/_ui/skeleton";
-import type { SuggestedControlMeasure } from "@/shared/domains/pgr/ai-control-measure-suggestion";
+import type { AcceptedControlMeasure } from "@/shared/domains/pgr/ai-control-measure-suggestion";
 import { controlLevelLabel } from "@/shared/domains/pgr/control-measure";
 import {
   acceptSuggestedControlMeasures,
@@ -20,6 +20,11 @@ import {
  *
  * A UNIQUE por nível permite **uma** medida por nível NR-01, então o servidor já
  * descarta os níveis que o risco tem — o que chega aqui é sempre aceitável.
+ *
+ * Responsável e prazo são editáveis aqui, e **obrigatórios** quando o risco é moderado ou
+ * superior (regra da issue #42). O modelo não os preenche de propósito — são compromisso
+ * de pessoa. Sem cobrá-los na tela, o aceite morreria num `VALIDATION` do servidor e o
+ * usuário perderia o lote inteiro de sugestões.
  */
 
 /** Roteiro fixo exibido enquanto o agente de medidas roda (ver `agent-stages.ts`). */
@@ -34,7 +39,8 @@ const MEASURE_AGENT_STAGES = [
 export function SuggestMeasuresSection({ riskId }: { riskId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<SuggestedControlMeasure[]>([]);
+  const [suggestions, setSuggestions] = useState<AcceptedControlMeasure[]>([]);
+  const [requiresPlan, setRequiresPlan] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -55,6 +61,7 @@ export function SuggestMeasuresSection({ riskId }: { riskId: string }) {
         return;
       }
       setSuggestions(result.data.suggestions);
+      setRequiresPlan(result.data.requiresResponsibleAndDeadline);
       setSelected(new Set(result.data.suggestions.map((_, i) => i)));
     });
   }
@@ -68,9 +75,23 @@ export function SuggestMeasuresSection({ riskId }: { riskId: string }) {
     });
   }
 
+  function edit(index: number, patch: Partial<AcceptedControlMeasure>) {
+    setSuggestions((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+  }
+
   function accept() {
     const chosen = suggestions.filter((_, i) => selected.has(i));
     if (chosen.length === 0) return;
+    // Espelha a regra do servidor (#42) para o usuário corrigir sem perder as sugestões.
+    if (
+      requiresPlan &&
+      chosen.some((s) => !s.actionResponsible?.trim() || !s.actionDeadline)
+    ) {
+      setError(
+        "Este risco é moderado ou superior: informe responsável e prazo em cada medida selecionada.",
+      );
+      return;
+    }
     setError(null);
     startAccept(async () => {
       const result = await acceptSuggestedControlMeasures(riskId, {
@@ -116,7 +137,9 @@ export function SuggestMeasuresSection({ riskId }: { riskId: string }) {
       {open ? (
         <ReviewModal
           suggestions={suggestions}
+          requiresPlan={requiresPlan}
           selected={selected}
+          onEdit={edit}
           generating={generating}
           pending={pending}
           onToggle={toggle}
@@ -130,21 +153,26 @@ export function SuggestMeasuresSection({ riskId }: { riskId: string }) {
 
 function ReviewModal({
   suggestions,
+  requiresPlan,
   selected,
   generating,
   pending,
   onToggle,
+  onEdit,
   onAccept,
   onClose,
 }: {
-  suggestions: SuggestedControlMeasure[];
+  suggestions: AcceptedControlMeasure[];
+  requiresPlan: boolean;
   selected: Set<number>;
   generating: boolean;
   pending: boolean;
   onToggle: (index: number) => void;
+  onEdit: (index: number, patch: Partial<AcceptedControlMeasure>) => void;
   onAccept: () => void;
   onClose: () => void;
 }) {
+  const fieldClass = "glass-input text-text rounded-card px-2 py-1 text-sm outline-none";
   return (
     <div
       role="dialog"
@@ -191,6 +219,13 @@ function ReviewModal({
           </p>
         ) : (
           <ul className="flex flex-col gap-2 overflow-y-auto">
+            {requiresPlan ? (
+              <li className="rounded-card border border-amber-300 bg-amber-50/70 px-3 py-2 text-sm text-amber-900">
+                Risco moderado ou superior: responsável e prazo são obrigatórios em cada
+                medida aplicável (NR-01). O agente não preenche esses dois — são
+                compromisso de pessoa.
+              </li>
+            ) : null}
             {suggestions.map((s, index) => (
               <li key={index} className="glass-panel rounded-card flex gap-3 p-3">
                 <input
@@ -214,6 +249,34 @@ function ReviewModal({
                   {s.justification ? (
                     <span className="text-text-subtle text-sm">{s.justification}</span>
                   ) : null}
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    <label className="flex flex-col gap-1">
+                      <span className="text-text-subtle text-xs">
+                        Responsável{requiresPlan ? " *" : ""}
+                      </span>
+                      <input
+                        value={s.actionResponsible ?? ""}
+                        onChange={(e) =>
+                          onEdit(index, { actionResponsible: e.target.value })
+                        }
+                        placeholder="Área ou função"
+                        className={fieldClass}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-text-subtle text-xs">
+                        Prazo{requiresPlan ? " *" : ""}
+                      </span>
+                      <input
+                        type="date"
+                        value={s.actionDeadline ?? ""}
+                        onChange={(e) =>
+                          onEdit(index, { actionDeadline: e.target.value })
+                        }
+                        className={fieldClass}
+                      />
+                    </label>
+                  </div>
                 </div>
               </li>
             ))}
