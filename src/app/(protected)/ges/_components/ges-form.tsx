@@ -14,6 +14,7 @@ import {
   FieldError,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
@@ -116,9 +117,10 @@ export function GesForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <FormError message={formError} />
-      <div className="grid gap-4 sm:grid-cols-2">
+
+      <FormSection title="Identificação">
         <SelectField
           label="Empresa"
           name="companyId"
@@ -137,78 +139,74 @@ export function GesForm({
           options={workUnits.map((w) => ({ value: w.id, label: w.name }))}
           error={errors.workUnitId}
         />
-      </div>
-      {noWorkUnits ? (
-        <p className="rounded-card border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Esta empresa não possui unidades de obra. Cadastre uma unidade antes de criar um
-          GES.
-        </p>
-      ) : null}
+        {noWorkUnits ? (
+          <p className="rounded-field border border-amber-300 bg-amber-50/80 px-3.5 py-2.5 text-[13px] text-amber-800 sm:col-span-full">
+            Esta empresa não possui unidades de obra. Cadastre uma unidade antes de criar
+            um GES.
+          </p>
+        ) : null}
+        <TextField
+          label="Nome do GES"
+          name="name"
+          required
+          defaultValue={ges?.name}
+          error={errors.name}
+          isFullWidth
+        />
+        {exposedWorkers !== undefined ? (
+          <TextField
+            label="Nº de trabalhadores expostos (derivado)"
+            name="_exposedWorkers"
+            defaultValue={String(exposedWorkers)}
+            readOnly
+            isMono
+            isFullWidth
+          />
+        ) : null}
+      </FormSection>
 
-      <TextField
-        label="Nome do GES"
-        name="name"
-        required
-        defaultValue={ges?.name}
-        error={errors.name}
-      />
-
-      {exposedWorkers !== undefined ? (
-        <div className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">
-            Nº de trabalhadores expostos (derivado)
-          </span>
-          <output className="glass-panel text-text rounded-card px-3 py-2 text-sm">
-            {exposedWorkers}
-          </output>
+      <FormSection title="Caracterização do ambiente">
+        <div className="flex flex-col gap-1 sm:col-span-full">
+          <FieldHint>{GES_FIELD_HINTS.processDescription}</FieldHint>
+          <FieldHint>{GES_FIELD_HINTS.environment}</FieldHint>
         </div>
-      ) : null}
-
-      <fieldset className="glass-card grid gap-4 p-4">
-        <legend className="text-text-muted px-1 text-sm font-medium">
-          Caracterização do ambiente
-        </legend>
-        <FieldHint>{GES_FIELD_HINTS.processDescription}</FieldHint>
-        <FieldHint>{GES_FIELD_HINTS.environment}</FieldHint>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <TextField
-              label="Pé-direito"
-              name="ceilingHeight"
-              defaultValue={ges?.ceilingHeight ?? ""}
-              error={errors.ceilingHeight}
-            />
-            <p className="text-text-subtle mt-1 text-xs">
-              Utilize ponto ou vírgula para separar decimais: 2.50 ou 2,50. Deixe em
-              branco se não for aplicável.
-            </p>
-          </div>
-          <div>
-            <SelectField
-              label="Cobertura"
-              name="roof"
-              defaultValue={ges?.roof ?? ""}
-              options={ROOF_OPTIONS}
-              emptyLabel="— não informado —"
-              error={errors.roof}
-            />
-            <p className="text-text-subtle mt-1 text-xs">
-              Indica se o ambiente tem estrutura/telhado sobre a área de trabalho —
-              relevante para avaliar exposição a agentes ambientais (chuva, sol,
-              ventilação).
-            </p>
-          </div>
-          {ENV_FIELDS.map((field) => (
-            <TextField
-              key={field.name}
-              label={field.label}
-              name={field.name}
-              defaultValue={(ges?.[field.name] as string | null | undefined) ?? ""}
-              error={errors[field.name]}
-            />
-          ))}
+        <div>
+          <TextField
+            label="Pé-direito"
+            name="ceilingHeight"
+            defaultValue={ges?.ceilingHeight ?? ""}
+            error={errors.ceilingHeight}
+          />
+          <p className="text-text-subtle mt-1 text-xs">
+            Utilize ponto ou vírgula para separar decimais: 2.50 ou 2,50. Deixe em branco
+            se não for aplicável.
+          </p>
         </div>
-      </fieldset>
+        <div>
+          <SelectField
+            label="Cobertura"
+            name="roof"
+            defaultValue={ges?.roof ?? ""}
+            options={ROOF_OPTIONS}
+            emptyLabel="— não informado —"
+            error={errors.roof}
+          />
+          <p className="text-text-subtle mt-1 text-xs">
+            Indica se o ambiente tem estrutura/telhado sobre a área de trabalho —
+            relevante para avaliar exposição a agentes ambientais (chuva, sol,
+            ventilação).
+          </p>
+        </div>
+        {ENV_FIELDS.map((field) => (
+          <TextField
+            key={field.name}
+            label={field.label}
+            name={field.name}
+            defaultValue={(ges?.[field.name] as string | null | undefined) ?? ""}
+            error={errors[field.name]}
+          />
+        ))}
+      </FormSection>
 
       <FieldError message={errors._} />
       <FormActions>
