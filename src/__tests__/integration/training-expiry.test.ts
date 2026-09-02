@@ -48,11 +48,11 @@ function shiftYears(isoDate: string, years: number): string {
 
 async function seedTrainingCatalog(admin: ReturnType<typeof postgres>): Promise<void> {
   await admin.unsafe(`
-    insert into public.training_catalog (id, org_id, name, workload_hours, periodicity) values
-      ('${CATALOG.annualA}','org_a','NR-18 Canteiro',4,'annual'),
-      ('${CATALOG.biennialA}','org_a','NR-35 Altura',8,'biennial'),
-      ('${CATALOG.singleA}','org_a','Integração',2,'single'),
-      ('${CATALOG.annualB}','org_b','NR-10 SEP',40,'annual');
+    insert into public.training_catalog (id, org_id, number, name, workload_hours, periodicity) values
+      ('${CATALOG.annualA}','org_a',1,'NR-18 Canteiro',4,'annual'),
+      ('${CATALOG.biennialA}','org_a',2,'NR-35 Altura',8,'biennial'),
+      ('${CATALOG.singleA}','org_a',3,'Integração',2,'single'),
+      ('${CATALOG.annualB}','org_b',1,'NR-10 SEP',40,'annual');
   `);
 }
 

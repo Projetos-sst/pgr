@@ -31,6 +31,13 @@ export async function listTrainingCatalogOptionsAction(): Promise<
   );
 }
 
+/** Normas distintas para o filtro "Todas as NRs". */
+export async function listTrainingNormsAction(): Promise<ActionResult<string[]>> {
+  return officeAction("pgr.training_catalog.norms", ({ tenantId }) =>
+    repo.listTrainingNorms(tenantId),
+  );
+}
+
 export async function getTrainingCatalogAction(
   id: string,
 ): Promise<ActionResult<TrainingCatalog>> {

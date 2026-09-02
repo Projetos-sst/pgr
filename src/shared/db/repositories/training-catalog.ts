@@ -6,19 +6,21 @@ import type {
   TrainingCatalogOption,
   TrainingCatalogValues,
 } from "@/shared/domains/pgr/trainings";
+import { nextTrainingNumber } from "@/shared/domains/pgr/trainings";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { withOrg, type TenantTransaction } from "../with-org";
 import {
   jobRoleRequiredTrainings,
+  orgs,
   trainingCatalog,
   trainingRecords,
   type TrainingCatalog,
 } from "../schema";
 import { auditedTenantWrite } from "./audited-write";
 
-export type ListTrainingCatalogParams = PageParams & { search?: string };
+export type ListTrainingCatalogParams = PageParams & { search?: string; norm?: string };
 
 export type TrainingCatalogDependents = { records: number; requiredLinks: number };
 
@@ -30,6 +32,7 @@ function toTrainingCatalogColumns(input: TrainingCatalogValues) {
     referenceNorm: input.referenceNorm ?? null,
     workloadHours: input.workloadHours,
     periodicity: input.periodicity,
+    isActive: input.isActive ?? true,
     description: input.description ?? null,
   };
 }
@@ -62,6 +65,8 @@ export async function listTrainingCatalog(
       or(ilike(trainingCatalog.name, term), ilike(trainingCatalog.referenceNorm, term))!,
     );
   }
+  const norm = params.norm?.trim();
+  if (norm) filters.push(eq(trainingCatalog.referenceNorm, norm));
   const where = and(...filters);
 
   return withOrg(orgId, async (tx) => {
@@ -112,15 +117,34 @@ export async function getTrainingCatalogById(
   });
 }
 
+/** Normas distintas do tenant — alimenta o filtro "Todas as NRs". */
+export async function listTrainingNorms(orgId: string): Promise<string[]> {
+  return withOrg(orgId, async (tx) => {
+    const rows = await tx
+      .selectDistinct({ norm: trainingCatalog.referenceNorm })
+      .from(trainingCatalog)
+      .where(eq(trainingCatalog.orgId, orgId))
+      .orderBy(asc(trainingCatalog.referenceNorm));
+    return rows.map((r) => r.norm).filter((n): n is string => !!n && n.trim() !== "");
+  });
+}
+
 export async function createTrainingCatalog(
   orgId: string,
   input: TrainingCatalogValues,
 ): Promise<TrainingCatalog> {
   return auditedTenantWrite(orgId, AUDIT_OP, () =>
     withOrg(orgId, async (tx) => {
+      // Numeração sequencial por tenant sob lock da linha de orgs (UNIQUE(org,number) backstop).
+      await tx.execute(sql`select id from ${orgs} where id = ${orgId} for update`);
+      const [{ max }] = await tx
+        .select({ max: sql<number | null>`max(${trainingCatalog.number})` })
+        .from(trainingCatalog)
+        .where(eq(trainingCatalog.orgId, orgId));
+      const number = nextTrainingNumber(max);
       const [row] = await tx
         .insert(trainingCatalog)
-        .values({ orgId, ...toTrainingCatalogColumns(input) })
+        .values({ orgId, number, ...toTrainingCatalogColumns(input) })
         .returning();
       return row;
     }),

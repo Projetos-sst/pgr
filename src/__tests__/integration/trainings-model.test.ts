@@ -20,9 +20,9 @@ const I = PGR_IDS;
 
 async function seedTrainings(admin: ReturnType<typeof postgres>): Promise<void> {
   await admin.unsafe(`
-    insert into public.training_catalog (id, org_id, name, workload_hours, periodicity) values
-      ('${T.catalogA}','org_a','NR-35 Trabalho em Altura',8,'biennial'),
-      ('${T.catalogB}','org_b','NR-10 Segurança em Eletricidade',40,'biennial');
+    insert into public.training_catalog (id, org_id, number, name, workload_hours, periodicity) values
+      ('${T.catalogA}','org_a',1,'NR-35 Trabalho em Altura',8,'biennial'),
+      ('${T.catalogB}','org_b',1,'NR-10 Segurança em Eletricidade',40,'biennial');
 
     insert into public.training_records
       (id, org_id, employee_id, training_id, completed_at, valid_until) values
@@ -83,8 +83,8 @@ const TRAINING_TABLES = [
       await expect(
         withOrgTx(runtime, "org_a", (tx) =>
           tx.unsafe(
-            `insert into public.training_catalog (org_id, name, workload_hours, periodicity)
-             values ('org_b','Invasor',4,'annual')`,
+            `insert into public.training_catalog (org_id, number, name, workload_hours, periodicity)
+             values ('org_b',3,'Invasor',4,'annual')`,
           ),
         ),
       ).rejects.toThrow();
@@ -95,14 +95,14 @@ const TRAINING_TABLES = [
     it("CHECK workload_hours > 0: zero e negativo são rejeitados", async () => {
       await expect(
         admin.unsafe(
-          `insert into public.training_catalog (org_id, name, workload_hours, periodicity)
-           values ('org_a','Carga zero',0,'annual')`,
+          `insert into public.training_catalog (org_id, number, name, workload_hours, periodicity)
+           values ('org_a',91,'Carga zero',0,'annual')`,
         ),
       ).rejects.toThrow(/workload_hours/);
       await expect(
         admin.unsafe(
-          `insert into public.training_catalog (org_id, name, workload_hours, periodicity)
-           values ('org_a','Carga negativa',-4,'annual')`,
+          `insert into public.training_catalog (org_id, number, name, workload_hours, periodicity)
+           values ('org_a',92,'Carga negativa',-4,'annual')`,
         ),
       ).rejects.toThrow(/workload_hours/);
     });
@@ -110,8 +110,8 @@ const TRAINING_TABLES = [
     it("periodicidade fora do enum é rejeitada", async () => {
       await expect(
         admin.unsafe(
-          `insert into public.training_catalog (org_id, name, workload_hours, periodicity)
-           values ('org_a','Enum inválido',4,'monthly')`,
+          `insert into public.training_catalog (org_id, number, name, workload_hours, periodicity)
+           values ('org_a',93,'Enum inválido',4,'monthly')`,
         ),
       ).rejects.toThrow();
     });
@@ -119,15 +119,15 @@ const TRAINING_TABLES = [
     it("UNIQUE (org_id, name): duplica no mesmo org → 23505; mesmo nome em outro org → ok", async () => {
       await expect(
         admin.unsafe(
-          `insert into public.training_catalog (org_id, name, workload_hours, periodicity)
-           values ('org_a','NR-35 Trabalho em Altura',8,'biennial')`,
+          `insert into public.training_catalog (org_id, number, name, workload_hours, periodicity)
+           values ('org_a',94,'NR-35 Trabalho em Altura',8,'biennial')`,
         ),
       ).rejects.toThrow(/uq_training_catalog_org_name/);
 
       await expect(
         admin.unsafe(
-          `insert into public.training_catalog (org_id, name, workload_hours, periodicity)
-           values ('org_b','NR-35 Trabalho em Altura',8,'biennial')`,
+          `insert into public.training_catalog (org_id, number, name, workload_hours, periodicity)
+           values ('org_b',2,'NR-35 Trabalho em Altura',8,'biennial')`,
         ),
       ).resolves.toBeDefined();
     });
