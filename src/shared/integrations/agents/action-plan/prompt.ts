@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import type { SuggestionInput } from "@/shared/domains/safety/action-plan-suggestion";
 
+import { flexibleText } from "../core/flexible-text";
+
 /**
  * Instruções, schema de saída e montagem da mensagem do agente 5W2H — **puro** (sem
  * `server-only`, sem rede). O input já vem sanitizado (allowlist não-PII); aqui ele vira a
@@ -11,19 +13,21 @@ import type { SuggestionInput } from "@/shared/domains/safety/action-plan-sugges
 
 /**
  * Schema **tolerante** de propósito: aceita o que o modelo costuma emitir (número como
- * texto, prazo ausente) e deixa a validação estrita para `actionPlanSuggestionSchema` no
- * core. `.describe()` importa: com `jsonPromptInjection` o schema vira parte do prompt.
+ * texto, prazo ausente, passos de 'como' em lista) e deixa a validação estrita para
+ * `actionPlanSuggestionSchema` no core. `.describe()` importa: com `jsonPromptInjection` o
+ * schema vira parte do prompt.
+ *
+ * Os cinco campos de texto usam `flexibleText` porque o modelo responde 'como' em lista com
+ * frequência — e um `string[]` reprovava aqui, jogando fora o plano inteiro.
  */
 export const actionPlanOutputSchema = z.object({
-  what: z.string().describe("O que será feito — a ação corretiva, no infinitivo."),
-  why: z.string().describe("Por que a ação é necessária, ligando ao risco/incidente."),
-  who: z
-    .string()
-    .describe(
-      "Área ou função responsável. NUNCA nome de pessoa (ex.: 'SESMT', 'Manutenção').",
-    ),
-  where: z.string().describe("Onde a ação será executada."),
-  how: z.string().describe("Como executar — passos concretos, na ordem."),
+  what: flexibleText("O que será feito — a ação corretiva, no infinitivo."),
+  why: flexibleText("Por que a ação é necessária, ligando ao risco/incidente."),
+  who: flexibleText(
+    "Área ou função responsável. NUNCA nome de pessoa (ex.: 'SESMT', 'Manutenção').",
+  ),
+  where: flexibleText("Onde a ação será executada."),
+  how: flexibleText("Como executar — passos concretos, na ordem."),
   when: z
     .string()
     .nullish()

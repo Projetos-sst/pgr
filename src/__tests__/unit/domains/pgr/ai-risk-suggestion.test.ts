@@ -102,3 +102,39 @@ describe("toRiskValuesFromSuggestion", () => {
     ).toThrow();
   });
 });
+
+/**
+ * O prompt pede o grupo do agente em inglês (o enum do banco), mas a conversa é em
+ * português e o modelo às vezes responde no idioma dela. Sem normalizar, o Zod reprovava
+ * **item a item** e uma resposta inteira e correta virava lista vazia — que na tela é
+ * indistinguível de "a IA não encontrou nada".
+ */
+describe("normalizeAgentType", () => {
+  it.each([
+    ["físico", "physical"],
+    ["Químico", "chemical"],
+    ["BIOLÓGICO", "biological"],
+    ["ergonômico", "ergonomic"],
+    ["mecânico", "mechanical"],
+    ["acidentes", "accident"],
+    ["fatores psicossociais", "psychosocial"],
+    ["risco físico", "physical"],
+    ["agente químico", "chemical"],
+  ])("aceita %s como %s", (input, expected) => {
+    expect(parseModelSuggestions([{ agentType: input, description: "d" }])).toEqual([
+      { agentType: expected, description: "d" },
+    ]);
+  });
+
+  it("mantém o valor canônico em inglês intacto", () => {
+    expect(parseModelSuggestions([{ agentType: "chemical", description: "d" }])).toEqual([
+      { agentType: "chemical", description: "d" },
+    ]);
+  });
+
+  it("continua descartando grupo irreconhecível — tolerar forma não é aceitar qualquer coisa", () => {
+    expect(
+      parseModelSuggestions([{ agentType: "radioativo", description: "d" }]),
+    ).toEqual([]);
+  });
+});

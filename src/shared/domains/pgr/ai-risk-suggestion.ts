@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { riskInputSchema, type RiskValues } from "./risk";
-import { riskAgentTypeSchema } from "./risks";
+import { riskAgentTypeSchema, type RiskAgentType } from "./risks";
 
 /**
  * Domínio puro da sugestão de riscos por IA. Espelha o **subconjunto** de `risks`
@@ -22,9 +22,51 @@ const optionalText = z.preprocess(
   z.string().trim().min(1).optional(),
 );
 
+/**
+ * Sinônimos aceitos para o grupo do agente. O prompt pede o valor em inglês (o enum do
+ * banco), mas a conversa toda acontece em português e o modelo às vezes responde
+ * `"Físico"`, `"risco químico"` ou o plural. Sem este mapa, o Zod rejeitava **item a
+ * item** e uma resposta inteira e correta virava lista vazia — indistinguível, na tela, de
+ * "a IA não encontrou nada".
+ */
+const AGENT_TYPE_ALIASES: Record<string, RiskAgentType> = {
+  fisico: "physical",
+  fisicos: "physical",
+  quimico: "chemical",
+  quimicos: "chemical",
+  biologico: "biological",
+  biologicos: "biological",
+  ergonomico: "ergonomic",
+  ergonomicos: "ergonomic",
+  mecanico: "mechanical",
+  mecanicos: "mechanical",
+  acidente: "accident",
+  acidentes: "accident",
+  psicossocial: "psychosocial",
+  psicossociais: "psychosocial",
+  "fatores psicossociais": "psychosocial",
+};
+
+/**
+ * Normaliza o grupo do agente: minúsculas, sem acento, sem o prefixo "risco"/"agente" e
+ * sem plural do inglês. Valor irreconhecível passa intacto para o enum reprovar — tolerar
+ * forma não pode virar aceitar qualquer coisa.
+ */
+export function normalizeAgentType(raw: unknown): unknown {
+  if (typeof raw !== "string") return raw;
+  const key = raw
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^(risco|agente|riscos|agentes)\s+/, "")
+    .trim();
+  return AGENT_TYPE_ALIASES[key] ?? AGENT_TYPE_ALIASES[key.replace(/s$/, "")] ?? key;
+}
+
 /** Um risco sugerido pela IA — só os campos que o modelo produz. */
 export const suggestedRiskSchema = z.object({
-  agentType: riskAgentTypeSchema,
+  agentType: z.preprocess(normalizeAgentType, riskAgentTypeSchema),
   hazard: optionalText,
   description: z.string().trim().min(1, "Descrição é obrigatória"),
   sources: optionalText,

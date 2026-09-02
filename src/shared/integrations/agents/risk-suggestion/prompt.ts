@@ -4,6 +4,8 @@ import type { GesRiskContext } from "@/shared/domains/pgr/ai-risk-suggestion";
 import { MAX_SUGGESTIONS } from "@/shared/domains/pgr/ai-risk-suggestion";
 import { riskAgentTypeLabel, type RiskAgentType } from "@/shared/domains/pgr/risks";
 
+import { flexibleOptionalText, flexibleText } from "../core/flexible-text";
+
 /**
  * Instruções, schema de saída e montagem da mensagem do agente de riscos — **puro**
  * (sem `server-only`, sem rede). É o que os testes unitários exercitam para garantir que
@@ -30,14 +32,12 @@ export const riskSuggestionOutputSchema = z.object({
   risks: z
     .array(
       z.object({
-        agentType: z
-          .string()
-          .describe(
-            `Grupo do agente de risco (NR-01). Um de: ${AGENT_TYPES.join(", ")}.`,
-          ),
-        hazard: z.string().optional().describe("Perigo associado ao risco."),
-        description: z.string().describe("Descrição objetiva do risco ocupacional."),
-        sources: z.string().optional().describe("Fontes geradoras do agente de risco."),
+        agentType: flexibleText(
+          `Grupo do agente de risco (NR-01). Um de: ${AGENT_TYPES.join(", ")}.`,
+        ),
+        hazard: flexibleOptionalText("Perigo associado ao risco."),
+        description: flexibleText("Descrição objetiva do risco ocupacional."),
+        sources: flexibleOptionalText("Fontes geradoras do agente de risco."),
       }),
     )
     .describe(
@@ -58,13 +58,14 @@ export const RISK_SUGGESTION_INSTRUCTIONS = [
   "",
   "Regras:",
   `1. Classifique cada risco em exatamente um grupo de agente: ${AGENT_TYPES.map((a) => `${a} (${riskAgentTypeLabel(a)})`).join(", ")}.`,
-  "2. Baseie-se APENAS no contexto fornecido. Não presuma máquinas, produtos ou atividades que não foram descritos.",
-  "3. Contexto vago ou insuficiente → devolva poucos riscos ou nenhum. Lista vazia é uma resposta correta; inventar risco não é.",
-  `4. No máximo ${MAX_SUGGESTIONS} riscos, do mais relevante para o menos relevante.`,
-  "5. Um risco por item: não agrupe dois agentes diferentes na mesma descrição.",
-  "6. Em 'fontes geradoras', cite o que no contexto gera o agente — equipamento, processo ou condição do ambiente.",
-  "7. Nunca peça nem cite dados pessoais de trabalhadores (nome, CPF, dados médicos).",
-  "8. Escreva em português do Brasil, em linguagem técnica de SST, objetiva e sem rodeios.",
+  "2. O nome do GES e os títulos das funções são evidência técnica válida: um GES chamado 'Técnicos de Manutenção Elétrica' sustenta os riscos típicos dessa atividade. Use-os.",
+  "3. Não invente especificidade que o contexto não dá: nada de modelo de máquina, produto químico, medição ou número que ninguém informou. Descreva o risco típico da atividade, não um cenário fictício.",
+  "4. Com pouco contexto, prefira riscos típicos e bem estabelecidos da atividade, em menor quantidade. Só devolva lista vazia quando o contexto não permitir sequer inferir a atividade (ex.: um GES chamado 'Setor A', sem função nenhuma).",
+  `5. No máximo ${MAX_SUGGESTIONS} riscos, do mais relevante para o menos relevante.`,
+  "6. Um risco por item: não agrupe dois agentes diferentes na mesma descrição.",
+  "7. Em 'fontes geradoras', cite o que no contexto gera o agente — equipamento, processo ou condição do ambiente.",
+  "8. Nunca peça nem cite dados pessoais de trabalhadores (nome, CPF, dados médicos).",
+  "9. Escreva em português do Brasil, em linguagem técnica de SST, objetiva e sem rodeios.",
 ].join("\n");
 
 function contextLine(label: string, value: string | null): string | null {

@@ -48,8 +48,22 @@ describe("RISK_SUGGESTION_INSTRUCTIONS", () => {
     expect(RISK_SUGGESTION_INSTRUCTIONS).toContain("psychosocial");
   });
 
-  it("proíbe inventar risco e permite explicitamente a lista vazia", () => {
-    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/Lista vazia é uma resposta correta/);
+  it("proíbe inventar especificidade sem tolher o risco típico da atividade", () => {
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/Não invente especificidade/);
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/riscos típicos/);
+  });
+
+  /**
+   * Um GES só com nome ("Técnicos de Manutenção Elétrica") rendia lista vazia, que na tela
+   * é indistinguível de falha. O nome e os títulos de função são dado que o usuário
+   * escreveu — evidência, não suposição.
+   */
+  it("trata nome do GES e títulos de função como evidência válida", () => {
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/evidência técnica válida/);
+  });
+
+  it("mantém a lista vazia como saída legítima, mas só sem atividade inferível", () => {
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/Só devolva lista vazia/);
   });
 });
 
