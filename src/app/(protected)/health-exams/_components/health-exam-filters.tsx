@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { EXAM_TYPES, EXAM_TYPE_LABELS } from "@/shared/domains/pgr/health-exams";
 
 /**
- * Busca (funcionário) + filtro de tipo de exame na toolbar (GET). `display:
+ * Busca (funcionário ou tipo de exame) + filtro de tipo na toolbar (GET). `display:
  * contents` deixa os filhos participarem do flex da `ListToolbar`. A busca envia
  * no Enter; o tipo envia ao mudar — sem botão, fiel ao mockup.
  */
@@ -38,8 +38,8 @@ export function HealthExamFilters({
         <input
           name="search"
           defaultValue={search ?? ""}
-          placeholder="Buscar por funcionário…"
-          aria-label="Buscar por funcionário"
+          placeholder="Buscar por funcionário ou exame…"
+          aria-label="Buscar por funcionário ou tipo de exame"
           className="text-text placeholder:text-text-subtle w-full bg-transparent text-[13px] outline-none"
         />
       </div>
