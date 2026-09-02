@@ -3,6 +3,7 @@ import "server-only";
 import { and, desc, eq, gte, ilike, inArray, lte, or, sql, type SQL } from "drizzle-orm";
 
 import {
+  nextAccidentNumber,
   toAccidentListItem,
   type AccidentCreateValues,
   type AccidentFilters,
@@ -20,7 +21,14 @@ import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-erro
 import { ValidationError } from "@/shared/errors/validation-error";
 import { resolvePageParams, type Paginated } from "@/shared/pagination";
 
-import { accidents, actionPlans, companies, employees, type Accident } from "../schema";
+import {
+  accidents,
+  actionPlans,
+  companies,
+  employees,
+  orgs,
+  type Accident,
+} from "../schema";
 import { withOrg, type TenantTransaction } from "../with-org";
 import { auditedTenantWrite } from "./audited-write";
 
@@ -116,14 +124,18 @@ export async function listAccidents(
   }
   const q = filters.q?.trim();
   if (q) {
-    // Busca apenas em campos NÃO sensíveis (local/área/nº CAT) — nunca em saúde/investigação.
+    // Busca apenas em campos NÃO sensíveis (nº do incidente/local/área/nº CAT) — nunca em
+    // funcionário/saúde/investigação (privacidade P3). Nº aceita dígitos ou o formato "INC-0001".
     const term = `%${q}%`;
+    const digits = q.replace(/\D/g, "");
+    const numeric = digits.length > 0 ? Number(digits) : null;
+    const textMatch = or(
+      ilike(accidents.location, term),
+      ilike(accidents.responsibleArea, term),
+      ilike(accidents.catNumber, term),
+    )!;
     conditions.push(
-      or(
-        ilike(accidents.location, term),
-        ilike(accidents.responsibleArea, term),
-        ilike(accidents.catNumber, term),
-      )!,
+      numeric != null ? or(textMatch, eq(accidents.number, numeric))! : textMatch,
     );
   }
   const where = and(...conditions);
@@ -131,6 +143,7 @@ export async function listAccidents(
     const rows = await tx
       .select({
         id: accidents.id,
+        number: accidents.number,
         occurredAt: accidents.occurredAt,
         type: accidents.type,
         category: accidents.category,
@@ -174,9 +187,19 @@ export async function createAccident(
     withOrg(orgId, async (tx) => {
       await assertCompanyInTenant(tx, orgId, values.companyId);
       await assertEmployeeInTenant(tx, orgId, values.employeeId);
+
+      // Lock da linha do tenant em `orgs`: serializa a numeração POR tenant (max+1) sem lock
+      // global; tenants distintos não bloqueiam entre si. `UNIQUE(org_id, number)` é o backstop.
+      await tx.execute(sql`select id from ${orgs} where id = ${orgId} for update`);
+      const [{ max }] = await tx
+        .select({ max: sql<number | null>`max(${accidents.number})` })
+        .from(accidents)
+        .where(eq(accidents.orgId, orgId));
+      const number = nextAccidentNumber(max);
+
       const [row] = await tx
         .insert(accidents)
-        .values({ orgId, status: "registered", ...accidentColumns(values) })
+        .values({ orgId, number, status: "registered", ...accidentColumns(values) })
         .returning();
       return row;
     }),

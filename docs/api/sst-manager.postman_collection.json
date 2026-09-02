@@ -6769,7 +6769,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/incidents?page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/incidents?page=1&pageSize=20&search=&severity=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "incidents"],
               "query": [
@@ -6780,6 +6780,16 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Nº do incidente, local, área ou nº CAT (nunca funcionário)"
+                },
+                {
+                  "key": "severity",
+                  "value": "",
+                  "description": "no_injury|minor|moderate|severe|fatal"
                 }
               ]
             }

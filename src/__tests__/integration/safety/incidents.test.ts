@@ -157,6 +157,47 @@ async function advanceToAwaitingCompletion(id: string): Promise<void> {
       expect(paged.ok && paged.data.total).toBe(3);
     });
 
+    it("9b. número sequencial por tenant; tenants distintos reiniciam em 1", async () => {
+      const r1 = await createAccidentAction(MIN);
+      const r2 = await createAccidentAction(MIN);
+      expect(r1.ok && r1.data.number).toBe(1);
+      expect(r2.ok && r2.data.number).toBe(2);
+
+      asOwner("org_b");
+      const rb = await createAccidentAction({ ...MIN, companyId: PGR_IDS.companyB });
+      expect(rb.ok && rb.data.number).toBe(1);
+    });
+
+    it("9c. lista expõe numberLabel (INC-000N)", async () => {
+      await createOk();
+      const list = await listAccidentsAction({});
+      expect(list.ok).toBe(true);
+      if (list.ok) {
+        expect(list.data.rows[0].number).toBe(1);
+        expect(list.data.rows[0].numberLabel).toBe("INC-0001");
+      }
+    });
+
+    it("9d. severidade no_injury (Sem lesão) persiste e filtra", async () => {
+      await createOk({ ...MIN, severity: "no_injury" });
+      await createOk({ ...MIN, severity: "severe" });
+      const noInjury = await listAccidentsAction({ severity: "no_injury" });
+      expect(noInjury.ok && noInjury.data.rows).toHaveLength(1);
+      if (noInjury.ok) expect(noInjury.data.rows[0].severityLabel).toBe("Sem lesão");
+    });
+
+    it("9e. busca por número do incidente (dígitos ou INC-000N)", async () => {
+      await createOk(); // number 1
+      await createOk(); // number 2
+      const byDigits = await listAccidentsAction({ q: "2" });
+      expect(byDigits.ok && byDigits.data.rows).toHaveLength(1);
+      if (byDigits.ok) expect(byDigits.data.rows[0].number).toBe(2);
+
+      const byLabel = await listAccidentsAction({ q: "INC-0001" });
+      expect(byLabel.ok && byLabel.data.rows).toHaveLength(1);
+      if (byLabel.ok) expect(byLabel.data.rows[0].number).toBe(1);
+    });
+
     it("10. atualiza conteúdo sem alterar o status", async () => {
       const id = await createOk();
       const upd = await updateAccidentAction(id, {

@@ -1,8 +1,8 @@
-import Link from "next/link";
-
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
-import { accidentFiltersSchema } from "@/shared/domains/safety/accident";
-import { INCIDENT_STATUS_LABELS } from "@/shared/domains/safety/incident-lifecycle";
+import {
+  ACCIDENT_SEVERITY_LABELS,
+  accidentFiltersSchema,
+} from "@/shared/domains/safety/accident";
 import { resolvePageParams } from "@/shared/pagination";
 import { listAccidentsAction } from "@/shared/server/actions/safety/accidents";
 
@@ -20,6 +20,7 @@ import {
   StatusBadge,
   ToolbarButton,
   ToolbarSearch,
+  ToolbarSelect,
   type StatusTone,
 } from "../_ui/data-list";
 import { EmptyState, PageHeader } from "../_ui/list";
@@ -28,24 +29,31 @@ import { IncidentIcon } from "./_components/incident-icon";
 
 export const dynamic = "force-dynamic";
 
-const TEMPLATE = "1fr 1.8fr 1.2fr 1fr 1.2fr 1.1fr 84px";
+// Nº · Data · Tipo · Gravidade · Status · Opções (mockup; Funcionário omitido por
+// privacidade — incidente é dado de saúde P0/P3; Empresa fica no detalhe).
+const TEMPLATE = "0.9fr 1fr 1.8fr 1.1fr 1.2fr 84px";
 
 const SEVERITY_TONE: Record<string, StatusTone> = {
-  minor: "green",
+  no_injury: "green",
+  minor: "amber",
   moderate: "amber",
   severe: "red",
   fatal: "red",
 };
 
 const STATUS_TONE: Record<string, StatusTone> = {
-  registered: "amber",
+  registered: "indigo",
   awaiting_planning: "indigo",
   awaiting_completion: "indigo",
   completed: "green",
   cancelled: "neutral",
 };
 
-type SearchParams = Promise<{ page?: string; search?: string; status?: string }>;
+const SEVERITY_OPTIONS = Object.entries(ACCIDENT_SEVERITY_LABELS).map(
+  ([value, label]) => ({ value, label }),
+);
+
+type SearchParams = Promise<{ page?: string; search?: string; severity?: string }>;
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR");
@@ -61,54 +69,37 @@ export default async function IncidentsPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const parsedStatus = accidentFiltersSchema.shape.status.safeParse(sp.status);
-  const status = parsedStatus.success ? parsedStatus.data : undefined;
+  const parsedSeverity = accidentFiltersSchema.shape.severity.safeParse(sp.severity);
+  const severity = parsedSeverity.success ? parsedSeverity.data : undefined;
 
-  const result = await listAccidentsAction({ page, q: sp.search, status });
+  const result = await listAccidentsAction({ page, q: sp.search, severity });
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
-  const params = { search: sp.search, status: sp.status };
+  const params = { search: sp.search, severity: sp.severity };
 
   return (
     <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
         icon={<IncidentIcon />}
-        title="Incidentes / Acidentes"
-        description="Registro interno de incidentes e acidentes de trabalho"
+        title="Incidentes"
+        description="Registro de incidentes, acidentes e quase-acidentes"
       />
 
       <ListCard>
         <ListToolbar>
           <ToolbarSearch
             basePath="/incidents"
-            placeholder="Buscar por local, área ou nº CAT…"
+            placeholder="Buscar por nº, local ou nº CAT…"
             defaultValue={sp.search}
-            hidden={{ status: sp.status }}
+            hidden={{ severity: sp.severity }}
           />
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Link
-              href="/incidents"
-              className={`rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-colors ${
-                !sp.status
-                  ? "btn-primary"
-                  : "text-text-muted hover:text-text border border-white/70 bg-white/50"
-              }`}
-            >
-              Todos
-            </Link>
-            {Object.entries(INCIDENT_STATUS_LABELS).map(([value, label]) => (
-              <Link
-                key={value}
-                href={`/incidents?status=${value}`}
-                className={`rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-colors ${
-                  sp.status === value
-                    ? "btn-primary"
-                    : "text-text-muted hover:text-text border border-white/70 bg-white/50"
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
+          <ToolbarSelect
+            basePath="/incidents"
+            name="severity"
+            defaultValue={sp.severity}
+            options={SEVERITY_OPTIONS}
+            emptyLabel="Todas as Gravidades"
+            hidden={{ search: sp.search }}
+          />
           <ToolbarButton href="/incidents/new">Novo Registro</ToolbarButton>
         </ListToolbar>
 
@@ -118,14 +109,13 @@ export default async function IncidentsPage({
           </div>
         ) : (
           <>
-            <DataGrid minWidth={960}>
+            <DataGrid minWidth={880}>
               <GridHeader
                 template={TEMPLATE}
                 columns={[
+                  { header: "Nº" },
                   { header: "Data" },
-                  { header: "Empresa" },
                   { header: "Tipo" },
-                  { header: "Categoria" },
                   { header: "Gravidade" },
                   { header: "Status" },
                   { header: "Opções", align: "right" },
@@ -133,14 +123,9 @@ export default async function IncidentsPage({
               />
               {rows.map((row, i) => (
                 <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
-                  <MonoCell href={`/incidents/${row.id}`}>
-                    {formatDate(row.occurredAt)}
-                  </MonoCell>
-                  <Cell className="text-text font-semibold">
-                    {row.companyName ?? "—"}
-                  </Cell>
-                  <Cell>{row.typeLabel}</Cell>
-                  <Cell>{row.categoryLabel}</Cell>
+                  <MonoCell href={`/incidents/${row.id}`}>{row.numberLabel}</MonoCell>
+                  <Cell className="text-text-muted">{formatDate(row.occurredAt)}</Cell>
+                  <Cell className="text-text font-semibold">{row.typeLabel}</Cell>
                   <Cell>
                     <StatusBadge tone={SEVERITY_TONE[row.severity] ?? "neutral"}>
                       {row.severityLabel}

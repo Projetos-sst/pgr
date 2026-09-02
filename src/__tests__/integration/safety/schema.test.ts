@@ -81,6 +81,7 @@ const FASE06_TABLES = [
         "fatal",
       ]);
       expect(await values("accident_severity")).toEqual([
+        "no_injury",
         "minor",
         "moderate",
         "severe",
