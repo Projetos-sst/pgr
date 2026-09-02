@@ -39,6 +39,7 @@ export function vehicleTypeLabel(value: string | null): string {
 export const inspectionFrequencySchema = z.enum([
   "daily",
   "weekly",
+  "biweekly",
   "monthly",
   "quarterly",
   "semiannual",
@@ -49,6 +50,7 @@ export type InspectionFrequency = z.infer<typeof inspectionFrequencySchema>;
 export const INSPECTION_FREQUENCY_LABELS: Record<InspectionFrequency, string> = {
   daily: "Diária",
   weekly: "Semanal",
+  biweekly: "Quinzenal",
   monthly: "Mensal",
   quarterly: "Trimestral",
   semiannual: "Semestral",
@@ -59,6 +61,7 @@ export const INSPECTION_FREQUENCY_LABELS: Record<InspectionFrequency, string> = 
 export const INSPECTION_FREQUENCY_DAYS: Record<InspectionFrequency, number> = {
   daily: 1,
   weekly: 7,
+  biweekly: 14,
   monthly: 30,
   quarterly: 90,
   semiannual: 182,

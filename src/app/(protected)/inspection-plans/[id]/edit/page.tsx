@@ -29,6 +29,8 @@ export default async function EditarPlanoPage({
           subtype: plan.subtype,
           title: plan.title,
           description: plan.description,
+          frequency: plan.frequency,
+          status: plan.status,
           items: items.map((it) => ({
             description: it.description,
             defaultValue: it.defaultValue,

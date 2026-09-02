@@ -13,6 +13,8 @@ export function GET(req: NextRequest) {
     return repo.listPlans(tenantId, {
       ...pageParamsFrom(req),
       type: sp.get("type") ?? undefined,
+      status: sp.get("status") ?? undefined,
+      category: sp.get("category") ?? undefined,
     });
   });
 }

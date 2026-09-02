@@ -1,7 +1,11 @@
 import {
   PLAN_TYPE_LABELS,
+  formatPlanCode,
   inspectionPlanInputSchema,
+  nextPlanNumber,
   planItemInputSchema,
+  planStatusLabel,
+  planStatusSchema,
   planTypeLabel,
   toPlanListItem,
 } from "@/shared/domains/inspections/plans";
@@ -54,25 +58,73 @@ describe("planTypeLabel / toPlanListItem", () => {
     expect(planTypeLabel("desconhecido")).toBe("desconhecido");
   });
 
-  it("projeta linha de listagem", () => {
+  it("projeta linha de listagem (código, frequência e status derivados)", () => {
     const row = {
       id: "p1",
       orgId: "org_a",
+      number: 14,
       type: "vehicular",
-      subtype: null,
+      subtype: "Frota",
       title: "Plano",
       description: null,
+      frequency: "biweekly",
+      status: "draft",
       createdAt: new Date(),
       updatedAt: new Date(),
       itemCount: 3,
     } as InspectionPlan & { itemCount: number };
     expect(toPlanListItem(row)).toEqual({
       id: "p1",
+      number: 14,
+      code: "PI-0014",
       title: "Plano",
       type: "vehicular",
       typeLabel: "Veicular",
-      subtype: null,
+      subtype: "Frota",
+      frequency: "biweekly",
+      frequencyLabel: "Quinzenal",
+      status: "draft",
+      statusLabel: "Rascunho",
       itemCount: 3,
     });
+  });
+});
+
+describe("nextPlanNumber / formatPlanCode", () => {
+  it("sequência começa em 1 e incrementa; defensivo", () => {
+    expect(nextPlanNumber(null)).toBe(1);
+    expect(nextPlanNumber(13)).toBe(14);
+    expect(nextPlanNumber(-2)).toBe(1);
+    expect(nextPlanNumber(Number.NaN)).toBe(1);
+  });
+  it("formata como PI-0014", () => {
+    expect(formatPlanCode(1)).toBe("PI-0001");
+    expect(formatPlanCode(14)).toBe("PI-0014");
+  });
+});
+
+describe("status e frequência do plano", () => {
+  it("status aceita active/draft/inactive e rotula em pt-BR", () => {
+    expect(planStatusSchema.parse("draft")).toBe("draft");
+    expect(() => planStatusSchema.parse("bogus")).toThrow();
+    expect(planStatusLabel("active")).toBe("Ativo");
+    expect(planStatusLabel("inactive")).toBe("Inativo");
+    expect(planStatusLabel(null)).toBe("—");
+  });
+  it("input aceita frequência biweekly e status opcional (default no repo)", () => {
+    const parsed = inspectionPlanInputSchema.parse({
+      type: "vehicular",
+      title: "X",
+      frequency: "biweekly",
+    });
+    expect(parsed.frequency).toBe("biweekly");
+    expect(parsed.status).toBeUndefined();
+    expect(() =>
+      inspectionPlanInputSchema.parse({
+        type: "vehicular",
+        title: "X",
+        frequency: "hourly",
+      }),
+    ).toThrow();
   });
 });

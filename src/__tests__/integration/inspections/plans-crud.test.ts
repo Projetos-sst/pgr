@@ -118,6 +118,50 @@ const shouldRun = !!APP_RUNTIME_URL && !!ADMIN_URL;
     expect(count).toBe(0);
   });
 
+  it("gera código sequencial por tenant e persiste status/frequência/categoria", async () => {
+    const a = await createPlan("org_a", {
+      type: "vehicular",
+      subtype: "Trabalho em Altura",
+      title: "Andaimes",
+      frequency: "biweekly",
+      status: "draft",
+      items: [],
+    });
+    const b = await createPlan("org_a", {
+      type: "vehicular",
+      title: "Outro",
+      items: [],
+    });
+    const pa = await getPlanWithItems("org_a", a.id);
+    const pb = await getPlanWithItems("org_a", b.id);
+    expect(pb!.plan.number).toBe(pa!.plan.number + 1); // consecutivos
+    expect(pa!.plan.frequency).toBe("biweekly");
+    expect(pa!.plan.status).toBe("draft");
+    expect(pb!.plan.status).toBe("active"); // default quando omitido
+
+    const c = await createPlan("org_b", { type: "vehicular", title: "B1", items: [] });
+    const pc = await getPlanWithItems("org_b", c.id);
+    expect(pc!.plan.number).toBeGreaterThanOrEqual(1);
+  });
+
+  it("filtra por status e por categoria (subtype)", async () => {
+    await createPlan("org_a", {
+      type: "equipment",
+      subtype: "NR-12 Filtro",
+      title: "Prensa",
+      status: "inactive",
+      items: [],
+    });
+    const byStatus = await listPlans("org_a", { status: "inactive" });
+    expect(byStatus.rows.every((r) => r.status === "inactive")).toBe(true);
+    expect(byStatus.rows.some((r) => r.title === "Prensa")).toBe(true);
+
+    const byCat = await listPlans("org_a", { category: "NR-12 Filtro" });
+    expect(byCat.rows).toHaveLength(1);
+    expect(byCat.rows[0].title).toBe("Prensa");
+    expect(byCat.rows[0].code).toMatch(/^PI-\d{4}$/);
+  });
+
   it("isolamento cross-tenant: org_b não enxerga plano de org_a", async () => {
     const { id } = await createPlan("org_a", {
       type: "vehicular",
