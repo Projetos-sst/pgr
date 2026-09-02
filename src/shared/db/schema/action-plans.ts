@@ -25,6 +25,9 @@ export const actionPlanStatus = pgEnum("action_plan_status", [
   "cancelled",
 ]);
 
+// Natureza da ação (redesign): corretiva (após ocorrência) ou preventiva.
+export const actionPlanType = pgEnum("action_plan_type", ["corrective", "preventive"]);
+
 // Plano de Ação 5W2H multiorigem. `origin_type` é TEXT validado na aplicação
 // (V1 = risk|incident; inspection/non_conformity plugam depois sem migration).
 // `origin_id` NÃO tem FK física (polimórfico) — validação de existência/tenant na app.
@@ -38,6 +41,7 @@ export const actionPlans = pgTable(
       .references(() => orgs.id, { onDelete: "cascade" }),
     originType: text("origin_type").notNull(),
     originId: uuid("origin_id").notNull(),
+    type: actionPlanType("type"),
     what: text("what").notNull(),
     why: text("why").notNull(),
     who: text("who").notNull(),

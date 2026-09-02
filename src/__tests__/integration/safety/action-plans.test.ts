@@ -18,6 +18,7 @@ import {
   createActionPlanAction,
   deleteActionPlanAction,
   getActionPlanAction,
+  listActionPlanKpisAction,
   listActionPlansAction,
   setActionPlanStatusAction,
   updateActionPlanAction,
@@ -269,6 +270,45 @@ async function createIncident(): Promise<string> {
     await createActionPlanAction(riskPlan());
     const bare = await runtime<{ id: string }[]>`select id from public.action_plans`;
     expect(bare).toHaveLength(0);
+  });
+
+  it("27. Tipo (corretiva/preventiva) persiste e filtra; lista deriva Empresa da origem", async () => {
+    await createActionPlanAction(riskPlan({ type: "corrective" }));
+    await createActionPlanAction(riskPlan({ type: "preventive" }));
+
+    const corrective = await listActionPlansAction({ type: "corrective" });
+    expect(
+      corrective.ok && corrective.data.rows.every((r) => r.type === "corrective"),
+    ).toBe(true);
+    if (corrective.ok) {
+      const row = corrective.data.rows[0];
+      expect(row.typeLabel).toBe("Corretiva");
+      // riskA → GES A → empresa "A Ltda" (derivada, sem coluna própria).
+      expect(row.companyName).toBe("A Ltda");
+    }
+  });
+
+  it("28. KPIs: contagens por status + a vencer em 30 dias", async () => {
+    const today = new Date();
+    const in10 = new Date(today.getTime() + 10 * 86400000).toISOString().slice(0, 10);
+    await createActionPlanAction(riskPlan()); // planned
+    await createActionPlanAction(riskPlan({ when: in10 })); // planned, vence em 10d
+    const done = await createActionPlanAction(riskPlan());
+    if (done.ok) await setActionPlanStatusAction(done.data.id, { status: "completed" });
+
+    const kpis = await listActionPlanKpisAction();
+    expect(kpis.ok).toBe(true);
+    if (kpis.ok) {
+      expect(kpis.data.planned).toBeGreaterThanOrEqual(2);
+      expect(kpis.data.completed).toBeGreaterThanOrEqual(1);
+      expect(kpis.data.dueSoon).toBeGreaterThanOrEqual(1);
+      expect(kpis.data.total).toBe(
+        kpis.data.planned +
+          kpis.data.inProgress +
+          kpis.data.completed +
+          kpis.data.cancelled,
+      );
+    }
   });
 
   it("26. control_measures permanece inalterado após operações de plano", async () => {
