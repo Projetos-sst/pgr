@@ -73,3 +73,5 @@ next-env.d.ts
 .maestri/
 # Espelho local do CLAUDE.md gerado pelo Maestri para agentes (nao versionar)
 AGENTS.md
+
+novas-correcoes
