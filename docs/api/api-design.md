@@ -119,6 +119,9 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/ges` · `/ges/{id}` · `/ges/{id}/dependents`                                                                                                                  | GET, POST · GET (inclui `exposedWorkers`), PUT, DELETE · GET                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `/ges/{id}/job-roles` · `/ges/{id}/job-roles/{linkId}`                                                                                                         | GET (`?available=true` p/ não vinculadas), POST · PUT, DELETE                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/ges/{id}/risk-suggestions` · `/ges/{id}/risk-suggestions/accept`                                                                                             | POST (sugere riscos por IA — não persiste) · POST (persiste selecionados como rascunho, `201`)                                                                                                                                                                                                                                                                                                                                                                   |
+| `/risks/{id}/control-measure-suggestions` · `/risks/{id}/control-measure-suggestions/accept`                                                                   | POST (propõe medidas de controle por IA na hierarquia da NR-01 — não persiste) · POST (grava as aceitas em `control_measures`, `201`)                                                                                                                                                                                                                                                                                                                            |
+| `/job-roles/{id}/training-suggestions` · `/job-roles/{id}/training-suggestions/accept`                                                                         | POST (propõe treinamentos obrigatórios por IA, já casados com o catálogo — não persiste) · POST (vincula; cria no catálogo o que faltar, `201`)                                                                                                                                                                                                                                                                                                                  |
+| `/service-orders/{id}/instruction-suggestions`                                                                                                                 | POST (redige instruções de segurança da OS por IA, NR-01 1.4.1 — não persiste)                                                                                                                                                                                                                                                                                                                                                                                   |
 | `/employees` · `/employees/{id}` · `/employees/{id}/epi-record`                                                                                                | GET, POST · GET, PUT, DELETE · GET (ficha de EPI, read-only)                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `/pgr` · `/pgr/{id}`                                                                                                                                           | GET (`?search=` empresa/obra/responsável, `?registrationType=crm\|crea\|mte\|not_applicable`, `?companyId=`, `?workUnitId=`; resposta inclui `createdBy`), POST (persiste `created_by` = autor) · GET, PUT, DELETE (documento PGR; sem `/dependents`). **`PUT` em PGR assinado ou publicado → `409 ALREADY_SIGNED`** (trava imposta no servidor, não só na UI)                                                                                                   |
 | `/pgr/{id}/revisions` · `/pgr/{id}/revisions/{revisionId}/archive`                                                                                             | GET (histórico, mais recente primeiro), POST (número **server-side**; `revisionNumber` no body → `422`; `201`; PGR assinado/publicado → `409 ALREADY_SIGNED`) · PUT (arquiva a revisão, #46; idempotente — repetir não é erro; revisão inexistente/cross-tenant → `404`; PGR assinado/publicado → `409 ALREADY_SIGNED`)                                                                                                                                          |
@@ -170,12 +173,38 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
   corpo completo `RiskMethodologyInput` (gradações 1–5 + faixas que particionam 1–25). Sem `list`,
   `{id}` nem `dependents`.
 - **`/ges/{id}/risk-suggestions`** (sugestão de riscos por IA): `POST` monta o contexto **não-PII** do
-  GES (processo, ambiente, títulos de função) e consulta o LLM (Anthropic/Claude, chave só no servidor),
+  GES (processo, ambiente, títulos de função) e consulta o LLM via OpenRouter (chave só no servidor),
   devolvendo uma lista de riscos sugeridos (`{ suggestions: [{ agentType, hazard?, description, sources? }] }`)
   — **nada é persistido**. GES de outra org → `422 FK_NOT_FOUND`; cota mensal do plano free estourada →
   `402 QUOTA_EXCEEDED`; falha/timeout do LLM → `502 AI_UNAVAILABLE` (nunca bloqueia o cadastro). `POST
 /accept` recebe os riscos selecionados/revisados e os grava como **rascunho** em `risks` (reusa a regra
   de `createRisk`), `201` com `{ created }`.
+- **`/risks/{id}/control-measure-suggestions`** (medidas de controle por IA): `POST` monta o contexto
+  **não-PII** do risco (o risco, o ambiente do GES, títulos de função, classificação vigente e os
+  níveis já cadastrados) e devolve `{ suggestions: [{ controlLevel, actionWhat, actionHow, monitoring?,
+justification? }] }`, ordenadas pela hierarquia da NR-01 — **nada é persistido**. No máximo **uma
+  medida por nível** (`uq_control_measures_org_risk_level`), e os níveis que o risco já tem são
+  descartados antes de responder. A resposta traz `requiresResponsibleAndDeadline`: risco
+  **moderado ou superior** exige `actionResponsible` + `actionDeadline` em cada medida
+  aplicável (regra da issue #42) — a IA não os preenche (são compromisso de pessoa), então
+  o aceite tem de trazê-los ou o servidor recusa com `422 VALIDATION`.
+  `POST /accept` grava as aceitas reusando `createControlMeasure`
+  (que aplica a regra de status pela classificação e espelha no Plano de Ação), `201` com `{ created }`.
+  Risco de outra org → `422 FK_NOT_FOUND`; cota → `402`; falha do LLM → `502 AI_UNAVAILABLE`.
+- **`/job-roles/{id}/training-suggestions`** (treinamentos obrigatórios por IA): `POST` envia cargo,
+  GES, riscos da exposição e o **catálogo da organização**, e devolve `{ suggestions: [{ name,
+referenceNorm?, periodicity, workloadHours, rationale?, trainingId, alreadyRequired }] }`. O catálogo
+  entra no prompt para reconciliar nomes: `trainingId` vem preenchido quando o curso já existe
+  (comparação por tokens, então "Trabalho em Altura" casa com "NR-35 — Trabalho em Altura") e `null`
+  quando o aceite terá de criá-lo. `POST /accept` **cria no catálogo o que faltar** e vincula,
+  `201` com `{ linked, createdInCatalog }`; o vínculo é idempotente.
+- **`/service-orders/{id}/instruction-suggestions`** (instruções de segurança da OS, NR-01 1.4.1):
+  `POST` envia função, GES, unidade, riscos e EPIs da atividade e devolve `{ suggestions: [{
+description }] }` na voz imperativa, sem repetir os itens que a OS já tem. **Não há `/accept` de
+  propósito**: a coleção de itens é substituída em bloco por `PUT /service-orders/{id}`, que guarda as
+  regras de OS assinada (imutável) e estado terminal — um caminho de escrita próprio duplicaria essas
+  guardas. O trabalhador designado entra apenas pelo **título da função**: nome, CPF e matrícula nunca
+  saem do servidor.
 - **`/epi-deliveries`** (fatia 012): list filtra por `employeeId` + `search` (nome do funcionário).
   Create: `{ employeeId, deliveryDate, items: [{ stockId, quantity }] }` → `201` com a baixa
   aplicada por item; qualquer item sem saldo → `422 INSUFFICIENT_STOCK` com **rollback total**.

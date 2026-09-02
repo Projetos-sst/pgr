@@ -17,6 +17,7 @@ import { DeleteControlMeasure } from "./_components/delete-control-measure";
 import { MeasureStateBadge } from "./_components/measure-state-badge";
 import { MeasureStatusBadge } from "./_components/measure-status-badge";
 import { RiskContext } from "./_components/risk-context";
+import { SuggestMeasuresSection } from "./_components/suggest-measures-section";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,8 @@ export default async function ControlMeasuresPage({
       />
 
       <RiskContext risk={riskResult.data} assessment={currentAssessment} />
+
+      <SuggestMeasuresSection riskId={riskId} />
 
       {rows.length === 0 ? (
         <EmptyState message="Nenhuma medida de controle registrada. Crie a primeira medida por nível NR-01." />

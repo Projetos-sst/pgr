@@ -22,9 +22,9 @@
     "worker": "node --conditions=react-server --import tsx worker/index.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.110.0",
     "@clerk/localizations": "^4.6.8",
     "@clerk/nextjs": "^7.4.1",
+    "@mastra/core": "^1.63.2",
     "@supabase/supabase-js": "^2.106.1",
     "drizzle-orm": "^0.45.2",
     "next": "16.2.6",

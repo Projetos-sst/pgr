@@ -237,6 +237,47 @@ label[for] {
     animation: fadeIn 0.25s ease-out forwards;
   }
 
+  /* Espera dos agentes de IA: esqueleto do conteúdo + barra/pulso de progresso. */
+  @keyframes skeletonShimmer {
+    0% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.55;
+    }
+  }
+
+  @keyframes agentDotPulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.4;
+      transform: scale(0.7);
+    }
+  }
+
+  .skeleton-block {
+    animation: skeletonShimmer 1.4s ease-in-out infinite;
+  }
+
+  .agent-progress-dot {
+    animation: agentDotPulse 1.2s ease-in-out infinite;
+  }
+
+  /*
+   * A largura vem do estado (tick do componente), não de keyframe: a transição só
+   * suaviza os degraus entre um tick e o outro.
+   */
+  .agent-progress-bar {
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
   /* Micro-interações de Hover */
   .hover-lift {
     transition:
@@ -260,6 +301,18 @@ label[for] {
     .animate-fade-in {
       animation-duration: 0.01ms;
       animation-iteration-count: 1;
+    }
+    /*
+     * O esqueleto e o pulso continuam visíveis (são a informação "carregando"),
+     * só param de se mover; a barra passa a saltar entre os valores.
+     */
+    .skeleton-block,
+    .agent-progress-dot {
+      animation: none;
+      opacity: 1;
+    }
+    .agent-progress-bar {
+      transition: none;
     }
     .hover-lift,
     .hover-lift:hover {

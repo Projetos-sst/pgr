@@ -63,7 +63,9 @@ const noStoreHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  serverExternalPackages: ["zod"],
+  // `@mastra/core` é Node puro (execa, ws, croner) e quebra se o bundler tentar
+  // empacotá-lo; roda só no servidor, nos agentes de IA.
+  serverExternalPackages: ["zod", "@mastra/core"],
   experimental: {
     authInterrupts: true,
     // GED upload: teto de ARQUIVO do módulo é 25 MiB (`MAX_FILE_BYTES` em

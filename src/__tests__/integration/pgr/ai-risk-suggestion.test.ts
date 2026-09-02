@@ -9,13 +9,13 @@ jest.mock("@/shared/auth/require-office-staff", () => ({
 }));
 // O único ponto de rede (LLM) é substituído por mock: a persistência/isolamento/cota
 // são exercidos contra o Postgres efêmero sem chamar a API externa.
-jest.mock("@/shared/integrations/ai/anthropic", () => ({
+jest.mock("@/shared/integrations/agents", () => ({
   requestRiskSuggestions: jest.fn(),
 }));
 
 import { requireOfficeStaff } from "@/shared/auth/require-office-staff";
 import { ForbiddenError } from "@/shared/auth/errors";
-import { requestRiskSuggestions } from "@/shared/integrations/ai/anthropic";
+import { requestRiskSuggestions } from "@/shared/integrations/agents";
 import {
   acceptSuggestedRisks,
   suggestRisks,

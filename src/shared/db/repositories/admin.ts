@@ -83,7 +83,7 @@ export async function findUserByEmail(email: string): Promise<MasterUser | null>
 }
 
 /**
- * Uso de IA (Anthropic) por organização — agregação CROSS-TENANT (master-only).
+ * Uso da IA pgr-e por organização — agregação CROSS-TENANT (master-only).
  * `ai_usage_events` é append-only e modesto; conta-se em memória e junta-se o nome
  * da org. Ordenado por volume desc.
  */
