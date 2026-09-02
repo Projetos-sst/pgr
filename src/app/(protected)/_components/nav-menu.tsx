@@ -87,6 +87,11 @@ const NAV: NavEntry[] = [
         label: "Gestão de Riscos Psicossociais",
         iconName: "heart",
       },
+      {
+        href: "/psychosocial/risk-factors",
+        label: "Fatores de Risco Psicossocial",
+        iconName: "heart",
+      },
       { href: "/health-exams", label: "Gestão de Saúde (ASO)", iconName: "activity" },
       { href: "/incidents", label: "Gestão de Incidentes", iconName: "alert-circle" },
       { href: "/action-plans", label: "Gestão de Planos de Ação", iconName: "calendar" },

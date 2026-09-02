@@ -160,8 +160,11 @@ export {
   psychosocialResponses,
   psychosocialAnswers,
   psychosocialRisks,
+  psychosocialRiskFactors,
   psychosocialCampaignStatus,
   psychosocialQuestionType,
+  psychosocialRiskLevel,
+  psychosocialFactorStatus,
   type PsychosocialCampaign,
   type NewPsychosocialCampaign,
   type PsychosocialCampaignStatus,
@@ -174,6 +177,10 @@ export {
   type NewPsychosocialAnswer,
   type PsychosocialRisk,
   type NewPsychosocialRisk,
+  type PsychosocialRiskFactor,
+  type NewPsychosocialRiskFactor,
+  type PsychosocialRiskLevelValue,
+  type PsychosocialFactorStatusValue,
 } from "./psychosocial";
 export {
   folders,
