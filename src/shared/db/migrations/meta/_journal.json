@@ -288,6 +288,13 @@
 			"when": 1788226202820,
 			"tag": "0040_accidents_number_severity",
 			"breakpoints": true
+		},
+		{
+			"idx": 41,
+			"version": "7",
+			"when": 1788312155402,
+			"tag": "0041_vehicles_company_inspection",
+			"breakpoints": true
 		}
 	]
 }

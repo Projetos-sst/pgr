@@ -1,7 +1,13 @@
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
-import { formatPlate } from "@/shared/domains/inspections/vehicles";
-import { listVehiclesAction } from "@/shared/server/actions/inspections/vehicles";
+import {
+  formatPlate,
+  type VehicleInspectionStatus,
+} from "@/shared/domains/inspections/vehicles";
+import {
+  listVehicleCompanyOptionsAction,
+  listVehiclesAction,
+} from "@/shared/server/actions/inspections/vehicles";
 
 import { EmptyState, PageHeader } from "../_ui/list";
 import {
@@ -16,7 +22,9 @@ import {
   StatusBadge,
   ToolbarButton,
   ToolbarSearch,
+  ToolbarSelect,
   ViewIcon,
+  type StatusTone,
 } from "../_ui/data-list";
 import { DeleteVehicle } from "./_components/delete-vehicle";
 import { VehicleIcon } from "./_components/vehicle-icon";
@@ -25,7 +33,19 @@ export const dynamic = "force-dynamic";
 
 const TEMPLATE = "1fr 1.8fr 1.2fr 1fr 1.2fr 1.1fr 84px";
 
-type SearchParams = Promise<{ search?: string; page?: string }>;
+// Status de inspeção (derivado): Regular verde, A vencer âmbar, Vencida vermelho.
+const STATUS_TONE: Record<VehicleInspectionStatus, StatusTone> = {
+  none: "neutral",
+  regular: "green",
+  due_soon: "amber",
+  expired: "red",
+};
+
+function formatDate(iso: string | null): string {
+  return iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR") : "—";
+}
+
+type SearchParams = Promise<{ search?: string; company?: string; page?: string }>;
 
 export default async function VeiculosPage({
   searchParams,
@@ -37,8 +57,13 @@ export default async function VeiculosPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const result = await listVehiclesAction({ search: sp.search, page });
+  const [result, companyOptions] = await Promise.all([
+    listVehiclesAction({ search: sp.search, companyId: sp.company, page }),
+    listVehicleCompanyOptionsAction(),
+  ]);
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
+  const companies = companyOptions.ok ? companyOptions.data : [];
+  const params = { search: sp.search, company: sp.company };
 
   return (
     <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
@@ -54,6 +79,15 @@ export default async function VeiculosPage({
             basePath="/vehicles"
             placeholder="Buscar por placa ou modelo…"
             defaultValue={sp.search}
+            hidden={{ company: sp.company }}
+          />
+          <ToolbarSelect
+            basePath="/vehicles"
+            name="company"
+            defaultValue={sp.company}
+            options={companies}
+            emptyLabel="Todas as Empresas"
+            hidden={{ search: sp.search }}
           />
           <ToolbarButton href="/vehicles/new">Novo Veículo</ToolbarButton>
         </ListToolbar>
@@ -62,8 +96,8 @@ export default async function VeiculosPage({
           <div className="p-6">
             <EmptyState
               message={
-                sp.search
-                  ? "Nenhum veículo encontrado para a busca."
+                sp.search || sp.company
+                  ? "Nenhum veículo encontrado para o filtro."
                   : "Nenhum veículo cadastrado."
               }
             />
@@ -92,10 +126,14 @@ export default async function VeiculosPage({
                     {[row.brand, row.model].filter(Boolean).join(" ") || "—"}
                   </Cell>
                   <Cell>{row.typeLabel}</Cell>
-                  <Cell className="text-text-subtle">—</Cell>
-                  <Cell className="text-text-subtle">—</Cell>
+                  <Cell>{row.companyName ?? "—"}</Cell>
+                  <Cell className="text-text-muted font-mono">
+                    {formatDate(row.lastInspectedAt)}
+                  </Cell>
                   <Cell>
-                    <StatusBadge tone="neutral">Sem inspeção</StatusBadge>
+                    <StatusBadge tone={STATUS_TONE[row.inspectionStatus]}>
+                      {row.inspectionStatusLabel}
+                    </StatusBadge>
                   </Cell>
                   <Cell align="right">
                     <span className="flex items-center justify-end gap-1">
@@ -118,7 +156,7 @@ export default async function VeiculosPage({
               page={page}
               pageSize={pageSize}
               total={total}
-              params={{ search: sp.search }}
+              params={params}
             />
           </>
         )}

@@ -4640,7 +4640,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/vehicles?page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/vehicles?page=1&pageSize=20&search=&companyId=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "vehicles"],
               "query": [
@@ -4656,6 +4656,11 @@
                   "key": "search",
                   "value": "",
                   "disabled": true
+                },
+                {
+                  "key": "companyId",
+                  "value": "",
+                  "description": "filtra por empresa"
                 }
               ]
             }
@@ -4686,7 +4691,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"type\": \"truck\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH\",\n  \"initialKm\": 1000\n}"
+              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"renavam\": \"12345678901\",\n  \"brand\": \"Mercedes-Benz\",\n  \"model\": \"Actros 2651\",\n  \"type\": \"truck\",\n  \"year\": 2022,\n  \"color\": \"Branco\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"inspectionFrequency\": \"monthly\",\n  \"initialKm\": 1000,\n  \"notes\": \"Frota própria\"\n}"
             }
           }
         },
@@ -4736,7 +4741,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"type\": \"truck\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH\",\n  \"initialKm\": 1000\n}"
+              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"renavam\": \"12345678901\",\n  \"brand\": \"Mercedes-Benz\",\n  \"model\": \"Actros 2651\",\n  \"type\": \"truck\",\n  \"year\": 2022,\n  \"color\": \"Branco\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"inspectionFrequency\": \"monthly\",\n  \"initialKm\": 1000,\n  \"notes\": \"Frota própria\"\n}"
             }
           }
         },
