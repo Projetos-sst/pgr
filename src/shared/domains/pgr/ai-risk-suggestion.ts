@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { aliasPreprocessor } from "./enum-aliases";
 import { riskInputSchema, type RiskValues } from "./risk";
 import { riskAgentTypeSchema, type RiskAgentType } from "./risks";
 
@@ -47,22 +48,11 @@ const AGENT_TYPE_ALIASES: Record<string, RiskAgentType> = {
   "fatores psicossociais": "psychosocial",
 };
 
-/**
- * Normaliza o grupo do agente: minúsculas, sem acento, sem o prefixo "risco"/"agente" e
- * sem plural do inglês. Valor irreconhecível passa intacto para o enum reprovar — tolerar
- * forma não pode virar aceitar qualquer coisa.
- */
-export function normalizeAgentType(raw: unknown): unknown {
-  if (typeof raw !== "string") return raw;
-  const key = raw
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/^(risco|agente|riscos|agentes)\s+/, "")
-    .trim();
-  return AGENT_TYPE_ALIASES[key] ?? AGENT_TYPE_ALIASES[key.replace(/s$/, "")] ?? key;
-}
+/** Prefixos de ruído que o modelo anexa ao grupo: "risco físico", "agente químico". */
+const AGENT_TYPE_NOISE = /^(risco|agente|riscos|agentes)\s+/;
+
+/** Grupo do agente tolerante a pt-BR; valor irreconhecível segue para o enum reprovar. */
+export const normalizeAgentType = aliasPreprocessor(AGENT_TYPE_ALIASES, AGENT_TYPE_NOISE);
 
 /** Um risco sugerido pela IA — só os campos que o modelo produz. */
 export const suggestedRiskSchema = z.object({

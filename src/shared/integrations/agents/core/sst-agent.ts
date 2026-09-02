@@ -1,6 +1,26 @@
 import type { ZodType } from "zod";
 
 /**
+ * Contrato de saída anexado às instruções de **todo** agente.
+ *
+ * Com `jsonPromptInjection`, o schema JSON vai dentro do prompt — e os modelos pequenos do
+ * tier gratuito às vezes o confundem com o pedido: devolvem `{"$schema": …, "properties":
+ * …}`, isto é, a definição em vez do dado. Medido no agente de medidas de controle, isso
+ * derrubava 4 de 5 execuções, sempre com falha rápida (~3s, resposta curta demais para ser
+ * conteúdo).
+ *
+ * Fica na classe base de propósito: é limitação do provedor, não regra de um agente, e
+ * agente novo herda a proteção sem precisar saber que ela existe.
+ */
+const OUTPUT_CONTRACT = [
+  "",
+  "Formato da resposta (obrigatório):",
+  "- Responda SOMENTE com o objeto JSON preenchido com o conteúdo real que você produziu.",
+  '- NUNCA devolva o schema: nada de "$schema", "type", "properties", "items" ou "required".',
+  "- Não escreva texto, comentário ou cerca de código fora do JSON.",
+].join("\n");
+
+/**
  * Contrato de um agente de IA da plataforma. Um agente é **declarativo**: diz quem é
  * (`instructions`), o que recebe (`buildPrompt`), o formato fixo que devolve
  * (`outputSchema`) e como esse formato vira o tipo do domínio (`parseOutput`). Quem
@@ -37,6 +57,14 @@ export abstract class SstAgent<TInput, TRaw, TOutput> {
    * Estourou → `AiUnavailableError`, e o usuário segue no preenchimento manual.
    */
   readonly timeoutMs: number = 30_000;
+
+  /**
+   * Instruções efetivamente enviadas: as do agente mais o contrato de saída comum. É o que
+   * o executor consome — sobrescrever `instructions` numa subclasse não remove o contrato.
+   */
+  get systemPrompt(): string {
+    return `${this.instructions}\n${OUTPUT_CONTRACT}`;
+  }
 
   /** Contexto do caso concreto → mensagem enviada ao modelo. */
   abstract buildPrompt(input: TInput): string;

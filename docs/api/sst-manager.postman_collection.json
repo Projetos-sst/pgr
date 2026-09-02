@@ -4002,6 +4002,172 @@
       ]
     },
     {
+      "name": "Sugestao de medidas de controle (IA)",
+      "item": [
+        {
+          "name": "POST /risks/{id}/control-measure-suggestions (sugere por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measure-suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measure-suggestions"]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/{id}/control-measure-suggestions/accept (grava, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suggestions\": [\n    {\n      \"controlLevel\": \"engineering\",\n      \"actionWhat\": \"Enclausurar a fonte de ruido\",\n      \"actionHow\": \"Instalar cabine acustica na esmerilhadeira e verificar a atenuacao com dosimetria\",\n      \"monitoring\": \"Dosimetria semestral\",\n      \"justification\": \"Controle de engenharia precede o EPI na hierarquia da NR-01\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measure-suggestions/accept",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "control-measure-suggestions",
+                "accept"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sugestao de treinamentos obrigatorios (IA)",
+      "item": [
+        {
+          "name": "POST /job-roles/{id}/training-suggestions (sugere por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}/training-suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-roles", "{{jobRoleId}}", "training-suggestions"]
+            }
+          }
+        },
+        {
+          "name": "POST /job-roles/{id}/training-suggestions/accept (vincula, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suggestions\": [\n    {\n      \"name\": \"NR-35 - Trabalho em Altura\",\n      \"referenceNorm\": \"NR-35\",\n      \"periodicity\": \"biennial\",\n      \"workloadHours\": 8,\n      \"rationale\": \"Atividade acima de 2 m com risco de queda\",\n      \"trainingId\": null\n    },\n    {\n      \"name\": \"NR-06 - Uso de EPI\",\n      \"referenceNorm\": \"NR-06\",\n      \"periodicity\": \"annual\",\n      \"workloadHours\": 4,\n      \"trainingId\": \"{{trainingId}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}/training-suggestions/accept",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "job-roles",
+                "{{jobRoleId}}",
+                "training-suggestions",
+                "accept"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sugestao de instrucoes de OS (IA)",
+      "item": [
+        {
+          "name": "POST /service-orders/{id}/instruction-suggestions (redige por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}/instruction-suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "service-orders",
+                "{{serviceOrderId}}",
+                "instruction-suggestions"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Catalogo de EPI (epi-catalog)",
       "item": [
         {

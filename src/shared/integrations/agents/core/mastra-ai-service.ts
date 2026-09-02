@@ -71,7 +71,7 @@ export class MastraAiService {
     const agent = new Agent({
       id: definition.id,
       name: definition.name,
-      instructions: definition.instructions,
+      instructions: definition.systemPrompt,
       model: resolveModelChain(),
     });
     this.agents.set(definition.id, agent);

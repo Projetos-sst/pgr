@@ -12,6 +12,7 @@ import { JobRoleForm } from "../../_components/job-role-form";
 import { JobRoleIcon } from "../../_components/job-role-icon";
 import { DeleteJobRole } from "../../_components/delete-job-role";
 import { RequiredTrainings } from "../../_components/required-trainings";
+import { SuggestTrainingsSection } from "../../_components/suggest-trainings-section";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,7 @@ export default async function EditJobRolePage({
         links={requiredTrainings}
         options={trainingOptions}
       />
+      <SuggestTrainingsSection jobRoleId={jobRoleResult.data.id} />
     </div>
   );
 }
