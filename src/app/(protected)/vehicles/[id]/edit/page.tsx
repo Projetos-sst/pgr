@@ -2,7 +2,12 @@ import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { formatPlate } from "@/shared/domains/inspections/vehicles";
-import { getVehicleAction } from "@/shared/server/actions/inspections/vehicles";
+import {
+  getVehicleAction,
+  listVehicleCompanyOptionsAction,
+  listVehicleInspectionPlanOptionsAction,
+  listVehicleWorkUnitOptionsAction,
+} from "@/shared/server/actions/inspections/vehicles";
 
 import { PageHeader } from "../../../_ui/list";
 import { VehicleForm } from "../../_components/vehicle-form";
@@ -17,7 +22,12 @@ export default async function EditVehiclePage({
 }) {
   await requireOfficeStaffPage();
   const { id } = await params;
-  const result = await getVehicleAction(id);
+  const [result, companiesRes, workUnitsRes, plansRes] = await Promise.all([
+    getVehicleAction(id),
+    listVehicleCompanyOptionsAction(),
+    listVehicleWorkUnitOptionsAction(),
+    listVehicleInspectionPlanOptionsAction(),
+  ]);
   if (!result.ok) notFound();
   const v = result.data;
 
@@ -31,13 +41,22 @@ export default async function EditVehiclePage({
       />
       <VehicleForm
         id={v.id}
+        companies={companiesRes.ok ? companiesRes.data : []}
+        workUnits={workUnitsRes.ok ? workUnitsRes.data : []}
+        inspectionPlans={plansRes.ok ? plansRes.data : []}
         initial={{
           plate: v.plate,
+          renavam: v.renavam,
           brand: v.brand,
           model: v.model,
           type: v.type,
+          year: v.year,
           color: v.color,
           owner: v.owner,
+          companyId: v.companyId,
+          workUnitId: v.workUnitId,
+          inspectionPlanId: v.inspectionPlanId,
+          inspectionFrequency: v.inspectionFrequency,
           initialKm: v.initialKm,
           notes: v.notes,
         }}

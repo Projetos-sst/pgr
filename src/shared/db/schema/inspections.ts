@@ -17,6 +17,7 @@ import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { companies } from "./companies";
+import { workUnits } from "./work-units";
 import { epiCatalog } from "./epis";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
@@ -51,6 +52,16 @@ export const vehicleType = pgEnum("vehicle_type", [
   "utility",
   "pickup",
   "other",
+]);
+// Periodicidade de inspeção do veículo — base para derivar o vencimento (Status
+// Regular/A vencer/Vencida) a partir da última inspeção.
+export const inspectionFrequency = pgEnum("inspection_frequency", [
+  "daily",
+  "weekly",
+  "monthly",
+  "quarterly",
+  "semiannual",
+  "annual",
 ]);
 export const inspectionCategory = pgEnum("inspection_category", [
   "safety",
@@ -118,11 +129,25 @@ export const vehicles = pgTable(
       .notNull()
       .references(() => orgs.id, { onDelete: "cascade" }),
     plate: text("plate").notNull(),
+    renavam: text("renavam"),
     brand: text("brand"),
     model: text("model"),
     type: vehicleType("type"),
+    year: integer("year"),
     color: text("color"),
     owner: text("owner"),
+    // Vínculo & inspeção (redesign): empresa/unidade proprietária + plano/frequência
+    // que alimentam a derivação do vencimento na lista.
+    companyId: uuid("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+    workUnitId: uuid("work_unit_id").references(() => workUnits.id, {
+      onDelete: "set null",
+    }),
+    inspectionPlanId: uuid("inspection_plan_id").references(() => inspectionPlans.id, {
+      onDelete: "set null",
+    }),
+    inspectionFrequency: inspectionFrequency("inspection_frequency"),
     initialKm: integer("initial_km").notNull().default(0),
     photoPath: text("photo_path"),
     notes: text("notes"),
@@ -131,8 +156,13 @@ export const vehicles = pgTable(
   },
   (table) => [
     index("idx_vehicles_org_id").on(table.orgId),
+    index("idx_vehicles_company_id").on(table.orgId, table.companyId),
     uniqueIndex("uq_vehicles_org_id_plate").on(table.orgId, table.plate),
     check("vehicles_initial_km_check", sql`${table.initialKm} >= 0`),
+    check(
+      "vehicles_year_check",
+      sql`${table.year} is null or (${table.year} between 1900 and 2100)`,
+    ),
     isolationPolicy("vehicles_isolation"),
   ],
 ).enableRLS();

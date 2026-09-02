@@ -3,7 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 
-import { VEHICLE_TYPE_LABELS } from "@/shared/domains/inspections/vehicles";
+import {
+  INSPECTION_FREQUENCY_LABELS,
+  VEHICLE_TYPE_LABELS,
+} from "@/shared/domains/inspections/vehicles";
 import {
   createVehicleAction,
   updateVehicleAction,
@@ -19,27 +22,45 @@ import {
   TextField,
 } from "../../_ui/form";
 
+type Option = { value: string; label: string };
+
 const TYPE_OPTIONS = Object.entries(VEHICLE_TYPE_LABELS).map(([value, label]) => ({
   value,
   label,
 }));
 
+const FREQUENCY_OPTIONS = Object.entries(INSPECTION_FREQUENCY_LABELS).map(
+  ([value, label]) => ({ value, label }),
+);
+
 export type VehicleFormInitial = {
   plate: string;
+  renavam: string | null;
   brand: string | null;
   model: string | null;
   type: string | null;
+  year: number | null;
   color: string | null;
   owner: string | null;
+  companyId: string | null;
+  workUnitId: string | null;
+  inspectionPlanId: string | null;
+  inspectionFrequency: string | null;
   initialKm: number;
   notes: string | null;
 };
 
 export function VehicleForm({
   id,
+  companies,
+  workUnits,
+  inspectionPlans,
   initial,
 }: {
   id?: string;
+  companies: Option[];
+  workUnits: Option[];
+  inspectionPlans: Option[];
   initial?: VehicleFormInitial;
 }) {
   const router = useRouter();
@@ -50,15 +71,22 @@ export function VehicleForm({
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
+    const str = (k: string) => (fd.get(k) as string)?.trim() || undefined;
     const input = {
       plate: (fd.get("plate") as string) ?? "",
-      brand: (fd.get("brand") as string) ?? "",
-      model: (fd.get("model") as string) ?? "",
-      type: (fd.get("type") as string) ?? "",
-      color: (fd.get("color") as string) ?? "",
-      owner: (fd.get("owner") as string) ?? "",
+      renavam: str("renavam"),
+      brand: str("brand"),
+      model: str("model"),
+      type: str("type"),
+      year: str("year"),
+      color: str("color"),
+      owner: str("owner"),
+      companyId: str("companyId") ?? null,
+      workUnitId: str("workUnitId") ?? null,
+      inspectionPlanId: str("inspectionPlanId") ?? null,
+      inspectionFrequency: str("inspectionFrequency"),
       initialKm: (fd.get("initialKm") as string) ?? "0",
-      notes: (fd.get("notes") as string) ?? "",
+      notes: str("notes"),
     };
     startTransition(async () => {
       const result = id
@@ -90,12 +118,20 @@ export function VehicleForm({
           defaultValue={initial?.plate}
           error={errors.plate}
         />
-        <SelectField
-          label="Tipo"
-          name="type"
-          defaultValue={initial?.type ?? ""}
-          options={TYPE_OPTIONS}
-          error={errors.type}
+        <TextField
+          label="Renavam"
+          name="renavam"
+          isMono
+          placeholder="00000000000"
+          defaultValue={initial?.renavam}
+          error={errors.renavam}
+        />
+        <TextField
+          label="Modelo"
+          name="model"
+          placeholder="Ex.: Mercedes Actros 2651"
+          defaultValue={initial?.model}
+          error={errors.model}
         />
         <TextField
           label="Marca"
@@ -104,12 +140,21 @@ export function VehicleForm({
           defaultValue={initial?.brand}
           error={errors.brand}
         />
+        <SelectField
+          label="Tipo"
+          name="type"
+          defaultValue={initial?.type ?? ""}
+          options={TYPE_OPTIONS}
+          emptyLabel="— selecione —"
+          error={errors.type}
+        />
         <TextField
-          label="Modelo"
-          name="model"
-          placeholder="Ex.: Actros 2651"
-          defaultValue={initial?.model}
-          error={errors.model}
+          label="Ano"
+          name="year"
+          type="number"
+          placeholder="Ex.: 2022"
+          defaultValue={initial?.year != null ? String(initial.year) : undefined}
+          error={errors.year}
         />
         <TextField
           label="Cor"
@@ -117,6 +162,41 @@ export function VehicleForm({
           placeholder="Ex.: Branco"
           defaultValue={initial?.color}
           error={errors.color}
+        />
+      </FormSection>
+
+      <FormSection title="Vínculo & inspeção">
+        <SelectField
+          label="Empresa"
+          name="companyId"
+          defaultValue={initial?.companyId ?? ""}
+          options={companies}
+          emptyLabel="— sem empresa —"
+          error={errors.companyId}
+        />
+        <SelectField
+          label="Unidade / Obra"
+          name="workUnitId"
+          defaultValue={initial?.workUnitId ?? ""}
+          options={workUnits}
+          emptyLabel="— sem unidade —"
+          error={errors.workUnitId}
+        />
+        <SelectField
+          label="Plano de inspeção"
+          name="inspectionPlanId"
+          defaultValue={initial?.inspectionPlanId ?? ""}
+          options={inspectionPlans}
+          emptyLabel="— sem plano —"
+          error={errors.inspectionPlanId}
+        />
+        <SelectField
+          label="Frequência"
+          name="inspectionFrequency"
+          defaultValue={initial?.inspectionFrequency ?? ""}
+          options={FREQUENCY_OPTIONS}
+          emptyLabel="— sem frequência —"
+          error={errors.inspectionFrequency}
         />
       </FormSection>
 
