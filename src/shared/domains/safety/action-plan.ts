@@ -80,24 +80,6 @@ export function actionPlanPriorityLabel(value: number | null): string {
   return ACTION_PLAN_PRIORITY_LABELS[value] ?? String(value);
 }
 
-// ── Tipo (corretiva/preventiva) ─────────────────────────────────────────────────
-
-export const actionPlanTypeSchema = z.enum(["corrective", "preventive"]);
-export type ActionPlanType = z.infer<typeof actionPlanTypeSchema>;
-
-export const ACTION_PLAN_TYPE_LABELS: Record<ActionPlanType, string> = {
-  corrective: "Corretiva",
-  preventive: "Preventiva",
-};
-
-export function actionPlanTypeLabel(value: string | null): string {
-  if (!value) return "—";
-  return ACTION_PLAN_TYPE_LABELS[value as ActionPlanType] ?? value;
-}
-
-/** Janela (dias) do KPI "próximas a vencer". */
-export const ACTION_PLAN_DUE_SOON_DAYS = 30;
-
 // ── Campos 5W2H ────────────────────────────────────────────────────────────────
 
 const MAX_5W2H = 2000;
@@ -126,7 +108,6 @@ export const actionPlanCreateSchema = z
   .object({
     originType: actionPlanOriginTypeSchema,
     originId: requiredUuid("Origem inválida"),
-    type: actionPlanTypeSchema.optional(),
     ...fiveW2hShape,
   })
   .strict();
@@ -137,9 +118,7 @@ export type ActionPlanCreateValues = z.output<typeof actionPlanCreateSchema>;
  * Atualização: só o conteúdo 5W2H + prioridade/prazo. Preserva `id`/`org_id`/`origin_type`/
  * `origin_id`/`created_at`; `status` muda **apenas** pelo fluxo dedicado (não por update genérico).
  */
-export const actionPlanUpdateSchema = z
-  .object({ type: actionPlanTypeSchema.optional(), ...fiveW2hShape })
-  .strict();
+export const actionPlanUpdateSchema = z.object(fiveW2hShape).strict();
 export type ActionPlanUpdateInput = z.input<typeof actionPlanUpdateSchema>;
 export type ActionPlanUpdateValues = z.output<typeof actionPlanUpdateSchema>;
 
@@ -157,7 +136,6 @@ export type ActionPlanStatusTransitionInput = z.input<
 export const actionPlanFiltersSchema = z
   .object({
     status: actionPlanStatusSchema.optional(),
-    type: actionPlanTypeSchema.optional(),
     priority: actionPlanPrioritySchema.optional(),
     originType: actionPlanOriginTypeSchema.optional(),
     originId: z.string().uuid().optional(),
@@ -189,11 +167,6 @@ export function computeActionPlanOverdue(
 export type ActionPlanListItem = {
   id: string;
   what: string;
-  who: string;
-  where: string;
-  type: string | null;
-  typeLabel: string;
-  companyName: string | null;
   status: string;
   statusLabel: string;
   priority: number | null;
@@ -201,16 +174,6 @@ export type ActionPlanListItem = {
   when: string | null;
   overdue: boolean;
   origin: OriginSnapshot;
-};
-
-/** Contagens para os KPIs do topo da lista (derivadas, nunca persistidas). */
-export type ActionPlanKpis = {
-  planned: number;
-  inProgress: number;
-  completed: number;
-  cancelled: number;
-  dueSoon: number;
-  total: number;
 };
 
 export type ActionPlanDetail = {

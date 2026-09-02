@@ -40,7 +40,6 @@ export default async function EditActionPlanPage({
         riskOptions={[]}
         incidentOptions={[]}
         initial={{
-          type: plan.type,
           what: plan.what,
           why: plan.why,
           who: plan.who,

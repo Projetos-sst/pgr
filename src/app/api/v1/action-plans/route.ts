@@ -19,7 +19,6 @@ export function GET(req: NextRequest) {
       pageSize,
       q: search,
       status: sp.get("status") ?? undefined,
-      type: sp.get("type") ?? undefined,
       priority: sp.get("priority") ?? undefined,
       originType: sp.get("origin_type") ?? undefined,
       originId: sp.get("origin_id") ?? undefined,

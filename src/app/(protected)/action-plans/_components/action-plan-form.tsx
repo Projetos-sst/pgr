@@ -5,7 +5,6 @@ import { useState, useTransition, type FormEvent } from "react";
 
 import {
   ACTION_PLAN_PRIORITY_LABELS,
-  ACTION_PLAN_TYPE_LABELS,
   type ActionPlanCreateInput,
   type ActionPlanUpdateInput,
 } from "@/shared/domains/safety/action-plan";
@@ -20,7 +19,6 @@ import { FormActions, FormError, SubmitButton } from "../../_ui/form";
 type Option = { value: string; label: string };
 
 export type ActionPlanFormInitial = {
-  type: string | null;
   what: string;
   why: string;
   who: string;
@@ -86,7 +84,6 @@ export function ActionPlanForm({
     const priorityRaw = str("priority");
 
     const content = {
-      type: str("type") as "corrective" | "preventive" | undefined,
       what: (fd.get("what") as string) ?? "",
       why: (fd.get("why") as string) ?? "",
       who: (fd.get("who") as string) ?? "",
@@ -224,16 +221,6 @@ export function ActionPlanForm({
             defaultValue={initial.howMuch ?? ""}
             className={inputClass}
           />
-        </Field>
-        <Field label="Tipo">
-          <select name="type" defaultValue={initial.type ?? ""} className={inputClass}>
-            <option value="">— selecione —</option>
-            {Object.entries(ACTION_PLAN_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
         </Field>
         <Field label="Prioridade">
           <select

@@ -295,13 +295,6 @@
 			"when": 1788312155402,
 			"tag": "0041_vehicles_company_inspection",
 			"breakpoints": true
-		},
-		{
-			"idx": 42,
-			"version": "7",
-			"when": 1788323226492,
-			"tag": "0042_action_plan_type",
-			"breakpoints": true
 		}
 	]
 }

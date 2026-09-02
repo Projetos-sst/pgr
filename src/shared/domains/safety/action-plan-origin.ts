@@ -32,6 +32,5 @@ export type OriginSnapshot = {
   type: ActionPlanOriginType;
   id: string;
   title: string | null;
-  company: string | null; // empresa derivada (risco→GES→empresa / incidente→empresa)
   removed: boolean;
 };
