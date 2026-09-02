@@ -4787,7 +4787,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/inspection-plans?search=&type=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/inspection-plans?search=&type=&page=1&pageSize=20&status=&category=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "inspection-plans"],
               "query": [
@@ -4806,6 +4806,16 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "active|draft|inactive"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "categoria (subtype exato)"
                 }
               ]
             }
@@ -4836,7 +4846,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota\",\n  \"description\": \"Inspeção pré-uso\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Pneus\",\n      \"defaultValue\": false\n    },\n    {\n      \"description\": \"Luzes\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Trabalho em Altura\",\n  \"title\": \"Inspeção de Andaimes\",\n  \"description\": \"\",\n  \"frequency\": \"biweekly\",\n  \"status\": \"active\",\n  \"items\": [\n    {\n      \"description\": \"Travamento dos módulos\",\n      \"defaultValue\": true\n    }\n  ]\n}"
             }
           }
         },
@@ -4886,7 +4896,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota (v2)\",\n  \"description\": \"Revisado\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Documentação\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Trabalho em Altura\",\n  \"title\": \"Inspeção de Andaimes\",\n  \"description\": \"\",\n  \"frequency\": \"biweekly\",\n  \"status\": \"active\",\n  \"items\": [\n    {\n      \"description\": \"Travamento dos módulos\",\n      \"defaultValue\": true\n    }\n  ]\n}"
             }
           }
         },

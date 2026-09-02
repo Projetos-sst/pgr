@@ -5,18 +5,24 @@ import { and, asc, desc, eq, ilike, sql, type SQL } from "drizzle-orm";
 import type {
   InspectionPlanValues,
   PlanListItem,
+  PlanStatus,
   PlanWithItems,
 } from "@/shared/domains/inspections/plans";
-import { toPlanListItem } from "@/shared/domains/inspections/plans";
+import { nextPlanNumber, toPlanListItem } from "@/shared/domains/inspections/plans";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
-import { inspectionPlanItems, inspectionPlans } from "../schema";
+import { inspectionPlanItems, inspectionPlans, orgs } from "../schema";
 import { withOrg } from "../with-org";
 import { auditedTenantWrite } from "./audited-write";
 
 const WRITE_EVENT = "inspections.plans.write_rejected";
 
-export type ListPlansParams = PageParams & { search?: string; type?: string };
+export type ListPlansParams = PageParams & {
+  search?: string;
+  type?: string;
+  status?: string;
+  category?: string;
+};
 
 // Subconsulta correlacionada: qualifica a coluna externa como
 // "inspection_plans"."id" para não colidir com o "id" da tabela interna
@@ -37,16 +43,24 @@ export async function listPlans(
   if (params.type) {
     filters.push(eq(inspectionPlans.type, params.type as "vehicular" | "equipment"));
   }
+  if (params.status) {
+    filters.push(eq(inspectionPlans.status, params.status as PlanStatus));
+  }
+  const category = params.category?.trim();
+  if (category) filters.push(eq(inspectionPlans.subtype, category));
   const where = and(...filters);
   return withOrg(orgId, async (tx) => {
     const rows = await tx
       .select({
         id: inspectionPlans.id,
         orgId: inspectionPlans.orgId,
+        number: inspectionPlans.number,
         type: inspectionPlans.type,
         subtype: inspectionPlans.subtype,
         title: inspectionPlans.title,
         description: inspectionPlans.description,
+        frequency: inspectionPlans.frequency,
+        status: inspectionPlans.status,
         createdAt: inspectionPlans.createdAt,
         updatedAt: inspectionPlans.updatedAt,
         itemCount: itemCountExpr,
@@ -61,6 +75,18 @@ export async function listPlans(
       .from(inspectionPlans)
       .where(where);
     return { rows: rows.map(toPlanListItem), total };
+  });
+}
+
+/** Categorias distintas (subtype) do tenant — alimenta o filtro "Todas as Categorias". */
+export async function listPlanCategories(orgId: string): Promise<string[]> {
+  return withOrg(orgId, async (tx) => {
+    const rows = await tx
+      .selectDistinct({ subtype: inspectionPlans.subtype })
+      .from(inspectionPlans)
+      .where(eq(inspectionPlans.orgId, orgId))
+      .orderBy(asc(inspectionPlans.subtype));
+    return rows.map((r) => r.subtype).filter((s): s is string => !!s && s.trim() !== "");
   });
 }
 
@@ -102,14 +128,26 @@ export async function createPlan(
 ): Promise<{ id: string }> {
   return auditedTenantWrite(orgId, WRITE_EVENT, () =>
     withOrg(orgId, async (tx) => {
+      // Lock da linha do tenant em `orgs`: serializa a numeração POR tenant (max+1);
+      // `UNIQUE(org_id, number)` é o backstop.
+      await tx.execute(sql`select id from ${orgs} where id = ${orgId} for update`);
+      const [{ max }] = await tx
+        .select({ max: sql<number | null>`max(${inspectionPlans.number})` })
+        .from(inspectionPlans)
+        .where(eq(inspectionPlans.orgId, orgId));
+      const number = nextPlanNumber(max);
+
       const [plan] = await tx
         .insert(inspectionPlans)
         .values({
           orgId,
+          number,
           type: input.type,
           subtype: input.subtype ?? null,
           title: input.title,
           description: input.description ?? null,
+          frequency: input.frequency ?? null,
+          status: input.status ?? "active",
         })
         .returning({ id: inspectionPlans.id });
       const rows = itemRows(orgId, plan.id, input.items);
@@ -133,6 +171,8 @@ export async function updatePlan(
           subtype: input.subtype ?? null,
           title: input.title,
           description: input.description ?? null,
+          frequency: input.frequency ?? null,
+          status: input.status ?? "active",
           updatedAt: new Date(),
         })
         .where(and(eq(inspectionPlans.orgId, orgId), eq(inspectionPlans.id, id)))

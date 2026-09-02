@@ -58,10 +58,17 @@ export const vehicleType = pgEnum("vehicle_type", [
 export const inspectionFrequency = pgEnum("inspection_frequency", [
   "daily",
   "weekly",
+  "biweekly",
   "monthly",
   "quarterly",
   "semiannual",
   "annual",
+]);
+// Status do plano de inspeção (ciclo de publicação do modelo/checklist).
+export const inspectionPlanStatus = pgEnum("inspection_plan_status", [
+  "active",
+  "draft",
+  "inactive",
 ]);
 export const inspectionCategory = pgEnum("inspection_category", [
   "safety",
@@ -84,15 +91,21 @@ export const inspectionPlans = pgTable(
     orgId: text("org_id")
       .notNull()
       .references(() => orgs.id, { onDelete: "cascade" }),
+    // Código sequencial por tenant (max+1 sob lock de orgs; ver repositório) → "PI-0014".
+    number: integer("number").notNull(),
     type: inspectionType("type").notNull(),
     subtype: text("subtype"),
     title: text("title").notNull(),
     description: text("description"),
+    // Cadência recomendada do plano + status de publicação (redesign).
+    frequency: inspectionFrequency("frequency"),
+    status: inspectionPlanStatus("status").notNull().default("active"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("idx_inspection_plans_org_id").on(table.orgId),
+    uniqueIndex("uq_inspection_plans_org_id_number").on(table.orgId, table.number),
     isolationPolicy("inspection_plans_isolation"),
   ],
 ).enableRLS();

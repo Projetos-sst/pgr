@@ -126,8 +126,11 @@ async function main() {
     // ── Planos de inspeção + itens ──────────────────────────────────────────
     async function createPlan(type: string, title: string, items: string[]) {
       const [plan] = await sql<{ id: string }[]>`
-        insert into public.inspection_plans (org_id, type, title, description)
-        values (${ORG_ID}, ${type}, ${title}, ${`${SEED_TAG} plano de demonstração`})
+        insert into public.inspection_plans (org_id, number, type, title, description)
+        values (
+          ${ORG_ID},
+          (select coalesce(max(number), 0) + 1 from public.inspection_plans where org_id = ${ORG_ID}),
+          ${type}, ${title}, ${`${SEED_TAG} plano de demonstração`})
         returning id`;
       for (const [index, description] of items.entries()) {
         await sql`

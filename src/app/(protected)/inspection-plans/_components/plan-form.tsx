@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 
-import { PLAN_TYPE_LABELS } from "@/shared/domains/inspections/plans";
+import {
+  INSPECTION_FREQUENCY_LABELS,
+  PLAN_STATUS_LABELS,
+  PLAN_TYPE_LABELS,
+} from "@/shared/domains/inspections/plans";
 import {
   createPlanAction,
   updatePlanAction,
@@ -15,6 +19,13 @@ const TYPE_OPTIONS = Object.entries(PLAN_TYPE_LABELS).map(([value, label]) => ({
   value,
   label,
 }));
+const STATUS_OPTIONS = Object.entries(PLAN_STATUS_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
+const FREQUENCY_OPTIONS = Object.entries(INSPECTION_FREQUENCY_LABELS).map(
+  ([value, label]) => ({ value, label }),
+);
 
 type ItemRow = { description: string; defaultValue: boolean };
 
@@ -23,6 +34,8 @@ export type PlanFormInitial = {
   subtype: string | null;
   title: string;
   description: string | null;
+  frequency: string | null;
+  status: string;
   items: ItemRow[];
 };
 
@@ -46,6 +59,11 @@ export function PlanForm({ id, initial }: { id?: string; initial?: PlanFormIniti
       subtype: (fd.get("subtype") as string) ?? "",
       title: (fd.get("title") as string) ?? "",
       description: (fd.get("description") as string) ?? "",
+      frequency: (fd.get("frequency") as string)?.trim() || undefined,
+      status: ((fd.get("status") as string) || "active") as
+        | "active"
+        | "draft"
+        | "inactive",
       items: items.filter((it) => it.description.trim() !== ""),
     };
     startTransition(async () => {
@@ -80,7 +98,43 @@ export function PlanForm({ id, initial }: { id?: string; initial?: PlanFormIniti
         </select>
       </label>
       <TextField label="Título" name="title" required defaultValue={initial?.title} />
-      <TextField label="Subtipo" name="subtype" defaultValue={initial?.subtype} />
+      <TextField
+        label="Categoria"
+        name="subtype"
+        placeholder="Ex.: Trabalho em Altura, Frota, NR-12"
+        defaultValue={initial?.subtype}
+      />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label className="flex flex-col gap-1">
+          <span className="text-text-muted text-sm font-semibold">Frequência</span>
+          <select
+            name="frequency"
+            defaultValue={initial?.frequency ?? ""}
+            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
+          >
+            <option value="">— sem frequência —</option>
+            {FREQUENCY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-text-muted text-sm font-semibold">Status</span>
+          <select
+            name="status"
+            defaultValue={initial?.status ?? "active"}
+            className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
+          >
+            {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <TextField
         label="Descrição"
         name="description"
