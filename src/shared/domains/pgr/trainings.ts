@@ -38,6 +38,30 @@ export function trainingPeriodicityLabel(periodicity: TrainingPeriodicity): stri
   return PERIODICITY_LABELS[periodicity];
 }
 
+/** Validade em meses derivada da periodicidade (coluna "Validade" do redesign). */
+const PERIODICITY_MONTHS: Record<Exclude<TrainingPeriodicity, "single">, number> = {
+  annual: 12,
+  biennial: 24,
+  triennial: 36,
+  quinquennial: 60,
+};
+
+export function trainingValidityLabel(periodicity: string): string {
+  if (periodicity === "single") return "Única";
+  const m = PERIODICITY_MONTHS[periodicity as Exclude<TrainingPeriodicity, "single">];
+  return m ? `${m} meses` : "—";
+}
+
+/** Código sequencial por tenant do treinamento ("TR-0201"). */
+export function nextTrainingNumber(currentMax: number | null | undefined): number {
+  if (currentMax == null || !Number.isFinite(currentMax) || currentMax < 0) return 1;
+  return Math.floor(currentMax) + 1;
+}
+
+export function formatTrainingCode(n: number): string {
+  return `TR-${String(n).padStart(4, "0")}`;
+}
+
 const YEARS_TO_ADD: Record<Exclude<TrainingPeriodicity, "single">, number> = {
   annual: 1,
   biennial: 2,
@@ -130,6 +154,7 @@ export const trainingCatalogInputSchema = z.object({
     .int("Carga horária deve ser um número inteiro")
     .positive("Carga horária deve ser maior que zero"),
   periodicity: trainingPeriodicitySchema,
+  isActive: z.coerce.boolean().optional(), // default true no repositório
   description: optionalString,
 });
 

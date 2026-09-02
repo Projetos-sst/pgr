@@ -3526,7 +3526,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/training-catalog?search=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/training-catalog?search=&page=1&pageSize=20&norm=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "training-catalog"],
               "query": [
@@ -3541,6 +3541,11 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "norm",
+                  "value": "",
+                  "description": "filtra por norma (referenceNorm exato)"
                 }
               ]
             }
@@ -3571,7 +3576,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"NR-35 Trabalho em Altura\",\n  \"referenceNorm\": \"NR-35\",\n  \"workloadHours\": 8,\n  \"periodicity\": \"biennial\",\n  \"description\": \"Capacitacao obrigatoria para trabalho em altura\"\n}"
+              "raw": "{\n  \"name\": \"NR-35 Trabalho em Altura\",\n  \"referenceNorm\": \"NR-35\",\n  \"workloadHours\": 8,\n  \"periodicity\": \"biennial\",\n  \"description\": \"Capacitacao obrigatoria para trabalho em altura\",\n  \"isActive\": true\n}"
             }
           }
         },
@@ -3590,9 +3595,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}&norm=",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"],
+              "query": [
+                {
+                  "key": "norm",
+                  "value": "",
+                  "description": "filtra por norma (referenceNorm exato)"
+                }
+              ]
             }
           }
         },
@@ -3661,9 +3673,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}/dependents",
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}/dependents&norm=",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-catalog", "{{trainingId}}", "dependents"]
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}", "dependents"],
+              "query": [
+                {
+                  "key": "norm",
+                  "value": "",
+                  "description": "filtra por norma (referenceNorm exato)"
+                }
+              ]
             }
           }
         }

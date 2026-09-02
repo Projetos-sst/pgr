@@ -38,10 +38,10 @@ const I = PGR_IDS;
 
 async function seedTrainingCatalog(admin: ReturnType<typeof postgres>): Promise<void> {
   await admin.unsafe(`
-    insert into public.training_catalog (id, org_id, name, workload_hours, periodicity) values
-      ('${CATALOG.biennialA}','org_a','NR-35 Trabalho em Altura',8,'biennial'),
-      ('${CATALOG.singleA}','org_a','Integração de Segurança',2,'single'),
-      ('${CATALOG.biennialB}','org_b','NR-10 SEP',40,'biennial');
+    insert into public.training_catalog (id, org_id, number, name, workload_hours, periodicity) values
+      ('${CATALOG.biennialA}','org_a',1,'NR-35 Trabalho em Altura',8,'biennial'),
+      ('${CATALOG.singleA}','org_a',2,'Integração de Segurança',2,'single'),
+      ('${CATALOG.biennialB}','org_b',1,'NR-10 SEP',40,'biennial');
   `);
 }
 

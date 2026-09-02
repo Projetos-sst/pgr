@@ -9,7 +9,10 @@ export const dynamic = "force-dynamic";
 
 export function GET(req: NextRequest) {
   return restHandler(req, ({ tenantId }) =>
-    repo.listTrainingCatalog(tenantId, pageParamsFrom(req)),
+    repo.listTrainingCatalog(tenantId, {
+      ...pageParamsFrom(req),
+      norm: req.nextUrl.searchParams.get("norm") ?? undefined,
+    }),
   );
 }
 

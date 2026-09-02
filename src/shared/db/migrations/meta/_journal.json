@@ -309,6 +309,13 @@
 			"when": 1788326016129,
 			"tag": "0043_inspection_plan_fields",
 			"breakpoints": true
+		},
+		{
+			"idx": 44,
+			"version": "7",
+			"when": 1788327113016,
+			"tag": "0044_training_catalog_fields",
+			"breakpoints": true
 		}
 	]
 }
