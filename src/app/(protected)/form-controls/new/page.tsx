@@ -23,6 +23,7 @@ export default async function NewFormControlPage() {
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/form-controls"
         title="Novo controle de formulário"
         description="Configure o cabeçalho ISO (FRM/REV/N.C.) para um tipo de documento."
       />

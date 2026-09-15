@@ -54,6 +54,7 @@ export default async function NewRiskPage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/risks"
         title="Novo risco"
         description={
           initial

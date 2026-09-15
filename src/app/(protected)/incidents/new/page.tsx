@@ -21,6 +21,7 @@ export default async function NewIncidentPage() {
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/incidents"
         title="Novo incidente/acidente"
         description="Registro interno. Dado de saúde é restrito à equipe do escritório."
       />

@@ -21,6 +21,7 @@ export default async function NewPgrPage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/pgr"
         title="Novo PGR"
         description="Documento de Gerenciamento de Riscos Ocupacionais (NR-01/GRO). A criação exige o aceite da Declaração de Ciência de Riscos."
       />

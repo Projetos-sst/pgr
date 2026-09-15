@@ -38,6 +38,7 @@ export default async function EditControlMeasurePage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref={`/risks/${riskId}`}
         title="Editar medida de controle"
         description={riskResult.data.description}
       />

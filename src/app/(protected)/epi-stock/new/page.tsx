@@ -14,6 +14,7 @@ export default async function NewEpiStockPage() {
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/epi-stock"
         title="Adicionar ao estoque"
         description="Associe um item do catálogo ao estoque e defina a quantidade mínima."
       />

@@ -35,6 +35,7 @@ export default async function EditFormControlPage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/form-controls"
         title={`Editar controle · ${control.frmCode}`}
         description="Altere os dados do cabeçalho ISO ou exclua este controle."
         action={

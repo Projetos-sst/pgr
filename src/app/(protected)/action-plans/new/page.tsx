@@ -21,6 +21,7 @@ export default async function NewActionPlanPage() {
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/action-plans"
         title="Novo plano de ação"
         description="Plano 5W2H vinculado a um risco ou incidente do escritório."
       />
