@@ -6586,6 +6586,61 @@
       ]
     },
     {
+      "name": "eSocial — Configuração (singleton)",
+      "item": [
+        {
+          "name": "GET /esocial-config",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-config",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-config"]
+            }
+          }
+        },
+        {
+          "name": "PUT /esocial-config (upsert)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-config",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-config"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"environment\": \"homologation\",\n  \"employerCnpj\": \"12.345.678/0001-90\",\n  \"taxClassification\": \"01 — Lucro Real\",\n  \"certificateName\": \"EMPRESA_A1.pfx\",\n  \"certificateExpiresAt\": \"2026-11-18\",\n  \"enabledEvents\": [\n    \"S-2210\",\n    \"S-2220\",\n    \"S-2240\"\n  ],\n  \"autoSend\": false,\n  \"checkFrequencyHours\": 24\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Agenda (plataforma)",
       "item": [
         {
