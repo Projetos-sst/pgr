@@ -195,9 +195,11 @@ export { jobs, jobType, jobStatus, type Job, type NewJob } from "./jobs";
 export {
   esocialEvents,
   esocialBatches,
+  esocialConfig,
   esocialEventType,
   esocialEventStatus,
   esocialBatchStatus,
+  esocialEnvironment,
   type EsocialEvent,
   type NewEsocialEvent,
   type EsocialEventType,
@@ -205,6 +207,9 @@ export {
   type EsocialBatch,
   type NewEsocialBatch,
   type EsocialBatchStatus,
+  type EsocialConfig,
+  type NewEsocialConfig,
+  type EsocialEnvironment,
 } from "./esocial";
 export {
   serviceOrders,
