@@ -29,7 +29,11 @@ export default async function NewRiskAssessmentPage({
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Nova avaliação" description={riskResult.data.description} />
+      <PageHeader
+        backHref={`/risks/${riskId}`}
+        title="Nova avaliação"
+        description={riskResult.data.description}
+      />
       <AssessmentForm
         riskId={riskId}
         bands={methodology.classificationBands}

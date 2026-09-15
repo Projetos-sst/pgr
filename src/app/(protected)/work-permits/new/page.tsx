@@ -15,7 +15,7 @@ export default async function NovaPermissaoTrabalhoPage() {
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Nova permissão de trabalho" />
+      <PageHeader backHref="/work-permits" title="Nova permissão de trabalho" />
       <PermitForm companies={companies} />
       <Link href="/work-permits" className="text-text-subtle text-sm hover:underline">
         ← Voltar

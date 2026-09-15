@@ -29,7 +29,10 @@ export default async function EditarInspecaoEquipamentoPage({
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Editar cabeçalho da inspeção" />
+      <PageHeader
+        backHref="/equipment-inspections"
+        title="Editar cabeçalho da inspeção"
+      />
       <HeaderForm
         id={id}
         equipment={equipment}

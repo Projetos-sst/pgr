@@ -37,6 +37,7 @@ export default async function EditIncidentPage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/incidents"
         title="Editar incidente/acidente"
         description="Estados terminais não podem ser editados."
       />

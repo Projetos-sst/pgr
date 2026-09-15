@@ -29,7 +29,7 @@ export default async function EditRiskAssessmentPage({
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Editar avaliação" />
+      <PageHeader backHref={`/risks/${riskId}`} title="Editar avaliação" />
       <AssessmentForm
         riskId={riskId}
         assessmentId={assessment.id}

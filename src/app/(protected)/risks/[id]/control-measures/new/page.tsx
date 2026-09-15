@@ -33,6 +33,7 @@ export default async function NewControlMeasurePage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref={`/risks/${riskId}`}
         title="Nova medida de controle"
         description={riskResult.data.description}
       />

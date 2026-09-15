@@ -47,6 +47,7 @@ export default async function EditRiskPage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/risks"
         title="Editar risco"
         description="Detalhe e edição do risco do GES."
         action={<DeleteRisk id={risk.id} redirectTo="/risks" hasLabel />}

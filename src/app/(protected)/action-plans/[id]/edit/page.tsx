@@ -27,6 +27,7 @@ export default async function EditActionPlanPage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/action-plans"
         title="Editar plano de ação"
         description="A origem é imutável. Planos terminais não podem ser editados."
       />

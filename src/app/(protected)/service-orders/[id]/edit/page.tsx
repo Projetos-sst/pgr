@@ -44,6 +44,7 @@ export default async function EditServiceOrderPage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/service-orders"
         title={`Editar OS #${order.number}`}
         description="Atualize dados e checklist. Estados terminais não podem ser editados."
       />

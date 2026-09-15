@@ -37,6 +37,7 @@ export default async function NewDocumentPage({
   return (
     <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-4 py-8 sm:px-8">
       <PageHeader
+        backHref="/documents"
         title="Novo Documento — GED"
         description="Envie um arquivo para o acervo (laudo, contrato, ficha etc.)."
         icon={

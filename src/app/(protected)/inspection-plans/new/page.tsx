@@ -9,7 +9,7 @@ export default async function NovoPlanoPage() {
   await requireOfficeStaffPage();
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Novo plano de inspeção" />
+      <PageHeader backHref="/inspection-plans" title="Novo plano de inspeção" />
       <PlanForm />
     </div>
   );

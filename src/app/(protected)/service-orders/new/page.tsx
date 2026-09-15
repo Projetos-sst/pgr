@@ -30,6 +30,7 @@ export default async function NewServiceOrderPage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/service-orders"
         title="Nova Ordem de Serviço"
         description="O número é gerado automaticamente por escritório ao salvar."
       />
