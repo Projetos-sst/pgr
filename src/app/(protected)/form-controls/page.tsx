@@ -1,6 +1,11 @@
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
 import { listFormControlsAction } from "@/shared/server/actions/documents/form-controls";
+import {
+  FORM_CONTROL_STATUSES,
+  formControlStatusLabel,
+  formControlStatusTone,
+} from "@/shared/domains/documents/form-controls";
 
 import {
   Cell,
@@ -16,6 +21,7 @@ import {
   StatusBadge,
   ToolbarButton,
   ToolbarSearch,
+  ToolbarSelect,
 } from "../_ui/data-list";
 import { EmptyState, PageHeader } from "../_ui/list";
 import { DeleteFormControl } from "./_components/delete-form-control";
@@ -25,7 +31,12 @@ export const dynamic = "force-dynamic";
 
 const TEMPLATE = "1fr 1.8fr 1.2fr 1fr 1.2fr 1.1fr 84px";
 
-type SearchParams = Promise<{ search?: string; page?: string }>;
+const STATUS_OPTIONS = FORM_CONTROL_STATUSES.map((value) => ({
+  value,
+  label: formControlStatusLabel(value),
+}));
+
+type SearchParams = Promise<{ search?: string; status?: string; page?: string }>;
 
 export default async function FormControlsPage({
   searchParams,
@@ -37,7 +48,11 @@ export default async function FormControlsPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const result = await listFormControlsAction({ search: sp.search, page });
+  const result = await listFormControlsAction({
+    search: sp.search,
+    status: sp.status,
+    page,
+  });
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
 
   return (
@@ -52,8 +67,17 @@ export default async function FormControlsPage({
         <ListToolbar>
           <ToolbarSearch
             basePath="/form-controls"
-            placeholder="Buscar por código FRM ou tipo…"
+            placeholder="Buscar por código FRM ou formulário…"
             defaultValue={sp.search}
+            hidden={{ status: sp.status }}
+          />
+          <ToolbarSelect
+            basePath="/form-controls"
+            name="status"
+            defaultValue={sp.status}
+            options={STATUS_OPTIONS}
+            emptyLabel="Todos os status"
+            hidden={{ search: sp.search }}
           />
           <ToolbarButton href="/form-controls/new">Novo Controle</ToolbarButton>
         </ListToolbar>
@@ -89,11 +113,13 @@ export default async function FormControlsPage({
                     {row.frmCode}
                   </MonoCell>
                   <Cell className="text-text font-semibold">{row.formType}</Cell>
-                  <Cell>{row.positionLabel}</Cell>
+                  <Cell>{row.typeLabel}</Cell>
                   <Cell className="text-text-muted font-mono">{row.revision}</Cell>
                   <Cell className="text-text-muted font-mono">{row.issueDate}</Cell>
                   <Cell>
-                    <StatusBadge tone="green">Ativo</StatusBadge>
+                    <StatusBadge tone={formControlStatusTone(row.status)}>
+                      {row.statusLabel}
+                    </StatusBadge>
                   </Cell>
                   <Cell align="right">
                     <RowActions>
@@ -109,7 +135,7 @@ export default async function FormControlsPage({
               page={page}
               pageSize={pageSize}
               total={total}
-              params={{ search: sp.search }}
+              params={{ search: sp.search, status: sp.status }}
             />
           </>
         )}

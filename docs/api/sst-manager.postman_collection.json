@@ -2969,7 +2969,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/form-controls?search=&formType=&companyId=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/form-controls?search=&formType=&companyId=&page=1&pageSize=20&status=&type=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "form-controls"],
               "query": [
@@ -2992,6 +2992,16 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "draft|published|archived"
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "ficha|checklist|documento"
                 }
               ]
             }
@@ -3022,7 +3032,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\"\n}"
+              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\",\n  \"type\": \"documento\",\n  \"status\": \"published\"\n}"
             }
           }
         },
@@ -3051,7 +3061,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formType\": \"OS\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\"\n}"
+              "raw": "{\n  \"formType\": \"OS\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\",\n  \"type\": \"documento\",\n  \"status\": \"published\"\n}"
             }
           }
         },
@@ -3101,7 +3111,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"01\",\n  \"issueDate\": \"2026-02-01\",\n  \"nonConformityNumber\": \"NC-002\",\n  \"position\": \"both\",\n  \"notes\": \"atualizado\"\n}"
+              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"01\",\n  \"issueDate\": \"2026-02-01\",\n  \"nonConformityNumber\": \"NC-002\",\n  \"position\": \"both\",\n  \"notes\": \"atualizado\",\n  \"type\": \"documento\",\n  \"status\": \"published\"\n}"
             }
           }
         },

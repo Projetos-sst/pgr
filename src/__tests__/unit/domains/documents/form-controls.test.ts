@@ -1,6 +1,9 @@
 import {
   buildFormControlPreview,
   formControlInputSchema,
+  formControlStatusLabel,
+  formControlStatusTone,
+  formControlTypeLabel,
   formatIsoDateBr,
 } from "@/shared/domains/documents/form-controls";
 
@@ -133,5 +136,46 @@ describe("buildFormControlPreview (montagem do preview em tempo real)", () => {
     expect(preview.nonConformityNumber).toBeNull();
     expect(preview.notes).toBeNull();
     expect(preview.positionLabel).toBe("Topo");
+  });
+});
+
+describe("form control — tipo e situação (redesign)", () => {
+  it("rótulos de tipo e situação", () => {
+    expect(formControlTypeLabel("ficha")).toBe("Ficha");
+    expect(formControlTypeLabel("checklist")).toBe("Checklist");
+    expect(formControlTypeLabel("documento")).toBe("Documento");
+    expect(formControlStatusLabel("draft")).toBe("Rascunho");
+    expect(formControlStatusLabel("published")).toBe("Publicado");
+    expect(formControlStatusLabel("archived")).toBe("Arquivado");
+  });
+
+  it("tom da situação (published=green, draft=amber, archived=neutral)", () => {
+    expect(formControlStatusTone("published")).toBe("green");
+    expect(formControlStatusTone("draft")).toBe("amber");
+    expect(formControlStatusTone("archived")).toBe("neutral");
+  });
+
+  it("schema aplica defaults type=documento / status=published", () => {
+    const parsed = formControlInputSchema.parse({
+      formType: "PGR",
+      frmCode: "FRM-001",
+      revision: "00",
+      issueDate: "2026-01-15",
+      position: "top",
+    });
+    expect(parsed.type).toBe("documento");
+    expect(parsed.status).toBe("published");
+  });
+
+  it("schema rejeita tipo/situação fora do enum", () => {
+    const bad = formControlInputSchema.safeParse({
+      formType: "PGR",
+      frmCode: "FRM-001",
+      revision: "00",
+      issueDate: "2026-01-15",
+      position: "top",
+      type: "planilha",
+    });
+    expect(bad.success).toBe(false);
   });
 });

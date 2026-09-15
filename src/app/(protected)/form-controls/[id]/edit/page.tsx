@@ -55,6 +55,8 @@ export default async function EditFormControlPage({
           nonConformityNumber: control.nonConformityNumber,
           gesId: control.gesId,
           position: control.position,
+          type: control.type,
+          status: control.status,
           notes: control.notes,
         }}
       />

@@ -11,8 +11,11 @@ function paramsFrom(req: NextRequest): repo.ListFormControlsParams {
   const searchParams = req.nextUrl.searchParams;
   return {
     ...pageParamsFrom(req),
+    search: searchParams.get("search") ?? undefined,
     formType: searchParams.get("formType") ?? undefined,
     companyId: searchParams.get("companyId") ?? undefined,
+    status: searchParams.get("status") ?? undefined,
+    type: searchParams.get("type") ?? undefined,
   };
 }
 

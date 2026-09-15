@@ -6,7 +6,13 @@ import { useRouter } from "next/navigation";
 import {
   buildFormControlPreview,
   FORM_CONTROL_POSITION_LABELS,
+  FORM_CONTROL_STATUSES,
+  FORM_CONTROL_TYPES,
+  formControlStatusLabel,
+  formControlTypeLabel,
   type FormControlPosition,
+  type FormControlStatus,
+  type FormControlType,
 } from "@/shared/domains/documents/form-controls";
 import {
   createFormControlAction,
@@ -27,6 +33,16 @@ const POSITION_OPTIONS = Object.entries(FORM_CONTROL_POSITION_LABELS).map(
   ([value, label]) => ({ value, label }),
 );
 
+const TYPE_OPTIONS = FORM_CONTROL_TYPES.map((value) => ({
+  value,
+  label: formControlTypeLabel(value),
+}));
+
+const STATUS_OPTIONS = FORM_CONTROL_STATUSES.map((value) => ({
+  value,
+  label: formControlStatusLabel(value),
+}));
+
 export type FormControlFormInitial = {
   formType: string;
   companyId: string | null;
@@ -36,6 +52,8 @@ export type FormControlFormInitial = {
   nonConformityNumber: string | null;
   gesId: string | null;
   position: string;
+  type: string;
+  status: string;
   notes: string | null;
 };
 
@@ -64,6 +82,8 @@ export function FormControlForm({
   );
   const [gesId, setGesId] = useState(initial?.gesId ?? "");
   const [position, setPosition] = useState(initial?.position ?? "top");
+  const [type, setType] = useState(initial?.type ?? "documento");
+  const [status, setStatus] = useState(initial?.status ?? "published");
   const [notes, setNotes] = useState(initial?.notes ?? "");
 
   const preview = useMemo(
@@ -105,6 +125,8 @@ export function FormControlForm({
       nonConformityNumber: nonConformityNumber ? nonConformityNumber : "",
       gesId: gesId ? gesId : null,
       position: position as FormControlPosition,
+      type: type as FormControlType,
+      status: status as FormControlStatus,
       notes: notes ? notes : "",
     };
     startTransition(async () => {
@@ -126,12 +148,30 @@ export function FormControlForm({
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <FormError message={formError} />
         <TextField
-          label="Tipo de formulário"
+          label="Nome do formulário"
           name="formType"
           required
           value={formType}
           onChange={setFormType}
         />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SelectField
+            label="Tipo"
+            name="type"
+            required
+            options={TYPE_OPTIONS}
+            value={type}
+            onChange={setType}
+          />
+          <SelectField
+            label="Situação"
+            name="status"
+            required
+            options={STATUS_OPTIONS}
+            value={status}
+            onChange={setStatus}
+          />
+        </div>
         <SelectField
           label="Empresa (opcional)"
           name="companyId"
