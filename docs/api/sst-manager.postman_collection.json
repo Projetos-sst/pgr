@@ -217,6 +217,10 @@
     {
       "key": "riskAuditId",
       "value": ""
+    },
+    {
+      "key": "riskFactorId",
+      "value": ""
     }
   ],
   "item": [
@@ -6193,6 +6197,179 @@
               "raw": "{{baseUrl}}/api/v1/psychosocial-campaigns/{{psychoCampaignId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "psychosocial-campaigns", "{{psychoCampaignId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fatores de Risco Psicossocial (catalogo)",
+      "item": [
+        {
+          "name": "GET /psychosocial-risk-factors (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors?search=&level=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "level",
+                  "value": "",
+                  "description": "low|medium|high"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /psychosocial-risk-factors (?level=high)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors?level=high",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors"],
+              "query": [
+                {
+                  "key": "level",
+                  "value": "high"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /psychosocial-risk-factors (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sobrecarga de trabalho\",\n  \"gesId\": \"{{gesId}}\",\n  \"level\": \"high\",\n  \"assessmentMethod\": \"Questionario COPSOQ\",\n  \"status\": \"in_action\",\n  \"description\": \"Fator mapeado por GES conforme NR-01\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /psychosocial-risk-factors/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors/{{riskFactorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors", "{{riskFactorId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /psychosocial-risk-factors/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors/{{riskFactorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors", "{{riskFactorId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sobrecarga de trabalho\",\n  \"gesId\": \"{{gesId}}\",\n  \"level\": \"medium\",\n  \"assessmentMethod\": \"Questionario COPSOQ\",\n  \"status\": \"monitored\",\n  \"description\": \"Fator mapeado por GES conforme NR-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /psychosocial-risk-factors/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors/{{riskFactorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors", "{{riskFactorId}}"]
             }
           }
         }

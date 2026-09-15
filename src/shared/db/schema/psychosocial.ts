@@ -16,6 +16,7 @@ import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { companies } from "./companies";
 import { workUnits } from "./work-units";
+import { ges } from "./ges";
 import { risks } from "./risks";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
@@ -42,6 +43,20 @@ export const psychosocialQuestionType = pgEnum("psychosocial_question_type", [
   "likert",
   "multiple_choice",
   "free_text",
+]);
+
+// Nível do fator de risco psicossocial (catálogo por GES, NR-01). Rótulos PT na UI.
+export const psychosocialRiskLevel = pgEnum("psychosocial_risk_level", [
+  "low",
+  "medium",
+  "high",
+]);
+
+// Situação do tratamento do fator (catálogo por GES). Rótulos PT na UI.
+export const psychosocialFactorStatus = pgEnum("psychosocial_factor_status", [
+  "in_action",
+  "monitored",
+  "controlled",
 ]);
 
 // ── Campanha ────────────────────────────────────────────────────────────────
@@ -200,6 +215,44 @@ export const psychosocialRisks = pgTable(
   ],
 ).enableRLS();
 
+// ── Catálogo de fatores de risco psicossocial (standalone, por GES) ─────────
+// Conceito distinto de `psychosocial_risks` (que é derivado de uma campanha):
+// este é um CATÁLOGO independente de fatores mapeados por GES (NR-01), com
+// código sequencial por tenant, nível, método de avaliação e situação. NÃO
+// referencia campanhas — campanhas podem, no futuro, consumir este catálogo.
+export const psychosocialRiskFactors = pgTable(
+  "psychosocial_risk_factors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    // Código sequencial por tenant ("PS-07"); gerado no servidor na criação.
+    number: integer("number").notNull(),
+    // Fator de risco psicossocial (ex.: "Sobrecarga de trabalho").
+    name: text("name").notNull(),
+    // GES ao qual o fator está mapeado. CASCADE para não travar a exclusão em
+    // cascata da empresa (companies → work_units → ges).
+    gesId: uuid("ges_id")
+      .notNull()
+      .references(() => ges.id, { onDelete: "cascade" }),
+    level: psychosocialRiskLevel("level").notNull(),
+    // Método de avaliação — texto livre (ex.: "Questionário COPSOQ",
+    // "Escuta ativa", "Entrevista"); conjunto não é fechado por regulamentação.
+    assessmentMethod: text("assessment_method"),
+    status: psychosocialFactorStatus("status").notNull().default("monitored"),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_psychosocial_risk_factors_org_id").on(table.orgId),
+    index("idx_psychosocial_risk_factors_ges").on(table.gesId),
+    uniqueIndex("uq_psychosocial_risk_factors_org_number").on(table.orgId, table.number),
+    isolationPolicy("psychosocial_risk_factors_isolation"),
+  ],
+).enableRLS();
+
 export type PsychosocialCampaign = InferSelectModel<typeof psychosocialCampaigns>;
 export type NewPsychosocialCampaign = InferInsertModel<typeof psychosocialCampaigns>;
 export type PsychosocialCampaignStatus = PsychosocialCampaign["status"];
@@ -212,3 +265,7 @@ export type PsychosocialAnswer = InferSelectModel<typeof psychosocialAnswers>;
 export type NewPsychosocialAnswer = InferInsertModel<typeof psychosocialAnswers>;
 export type PsychosocialRisk = InferSelectModel<typeof psychosocialRisks>;
 export type NewPsychosocialRisk = InferInsertModel<typeof psychosocialRisks>;
+export type PsychosocialRiskFactor = InferSelectModel<typeof psychosocialRiskFactors>;
+export type NewPsychosocialRiskFactor = InferInsertModel<typeof psychosocialRiskFactors>;
+export type PsychosocialRiskLevelValue = PsychosocialRiskFactor["level"];
+export type PsychosocialFactorStatusValue = PsychosocialRiskFactor["status"];
