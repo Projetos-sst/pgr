@@ -19,7 +19,11 @@ export default async function NewGesPage({
   const companies = result.ok ? result.data : [];
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Novo GES" description="Empresa → unidade de obra (cascata)." />
+      <PageHeader
+        title="Novo GES"
+        description="Empresa → unidade de obra (cascata)."
+        backHref="/ges"
+      />
       <OnboardingTip stepKey="ges" show={sp.onboarding === "1"} />
       <GesForm companies={companies} />
     </div>
