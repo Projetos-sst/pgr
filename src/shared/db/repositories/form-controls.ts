@@ -22,6 +22,8 @@ export type ListFormControlsParams = PageParams & {
   search?: string;
   formType?: string;
   companyId?: string;
+  status?: string;
+  type?: string;
 };
 
 export async function listFormControls(
@@ -41,6 +43,8 @@ export async function listFormControls(
   }
   if (params.formType) filters.push(eq(formControls.formType, params.formType));
   if (params.companyId) filters.push(eq(formControls.companyId, params.companyId));
+  if (params.status) filters.push(eq(formControls.status, params.status as never));
+  if (params.type) filters.push(eq(formControls.type, params.type as never));
   const where = and(...filters);
 
   return withOrg(orgId, async (tx) => {
@@ -53,6 +57,8 @@ export async function listFormControls(
         revision: formControls.revision,
         issueDate: formControls.issueDate,
         position: formControls.position,
+        type: formControls.type,
+        status: formControls.status,
       })
       .from(formControls)
       .leftJoin(companies, eq(companies.id, formControls.companyId))
@@ -137,6 +143,8 @@ function toColumns(input: FormControlValues) {
     nonConformityNumber: input.nonConformityNumber ?? null,
     gesId: input.gesId ?? null,
     position: input.position,
+    type: input.type,
+    status: input.status,
     notes: input.notes ?? null,
   };
 }

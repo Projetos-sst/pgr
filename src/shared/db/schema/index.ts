@@ -244,6 +244,8 @@ export {
 export {
   formControls,
   formControlPosition,
+  formControlType,
+  formControlStatus,
   type FormControl,
   type NewFormControl,
 } from "./form-controls";

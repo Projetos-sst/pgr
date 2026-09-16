@@ -20,6 +20,48 @@ export function formControlPositionLabel(value: string): string {
   return FORM_CONTROL_POSITION_LABELS[value as FormControlPosition] ?? value;
 }
 
+// ── Categoria do formulário (Ficha/Checklist/Documento) ─────────────────────
+export const FORM_CONTROL_TYPES = ["ficha", "checklist", "documento"] as const;
+export const formControlTypeSchema = z.enum(FORM_CONTROL_TYPES, {
+  error: "Tipo inválido",
+});
+export type FormControlType = (typeof FORM_CONTROL_TYPES)[number];
+
+const TYPE_LABELS: Record<FormControlType, string> = {
+  ficha: "Ficha",
+  checklist: "Checklist",
+  documento: "Documento",
+};
+
+export function formControlTypeLabel(value: string): string {
+  return TYPE_LABELS[value as FormControlType] ?? value;
+}
+
+// ── Situação (Rascunho/Publicado/Arquivado) ─────────────────────────────────
+export const FORM_CONTROL_STATUSES = ["draft", "published", "archived"] as const;
+export const formControlStatusSchema = z.enum(FORM_CONTROL_STATUSES, {
+  error: "Situação inválida",
+});
+export type FormControlStatus = (typeof FORM_CONTROL_STATUSES)[number];
+
+const STATUS_LABELS: Record<FormControlStatus, string> = {
+  draft: "Rascunho",
+  published: "Publicado",
+  archived: "Arquivado",
+};
+
+export function formControlStatusLabel(value: string): string {
+  return STATUS_LABELS[value as FormControlStatus] ?? value;
+}
+
+/** Tom da pílula de situação do kit de listagem. */
+export type FormControlTone = "green" | "amber" | "neutral";
+export function formControlStatusTone(value: string): FormControlTone {
+  if (value === "published") return "green";
+  if (value === "draft") return "amber";
+  return "neutral";
+}
+
 export const formControlInputSchema = z.object({
   formType: requiredString("Tipo de formulário é obrigatório"),
   // .nullable() além de optionalUuid: o form envia `null` (não só "") quando o
@@ -31,6 +73,8 @@ export const formControlInputSchema = z.object({
   nonConformityNumber: optionalString,
   gesId: optionalUuid.nullable().optional(),
   position: formControlPositionSchema,
+  type: formControlTypeSchema.default("documento"),
+  status: formControlStatusSchema.default("published"),
   notes: optionalString,
 });
 
@@ -46,6 +90,10 @@ export type FormControlListItem = {
   issueDate: string;
   position: string;
   positionLabel: string;
+  type: string;
+  typeLabel: string;
+  status: string;
+  statusLabel: string;
 };
 
 export function toFormControlListItem(row: {
@@ -56,6 +104,8 @@ export function toFormControlListItem(row: {
   revision: string;
   issueDate: string;
   position: string;
+  type: string;
+  status: string;
 }): FormControlListItem {
   return {
     id: row.id,
@@ -66,6 +116,10 @@ export function toFormControlListItem(row: {
     issueDate: row.issueDate,
     position: row.position,
     positionLabel: formControlPositionLabel(row.position),
+    type: row.type,
+    typeLabel: formControlTypeLabel(row.type),
+    status: row.status,
+    statusLabel: formControlStatusLabel(row.status),
   };
 }
 

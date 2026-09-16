@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
@@ -55,12 +54,11 @@ export default async function EditFormControlPage({
           nonConformityNumber: control.nonConformityNumber,
           gesId: control.gesId,
           position: control.position,
+          type: control.type,
+          status: control.status,
           notes: control.notes,
         }}
       />
-      <Link href="/form-controls" className="text-text-subtle text-sm hover:underline">
-        ← Voltar
-      </Link>
     </div>
   );
 }
