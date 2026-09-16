@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import {
   listFormControlCompanyOptionsAction,
@@ -28,9 +26,6 @@ export default async function NewFormControlPage() {
         description="Configure o cabeçalho ISO (FRM/REV/N.C.) para um tipo de documento."
       />
       <FormControlForm companies={companies} gesOptions={gesOptions} />
-      <Link href="/form-controls" className="text-text-subtle text-sm hover:underline">
-        ← Voltar
-      </Link>
     </div>
   );
 }
