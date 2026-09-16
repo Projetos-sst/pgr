@@ -12,6 +12,7 @@ import { isTeamManagementAvailable } from "@/shared/tenant/plan";
 
 import { EmptyState, PageHeader } from "../_ui/list";
 import { InviteMemberForm, MemberActions } from "../team/_components/team-actions";
+import { AvatarField } from "./_components/avatar-field";
 import { ProfileForm } from "./_components/profile-form";
 
 export const dynamic = "force-dynamic";
@@ -181,6 +182,7 @@ export default async function PerfilPage({
             <h2 className="text-xs font-extrabold tracking-wider text-[#8c91a8] uppercase">
               Dados de Acesso (Gerenciados pela Plataforma)
             </h2>
+            <AvatarField />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <DisplayField label="Nome Completo" value={fullName || null} />
               <DisplayField label="E-mail de Login" value={profile.email} />
