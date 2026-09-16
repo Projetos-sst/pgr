@@ -87,6 +87,15 @@ export default async function ProtectedLayout({
       <main className="flex flex-1 flex-col">
         <div className="mx-auto w-full max-w-[1320px] flex-1">{children}</div>
       </main>
+      {/*
+        Rodapé do shell: aparece em 39 dos 40 mockups do redesign (`*.dc.html`),
+        logo é global e não da `/welcome`. O link "Política de Privacidade" do
+        mockup fica de fora enquanto a rota não existir — link morto seria pior
+        que a ausência.
+      */}
+      <footer className="flex min-h-[54px] items-center justify-center gap-[18px] border-t border-white/50 bg-white/30 px-5 py-3 text-center text-[12px] text-[#9095ad] saturate-[175%] backdrop-blur-[26px]">
+        <span>© {new Date().getFullYear()} — PGR-e · Todos os direitos reservados</span>
+      </footer>
     </div>
   );
 }
