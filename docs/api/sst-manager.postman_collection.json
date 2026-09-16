@@ -6592,6 +6592,27 @@
               "raw": "{}"
             }
           }
+        },
+        {
+          "name": "GET /esocial-dashboard (painel agregado)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-dashboard"]
+            }
+          }
         }
       ]
     },

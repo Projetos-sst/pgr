@@ -1,6 +1,7 @@
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { EVENT_STATUS_LABELS } from "@/shared/domains/esocial/events";
 import {
+  getEsocialDashboardAction,
   listBatchesAction,
   listEventsAction,
 } from "@/shared/server/actions/esocial/events";
@@ -9,6 +10,7 @@ import Link from "next/link";
 
 import { PageHeader } from "../_ui/list";
 import { EsocialIcon } from "./_components/esocial-icon";
+import { EsocialDashboardPanel } from "./_components/esocial-dashboard";
 import { EventsTable } from "./_components/events-table";
 
 export const dynamic = "force-dynamic";
@@ -29,15 +31,17 @@ export default async function EsocialPage({
 }) {
   await requireOfficeStaffPage();
   const sp = await searchParams;
-  const [eventsResult, batchesResult] = await Promise.all([
+  const [eventsResult, batchesResult, dashboardResult] = await Promise.all([
     listEventsAction({
       status: sp.status as never,
       dateFrom: sp.dateFrom,
       dateTo: sp.dateTo,
     }),
     listBatchesAction(),
+    getEsocialDashboardAction(),
   ]);
   const events = eventsResult.ok ? eventsResult.data.rows : [];
+  const dashboard = dashboardResult.ok ? dashboardResult.data : null;
   const batches = batchesResult.ok
     ? batchesResult.data.map((b) => ({
         id: b.id,
@@ -74,6 +78,8 @@ export default async function EsocialPage({
           </Link>
         }
       />
+
+      {dashboard ? <EsocialDashboardPanel data={dashboard} /> : null}
 
       <form
         action="/esocial"

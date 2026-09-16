@@ -28,7 +28,9 @@ type BatchRow = {
   createdAt: string;
 };
 
-const TEMPLATE = "44px 2fr 1.2fr 1fr 84px";
+// Colunas do redesign (#217): Evento · Descrição · Funcionário · Data Envio ·
+// Protocolo · Status · Opções (+ checkbox de seleção para o lote).
+const TEMPLATE = "44px 0.9fr 1.7fr 1.2fr 1fr 1.1fr 1fr 84px";
 
 const STATUS_TONE: Record<string, StatusTone> = {
   draft: "neutral",
@@ -132,14 +134,17 @@ export function EventsTable({
             Nenhum evento eSocial.
           </p>
         ) : (
-          <DataGrid minWidth={720}>
+          <DataGrid minWidth={1040}>
             <GridHeader
               template={TEMPLATE}
               columns={[
                 { header: "" },
                 { header: "Evento" },
+                { header: "Descrição" },
+                { header: "Funcionário" },
+                { header: "Data Envio" },
+                { header: "Protocolo" },
                 { header: "Status" },
-                { header: "Criado" },
                 { header: "Opções", align: "right" },
               ]}
             />
@@ -155,14 +160,21 @@ export function EventsTable({
                     className="accent-primary size-4"
                   />
                 </Cell>
-                <Cell className="text-text font-semibold">{e.eventTypeLabel}</Cell>
+                <Cell className="text-primary font-mono font-semibold">
+                  {e.eventType}
+                </Cell>
+                <Cell className="text-text font-semibold">{e.description}</Cell>
+                <Cell className="text-text-muted">{e.employeeName ?? "—"}</Cell>
+                <Cell className="text-text-muted font-mono">
+                  {e.sentAt ? e.sentAt.slice(0, 10) : "—"}
+                </Cell>
+                <Cell className="text-text-muted font-mono text-[12px]">
+                  {e.protocolNumber ?? "—"}
+                </Cell>
                 <Cell>
                   <StatusBadge tone={STATUS_TONE[e.status] ?? "neutral"}>
                     {e.statusLabel}
                   </StatusBadge>
-                </Cell>
-                <Cell className="text-text-muted font-mono">
-                  {e.createdAt.slice(0, 10)}
                 </Cell>
                 <Cell align="right">
                   <span className="flex justify-end">
