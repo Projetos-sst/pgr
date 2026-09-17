@@ -70,7 +70,8 @@ export function VersionHistoryModal({
           aria-modal="true"
           aria-labelledby={`version-history-${documentId}`}
         >
-          <div className="glass-card flex max-h-[85vh] w-full max-w-lg flex-col bg-white/90 p-6">
+          {/* `text-left`: o modal é renderizado dentro da célula de ações, que é alinhada à direita. */}
+          <div className="glass-card flex max-h-[85vh] w-full max-w-lg flex-col bg-white/90 p-6 text-left">
             <h2
               id={`version-history-${documentId}`}
               className="text-text text-lg font-bold"
