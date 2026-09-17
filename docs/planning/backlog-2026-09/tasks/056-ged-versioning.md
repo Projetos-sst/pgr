@@ -145,10 +145,12 @@ A matriz de verdade (rascunho → revisão → aprovado → publicado) depende d
 
 Aprovação não é testável nesta issue (não existe).
 
-## Decisões pendentes (não bloqueantes — premissas acima)
+## Premissa definitiva (2026-09-16)
 
-- Código de erro para escrita em versão antiga (novo `409` vs. reuso).
-- Confirmação de que o gate de aprovação e a redefinição de "vigente" ficam em #54/#62.
+- Até existir aprovação (#54): **versão vigente = maior versão do `document_group_id`**.
+- Não criar agora revisor, aprovador, workflow nem status documental novo.
+- A definição de vigente fica em **um único ponto**, para #54 substituí-la depois.
+- Código de erro de escrita em versão antiga: definido no PLAN do lote.
 
 ## Riscos
 
@@ -169,7 +171,7 @@ uso conhecido na UI).
 
 ## Lote recomendado
 
-**1A** (primeira a executar).
+**1A** — primeira do Lote 1, na PR única do lote.
 
 ## Execução
 

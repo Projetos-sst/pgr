@@ -13,10 +13,10 @@ As três issues mais fáceis (#33, #42, #56) estão em **três módulos diferent
 migration e são pequenas o bastante para que a troca de contexto custe pouco. Coesão por domínio só
 compensa quando as tarefas mexem nos mesmos arquivos — que é exatamente o caso de PGR (2–3) e GED (5–7).
 
-**Revisão após auditoria específica (2026-09-16):** o Lote 1 foi dividido em **1A (#56)**, **1B (#42)** e
-**1C (#33)**. #42 subiu para dificuldade 3 e depende de decisão de produto; #33 é funcionalmente resolvida
-(sem código). Executar 1A primeiro, 1C em paralelo, 1B após a decisão. As mudanças de PDF que #42 implica
-migram para o Lote 2, junto de #47.
+**Revisão após auditoria específica e decisões (2026-09-16):** o Lote 1 segue a ordem **1A (#56) → 1C (#33) →
+1B (#42)**. #42 subiu para dificuldade 3, mas as decisões de produto já foram tomadas; #33 é fechada sem código.
+As mudanças de PDF que #42 implica migram para o Lote 2, junto de #47. **Exceção à regra de PR:** por decisão do
+responsável, o Lote 1 é entregue numa PR única, com commits separados por issue.
 
 ## Ordem geral e por quê
 

@@ -60,6 +60,21 @@ Critérios 1 e 2 já atendidos e testados; falta listar/exibir o histórico e ap
   3. "Revisão obrigatória": usar `valid_until` existente ou criar periodicidade de revisão por documento?
   4. Alerta = notificação in-app (padrão atual) ou exige e-mail (#61)?
 
+### #42 — Plano de ação por nível de risco
+
+Status MANTER/INTRODUZIDA/APRIMORADA e a regra por nível **já existem** em `control_measures` (migration
+0031, 9 testes de integração). **Decisões de 2026-09-16 (não reabrir):**
+
+- Plano = plano do PGR em `control_measures`; nenhum `action_plan` ou `control_measure` automático.
+- Garantia suave: todo risco aparece na projeção com cobertura derivada (não avaliado / sem medida /
+  incompleto / coberto); nada inventado.
+- Sem bloqueio de assinatura/publicação do PGR.
+- Reclassificação para moderado+ → incompleto até revisão; para baixo → preserva dados humanos.
+- PDF fica no Lote 2 com #47. Sem migration.
+- Premissa restante: nomes finais da cobertura seguem o vocabulário do domínio/UI.
+- Dívida pré-existente registrada (não expandir): a ponte #51 grava `who = "Responsável não definido"` e
+  `why` gerado em `action_plans`.
+
 ## NEEDS CONTEXT
 
 ### #40 — NR-17
@@ -74,32 +89,6 @@ Falta o modelo da avaliação. A issue lista dimensões, não campos.
 4. Avaliação ergonômica fica por risco (agente `ergonomic`) ou por GES/posto?
 
 ## NEEDS PRODUCT DECISION
-
-### #42 — Plano de ação por nível de risco
-
-Status MANTER/INTRODUZIDA/APRIMORADA e a regra por nível **já existem** em `control_measures` (migration
-0031, 9 testes de integração). Falta garantir/exibir "todo risco tem entrada no plano".
-
-- **Recomendação:** o plano de ação **do PGR** é a projeção das medidas de controle; todo risco aparece nele
-  com cobertura derivada (`not_assessed | no_measure | incomplete | covered`), status exposto no consolidado,
-  zero migration e nenhum registro automático (criar `action_plan` ou `control_measure` exigiria inventar
-  `what/why/who/where/how` ou `control_level`).
-- Perguntas bloqueantes:
-  1. "Plano de ação" da issue = plano do PGR (medidas de controle) ou módulo Plano de Ação (`action_plans`)?
-  2. Garantia suave (indicador + risco pendente listado) ou rígida (bloquear assinatura do PGR com risco não coberto)?
-  3. Reclassificação tolerável → moderado+: só sinalizar `incomplete` ou exigir revisão das medidas?
-- Dívida pré-existente a decidir antes de #47: a ponte #51 grava `who = "Responsável não definido"` e `why`
-  gerado em `action_plans`.
-
-### #33 — EPI: assinatura/QR — FUNCIONALMENTE RESOLVIDA
-
-Os 3 critérios de aceite são atendidos pelo fluxo próprio do EPI, com testes de integração (link, QR,
-manual, já assinada, cross-org, expirado, adulterado). Migrar para a infra genérica traria regressão: cota de
-10 assinaturas/mês do plano free passaria a valer para entregas de EPI; assinaturas históricas não cabem em
-`signature_captures` (`image_data` NOT NULL, imagem nunca guardada); links em circulação exigem coexistência de 72h.
-
-1. Confirmam o fechamento da #33 como resolvida?
-2. (Opcional, issue separada) Querem endurecer com `signed_at` próprio em `epi_deliveries` e/ou persistir a imagem do pad?
 
 ### #52 — GED: elaboração
 
@@ -135,6 +124,15 @@ manual, já assinada, cross-org, expirado, adulterado). Migrar para a infra gen�
 1. Aprovam provedor externo pago (ex.: Resend) com emenda ao Princípio II da constituição?
 2. "Administrador de TI" é um e-mail configurado por tenant?
 3. Quais eventos de permissão disparam e-mail (concessão, revogação, troca de setor)?
+
+## RESOLVIDA — VALIDAR E FECHAR
+
+### #33 — EPI: assinatura/QR
+
+Os 3 critérios de aceite são atendidos pelo fluxo próprio do EPI, com testes de integração. **Decisão de
+2026-09-16:** não migrar para a infra genérica (cota de 10 assinaturas/mês do plano free, assinaturas
+históricas sem os dados exigidos, links de 72h em circulação, risco sem requisito). Ação: evidência →
+comentário → fechar. `signed_at` próprio, se desejado, é melhoria separada.
 
 ## NEEDS EXTERNAL INFO
 

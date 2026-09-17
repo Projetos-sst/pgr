@@ -3,8 +3,8 @@
 https://github.com/Projetos-sst/pgr/issues/33
 
 > **Auditoria específica (2026-09-16, `develop` @ `690ec1b`) — prevalece sobre a classificação
-> inicial.** Categoria: **A — FUNCIONALMENTE RESOLVIDA.** A unificação com a infra genérica é melhoria
-> arquitetural separada e, hoje, traria regressão.
+> inicial.** Categoria: **A — FUNCIONALMENTE RESOLVIDA.** Decisão de 2026-09-16: **não migrar**; validar
+> critérios, comentar e fechar, sem código.
 
 ## Pedido real da issue
 
@@ -95,10 +95,14 @@ exija a unificação.
 3. Corrigir o comentário desatualizado `tests/e2e/public-signature.spec.ts:70` (cita `/assinar`) quando
    alguém tocar nesse arquivo.
 
-## Decisão pendente
+## Decisão definitiva (2026-09-16)
 
-Tech Lead/produto confirmar: fechar como resolvida (A) ou abrir fatia dedicada de unificação (B), ciente da
-regressão de cota.
+**Não migrar** para `signature_requests`/`signature_captures` nesta issue ("avaliar reaproveitar" não é
+"migrar obrigatoriamente"). Motivos: cota genérica de 10 assinaturas/mês no plano free; assinaturas antigas
+sem os dados exigidos pela infra genérica (migrar exigiria fabricar dados); links/QR antigos válidos por até
+72h; risco maior sem requisito funcional. `signed_at` próprio, se desejado, vira melhoria separada.
+
+Ação: tabela de evidências → comentário na issue → fechar → card Done. Sem branch funcional, sem migration.
 
 ## Testes
 
@@ -122,7 +126,7 @@ Fechar: nenhum. Migrar: alto (ver tabela).
 
 ## Prontidão
 
-**NEEDS PRODUCT DECISION** — só a confirmação do fechamento; não bloqueia nenhuma outra issue.
+**RESOLVIDA — VALIDAR E FECHAR.**
 
 ## Cobertura atual
 
@@ -130,7 +134,7 @@ Fechar: nenhum. Migrar: alto (ver tabela).
 
 ## Lote recomendado
 
-**1C** — decisão/fechamento, sem código, em paralelo a 1A/1B.
+**1C** — segunda do Lote 1; sem código.
 
 ## Execução
 

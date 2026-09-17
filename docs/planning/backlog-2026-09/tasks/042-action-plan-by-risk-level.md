@@ -3,8 +3,8 @@
 https://github.com/Projetos-sst/pgr/issues/42
 
 > **Auditoria específica (2026-09-16, `develop` @ `690ec1b`) — prevalece sobre a classificação
-> inicial.** Resultado: deixa de ser quick win. Dificuldade 2 → **3**; prontidão READY COM PREMISSAS →
-> **NEEDS PRODUCT DECISION**.
+> inicial.** Resultado: deixa de ser quick win (dificuldade 2 → **3**). As decisões de produto foram
+> tomadas em 2026-09-16 (seção "Decisões definitivas") e a prontidão passou a **READY COM PREMISSAS**.
 
 ## Pedido real da issue
 
@@ -48,7 +48,8 @@ Server Action e REST de medidas chamam o mesmo repositório, então a regra vale
 Descartados: `action_plans` (misturaria ciclo de execução com classificação normativa), relação
 risco↔plano (não existe tabela e o status é por medida), item de plano (não existe entidade).
 
-**Gap:** o status é gravado, mas **não aparece fora do formulário da medida**. `ConsolidatedMeasure`
+**Gap:** o status é gravado e aparece no formulário e na lista de medidas do risco (`MeasureStatusBadge`,
+`risks/[id]/control-measures/page.tsx:87`), mas **não no consolidado do PGR**. `ConsolidatedMeasure`
 (`domains/pgr/pgr-consolidated.ts:73-87`) não tem `status`; o PDF mostra só a situação derivada
 (Sem plano/Planejada/Vencida).
 
@@ -75,9 +76,8 @@ suas medidas (status + 5W2H + situação) ou uma linha de pendência explícita.
 | `incomplete`       | Moderado+ com medida aplicável sem responsável ou prazo (possível após reclassificação) |
 | `covered`          | Demais casos                                                                            |
 
-**Ambiguidade que bloqueia:** a issue cita `actions/safety/action-plans.ts`, sugerindo o módulo de
-Segurança, mas o "plano de ação" do PGR (tela consolidada e PDF) é feito de `control_measures`. Precisa de
-decisão explícita (ver perguntas).
+**Ambiguidade resolvida (decisão 1):** a issue cita `actions/safety/action-plans.ts`, mas o "plano de ação"
+desta issue é o **plano do PGR** feito de `control_measures`.
 
 ## C. Classificação (enum real `risk_classification`, `schema/risk-methodology.ts:28-34`)
 
@@ -153,7 +153,7 @@ qualquer lote que dependa de `action_plans` (ex.: #47).
 3. Aba Inventário do PGR: contador por cobertura + badge por risco + atalho para cadastrar medida.
 4. Formulário da medida: sinalizar responsável/prazo obrigatórios quando o risco vigente for moderado+
    (a validação continua no servidor).
-5. PDF: todo risco no plano + coluna Status — **entregar junto com #47** para não editar o template duas vezes.
+5. PDF: **fora desta issue** (decisão 5) — entra no Lote 2 com #47.
 
 ## Endpoints/actions afetados
 
@@ -177,12 +177,23 @@ documentar em `api-design.md`. Actions/REST de medidas inalteradas.
 - **RLS:** consolidado de outro tenant não retorna riscos (existente em `pgr-consolidated.test.ts`).
 - **E2E:** aba Inventário com contador e badge (Playwright 375/768/1440).
 
-## Perguntas de produto restantes
+## Decisões definitivas (2026-09-16)
 
-1. "Plano de ação" da issue = plano do PGR (medidas de controle) ou módulo Plano de Ação (`action_plans`)?
-2. Garantia suave (indicador + risco pendente listado no plano) ou rígida (bloquear assinatura do PGR com
-   risco `not_assessed`/`no_measure`/`incomplete`)?
-3. Reclassificação para moderado+: só sinalizar `incomplete`, ou exigir revisão das medidas?
+Não reabrir.
+
+1. **Qual plano:** "Plano de Ação" = plano do PGR baseado em `control_measures`. **Não** é o módulo
+   `action_plans`; nenhum `action_plan` é criado para satisfazer a issue, e a ponte que grava texto padrão
+   não é expandida.
+2. **Todo risco tem entrada:** garantia **suave e explícita**. Todo risco do inventário aparece na projeção
+   do plano com cobertura derivada (não avaliado / sem medida / incompleto / coberto), mesmo sem medida.
+   Nada é inventado: sem medida fake, plano fake, prazo, responsável, controle, descrição ou justificativa.
+3. **Sem bloqueio:** assinatura/publicação do PGR não são bloqueadas nesta issue. A fatia indica, destaca,
+   contabiliza e permite correção. Bloqueio futuro = regra própria.
+4. **Reclassificação:** trivial/tolerável → moderado+ não altera medidas; o risco aparece como
+   **incompleto** enquanto medidas aplicáveis não tiverem prazo e responsável. Moderado+ → trivial/tolerável
+   preserva status, prazo e responsável (registro humano).
+5. **PDF:** não muda nesta issue; vai para o Lote 2 junto com #47.
+6. **Sem migration.** Se surgir necessidade real, parar só esta issue e documentar.
 
 ## Dificuldade
 
@@ -191,7 +202,7 @@ indireto no PDF (#47).
 
 ## Prontidão
 
-**NEEDS PRODUCT DECISION** (com recomendação pronta; vira READY assim que a pergunta 1 for respondida).
+**READY COM PREMISSAS** — decisões tomadas; premissa: vocabulário final da cobertura definido no domínio/UI.
 
 ## Cobertura atual
 
@@ -199,7 +210,7 @@ indireto no PDF (#47).
 
 ## Lote recomendado
 
-**1B** (depois do #56).
+**1B** — terceira do Lote 1 (depois de #56 e #33), na PR única do lote.
 
 ## Execução
 

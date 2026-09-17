@@ -5,9 +5,10 @@ trechos "Onde mexer no código" das issues foram escritos em 2026-08-29 e diverg
 registradas nas fichas de `tasks/`.
 
 > **Auditoria específica do Lote 1 (2026-09-16, `develop` @ `690ec1b`) prevalece** sobre a
-> classificação inicial para #33, #42 e #56. Mudanças: #42 dificuldade 2→3 e prontidão → NEEDS PRODUCT
-> DECISION; #56 READY → READY COM PREMISSAS; #33 confirmada como funcionalmente resolvida. Detalhes nas
-> fichas `tasks/033`, `tasks/042`, `tasks/056`.
+> classificação inicial para #33, #42 e #56. Mudanças: #42 dificuldade 2→3; #56 READY → READY COM
+> PREMISSAS; #33 funcionalmente resolvida. **Decisões de produto tomadas em 2026-09-16:** #42 → READY COM
+> PREMISSAS (plano do PGR em `control_measures`, garantia suave, sem bloqueio, sem migration); #33 → RESOLVIDA,
+> validar e fechar sem migrar; #56 → vigente = maior versão até #54. Detalhes nas fichas.
 
 ## 1. Snapshot do Backlog (via `gh project item-list`)
 
@@ -24,10 +25,10 @@ registradas nas fichas de `tasks/`.
 | --- | --------------------------------- | ------------------- | ---- | ---------------------- | --------- | --------- | -------------------------------- | -------------------------- | ---- |
 | 3   | CNAE — busca por código/descrição | Empresas (catálogo) | 3    | READY COM PREMISSAS    | 25%       | PROVÁVEL  | IBGE `servicodados` (verificada) | combobox com #10           | 4    |
 | 10  | CBO — busca por código/descrição  | Funções (catálogo)  | 3    | NEEDS EXTERNAL INFO    | 0%        | PROVÁVEL  | Arquivo CBO do MTE (sem API)     | combobox com #3            | 4    |
-| 33  | Assinatura/QR na entrega de EPI   | EPI                 | 1    | NEEDS PRODUCT DECISION | 75%       | NÃO       | —                                | —                          | 1C   |
+| 33  | Assinatura/QR na entrega de EPI   | EPI                 | 1    | RESOLVIDA — FECHAR     | 75%       | NÃO       | —                                | —                          | 1C   |
 | 39  | NR-09 — avaliação quantitativa    | PGR / Inventário    | 3    | READY COM PREMISSAS    | 25%       | SIM       | —                                | desbloqueia #47            | 2    |
 | 40  | NR-17 — avaliação ergonômica      | PGR / Inventário    | 4    | NEEDS CONTEXT          | 25%       | SIM       | COPSOQ (instrumento)             | desbloqueia #47            | 3    |
-| 42  | Plano de ação por nível de risco  | PGR / Plano de ação | 3    | NEEDS PRODUCT DECISION | 50%       | NÃO       | —                                | decisão afeta #47          | 1B   |
+| 42  | Plano de ação por nível de risco  | PGR / Plano de ação | 3    | READY COM PREMISSAS    | 50%       | NÃO       | —                                | PDF do plano vai para #47  | 1B   |
 | 47  | Estrutura do PDF do PGR           | PGR / PDF           | 3    | BLOCKED (#39, #40)     | 50%       | NÃO       | Gotenberg (já existe)            | #39, #40                   | 2→3  |
 | 48  | NR-18 — documentos do canteiro    | PGR / Documentos    | 3    | READY COM PREMISSAS    | 25%       | INCERTO   | —                                | usa #47 para o anexo EPI   | 3    |
 | 52  | GED — elaboração                  | GED                 | 3    | NEEDS PRODUCT DECISION | 25%       | SIM       | —                                | #58                        | 5    |
@@ -52,16 +53,17 @@ registradas nas fichas de `tasks/`.
 | 4           | 5   | #40, #54, #55, #61, #62                         |
 | 5           | 2   | #58, #60                                        |
 
-| Prontidão              | Qtd | Issues                            |
-| ---------------------- | --- | --------------------------------- |
-| READY                  | 0   | —                                 |
-| READY COM PREMISSAS    | 5   | #3, #39, #48, #56, #59            |
-| NEEDS CONTEXT          | 1   | #40                               |
-| NEEDS PRODUCT DECISION | 7   | #33, #42, #52, #57, #58, #60, #61 |
-| NEEDS EXTERNAL INFO    | 1   | #10                               |
-| BLOCKED                | 5   | #47, #53, #54, #55, #62           |
+| Prontidão              | Qtd | Issues                      |
+| ---------------------- | --- | --------------------------- |
+| READY                  | 0   | —                           |
+| READY COM PREMISSAS    | 6   | #3, #39, #42, #48, #56, #59 |
+| NEEDS CONTEXT          | 1   | #40                         |
+| NEEDS PRODUCT DECISION | 5   | #52, #57, #58, #60, #61     |
+| RESOLVIDA — FECHAR     | 1   | #33                         |
+| NEEDS EXTERNAL INFO    | 1   | #10                         |
+| BLOCKED                | 5   | #47, #53, #54, #55, #62     |
 
-`#33` está classificada como **FUNCIONALMENTE RESOLVIDA** (auditoria específica; a decisão pendente é só confirmar o fechamento). `#54` tem ainda uma decisão de
+`#33` é **FUNCIONALMENTE RESOLVIDA**: decisão de não migrar tomada em 2026-09-16; validar, comentar e fechar. `#54` tem ainda uma decisão de
 produto (assinatura por QR/link vs. aceite autenticado) atrás do bloqueio.
 
 ## 4. Módulos reais

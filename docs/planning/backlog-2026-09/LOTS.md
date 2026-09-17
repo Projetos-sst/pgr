@@ -5,55 +5,40 @@ depois das decisões de produto; **8** é um lote de decisão. Estimativa relati
 
 ---
 
-# Lote 1 — dividido após auditoria específica (2026-09-16)
+# Lote 1 — #56, #33, #42 (auditoria específica + decisões de 2026-09-16)
 
-A auditoria específica de #42, #56 e #33 (fichas em `tasks/`) **prevalece** sobre a composição inicial. As
-três não compartilham arquivos nem migration, mas têm prontidões diferentes — executá-las como um pacote
-atrasaria a pronta (#56) à espera da decisão de #42.
+A auditoria específica (fichas em `tasks/`) e as decisões de 2026-09-16 **prevalecem** sobre a composição
+inicial. Planejamento operacional em [lots/lot-01/PLAN.md](lots/lot-01/PLAN.md) e
+[lots/lot-01/TASK.md](lots/lot-01/TASK.md).
 
-| Sub-lote | Issue | Dificuldade | Prontidão                 | Migration         | Entregável                          |
-| -------- | ----- | ----------- | ------------------------- | ----------------- | ----------------------------------- |
-| **1A**   | #56   | 2           | READY COM PREMISSAS       | Não               | Código + PR                         |
-| **1B**   | #42   | 3           | NEEDS PRODUCT DECISION    | Não (recomendado) | Código + PR após decisão            |
-| **1C**   | #33   | 1           | Confirmação de fechamento | Não               | Comentário de evidência, sem código |
+| Ordem | Sub-lote | Issue | Dificuldade | Prontidão           | Migration | Entregável                          |
+| ----- | -------- | ----- | ----------- | ------------------- | --------- | ----------------------------------- |
+| 1     | **1A**   | #56   | 2           | READY COM PREMISSAS | Não       | Código (commits #56)                |
+| 2     | **1C**   | #33   | 1           | RESOLVIDA — FECHAR  | Não       | Evidência + comentário + fechamento |
+| 3     | **1B**   | #42   | 3           | READY COM PREMISSAS | Não       | Código (commits #42)                |
 
-Um único `lots/lot-01/` (PLAN/TASK/REVIEW) com seções 1A/1B/1C; uma PR por sub-lote com código.
+**Entrega:** uma **PR única do Lote 1** (decisão do responsável, 2026-09-16), com PLAN/TASK/REVIEW e commits
+separados por issue — em vez de uma PR por sub-lote.
 
 ## 1A — #56 versionamento
 
 **Escopo:** listar versões do grupo (repositório + Server Action + `GET /api/v1/documents/{id}/versions` +
 api-design + Postman); UI de histórico com badge vigente e download de versões antigas; somente leitura no
-**backend** (PUT em versão não vigente → 409; nova versão via id antigo herda da vigente); conflito de upload
-do Storage → `DUPLICATE`; definição de "vigente" centralizada.
-
-**DoD:** integração (listagem ordenada, vigente única, PUT antigo 409 sem mutação, herança da vigente,
-cross-tenant 404, race existente); REST GET; regressão do worker de PDF; Playwright 375/768/1440; ficha atualizada.
-
-## 1B — #42 plano de ação do PGR
-
-**Pré-requisito:** resposta à pergunta 1 da ficha (qual "plano de ação").
-
-**Escopo recomendado:** cobertura derivada por risco (`not_assessed | no_measure | incomplete | covered`);
-`status` da medida exposto no consolidado; indicador + badge na aba Inventário; formulário da medida sinaliza
-responsável/prazo obrigatórios para moderado+ (validação segue no servidor). **PDF fica para o Lote 2 (#47)**
-para não editar o template duas vezes.
-
-**DoD:** unit (4 coberturas, grupos A/B, transições de classificação); integração (consolidado com status e
-cobertura, reclassificação altera cobertura sem mutar medidas, exclusão documentada); regras existentes
-(9 casos) verdes; api-design do consolidado; Playwright; ficha atualizada.
+**backend**; nova versão sempre deriva da vigente; conflito de upload de mesmo nome → erro de domínio; definição
+de "vigente" centralizada. **Não** implementar revisão/aprovação (#54).
 
 ## 1C — #33 assinatura de EPI
 
-**Escopo:** comentário na issue com a tabela critério × código × teste e a comparação A×B; obter confirmação
-de fechamento. Endurecimento `signed_at` só como issue separada, se pedido.
+**Escopo:** revalidar critérios com evidência concreta; comentar; fechar; card → Done. Sem código.
 
-**DoD:** comentário publicado; decisão registrada na ficha.
+## 1B — #42 plano do PGR
 
-## Ordem
+**Escopo:** cobertura derivada por risco no consolidado; status da medida exposto; indicador/badge/contador na
+aba Inventário; formulário sinaliza prazo/responsável obrigatórios para moderado+ antes do submit (backend
+continua autoridade). Sem PDF (Lote 2), sem migration, sem bloqueio de assinatura.
 
-1. **1A** imediatamente.
-2. **1C** em paralelo (não consome tempo de implementação).
-3. **1B** assim que a pergunta 1 de #42 for respondida.
+**DoD do lote:** `npm run check`, integração, build e regressão verdes; 4 superfícies de API do endpoint novo;
+evidência Playwright das telas; #33 fechada; REVIEW.md escrito; fichas atualizadas.
 
 ---
 
