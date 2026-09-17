@@ -81,6 +81,6 @@ Branch: `lot-01-feat/document-versions-risk-plan-coverage` · PR única do lote.
 - [x] Evidência Playwright (quando o ambiente permitir) — `validacao_full/056-ged-historico-versoes` e `042-pgr-cobertura-plano`; dados sintéticos removidos
 - [x] Push `--force-with-lease` — não necessário (sem reescrita de histórico)
 - [x] PR pronta para revisão; cards #56/#42 → In review
-- [ ] CI verde
+- [x] CI verde — Lint/format/typecheck, Unit & integration (Postgres 16), Production build: todos `pass`
 - [x] REVIEW.md
 - [x] LOTS.md / EXECUTION-PLAN.md atualizados

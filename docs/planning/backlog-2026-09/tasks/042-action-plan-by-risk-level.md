@@ -214,6 +214,6 @@ indireto no PDF (#47).
 
 ## Execução
 
-| Branch                                             | PR           | Migration | Testes                                                                              | CI     | Decisão                                                                          | Status                                       |
-| -------------------------------------------------- | ------------ | --------- | ----------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------- | -------------------------------------------- |
-| `lot-01-feat/document-versions-risk-plan-coverage` | #93 (Lote 1) | Nenhuma   | unit 14 novos; integração 8/8; regressão 49 suítes 454/454; Playwright 1440/768/375 | ver PR | Plano do PGR = control_measures; cobertura derivada; sem bloqueio; PDF no Lote 2 | Implementada (`c75fc51`), aguardando revisão |
+| Branch                                             | PR           | Migration | Testes                                                                              | CI                      | Decisão                                                                          | Status                                       |
+| -------------------------------------------------- | ------------ | --------- | ----------------------------------------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------- | -------------------------------------------- |
+| `lot-01-feat/document-versions-risk-plan-coverage` | #93 (Lote 1) | Nenhuma   | unit 14 novos; integração 8/8; regressão 49 suítes 454/454; Playwright 1440/768/375 | verde (run 35170931535) | Plano do PGR = control_measures; cobertura derivada; sem bloqueio; PDF no Lote 2 | Implementada (`c75fc51`), aguardando revisão |

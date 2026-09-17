@@ -68,8 +68,8 @@ preservado; formulário bloqueou o envio sem responsável/prazo antes de qualque
 
 ## CI
 
-A PR #93 roda o CI completo (format, lint, typecheck, unit, integração em Postgres 16 e build). Resultado
-registrado na descrição da PR.
+PR #93, run `35170931535`: **Lint, format & typecheck — pass (1m41s)** · **Unit & integration tests — pass
+(5m6s)**, suíte de integração completa em Postgres 16 · **Production build — pass (1m29s)**.
 
 ## Regressões verificadas
 
