@@ -20,6 +20,9 @@ inicial. Planejamento operacional em [lots/lot-01/PLAN.md](lots/lot-01/PLAN.md) 
 **Entrega:** uma **PR única do Lote 1** (decisão do responsável, 2026-09-16), com PLAN/TASK/REVIEW e commits
 separados por issue — em vez de uma PR por sub-lote.
 
+**Status (2026-09-16):** tecnicamente encerrado — #33 fechada; #56 e #42 implementadas na PR #93, aguardando
+merge. Detalhes em [lots/lot-01/REVIEW.md](lots/lot-01/REVIEW.md). Próximo: **Lote 2 (#39 + #47)**.
+
 ## 1A — #56 versionamento
 
 **Escopo:** listar versões do grupo (repositório + Server Action + `GET /api/v1/documents/{id}/versions` +

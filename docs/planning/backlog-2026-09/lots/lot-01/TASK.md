@@ -57,30 +57,30 @@ Branch: `lot-01-feat/document-versions-risk-plan-coverage` · PR única do lote.
 
 ## 1B — #42 cobertura do plano do PGR
 
-- [ ] Card #42 → In progress
+- [x] Card #42 → In progress
 - [x] Schema — N/A
 - [x] Migration — N/A (parar #42 e documentar se surgir necessidade)
-- [ ] Domain: `isMeasureMissingRequiredPlanFields` (regra única) + uso no repositório
-- [ ] Domain: `plan-coverage.ts` (4 coberturas, rótulos, resumo)
-- [ ] Consolidated: `status` e `planCoverage` no DTO + repositório
-- [ ] Server Action / REST — N/A novo endpoint; consolidado aditivo
-- [ ] Frontend: aba Inventário (resumo, coluna Plano, status por medida, orientação)
-- [ ] Frontend: formulário sinaliza prazo/responsável (moderado+ aplicável)
-- [ ] Unit
-- [ ] Integration (todos os riscos, sem medida, status, reclassificação, exclusão, isolamento)
-- [ ] REST/Action (shape; 9 testes da regra verdes)
-- [ ] Docs: `api-design.md` (consolidado)
-- [ ] `npm run check`
-- [ ] Commit `#42`
-- [ ] Ficha `tasks/042` atualizada
+- [x] Domain: `isMeasureMissingRequiredPlanFields` (regra única) + uso no repositório
+- [x] Domain: `plan-coverage.ts` (4 coberturas, rótulos, resumo)
+- [x] Consolidated: `status` e `planCoverage` no DTO + repositório
+- [x] Server Action / REST — N/A novo endpoint; consolidado aditivo
+- [x] Frontend: aba Inventário (resumo, coluna Plano, status por medida, orientação)
+- [x] Frontend: formulário sinaliza prazo/responsável (moderado+ aplicável)
+- [x] Unit — `plan-coverage.test.ts` (14) + fixtures ajustados
+- [x] Integration (todos os riscos, sem medida, status, reclassificação, exclusão, isolamento) — `pgr-plan-coverage.test.ts` 8/8
+- [x] REST/Action (shape; 9 testes da regra verdes) — regressão 49 suítes, 454/454
+- [x] Docs: `api-design.md` (consolidado)
+- [x] `npm run check` — 1256 unit, 0 erros de lint
+- [x] Commit `#42` — `c75fc51`
+- [x] Ficha `tasks/042` atualizada
 
 ## Fechamento do lote
 
-- [ ] Rebase em `origin/develop`
-- [ ] `npm run check` + integração completa das áreas tocadas + `npm run build`
-- [ ] Evidência Playwright (quando o ambiente permitir)
-- [ ] Push `--force-with-lease`
-- [ ] PR pronta para revisão; cards #56/#42 → In review
+- [x] Rebase em `origin/develop` — sem mudanças na develop (`690ec1b`)
+- [x] `npm run check` + integração completa das áreas tocadas + `npm run build` — check 1256/1256; integração 90/90 (GED) e 454/454 (PGR); build ok
+- [x] Evidência Playwright (quando o ambiente permitir) — `validacao_full/056-ged-historico-versoes` e `042-pgr-cobertura-plano`; dados sintéticos removidos
+- [x] Push `--force-with-lease` — não necessário (sem reescrita de histórico)
+- [x] PR pronta para revisão; cards #56/#42 → In review
 - [ ] CI verde
-- [ ] REVIEW.md
-- [ ] LOTS.md / EXECUTION-PLAN.md atualizados
+- [x] REVIEW.md
+- [x] LOTS.md / EXECUTION-PLAN.md atualizados

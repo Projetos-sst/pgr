@@ -20,7 +20,7 @@ responsável, o Lote 1 é entregue numa PR única, com commits separados por iss
 
 ## Ordem geral e por quê
 
-1. **Lote 1 (1A → 1C → 1B)** — entrega rápida, zero migration, e valida o workflow PLAN → TASK → REVIEW.
+1. **Lote 1 (1A → 1C → 1B)** — ✅ tecnicamente encerrado em 2026-09-16 (PR #93; REVIEW em `lots/lot-01/`).
 2. **Lote 2** — maior valor para o cliente (NR-09 + PDF é o entregável regulatório) e está pronto com premissas.
 3. **Lote 3** — fecha o PGR; depende das respostas de #40.
 4. **Lote 4** — independente; pode correr em paralelo a 2/3 se houver capacidade.
