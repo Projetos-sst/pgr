@@ -5,45 +5,55 @@ depois das decisões de produto; **8** é um lote de decisão. Estimativa relati
 
 ---
 
-# Lote 1 — Quick wins sem migration
+# Lote 1 — dividido após auditoria específica (2026-09-16)
 
-**Issues:** #42 (parte restante), #56, #33
+A auditoria específica de #42, #56 e #33 (fichas em `tasks/`) **prevalece** sobre a composição inicial. As
+três não compartilham arquivos nem migration, mas têm prontidões diferentes — executá-las como um pacote
+atrasaria a pronta (#56) à espera da decisão de #42.
 
-| Item                | Valor                                                    |
-| ------------------- | -------------------------------------------------------- |
-| Dificuldade média   | 1,7 (níveis 2, 2, 1)                                     |
-| Migration           | Nenhuma                                                  |
-| Integração externa  | Nenhuma                                                  |
-| Estimativa relativa | S–M                                                      |
-| PRs                 | até 2 (#42 e #56 são independentes); #33 não gera código |
+| Sub-lote | Issue | Dificuldade | Prontidão                 | Migration         | Entregável                          |
+| -------- | ----- | ----------- | ------------------------- | ----------------- | ----------------------------------- |
+| **1A**   | #56   | 2           | READY COM PREMISSAS       | Não               | Código + PR                         |
+| **1B**   | #42   | 3           | NEEDS PRODUCT DECISION    | Não (recomendado) | Código + PR após decisão            |
+| **1C**   | #33   | 1           | Confirmação de fechamento | Não               | Comentário de evidência, sem código |
 
-**Por que juntas:** são as únicas três issues do backlog que fecham sem migration, sem integração e sem
-decisão estrutural. Não compartilham arquivos, então não há conflito entre elas, e cada uma reaproveita
-um fluxo que já existe e tem testes (ponte `control_measure → action_plan`, `addDocumentVersion` +
-`currentVersionPredicate`, fluxo de assinatura do EPI).
+Um único `lots/lot-01/` (PLAN/TASK/REVIEW) com seções 1A/1B/1C; uma PR por sub-lote com código.
 
-**Escopo mínimo:**
+## 1A — #56 versionamento
 
-- **#42** — consulta derivada "riscos do inventário sem plano de ação" (sem coluna nova), indicador na aba
-  Inventário do editor de PGR e na lista de riscos, ação "Criar plano" com `origin_type = risk`
-  pré-preenchido. Server Action + REST GET + api-design + Postman.
-- **#56** — leitura do histórico de versões do grupo (`GET /api/v1/documents/{id}/versions`, hoje só existe
-  POST), destaque da versão vigente e download de versões antigas na UI do GED. Server Action + REST +
-  api-design + Postman.
-- **#33** — anexar à issue a evidência de que os critérios de aceite já são atendidos e obter a decisão
-  (fechar ou abrir fatia de unificação). Sem código.
+**Escopo:** listar versões do grupo (repositório + Server Action + `GET /api/v1/documents/{id}/versions` +
+api-design + Postman); UI de histórico com badge vigente e download de versões antigas; somente leitura no
+**backend** (PUT em versão não vigente → 409; nova versão via id antigo herda da vigente); conflito de upload
+do Storage → `DUPLICATE`; definição de "vigente" centralizada.
 
-**Dependências:** nenhuma externa ao lote. #42 depende das respostas 1–3 da seção #42 em
-REQUIREMENTS-GAPS (a premissa segue se não houver objeção).
+**DoD:** integração (listagem ordenada, vigente única, PUT antigo 409 sem mutação, herança da vigente,
+cross-tenant 404, race existente); REST GET; regressão do worker de PDF; Playwright 375/768/1440; ficha atualizada.
 
-**Definition of Done:**
+## 1B — #42 plano de ação do PGR
 
-- [ ] `npm run check` e `npm run build` verdes; `npm run test:integration` cobrindo as consultas novas
-      (isolamento cross-tenant, risco coberto por plano direto e por ponte, histórico preserva versões)
-- [ ] 4 superfícies de API completas para os dois endpoints novos
-- [ ] Evidência Playwright 375/768/1440 das telas tocadas
-- [ ] Comentário de evidência na #33 com decisão registrada
-- [ ] Fichas `tasks/42`, `tasks/56`, `tasks/33` atualizadas; `lots/lot-01/REVIEW.md` escrito
+**Pré-requisito:** resposta à pergunta 1 da ficha (qual "plano de ação").
+
+**Escopo recomendado:** cobertura derivada por risco (`not_assessed | no_measure | incomplete | covered`);
+`status` da medida exposto no consolidado; indicador + badge na aba Inventário; formulário da medida sinaliza
+responsável/prazo obrigatórios para moderado+ (validação segue no servidor). **PDF fica para o Lote 2 (#47)**
+para não editar o template duas vezes.
+
+**DoD:** unit (4 coberturas, grupos A/B, transições de classificação); integração (consolidado com status e
+cobertura, reclassificação altera cobertura sem mutar medidas, exclusão documentada); regras existentes
+(9 casos) verdes; api-design do consolidado; Playwright; ficha atualizada.
+
+## 1C — #33 assinatura de EPI
+
+**Escopo:** comentário na issue com a tabela critério × código × teste e a comparação A×B; obter confirmação
+de fechamento. Endurecimento `signed_at` só como issue separada, se pedido.
+
+**DoD:** comentário publicado; decisão registrada na ficha.
+
+## Ordem
+
+1. **1A** imediatamente.
+2. **1C** em paralelo (não consome tempo de implementação).
+3. **1B** assim que a pergunta 1 de #42 for respondida.
 
 ---
 

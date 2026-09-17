@@ -3,25 +3,23 @@
 Cada pergunta foi escrita para destravar implementação: responde-se com uma escolha, não com uma
 discussão. Onde há premissa recomendada, ela é a que será usada se não houver objeção.
 
+> **Auditoria específica do Lote 1 (2026-09-16) prevalece** para #33, #42 e #56 — ver fichas em `tasks/`.
+
 ## READY
 
-### #56 — GED: controle de versões
-
-Critérios de aceite claros e metade já atendida no modelo. Sem perguntas bloqueantes.
-
-- Premissa registrada: o gate "só vira ativa após aprovação" pertence a #54/#62, não a esta issue.
+Nenhuma issue — #56 passou a READY COM PREMISSAS na auditoria específica.
 
 ## READY COM PREMISSAS
 
-### #42 — Plano de ação por nível de risco (parte restante)
+### #56 — GED: controle de versões
 
-- **Premissa:** "todo risco tem entrada no plano" será atendido por **indicador derivado** (riscos do
-  inventário sem plano de ação) + ação "Criar plano" com `origin_type = risk` — sem gerar registro
-  automático, porque `action_plans` exige `what/why/who/where/how` NOT NULL e isso obrigaria texto fictício.
-- Perguntas:
-  1. Indicador + botão "Criar plano" atende, ou vocês exigem geração automática de uma entrada por risco?
-  2. Risco com medida de controle aplicável já ligada a um plano (ponte `control_measure`) conta como coberto?
-  3. Risco **nunca avaliado** entra no indicador de "sem plano"?
+Critérios 1 e 2 já atendidos e testados; falta listar/exibir o histórico e aplicar somente leitura no backend.
+
+- Premissa 1: "versão ativa" continua sendo a **maior versão do grupo** até existir aprovação; #54/#62
+  redefinem para "maior versão aprovada/publicada" (a definição fica centralizada num único ponto).
+- Premissa 2: escrever metadados em versão não vigente é rejeitado no repositório (409); nova versão criada
+  a partir de id antigo herda metadados da versão **vigente**.
+- Não bloqueante: código de erro (novo 409 vs. reuso) é decidido no PLAN.
 
 ### #3 — CNAE
 
@@ -77,15 +75,31 @@ Falta o modelo da avaliação. A issue lista dimensões, não campos.
 
 ## NEEDS PRODUCT DECISION
 
-### #33 — EPI: assinatura/QR — POSSIVELMENTE JÁ RESOLVIDA
+### #42 — Plano de ação por nível de risco
 
-Os dois critérios de aceite já são atendidos pelo fluxo próprio do EPI (link/QR/manual, status com data
-na entrega e coluna "Assinatura" na Ficha de EPI, testes de integração cobrindo token, expiração e
-cross-tenant).
+Status MANTER/INTRODUZIDA/APRIMORADA e a regra por nível **já existem** em `control_measures` (migration
+0031, 9 testes de integração). Falta garantir/exibir "todo risco tem entrada no plano".
 
-1. Fechamos a #33 como resolvida?
-2. Ou vocês querem a unificação com a infra genérica (guarda imagem da assinatura, `signed_at` real,
-   aparece em `/signatures`) — sabendo que é migração de dados com tokens já distribuídos?
+- **Recomendação:** o plano de ação **do PGR** é a projeção das medidas de controle; todo risco aparece nele
+  com cobertura derivada (`not_assessed | no_measure | incomplete | covered`), status exposto no consolidado,
+  zero migration e nenhum registro automático (criar `action_plan` ou `control_measure` exigiria inventar
+  `what/why/who/where/how` ou `control_level`).
+- Perguntas bloqueantes:
+  1. "Plano de ação" da issue = plano do PGR (medidas de controle) ou módulo Plano de Ação (`action_plans`)?
+  2. Garantia suave (indicador + risco pendente listado) ou rígida (bloquear assinatura do PGR com risco não coberto)?
+  3. Reclassificação tolerável → moderado+: só sinalizar `incomplete` ou exigir revisão das medidas?
+- Dívida pré-existente a decidir antes de #47: a ponte #51 grava `who = "Responsável não definido"` e `why`
+  gerado em `action_plans`.
+
+### #33 — EPI: assinatura/QR — FUNCIONALMENTE RESOLVIDA
+
+Os 3 critérios de aceite são atendidos pelo fluxo próprio do EPI, com testes de integração (link, QR,
+manual, já assinada, cross-org, expirado, adulterado). Migrar para a infra genérica traria regressão: cota de
+10 assinaturas/mês do plano free passaria a valer para entregas de EPI; assinaturas históricas não cabem em
+`signature_captures` (`image_data` NOT NULL, imagem nunca guardada); links em circulação exigem coexistência de 72h.
+
+1. Confirmam o fechamento da #33 como resolvida?
+2. (Opcional, issue separada) Querem endurecer com `signed_at` próprio em `epi_deliveries` e/ou persistir a imagem do pad?
 
 ### #52 — GED: elaboração
 
@@ -135,13 +149,13 @@ Não há API; a fonte oficial é o download de arquivos no portal do MTE.
 
 ## BLOCKED
 
-| Issue | Bloqueada por | Pergunta que ainda sobra quando desbloquear                                                                                                                     |
-| ----- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| #47   | #39, #40      | "Preposto" = `work_units.managerName/managerRole` (rótulo "Gestor/Preposto")? Plano 5W2H lido de `action_plans` (tem os 7 campos) em vez de `control_measures`? |
-| #53   | #52, #58      | Revisão pode reprovar e devolver ao autor, ou só comentar?                                                                                                      |
-| #54   | #53, #58      | Aprovação com assinatura por QR/link (infra 010) ou aceite autenticado in-app? Mapeamento tipo→aprovador é fixo?                                                |
-| #55   | #54, #58      | Leitor vê só a versão publicada vigente? Log de cada visualização ou só download?                                                                               |
-| #62   | #52–#57       | "Documento sem versão ativa" — em que situação isso ocorre após descarte da versão vigente?                                                                     |
+| Issue | Bloqueada por | Pergunta que ainda sobra quando desbloquear                                                                                                                                 |
+| ----- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #47   | #39, #40      | "Preposto" = `work_units.managerName/managerRole` (rótulo "Gestor/Preposto")? Fonte do plano 5W2H depende da **decisão 1 de #42** (medidas de controle vs. `action_plans`). |
+| #53   | #52, #58      | Revisão pode reprovar e devolver ao autor, ou só comentar?                                                                                                                  |
+| #54   | #53, #58      | Aprovação com assinatura por QR/link (infra 010) ou aceite autenticado in-app? Mapeamento tipo→aprovador é fixo?                                                            |
+| #55   | #54, #58      | Leitor vê só a versão publicada vigente? Log de cada visualização ou só download?                                                                                           |
+| #62   | #52–#57       | "Documento sem versão ativa" — em que situação isso ocorre após descarte da versão vigente?                                                                                 |
 
 **#47 é desbloqueável em parte:** seções 1 (identificação com preposto), 2 (inventário com dados
 quantitativos) e 5 (plano 5W2H) não dependem de NR-09/NR-17 e entram no Lote 2.

@@ -13,9 +13,14 @@ As três issues mais fáceis (#33, #42, #56) estão em **três módulos diferent
 migration e são pequenas o bastante para que a troca de contexto custe pouco. Coesão por domínio só
 compensa quando as tarefas mexem nos mesmos arquivos — que é exatamente o caso de PGR (2–3) e GED (5–7).
 
+**Revisão após auditoria específica (2026-09-16):** o Lote 1 foi dividido em **1A (#56)**, **1B (#42)** e
+**1C (#33)**. #42 subiu para dificuldade 3 e depende de decisão de produto; #33 é funcionalmente resolvida
+(sem código). Executar 1A primeiro, 1C em paralelo, 1B após a decisão. As mudanças de PDF que #42 implica
+migram para o Lote 2, junto de #47.
+
 ## Ordem geral e por quê
 
-1. **Lote 1** — entrega rápida, zero risco de migration, e valida o workflow PLAN → TASK → REVIEW.
+1. **Lote 1 (1A → 1C → 1B)** — entrega rápida, zero migration, e valida o workflow PLAN → TASK → REVIEW.
 2. **Lote 2** — maior valor para o cliente (NR-09 + PDF é o entregável regulatório) e está pronto com premissas.
 3. **Lote 3** — fecha o PGR; depende das respostas de #40.
 4. **Lote 4** — independente; pode correr em paralelo a 2/3 se houver capacidade.

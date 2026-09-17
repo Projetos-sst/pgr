@@ -2,71 +2,135 @@
 
 https://github.com/Projetos-sst/pgr/issues/33
 
-> **POSSIVELMENTE JÁ RESOLVIDA** — os dois critérios funcionais são atendidos pelo fluxo próprio do EPI.
+> **Auditoria específica (2026-09-16, `develop` @ `690ec1b`) — prevalece sobre a classificação
+> inicial.** Categoria: **A — FUNCIONALMENTE RESOLVIDA.** A unificação com a infra genérica é melhoria
+> arquitetural separada e, hoje, traria regressão.
 
-### Objetivo
+## Pedido real da issue
 
-Entrega de EPI gera pedido de assinatura (link/QR), captura a confirmação e mostra o status no histórico.
-A issue sugere avaliar a infra genérica de assinatura.
+"**Avaliar** reaproveitar a infraestrutura de assinatura digital genérica (`signature_requests` /
+`signature_captures`) como consumidor novo (`target_type = epi_delivery`), em vez de criar mecanismo
+próprio." Critérios: gerar pedido link/QR; capturar confirmação do funcionário; status visível no
+histórico do item/funcionário; `npm run check`.
 
-### Estado atual no código (evidência)
+A issue pede avaliação, não migração obrigatória.
 
-- **Critério 1 — gerar link/QR e capturar confirmação:** botões em `employees/[id]/_components/delivery-signature.tsx:91-114` → `generateSignTokenAction` (`server/actions/pgr/epi-deliveries.ts:124-140`, URL + QR SVG); página pública `src/app/(public)/sign/[token]/page.tsx` (expirado/inválido/já assinado + pad); `signByToken` condicional em `repositories/epi-deliveries.ts:427-468`; assinatura manual (`signDeliveryManual`) e REST `api/v1/epi-deliveries/[id]/sign`.
-- **Critério 2 — status visível no histórico:** badge com data em `delivery-signature.tsx:76-83`; coluna "Assinatura" na Ficha de EPI (`epi-record-table.tsx:159,172`, `repositories/employee-epi-record.ts:69,89`).
-- Token HMAC stateless 72h (`integrations/epi-signature/token.ts`), guardado em `auth_token` só para revogação/uso único.
-- Testes: `__tests__/unit/epi-signature-token.test.ts`; integração `epi-sign-public.test.ts` (QR, link, já assinado, cross-org, expirado, adulterado) e `epi-deliveries.test.ts` (manual, ALREADY_SIGNED, cross-tenant, não apaga assinada).
+## Pergunta 1 — Critérios funcionais
 
-### O que já existe
+| Critério                   | Código                                                                                                                                                                | Teste                                                                                    | Atendido?                                                     |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Link                       | `generateSignTokenAction` monta `/sign/{token}` (`server/actions/pgr/epi-deliveries.ts:124-140`); botão em `employees/[id]/_components/delivery-signature.tsx:91-114` | `epi-sign-public.test.ts:99` (método link)                                               | Sim                                                           |
+| QR Code                    | SVG no servidor (`integrations/epi-signature/qr.ts:10-12`), exibido no painel (`delivery-signature.tsx:118-141`)                                                      | `epi-sign-public.test.ts:78` (via QR)                                                    | Sim                                                           |
+| Confirmação do funcionário | Página pública `src/app/(public)/sign/[token]/page.tsx` + `signByToken` condicional `pending → signed_*` (`repositories/epi-deliveries.ts:427-468`)                   | `:78`, `:107` (já assinada)                                                              | Sim                                                           |
+| Assinatura                 | Pad exigido como gesto de consentimento; **imagem não persistida** por decisão registrada (`signature-pad.tsx:8-12`)                                                  | —                                                                                        | Sim (consentimento), sem imagem                               |
+| Assinatura manual          | `signDeliveryManual` (`epi-deliveries.ts:255-282`) + REST `api/v1/epi-deliveries/[id]/sign`                                                                           | `epi-deliveries.test.ts:149`                                                             | Sim                                                           |
+| Status                     | Enum `pending/signed_qr/signed_link/signed_manual` (`schema/epis.ts:48-53`); badge (`delivery-signature.tsx:76-83`)                                                   | `:78`, `:149`                                                                            | Sim                                                           |
+| Histórico do funcionário   | Coluna "Assinatura" na Ficha de EPI (`epi-record-table.tsx:159,172`; `employee-epi-record.ts:69,89`)                                                                  | coberto indiretamente                                                                    | Sim                                                           |
+| Data                       | `signedAt` derivado de `updated_at` (`epi-deliveries.ts:206`)                                                                                                         | —                                                                                        | Sim (derivada; ver risco)                                     |
+| Funcionário                | Entrega pertence ao funcionário; página pública mostra itens                                                                                                          | —                                                                                        | Sim                                                           |
+| Segurança do token         | HMAC com orgId/deliveryId/método, TTL 72h (`token.ts:16,58-100`); uso único (limpa `auth_token`); revogável                                                           | `:122` cross-org, `:144` expirado, `:162` adulterado; `unit/epi-signature-token.test.ts` | Sim                                                           |
+| Imutabilidade              | Entrega assinada não pode ser apagada                                                                                                                                 | `epi-deliveries.test.ts:190`                                                             | Sim                                                           |
+| Auditoria persistida       | Só log de console (`officeAction`)                                                                                                                                    | —                                                                                        | **Não** (também não existe na infra genérica além da captura) |
 
-Fluxo completo e testado.
+**Critérios de aceite da issue: 3/3 atendidos.**
 
-### O que falta (só se decidirem unificar)
+## Pergunta 2 — Existe motivo concreto para substituir?
 
-Registrar `epi_delivery` como `target_type` (`domains/signatures/contract.ts:13-18` + `ui/signature/form-registry.tsx`), migrar entregas existentes, guardar imagem da assinatura (hoje o pad é só gesto de consentimento, `signature-pad.tsx:8-12`), `signed_at` real (hoje derivado de `updated_at`), aparecer em `/signatures`. Não há E2E de EPI; o comentário em `tests/e2e/public-signature.spec.ts:70` cita rota antiga `/assinar`.
+### Modelo real de `target_type`
 
-### Arquivos/domínios afetados
+- `signature_requests.target_type` é **`text NOT NULL`**, sem enum e sem CHECK (`schema/signatures.ts`,
+  migration `0010_digital_signature_infra.sql:19`).
+- Allowlist **na aplicação**: `SIGNATURE_TARGET_TYPES = demo|inspection|pgr|service_order`
+  (`domains/signatures/contract.ts:13-18`) + registry de payload + registry de formulário
+  (`ui/signature/form-registry.tsx`).
+- Adicionar `epi_delivery`: **sem migration de schema** para o tipo, mas exige payload schema, formulário
+  público e adaptador de servidor.
+- Consumidores com comportamento específico: `service-orders.ts:64-79` filtra por `target_type` em SQL; PGR
+  e OS têm adaptadores próprios (`pgr-signature-core.ts`, `service-order-signature-core.ts`).
 
-Nenhum para fechar. Se unificar: `epis.ts`, `epi-deliveries` (repo/actions/REST), rota pública, registry de assinatura.
+### Comparação
 
-### Backend / Frontend
+| Aspecto              | A — manter infra própria            | B — migrar para `signature_requests`                                                                                                                                                          |
+| -------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Duplicação           | Dois mecanismos de assinatura       | Um mecanismo                                                                                                                                                                                  |
+| **Cota do plano**    | EPI ilimitado                       | **Regressão:** o core genérico aplica `FREE_SIGNATURE_MONTHLY_QUOTA = 10`/mês (`create-request-core.ts:48`), compartilhado com PGR, OS e inspeções — um cliente free travaria entregas de EPI |
+| Imagem da assinatura | Não guardada                        | Guardada (`image_data`)                                                                                                                                                                       |
+| Data de assinatura   | Derivada de `updated_at`            | `signed_at` próprio                                                                                                                                                                           |
+| Tokens               | HMAC stateless, 72h, orgId no token | Aleatório, só hash no banco, `used_at`, policy RLS de capability                                                                                                                              |
+| Dados históricos     | Intactos                            | **Não migráveis sem inventar:** `signature_captures.image_data` e `signer_name` são NOT NULL e o EPI nunca guardou imagem                                                                     |
+| Links/QR já emitidos | Válidos até 72h                     | Exige coexistência das duas rotas por ≥72h ou invalida links em circulação                                                                                                                    |
+| Rota pública         | `/sign/[token]`                     | `/signature-requests/[token]` (+ formulário novo)                                                                                                                                             |
+| RLS                  | Tenant via token → `withOrg`        | Tenant + capability (mais robusto)                                                                                                                                                            |
+| Migration            | Nenhuma                             | Dados (+ decisão sobre `epi_deliveries.signature_status/auth_token`)                                                                                                                          |
+| Rollback             | —                                   | Difícil depois que as capturas novas existirem                                                                                                                                                |
+| Tela `/signatures`   | EPI não aparece                     | Aparece                                                                                                                                                                                       |
+| Risco                | Baixo                               | Alto — prova legal de entrega de EPI em produção                                                                                                                                              |
+| Ganho real           | —                                   | Imagem + `signed_at` + consistência arquitetural                                                                                                                                              |
 
-Nenhum para fechar.
+## Tokens e evidência existentes
 
-### Migration
+- **Links/QR já enviados:** expiram sozinhos em ≤72h (`SIGN_TOKEN_TTL_MS`). Qualquer corte de rota precisa
+  de janela de coexistência.
+- **Entregas assinadas:** a evidência é `signature_status` + `updated_at`. Todas as escritas em
+  `epi_deliveries` exigem `signature_status = 'pending'` (`epi-deliveries.ts:262,299,438`), então nenhum
+  código altera a linha depois de assinada. Mas o trigger `set_updated_at` (migration 0007) mudaria a data
+  num UPDATE manual ou de migration futura.
+- **Pendentes:** podem gerar novo token a qualquer momento.
+- **Trilha de auditoria:** não persistida em nenhuma das duas infras além da própria captura.
 
-NÃO para fechar; SIM (com migração de dados) se unificar.
+Nenhuma proposta abaixo invalida evidência registrada.
 
-### Testes necessários
+## Classificação
 
-Nenhum novo para fechar.
+**A — FUNCIONALMENTE RESOLVIDA.** Os três critérios são atendidos com testes de integração. A opção B tem
+custo concreto (cota do plano free, dados históricos não migráveis, coexistência de links) sem que a issue
+exija a unificação.
 
-### Dependências
+## Recomendação
 
-Nenhuma.
+1. Fechar #33 como resolvida, com comentário de evidência (tabela acima).
+2. **Opcional**, como issue separada de endurecimento (não bloqueia o fechamento): coluna `signed_at` em
+   `epi_deliveries` preenchida na transição (tira a dependência de `updated_at`) e, se o produto quiser,
+   persistir a imagem do pad. Ambos com migration.
+3. Corrigir o comentário desatualizado `tests/e2e/public-signature.spec.ts:70` (cita `/assinar`) quando
+   alguém tocar nesse arquivo.
 
-### Riscos
+## Decisão pendente
 
-Unificação mexe em comprovação legal já emitida e em links distribuídos a funcionários.
+Tech Lead/produto confirmar: fechar como resolvida (A) ou abrir fatia dedicada de unificação (B), ciente da
+regressão de cota.
 
-### Requisitos faltantes
+## Testes
 
-Decisão: fechar como resolvida ou abrir fatia de unificação.
+- **Para fechar:** nenhum novo; rodar os existentes como evidência (`epi-sign-public.test.ts`,
+  `epi-deliveries.test.ts`, `unit/epi-signature-token.test.ts`).
+- **Se endurecer (`signed_at`):** INTEGRATION — transição grava `signed_at`; UPDATE posterior não altera
+  `signed_at`; backfill de assinadas a partir de `updated_at`; REST/ACTION — `signedAt` no DTO vem da
+  coluna; RLS — isolamento inalterado.
+- **Se migrar (B):** UNIT — payload `epi_delivery`; INTEGRATION — criação respeita/isenta cota,
+  coexistência `/sign` × `/signature-requests`, entregas assinadas legadas continuam exibindo status e data,
+  token legado válido até 72h; RLS — capability; E2E — assinatura pública ponta a ponta (hoje não há E2E
+  de EPI).
 
-### Dificuldade
+## Riscos
 
-1/5 para fechar (evidência + decisão). 4/5 se virar unificação.
+Fechar: nenhum. Migrar: alto (ver tabela).
 
-### Prontidão
+## Dificuldade
 
-NEEDS PRODUCT DECISION
+**1/5** para fechar · 2/5 para `signed_at` · 4/5 para migrar.
 
-### Cobertura atual
+## Prontidão
 
-75% — 100% dos critérios de aceite; o restante é a unificação arquitetural opcional.
+**NEEDS PRODUCT DECISION** — só a confirmação do fechamento; não bloqueia nenhuma outra issue.
 
-### Lote recomendado
+## Cobertura atual
 
-1 (evidência + decisão)
+75% — 100% dos critérios de aceite; o restante é a unificação opcional.
+
+## Lote recomendado
+
+**1C** — decisão/fechamento, sem código, em paralelo a 1A/1B.
 
 ## Execução
 
