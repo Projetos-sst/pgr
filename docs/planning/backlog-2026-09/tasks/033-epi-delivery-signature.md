@@ -15,6 +15,25 @@ histórico do item/funcionário; `npm run check`.
 
 A issue pede avaliação, não migração obrigatória.
 
+## Verificação dos critérios de aceite
+
+Revalidada em 2026-09-16 na branch do Lote 1 (base `develop` @ `690ec1b`). Referências conferidas no
+código; suítes executadas contra Postgres 16 efêmero: `epi-sign-public.test.ts` + `epi-deliveries.test.ts`
+**18/18**; `unit/epi-signature-token.test.ts` verde (suíte unitária completa 1242/1242).
+
+| Critério                                          | Implementação                                                                                                                                                                                      | Teste                                                                                                            | Resultado |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------- |
+| Entrega gera pedido de assinatura por **link**    | `generateSignTokenAction` monta `/sign/{token}` (`server/actions/pgr/epi-deliveries.ts:124,133`); rota pública liberada no `proxy.ts:70`                                                           | `epi-sign-public.test.ts` — método `link` vira `signed_link`                                                     | Atendido  |
+| Entrega gera pedido de assinatura por **QR Code** | `qrSvgFor(url)` (`integrations/epi-signature/qr.ts:10`); botão "Gerar QR" (`employees/[id]/_components/delivery-signature.tsx:105`)                                                                | `epi-sign-public.test.ts` — assinatura via QR sem sessão                                                         | Atendido  |
+| Captura a **confirmação do funcionário**          | Página `src/app/(public)/sign/[token]/page.tsx` (link expirado, inválido, já confirmado, pad de assinatura); `signByToken` condicional `pending → signed_*` (`repositories/epi-deliveries.ts:427`) | `epi-sign-public.test.ts` — QR, link, já assinada, cross-org, expirado, adulterado                               | Atendido  |
+| Alternativa presencial                            | `signDeliveryManual` (`repositories/epi-deliveries.ts:254`) + REST `api/v1/epi-deliveries/[id]/sign`                                                                                               | `epi-deliveries.test.ts` — manual; repetida → `ALREADY_SIGNED`                                                   | Atendido  |
+| **Status visível no histórico da entrega**        | Badge com data (`delivery-signature.tsx:80`); `signedAt` derivado (`epi-deliveries.ts:206`); enum `pending/signed_qr/signed_link/signed_manual` (`schema/epis.ts:48-53`)                           | `epi-deliveries.test.ts` — transições de status                                                                  | Atendido  |
+| **Status visível no histórico do funcionário**    | Coluna "Assinatura" na Ficha de EPI (`employees/[id]/_components/epi-record-table.tsx:157,172`)                                                                                                    | Coberto pela leitura da entrega (`employee-epi-record.ts`)                                                       | Atendido  |
+| Integridade da evidência                          | Token HMAC com TTL de 72h (`token.ts:16`), uso único, revogável; entrega assinada não pode ser excluída                                                                                            | `epi-sign-public.test.ts` (adulterado/revogado/expirado); `epi-deliveries.test.ts` (DELETE assinada → FORBIDDEN) | Atendido  |
+| `npm run check`                                   | —                                                                                                                                                                                                  | Verde no Lote 1                                                                                                  | Atendido  |
+
+**Resultado:** 3/3 critérios de aceite atendidos pela infraestrutura própria do EPI. Nenhum código alterado.
+
 ## Pergunta 1 — Critérios funcionais
 
 | Critério                   | Código                                                                                                                                                                | Teste                                                                                    | Atendido?                                                     |
@@ -138,6 +157,6 @@ Fechar: nenhum. Migrar: alto (ver tabela).
 
 ## Execução
 
-| Branch | PR  | Migration | Testes | CI  | Decisão | Status  |
-| ------ | --- | --------- | ------ | --- | ------- | ------- |
-| —      | —   | —         | —      | —   | —       | Backlog |
+| Branch         | PR  | Migration | Testes                                 | CI  | Decisão                           | Status                |
+| -------------- | --- | --------- | -------------------------------------- | --- | --------------------------------- | --------------------- |
+| — (sem código) | —   | —         | EPI 18/18 integração; token unit verde | —   | Não migrar; fechar como resolvida | Fechada em 2026-09-16 |

@@ -175,6 +175,6 @@ uso conhecido na UI).
 
 ## Execução
 
-| Branch | PR  | Migration | Testes | CI  | Decisão | Status  |
-| ------ | --- | --------- | ------ | --- | ------- | ------- |
-| —      | —   | —         | —      | —   | —       | Backlog |
+| Branch                                             | PR           | Migration | Testes                                                             | CI       | Decisão                                                                          | Status                                       |
+| -------------------------------------------------- | ------------ | --------- | ------------------------------------------------------------------ | -------- | -------------------------------------------------------------------------------- | -------------------------------------------- |
+| `lot-01-feat/document-versions-risk-plan-coverage` | #93 (Lote 1) | Nenhuma   | unit 8 novos; integração 8/8; REST 4/4; regressão GED+worker 90/90 | pendente | Vigente = maior versão (centralizada); antiga → 409 `DOCUMENT_VERSION_READ_ONLY` | Implementada (`aa5605e`), aguardando revisão |

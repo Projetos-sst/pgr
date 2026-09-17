@@ -12,7 +12,7 @@ Branch: `lot-01-feat/document-versions-risk-plan-coverage` · PR única do lote.
 - [x] TASK.md
 - [x] Postgres 16 efêmero local (porta 5433) + bootstrap do CI
 - [x] Linha de base de integração: 137/137 (`documents`, `control-measures`, `pgr-editor`)
-- [ ] PR do lote aberta como rascunho → pronta ao final
+- [x] PR do lote aberta como rascunho → pronta ao final — #93 aberta como rascunho
 
 ## Notas de retomada
 
@@ -23,37 +23,37 @@ Branch: `lot-01-feat/document-versions-risk-plan-coverage` · PR única do lote.
 
 ## 1A — #56 histórico de versões
 
-- [ ] Card #56 → In progress
+- [x] Card #56 → In progress
 - [x] Schema — N/A (sem mudança)
 - [x] Migration — N/A (sem migration)
-- [ ] Domain: `domains/documents/versions.ts` (`DocumentVersionItem`, `toDocumentVersionHistory`)
-- [ ] Errors: `DocumentVersionReadOnlyError` (409) + `DuplicateError` + mapa em `api/rest.ts`
-- [ ] Repository: `document-versions.ts` (predicate exportado, vigente, listagem)
-- [ ] Repository: `updateDocument` bloqueia versão não vigente
-- [ ] Repository: `addDocumentVersion` herda da vigente
-- [ ] Storage: conflito de objeto → `StorageObjectExistsError` → `DUPLICATE`
-- [ ] Server Action: `listDocumentVersionsAction`
-- [ ] REST: `GET /api/v1/documents/{id}/versions`
-- [ ] Frontend: `version-history-modal.tsx` + botão em `DocumentRowActions`
-- [ ] Unit
-- [ ] Integration (versões, somente leitura, herança, conflito, cross-tenant, RLS)
-- [ ] REST (GET 200/404, PUT antiga 409, POST sem regressão)
-- [ ] Regressão GED/worker/download
-- [ ] Docs: `api-design.md` + Postman
-- [ ] `npm run check`
-- [ ] Commit `#56`
-- [ ] Ficha `tasks/056` atualizada
+- [x] Domain: `domains/documents/versions.ts` (`DocumentVersionItem`, `toDocumentVersionHistory`)
+- [x] Errors: `DocumentVersionReadOnlyError` (409) + `DuplicateError` + mapa em `api/rest.ts`
+- [x] Repository: `document-versions.ts` (predicate exportado, vigente, listagem)
+- [x] Repository: `updateDocument` bloqueia versão não vigente
+- [x] Repository: `addDocumentVersion` herda da vigente
+- [x] Storage: conflito de objeto → `StorageObjectExistsError` → `DUPLICATE`
+- [x] Server Action: `listDocumentVersionsAction`
+- [x] REST: `GET /api/v1/documents/{id}/versions`
+- [x] Frontend: `version-history-modal.tsx` + botão em `DocumentRowActions`
+- [x] Unit — `versions.test.ts` (5) + storage (3)
+- [x] Integration (versões, somente leitura, herança, conflito, cross-tenant, RLS) — `documents-versions.test.ts` 8/8
+- [x] REST (GET 200/404, PUT antiga 409, POST sem regressão) — `rest-document-versions.test.ts` 4/4
+- [x] Regressão GED/worker/download — 13 suítes, 90/90
+- [x] Docs: `api-design.md` + Postman
+- [x] `npm run check` — 1242 unit, 0 erros de lint (4 warnings pré-existentes)
+- [x] Commit `#56` — `aa5605e`
+- [x] Ficha `tasks/056` atualizada
 
 ## 1C — #33 assinatura de EPI
 
 - [x] Branch funcional — N/A
 - [x] Schema / migration / domain / repository / actions / REST / frontend — N/A (sem código)
-- [ ] Revalidar referências da tabela de critérios no código atual
-- [ ] Rodar suítes de EPI como evidência
-- [ ] Ficha: "Verificação dos critérios de aceite"
-- [ ] Comentário na issue
-- [ ] Fechar issue
-- [ ] Card → Done
+- [x] Revalidar referências da tabela de critérios no código atual
+- [x] Rodar suítes de EPI como evidência — integração 18/18
+- [x] Ficha: "Verificação dos critérios de aceite"
+- [x] Comentário na issue
+- [x] Fechar issue
+- [x] Card → Done
 
 ## 1B — #42 cobertura do plano do PGR
 
