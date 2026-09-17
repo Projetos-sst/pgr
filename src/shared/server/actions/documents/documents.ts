@@ -18,6 +18,8 @@ import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
 import type { Paginated } from "@/shared/pagination";
 import * as repo from "@/shared/db/repositories/documents";
+import { listDocumentVersions } from "@/shared/db/repositories/document-versions";
+import type { DocumentVersionItem } from "@/shared/domains/documents/versions";
 import { listFolderTree } from "@/shared/db/repositories/folders";
 import type { DocumentKpis } from "@/shared/domains/documents/kpis";
 import type { DocumentListItem } from "@/shared/domains/documents/documents";
@@ -56,6 +58,20 @@ export async function getDocumentAction(
     const doc = await repo.getDocumentById(tenantId, id);
     if (!doc) throw new NotFoundError();
     return doc;
+  });
+}
+
+/**
+ * Histórico de versões do documento lógico (#56): mais nova primeiro, exatamente uma vigente.
+ * Qualquer versão do grupo serve de ponto de entrada. Outro escritório → NOT_FOUND.
+ */
+export async function listDocumentVersionsAction(
+  id: string,
+): Promise<ActionResult<DocumentVersionItem[]>> {
+  return officeAction("documents.documents.versions", async ({ tenantId }) => {
+    const versions = await listDocumentVersions(tenantId, id);
+    if (!versions) throw new NotFoundError();
+    return versions;
   });
 }
 
