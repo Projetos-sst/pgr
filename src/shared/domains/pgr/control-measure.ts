@@ -74,6 +74,27 @@ export function isModeratePlusClassification(
 }
 
 /**
+ * Regra única de campos obrigatórios da medida (#42): risco moderado+ com medida aplicável exige
+ * responsável **e** prazo. Usada pelo repositório (bloqueio na escrita), pela cobertura do plano do
+ * PGR (risco `incomplete` na leitura) e pelo formulário (aviso antes do submit) — as três camadas
+ * derivam desta função, nunca de cópias.
+ */
+export function isMeasureMissingRequiredPlanFields(
+  measure: {
+    applicable: boolean;
+    actionResponsible?: string | null;
+    actionDeadline?: string | null;
+  },
+  classification: RiskClassification | null,
+): boolean {
+  return (
+    measure.applicable &&
+    isModeratePlusClassification(classification) &&
+    (!measure.actionResponsible || !measure.actionDeadline)
+  );
+}
+
+/**
  * Status default da medida a partir da classificação vigente do risco pai (#42):
  * trivial/tolerável → "maintain"; moderado+ → "introduced". Sem avaliação vigente
  * (`classification === null`) não há default — não existe nível para basear a regra, o

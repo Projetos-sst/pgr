@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getRiskAction } from "@/shared/server/actions/pgr/risks";
+import { riskClassificationSchema } from "@/shared/domains/pgr/methodology";
 import { getCurrentRiskAssessmentAction } from "@/shared/server/actions/pgr/risk-assessments";
 import { listEmployeesAction } from "@/shared/server/actions/pgr/employees";
 
@@ -24,6 +25,9 @@ export default async function NewControlMeasurePage({
 
   const assessmentResult = await getCurrentRiskAssessmentAction(riskId);
   const currentAssessment = assessmentResult.ok ? assessmentResult.data : null;
+  // `result` é texto no banco: só vale como classificação se for um valor conhecido.
+  const riskClassification =
+    riskClassificationSchema.safeParse(currentAssessment?.result).data ?? null;
 
   const employeesResult = await listEmployeesAction({ pageSize: 100 });
   const employees = employeesResult.ok
@@ -42,6 +46,7 @@ export default async function NewControlMeasurePage({
         riskId={riskId}
         initial={{ applicable: false }}
         employees={employees}
+        riskClassification={riskClassification}
       />
     </div>
   );

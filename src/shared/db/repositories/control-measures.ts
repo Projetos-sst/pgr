@@ -4,7 +4,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 
 import {
   defaultMeasureStatusForClassification,
-  isModeratePlusClassification,
+  isMeasureMissingRequiredPlanFields,
   type ControlMeasureListItem,
   type ControlMeasureWriteValues,
 } from "@/shared/domains/pgr/control-measure";
@@ -93,11 +93,7 @@ function applyMeasureStatusRule(
   values: ControlMeasureWriteValues,
   classification: RiskClassification | null,
 ): ControlMeasureWriteValues {
-  if (
-    values.applicable &&
-    isModeratePlusClassification(classification) &&
-    (!values.actionResponsible || !values.actionDeadline)
-  ) {
+  if (isMeasureMissingRequiredPlanFields(values, classification)) {
     throw new ValidationError(
       "Risco moderado ou superior exige responsável e prazo definidos na medida de controle aplicável.",
     );

@@ -4,6 +4,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import {
   deriveMeasureState,
+  deriveRiskPlanCoverage,
   sortConsolidatedRisks,
   type ConsolidatedAssessment,
   type ConsolidatedEpi,
@@ -11,6 +12,7 @@ import {
   type ConsolidatedMeasure,
   type ConsolidatedRisk,
   type ControlLevel,
+  type ControlMeasureStatus,
   type PgrConsolidated,
   type RiskAgentType,
   type RiskClassification,
@@ -53,7 +55,7 @@ type CurrentAssessmentRow = {
 /**
  * Visão consolidada read-only do PGR. Composição em **6 queries em lote** (sem N+1):
  * PGR+empresa+obra → GES vinculados → riscos (`inArray`, detalhe + eSocial S-2240) → avaliação
- * vigente por risco (`DISTINCT ON`, params bind-seguros) → medidas (`inArray`, 5W2H completo) →
+ * vigente por risco (`DISTINCT ON`, params bind-seguros) → medidas (`inArray`, 5W2H completo + status) →
  * **EPIs por risco** (`epi_risk` ⨝ `epi_catalog`, `inArray`); agrupa/ordena em memória.
  * `null` se o PGR não existe no tenant (→ 404 na Action). Não persiste nada; não gera PDF.
  */
@@ -185,6 +187,7 @@ export async function getPgrConsolidated(
           riskId: controlMeasures.riskId,
           controlLevel: controlMeasures.controlLevel,
           applicable: controlMeasures.applicable,
+          status: controlMeasures.status,
           justification: controlMeasures.justification,
           monitoring: controlMeasures.monitoring,
           actionWhat: controlMeasures.actionWhat,
@@ -204,6 +207,7 @@ export async function getPgrConsolidated(
           id: m.id,
           controlLevel: m.controlLevel as ControlLevel,
           applicable: m.applicable,
+          status: m.status as ControlMeasureStatus | null,
           justification: m.justification,
           monitoring: m.monitoring,
           actionWhat: m.actionWhat,
@@ -254,6 +258,8 @@ export async function getPgrConsolidated(
     const risksByGes = new Map<string, ConsolidatedRisk[]>();
     for (const r of riskRows) {
       const assessment = assessmentByRisk.get(r.id) ?? null;
+      const measures = measuresByRisk.get(r.id) ?? [];
+      const result = assessment ? assessment.result : null;
       const list = risksByGes.get(r.gesId) ?? [];
       list.push({
         id: r.id,
@@ -268,9 +274,11 @@ export async function getPgrConsolidated(
         measurementUnit: r.measurementUnit as MeasurementUnit | null,
         concentrationIntensity: r.concentrationIntensity,
         riskLevel: assessment ? assessment.riskLevel : null,
-        result: assessment ? assessment.result : null,
+        result,
         assessment,
-        measures: measuresByRisk.get(r.id) ?? [],
+        measures,
+        // #42: todo risco entra no plano do PGR com cobertura derivada — nada é criado.
+        planCoverage: deriveRiskPlanCoverage({ result, measures }),
         epis: episByRisk.get(r.id) ?? [],
       });
       risksByGes.set(r.gesId, list);

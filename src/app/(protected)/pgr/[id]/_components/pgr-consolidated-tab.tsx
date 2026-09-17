@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -9,10 +10,15 @@ import {
   exposureTimeLabel,
   measurementUnitLabel,
   epiNeutralizationLabel,
+  planCoverageGuidance,
+  planCoverageLabel,
+  summarizePlanCoverage,
+  RISK_PLAN_COVERAGES,
   type ConsolidatedGes,
   type ConsolidatedRisk,
   type MeasureState,
   type PgrConsolidated,
+  type RiskPlanCoverage,
 } from "@/shared/domains/pgr/pgr-consolidated";
 import {
   riskClassificationLabel,
@@ -20,11 +26,48 @@ import {
   type RiskClassification,
 } from "@/shared/domains/pgr/methodology";
 
+import { MeasureStatusBadge } from "../../../risks/[id]/control-measures/_components/measure-status-badge";
+
 const STATE_CLASS: Record<MeasureState, string> = {
   without_plan: "bg-black/5 text-text-muted",
   planned: "bg-emerald-500/15 text-emerald-700",
   overdue: "bg-red-500/15 text-red-700",
 };
+
+/** Cobertura do plano do PGR (#42): pendências em âmbar/vermelho, coberto em verde. */
+const COVERAGE_CLASS: Record<RiskPlanCoverage, string> = {
+  not_assessed: "bg-black/5 text-text-muted",
+  no_measure: "bg-red-500/12 text-red-700",
+  incomplete: "bg-amber-500/15 text-amber-800",
+  covered: "bg-emerald-500/15 text-emerald-700",
+};
+
+function PlanCoverageBadge({ coverage }: { coverage: RiskPlanCoverage }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold ${COVERAGE_CLASS[coverage]}`}
+    >
+      {planCoverageLabel(coverage)}
+    </span>
+  );
+}
+
+/** Onde o usuário corrige a pendência; `null` quando o risco já está coberto. */
+function coverageFixLink(risk: ConsolidatedRisk): { href: string; label: string } | null {
+  switch (risk.planCoverage) {
+    case "not_assessed":
+      return { href: `/risks/${risk.id}/assessments/new`, label: "Avaliar risco" };
+    case "no_measure":
+      return {
+        href: `/risks/${risk.id}/control-measures/new`,
+        label: "Cadastrar medida",
+      };
+    case "incomplete":
+      return { href: `/risks/${risk.id}/control-measures`, label: "Revisar medidas" };
+    case "covered":
+      return null;
+  }
+}
 
 const AGENT_TYPE_COLOR: Record<string, string> = {
   physical: "text-[#7c3aed]",
@@ -107,9 +150,31 @@ function RiskDetailPanel({ risk }: { risk: ConsolidatedRisk }) {
     ["Concentração/intensidade", risk.concentrationIntensity],
   ];
   const shown = items.filter(([, v]) => v && v !== "");
+  const fix = coverageFixLink(risk);
 
   return (
     <div className="glass-panel my-2 flex flex-col gap-3 rounded-[14px] border border-black/5 bg-white/40 p-4">
+      {/* Cobertura do plano do PGR (#42) */}
+      <div className="flex flex-col gap-2 border-b border-black/5 pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-text-subtle text-xs font-medium">Plano de ação</span>
+            <PlanCoverageBadge coverage={risk.planCoverage} />
+          </div>
+          <p className="text-text-subtle text-xs">
+            {planCoverageGuidance(risk.planCoverage)}
+          </p>
+        </div>
+        {fix ? (
+          <Link
+            href={fix.href}
+            className="text-primary self-start text-xs font-bold hover:underline sm:self-auto"
+          >
+            {fix.label} &rarr;
+          </Link>
+        ) : null}
+      </div>
+
       {/* Classificação e Orientação do Risco */}
       {risk.result ? (
         <div className="flex flex-col gap-1 border-b border-black/5 pb-3">
@@ -166,6 +231,7 @@ function RiskDetailPanel({ risk }: { risk: ConsolidatedRisk }) {
                     <span className="text-text font-bold">
                       {controlLevelLabel(m.controlLevel)}
                     </span>
+                    <MeasureStatusBadge status={m.status} />
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${STATE_CLASS[m.state]}`}
                     >
@@ -233,7 +299,7 @@ function RiskRow({
       {/* Linha principal compacta e limpa (estilo do mockup) */}
       <div
         onClick={onToggle}
-        className={`grid cursor-pointer grid-cols-2 items-center gap-3 px-6 py-3.5 hover:bg-white/40 sm:grid-cols-[1.1fr_1.6fr_1fr_1fr_0.9fr_1fr_auto] ${
+        className={`grid cursor-pointer grid-cols-2 items-center gap-3 px-6 py-3.5 hover:bg-white/40 sm:grid-cols-[1.1fr_1.6fr_1fr_0.9fr_0.9fr_0.9fr_1fr_auto] ${
           isEven ? "bg-white/20" : ""
         }`}
       >
@@ -257,6 +323,9 @@ function RiskRow({
           <span className="text-text text-xs font-medium">{probText}</span>
         </div>
         <div>{getRiskBadge(risk.riskLevel, risk.result)}</div>
+        <div>
+          <PlanCoverageBadge coverage={risk.planCoverage} />
+        </div>
         <div className="flex justify-end">
           <button
             type="button"
@@ -323,13 +392,14 @@ function GesBlock({
       ) : (
         <div>
           {/* Header da Tabela em telas médias/grandes (Espelhado do mockup) */}
-          <div className="text-text-subtle hidden grid-cols-[1.1fr_1.6fr_1fr_1fr_0.9fr_1fr_auto] gap-3 bg-black/5 px-6 py-2.5 font-mono text-[10px] font-bold tracking-wider uppercase sm:grid">
+          <div className="text-text-subtle hidden grid-cols-[1.1fr_1.6fr_1fr_0.9fr_0.9fr_0.9fr_1fr_auto] gap-3 bg-black/5 px-6 py-2.5 font-mono text-[10px] font-bold tracking-wider uppercase sm:grid">
             <span>Tipo</span>
             <span>Agente / Fator</span>
             <span>Fonte</span>
             <span>Severidade</span>
             <span>Probab.</span>
             <span>Nível</span>
+            <span>Plano</span>
             <span className="text-right">Ação</span>
           </div>
           <div>
@@ -370,10 +440,9 @@ export function PgrConsolidatedTab({
   }
   const { ges } = consolidated;
 
-  let totalRisksCount = 0;
-  for (const g of ges) {
-    totalRisksCount += g.risks.length;
-  }
+  const allRisks = ges.flatMap((g) => g.risks);
+  const totalRisksCount = allRisks.length;
+  const coverageSummary = summarizePlanCoverage(allRisks);
 
   function toggleExpand(id: string) {
     setExpandedMap((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -402,6 +471,23 @@ export function PgrConsolidatedTab({
           <p className="text-text-subtle mt-0.5 text-xs">
             Identificação e avaliação por Grupo de Exposição Similar (GES)
           </p>
+          {totalRisksCount > 0 ? (
+            <div
+              className="mt-3 flex flex-wrap items-center gap-2"
+              aria-label="Cobertura do plano de ação"
+            >
+              <span className="text-text-subtle text-xs font-medium">Plano de ação:</span>
+              {RISK_PLAN_COVERAGES.map((coverage) => (
+                <span
+                  key={coverage}
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${COVERAGE_CLASS[coverage]}`}
+                >
+                  {planCoverageLabel(coverage)}
+                  <span className="font-mono">{coverageSummary[coverage]}</span>
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
         {totalRisksCount > 0 ? (
           <button
