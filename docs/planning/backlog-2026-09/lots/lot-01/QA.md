@@ -22,6 +22,24 @@ Para a seção D (PDF), suba também o worker e o Gotenberg:
 docker compose up -d --build worker
 ```
 
+Se o `docker compose` reclamar de `services.worker.env_file.0 must be a string`, sua versão do
+Compose (< 2.24) não entende a sintaxe longa de `env_file` do `docker-compose.yml`. Nesse caso suba
+os dois contêineres na mão — o Gotenberg publica na **3010** porque a 3001 é a do `npm run dev`:
+
+```bash
+docker network create sst-net
+docker run -d --name sst-gotenberg --network sst-net --network-alias gotenberg -p 3010:3000   gotenberg/gotenberg:8 gotenberg --api-timeout=120s --chromium-max-queue-size=0
+docker build -f Dockerfile.worker -t sst-pdf-worker:local .
+docker run -d --name sst-pdf-worker --network sst-net --env-file .env.local   -e GOTENBERG_URL=http://gotenberg:3000 -e WORKER_POLL_IDLE_MS=2000   -e WORKER_STALE_AFTER_SECONDS=300 -e WORKER_MAX_ATTEMPTS=3 sst-pdf-worker:local
+docker logs sst-pdf-worker   # esperado: {"level":"info","worker":"pdf_batch","msg":"started"}
+```
+
+Dois detalhes que travam o worker: o `--env-file` do `docker run` **não remove aspas**, então as
+linhas do `.env.local` usadas por ele (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`) precisam estar sem
+`"` — senão o worker morre com `DATABASE_URL is not a valid URL`. E o `GOTENBERG_URL` do `.env` (o
+que o `npm run dev` lê, usado pelo **Baixar agora** do D1) tem de apontar para o host,
+`http://localhost:3010`; o `http://gotenberg:3000` só vale dentro da rede do Docker.
+
 Faça login e confirme, no topo da tela, que está na **organização de teste** — nunca em dados de
 cliente real. Tudo criado aqui é descartável; a limpeza está na seção H.
 
