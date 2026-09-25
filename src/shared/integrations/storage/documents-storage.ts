@@ -43,8 +43,38 @@ export function buildStoragePath(
 export type StoredObject = { storagePath: string; sizeBytes: number };
 
 /**
+ * O path já tem um objeto (upload com `upsert: false`). Acontece quando dois envios
+ * disputam a mesma versão com o mesmo nome de arquivo (#56): o path é determinístico
+ * (`v{N}-{slug}`), então o segundo upload falha antes de chegar ao INSERT.
+ */
+export class StorageObjectExistsError extends Error {
+  constructor(readonly storagePath: string) {
+    super("documents storage object already exists");
+    this.name = "StorageObjectExistsError";
+  }
+}
+
+/**
+ * Reconhece o erro de "objeto já existe" do Supabase Storage. O provedor já variou entre
+ * `status: 409` e `status: 400` + `statusCode: "409"`, com a mensagem "The resource already
+ * exists" — por isso checa os três sinais.
+ */
+export function isStorageObjectExistsError(error: {
+  message?: string;
+  status?: number;
+  statusCode?: string;
+}): boolean {
+  return (
+    error.status === 409 ||
+    error.statusCode === "409" ||
+    /already exists|duplicate/i.test(error.message ?? "")
+  );
+}
+
+/**
  * Grava o binário no path particionado do tenant. `orgId` SEMPRE da sessão. Erro
  * do provedor → lança (o chamador compensa/propaga; nunca vaza detalhe do provedor).
+ * Path ocupado → `StorageObjectExistsError`, para o chamador responder com conflito.
  */
 export async function putDocumentObject(
   orgId: string,
@@ -57,7 +87,12 @@ export async function putDocumentObject(
   const { error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .upload(storagePath, file, { contentType: file.type, upsert: false });
-  if (error) throw new Error(`documents storage upload failed: ${error.message}`);
+  if (error) {
+    if (isStorageObjectExistsError(error)) {
+      throw new StorageObjectExistsError(storagePath);
+    }
+    throw new Error(`documents storage upload failed: ${error.message}`);
+  }
   return { storagePath, sizeBytes: file.size };
 }
 

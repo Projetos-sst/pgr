@@ -2,9 +2,20 @@ import {
   deriveMeasureState,
   controlLevelLabel,
   measureStateLabel,
+  measureStatusLabel,
   type ControlLevel,
+  type ControlMeasureStatus,
   type MeasureState,
 } from "./control-measure";
+import {
+  deriveRiskPlanCoverage,
+  planCoverageGuidance,
+  planCoverageLabel,
+  summarizePlanCoverage,
+  RISK_PLAN_COVERAGES,
+  type PlanCoverageSummary,
+  type RiskPlanCoverage,
+} from "./plan-coverage";
 import { riskClassificationLabel, type RiskClassification } from "./risk-assessment";
 import {
   riskAgentTypeLabel,
@@ -31,6 +42,12 @@ export {
   deriveMeasureState,
   controlLevelLabel,
   measureStateLabel,
+  measureStatusLabel,
+  deriveRiskPlanCoverage,
+  planCoverageGuidance,
+  planCoverageLabel,
+  summarizePlanCoverage,
+  RISK_PLAN_COVERAGES,
   riskClassificationLabel,
   riskAgentTypeLabel,
   exposureTimeLabel,
@@ -40,7 +57,10 @@ export {
 };
 export type {
   ControlLevel,
+  ControlMeasureStatus,
   MeasureState,
+  PlanCoverageSummary,
+  RiskPlanCoverage,
   RiskClassification,
   RiskAgentType,
   ExposureTime,
@@ -74,6 +94,8 @@ export type ConsolidatedMeasure = {
   id: string;
   controlLevel: ControlLevel;
   applicable: boolean;
+  // MANTER / INTRODUZIDA / APRIMORADA (#42); null = risco nunca avaliado quando a medida foi gravada.
+  status: ControlMeasureStatus | null;
   justification: string | null;
   monitoring: string | null;
   // Plano 5W2H completo (todos já persistidos em `control_measures`).
@@ -104,6 +126,8 @@ export type ConsolidatedRisk = {
   result: RiskClassification | null;
   assessment: ConsolidatedAssessment | null;
   measures: ConsolidatedMeasure[]; // [] = "Sem medidas de controle"
+  // Cobertura do plano do PGR (#42), derivada de `result` + `measures` — nunca persistida.
+  planCoverage: RiskPlanCoverage;
   epis: ConsolidatedEpi[]; // [] = "Sem EPIs indicados"
 };
 

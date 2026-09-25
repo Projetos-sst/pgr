@@ -3350,6 +3350,28 @@
           }
         },
         {
+          "name": "GET /documents/:id/versions (historico, #56)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/versions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}", "versions"]
+            },
+            "description": "Historico do documento logico: mais nova primeiro, isCurrent em exatamente uma. Qualquer versao do grupo serve de entrada; outro escritorio -> 404. Versao antiga e somente leitura: PUT /documents/{idAntigo} -> 409 DOCUMENT_VERSION_READ_ONLY."
+          }
+        },
+        {
           "name": "POST /documents/:id/versions (nova versao, multipart)",
           "request": {
             "method": "POST",

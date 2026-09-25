@@ -7,7 +7,9 @@ import {
   buildStoragePath,
   DOCUMENTS_BUCKET,
   getSignedDownloadUrl,
+  isStorageObjectExistsError,
   putDocumentObject,
+  StorageObjectExistsError,
   removeDocumentObject,
   SIGNED_DOWNLOAD_URL_TTL_SECONDS,
   slugifyFileName,
@@ -97,6 +99,39 @@ describe("putDocumentObject (ordem upload→insert; aqui só o upload)", () => {
     await expect(putDocumentObject("org_a", "group_1", 1, file)).rejects.toThrow(
       /bucket unreachable/,
     );
+  });
+
+  it("path já ocupado (corrida de mesmo nome, #56) → StorageObjectExistsError", async () => {
+    const client = storageClient({
+      message: "The resource already exists",
+      status: 400,
+      statusCode: "409",
+    });
+    mockedClient.mockReturnValue({
+      storage: { from: client.from },
+    } as unknown as ReturnType<typeof getRlsBypassingSupabaseClient>);
+
+    const file = new File(["x"], "a.pdf", { type: "application/pdf" });
+    const attempt = putDocumentObject("org_a", "group_1", 2, file);
+    await expect(attempt).rejects.toBeInstanceOf(StorageObjectExistsError);
+    await expect(attempt).rejects.toMatchObject({
+      storagePath: "org_a/documentos/group_1/v2-a.pdf",
+    });
+  });
+});
+
+describe("isStorageObjectExistsError", () => {
+  it("reconhece status 409, statusCode '409' e a mensagem do provedor", () => {
+    expect(isStorageObjectExistsError({ status: 409 })).toBe(true);
+    expect(isStorageObjectExistsError({ status: 400, statusCode: "409" })).toBe(true);
+    expect(isStorageObjectExistsError({ message: "The resource already exists" })).toBe(
+      true,
+    );
+  });
+
+  it("não confunde outros erros do provedor com conflito", () => {
+    expect(isStorageObjectExistsError({ message: "bucket unreachable" })).toBe(false);
+    expect(isStorageObjectExistsError({ status: 500, statusCode: "500" })).toBe(false);
   });
 });
 

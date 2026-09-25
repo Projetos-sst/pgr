@@ -21,6 +21,7 @@ function risk(overrides: Partial<ConsolidatedRisk> = {}): ConsolidatedRisk {
     result: overrides.result ?? null,
     assessment: null,
     measures: overrides.measures ?? [],
+    planCoverage: overrides.planCoverage ?? "not_assessed",
     epis: overrides.epis ?? [],
     ...overrides,
   };
@@ -92,6 +93,7 @@ describe("sortConsolidatedRisks", () => {
       actionMeasurement: "medição",
       actionResponsible: "resp",
       actionDeadline: "2026-12-31",
+      status: "introduced" as const,
       state: "planned" as const,
     };
     const out = sortConsolidatedRisks([

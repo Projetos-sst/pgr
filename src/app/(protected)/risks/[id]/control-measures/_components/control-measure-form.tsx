@@ -11,9 +11,15 @@ import {
   controlLevelSchema,
   controlLevelLabel,
   controlMeasureStatusSchema,
+  isMeasureMissingRequiredPlanFields,
+  isModeratePlusClassification,
   measureStatusLabel,
   type ControlMeasureInput,
 } from "@/shared/domains/pgr/control-measure";
+import {
+  riskClassificationLabel,
+  type RiskClassification,
+} from "@/shared/domains/pgr/methodology";
 import type { ActionError } from "@/shared/server/result";
 
 import { FieldError, FormError } from "../../../../_ui/form";
@@ -80,12 +86,15 @@ export function ControlMeasureForm({
   initial,
   employees,
   lockLevel = false,
+  riskClassification = null,
 }: {
   riskId: string;
   measureId?: string;
   initial: ControlMeasureFormInitial;
   employees: { id: string; fullName: string }[];
   lockLevel?: boolean;
+  /** Classificação vigente do risco (`null` = sem avaliação) — define se prazo/responsável são exigidos. */
+  riskClassification?: RiskClassification | null;
 }) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -97,6 +106,9 @@ export function ControlMeasureForm({
   );
   const [applicable, setApplicable] = useState(initial.applicable ?? false);
   const [status, setStatus] = useState(initial.status ?? "");
+  // #42: mesma regra do repositório, avaliada antes do submit. O servidor continua a autoridade.
+  const requiresOwnership =
+    applicable && isModeratePlusClassification(riskClassification);
 
   function applyError(error: ActionError) {
     if (error.code === "DUPLICATE") {
@@ -125,6 +137,28 @@ export function ControlMeasureForm({
       actionResponsible: str("actionResponsible"),
       actionDeadline: str("actionDeadline"),
     };
+    const ownership = {
+      applicable,
+      actionResponsible: str("actionResponsible"),
+      actionDeadline: str("actionDeadline"),
+    };
+    if (isMeasureMissingRequiredPlanFields(ownership, riskClassification)) {
+      setFormError(null);
+      setErrors({
+        ...(ownership.actionResponsible
+          ? {}
+          : {
+              actionResponsible:
+                "Informe o responsável: exigido para risco moderado ou superior.",
+            }),
+        ...(ownership.actionDeadline
+          ? {}
+          : {
+              actionDeadline: "Informe o prazo: exigido para risco moderado ou superior.",
+            }),
+      });
+      return;
+    }
     startTransition(async () => {
       const result = measureId
         ? await updateControlMeasureAction(riskId, measureId, input)
@@ -228,10 +262,21 @@ export function ControlMeasureForm({
         />
       </div>
 
+      {requiresOwnership && riskClassification ? (
+        <p
+          role="note"
+          className="rounded-card border border-amber-300/60 bg-amber-500/10 px-3 py-2 text-xs text-amber-800"
+        >
+          Risco {riskClassificationLabel(riskClassification).toLowerCase()}: responsável e
+          prazo são obrigatórios para medida aplicável.
+        </p>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-text-muted text-sm font-medium">
             Responsável pela ação
+            {requiresOwnership ? " *" : ""}
           </span>
           <input
             name="actionResponsible"
@@ -248,7 +293,10 @@ export function ControlMeasureForm({
           <FieldError message={errors.actionResponsible} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">Prazo para execução</span>
+          <span className="text-text-muted text-sm font-medium">
+            Prazo para execução
+            {requiresOwnership ? " *" : ""}
+          </span>
           <input
             type="date"
             name="actionDeadline"

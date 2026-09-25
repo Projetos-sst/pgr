@@ -3,10 +3,12 @@
 ## Grafo
 
 ```
-INDEPENDENTES (podem começar já)
-├── #42  Plano de ação — cobertura por risco
-├── #56  GED — histórico de versões (leitura)
-└── #33  EPI — assinatura (decisão/bookkeeping)
+INDEPENDENTES (auditoria específica do Lote 1 — sem arquivos em comum entre si)
+├── #56  GED — histórico de versões + somente leitura   (READY COM PREMISSAS)
+├── #42  Plano do PGR — cobertura por risco             (READY COM PREMISSAS)
+└── #33  EPI — funcionalmente resolvida                  (fechar sem código)
+
+#42 decidido: plano do PGR = control_measures ──► #47 lê o plano 5W2H das medidas (PDF do #42 no Lote 2)
 
 PGR — inventário → PDF
 #39 NR-09 ─────────────┐
@@ -33,17 +35,18 @@ PLATAFORMA
 
 ## Ordem obrigatória
 
-| Antes          | Depois       | Motivo                                                             |
-| -------------- | ------------ | ------------------------------------------------------------------ |
-| #39 e #40      | fechar #47   | Critério de aceite exige as seções NR-09 e NR-17 com dado real     |
-| #58            | #52–#55, #57 | Autor/Revisor/Aprovador/Leitor/Administrador são papéis de #58     |
-| #52            | #53          | Revisão opera sobre documento com metadados e status de workflow   |
-| #53            | #54          | Aprovação vem depois da revisão                                    |
-| #54            | #55          | "Documento só é publicável após aprovação"                         |
-| #59 (tabela)   | #55, #57     | Log de acesso (#55) e auditoria de descarte (#57) gravam na trilha |
-| #52–#57        | fechar #62   | #62 são invariantes sobre o que as outras criarem                  |
-| #3             | #10 (UI)     | Mesmo componente de autocomplete; fazer duas vezes é retrabalho    |
-| decisão de #60 | parte de #61 | Sem backup automatizado não há e-mail de backup                    |
+| Antes           | Depois         | Motivo                                                                              |
+| --------------- | -------------- | ----------------------------------------------------------------------------------- |
+| #39 e #40       | fechar #47     | Critério de aceite exige as seções NR-09 e NR-17 com dado real                      |
+| #42 (cobertura) | seção 5 de #47 | Plano do PGR = `control_measures` (decidido); PDF mostra cobertura/status no Lote 2 |
+| #58             | #52–#55, #57   | Autor/Revisor/Aprovador/Leitor/Administrador são papéis de #58                      |
+| #52             | #53            | Revisão opera sobre documento com metadados e status de workflow                    |
+| #53             | #54            | Aprovação vem depois da revisão                                                     |
+| #54             | #55            | "Documento só é publicável após aprovação"                                          |
+| #59 (tabela)    | #55, #57       | Log de acesso (#55) e auditoria de descarte (#57) gravam na trilha                  |
+| #52–#57         | fechar #62     | #62 são invariantes sobre o que as outras criarem                                   |
+| #3              | #10 (UI)       | Mesmo componente de autocomplete; fazer duas vezes é retrabalho                     |
+| decisão de #60  | parte de #61   | Sem backup automatizado não há e-mail de backup                                     |
 
 ## Compartilhamento de código (risco de conflito)
 
@@ -61,7 +64,9 @@ PLATAFORMA
 - **Lote 4 (catálogos)** não toca PGR nem GED e pode rodar em paralelo com os lotes 2/3, **desde que as
   migrations sejam serializadas**: quem mergear primeiro fica com o número; o outro rebaseia e
   regenera (procedimento em [EXECUTION-PLAN.md](EXECUTION-PLAN.md)).
-- Dentro do **Lote 1**, as três issues não compartilham arquivos e podem virar PRs separadas.
+- **Lote 1** tem sub-lotes 1A (#56), 1C (#33) e 1B (#42), sem arquivo em comum nem migration. Por decisão do
+  responsável (2026-09-16), são entregues numa **PR única do Lote 1**, com commits separados por issue. As
+  mudanças de template do plano ficam no Lote 2 (#47), não em #42.
 - Lotes do GED (5 → 6 → 7) são estritamente sequenciais.
 
 ## Não compartilhar branch

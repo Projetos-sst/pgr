@@ -41,6 +41,7 @@ function makeRisk(overrides: Partial<ConsolidatedRisk> = {}): ConsolidatedRisk {
         id: "m-1",
         controlLevel: "ppe",
         applicable: true,
+        status: "introduced",
         justification: null,
         monitoring: null,
         actionWhat: "Fornecer respirador PFF2",
@@ -52,6 +53,7 @@ function makeRisk(overrides: Partial<ConsolidatedRisk> = {}): ConsolidatedRisk {
         state: "planned",
       },
     ],
+    planCoverage: "covered",
     epis: [],
     ...overrides,
   };

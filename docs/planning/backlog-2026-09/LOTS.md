@@ -5,45 +5,43 @@ depois das decisões de produto; **8** é um lote de decisão. Estimativa relati
 
 ---
 
-# Lote 1 — Quick wins sem migration
+# Lote 1 — #56, #33, #42 (auditoria específica + decisões de 2026-09-16)
 
-**Issues:** #42 (parte restante), #56, #33
+A auditoria específica (fichas em `tasks/`) e as decisões de 2026-09-16 **prevalecem** sobre a composição
+inicial. Planejamento operacional em [lots/lot-01/PLAN.md](lots/lot-01/PLAN.md) e
+[lots/lot-01/TASK.md](lots/lot-01/TASK.md).
 
-| Item                | Valor                                                    |
-| ------------------- | -------------------------------------------------------- |
-| Dificuldade média   | 1,7 (níveis 2, 2, 1)                                     |
-| Migration           | Nenhuma                                                  |
-| Integração externa  | Nenhuma                                                  |
-| Estimativa relativa | S–M                                                      |
-| PRs                 | até 2 (#42 e #56 são independentes); #33 não gera código |
+| Ordem | Sub-lote | Issue | Dificuldade | Prontidão           | Migration | Entregável                          |
+| ----- | -------- | ----- | ----------- | ------------------- | --------- | ----------------------------------- |
+| 1     | **1A**   | #56   | 2           | READY COM PREMISSAS | Não       | Código (commits #56)                |
+| 2     | **1C**   | #33   | 1           | RESOLVIDA — FECHAR  | Não       | Evidência + comentário + fechamento |
+| 3     | **1B**   | #42   | 3           | READY COM PREMISSAS | Não       | Código (commits #42)                |
 
-**Por que juntas:** são as únicas três issues do backlog que fecham sem migration, sem integração e sem
-decisão estrutural. Não compartilham arquivos, então não há conflito entre elas, e cada uma reaproveita
-um fluxo que já existe e tem testes (ponte `control_measure → action_plan`, `addDocumentVersion` +
-`currentVersionPredicate`, fluxo de assinatura do EPI).
+**Entrega:** uma **PR única do Lote 1** (decisão do responsável, 2026-09-16), com PLAN/TASK/REVIEW e commits
+separados por issue — em vez de uma PR por sub-lote.
 
-**Escopo mínimo:**
+**Status (2026-09-16):** tecnicamente encerrado — #33 fechada; #56 e #42 implementadas na PR #93, aguardando
+merge. Detalhes em [lots/lot-01/REVIEW.md](lots/lot-01/REVIEW.md). Próximo: **Lote 2 (#39 + #47)**.
 
-- **#42** — consulta derivada "riscos do inventário sem plano de ação" (sem coluna nova), indicador na aba
-  Inventário do editor de PGR e na lista de riscos, ação "Criar plano" com `origin_type = risk`
-  pré-preenchido. Server Action + REST GET + api-design + Postman.
-- **#56** — leitura do histórico de versões do grupo (`GET /api/v1/documents/{id}/versions`, hoje só existe
-  POST), destaque da versão vigente e download de versões antigas na UI do GED. Server Action + REST +
-  api-design + Postman.
-- **#33** — anexar à issue a evidência de que os critérios de aceite já são atendidos e obter a decisão
-  (fechar ou abrir fatia de unificação). Sem código.
+## 1A — #56 versionamento
 
-**Dependências:** nenhuma externa ao lote. #42 depende das respostas 1–3 da seção #42 em
-REQUIREMENTS-GAPS (a premissa segue se não houver objeção).
+**Escopo:** listar versões do grupo (repositório + Server Action + `GET /api/v1/documents/{id}/versions` +
+api-design + Postman); UI de histórico com badge vigente e download de versões antigas; somente leitura no
+**backend**; nova versão sempre deriva da vigente; conflito de upload de mesmo nome → erro de domínio; definição
+de "vigente" centralizada. **Não** implementar revisão/aprovação (#54).
 
-**Definition of Done:**
+## 1C — #33 assinatura de EPI
 
-- [ ] `npm run check` e `npm run build` verdes; `npm run test:integration` cobrindo as consultas novas
-      (isolamento cross-tenant, risco coberto por plano direto e por ponte, histórico preserva versões)
-- [ ] 4 superfícies de API completas para os dois endpoints novos
-- [ ] Evidência Playwright 375/768/1440 das telas tocadas
-- [ ] Comentário de evidência na #33 com decisão registrada
-- [ ] Fichas `tasks/42`, `tasks/56`, `tasks/33` atualizadas; `lots/lot-01/REVIEW.md` escrito
+**Escopo:** revalidar critérios com evidência concreta; comentar; fechar; card → Done. Sem código.
+
+## 1B — #42 plano do PGR
+
+**Escopo:** cobertura derivada por risco no consolidado; status da medida exposto; indicador/badge/contador na
+aba Inventário; formulário sinaliza prazo/responsável obrigatórios para moderado+ antes do submit (backend
+continua autoridade). Sem PDF (Lote 2), sem migration, sem bloqueio de assinatura.
+
+**DoD do lote:** `npm run check`, integração, build e regressão verdes; 4 superfícies de API do endpoint novo;
+evidência Playwright das telas; #33 fechada; REVIEW.md escrito; fichas atualizadas.
 
 ---
 
