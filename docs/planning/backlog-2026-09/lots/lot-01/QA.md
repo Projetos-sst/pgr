@@ -226,3 +226,90 @@ ou no terminal do `npm run dev`. Sendo de API, cole o comando e a resposta.
 
 Apague na ordem inversa: documento → PGR → medidas → riscos → GES → unidade → empresa. Confira que
 nenhum plano de ação sobrou em [/action-plans](http://localhost:3001/action-plans).
+
+---
+
+# Execução Playwright
+
+**Data:** 25/09/2026 · **Executor:** Claude Code (Playwright MCP + REST + Postgres)
+**Base:** `develop` em `c97ef48` (PR #93 mergeada); branch de execução `docs/lot-01-qa`, que só
+acrescenta este documento — o código sob teste é idêntico ao da `develop`.
+
+**Ambiente**
+
+| Peça                | Estado na execução                                                                        |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| App (`npm run dev`) | http://localhost:3001                                                                     |
+| Gotenberg           | contêiner `sst-gotenberg`, host **3010** (a 3001 é o dev server)                          |
+| Worker de PDF       | contêiner `sst-pdf-worker` (rede `sst-net`, `GOTENBERG_URL=http://gotenberg:3000`)        |
+| Banco               | Supabase de desenvolvimento                                                               |
+| Tenant              | organização pessoal do usuário de E2E (`7d53a236…`), nunca dado de cliente                |
+| Autenticação        | sign-in **ticket** do Clerk (mesmo caminho de `tests/e2e/auth.setup.ts`) — sem burlar MFA |
+
+**Massa sintética** — empresa `QA Lote 1 Ltda` → obra `Obra QA Lote 1` → `GES Montagem QA` → cinco
+riscos cobrindo os quatro estados de cobertura (RA tolerável com medida, RB reclassificado, RC sem
+medida, RD sem avaliação, RE moderado+ com plano completo) → PGR com o GES vinculado → documento
+`QA Lote 1 - laudo` com versões v1…v5. Tudo removido na seção de limpeza.
+
+## Resultado por caso
+
+| Caso                                                        | Resultado         | Evidência                                                          | Observações                                                                                               |
+| ----------------------------------------------------------- | ----------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------- |
+| #42 — resumo de cobertura reflete a massa                   | PASS              | `042-.../desktop/01-inventario-resumo.png`                         | DOM: Não avaliado 1 · Sem medida 1 · Incompleto 0 · Coberto 3                                             |
+| #42 — todos os riscos aparecem                              | PASS              | mesma captura                                                      | 5 de 5, inclusive o sem avaliação e o sem medida                                                          |
+| #42 — status da medida (Manter/Introduzida)                 | PASS              | `desktop/01-inventario-resumo.png`                                 | `Manter` nas toleráveis, `Introduzida` na moderado+; `Aprimorada` não ocorre nesta massa                  |
+| #42 — reclassificação ↑ (tolerável → substancial)           | PASS              | `desktop/02-risco-incompleto.png`                                  | risco vira `Incompleto`; medida, status, responsável e prazo **intactos**                                 |
+| #42 — orientação + link "Revisar medidas"                   | PASS              | `desktop/02-risco-incompleto.png`                                  | links de correção apontam para o risco certo (também "Cadastrar medida" e "Avaliar risco")                |
+| #42 — completar responsável/prazo → Coberto                 | PASS              | resumo volta a 0 incompleto / 3 cobertos                           | —                                                                                                         |
+| #42 — reclassificação ↓ (substancial → trivial)             | PASS              | consulta REST das medidas                                          | responsável, prazo e status **permanecem**                                                                |
+| #42 — UI bloqueia submit inválido                           | PASS              | `desktop/03-formulario-moderado.png`                               | aviso âmbar, `*` nos dois campos, erro por campo e **nenhuma requisição de criação** (network monitorado) |
+| #42 — API rejeita medida inválida                           | PASS              | `422 VALIDATION`                                                   | "Risco moderado ou superior exige responsável e prazo…"; contagem de medidas antes/depois = 0             |
+| #42 — nada nasce sozinho                                    | PASS com ressalva | contagens antes/depois                                             | nenhuma medida automática; os `action_plans` criados vêm da **ponte #51** já existente (ver achado 3)     |
+| #56 — uma linha por documento lógico                        | PASS              | `056-.../desktop/03-lista-ged.png`                                 | lista mostra só a vigente (v3 → v5)                                                                       |
+| #56 — histórico completo e ordenado                         | PASS              | `desktop/01-historico-3-versoes.png`, `02-historico-5-versoes.png` | mais nova → mais antiga, **uma** `Vigente`, demais `Somente leitura`, com data/tamanho/validade           |
+| #56 — download por versão                                   | PASS              | conteúdo conferido byte a byte                                     | v1→"VERSAO 1", v2→2, v3→3; download pela UI da v1 trouxe o arquivo antigo                                 |
+| #56 — edição só na vigente                                  | PASS              | consulta ao banco                                                  | editar nome/tipo/validade alterou **apenas** a v3                                                         |
+| #56 — nova versão herda da vigente                          | PASS              | v4 = metadados da v3                                               | não herdou de v1/v2                                                                                       |
+| #56 — PUT em versão antiga                                  | PASS              | `409 DOCUMENT_VERSION_READ_ONLY`                                   | nome da v1 inalterado depois da tentativa                                                                 |
+| #56 — `GET /versions`                                       | PASS              | `200`                                                              | 4 versões, ordem correta, exatamente uma vigente                                                          |
+| #56 — isolamento cross-tenant                               | PASS              | `404 NOT_FOUND`                                                    | `GET /versions` e `PUT` com outro tenant                                                                  |
+| #56 — conflito de upload simultâneo                         | PASS              | `409 DUPLICATE` + `201`                                            | um envio vence, o outro recebe erro de domínio; nenhuma versão corrompida                                 |
+| #56 — exclusão remove o grupo                               | PASS              | banco + Storage                                                    | 5 versões e todos os binários removidos                                                                   |
+| Regressão — PDF "Baixar agora"                              | PASS              | `pgr-….pdf`, 41 160 bytes                                          | PDF válido (assinatura + `%%EOF`), gerado pelo Gotenberg                                                  |
+| Regressão — Arquivar no GED + worker                        | PASS              | log do worker `job_done`                                           | job `done` em 8 s, 1 tentativa; documento `ready`, ligado ao PGR, 1 versão vigente                        |
+| Regressão — GED (pasta, mover, renomear, baixar, histórico) | PASS              | `desktop/03-lista-ged.png`                                         | mover levou **todas** as versões do grupo junto                                                           |
+| Responsivo 1440 / 768 / 375                                 | PASS              | `desktop                                                           | tablet                                                                                                    | mobile/\*` | `scrollWidth == clientWidth` nas quatro telas; modal dentro da viewport (328 px no 375); nenhum badge cortado |
+| `npm run check`                                             | PASS              | —                                                                  | 0 erros, 4 warnings pré-existentes, 1 256 testes unitários                                                |
+| `npm run build`                                             | PASS              | —                                                                  | compila em 45 s; 264 rotas                                                                                |
+| Integração (documents, pgr-editor, control-measures)        | PASS              | —                                                                  | 21 suítes / 157 testes em Postgres efêmero                                                                |
+
+## Achados (nenhum é regressão do Lote 1)
+
+1. **`DEV_API_AUTH_BYPASS=true` + `DEV_TENANT_ID` sequestram a sessão nas rotas `/api/v1`.** Com a
+   flag ligada, `resolveContext` ignora a sessão do Clerk e usa o tenant da env — o "Baixar agora"
+   do PGR respondeu **404** no navegador enquanto funcionava por cURL com `x-dev-tenant`. Some com
+   `DEV_API_AUTH_BYPASS=false` (o `playwright.config.ts` já recomenda a flag desligada para UI).
+   Configuração local, não defeito de produto — mas convém não deixar a flag ligada ao testar a UI.
+2. **404 nas duas páginas de edição aninhadas** (`/risks/[id]/control-measures/[measureId]/edit` e
+   `/risks/[id]/assessments/[assessmentId]/edit`) num dev server que já rodava havia horas. **Não
+   reproduziu** depois de reiniciar o `npm run dev`, e as duas rotas aparecem no `npm run build`.
+   Artefato do servidor de desenvolvimento.
+3. **Ponte #51 inventa texto.** Cada medida de controle gera automaticamente um `action_plan`
+   (`origin_type=control_measure`); quando a medida não tem responsável, o plano nasce com
+   `who = "Responsável não definido"`. Comportamento **pré-existente e intencional** (issue #51),
+   fora do escopo do Lote 1, mas é dado fabricado — vale decidir se o campo deve ficar vazio.
+4. **Revalidação atrasada na lista do GED.** Logo após enviar versão ou excluir, a tabela ainda
+   mostra o estado anterior por alguns segundos; recarregar corrige. Cosmético.
+5. **`status` da medida é re-derivado no update.** Um `PUT` que não envia `status` faz a regra
+   recalcular (`maintain` → `introduced`). A **reclassificação do risco**, sozinha, não altera nada
+   — o que o Lote 1 promete. Vale saber ao integrar por API.
+6. **502 nas integrações CNPJ/CEP no primeiro acesso** (cold start do dev server); depois `200`.
+   O CNPJ `11.222.333/0001-81` usado como fictício **existe** na Receita — ao sair do campo, a
+   consulta pode sobrescrever a razão social.
+
+## Limpeza
+
+Massa sintética removida por completo (empresa, obra, GES, 5 riscos, 6 avaliações, 4 medidas,
+4 planos da ponte, PGR, job, 2 documentos com 6 versões, pasta) e binários do Storage conferidos
+vazios. As contagens do tenant voltaram exatamente ao estado anterior ao teste. A organização
+Clerk criada para o login de QA foi apagada.
