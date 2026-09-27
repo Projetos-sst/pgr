@@ -4,6 +4,7 @@ import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getRiskAction } from "@/shared/server/actions/pgr/risks";
 import { getRiskMethodologyAction } from "@/shared/server/actions/pgr/risk-methodology";
 import { defaultRiskMethodology } from "@/shared/domains/pgr/methodology-presets";
+import { isNr09EligibleAgent } from "@/shared/domains/pgr/nr09";
 
 import { PageHeader } from "../../../../_ui/list";
 import { AssessmentForm } from "../_components/assessment-form";
@@ -39,6 +40,7 @@ export default async function NewRiskAssessmentPage({
         bands={methodology.classificationBands}
         configured={methodology.configured}
         initial={{ assessedAt: today }}
+        nr09Eligible={isNr09EligibleAgent(riskResult.data.agentType)}
       />
     </div>
   );

@@ -19,6 +19,7 @@ import {
   type AssessmentCriterion,
   type ExposureTime,
   type MeasurementUnit,
+  type Nr09Conclusion,
 } from "@/shared/domains/pgr/pgr-consolidated";
 import type { EpiNeutralization } from "@/shared/domains/pgr/epi-risk";
 import type { PgrRegistrationType } from "@/shared/domains/pgr/pgr";
@@ -50,6 +51,12 @@ type CurrentAssessmentRow = {
   tolerance_limit: string | null;
   result: string | null;
   assessed_at: string;
+  // NR-09 (#39)
+  evaluation_method: string | null;
+  measured_value: string | null;
+  measured_unit: string | null;
+  tolerance_limit_value: string | null;
+  nr09_conclusion: string | null;
 };
 
 /**
@@ -154,7 +161,9 @@ export async function getPgrConsolidated(
       const rows = (await tx.execute(sql`
         select distinct on (risk_id)
           risk_id, criterion, probability, severity, risk_level,
-          uncertainty_degree, tolerance_limit, result, assessed_at
+          uncertainty_degree, tolerance_limit, result, assessed_at,
+          evaluation_method, measured_value, measured_unit,
+          tolerance_limit_value, nr09_conclusion
         from public.risk_assessments
         where org_id = ${orgId}
           and risk_id in (${sql.join(
@@ -173,6 +182,11 @@ export async function getPgrConsolidated(
           toleranceLimit: row.tolerance_limit,
           result: row.result as RiskClassification | null,
           assessedAt: row.assessed_at,
+          evaluationMethod: row.evaluation_method,
+          measuredValue: row.measured_value,
+          measuredUnit: row.measured_unit as MeasurementUnit | null,
+          toleranceLimitValue: row.tolerance_limit_value,
+          nr09Conclusion: row.nr09_conclusion as Nr09Conclusion | null,
         });
       }
     }

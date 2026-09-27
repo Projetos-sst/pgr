@@ -29,6 +29,13 @@ import {
   type AssessmentCriterion,
 } from "./risks";
 import { epiNeutralizationLabel, type EpiNeutralization } from "./epi-risk";
+import {
+  hasNr09Measurement,
+  isNr09EligibleAgent,
+  nr09ConclusionLabel,
+  formatMeasurement,
+  type Nr09Conclusion,
+} from "./nr09";
 
 /**
  * Domínio da visão consolidada do PGR — issue #27 / fatia 022. Estrutura **derivada** (não
@@ -54,6 +61,10 @@ export {
   measurementUnitLabel,
   assessmentCriterionLabel,
   epiNeutralizationLabel,
+  hasNr09Measurement,
+  isNr09EligibleAgent,
+  nr09ConclusionLabel,
+  formatMeasurement,
 };
 export type {
   ControlLevel,
@@ -67,6 +78,7 @@ export type {
   MeasurementUnit,
   AssessmentCriterion,
   EpiNeutralization,
+  Nr09Conclusion,
 };
 
 /** EPI indicado para um risco (mesma forma de `EpiRiskLinkItem`). */
@@ -88,6 +100,13 @@ export type ConsolidatedAssessment = {
   toleranceLimit: string | null;
   result: RiskClassification | null;
   assessedAt: string;
+  // Avaliação quantitativa NR-09 (#39) — `null` quando não houve medição. Ausência de
+  // medição NÃO é conformidade: o PDF imprime "sem medição", nunca "abaixo do limite".
+  evaluationMethod: string | null;
+  measuredValue: string | null;
+  measuredUnit: MeasurementUnit | null;
+  toleranceLimitValue: string | null;
+  nr09Conclusion: Nr09Conclusion | null;
 };
 
 export type ConsolidatedMeasure = {

@@ -17,60 +17,59 @@ Checklist vivo do Lote 2 — atualizado conforme cada item é concluído **e** t
 - [x] Última migration conferida no journal: `0048_form_control_type_status`
 - [x] Nenhuma PR aberta no repositório
 - [x] Branch única do lote: `feature/lot-02-nr09-pgr-pdf` (renomeada de `docs/lot-02-audit-plan`, preservando `743dfc1`)
-- [ ] Mover #39 e #47 para _In progress_ no board
+- [x] Mover #39 e #47 para _In progress_ no board
 
 ## 2. #39 — Schema
 
-- [ ] Enum `nr09_conclusion` (`below_limit | above_limit | not_applicable`) em `schema/risks.ts`
-- [ ] Colunas em `riskAssessments`: `evaluation_method`, `measured_value`, `measured_unit`,
+- [x] Enum `nr09_conclusion` (`below_limit | above_limit | not_applicable`) em `schema/risks.ts`
+- [x] Colunas em `riskAssessments`: `evaluation_method`, `measured_value`, `measured_unit`,
       `tolerance_limit_value`, `nr09_conclusion`
-- [ ] CHECK: valor medido exige unidade e unidade diferente de `qualitative_na`
-- [ ] `npm run db:generate` (número só agora) e revisar o SQL gerado
-- [ ] Conferir que a migration **não** recria policy/GRANT (herdados) e que o journal ficou coerente
-- [ ] Aplicar em Postgres efêmero e rodar o teste de RLS da tabela
+- [x] CHECK: valor medido exige unidade e unidade diferente de `qualitative_na`
+- [x] `npm run db:generate` (número só agora) e revisar o SQL gerado
+- [x] Conferir que a migration **não** recria policy/GRANT (herdados) e que o journal ficou coerente
+- [x] Aplicar em Postgres efêmero e rodar o teste de RLS da tabela
 
 ## 3. #39 — Domain
 
-- [ ] Campos novos em `riskAssessmentInputSchema` (`domains/pgr/risk-assessment.ts`), todos opcionais
-- [ ] Regra pura: quantitativo com valor exige unidade; qualitativo não aceita campos quantitativos
-- [ ] `domains/pgr/nr09.ts`: agentes elegíveis (`physical|chemical|biological`), sugestão de conclusão
+- [x] Campos novos em `riskAssessmentInputSchema` (`domains/pgr/risk-assessment.ts`), todos opcionais
+- [x] Regra pura: quantitativo com valor exige unidade; qualitativo não aceita campos quantitativos
+- [x] `domains/pgr/nr09.ts`: agentes elegíveis (`physical|chemical|biological`), sugestão de conclusão
       (só quando as unidades batem), rótulos pt-BR de método/conclusão
-- [ ] Nenhuma regra nova no repositório ou na UI — as três camadas chamam a função pura
+- [x] Nenhuma regra nova no repositório ou na UI — as três camadas chamam a função pura
 
 ## 4. #39 — Repository
 
-- [ ] `repositories/risk-assessments.ts`: persistir e devolver os campos novos (create/update/get/list)
-- [ ] Manter o cálculo de `riskLevel`/`result` intocado
-- [ ] `getPgrConsolidated`: avaliação vigente passa a trazer método, valor, unidade, LT numérico e
+- [x] `repositories/risk-assessments.ts`: persistir e devolver os campos novos (create/update/get/list)
+- [x] Manter o cálculo de `riskLevel`/`result` intocado
+- [x] `getPgrConsolidated`: avaliação vigente passa a trazer método, valor, unidade, LT numérico e
       conclusão
 
 ## 5. #39 — Actions/REST
 
-- [ ] Server Actions de avaliação carregando os campos (sem ação nova)
-- [ ] REST `POST/GET /api/v1/risks/{id}/assessments` e `GET/PUT/DELETE /api/v1/risk-assessments/{id}`
-- [ ] `docs/api/api-design.md` atualizado (campos e regra de validação)
-- [ ] `docs/api/sst-manager.postman_collection.json` atualizado nas duas pastas
+- [x] Server Actions de avaliação carregando os campos (sem ação nova)
+- [x] REST `POST/GET /api/v1/risks/{id}/assessments` e `GET/PUT/DELETE /api/v1/risk-assessments/{id}`
+- [x] `docs/api/api-design.md` atualizado (campos e regra de validação)
+- [x] `docs/api/sst-manager.postman_collection.json` atualizado nas duas pastas
 
 ## 6. #39 — UI
 
-- [ ] Bloco "Avaliação quantitativa (NR-09)" no `assessment-form.tsx`, visível só no critério
+- [x] Bloco "Avaliação quantitativa (NR-09)" no `assessment-form.tsx`, visível só no critério
       quantitativo
-- [ ] Unidade pré-selecionada com a unidade do risco; sugestão de conclusão quando houver os dois
-      números
-- [ ] Exibir os campos no detalhe do risco e na aba consolidada do PGR
-- [ ] Estado honesto para risco quantitativo sem medição
+- [x] Sugestão de conclusão quando houver valor e limite comparáveis, com botão "Usar sugestão"
+- [x] Exibir os campos no detalhe do risco e na aba consolidada do PGR
+- [x] Estado honesto para risco quantitativo sem medição
 
 ## 7. #39 — Tests
 
-- [ ] Unit: schema Zod (4 casos de validação), sugestão de conclusão, elegibilidade por agente
-- [ ] Integração: criar/editar com campos NR-09; CHECK do banco; cross-tenant; `client` → `FORBIDDEN`
-- [ ] `npm run check` verde
-- [ ] Rebase em `origin/develop` e abrir **PR #1** (fecha #39) — sem merge automático
+- [x] Unit: schema Zod (4 casos de validação), sugestão de conclusão, elegibilidade por agente
+- [x] Integração: criar/editar com campos NR-09; CHECK do banco; cross-tenant; `client` → `FORBIDDEN`
+- [x] `npm run check` verde
+- [x] N/A — branch única do lote; a PR sai no fim, com #39 e #47 juntas
 
 ## 8. #47 — Preparação
 
 - [x] N/A — mesma branch do lote; #39 não precisa estar mergeada, só verde
-- [ ] Gate interno da #39 verde antes de tocar no template
+- [x] Gate interno da #39 verde antes de tocar no template
 
 ## 9. #47 — View model (consolidado)
 

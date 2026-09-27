@@ -1913,8 +1913,68 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"uncertaintyDegree\": 0,\n  \"toleranceLimit\": \"85 dB(A) / NEN 8h\",\n  \"assessedAt\": \"2026-07-08\"\n}"
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"uncertaintyDegree\": 0,\n  \"toleranceLimit\": \"85 dB(A) / NEN 8h\",\n  \"assessedAt\": \"2026-07-08\",\n  \"evaluationMethod\": \"NHO-01 (ruído)\",\n  \"measuredValue\": \"87.5\",\n  \"measuredUnit\": \"db_a\",\n  \"toleranceLimitValue\": \"85\",\n  \"nr09Conclusion\": \"above_limit\"\n}"
             }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/assessments (422 NR-09 sem critério quantitativo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"qualitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"uncertaintyDegree\": 0,\n  \"toleranceLimit\": \"85 dB(A) / NEN 8h\",\n  \"assessedAt\": \"2026-07-08\",\n  \"evaluationMethod\": \"NHO-01 (ruído)\",\n  \"measuredValue\": \"87.5\",\n  \"measuredUnit\": \"db_a\",\n  \"toleranceLimitValue\": \"85\",\n  \"nr09Conclusion\": \"above_limit\"\n}"
+            },
+            "description": "Bloco NR-09 exige criterion='quantitative' (VALIDATION 422). Mesma regra tem CHECK no banco."
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/assessments (422 NR-09 medição sem unidade)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"uncertaintyDegree\": 0,\n  \"toleranceLimit\": \"85 dB(A) / NEN 8h\",\n  \"assessedAt\": \"2026-07-08\",\n  \"evaluationMethod\": \"NHO-01 (ruído)\",\n  \"measuredValue\": \"87.5\",\n  \"toleranceLimitValue\": \"85\",\n  \"nr09Conclusion\": \"above_limit\"\n}"
+            },
+            "description": "Valor medido sem unidade quantitativa → VALIDATION 422."
           }
         },
         {

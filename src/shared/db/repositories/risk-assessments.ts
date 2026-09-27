@@ -11,6 +11,10 @@ import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-erro
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { withOrg, type TenantTransaction } from "../with-org";
+import { isNr09EligibleAgent, nr09IneligibleReason } from "@/shared/domains/pgr/nr09";
+import type { RiskAgentType } from "@/shared/domains/pgr/risks";
+import { ValidationError } from "@/shared/errors/validation-error";
+
 import { riskAssessments, risks, type RiskAssessment } from "../schema/risks";
 import { auditedTenantWrite } from "./audited-write";
 
@@ -26,6 +30,13 @@ function toColumns(values: RiskAssessmentWriteValues) {
     toleranceLimit: values.toleranceLimit ?? null,
     result: values.result,
     assessedAt: values.assessedAt,
+    // NR-09 (#39) — `?? null` limpa o campo quando o usuário apaga na edição; a
+    // conclusão gravada é a que ele confirmou, o servidor não deriva nem substitui.
+    evaluationMethod: values.evaluationMethod ?? null,
+    measuredValue: values.measuredValue ?? null,
+    measuredUnit: values.measuredUnit ?? null,
+    toleranceLimitValue: values.toleranceLimitValue ?? null,
+    nr09Conclusion: values.nr09Conclusion ?? null,
   };
 }
 
@@ -40,13 +51,39 @@ async function assertRiskInTenant(
   tx: TenantTransaction,
   orgId: string,
   riskId: string,
-): Promise<void> {
+): Promise<RiskAgentType> {
   const [row] = await tx
-    .select({ id: risks.id })
+    .select({ id: risks.id, agentType: risks.agentType })
     .from(risks)
     .where(and(eq(risks.orgId, orgId), eq(risks.id, riskId)))
     .limit(1);
   if (!row) throw new ReferenceNotFoundError("risk");
+  return row.agentType;
+}
+
+/** A avaliação traz bloco NR-09? (qualquer um dos campos quantitativos preenchido) */
+function hasNr09Fields(values: RiskAssessmentWriteValues): boolean {
+  return Boolean(
+    values.evaluationMethod ||
+    values.measuredValue ||
+    values.measuredUnit ||
+    values.toleranceLimitValue ||
+    values.nr09Conclusion,
+  );
+}
+
+/**
+ * Elegibilidade NR-09 (#39): a norma cobre agentes físicos, químicos e biológicos. A
+ * regra vive no SERVIDOR — a tela apenas esconde o bloco; quem chamar a API direto
+ * recebe `VALIDATION`.
+ */
+function assertNr09Eligible(
+  agentType: RiskAgentType,
+  values: RiskAssessmentWriteValues,
+): void {
+  if (!hasNr09Fields(values)) return;
+  if (isNr09EligibleAgent(agentType)) return;
+  throw new ValidationError(nr09IneligibleReason(agentType));
 }
 
 export async function listRiskAssessments(
@@ -73,6 +110,11 @@ export async function listRiskAssessments(
         result: riskAssessments.result,
         assessedAt: riskAssessments.assessedAt,
         createdAt: riskAssessments.createdAt,
+        evaluationMethod: riskAssessments.evaluationMethod,
+        measuredValue: riskAssessments.measuredValue,
+        measuredUnit: riskAssessments.measuredUnit,
+        toleranceLimitValue: riskAssessments.toleranceLimitValue,
+        nr09Conclusion: riskAssessments.nr09Conclusion,
       })
       .from(riskAssessments)
       .where(where)
@@ -130,7 +172,8 @@ export async function createRiskAssessment(
 ): Promise<RiskAssessment> {
   return auditedTenantWrite(orgId, "risk_assessments.write_rejected", () =>
     withOrg(orgId, async (tx) => {
-      await assertRiskInTenant(tx, orgId, riskId);
+      const agentType = await assertRiskInTenant(tx, orgId, riskId);
+      assertNr09Eligible(agentType, values);
       const [row] = await tx
         .insert(riskAssessments)
         .values({ orgId, riskId, ...toColumns(values) })
@@ -147,6 +190,15 @@ export async function updateRiskAssessment(
 ): Promise<RiskAssessment | null> {
   return auditedTenantWrite(orgId, "risk_assessments.write_rejected", () =>
     withOrg(orgId, async (tx) => {
+      if (hasNr09Fields(values)) {
+        const [current] = await tx
+          .select({ agentType: risks.agentType })
+          .from(riskAssessments)
+          .innerJoin(risks, eq(risks.id, riskAssessments.riskId))
+          .where(and(eq(riskAssessments.orgId, orgId), eq(riskAssessments.id, id)))
+          .limit(1);
+        if (current) assertNr09Eligible(current.agentType, values);
+      }
       const [row] = await tx
         .update(riskAssessments)
         .set({ ...toColumns(values), updatedAt: new Date() })

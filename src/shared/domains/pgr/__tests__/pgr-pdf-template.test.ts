@@ -35,6 +35,11 @@ function makeRisk(overrides: Partial<ConsolidatedRisk> = {}): ConsolidatedRisk {
       toleranceLimit: null,
       result: "substantial",
       assessedAt: "2026-06-01",
+      evaluationMethod: null,
+      measuredValue: null,
+      measuredUnit: null,
+      toleranceLimitValue: null,
+      nr09Conclusion: null,
     },
     measures: [
       {
