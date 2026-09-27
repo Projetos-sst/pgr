@@ -87,6 +87,13 @@ Detalhe em [../lots/lot-03/AUDIT.md](../lots/lot-03/AUDIT.md); plano em
 
 ## Execução
 
-| Branch                         | PR  | Migration | Testes | CI  | Decisão          | Status      |
-| ------------------------------ | --- | --------- | ------ | --- | ---------------- | ----------- |
-| `feature/lot-03-nr17-nr18-pgr` | —   | prevista  | —      | —   | Q1=B, Q2=A, Q3=A | In progress |
+| Branch                         | PR           | Migration                    | Testes                         | CI         | Decisão          | Status    |
+| ------------------------------ | ------------ | ---------------------------- | ------------------------------ | ---------- | ---------------- | --------- |
+| `feature/lot-03-nr17-nr18-pgr` | PR do Lote 3 | `0051_ergonomic_evaluations` | unit + integração + Playwright | aguardando | Q1=B, Q2=A, Q3=A | In review |
+
+### Entrega (27/09/2026)
+
+Implementada no Lote 3. Tabela dedicada `ergonomic_evaluations` (migration `0051`), domínio puro,
+repositório, Server Actions, REST espelho, docs/Postman e UI (seção no detalhe do risco, histórico e
+formulário de 940 px). Vínculo opcional com campanha psicossocial **encerrada da mesma unidade**,
+exibido só como agregado. Walkthrough, review e QA em [../lots/lot-03/](../lots/lot-03/).

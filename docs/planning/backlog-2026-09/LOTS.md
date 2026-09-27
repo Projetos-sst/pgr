@@ -78,8 +78,9 @@ chamadores (rota síncrona e worker) conferido; #47 permanece aberta até o Lote
 
 # Lote 3 — NR-17 + NR-18 + fechamento do PDF
 
-**Status (27/09/2026):** auditado, planejado e **em implementação** em
-[lots/lot-03/](lots/lot-03/); branch única `feature/lot-03-nr17-nr18-pgr`. Q1–Q4 decididas.
+**Status (27/09/2026):** **implementado, revisado e com QA aprovado** em
+[lots/lot-03/](lots/lot-03/); branch única `feature/lot-03-nr17-nr18-pgr`, uma PR aguardando merge.
+Q1–Q4 decididas. #40, #47 e #48 concluídas.
 
 **Issues:** #40, #48, #47 (seção 4 e fechamento)
 

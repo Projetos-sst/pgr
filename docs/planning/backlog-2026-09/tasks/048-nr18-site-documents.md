@@ -88,3 +88,11 @@ READY — Q4 decidida em 27/09/2026: a relação de EPIs vai para a tela **e** p
 | Branch                         | PR  | Migration | Testes | CI  | Decisão   | Status  |
 | ------------------------------ | --- | --------- | ------ | --- | --------- | ------- |
 | `feature/lot-03-nr17-nr18-pgr` | —   | não       | —      | —   | Q4 aberta | Backlog |
+
+### Entrega (27/09/2026)
+
+Implementada no Lote 3, **sem migration**: lista fechada dos quatro projetos do 18.4.3 no domínio,
+checklist informativo derivado dos anexos vigentes do GED (só em unidade `site`) e relação de EPIs
+derivada e deduplicada — na tela e como seção do PDF. Duas leituras REST novas
+(`/api/v1/pgr/{id}/nr18-checklist` e `/epi-relation`), nenhuma escrita nova. Detalhes em
+[../lots/lot-03/](../lots/lot-03/).

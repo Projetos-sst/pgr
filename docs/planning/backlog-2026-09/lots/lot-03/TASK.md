@@ -14,9 +14,9 @@ vira `[x]` depois de implementado **e** verificado.
 
 ## 1. Preparação
 
-- [x] `git fetch origin --prune && git rebase origin/develop` (a branch nasceu em `25ade4d`)
-- [x] Conferir a última migration real antes de gerar qualquer coisa (era `0050`)
-- [x] Conferir PRs concorrentes tocando `pgr-consolidated.ts`, `pgr-pdf-template.ts`, `documents` ou `epis`
+- [x] `git fetch origin --prune` — `develop` não andou desde `25ade4d`; rebase desnecessário no início
+- [x] Conferida a última migration real antes de gerar: era `0050`, a nova é `0051`
+- [x] Conferir PRs concorrentes tocando `pgr-consolidated.ts`, `pgr-pdf-template.ts`, `documents` ou `epis` — nenhuma
 - [x] Mover #40 e #48 para _In progress_ no board
 
 ## 2. #40 — Schema
@@ -38,7 +38,7 @@ vira `[x]` depois de implementado **e** verificado.
 
 - [x] `repositories/ergonomic-evaluations.ts` com `withOrg`, `assertRiskInTenant` e `auditedTenantWrite`
 - [x] Leitura da vigente por risco, reaproveitada pelo consolidado
-- [ ] `getPgrConsolidated` passa a trazer a avaliação ergonômica vigente
+- [x] `getPgrConsolidated` passa a trazer a avaliação ergonômica vigente (query em lote)
 
 ## 5. #40 — Action/REST
 
@@ -74,118 +74,129 @@ vira `[x]` depois de implementado **e** verificado.
 
 ## 9. #47 — NR-17 no PDF
 
-- [ ] `PgrPdfSectionKey` ganha a seção NR-17 na ordem correta
-- [ ] Tabela por GES: risco, data, responsável, seis dimensões e observações
-- [ ] Bloco agregado da campanha psicossocial
-- [ ] Risco sem avaliação → "sem avaliação ergonômica registrada"; GES sem nenhuma → linha única
-- [ ] Sumário e numeração das seções acompanham
-- [ ] Unit do template: ordem, estado honesto, ausência de escore inventado
-- [ ] Integração: rota de PDF e `pdf-batch-core`
-- [ ] PDF real conferido pelos **dois** chamadores
-- [ ] Comentar e **fechar a #47**
+- [x] `PgrPdfSectionKey` ganha a seção NR-17 na ordem correta
+- [x] Tabela por GES: risco, data, responsável, seis dimensões e observações
+- [x] Bloco agregado da campanha psicossocial
+- [x] Risco sem avaliação → "sem avaliação ergonômica registrada"; GES sem nenhuma → linha única
+- [x] Sumário e numeração das seções acompanham
+- [x] Unit do template: ordem, estado honesto, ausência de escore inventado
+- [x] Integração: rota de PDF e `pdf-batch-core`
+- [x] PDF real conferido pelos **dois** chamadores
+- [x] N/A nesta branch — a #47 é fechada pelo `Closes #47` da PR; o board vai para _In review_
 
 ## 10. #48 — Tipos NR-18
 
-- [ ] `domains/documents/nr18.ts` com a lista fechada dos tipos do 18.4.3 e rótulos
-- [ ] Tipos entram como sugestões de `doc_type` no upload vindo do PGR
-- [ ] N/A — nenhuma migration (o GED já cobre arquivo, versão, vínculo e tipo)
+- [x] `domains/documents/nr18.ts` com a lista fechada dos tipos do 18.4.3 e rótulos
+- [x] Tipos entram como sugestões de `doc_type` no upload vindo do PGR
+- [x] N/A — nenhuma migration na #48 (o GED já cobre arquivo, versão, vínculo e tipo)
 
 ## 11. #48 — Documents/GED
 
-- [ ] Painel "Documentos complementares (NR-18)" na aba Documentos do PGR
-- [ ] Checklist por tipo (anexado/faltando) com atalho de anexar, **informativo** (não bloqueia)
-- [ ] Exibido quando a unidade do PGR é `site`; nas demais, nada é mostrado
-- [ ] Versionamento (#56) e vínculo preservados — nova versão não some do checklist
+- [x] Painel "Documentos complementares (NR-18)" na aba Documentos do PGR
+- [x] Checklist por tipo (anexado/faltando) com atalho de anexar, **informativo** (não bloqueia)
+- [x] Exibido quando a unidade do PGR é `site`; nas demais, nada é mostrado
+- [x] Versionamento (#56) e vínculo preservados — nova versão não some do checklist
 
 ## 12. #48 — EPI derivado
 
-- [ ] Consulta derivada PGR → GES → riscos → `epi_risk` → `epi_catalog`, deduplicada por EPI
-- [ ] Colunas: nome, CA, validade do CA, fabricante, norma, material/tamanho, vida útil, riscos atendidos
-- [ ] Badge de CA vencido/a vencer usando a validade real
-- [ ] Nenhuma digitação: a fonte é o cadastro
-- [ ] Seção "Relação de EPIs" no PDF
+- [x] Consulta derivada PGR → GES → riscos → `epi_risk` → `epi_catalog`, deduplicada por EPI
+- [x] Colunas: nome, CA, validade do CA, fabricante, norma, material/tamanho, vida útil, riscos atendidos
+- [x] Badge de CA vencido/a vencer usando a validade real
+- [x] Nenhuma digitação: a fonte é o cadastro
+- [x] Seção "Relação de EPIs" no PDF
 
 ## 13. #48 — UI
 
-- [ ] Painel de checklist e painel da relação no padrão do `data-list`
-- [ ] Aviso de que a relação vem do cadastro de EPI
-- [ ] Estado vazio: PGR sem GES/EPI indicado
+- [x] Painel de checklist e painel da relação no padrão do `data-list`
+- [x] Aviso de que a relação vem do cadastro de EPI
+- [x] Estado vazio: PGR sem GES/EPI indicado
 
 ## 14. #48 — Tests
 
-- [ ] Unit: checklist por tipo, relação deduplicada, badge de validade
-- [ ] Integração: relação isolada por tenant; documento de outro tenant fora do checklist
-- [ ] Unit do template da seção de EPIs
+- [x] Unit: checklist por tipo, relação deduplicada, badge de validade
+- [x] Integração: relação isolada por tenant; documento de outro tenant fora do checklist
+- [x] Unit do template da seção de EPIs
 
 ## 15. Visual (obrigatório em toda tela nova ou alterada)
 
-- [ ] Reutilizar `PageHeader` global (com `icon`, `description` e `backHref`)
-- [ ] Reutilizar `ListCard` + `ListToolbar` do `data-list`
-- [ ] Reutilizar `DataGrid`/`GridHeader`/`GridRow`/`Cell` — nenhuma tabela nova à mão
-- [ ] Estender `Cell`/`GridColumn` com `align: "center"` na primitive (não espalhar `text-center`)
-- [ ] Centralizar cabeçalhos e valores; deixar à esquerda só a coluna descritiva principal
-- [ ] Badges semânticos com `StatusBadge` e os tons existentes — nenhuma cor hardcoded
-- [ ] Formulário no wrapper centralizado de 940px
-- [ ] Usar `_ui/form` (sem `max-w-2xl`, sem input solto)
-- [ ] Botão Voltar pelo `PageHeader`, na posição padrão
-- [ ] Campos agrupados em cartões por tema
-- [ ] Ações no rodapé (`FormActions`: primária à direita, cancelar ao lado)
-- [ ] `ListFooter` com contagem, paginação e itens por página
-- [ ] `EmptyState` nos estados vazios
-- [ ] Validar 1440×900
-- [ ] Validar 768×1024
-- [ ] Validar 375×812
-- [ ] Verificar `scrollWidth <= clientWidth` nas três larguras
-- [ ] Comparar visualmente com uma tela de referência já aprovada (riscos psicossociais / EPI / GES)
+- [x] Reutilizar `PageHeader` global (com `icon`, `description` e `backHref`)
+- [x] Reutilizar `ListCard` + `ListToolbar` do `data-list`
+- [x] Reutilizar `DataGrid`/`GridHeader`/`GridRow`/`Cell` — nenhuma tabela nova à mão
+- [x] Estender `Cell`/`GridColumn` com `align: "center"` na primitive (não espalhar `text-center`)
+- [x] Centralizar cabeçalhos e valores; deixar à esquerda só a coluna descritiva principal
+- [x] Badges semânticos com `StatusBadge` e os tons existentes — nenhuma cor hardcoded
+- [x] Formulário no wrapper centralizado de 940px
+- [x] Usar `_ui/form` (sem `max-w-2xl`, sem input solto)
+- [x] Botão Voltar pelo `PageHeader`, na posição padrão
+- [x] Campos agrupados em cartões por tema
+- [x] Ações no rodapé (`FormActions`: primária à direita, cancelar ao lado)
+- [x] `ListFooter` com contagem, paginação e itens por página
+- [x] `EmptyState` nos estados vazios
+- [x] Validar 1440×900
+- [x] Validar 768×1024
+- [x] Validar 375×812
+- [x] Verificar `scrollWidth <= clientWidth` nas três larguras
+- [x] Comparar visualmente com uma tela de referência já aprovada (riscos psicossociais / EPI / GES)
 
 ## 16. PDF
 
-- [ ] Gerar pela rota síncrona e conferir o arquivo
-- [ ] Gerar pelo worker ("Arquivar no GED") e conferir que sai equivalente
-- [ ] Conferir A4: sem overflow, cabeçalho de tabela repetindo, sem linha órfã
-- [ ] Nenhuma string fabricada (ponte #51) e nenhum escore inventado
+- [x] Gerar pela rota síncrona e conferir o arquivo
+- [x] Gerar pelo worker ("Arquivar no GED") e conferir que sai equivalente
+- [x] Conferir A4: sem overflow, cabeçalho de tabela repetindo, sem linha órfã
+- [x] Nenhuma string fabricada (ponte #51) e nenhum escore inventado
 
 ## 17. RLS e cross-tenant
 
-- [ ] Avaliação ergonômica de outro tenant → `NOT_FOUND`
-- [ ] Criar avaliação em risco de outro tenant → `FK_NOT_FOUND`
-- [ ] Relação de EPIs não inclui EPI de outro tenant
-- [ ] Documento de outro tenant não entra no checklist NR-18
-- [ ] `client` → `FORBIDDEN` nas ações novas
+- [x] Avaliação ergonômica de outro tenant → `NOT_FOUND`
+- [x] Criar avaliação em risco de outro tenant → `FK_NOT_FOUND`
+- [x] Relação de EPIs não inclui EPI de outro tenant
+- [x] Documento de outro tenant não entra no checklist NR-18
+- [x] `client` → `FORBIDDEN` nas ações novas
 
 ## 18. Playwright
 
-- [ ] Massa sintética própria em tenant de QA (nunca cliente real)
-- [ ] #40: criar, reabrir, editar e excluir avaliação ergonômica
-- [ ] #40: risco sem avaliação com estado honesto
-- [ ] #47: PDF com a seção NR-17 na ordem
-- [ ] #48: anexar documento NR-18 e ver o checklist mudar
-- [ ] #48: relação de EPIs refletindo o cadastro
-- [ ] Evidências em `validacao_full/040-*` e `validacao_full/048-*` (desktop/tablet/mobile)
-- [ ] Console e rede sem erro inesperado
-- [ ] Massa removida (dados + Storage) e contagens conferidas
+- [x] Massa sintética própria em tenant de QA (nunca cliente real)
+- [x] #40: criar, reabrir, editar e excluir avaliação ergonômica
+- [x] #40: risco sem avaliação com estado honesto
+- [x] #47: PDF com a seção NR-17 na ordem
+- [x] #48: anexar documento NR-18 e ver o checklist mudar
+- [x] #48: relação de EPIs refletindo o cadastro
+- [x] Evidências em `validacao_full/040-*` e `validacao_full/048-*` (desktop/tablet/mobile)
+- [x] Console e rede sem erro inesperado
+- [x] Massa removida (dados + Storage) e contagens conferidas — 49 linhas → 0
 
 ## 19. Walkthrough
 
-- [ ] `WALKTHROUGH.md` do lote com o fluxo real (onde cadastrar, o que aparece no PDF, o que a NR-18 mostra)
+- [x] `WALKTHROUGH.md` do lote com o fluxo real (onde cadastrar, o que aparece no PDF, o que a NR-18 mostra)
 
 ## 20. Review
 
-- [ ] `REVIEW.md` com arquivos, migration, decisões, desvios, riscos e dívidas
+- [x] `REVIEW.md` com arquivos, migration, decisões, desvios, riscos e dívidas
 
 ## 21. QA
 
-- [ ] `QA.md` escrito **antes** da execução e preenchido com o resultado real
+- [x] `QA.md` escrito **antes** da execução e preenchido com o resultado real
 
 ## 22. Rebase
 
-- [ ] `git fetch origin --prune && git rebase origin/develop`
-- [ ] Migrations revalidadas após o rebase (journal, snapshots, banco do zero)
-- [ ] Repetir `check`, integração, build e os fluxos críticos do Playwright
+- [x] `git fetch origin --prune && git rebase origin/develop`
+- [x] Migrations revalidadas após o rebase (journal, snapshots, banco do zero)
+- [x] Repetir `check`, integração, build e os fluxos críticos do Playwright
 
 ## 23. PR
 
-- [ ] Push da branch e **uma única PR**
-- [ ] `Closes #40`, `Closes #47` e `Closes #48` (o que estiver completo)
-- [ ] Board: issues entregues → In review; nada marcado como Done sem merge
-- [ ] Sem merge automático — merge é do usuário
+- [x] Push da branch e **uma única PR**
+- [x] `Closes #40`, `Closes #47` e `Closes #48` — as três completas
+- [x] Board: issues entregues → In review; nada marcado como Done sem merge
+- [x] Sem merge automático — merge é do usuário
+
+## 24. Fechamento
+
+- [x] Bugs do QA corrigidos na mesma branch e reverificados (4 achados de layout)
+- [x] `npm run check`, `npm run test:integration` e `npm run build` verdes depois das correções
+- [x] Evidências em `validacao_full/040-nr17-ergonomia/`, `048-nr18-pgr/` e
+      `047-pgr-pdf-estrutura/lote-03/` (pasta não versionada, padrão dos lotes anteriores)
+- [x] Ambiente devolvido como estava (contêiner do worker religado, `pdf-parse` desinstalado,
+      temporários removidos, working tree limpa)
+
+Nenhum item ficou em aberto.
