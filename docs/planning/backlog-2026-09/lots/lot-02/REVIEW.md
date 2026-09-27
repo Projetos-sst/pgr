@@ -103,3 +103,8 @@ contrato de dados esperado está no [AUDIT](AUDIT.md#seção-4--nr-17).
    reconciliação.
 2. **Ponte #51** fabrica `who`/`why`/`where` em `action_plans` (mantida de propósito neste lote).
 3. `rest-*.test.ts` fora do CI por limitação do harness.
+4. **Suíte de integração sensível à ordem.** Numa das execuções completas locais,
+   `safety/service-order-signature` e `safety/risk-audits` falharam com `FK_NOT_FOUND` no próprio
+   seed; passam isoladas, passam na pasta `safety` inteira e passaram na reexecução completa
+   (1 158 verdes). É fragilidade de estado compartilhado entre suítes no banco único local — nada do
+   lote toca ordens de serviço nem auditorias de risco.
