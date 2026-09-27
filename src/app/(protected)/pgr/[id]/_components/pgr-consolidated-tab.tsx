@@ -9,6 +9,8 @@ import {
   riskAgentTypeLabel,
   exposureTimeLabel,
   measurementUnitLabel,
+  formatMeasurement,
+  nr09ConclusionLabel,
   epiNeutralizationLabel,
   planCoverageGuidance,
   planCoverageLabel,
@@ -148,6 +150,28 @@ function RiskDetailPanel({ risk }: { risk: ConsolidatedRisk }) {
       risk.measurementUnit ? measurementUnitLabel(risk.measurementUnit) : null,
     ],
     ["Concentração/intensidade", risk.concentrationIntensity],
+    // Avaliação quantitativa NR-09 (#39) — vem da avaliação vigente, não do risco.
+    ["Método de avaliação (NR-09)", risk.assessment?.evaluationMethod ?? null],
+    [
+      "Resultado medido (NR-09)",
+      formatMeasurement(
+        risk.assessment?.measuredValue,
+        risk.assessment?.measuredUnit ?? null,
+      ),
+    ],
+    [
+      "Limite de tolerância (NR-09)",
+      formatMeasurement(
+        risk.assessment?.toleranceLimitValue,
+        risk.assessment?.measuredUnit ?? null,
+      ),
+    ],
+    [
+      "Conclusão (NR-09)",
+      risk.assessment?.nr09Conclusion
+        ? nr09ConclusionLabel(risk.assessment.nr09Conclusion)
+        : null,
+    ],
   ];
   const shown = items.filter(([, v]) => v && v !== "");
   const fix = coverageFixLink(risk);

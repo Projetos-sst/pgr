@@ -40,7 +40,7 @@ export default async function EditControlMeasurePage({
     : [];
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
       <PageHeader
         backHref={`/risks/${riskId}`}
         title="Editar medida de controle"
@@ -60,11 +60,13 @@ export default async function EditControlMeasurePage({
           justification: measure.justification,
           monitoring: measure.monitoring,
           actionWhat: measure.actionWhat,
+          actionWhy: measure.actionWhy,
           actionHow: measure.actionHow,
           actionTracking: measure.actionTracking,
           actionMeasurement: measure.actionMeasurement,
           actionResponsible: measure.actionResponsible,
           actionDeadline: measure.actionDeadline,
+          actionCost: measure.actionCost,
         }}
       />
     </div>

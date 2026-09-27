@@ -19,6 +19,7 @@ import {
   type AssessmentCriterion,
   type ExposureTime,
   type MeasurementUnit,
+  type Nr09Conclusion,
 } from "@/shared/domains/pgr/pgr-consolidated";
 import type { EpiNeutralization } from "@/shared/domains/pgr/epi-risk";
 import type { PgrRegistrationType } from "@/shared/domains/pgr/pgr";
@@ -50,6 +51,12 @@ type CurrentAssessmentRow = {
   tolerance_limit: string | null;
   result: string | null;
   assessed_at: string;
+  // NR-09 (#39)
+  evaluation_method: string | null;
+  measured_value: string | null;
+  measured_unit: string | null;
+  tolerance_limit_value: string | null;
+  nr09_conclusion: string | null;
 };
 
 /**
@@ -76,6 +83,34 @@ export async function getPgrConsolidated(
         registrationNumber: pgr.registrationNumber,
         issuedAt: pgr.issuedAt,
         validUntil: pgr.validUntil,
+        // Seção 1 do PDF (#47) — identificação completa, tudo já persistido.
+        companyNomeFantasia: companies.nomeFantasia,
+        companyCnpj: companies.cnpj,
+        companyCnae: companies.cnae,
+        companyMainActivity: companies.mainActivity,
+        companyRiskGrade: companies.riskGrade,
+        companyZipCode: companies.zipCode,
+        companyStreet: companies.street,
+        companyNumber: companies.number,
+        companyComplement: companies.complement,
+        companyDistrict: companies.district,
+        companyCity: companies.city,
+        companyState: companies.state,
+        workUnitType: workUnits.type,
+        workUnitContractNumber: workUnits.contractNumber,
+        workUnitManagerName: workUnits.managerName,
+        workUnitManagerRole: workUnits.managerRole,
+        workUnitProfessionalTitle: workUnits.professionalTitle,
+        workUnitProfessionalRegistration: workUnits.professionalRegistration,
+        workUnitStartDate: workUnits.startDate,
+        workUnitExpectedEndDate: workUnits.expectedEndDate,
+        workUnitZipCode: workUnits.zipCode,
+        workUnitStreet: workUnits.street,
+        workUnitNumber: workUnits.number,
+        workUnitComplement: workUnits.complement,
+        workUnitDistrict: workUnits.district,
+        workUnitCity: workUnits.city,
+        workUnitState: workUnits.state,
       })
       .from(pgr)
       .innerJoin(
@@ -116,6 +151,46 @@ export async function getPgrConsolidated(
       registrationNumber: head.registrationNumber,
       issuedAt: head.issuedAt,
       validUntil: head.validUntil,
+      company: {
+        razaoSocial: head.companyName,
+        nomeFantasia: head.companyNomeFantasia ?? null,
+        cnpj: head.companyCnpj ?? null,
+        cnae: head.companyCnae ?? null,
+        mainActivity: head.companyMainActivity ?? null,
+        riskGrade: head.companyRiskGrade ?? null,
+        website: head.companyWebsite ?? null,
+        address: {
+          zipCode: head.companyZipCode ?? null,
+          street: head.companyStreet ?? null,
+          number: head.companyNumber ?? null,
+          complement: head.companyComplement ?? null,
+          district: head.companyDistrict ?? null,
+          city: head.companyCity ?? null,
+          state: head.companyState ?? null,
+        },
+      },
+      workUnit: head.workUnitName
+        ? {
+            name: head.workUnitName,
+            type: head.workUnitType ?? null,
+            contractNumber: head.workUnitContractNumber ?? null,
+            managerName: head.workUnitManagerName ?? null,
+            managerRole: head.workUnitManagerRole ?? null,
+            professionalTitle: head.workUnitProfessionalTitle ?? null,
+            professionalRegistration: head.workUnitProfessionalRegistration ?? null,
+            startDate: head.workUnitStartDate ?? null,
+            expectedEndDate: head.workUnitExpectedEndDate ?? null,
+            address: {
+              zipCode: head.workUnitZipCode ?? null,
+              street: head.workUnitStreet ?? null,
+              number: head.workUnitNumber ?? null,
+              complement: head.workUnitComplement ?? null,
+              district: head.workUnitDistrict ?? null,
+              city: head.workUnitCity ?? null,
+              state: head.workUnitState ?? null,
+            },
+          }
+        : null,
     };
 
     // 2) GES vinculados
@@ -154,7 +229,9 @@ export async function getPgrConsolidated(
       const rows = (await tx.execute(sql`
         select distinct on (risk_id)
           risk_id, criterion, probability, severity, risk_level,
-          uncertainty_degree, tolerance_limit, result, assessed_at
+          uncertainty_degree, tolerance_limit, result, assessed_at,
+          evaluation_method, measured_value, measured_unit,
+          tolerance_limit_value, nr09_conclusion
         from public.risk_assessments
         where org_id = ${orgId}
           and risk_id in (${sql.join(
@@ -173,6 +250,11 @@ export async function getPgrConsolidated(
           toleranceLimit: row.tolerance_limit,
           result: row.result as RiskClassification | null,
           assessedAt: row.assessed_at,
+          evaluationMethod: row.evaluation_method,
+          measuredValue: row.measured_value,
+          measuredUnit: row.measured_unit as MeasurementUnit | null,
+          toleranceLimitValue: row.tolerance_limit_value,
+          nr09Conclusion: row.nr09_conclusion as Nr09Conclusion | null,
         });
       }
     }
@@ -191,11 +273,13 @@ export async function getPgrConsolidated(
           justification: controlMeasures.justification,
           monitoring: controlMeasures.monitoring,
           actionWhat: controlMeasures.actionWhat,
+          actionWhy: controlMeasures.actionWhy,
           actionHow: controlMeasures.actionHow,
           actionTracking: controlMeasures.actionTracking,
           actionMeasurement: controlMeasures.actionMeasurement,
           actionResponsible: controlMeasures.actionResponsible,
           actionDeadline: controlMeasures.actionDeadline,
+          actionCost: controlMeasures.actionCost,
         })
         .from(controlMeasures)
         .where(
@@ -211,11 +295,13 @@ export async function getPgrConsolidated(
           justification: m.justification,
           monitoring: m.monitoring,
           actionWhat: m.actionWhat,
+          actionWhy: m.actionWhy,
           actionHow: m.actionHow,
           actionTracking: m.actionTracking,
           actionMeasurement: m.actionMeasurement,
           actionResponsible: m.actionResponsible,
           actionDeadline: m.actionDeadline,
+          actionCost: m.actionCost,
           state: deriveMeasureState(
             { applicable: m.applicable, actionDeadline: m.actionDeadline },
             today,

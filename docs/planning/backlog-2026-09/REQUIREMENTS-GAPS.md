@@ -32,13 +32,31 @@ Critérios 1 e 2 já atendidos e testados; falta listar/exibir o histórico e ap
 
 ### #39 — NR-09
 
-- **Premissa:** avaliação quantitativa ligada a cada **avaliação** (`risk_assessments`), com método,
-  valor medido, unidade (enum `measurementUnit` existente), LT numérico e conclusão calculada.
-- Perguntas:
-  1. Um risco pode ter várias medições (histórico) ou uma avaliação NR-09 vigente?
-  2. Conclusão (acima/abaixo do LT) calculada pelo sistema ou informada pelo técnico?
-  3. LT sempre numérico (NR-15) ou também texto para agentes qualitativos?
-  4. Precisa anexar o laudo/relatório de medição (reusar anexos de documento do risco)?
+> Auditado em profundidade em 26/09 — ver [lots/lot-02/AUDIT.md](lots/lot-02/AUDIT.md), que prevalece
+> sobre esta seção.
+
+- **Recomendação técnica:** colunas quantitativas na própria `risk_assessments` (método, valor
+  medido, unidade reusando o enum `measurement_unit`, LT numérico ao lado do LT textual já existente,
+  conclusão), preenchidas só no critério `quantitative`; a seção do PGR mostra a **avaliação
+  vigente**.
+- **Decidido em 27/09/2026:**
+  1. **Q1** → colunas em `risk_assessments`; nada de tabela dedicada.
+  2. **Q2** → conclusão **informada/confirmada pelo profissional**; o sistema só sugere, nunca
+     sobrescreve nem recalcula em silêncio.
+- Resolvidas na auditoria do Lote 2: 3. LT — fica **numérico e textual**: `tolerance_limit_value` novo ao lado do `tolerance_limit` atual
+  (nem todo agente tem limite numérico). 4. Laudo — **já funciona**: documento vinculado ao risco (`related_entity_type = "risk"`).
+
+### #47 — PDF do PGR (seção 5)
+
+> Ver [lots/lot-02/AUDIT.md](lots/lot-02/AUDIT.md).
+
+- **Fonte do plano:** `control_measures` (decisão do Lote 1). `action_plans` está descartado como
+  fonte do PDF — a ponte #51 fabrica `who`/`why`/`where`.
+- **Decidido em 27/09/2026:**
+  1. **Q3** → **7 de 7**, com `action_why` e `action_cost` novos em `control_measures`; sem backfill
+     fictício e sem obrigatoriedade retroativa.
+- Resolvido na auditoria: **preposto = `work_units.manager_name`/`manager_role`** — é o rótulo que o
+  próprio formulário de unidade usa ("Gestor/Preposto"); nenhum campo novo.
 
 ### #48 — NR-18
 

@@ -9,6 +9,10 @@ As três issues mais fáceis (#33, #42, #56) estão em **três módulos diferent
 | A — quick wins puros         | #42, #56, #33      | 3                | Baixo |
 | B — coesão por domínio (PGR) | #42 + parte de #47 | 1                | Médio |
 
+> **Estado em 27/09/2026:** Lote 1 mergeado (PRs #93 e #94). Lote 2 implementado e testado numa
+> **branch única** (`feature/lot-02-nr09-pgr-pdf`), com **uma PR** ao final — #39 completa, #47 parcial
+> (NR-17 depende da #40). Documentos em [lots/lot-02/](lots/lot-02/).
+
 **Escolha: A no Lote 1, B a partir do Lote 2.** As três quick wins não compartilham arquivos, não têm
 migration e são pequenas o bastante para que a troca de contexto custe pouco. Coesão por domínio só
 compensa quando as tarefas mexem nos mesmos arquivos — que é exatamente o caso de PGR (2–3) e GED (5–7).

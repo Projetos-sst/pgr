@@ -8,7 +8,7 @@ INDEPENDENTES (auditoria específica do Lote 1 — sem arquivos em comum entre s
 ├── #42  Plano do PGR — cobertura por risco             (READY COM PREMISSAS)
 └── #33  EPI — funcionalmente resolvida                  (fechar sem código)
 
-#42 decidido: plano do PGR = control_measures ──► #47 lê o plano 5W2H das medidas (PDF do #42 no Lote 2)
+#42 decidido: plano do PGR = control_measures ──► #47 lê o 5W2H das medidas (7/7 após o Lote 2)
 
 PGR — inventário → PDF
 #39 NR-09 ─────────────┐

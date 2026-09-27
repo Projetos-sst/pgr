@@ -131,7 +131,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/pgr/{id}/pdf`                                                                                                                                                | GET (gera o PDF do PGR via Gotenberg; `?color=` opcional para a capa; `application/pdf`; PGR inexistente/cross-tenant → 404; serviço de PDF ausente → 503)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `/risks` · `/risks/{id}`                                                                                                                                       | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/risks/{id}/epis` · `/risks/{id}/epis/{linkId}`                                                                                                               | GET (`?available=true&search=` p/ EPIs não vinculados), POST · PUT (neutralização), DELETE (vínculo EPI × risco)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `/risks/{id}/assessments` · `/risk-assessments/{id}`                                                                                                           | GET, POST (avaliação 5×5 do risco; 201) · GET, PUT, DELETE (histórico 1:N; `riskLevel`/`result` calculados; sem `/dependents`, sem 409)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `/risks/{id}/assessments` · `/risk-assessments/{id}`                                                                                                           | GET, POST (avaliação 5×5 do risco + bloco NR-09 opcional; 201) · GET, PUT, DELETE (histórico 1:N; `riskLevel`/`result` calculados; sem `/dependents`, sem 409)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `/risks/{id}/control-measures` · `/control-measures/{id}`                                                                                                      | GET, POST (plano de ação 5W2H por nível NR-01; 201) · GET, PUT, DELETE (nível imutável; **DUPLICATE/409** se nível repetido; sem `/dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/categories` · `/categories/{id}`                                                                                                                             | GET, POST · GET, PUT, DELETE                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/medicos` · `/medicos/{id}`                                                                                                                                   | GET (`?search=` nome/CRM, `?clinic=` empresa/clínica, `?status=active\|inactive`), POST (`201`) · GET, PUT, DELETE (`204`) — CRM único por org (`DUPLICATE`); sem `/dependents`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -866,9 +866,27 @@ DELETE 204).
 
 **`RiskAssessmentInput`** (mesmo corpo para create e PUT): `criterion*` (`qualitative`|`quantitative`),
 `probability*` (1–5), `severity*` (1–5), `uncertaintyDegree` (0–2, default 0), `assessedAt*`
-(`AAAA-MM-DD`), `toleranceLimit?`. **Não** aceita `riskLevel`/`result` (calculados no servidor),
-`riskId` (vem da rota) nem `orgId` (sessão). **Erros REST**: 422 (validação/FK `riskId`), 404
-(cross-tenant/inexistente), 403 (`client`); **nunca 409**.
+(`AAAA-MM-DD`), `toleranceLimit?` (referência normativa em texto, ex.: "NR-15 Anexo 1"). **Não** aceita
+`riskLevel`/`result` (calculados no servidor), `riskId` (vem da rota) nem `orgId` (sessão).
+**Erros REST**: 422 (validação/FK `riskId`), 404 (cross-tenant/inexistente), 403 (`client`);
+**nunca 409**.
+
+### Bloco NR-09 (issue #39, migration `0049_nr09_evaluation`)
+
+Campos **opcionais** do mesmo corpo, para a avaliação quantitativa da NR-09 (item 9.4.3):
+`evaluationMethod?` (texto livre; a UI sugere NHO/NIOSH), `measuredValue?` (decimal em string),
+`measuredUnit?` (enum `measurement_unit`, **sem** `qualitative_na`), `toleranceLimitValue?` (decimal em
+string) e `nr09Conclusion?` (`below_limit` | `above_limit` | `not_applicable`).
+
+Regras (422 quando violadas — a aplicação valida e o banco também tem CHECK):
+
+1. qualquer campo do bloco exige `criterion = "quantitative"`;
+2. `measuredValue` exige `measuredUnit` quantitativa;
+3. o bloco só é aceito em risco de agente **físico, químico ou biológico** — os demais recebem
+   `VALIDATION` mesmo chamando a API direto.
+
+A **conclusão é informada pelo profissional**: o servidor nunca a deriva nem a sobrescreve. A tela
+sugere um valor quando há medição e limite comparáveis, e quem confirma é o usuário.
 
 ---
 
@@ -896,10 +914,18 @@ espelho: `/api/v1/risks/{id}/control-measures` (GET, POST 201) · `/api/v1/contr
 
 **`ControlMeasureInput`** (mesmo corpo para create e PUT): `controlLevel*` (enum NR-01; ignorado na
 escrita do PUT — imutável), `applicable` (bool), `actionWhat`/`actionHow` (**obrigatórios quando
-`applicable=true`**), `actionTracking?`/`actionMeasurement?`/`actionResponsible?`/`actionDeadline?`
+`applicable=true`**), `actionWhy?` (motivo real da medida — o "por quê" do 5W2H, issue #47),
+`actionCost?` (custo estimado em BRL, decimal em string — o "quanto"),
+`actionTracking?`/`actionMeasurement?`/`actionResponsible?`/`actionDeadline?`
 (`AAAA-MM-DD`)/`justification?`/`monitoring?`. **Não** aceita `riskId` (rota) nem `orgId` (sessão).
 **Erros REST**: 422 (validação/FK `riskId`), 404 (cross-tenant/inexistente), **409** (nível
 duplicado), 403 (`client`).
+
+O 5W2H do PGR é **completo** desde a migration `0050_measure_why_cost`: o quê (`actionWhat`), por quê
+(`actionWhy`), onde (GES do risco, derivado na leitura), quando (`actionDeadline`), quem
+(`actionResponsible`), como (`actionHow`) e quanto (`actionCost`). Nenhum deles é obrigatório
+retroativamente — medida antiga sem motivo/custo aparece como "não informado" no PDF. O módulo
+`action_plans` (ponte #51) **não** alimenta o PGR.
 
 ---
 

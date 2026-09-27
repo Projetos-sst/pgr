@@ -39,11 +39,13 @@ function toWriteColumns(values: ControlMeasureWriteValues) {
     justification: values.justification ?? null,
     monitoring: values.monitoring ?? null,
     actionWhat: values.actionWhat ?? null,
+    actionWhy: values.actionWhy ?? null,
     actionHow: values.actionHow ?? null,
     actionTracking: values.actionTracking ?? null,
     actionMeasurement: values.actionMeasurement ?? null,
     actionResponsible: values.actionResponsible ?? null,
     actionDeadline: values.actionDeadline ?? null,
+    actionCost: values.actionCost ?? null,
   };
 }
 
@@ -125,11 +127,13 @@ export async function listControlMeasures(
         justification: controlMeasures.justification,
         monitoring: controlMeasures.monitoring,
         actionWhat: controlMeasures.actionWhat,
+        actionWhy: controlMeasures.actionWhy,
         actionHow: controlMeasures.actionHow,
         actionTracking: controlMeasures.actionTracking,
         actionMeasurement: controlMeasures.actionMeasurement,
         actionResponsible: controlMeasures.actionResponsible,
         actionDeadline: controlMeasures.actionDeadline,
+        actionCost: controlMeasures.actionCost,
         createdAt: controlMeasures.createdAt,
       })
       .from(controlMeasures)
