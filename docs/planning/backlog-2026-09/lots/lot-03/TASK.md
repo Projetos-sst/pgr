@@ -14,60 +14,63 @@ vira `[x]` depois de implementado **e** verificado.
 
 ## 1. Preparação
 
-- [ ] `git fetch origin --prune && git rebase origin/develop` (a branch nasceu em `25ade4d`)
-- [ ] Conferir a última migration real antes de gerar qualquer coisa (era `0050`)
-- [ ] Conferir PRs concorrentes tocando `pgr-consolidated.ts`, `pgr-pdf-template.ts`, `documents` ou `epis`
-- [ ] Mover #40 e #48 para _In progress_ no board
+- [x] `git fetch origin --prune && git rebase origin/develop` (a branch nasceu em `25ade4d`)
+- [x] Conferir a última migration real antes de gerar qualquer coisa (era `0050`)
+- [x] Conferir PRs concorrentes tocando `pgr-consolidated.ts`, `pgr-pdf-template.ts`, `documents` ou `epis`
+- [x] Mover #40 e #48 para _In progress_ no board
 
 ## 2. #40 — Schema
 
-- [ ] Enum de adequação das dimensões (`ergonomic_adequacy`)
-- [ ] Tabela `ergonomic_evaluations` com `org_id`, `risk_id`, dimensões, observações, método,
+- [x] Enum de adequação das dimensões (`ergonomic_adequacy`)
+- [x] Tabela `ergonomic_evaluations` com `org_id`, `risk_id`, dimensões, observações, método,
       responsável, `assessed_at`, notas e timestamps
-- [ ] `pgPolicy` de isolamento + índices por `org_id` e `risk_id`
-- [ ] `npm run db:generate`, renomear para o padrão descritivo e acertar o `tag` no journal
-- [ ] Aplicar em Postgres efêmero e rodar o teste de RLS da tabela nova
+- [x] `pgPolicy` de isolamento + índices por `org_id` e `risk_id`
+- [x] `npm run db:generate`, renomear para o padrão descritivo e acertar o `tag` no journal
+- [x] Aplicar em Postgres efêmero e rodar o teste de RLS da tabela nova
 
 ## 3. #40 — Domain
 
-- [ ] `domains/pgr/ergonomics.ts`: schema Zod de entrada, rótulos das dimensões e da adequação
-- [ ] Regra pura de "avaliação vigente" (mais recente por `assessed_at`, desempate por `created_at`)
-- [ ] Nenhuma conclusão global inventada; nenhuma escala criada sem requisito
+- [x] `domains/pgr/ergonomics.ts`: schema Zod de entrada, rótulos das dimensões e da adequação
+- [x] Regra pura de "avaliação vigente" (mais recente por `assessed_at`, desempate por `created_at`)
+- [x] Nenhuma conclusão global inventada; nenhuma escala criada sem requisito
 
 ## 4. #40 — Repository
 
-- [ ] `repositories/ergonomic-evaluations.ts` com `withOrg`, `assertRiskInTenant` e `auditedTenantWrite`
-- [ ] Leitura da vigente por risco, reaproveitada pelo consolidado
+- [x] `repositories/ergonomic-evaluations.ts` com `withOrg`, `assertRiskInTenant` e `auditedTenantWrite`
+- [x] Leitura da vigente por risco, reaproveitada pelo consolidado
 - [ ] `getPgrConsolidated` passa a trazer a avaliação ergonômica vigente
 
 ## 5. #40 — Action/REST
 
-- [ ] Server Actions (list, get, getCurrent, create, update, delete) com `officeAction`
-- [ ] REST `/api/v1/risks/{id}/ergonomic-evaluations` (GET, POST 201)
-- [ ] REST `/api/v1/ergonomic-evaluations/{id}` (GET, PUT, DELETE 204)
-- [ ] `docs/api/api-design.md` atualizado (recurso, verbos, filtros, erros)
-- [ ] `docs/api/sst-manager.postman_collection.json` com a pasta do recurso
+- [x] Server Actions (list, get, getCurrent, create, update, delete) com `officeAction`
+- [x] REST `/api/v1/risks/{id}/ergonomic-evaluations` (GET, POST 201)
+- [x] REST `/api/v1/ergonomic-evaluations/{id}` (GET, PUT, DELETE 204)
+- [x] N/A — `rest-ergonomic-evaluations.test.ts` fica fora do CI pela limitação de harness já
+      documentada em `jest.config.ts` (o `NextRequest` do Jest quebra em `resolveContext`); a
+      verificação real do REST é por HTTP no QA
+- [x] `docs/api/api-design.md` atualizado (recurso, verbos, filtros, erros)
+- [x] `docs/api/sst-manager.postman_collection.json` com a pasta do recurso
 
 ## 6. #40 — UI
 
-- [ ] Seção "Avaliação ergonômica (NR-17)" no detalhe do risco, com vigente em destaque
-- [ ] Páginas de criar e editar avaliação, no wrapper de 940px
-- [ ] Campos agrupados por cartão (identificação, aspectos físicos, mentais/organizacionais, observações)
-- [ ] Atalho "Anexar laudo (AET)" apontando para o upload com vínculo ao risco
-- [ ] Estado honesto quando não há avaliação
+- [x] Seção "Avaliação ergonômica (NR-17)" no detalhe do risco, com vigente em destaque
+- [x] Páginas de criar e editar avaliação, no wrapper de 940px
+- [x] Campos agrupados por cartão (identificação, aspectos físicos, mentais/organizacionais, observações)
+- [x] Atalho "Anexar laudo (AET)" apontando para o upload com vínculo ao risco
+- [x] Estado honesto quando não há avaliação
 
 ## 7. #40 — Psicossocial/COPSOQ
 
-- [ ] Campo de método/instrumento com sugestões (inclui COPSOQ) — **sem** calcular escore
-- [ ] Vínculo opcional com campanha psicossocial **fechada** do mesmo GES
-- [ ] Leitura agregada (período, nº de respostas, fatores derivados) — **nunca** resposta individual
-- [ ] Rótulo no PDF declara que é resultado agregado da campanha, não escore normativo
+- [x] Campo de método/instrumento com sugestões (inclui COPSOQ) — **sem** calcular escore
+- [x] Vínculo opcional com campanha psicossocial **fechada** do mesmo GES
+- [x] Leitura agregada (período, nº de respostas, fatores derivados) — **nunca** resposta individual
+- [x] Rótulo no PDF declara que é resultado agregado da campanha, não escore normativo
 
 ## 8. #40 — Tests
 
-- [ ] Unit: Zod, rótulos, seleção da vigente
-- [ ] Integração: CRUD, histórico, cross-tenant, `client` → `FORBIDDEN`, RLS da tabela nova
-- [ ] `npm run check` verde (gate antes de tocar no template)
+- [x] Unit: Zod, rótulos, seleção da vigente
+- [x] Integração: CRUD, histórico, cross-tenant, `client` → `FORBIDDEN`, RLS da tabela nova
+- [x] `npm run check` verde (gate antes de tocar no template) — 141 suítes / 1 330 testes
 
 ## 9. #47 — NR-17 no PDF
 

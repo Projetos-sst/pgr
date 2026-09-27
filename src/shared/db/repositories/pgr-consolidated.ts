@@ -20,11 +20,17 @@ import {
   type ExposureTime,
   type MeasurementUnit,
   type Nr09Conclusion,
+  type ConsolidatedErgonomicEvaluation,
 } from "@/shared/domains/pgr/pgr-consolidated";
+import { listErgonomicDimensions } from "@/shared/domains/pgr/ergonomics";
 import type { EpiNeutralization } from "@/shared/domains/pgr/epi-risk";
 import type { PgrRegistrationType } from "@/shared/domains/pgr/pgr";
 
 import { withOrg } from "../with-org";
+import {
+  getCurrentErgonomicEvaluationsByRiskTx,
+  getPsychosocialAggregatesTx,
+} from "./ergonomic-evaluations";
 import { pgr, pgrGes } from "../schema/pgr";
 import { companies } from "../schema/companies";
 import { workUnits } from "../schema/work-units";
@@ -60,7 +66,7 @@ type CurrentAssessmentRow = {
 };
 
 /**
- * Visão consolidada read-only do PGR. Composição em **6 queries em lote** (sem N+1):
+ * Visão consolidada read-only do PGR. Composição em **queries em lote** (sem N+1):
  * PGR+empresa+obra → GES vinculados → riscos (`inArray`, detalhe + eSocial S-2240) → avaliação
  * vigente por risco (`DISTINCT ON`, params bind-seguros) → medidas (`inArray`, 5W2H completo + status) →
  * **EPIs por risco** (`epi_risk` ⨝ `epi_catalog`, `inArray`); agrupa/ordena em memória.
@@ -340,6 +346,31 @@ export async function getPgrConsolidated(
       }
     }
 
+    // 7) Avaliação ergonômica vigente por risco (#40) + agregado psicossocial das
+    //    campanhas vinculadas. Duas queries em lote — nunca uma por risco. As respostas
+    //    individuais da campanha NÃO são lidas: só contagem e fatores derivados.
+    const ergonomicByRisk = new Map<string, ConsolidatedErgonomicEvaluation>();
+    if (riskIds.length > 0) {
+      const rows = await getCurrentErgonomicEvaluationsByRiskTx(tx, orgId, riskIds);
+      const campaignIds = [...rows.values()]
+        .map((r) => r.psychosocialCampaignId)
+        .filter((id): id is string => Boolean(id));
+      const aggregates = await getPsychosocialAggregatesTx(tx, orgId, campaignIds);
+      for (const [riskId, row] of rows) {
+        ergonomicByRisk.set(riskId, {
+          id: row.id,
+          assessedAt: row.assessedAt,
+          responsible: row.responsible,
+          method: row.method,
+          notes: row.notes,
+          dimensions: listErgonomicDimensions(row),
+          psychosocial: row.psychosocialCampaignId
+            ? (aggregates.get(row.psychosocialCampaignId) ?? null)
+            : null,
+        });
+      }
+    }
+
     // Composição em memória: riscos por GES, ordenados por nível.
     const risksByGes = new Map<string, ConsolidatedRisk[]>();
     for (const r of riskRows) {
@@ -366,6 +397,7 @@ export async function getPgrConsolidated(
         // #42: todo risco entra no plano do PGR com cobertura derivada — nada é criado.
         planCoverage: deriveRiskPlanCoverage({ result, measures }),
         epis: episByRisk.get(r.id) ?? [],
+        ergonomic: ergonomicByRisk.get(r.id) ?? null,
       });
       risksByGes.set(r.gesId, list);
     }

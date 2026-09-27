@@ -12,6 +12,10 @@ import {
   formatMeasurement,
   nr09ConclusionLabel,
   epiNeutralizationLabel,
+  ergonomicAdequacyText,
+  formatCampaignPeriod,
+  NO_ERGONOMIC_EVALUATION_LABEL,
+  PSYCHOSOCIAL_AGGREGATE_LABEL,
   planCoverageGuidance,
   planCoverageLabel,
   summarizePlanCoverage,
@@ -226,6 +230,78 @@ function RiskDetailPanel({ risk }: { risk: ConsolidatedRisk }) {
           ))}
         </dl>
       ) : null}
+
+      {/* Avaliação ergonômica (NR-17) — vigente; ausência é declarada, não omitida */}
+      <div className="border-t border-black/5 pt-2">
+        <p className="text-text-muted text-xs font-bold">Avaliação ergonômica (NR-17)</p>
+        {risk.ergonomic ? (
+          <div className="mt-2 flex flex-col gap-2">
+            <div className="text-text-subtle flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              <span>
+                Data: <strong className="text-text">{risk.ergonomic.assessedAt}</strong>
+              </span>
+              <span>
+                Responsável:{" "}
+                <strong className="text-text">{risk.ergonomic.responsible ?? "—"}</strong>
+              </span>
+              <span>
+                Método:{" "}
+                <strong className="text-text">{risk.ergonomic.method ?? "—"}</strong>
+              </span>
+            </div>
+            <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
+              {risk.ergonomic.dimensions.map((d) => (
+                <div key={d.dimension} className="flex gap-1.5">
+                  <dt className="text-text-subtle font-medium">{d.label}:</dt>
+                  <dd className="text-text font-semibold">
+                    {ergonomicAdequacyText(d.adequacy)}
+                    {d.notes ? (
+                      <span className="text-text-subtle font-normal"> — {d.notes}</span>
+                    ) : null}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            {risk.ergonomic.notes ? (
+              <p className="text-text-subtle text-xs">{risk.ergonomic.notes}</p>
+            ) : null}
+            {risk.ergonomic.psychosocial ? (
+              <div className="rounded-card border border-black/5 bg-white/60 p-3">
+                <p className="text-text-muted text-xs font-bold">
+                  {PSYCHOSOCIAL_AGGREGATE_LABEL}
+                </p>
+                <p className="text-text-subtle mt-1 text-xs">
+                  {risk.ergonomic.psychosocial.name}
+                  {formatCampaignPeriod(
+                    risk.ergonomic.psychosocial.startsAt,
+                    risk.ergonomic.psychosocial.endsAt,
+                  )
+                    ? ` · ${formatCampaignPeriod(
+                        risk.ergonomic.psychosocial.startsAt,
+                        risk.ergonomic.psychosocial.endsAt,
+                      )}`
+                    : ""}{" "}
+                  · {risk.ergonomic.psychosocial.responseCount} resposta(s)
+                </p>
+                {risk.ergonomic.psychosocial.factors.length > 0 ? (
+                  <ul className="mt-1.5 flex flex-wrap gap-2">
+                    {risk.ergonomic.psychosocial.factors.map((f) => (
+                      <li
+                        key={f.factor}
+                        className="rounded-card text-text border border-black/5 bg-white/80 px-2.5 py-1 text-xs"
+                      >
+                        {f.factor} · nível {f.level}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-text-subtle mt-1 text-xs">{NO_ERGONOMIC_EVALUATION_LABEL}</p>
+        )}
+      </div>
 
       {/* Medidas de Controle 5W2H */}
       <div className="border-t border-black/5 pt-2">

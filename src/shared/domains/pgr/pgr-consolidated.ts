@@ -36,6 +36,18 @@ import {
   formatMeasurement,
   type Nr09Conclusion,
 } from "./nr09";
+import {
+  NO_ERGONOMIC_EVALUATION_LABEL,
+  PSYCHOSOCIAL_AGGREGATE_LABEL,
+  ergonomicAdequacyText,
+  ergonomicDimensionLabel,
+  formatCampaignPeriod,
+  listErgonomicDimensions,
+  type ErgonomicAdequacy,
+  type ErgonomicDimension,
+  type ErgonomicDimensionEntry,
+  type PsychosocialAggregate,
+} from "./ergonomics";
 
 /**
  * Domínio da visão consolidada do PGR — issue #27 / fatia 022. Estrutura **derivada** (não
@@ -65,8 +77,18 @@ export {
   isNr09EligibleAgent,
   nr09ConclusionLabel,
   formatMeasurement,
+  NO_ERGONOMIC_EVALUATION_LABEL,
+  PSYCHOSOCIAL_AGGREGATE_LABEL,
+  ergonomicAdequacyText,
+  ergonomicDimensionLabel,
+  formatCampaignPeriod,
+  listErgonomicDimensions,
 };
 export type {
+  ErgonomicAdequacy,
+  ErgonomicDimension,
+  ErgonomicDimensionEntry,
+  PsychosocialAggregate,
   ControlLevel,
   ControlMeasureStatus,
   MeasureState,
@@ -107,6 +129,22 @@ export type ConsolidatedAssessment = {
   measuredUnit: MeasurementUnit | null;
   toleranceLimitValue: string | null;
   nr09Conclusion: Nr09Conclusion | null;
+};
+
+/**
+ * Avaliação ergonômica **vigente** do risco (NR-17, #40) — já achatada para leitura:
+ * as seis dimensões vêm como lista ordenada com rótulo, estado e observação, e o bloco
+ * psicossocial (quando há campanha vinculada) vem **agregado**. Nenhuma resposta
+ * individual entra neste view model — não há por onde vazar para a tela nem para o PDF.
+ */
+export type ConsolidatedErgonomicEvaluation = {
+  id: string;
+  assessedAt: string;
+  responsible: string | null;
+  method: string | null;
+  notes: string | null;
+  dimensions: ErgonomicDimensionEntry[];
+  psychosocial: PsychosocialAggregate | null;
 };
 
 export type ConsolidatedMeasure = {
@@ -151,6 +189,12 @@ export type ConsolidatedRisk = {
   // Cobertura do plano do PGR (#42), derivada de `result` + `measures` — nunca persistida.
   planCoverage: RiskPlanCoverage;
   epis: ConsolidatedEpi[]; // [] = "Sem EPIs indicados"
+  /**
+   * Avaliação ergonômica vigente (#40). `null`/ausente = risco sem avaliação — o PDF
+   * imprime "sem avaliação ergonômica registrada", nunca conformidade. Opcional para
+   * não quebrar fixtures anteriores à #40.
+   */
+  ergonomic?: ConsolidatedErgonomicEvaluation | null;
 };
 
 export type ConsolidatedGes = {

@@ -3,6 +3,7 @@ import {
   DEFAULT_COVER_COLOR,
   type PgrPdfOptions,
 } from "@/shared/domains/pgr/pgr-pdf-template";
+import { listErgonomicDimensions } from "@/shared/domains/pgr/ergonomics";
 import type {
   ConsolidatedGes,
   ConsolidatedRisk,
@@ -89,6 +90,14 @@ function coverOf(html: string): string {
   return html.slice(start, end);
 }
 
+/** Recorta uma seção do documento a partir do título numerado até o `</section>`. */
+function sectionOf(html: string, title: string): string {
+  const start = html.indexOf(title);
+  if (start === -1) return "";
+  const end = html.indexOf("</section>", start);
+  return html.slice(start, end === -1 ? undefined : end);
+}
+
 /** PGR com identificação completa (#47, seção 1). */
 function makePgrFull(ges: ConsolidatedGes[]): PgrConsolidated {
   const base = makePgr(ges);
@@ -133,6 +142,28 @@ function makePgrFull(ges: ConsolidatedGes[]): PgrConsolidated {
   return base;
 }
 
+/** Avaliação ergonômica vigente para os testes da seção NR-17 (#40 + #47). */
+function makeErgonomic(
+  overrides: Partial<NonNullable<ConsolidatedRisk["ergonomic"]>> = {},
+): NonNullable<ConsolidatedRisk["ergonomic"]> {
+  return {
+    id: "erg-1",
+    assessedAt: "2026-05-04",
+    responsible: "Ergonomista Beltrana",
+    method: "RULA",
+    notes: "Reavaliar após troca das bancadas.",
+    dimensions: listErgonomicDimensions({
+      posture: "inadequate",
+      postureNotes: "Bancada abaixo do cotovelo",
+      movements: "adequate",
+      physicalLoad: "not_applicable",
+      // mentalLoad / workOrganization / physicalEnvironment: não avaliados (null).
+    }),
+    psychosocial: null,
+    ...overrides,
+  };
+}
+
 describe("PDF do PGR — estrutura de seções (#47)", () => {
   it("monta as seções na ordem e numeradas sequencialmente", () => {
     const html = buildPgrHtml(makePgrFull([]), baseOptions);
@@ -140,8 +171,9 @@ describe("PDF do PGR — estrutura de seções (#47)", () => {
       "1. Identificação",
       "2. Inventário de riscos (NR-01)",
       "3. Avaliação quantitativa de agentes (NR-09)",
-      "4. Plano de ação (5W2H)",
-      "5. Hierarquia de controles (NR-01)",
+      "4. Avaliação ergonômica (NR-17)",
+      "5. Plano de ação (5W2H)",
+      "6. Hierarquia de controles (NR-01)",
     ];
     const positions = order.map((title) => html.indexOf(title));
     expect(positions.every((pos) => pos > -1)).toBe(true);
@@ -156,14 +188,174 @@ describe("PDF do PGR — estrutura de seções (#47)", () => {
     expect(html).toContain("<li>Identificação</li>");
     expect(html).not.toContain("<li>Avaliação quantitativa de agentes (NR-09)</li>");
     expect(html).not.toContain("3. Avaliação quantitativa de agentes (NR-09)");
-    // Com a NR-09 desligada, o plano de ação vira a seção 3.
-    expect(html).toContain("3. Plano de ação (5W2H)");
+    // Com a NR-09 desligada, a NR-17 vira a seção 3 e o plano de ação a 4.
+    expect(html).toContain("3. Avaliação ergonômica (NR-17)");
+    expect(html).toContain("4. Plano de ação (5W2H)");
   });
 
-  it("não traz seção NR-17: ela depende da #40 e não é simulada", () => {
+  it("NR-17 fica entre a NR-09 e o plano de ação", () => {
     const html = buildPgrHtml(makePgrFull([]), baseOptions);
-    expect(html).not.toContain("NR-17");
-    expect(html).not.toContain("Ergonom");
+    const nr09 = html.indexOf("3. Avaliação quantitativa de agentes (NR-09)");
+    const nr17 = html.indexOf("4. Avaliação ergonômica (NR-17)");
+    const plan = html.indexOf("5. Plano de ação (5W2H)");
+    expect(nr09).toBeGreaterThan(-1);
+    expect(nr17).toBeGreaterThan(nr09);
+    expect(plan).toBeGreaterThan(nr17);
+  });
+
+  it("NR-17 imprime a avaliação vigente com as seis dimensões e as observações", () => {
+    const risk = makeRisk({ agentType: "ergonomic", ergonomic: makeErgonomic() });
+    const html = buildPgrHtml(
+      makePgrFull([{ id: "g1", name: "Montagem", risks: [risk] }]),
+      baseOptions,
+    );
+    const section = sectionOf(html, "4. Avaliação ergonômica (NR-17)");
+    expect(section).toContain("2026-05-04");
+    expect(section).toContain("Ergonomista Beltrana");
+    expect(section).toContain("RULA");
+    for (const label of [
+      "Postura",
+      "Movimentos",
+      "Carga física",
+      "Carga mental",
+      "Organização do trabalho",
+      "Ambiente físico",
+    ]) {
+      expect(section).toContain(label);
+    }
+    expect(section).toContain("Bancada abaixo do cotovelo");
+    expect(section).toContain("Reavaliar após troca das bancadas.");
+  });
+
+  it("NR-17 distingue não avaliado, não aplicável e adequado", () => {
+    const risk = makeRisk({ agentType: "ergonomic", ergonomic: makeErgonomic() });
+    const html = buildPgrHtml(
+      makePgrFull([{ id: "g1", name: "Montagem", risks: [risk] }]),
+      baseOptions,
+    );
+    const section = sectionOf(html, "4. Avaliação ergonômica (NR-17)");
+    expect(section).toContain("Inadequado");
+    expect(section).toContain("Adequado");
+    expect(section).toContain("Não aplicável");
+    expect(section).toContain("Não avaliado");
+    // A dimensão em branco NÃO vira conformidade.
+    expect(section).not.toMatch(/Carga mental<\/td>\s*<td>Adequado/);
+  });
+
+  it("NR-17: risco sem avaliação é declarado nominalmente, nunca omitido", () => {
+    const avaliado = makeRisk({
+      id: "r-1",
+      description: "Postura em bancada",
+      agentType: "ergonomic",
+      ergonomic: makeErgonomic(),
+    });
+    const semAvaliacao = makeRisk({ id: "r-2", description: "Poeira mineral" });
+    const html = buildPgrHtml(
+      makePgrFull([{ id: "g1", name: "Montagem", risks: [avaliado, semAvaliacao] }]),
+      baseOptions,
+    );
+    const section = sectionOf(html, "4. Avaliação ergonômica (NR-17)");
+    expect(section).toContain("Sem avaliação ergonômica registrada");
+    expect(section).toContain("Poeira mineral");
+    expect(section).not.toContain("Adequado</td><td>Poeira mineral");
+  });
+
+  it("NR-17: GES sem nenhuma avaliação diz isso em uma linha", () => {
+    const html = buildPgrHtml(
+      makePgrFull([{ id: "g1", name: "Montagem", risks: [makeRisk()] }]),
+      baseOptions,
+    );
+    const section = sectionOf(html, "4. Avaliação ergonômica (NR-17)");
+    expect(section).toContain(
+      "Sem avaliação ergonômica registrada para os riscos deste GES",
+    );
+  });
+
+  it("NR-17: GES sem riscos não inventa avaliação", () => {
+    const html = buildPgrHtml(
+      makePgrFull([{ id: "g1", name: "Montagem", risks: [] }]),
+      baseOptions,
+    );
+    const section = sectionOf(html, "4. Avaliação ergonômica (NR-17)");
+    expect(section).toContain("GES sem riscos");
+  });
+
+  it("NR-17: sem campanha vinculada, nenhum bloco psicossocial aparece", () => {
+    const risk = makeRisk({ agentType: "ergonomic", ergonomic: makeErgonomic() });
+    const html = buildPgrHtml(
+      makePgrFull([{ id: "g1", name: "Montagem", risks: [risk] }]),
+      baseOptions,
+    );
+    const section = sectionOf(html, "4. Avaliação ergonômica (NR-17)");
+    expect(section).not.toContain("Resultado agregado da campanha psicossocial");
+  });
+
+  it("NR-17: campanha vinculada imprime só o agregado, e nunca 'escore COPSOQ'", () => {
+    const risk = makeRisk({
+      agentType: "psychosocial",
+      description: "Sobrecarga de trabalho",
+      ergonomic: makeErgonomic({
+        method: "COPSOQ",
+        psychosocial: {
+          campaignId: "c-1",
+          name: "Clima 2026",
+          status: "closed",
+          startsAt: "2026-01-01",
+          endsAt: "2026-03-31",
+          responseCount: 42,
+          factors: [
+            { factor: "Ritmo de trabalho", level: 3 },
+            { factor: "Autonomia", level: 2 },
+          ],
+        },
+      }),
+    });
+    const html = buildPgrHtml(
+      makePgrFull([{ id: "g1", name: "Atendimento", risks: [risk] }]),
+      baseOptions,
+    );
+    const section = sectionOf(html, "4. Avaliação ergonômica (NR-17)");
+    expect(section).toContain("Resultado agregado da campanha psicossocial");
+    expect(section).toContain("Clima 2026");
+    expect(section).toContain("2026-01-01 a 2026-03-31");
+    expect(section).toContain("42");
+    expect(section).toContain("Ritmo de trabalho");
+    // "COPSOQ" só pode aparecer como método informado — nunca como escore calculado.
+    expect(section).not.toMatch(/escore\s+COPSOQ/i);
+    expect(section).not.toContain("Escore");
+  });
+
+  it("NR-17: o documento nunca carrega resposta individual da campanha", () => {
+    const risk = makeRisk({
+      agentType: "psychosocial",
+      ergonomic: makeErgonomic({
+        psychosocial: {
+          campaignId: "c-1",
+          name: "Clima 2026",
+          status: "closed",
+          startsAt: null,
+          endsAt: null,
+          responseCount: 3,
+          factors: [{ factor: "Ritmo de trabalho", level: 3 }],
+        },
+      }),
+    });
+    const html = buildPgrHtml(
+      makePgrFull([{ id: "g1", name: "Atendimento", risks: [risk] }]),
+      baseOptions,
+    );
+    for (const forbidden of ["respondente", "Respondente", "answer", "token"]) {
+      expect(html).not.toContain(forbidden);
+    }
+  });
+
+  it("NR-17 pode ser desligada como qualquer outra seção", () => {
+    const html = buildPgrHtml(makePgrFull([]), {
+      ...baseOptions,
+      sections: { nr17: false },
+    });
+    expect(html).not.toContain("Avaliação ergonômica (NR-17)");
+    expect(html).toContain("4. Plano de ação (5W2H)");
   });
 
   it("identificação imprime empresa, obra, responsável técnico e preposto", () => {
