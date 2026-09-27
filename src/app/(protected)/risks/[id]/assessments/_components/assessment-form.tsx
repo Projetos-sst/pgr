@@ -32,7 +32,16 @@ import {
 import { riskClassificationGuidance } from "@/shared/domains/pgr/methodology";
 import type { ActionError } from "@/shared/server/result";
 
-import { FieldError, FormActions, FormError, SubmitButton } from "../../../../_ui/form";
+import {
+  CancelLink,
+  FieldError,
+  FormActions,
+  FormError,
+  FormSection,
+  SelectField,
+  SubmitButton,
+  TextField,
+} from "../../../../_ui/form";
 
 const CRITERION_OPTIONS = assessmentCriterionSchema.options.map((v) => ({
   value: v,
@@ -50,8 +59,6 @@ const UNCERTAINTY_OPTIONS = [0, 1, 2].map((n) => ({
   value: String(n),
   label: `${n} — ${uncertaintyDegreeLabel(n)}`,
 }));
-
-const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
 
 // Unidades quantitativas: `qualitative_na` não serve para valor medido (CHECK no banco).
 const MEASURED_UNIT_OPTIONS = measurementUnitSchema.options
@@ -77,41 +84,6 @@ export type AssessmentFormInitial = {
   toleranceLimitValue?: string | null;
   nr09Conclusion?: string | null;
 };
-
-function Select({
-  label,
-  name,
-  value,
-  onChange,
-  options,
-  error,
-}: {
-  label: string;
-  name: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-  error?: string;
-}) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-text-muted text-sm font-medium">{label} *</span>
-      <select
-        name={name}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={inputClass}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-      <FieldError message={error} />
-    </label>
-  );
-}
 
 export function AssessmentForm({
   riskId,
@@ -216,223 +188,174 @@ export function AssessmentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[22px]">
       <FormError message={formError} />
 
       {!configured ? (
-        <p className="rounded-card border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="rounded-field border border-amber-300 bg-amber-50/80 px-3.5 py-2.5 text-[13px] text-amber-800">
           A organização ainda não configurou uma metodologia de risco. A classificação usa
           a <strong>metodologia padrão</strong> até que uma seja definida.
         </p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Select
+      <FormSection title="Avaliação do risco (matriz 5×5)">
+        <SelectField
           label="Critério"
           name="criterion"
+          required
           value={criterion}
           onChange={setCriterion}
           options={CRITERION_OPTIONS}
           error={errors.criterion}
         />
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">Data da avaliação *</span>
-          <input
-            type="date"
-            name="assessedAt"
-            defaultValue={initial.assessedAt}
-            className={inputClass}
-          />
-          <FieldError message={errors.assessedAt} />
-        </label>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Select
+        <TextField
+          label="Data da avaliação"
+          name="assessedAt"
+          type="date"
+          required
+          defaultValue={initial.assessedAt}
+          error={errors.assessedAt}
+        />
+        <SelectField
           label="Probabilidade"
           name="probability"
+          required
           value={probability}
           onChange={setProbability}
           options={PROBABILITY_OPTIONS}
           error={errors.probability}
         />
-        <Select
+        <SelectField
           label="Severidade"
           name="severity"
+          required
           value={severity}
           onChange={setSeverity}
           options={SEVERITY_OPTIONS}
           error={errors.severity}
         />
-        <Select
+        <SelectField
           label="Grau de incerteza"
           name="uncertaintyDegree"
+          required
           value={uncertaintyDegree}
           onChange={setUncertaintyDegree}
           options={UNCERTAINTY_OPTIONS}
           error={errors.uncertaintyDegree}
         />
-      </div>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-text-muted text-sm font-medium">
-          Limite de tolerância (referência normativa)
-        </span>
-        <input
+        <TextField
+          label="Limite de tolerância (referência normativa)"
           name="toleranceLimit"
-          defaultValue={initial.toleranceLimit ?? ""}
           placeholder="Ex.: NR-15 Anexo 1 — 85 dB(A) para 8h"
-          className={inputClass}
+          defaultValue={initial.toleranceLimit ?? ""}
+          error={errors.toleranceLimit}
+          isFullWidth
         />
-        <FieldError message={errors.toleranceLimit} />
-      </label>
+      </FormSection>
 
       {showNr09 ? (
-        <fieldset className="glass-card flex flex-col gap-4 p-4">
-          <legend className="text-text px-1 text-sm font-semibold">
-            Avaliação quantitativa (NR-09)
-          </legend>
-          <p className="text-text-subtle text-xs">
+        <FormSection title="Avaliação quantitativa (NR-09)" columns={3}>
+          <p className="text-text-subtle text-xs sm:col-span-full">
             Item 9.4.3 da NR-09 — registre o método, a medição e o limite. A conclusão é
             sua: o sistema apenas sugere quando há valor e limite comparáveis.
           </p>
-
-          <label className="flex flex-col gap-1">
-            <span className="text-text-muted text-sm font-medium">
-              Método de avaliação
-            </span>
-            <input
-              name="evaluationMethod"
-              value={evaluationMethod}
-              onChange={(e) => setEvaluationMethod(e.target.value)}
-              list="nr09-methods"
-              placeholder="Ex.: NHO-01 (ruído)"
-              className={inputClass}
-            />
-            <datalist id="nr09-methods">
-              {NR09_METHOD_SUGGESTIONS.map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
-            <FieldError message={errors.evaluationMethod} />
-          </label>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <label className="flex flex-col gap-1">
-              <span className="text-text-muted text-sm font-medium">Valor medido</span>
-              <input
-                name="measuredValue"
-                inputMode="decimal"
-                value={measuredValue}
-                onChange={(e) => setMeasuredValue(e.target.value)}
-                placeholder="Ex.: 87.5"
-                className={inputClass}
-              />
-              <FieldError message={errors.measuredValue} />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-text-muted text-sm font-medium">
-                Unidade da medição
-              </span>
-              <select
-                name="measuredUnit"
-                value={measuredUnit}
-                onChange={(e) => setMeasuredUnit(e.target.value)}
-                className={inputClass}
-              >
-                <option value="">— selecione —</option>
-                {MEASURED_UNIT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <FieldError message={errors.measuredUnit} />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-text-muted text-sm font-medium">
-                Limite de tolerância (valor)
-              </span>
-              <input
-                name="toleranceLimitValue"
-                inputMode="decimal"
-                value={toleranceLimitValue}
-                onChange={(e) => setToleranceLimitValue(e.target.value)}
-                placeholder="Ex.: 85"
-                className={inputClass}
-              />
-              <FieldError message={errors.toleranceLimitValue} />
-            </label>
-          </div>
-
-          <label className="flex flex-col gap-1">
-            <span className="text-text-muted text-sm font-medium">
-              Conclusão (informada pelo profissional)
-            </span>
-            <select
-              name="nr09Conclusion"
-              value={nr09Conclusion}
-              onChange={(e) => setNr09Conclusion(e.target.value)}
-              className={inputClass}
+          <TextField
+            label="Método de avaliação"
+            name="evaluationMethod"
+            value={evaluationMethod}
+            onChange={setEvaluationMethod}
+            suggestions={NR09_METHOD_SUGGESTIONS}
+            placeholder="Ex.: NHO-01 (ruído)"
+            error={errors.evaluationMethod}
+            isFullWidth
+          />
+          <TextField
+            label="Valor medido"
+            name="measuredValue"
+            value={measuredValue}
+            onChange={setMeasuredValue}
+            placeholder="Ex.: 87.5"
+            isMono
+            error={errors.measuredValue}
+          />
+          <SelectField
+            label="Unidade da medição"
+            name="measuredUnit"
+            value={measuredUnit}
+            onChange={setMeasuredUnit}
+            options={MEASURED_UNIT_OPTIONS}
+            emptyLabel="— selecione —"
+            error={errors.measuredUnit}
+          />
+          <TextField
+            label="Limite de tolerância (valor)"
+            name="toleranceLimitValue"
+            value={toleranceLimitValue}
+            onChange={setToleranceLimitValue}
+            placeholder="Ex.: 85"
+            isMono
+            error={errors.toleranceLimitValue}
+          />
+          <SelectField
+            label="Conclusão (informada pelo profissional)"
+            name="nr09Conclusion"
+            value={nr09Conclusion}
+            onChange={setNr09Conclusion}
+            options={CONCLUSION_OPTIONS}
+            emptyLabel="— não informada —"
+            error={errors.nr09Conclusion}
+            isFullWidth
+          />
+          {suggestedConclusion ? (
+            <p
+              role="note"
+              className="rounded-field border border-amber-300/60 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-800 sm:col-span-full"
             >
-              <option value="">— não informada —</option>
-              {CONCLUSION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            {suggestedConclusion ? (
-              <span
-                role="note"
-                className="rounded-card mt-1 border border-amber-300/60 bg-amber-500/10 px-3 py-2 text-xs text-amber-800"
-              >
-                Sugestão do sistema:{" "}
-                <strong>{nr09ConclusionLabel(suggestedConclusion)}</strong> (comparação
-                entre valor medido e limite). Confirme, altere ou ignore — o que vale é a
-                sua conclusão.{" "}
-                {nr09Conclusion !== suggestedConclusion ? (
-                  <button
-                    type="button"
-                    onClick={() => setNr09Conclusion(suggestedConclusion)}
-                    className="font-semibold underline"
-                  >
-                    Usar sugestão
-                  </button>
-                ) : null}
-              </span>
-            ) : null}
-            <FieldError message={errors.nr09Conclusion} />
-          </label>
-        </fieldset>
+              Sugestão do sistema:{" "}
+              <strong>{nr09ConclusionLabel(suggestedConclusion)}</strong> (comparação
+              entre valor medido e limite). Confirme, altere ou ignore — o que vale é a
+              sua conclusão.{" "}
+              {nr09Conclusion !== suggestedConclusion ? (
+                <button
+                  type="button"
+                  onClick={() => setNr09Conclusion(suggestedConclusion)}
+                  className="font-semibold underline"
+                >
+                  Usar sugestão
+                </button>
+              ) : null}
+            </p>
+          ) : null}
+        </FormSection>
       ) : null}
 
-      <div className="glass-card grid gap-4 p-4 sm:grid-cols-2">
+      <section className="glass-card animate-fade-slide-up grid gap-4 rounded-[20px] p-5 sm:grid-cols-2 sm:p-6">
         <div className="flex flex-col">
-          <span className="text-text-subtle text-xs tracking-wide uppercase">
+          <span className="text-text-subtle font-mono text-[11px] tracking-[0.14em] uppercase">
             Nível de risco (calculado)
           </span>
-          <span className="text-text text-lg font-semibold">
+          <span className="text-text text-2xl font-bold">
             {preview ? preview.riskLevel : "—"}
           </span>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-text-subtle text-xs tracking-wide uppercase">
+          <span className="text-text-subtle font-mono text-[11px] tracking-[0.14em] uppercase">
             Classificação (prevista)
           </span>
           <span className="text-text text-lg font-semibold">
             {preview ? riskClassificationLabel(preview.result) : "—"}
           </span>
           {preview ? (
-            <p className="text-text-subtle text-sm">
+            <p className="text-text-subtle text-[13px]">
               {riskClassificationGuidance(preview.result)}
             </p>
           ) : null}
         </div>
-      </div>
+      </section>
 
       <FieldError message={errors._} />
       <FormActions>
+        <CancelLink href={`/risks/${riskId}/assessments`} />
         <SubmitButton
           pending={pending}
           label={assessmentId ? "Salvar alterações" : "Criar avaliação"}

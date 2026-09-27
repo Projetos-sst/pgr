@@ -24,6 +24,7 @@ import {
   FieldError,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
@@ -165,10 +166,10 @@ export function RiskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[22px]">
       <FormError message={formError} />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <FormSection title="Localização do risco" columns={3}>
         <SelectField
           label="Empresa"
           name="companyId"
@@ -201,9 +202,9 @@ export function RiskForm({
           }
           error={errors.gesId}
         />
-      </div>
+      </FormSection>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <FormSection title="Caracterização do agente">
         <SelectField
           label="Grupo do agente"
           name="agentType"
@@ -220,50 +221,52 @@ export function RiskForm({
           emptyLabel="— não informado —"
           error={errors.exposureTime}
         />
-      </div>
+        <TextField
+          label="Perigo"
+          name="hazard"
+          defaultValue={initial?.hazard ?? ""}
+          error={errors.hazard}
+        />
+        <TextField
+          label="Descrição"
+          name="description"
+          required
+          defaultValue={initial?.description ?? ""}
+          error={errors.description}
+        />
+      </FormSection>
 
-      <TextField
-        label="Perigo"
-        name="hazard"
-        defaultValue={initial?.hazard ?? ""}
-        error={errors.hazard}
-      />
-      <TextField
-        label="Descrição"
-        name="description"
-        required
-        defaultValue={initial?.description ?? ""}
-        error={errors.description}
-      />
-      <div>
-        <TextField
-          label="Fontes geradoras"
-          name="sources"
-          defaultValue={initial?.sources ?? ""}
-          error={errors.sources}
-        />
-        <FieldHint>{RISK_FIELD_HINTS.sources}</FieldHint>
-      </div>
-      <div>
-        <TextField
-          label="Meios de propagação"
-          name="propagation"
-          defaultValue={initial?.propagation ?? ""}
-          error={errors.propagation}
-        />
-        <FieldHint>{RISK_FIELD_HINTS.propagation}</FieldHint>
-      </div>
-      <div>
-        <TextField
-          label="Possíveis lesões"
-          name="possibleInjuries"
-          defaultValue={initial?.possibleInjuries ?? ""}
-          error={errors.possibleInjuries}
-        />
-        <FieldHint>{RISK_FIELD_HINTS.possibleInjuries}</FieldHint>
-      </div>
+      <FormSection title="Fontes, propagação e lesões">
+        <div>
+          <TextField
+            label="Fontes geradoras"
+            name="sources"
+            defaultValue={initial?.sources ?? ""}
+            error={errors.sources}
+          />
+          <FieldHint>{RISK_FIELD_HINTS.sources}</FieldHint>
+        </div>
+        <div>
+          <TextField
+            label="Meios de propagação"
+            name="propagation"
+            defaultValue={initial?.propagation ?? ""}
+            error={errors.propagation}
+          />
+          <FieldHint>{RISK_FIELD_HINTS.propagation}</FieldHint>
+        </div>
+        <div>
+          <TextField
+            label="Possíveis lesões"
+            name="possibleInjuries"
+            defaultValue={initial?.possibleInjuries ?? ""}
+            error={errors.possibleInjuries}
+          />
+          <FieldHint>{RISK_FIELD_HINTS.possibleInjuries}</FieldHint>
+        </div>
+      </FormSection>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <FormSection title="eSocial e medição de referência" columns={3}>
         <TextField
           label="Código do agente (S-2240)"
           name="noxiousAgentCode"
@@ -284,7 +287,7 @@ export function RiskForm({
           defaultValue={initial?.concentrationIntensity ?? ""}
           error={errors.concentrationIntensity}
         />
-      </div>
+      </FormSection>
 
       <FieldError message={errors._} />
       <FormActions>

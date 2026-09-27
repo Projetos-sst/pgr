@@ -34,7 +34,7 @@ export default async function EditRiskAssessmentPage({
   const nr09Eligible = riskResult.ok && isNr09EligibleAgent(riskResult.data.agentType);
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
       <PageHeader backHref={`/risks/${riskId}`} title="Editar avaliação" />
       <AssessmentForm
         riskId={riskId}

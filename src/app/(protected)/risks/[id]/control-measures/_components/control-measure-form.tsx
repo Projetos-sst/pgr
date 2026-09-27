@@ -22,7 +22,17 @@ import {
 } from "@/shared/domains/pgr/methodology";
 import type { ActionError } from "@/shared/server/result";
 
-import { FieldError, FormError } from "../../../../_ui/form";
+import {
+  CancelLink,
+  FieldError,
+  FormActions,
+  FormError,
+  FormSection,
+  SelectField,
+  SubmitButton,
+  TextAreaField,
+  TextField,
+} from "../../../../_ui/form";
 
 const CONTROL_LEVEL_OPTIONS = controlLevelSchema.options.map((v) => ({
   value: v,
@@ -33,8 +43,6 @@ const MEASURE_STATUS_OPTIONS = controlMeasureStatusSchema.options.map((v) => ({
   value: v,
   label: measureStatusLabel(v),
 }));
-
-const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
 
 export type ControlMeasureFormInitial = {
   controlLevel?: string;
@@ -51,36 +59,6 @@ export type ControlMeasureFormInitial = {
   actionDeadline?: string | null;
   actionCost?: string | null;
 };
-
-function Textarea({
-  label,
-  name,
-  defaultValue,
-  required,
-  error,
-}: {
-  label: string;
-  name: string;
-  defaultValue?: string | null;
-  required?: boolean;
-  error?: string;
-}) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-text-muted text-sm font-medium">
-        {label}
-        {required ? " *" : ""}
-      </span>
-      <textarea
-        name={name}
-        defaultValue={defaultValue ?? ""}
-        rows={2}
-        className={inputClass}
-      />
-      <FieldError message={error} />
-    </label>
-  );
-}
 
 export function ControlMeasureForm({
   riskId,
@@ -178,123 +156,122 @@ export function ControlMeasureForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[22px]">
       <FormError message={formError} />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">Nível NR-01 *</span>
-          <select
-            value={controlLevel}
-            onChange={(e) => setControlLevel(e.target.value)}
-            disabled={lockLevel}
-            className={inputClass}
-          >
-            {CONTROL_LEVEL_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          {lockLevel ? (
-            <span className="text-text-subtle text-xs">
-              O nível não pode ser alterado; crie/exclua medidas para mudar de nível.
-            </span>
-          ) : null}
-          <FieldError message={errors.controlLevel} />
-        </label>
-
-        <label className="flex flex-row items-center gap-2 pt-6">
+      <FormSection title="Medida de controle (NR-01)">
+        <SelectField
+          label="Nível NR-01"
+          name="controlLevel"
+          required
+          value={controlLevel}
+          onChange={setControlLevel}
+          options={CONTROL_LEVEL_OPTIONS}
+          disabled={lockLevel}
+          error={errors.controlLevel}
+        />
+        <SelectField
+          label="Status da medida"
+          name="status"
+          value={status}
+          onChange={setStatus}
+          options={MEASURE_STATUS_OPTIONS}
+          emptyLabel="— Automático pelo nível do risco —"
+          error={errors.status}
+        />
+        <label className="flex items-center gap-2 sm:col-span-full">
           <input
             type="checkbox"
             checked={applicable}
             onChange={(e) => setApplicable(e.target.checked)}
             className="h-4 w-4"
           />
-          <span className="text-text-muted text-sm font-medium">
+          <span className="text-text-muted text-[13px] font-semibold">
             Medida aplicável a este risco
           </span>
         </label>
+        <p className="text-text-subtle text-xs sm:col-span-full">
+          {lockLevel
+            ? "O nível não pode ser alterado; crie/exclua medidas para mudar de nível. "
+            : ""}
+          Status em automático aplica a regra padrão (trivial/tolerável → Manter; moderado
+          ou superior → Introduzida).
+        </p>
+      </FormSection>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">Status da medida</span>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className={inputClass}
-          >
-            <option value="">— Automático pelo nível do risco —</option>
-            {MEASURE_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <span className="text-text-subtle text-xs">
-            Deixe em automático para aplicar a regra padrão (trivial/tolerável → Manter;
-            moderado ou superior → Introduzida).
-          </span>
-          <FieldError message={errors.status} />
-        </label>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Textarea
+      <FormSection title="Plano de ação 5W2H">
+        <TextAreaField
           label="Ação a implementar (o quê)"
           name="actionWhat"
           defaultValue={initial.actionWhat}
           required={applicable}
+          rows={2}
           error={errors.actionWhat}
+          isFullWidth={false}
         />
-        <Textarea
+        <TextAreaField
           label="Por que a medida é necessária"
           name="actionWhy"
           defaultValue={initial.actionWhy}
+          rows={2}
           error={errors.actionWhy}
+          isFullWidth={false}
         />
-        <Textarea
+        <TextAreaField
           label="Como será implementada"
           name="actionHow"
           defaultValue={initial.actionHow}
           required={applicable}
+          rows={2}
           error={errors.actionHow}
+          isFullWidth={false}
         />
-        <Textarea
+        <TextAreaField
           label="Formas de acompanhamento"
           name="actionTracking"
           defaultValue={initial.actionTracking}
+          rows={2}
           error={errors.actionTracking}
+          isFullWidth={false}
         />
-        <Textarea
+        <TextAreaField
           label="Aferição de resultados"
           name="actionMeasurement"
           defaultValue={initial.actionMeasurement}
+          rows={2}
           error={errors.actionMeasurement}
+          isFullWidth={false}
         />
-      </div>
+        <TextAreaField
+          label="Monitoramento"
+          name="monitoring"
+          defaultValue={initial.monitoring}
+          rows={2}
+          error={errors.monitoring}
+          isFullWidth={false}
+        />
 
-      {requiresOwnership && riskClassification ? (
-        <p
-          role="note"
-          className="rounded-card border border-amber-300/60 bg-amber-500/10 px-3 py-2 text-xs text-amber-800"
-        >
-          Risco {riskClassificationLabel(riskClassification).toLowerCase()}: responsável e
-          prazo são obrigatórios para medida aplicável.
-        </p>
-      ) : null}
+        {requiresOwnership && riskClassification ? (
+          <p
+            role="note"
+            className="rounded-field border border-amber-300/60 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-800 sm:col-span-full"
+          >
+            Risco {riskClassificationLabel(riskClassification).toLowerCase()}: responsável
+            e prazo são obrigatórios para medida aplicável.
+          </p>
+        ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">
+        <label className="block">
+          <span className="text-text-muted mb-1.5 block text-xs font-semibold">
             Responsável pela ação
-            {requiresOwnership ? " *" : ""}
+            {requiresOwnership ? <span className="text-danger"> *</span> : null}
           </span>
           <input
             name="actionResponsible"
             defaultValue={initial.actionResponsible ?? ""}
             list="control-measure-employees"
             placeholder="Nome do responsável (ou selecione um funcionário)"
-            className={inputClass}
+            className="glass-input text-text placeholder:text-text-subtle rounded-field h-[46px] w-full px-3.5 text-[13px] outline-none"
           />
           <datalist id="control-measure-employees">
             {employees.map((e) => (
@@ -303,61 +280,52 @@ export function ControlMeasureForm({
           </datalist>
           <FieldError message={errors.actionResponsible} />
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">
+        <label className="block">
+          <span className="text-text-muted mb-1.5 block text-xs font-semibold">
             Prazo para execução
-            {requiresOwnership ? " *" : ""}
+            {requiresOwnership ? <span className="text-danger"> *</span> : null}
           </span>
           <input
             type="date"
             name="actionDeadline"
             defaultValue={initial.actionDeadline ?? ""}
-            className={inputClass}
+            className="glass-input text-text rounded-field h-[46px] w-full px-3.5 text-[13px] outline-none"
           />
           <FieldError message={errors.actionDeadline} />
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">Custo estimado (R$)</span>
-          <input
-            name="actionCost"
-            inputMode="decimal"
-            placeholder="Ex.: 1500.00"
-            defaultValue={initial.actionCost ?? ""}
-            className={inputClass}
-          />
-          <span className="text-text-subtle text-xs">
-            Opcional — completa o 5W2H do PGR (&ldquo;quanto&rdquo;). Em branco sai como
-            não informado.
-          </span>
-          <FieldError message={errors.actionCost} />
-        </label>
-      </div>
+        <TextField
+          label="Custo estimado (R$)"
+          name="actionCost"
+          defaultValue={initial.actionCost ?? ""}
+          placeholder="Ex.: 1500.00"
+          isMono
+          error={errors.actionCost}
+        />
+        <p className="text-text-subtle text-xs sm:col-span-full">
+          Motivo e custo completam o 5W2H do PGR (&ldquo;por quê&rdquo; e
+          &ldquo;quanto&rdquo;). Em branco, o documento imprime &ldquo;não
+          informado&rdquo; — nada é preenchido pelo sistema.
+        </p>
+      </FormSection>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Textarea
-          label="Justificativa (quando não aplicável)"
+      <FormSection title="Quando não aplicável">
+        <TextAreaField
+          label="Justificativa"
           name="justification"
           defaultValue={initial.justification}
+          rows={2}
           error={errors.justification}
         />
-        <Textarea
-          label="Monitoramento"
-          name="monitoring"
-          defaultValue={initial.monitoring}
-          error={errors.monitoring}
-        />
-      </div>
+      </FormSection>
 
       <FieldError message={errors._} />
-      <div className="flex items-center gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="btn-primary rounded-pill px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
-        >
-          {pending ? "Salvando…" : measureId ? "Salvar alterações" : "Criar medida"}
-        </button>
-      </div>
+      <FormActions>
+        <CancelLink href={`/risks/${riskId}/control-measures`} />
+        <SubmitButton
+          pending={pending}
+          label={measureId ? "Salvar alterações" : "Criar medida"}
+        />
+      </FormActions>
     </form>
   );
 }
