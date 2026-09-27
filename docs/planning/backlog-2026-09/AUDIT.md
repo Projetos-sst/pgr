@@ -21,27 +21,27 @@ registradas nas fichas de `tasks/`.
 
 ## 2. Matriz master
 
-| #   | Task                              | Módulo              | Dif. | Prontidão                     | Cobertura | Migration | Integração externa               | Dependências               | Lote |
-| --- | --------------------------------- | ------------------- | ---- | ----------------------------- | --------- | --------- | -------------------------------- | -------------------------- | ---- |
-| 3   | CNAE — busca por código/descrição | Empresas (catálogo) | 3    | READY COM PREMISSAS           | 25%       | PROVÁVEL  | IBGE `servicodados` (verificada) | combobox com #10           | 4    |
-| 10  | CBO — busca por código/descrição  | Funções (catálogo)  | 3    | NEEDS EXTERNAL INFO           | 0%        | PROVÁVEL  | Arquivo CBO do MTE (sem API)     | combobox com #3            | 4    |
-| 33  | Assinatura/QR na entrega de EPI   | EPI                 | 1    | RESOLVIDA — FECHAR            | 75%       | NÃO       | —                                | —                          | 1C   |
-| 39  | NR-09 — avaliação quantitativa    | PGR / Inventário    | 3    | READY (decidido 27/09)        | 25%       | SIM       | —                                | desbloqueia #47            | 2    |
-| 40  | NR-17 — avaliação ergonômica      | PGR / Inventário    | 4    | NEEDS CONTEXT                 | 25%       | SIM       | COPSOQ (instrumento)             | desbloqueia #47            | 3    |
-| 42  | Plano de ação por nível de risco  | PGR / Plano de ação | 3    | READY COM PREMISSAS           | 50%       | NÃO       | —                                | PDF do plano vai para #47  | 1B   |
-| 47  | Estrutura do PDF do PGR           | PGR / PDF           | 3    | A/B/D READY · C BLOCKED (#40) | 50%       | NÃO       | Gotenberg (já existe)            | #39, #40                   | 2→3  |
-| 48  | NR-18 — documentos do canteiro    | PGR / Documentos    | 3    | READY COM PREMISSAS           | 25%       | INCERTO   | —                                | usa #47 para o anexo EPI   | 3    |
-| 52  | GED — elaboração                  | GED                 | 3    | READY (decidido 27/09)        | 25%       | SIM       | —                                | #58                        | 5    |
-| 53  | GED — revisão                     | GED                 | 3    | BLOCKED (#52, #58)            | 0%        | SIM       | —                                | #52, #58                   | 6    |
-| 54  | GED — aprovação                   | GED                 | 4    | BLOCKED (#53, #58)            | 25%       | SIM       | —                                | #53, #58                   | 6    |
-| 55  | GED — publicação e guarda         | GED                 | 4    | BLOCKED (#54, #58)            | 25%       | SIM       | —                                | #54, #58, #59              | 6    |
-| 56  | GED — controle de versões         | GED                 | 2    | READY COM PREMISSAS           | 50%       | NÃO       | —                                | vigência redefinida em #54 | 1A   |
-| 57  | GED — descarte com flag           | GED                 | 3    | READY (decidido 27/09)        | 0%        | SIM       | —                                | #58, #59                   | 7    |
-| 58  | GED — perfis e permissões         | GED / Auth          | 5    | READY (decidido 27/09)        | 0%        | SIM       | Clerk (papéis)                   | base de todo o GED         | 5    |
-| 59  | GED — auditoria e relatórios      | GED                 | 3    | READY COM PREMISSAS           | 25%       | SIM       | —                                | alimenta #55, #57          | 5    |
-| 60  | GED — Active Directory + backup   | Plataforma / Infra  | 5    | READY (decidido 27/09)        | 0%        | INCERTO   | AD/SSO, backup Supabase          | #61 (e-mails de backup)    | 8    |
-| 61  | Notificações por e-mail           | Plataforma          | 4    | READY (decidido 27/09)        | 0%        | PROVÁVEL  | Provedor de e-mail (pago)        | #58, #60                   | 8    |
-| 62  | Regras de negócio do GED          | GED (transversal)   | 4    | BLOCKED (#52–#57)             | 25%       | SIM       | —                                | #52–#57                    | 7    |
+| #   | Task                              | Módulo              | Dif. | Prontidão                     | Cobertura | Migration | Integração externa                       | Dependências               | Lote |
+| --- | --------------------------------- | ------------------- | ---- | ----------------------------- | --------- | --------- | ---------------------------------------- | -------------------------- | ---- |
+| 3   | CNAE — busca por código/descrição | Empresas (catálogo) | 3    | READY                         | 25%       | SIM       | IBGE `servicodados` (reverificada 27/09) | combobox com #10           | 4    |
+| 10  | CBO — busca por código/descrição  | Funções (catálogo)  | 3    | READY COM PREMISSAS (arquivo) | 0%        | SIM       | Arquivo CBO do MTE (download manual)     | combobox com #3            | 4    |
+| 33  | Assinatura/QR na entrega de EPI   | EPI                 | 1    | RESOLVIDA — FECHAR            | 75%       | NÃO       | —                                        | —                          | 1C   |
+| 39  | NR-09 — avaliação quantitativa    | PGR / Inventário    | 3    | READY (decidido 27/09)        | 25%       | SIM       | —                                        | desbloqueia #47            | 2    |
+| 40  | NR-17 — avaliação ergonômica      | PGR / Inventário    | 4    | NEEDS CONTEXT                 | 25%       | SIM       | COPSOQ (instrumento)                     | desbloqueia #47            | 3    |
+| 42  | Plano de ação por nível de risco  | PGR / Plano de ação | 3    | READY COM PREMISSAS           | 50%       | NÃO       | —                                        | PDF do plano vai para #47  | 1B   |
+| 47  | Estrutura do PDF do PGR           | PGR / PDF           | 3    | A/B/D READY · C BLOCKED (#40) | 50%       | NÃO       | Gotenberg (já existe)                    | #39, #40                   | 2→3  |
+| 48  | NR-18 — documentos do canteiro    | PGR / Documentos    | 3    | READY COM PREMISSAS           | 25%       | INCERTO   | —                                        | usa #47 para o anexo EPI   | 3    |
+| 52  | GED — elaboração                  | GED                 | 3    | READY (decidido 27/09)        | 25%       | SIM       | —                                        | #58                        | 5    |
+| 53  | GED — revisão                     | GED                 | 3    | BLOCKED (#52, #58)            | 0%        | SIM       | —                                        | #52, #58                   | 6    |
+| 54  | GED — aprovação                   | GED                 | 4    | BLOCKED (#53, #58)            | 25%       | SIM       | —                                        | #53, #58                   | 6    |
+| 55  | GED — publicação e guarda         | GED                 | 4    | BLOCKED (#54, #58)            | 25%       | SIM       | —                                        | #54, #58, #59              | 6    |
+| 56  | GED — controle de versões         | GED                 | 2    | READY COM PREMISSAS           | 50%       | NÃO       | —                                        | vigência redefinida em #54 | 1A   |
+| 57  | GED — descarte com flag           | GED                 | 3    | READY (decidido 27/09)        | 0%        | SIM       | —                                        | #58, #59                   | 7    |
+| 58  | GED — perfis e permissões         | GED / Auth          | 5    | READY (decidido 27/09)        | 0%        | SIM       | Clerk (papéis)                           | base de todo o GED         | 5    |
+| 59  | GED — auditoria e relatórios      | GED                 | 3    | READY COM PREMISSAS           | 25%       | SIM       | —                                        | alimenta #55, #57          | 5    |
+| 60  | GED — Active Directory + backup   | Plataforma / Infra  | 5    | READY (decidido 27/09)        | 0%        | INCERTO   | AD/SSO, backup Supabase                  | #61 (e-mails de backup)    | 8    |
+| 61  | Notificações por e-mail           | Plataforma          | 4    | READY (decidido 27/09)        | 0%        | PROVÁVEL  | Provedor de e-mail (pago)                | #58, #60                   | 8    |
+| 62  | Regras de negócio do GED          | GED (transversal)   | 4    | BLOCKED (#52–#57)             | 25%       | SIM       | —                                        | #52–#57                    | 7    |
 
 ## 3. Distribuição
 
@@ -104,8 +104,8 @@ produto (assinatura por QR/link vs. aceite autenticado) atrás do bloqueio.
 
 | #              | Migration | O quê (provável)                                                                                                                                                        |
 | -------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 3              | PROVÁVEL  | Tabela **global** `cnae_subclasses` (sem `org_id`, policy de leitura global, padrão `caepi_certificates`) — ou nenhuma, se a decisão for arquivo estático versionado    |
-| 10             | PROVÁVEL  | Tabela global `cbo_occupations` (mesmo padrão)                                                                                                                          |
+| 3              | **SIM**   | Tabela **global** `cnae_subclasses` (sem `org_id`, policy de leitura global, padrão `caepi_certificates`) — decidido na auditoria do Lote 4                             |
+| 10             | **SIM**   | Tabela global `cbo_occupations` (mesmo padrão) — decidido na auditoria do Lote 4                                                                                        |
 | 39             | SIM       | Colunas de avaliação quantitativa por avaliação (método, valor medido, unidade, LT numérico, conclusão) em `risk_assessments` **ou** tabela filha 1:N — decidir no PLAN |
 | 40             | SIM       | Tabela `ergonomic_assessments` (AEP) vinculada a risco/GES + RLS; formato COPSOQ a decidir                                                                              |
 | 48             | INCERTO   | Nenhuma se as categorias NR-18 forem tipos sugeridos de `doc_type`; enum/coluna se virar categoria fechada                                                              |

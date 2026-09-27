@@ -23,12 +23,13 @@ Critérios 1 e 2 já atendidos e testados; falta listar/exibir o histórico e ap
 
 ### #3 — CNAE
 
-- **Premissa:** espelho local das 1.332 subclasses da API do IBGE (busca por texto não existe na API),
-  consulta 100% local como no CAEPI; autofill via CNPJ continua como está.
-- Perguntas:
-  1. Espelho local (tabela global + script de sync) ou arquivo JSON versionado no repositório?
-  2. Guardar o código como hoje (`4712100`) ou formatado (`4712-1/00`)?
-  3. Só CNAE principal, ou também CNAEs secundários?
+> Auditada em profundidade em 27/09 — ver [lots/lot-04/AUDIT.md](lots/lot-04/AUDIT.md), que prevalece
+> sobre esta seção. **Nenhuma pergunta em aberto.**
+
+Decidido: espelho local em tabela **global** (`cnae_subclasses`, padrão `caepi_certificates`), porque a
+API do IBGE entrega a lista completa mas **não** busca por texto; código persistido com **7 dígitos**
+sem máscara (é o que a BrasilAPI já grava) e exibido `4929-9/02`; **só o CNAE principal**. Sem
+validação dura e sem migração de dados — os registros atuais estão mistos.
 
 ### #39 — NR-09
 
@@ -178,12 +179,17 @@ comentário → fechar. `signed_at` próprio, se desejado, é melhoria separada.
 
 ### #10 — CBO
 
-Não há API; a fonte oficial é o download de arquivos no portal do MTE.
+> Auditada em profundidade em 27/09 — ver [lots/lot-04/AUDIT.md](lots/lot-04/AUDIT.md), que prevalece
+> sobre esta seção.
 
-1. Qual arquivo oficial usamos (CBO 2002 — tabela de ocupações, 6 dígitos)? Alguém do time já tem o
-   arquivo validado?
-2. Buscar só ocupação (6 dígitos) ou também família (4 dígitos)?
-3. O campo passa a validar o formato `0000-00` ou continua aceitando texto livre?
+Resolvidas: arquivo = **“Estrutura CBO (CSV)”** do portal do MTE (página verificada; download é
+postback JSF não automatizável nas tentativas feitas); escopo = **ocupação de 6 dígitos** (família é
+prefixo); o campo **continua texto livre**, sem validação de formato.
+
+Pergunta que sobra (bloqueante para fechar a issue, não para implementar):
+
+1. Quem baixa e fornece o arquivo oficial? Se não vier agora, a #10 é entregue com o catálogo vazio e
+   fica **aberta**.
 
 ## BLOCKED
 

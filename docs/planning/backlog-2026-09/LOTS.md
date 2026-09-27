@@ -102,21 +102,25 @@ unidades `site`; relação de EPIs derivada do cadastro; #47 fechável.
 
 # Lote 4 — Catálogos oficiais (CNAE e CBO)
 
+**Status (27/09/2026):** auditado e planejado em [lots/lot-04/](lots/lot-04/); branch única
+`feature/lot-04-cnae-cbo` criada. Implementação **não** iniciada — aguarda só o arquivo oficial do CBO.
+
 **Issues:** #3, #10
 
-| Item                | Valor                                                   |
-| ------------------- | ------------------------------------------------------- |
-| Dificuldade média   | 3                                                       |
-| Migration           | Provável (tabelas globais, padrão `caepi_certificates`) |
-| Integração          | IBGE (CNAE, verificada) e arquivo MTE (CBO, pendente)   |
-| Estimativa relativa | M                                                       |
+| Item                | Valor                                                                   |
+| ------------------- | ----------------------------------------------------------------------- |
+| Dificuldade média   | 3                                                                       |
+| Migration           | Provável (tabelas globais, padrão `caepi_certificates`)                 |
+| Integração          | IBGE (CNAE, reverificada em 27/09) e arquivo MTE (CBO, download manual) |
+| Estimativa relativa | M                                                                       |
 
 **Por que juntas:** o projeto não tem componente de autocomplete (só `<datalist>` estático). Fazer #3 e
 #10 juntas cria o componente uma vez. O padrão de espelho global + script de sync já existe no CAEPI.
 
 **Paralelismo:** pode rodar junto com os Lotes 2/3 (sem arquivos em comum); serializar as migrations.
 
-**Dependências:** #10 precisa do arquivo oficial de CBO. Se não chegar, entregar #3 e manter #10 aberta.
+**Dependências:** #3 está **READY** e cria o `CatalogCombobox`; #10 reaproveita e precisa do arquivo
+oficial de CBO. Se o arquivo não chegar, entregar #3 e manter #10 aberta (`Partially addresses #10`).
 
 **Definition of Done:** busca por código e descrição nos dois formulários; cadastro manual continua
 funcionando com base vazia ou falha; tabelas globais com policy de leitura global; testes de busca e de

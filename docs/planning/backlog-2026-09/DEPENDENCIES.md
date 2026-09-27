@@ -18,7 +18,7 @@ PGR — inventário → PDF
 #48 NR-18 ── usa relação de EPIs derivada ──┘ (anexo no PDF, opcional)
 
 CATÁLOGOS
-#3 CNAE ── cria o componente de autocomplete ──► #10 CBO reaproveita
+#3 CNAE ── cria o CatalogCombobox (`_ui/`) ──► #10 CBO reaproveita   [auditado: lots/lot-04]
 
 GED (épico)
 #58 Perfis/setor ──┬──► #52 Elaboração ──► #53 Revisão ──► #54 Aprovação ──► #55 Publicação
@@ -55,7 +55,7 @@ PLATAFORMA
 | `risks.ts` / `risk_assessments` / `risk-assessment.ts` | #39, #40, #42      | Não rodar #39 e #40 em branches paralelas                    |
 | `pgr-consolidated.ts` + `pgr-pdf-template.ts`          | #39, #40, #47, #48 | Um lote por vez; o template tem 2 chamadores (rota + worker) |
 | `documents` (schema, repo, actions, UI)                | #52–#57, #59, #62  | Épico em branches sequenciais, nunca paralelas               |
-| `_ui/form.tsx` (novo combobox)                         | #3, #10            | Mesmo lote                                                   |
+| `_ui/` (novo `CatalogCombobox`)                        | #3, #10            | Mesmo lote e mesma branch (`feature/lot-04-cnae-cbo`)        |
 | `src/shared/tenant/roles.ts` / guards de auth          | #58                | Isolado; revisão com atenção dobrada                         |
 | `control-measures` / `control-measure-bridge.ts`       | #42                | Isolado                                                      |
 

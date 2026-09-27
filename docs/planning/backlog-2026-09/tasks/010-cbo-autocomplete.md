@@ -21,9 +21,14 @@ Campo e busca textual simples. Nada de base oficial.
 
 Base CBO, busca, autocomplete.
 
-### Fonte externa (verificada em 2026-09-16)
+### Fonte externa (reverificada em 2026-09-27 — Lote 4)
 
-Sem API: endpoint de CBO no IBGE não responde; portal do MTE (`mtecbo.gov.br`) oferece **arquivos para download**.
+Sem API. O portal oficial do MTE (`http://www.mtecbo.gov.br/cbosite/pages/downloads.jsf`) responde 200
+e lista **“Estrutura CBO (CSV) — Arquivo ZIP (106 kb)”**, mas o download é **postback JSF** com
+`javax.faces.ViewState` + redirecionamento temporizado (10 s). Duas tentativas automatizadas falharam:
+POST com ViewState devolveu HTML (sem `Content-Disposition`) e o clique real no Playwright não
+disparou download em 60 s nem em 90 s. Não há URL estática (404) e a API do dados.gov.br exige
+credencial (401). → **import a partir de arquivo local (`--file`) como caminho primário**.
 
 ### Arquivos/domínios provavelmente afetados
 
@@ -55,7 +60,10 @@ Arquivo oficial com formato/encoding instável; licença de uso a confirmar.
 
 ### Requisitos faltantes
 
-Qual arquivo oficial; nível (ocupação/família); validação de formato.
+Só **quem fornece o arquivo oficial**. O resto foi decidido: arquivo = “Estrutura CBO (CSV)”
+do portal do MTE; nível = **ocupação de 6 dígitos** (família é prefixo, sem tabela própria);
+**sem** validação de formato (os dados atuais estão mistos: `2521-05`, `715210`, `7152-10`);
+descrição **derivada** do catálogo, sem coluna nova em `job_roles`.
 
 ### Dificuldade
 
@@ -63,7 +71,9 @@ Qual arquivo oficial; nível (ocupação/família); validação de formato.
 
 ### Prontidão
 
-NEEDS EXTERNAL INFO
+**READY COM PREMISSAS** — tudo decidido tecnicamente na auditoria do Lote 4; falta só o
+**arquivo oficial** (quem baixa). Ver a pergunta bloqueante em
+[../lots/lot-04/AUDIT.md](../lots/lot-04/AUDIT.md).
 
 ### Cobertura atual
 
@@ -75,6 +85,17 @@ NEEDS EXTERNAL INFO
 
 ## Execução
 
-| Branch | PR  | Migration | Testes | CI  | Decisão | Status  |
-| ------ | --- | --------- | ------ | --- | ------- | ------- |
-| —      | —   | —         | —      | —   | —       | Backlog |
+### Auditoria do Lote 4 (27/09/2026)
+
+- Arquitetura: tabela **global** `cbo_occupations` + `scripts/cbo-import.ts --file`, molde CAEPI.
+- Coletor por browser (molde `caepi/collect.ts`) fica **opcional**, fora do caminho crítico.
+- Reaproveita o `CatalogCombobox` criado pela #3.
+- Migration: **SIM** (1 tabela global). Nenhuma criada ainda.
+- Se o arquivo não chegar: entrega tudo com o catálogo vazio e a issue **fica aberta**
+  (`Partially addresses #10`) — nada de fechamento artificial.
+
+## Execução
+
+| Branch                    | PR  | Migration | Testes | CI  | Decisão           | Status  |
+| ------------------------- | --- | --------- | ------ | --- | ----------------- | ------- |
+| `feature/lot-04-cnae-cbo` | —   | prevista  | —      | —   | arquivo em aberto | Backlog |
