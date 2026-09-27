@@ -236,7 +236,9 @@ function PgrLinkedDocumentsPanel({
           {linkedDocuments.map((document) => (
             <li
               key={document.id}
-              className="glass-panel flex flex-col gap-2 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              // `min-w-0`: item de grid não encolhe abaixo do min-content por
+              // padrão, e o nome longo do documento empurrava a página no 375px.
+              className="glass-panel flex min-w-0 flex-col gap-2 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <p className="text-text truncate text-sm font-bold">{document.name}</p>
@@ -305,7 +307,7 @@ function PgrNr18Panel({
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-black/5">
+      <div className="min-w-0 overflow-hidden rounded-2xl border border-black/5">
         <DataGrid minWidth={760}>
           <GridHeader
             template={template}
@@ -360,7 +362,9 @@ function PgrNr18Panel({
  * aqui. Um EPI que atende vários riscos aparece uma vez, com os contextos agrupados.
  */
 function PgrEpiRelationPanel({ items }: { items: PgrEpiRelationItem[] }) {
-  const template = "1.5fr 1.1fr 1fr 0.9fr 1.3fr 1.5fr";
+  // Largura mínima calibrada para caber na coluna do editor de PGR (~915px no 1440):
+  // acima disso a coluna "Riscos / GES" ficava cortada mesmo com scroll interno.
+  const template = "1.3fr 1fr 0.9fr 0.9fr 1.2fr 1.4fr";
 
   return (
     <section className="glass-card flex flex-col gap-5 p-6 sm:p-8">
@@ -377,8 +381,8 @@ function PgrEpiRelationPanel({ items }: { items: PgrEpiRelationItem[] }) {
           {EPI_RELATION_EMPTY_LABEL}
         </p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-black/5">
-          <DataGrid minWidth={1040}>
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-black/5">
+          <DataGrid minWidth={860}>
             <GridHeader
               template={template}
               columns={[

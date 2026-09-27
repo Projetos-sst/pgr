@@ -47,7 +47,9 @@ export default async function RiskDetailPage({
         title="Risco"
         description={`GES: ${gesName}`}
         action={
-          <div className="flex gap-2">
+          // `flex-wrap`: com seis ações a barra estourava a largura em 375px (a
+          // NR-17 entrou aqui no Lote 3, mas as cinco anteriores já não cabiam).
+          <div className="flex flex-wrap gap-2">
             <Link
               href={`/risks/${risk.id}/assessments`}
               className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
