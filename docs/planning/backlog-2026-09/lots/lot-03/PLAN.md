@@ -4,8 +4,10 @@
 (última migration `0050`) · **Branch única:** `feature/lot-03-nr17-nr18-pgr` · **Fonte:**
 [AUDIT.md](AUDIT.md).
 
-> Este plano depende das respostas de **Q1**, **Q2**, **Q3** e **Q4** do AUDIT. O que depende delas
-> está marcado `BLOCKED UNTIL DECISION`; o resto já está descrito como será feito.
+> **Q1–Q4 foram decididas em 27/09/2026** (ver [AUDIT.md](AUDIT.md)): Q1 = tabela dedicada
+> `ergonomic_evaluations`; Q2 = adequação (enum) + observação por dimensão; Q3 = campanha
+> psicossocial agregada **opcional**; Q4 = relação de EPIs **também** no PDF. Nada neste plano está
+> bloqueado.
 
 ## Objetivo
 
@@ -43,7 +45,7 @@ com a relação de EPIs derivada do cadastro.
 
 ## Arquitetura #40
 
-`BLOCKED UNTIL DECISION (Q1)` — o desenho abaixo assume a recomendação **B** (tabela dedicada).
+Q1 = **B** (tabela dedicada) — decidido.
 
 1. `schema/ergonomics.ts` (novo) — tabela `ergonomic_evaluations` + enum de adequação.
 2. `domains/pgr/ergonomics.ts` (novo) — Zod, rótulos das seis dimensões, regra de "vigente" e
@@ -59,19 +61,19 @@ com a relação de EPIs derivada do cadastro.
 
 ## Modelo de dados NR-17
 
-`BLOCKED UNTIL DECISION (Q1, Q2)`. Desenho recomendado (Q1=B, Q2=A):
+Q1 = **B**, Q2 = **A** — decidido. Modelo final:
 
-| Coluna                                                                                              | Tipo                      | Nulo | Observação                                    |
-| --------------------------------------------------------------------------------------------------- | ------------------------- | ---- | --------------------------------------------- |
-| `id`, `org_id`, `risk_id`                                                                           | uuid / text / uuid        | não  | FK `orgs` e `risks` (`on delete cascade`)     |
-| `posture`, `movements`, `physical_load`, `mental_load`, `work_organization`, `physical_environment` | enum `ergonomic_adequacy` | sim  | `adequate \| inadequate \| not_applicable`    |
-| `*_notes` (uma por dimensão)                                                                        | text                      | sim  | Observação do profissional                    |
-| `method`                                                                                            | text                      | sim  | Instrumento/método (sugestões incluem COPSOQ) |
-| `psychosocial_campaign_id`                                                                          | uuid                      | sim  | Só se **Q3 = A**; FK `psychosocial_campaigns` |
-| `responsible`                                                                                       | text                      | sim  | Não há cadastro de profissional (#36)         |
-| `assessed_at`                                                                                       | date                      | não  | Vigência = maior `assessed_at`                |
-| `notes`                                                                                             | text                      | sim  | Observação geral                              |
-| `created_at`, `updated_at`                                                                          | timestamptz               | não  | Trigger padrão                                |
+| Coluna                                                                                              | Tipo                      | Nulo | Observação                                     |
+| --------------------------------------------------------------------------------------------------- | ------------------------- | ---- | ---------------------------------------------- |
+| `id`, `org_id`, `risk_id`                                                                           | uuid / text / uuid        | não  | FK `orgs` e `risks` (`on delete cascade`)      |
+| `posture`, `movements`, `physical_load`, `mental_load`, `work_organization`, `physical_environment` | enum `ergonomic_adequacy` | sim  | `adequate \| inadequate \| not_applicable`     |
+| `*_notes` (uma por dimensão)                                                                        | text                      | sim  | Observação do profissional                     |
+| `method`                                                                                            | text                      | sim  | Instrumento/método (sugestões incluem COPSOQ)  |
+| `psychosocial_campaign_id`                                                                          | uuid                      | sim  | Q3 = A; FK `psychosocial_campaigns` (SET NULL) |
+| `responsible`                                                                                       | text                      | sim  | Não há cadastro de profissional (#36)          |
+| `assessed_at`                                                                                       | date                      | não  | Vigência = maior `assessed_at`                 |
+| `notes`                                                                                             | text                      | sim  | Observação geral                               |
+| `created_at`, `updated_at`                                                                          | timestamptz               | não  | Trigger padrão                                 |
 
 Regras: nenhuma dimensão é obrigatória (avaliação pode ser parcial e honesta); **não existe conclusão
 global** — a issue não pede e o sistema não diagnostica; histórico 1:N por risco, vigente = a mais
@@ -85,12 +87,12 @@ laudo (AET)" apontando para o upload com o vínculo pré-preenchido — zero sch
 
 ## Psicossocial/COPSOQ
 
-`BLOCKED UNTIL DECISION (Q3)`.
+Q3 = **A** — decidido.
 
-- **Q3 = A:** a avaliação aponta para uma campanha psicossocial **fechada** do mesmo GES; o PDF
+- **Q3 = A (o que vale):** a avaliação aponta para uma campanha psicossocial **fechada** do mesmo GES; o PDF
   imprime nome da campanha, período, nº de respostas e os fatores derivados com nível. Consulta
   agregada, **nunca** resposta individual (as respostas nem sequer têm vínculo com pessoa).
-- **Q3 = B:** só o campo `method` em texto livre, com sugestões.
+- ~~Q3 = B (descartada): só o campo `method` em texto livre.~~ O campo `method` continua existindo, mas o vínculo agregado também.
 
 Em qualquer cenário, o rótulo no documento diz exatamente o que é: "resultado agregado da campanha X",
 e **não** "escore COPSOQ". O sistema não implementa a metodologia.
@@ -128,7 +130,7 @@ Sem tabela nova e sem migration: vocabulário no domínio + leitura derivada.
 2. `pgr-documents-tab.tsx` — painel "Documentos complementares (NR-18)" com checklist por tipo,
    exibido quando a unidade do PGR é `site`.
 3. `repositories/pgr-consolidated.ts` — relação de EPIs deduplicada do PGR.
-4. `pgr-pdf-template.ts` — seção da relação de EPIs, **se Q4 = A**.
+4. `pgr-pdf-template.ts` — seção da relação de EPIs (Q4 = A).
 
 ## Documentos NR-18
 
@@ -198,11 +200,11 @@ Regras executáveis (ver a tabela de foundation no [AUDIT](AUDIT.md#auditoria-vi
 
 ## Migrations previstas
 
-| Migration (nome provisório)  | Issue | Conteúdo                                                                 | Situação                       |
-| ---------------------------- | ----- | ------------------------------------------------------------------------ | ------------------------------ |
-| `00NN_ergonomic_evaluations` | #40   | Tabela `ergonomic_evaluations` + enum `ergonomic_adequacy` + RLS/índices | `BLOCKED UNTIL DECISION` Q1/Q2 |
-| —                            | #48   | nenhuma                                                                  | Confirmado                     |
-| —                            | #47   | nenhuma                                                                  | Confirmado                     |
+| Migration (nome provisório)  | Issue | Conteúdo                                                                               | Situação         |
+| ---------------------------- | ----- | -------------------------------------------------------------------------------------- | ---------------- |
+| `0051_ergonomic_evaluations` | #40   | Tabela `ergonomic_evaluations` + enum `ergonomic_adequacy` + RLS/índices/GRANT/trigger | **implementada** |
+| —                            | #48   | nenhuma                                                                                | Confirmado       |
+| —                            | #47   | nenhuma                                                                                | Confirmado       |
 
 Número **não** reservado e **nada gerado** nesta execução. Na implementação: `git pull --ff-only`,
 `npm run db:generate`, renomear para o padrão descritivo e acertar o `tag` do journal.
@@ -242,15 +244,15 @@ cross-tenant, `check`, integração, build e rebase final. A PR deve fechar **#4
 
 1. **#40** — schema, migration, domínio, repositório, API, UI, testes (gate: verde antes de seguir).
 2. **#47** — seção NR-17 no template + consolidado; fecha a issue.
-3. **#48** — tipos NR-18 + checklist + relação de EPIs (+ seção no PDF se Q4 = A).
+3. **#48** — tipos NR-18 + checklist + relação de EPIs (+ seção no PDF — Q4 = A).
 
 Por quê: a migration sai isolada no começo; o template é tocado depois que o dado existe; #48 é a
 parte barata e, se precisar, pode ser cortada para outro lote sem travar o fechamento da #47.
 
 ## Dependências
 
-- **Entrada:** Q1, Q2, Q3 (#40) e Q4 (#48/#47).
-- **Interna:** #47 depende de #40 verde na branch; #48 depende do template já com a NR-17 se Q4 = A.
+- **Entrada:** Q1, Q2, Q3 (#40) e Q4 (#48/#47) — **todas respondidas em 27/09/2026**.
+- **Interna:** #47 depende de #40 verde na branch; #48 depende do template já com a NR-17 (Q4 = A).
 - **Saída:** com #40, #47 e #48 fechadas, o conjunto normativo do PGR (NR-01/09/17/18) fica completo.
 
 ## Riscos
@@ -260,11 +262,11 @@ interna como COPSOQ e **não** deixar tela nova fora do padrão visual.
 
 ## Definition of Done
 
-- Q1–Q4 respondidas e registradas.
+- [x] Q1–Q4 respondidas e registradas.
 - #40: migration com RLS validada em Postgres efêmero; 4 superfícies de API; UI no padrão; unit +
   integração novos.
 - #47: seção NR-17 no PDF pelos **dois** chamadores, conferida em PDF real; issue fechada.
-- #48: checklist NR-18 por tipo em unidade `site`; relação de EPIs derivada (e no PDF, se Q4 = A);
+- #48: checklist NR-18 por tipo em unidade `site`; relação de EPIs derivada (e no PDF (Q4 = A));
   nenhuma digitação duplicando o cadastro.
 - `npm run check`, integração completa e `npm run build` verdes; CI verde na PR.
 - QA Playwright com evidências em 375/768/1440; massa sintética removida.
@@ -272,9 +274,6 @@ interna como COPSOQ e **não** deixar tela nova fora do padrão visual.
 
 ## Itens bloqueados
 
-| Item                              | Bloqueio                       |
-| --------------------------------- | ------------------------------ |
-| Schema e migration da NR-17       | `BLOCKED UNTIL DECISION` Q1/Q2 |
-| Vínculo com campanha psicossocial | `BLOCKED UNTIL DECISION` Q3    |
-| Relação de EPIs no PDF            | `BLOCKED UNTIL DECISION` Q4    |
-| Fechamento da #47                 | depende de #40 implementada    |
+**Nenhum.** As quatro decisões foram fechadas em 27/09/2026 (Q1 = tabela dedicada; Q2 = adequação +
+observação; Q3 = campanha agregada opcional; Q4 = relação de EPIs também no PDF). Um bloqueio novo
+só entra aqui se aparecer impedimento técnico real durante a execução.

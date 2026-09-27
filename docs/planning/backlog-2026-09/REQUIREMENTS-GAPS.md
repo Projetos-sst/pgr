@@ -100,11 +100,12 @@ Status MANTER/INTRODUZIDA/APRIMORADA e a regra por nível **já existem** em `co
 > Auditada em profundidade em 27/09 — ver [lots/lot-03/AUDIT.md](lots/lot-03/AUDIT.md), que prevalece
 > sobre esta seção.
 
-Perguntas ainda abertas (bloqueiam a implementação):
+Perguntas respondidas em 27/09/2026 (não reabrir):
 
-1. **Q1** — tabela dedicada `ergonomic_evaluations` (recomendado) ou colunas em `risk_assessments`?
-2. **Q2** — cada dimensão como enum de adequação + observação (recomendado), texto livre ou escala?
-3. **Q3** — COPSOQ como referência agregada a uma campanha psicossocial ou só método em texto?
+1. **Q1 = tabela dedicada** `ergonomic_evaluations`, 1:N por risco.
+2. **Q2 = enum de adequação + observação** por dimensão (`NULL` ≠ `not_applicable`).
+3. **Q3 = referência agregada opcional** a campanha psicossocial fechada; o sistema **nunca**
+   calcula escore COPSOQ.
 
 Resolvidas na auditoria do Lote 3:
 
@@ -119,9 +120,9 @@ Resolvidas na auditoria do Lote 3:
 
 > Ver [lots/lot-03/AUDIT.md](lots/lot-03/AUDIT.md).
 
-Pergunta aberta:
+Pergunta respondida em 27/09/2026:
 
-1. **Q4** — a relação de EPIs derivada entra como **seção do PDF** (recomendado) ou fica só na tela?
+1. **Q4 = seção do PDF** — a relação de EPIs derivada aparece na tela do PGR **e** no documento.
 
 Resolvidas na auditoria do Lote 3: **sem migration** (tipos como lista fechada no domínio, relação
 derivada do cadastro); checklist **informativo**, não bloqueante; exibido para unidade `site`;

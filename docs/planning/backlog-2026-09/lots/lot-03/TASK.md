@@ -1,16 +1,16 @@
 # Lote 3 — Task
 
-Checklist da implementação do lote — **nada marcado**: a execução só começa depois das respostas de
-Q1–Q4 ([AUDIT.md](AUDIT.md)) e da autorização do usuário. Tudo numa branch só
-(`feature/lot-03-nr17-nr18-pgr`), uma PR no fim.
+Checklist **vivo** da implementação do lote. Q1–Q4 decididas em 27/09/2026 ([AUDIT.md](AUDIT.md)) e
+execução autorizada. Tudo numa branch só (`feature/lot-03-nr17-nr18-pgr`), uma PR no fim. Um item só
+vira `[x]` depois de implementado **e** verificado.
 
 ## 0. Decisões (pré-requisito)
 
-- [ ] Q1 — modelo da avaliação NR-17: tabela dedicada × colunas em `risk_assessments`
-- [ ] Q2 — formato das seis dimensões: enum + observação × texto livre × escala
-- [ ] Q3 — psicossocial/COPSOQ: referência agregada à campanha × método em texto
-- [ ] Q4 — relação de EPIs: seção no PDF × só na tela
-- [ ] Respostas registradas no AUDIT e no PLAN
+- [x] Q1 — **tabela dedicada `ergonomic_evaluations`** (1:N por risco)
+- [x] Q2 — **adequação (enum) + observação** por dimensão; sem escala, sem score, sem conclusão geral
+- [x] Q3 — **campanha psicossocial agregada opcional**; nunca escore COPSOQ
+- [x] Q4 — **relação de EPIs na tela E no PDF**
+- [x] Respostas registradas no AUDIT e no PLAN
 
 ## 1. Preparação
 
@@ -21,7 +21,7 @@ Q1–Q4 ([AUDIT.md](AUDIT.md)) e da autorização do usuário. Tudo numa branch 
 
 ## 2. #40 — Schema
 
-- [ ] Enum de adequação das dimensões (se Q2 = enum)
+- [ ] Enum de adequação das dimensões (`ergonomic_adequacy`)
 - [ ] Tabela `ergonomic_evaluations` com `org_id`, `risk_id`, dimensões, observações, método,
       responsável, `assessed_at`, notas e timestamps
 - [ ] `pgPolicy` de isolamento + índices por `org_id` e `risk_id`
@@ -59,8 +59,8 @@ Q1–Q4 ([AUDIT.md](AUDIT.md)) e da autorização do usuário. Tudo numa branch 
 ## 7. #40 — Psicossocial/COPSOQ
 
 - [ ] Campo de método/instrumento com sugestões (inclui COPSOQ) — **sem** calcular escore
-- [ ] Se Q3 = A: vínculo opcional com campanha psicossocial **fechada** do mesmo GES
-- [ ] Se Q3 = A: leitura agregada (período, nº de respostas, fatores derivados) — **nunca** resposta individual
+- [ ] Vínculo opcional com campanha psicossocial **fechada** do mesmo GES
+- [ ] Leitura agregada (período, nº de respostas, fatores derivados) — **nunca** resposta individual
 - [ ] Rótulo no PDF declara que é resultado agregado da campanha, não escore normativo
 
 ## 8. #40 — Tests
@@ -73,7 +73,7 @@ Q1–Q4 ([AUDIT.md](AUDIT.md)) e da autorização do usuário. Tudo numa branch 
 
 - [ ] `PgrPdfSectionKey` ganha a seção NR-17 na ordem correta
 - [ ] Tabela por GES: risco, data, responsável, seis dimensões e observações
-- [ ] Bloco agregado da campanha psicossocial (se Q3 = A)
+- [ ] Bloco agregado da campanha psicossocial
 - [ ] Risco sem avaliação → "sem avaliação ergonômica registrada"; GES sem nenhuma → linha única
 - [ ] Sumário e numeração das seções acompanham
 - [ ] Unit do template: ordem, estado honesto, ausência de escore inventado
@@ -100,7 +100,7 @@ Q1–Q4 ([AUDIT.md](AUDIT.md)) e da autorização do usuário. Tudo numa branch 
 - [ ] Colunas: nome, CA, validade do CA, fabricante, norma, material/tamanho, vida útil, riscos atendidos
 - [ ] Badge de CA vencido/a vencer usando a validade real
 - [ ] Nenhuma digitação: a fonte é o cadastro
-- [ ] Se Q4 = A: seção "Relação de EPIs" no PDF
+- [ ] Seção "Relação de EPIs" no PDF
 
 ## 13. #48 — UI
 
@@ -112,7 +112,7 @@ Q1–Q4 ([AUDIT.md](AUDIT.md)) e da autorização do usuário. Tudo numa branch 
 
 - [ ] Unit: checklist por tipo, relação deduplicada, badge de validade
 - [ ] Integração: relação isolada por tenant; documento de outro tenant fora do checklist
-- [ ] Unit do template (se Q4 = A)
+- [ ] Unit do template da seção de EPIs
 
 ## 15. Visual (obrigatório em toda tela nova ou alterada)
 

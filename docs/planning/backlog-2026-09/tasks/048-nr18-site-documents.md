@@ -62,7 +62,7 @@ Checklist informativo vs. bloqueante; campos de especificação; relação no PD
 
 ### Prontidão
 
-READY COM PREMISSAS — só a Q4 (relação de EPIs no PDF ou só na tela) muda o alcance; ver
+READY — Q4 decidida em 27/09/2026: a relação de EPIs vai para a tela **e** para o PDF; ver
 [../lots/lot-03/AUDIT.md](../lots/lot-03/AUDIT.md)
 
 ### Cobertura atual

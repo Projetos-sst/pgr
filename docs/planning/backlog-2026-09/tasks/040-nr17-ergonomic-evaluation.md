@@ -60,7 +60,7 @@ profissional — #36).
 
 ### Prontidão
 
-NEEDS PRODUCT DECISION (Q1 modelo, Q2 formato das dimensões, Q3 COPSOQ) — ver
+READY — Q1/Q2/Q3 decididas em 27/09/2026 (tabela dedicada; adequação + observação; campanha agregada opcional); ver
 [../lots/lot-03/AUDIT.md](../lots/lot-03/AUDIT.md)
 
 ### Cobertura atual
@@ -87,6 +87,6 @@ Detalhe em [../lots/lot-03/AUDIT.md](../lots/lot-03/AUDIT.md); plano em
 
 ## Execução
 
-| Branch                         | PR  | Migration | Testes | CI  | Decisão          | Status  |
-| ------------------------------ | --- | --------- | ------ | --- | ---------------- | ------- |
-| `feature/lot-03-nr17-nr18-pgr` | —   | prevista  | —      | —   | Q1/Q2/Q3 abertas | Backlog |
+| Branch                         | PR  | Migration | Testes | CI  | Decisão          | Status      |
+| ------------------------------ | --- | --------- | ------ | --- | ---------------- | ----------- |
+| `feature/lot-03-nr17-nr18-pgr` | —   | prevista  | —      | —   | Q1=B, Q2=A, Q3=A | In progress |

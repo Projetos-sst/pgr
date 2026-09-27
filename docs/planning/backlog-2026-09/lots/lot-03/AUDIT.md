@@ -82,7 +82,7 @@ A issue exige vínculo **com o risco**; a prática da NR-17 é avaliar posto/ati
 
 **Recomendação: B.** Mantém a promessa da issue (avaliação ligada ao risco), repete o padrão de
 vigência que o PDF já sabe consumir e evita transformar `risk_assessments` em tabela-tudo — ela já
-recebeu 5 colunas no Lote 2. **É decisão de produto (Q1)**, porque muda schema, UI e PDF.
+recebeu 5 colunas no Lote 2. **Decidido (Q1 = B)**, porque muda schema, UI e PDF.
 
 ## NR-17 — as seis dimensões
 
@@ -91,17 +91,17 @@ regulamentar) seria criar requisito.
 
 | Campo                   | Tipo pedido pela issue | Existe hoje? | Onde?                                 | Reutilizável? | Persistido? | Decisão necessária?     |
 | ----------------------- | ---------------------- | ------------ | ------------------------------------- | ------------- | ----------- | ----------------------- |
-| Postura                 | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2)**            |
-| Movimentos              | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2)**            |
-| Carga física            | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2)**            |
-| Carga mental            | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2)**            |
-| Organização do trabalho | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2)**            |
-| Ambiente físico         | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2)**            |
+| Postura                 | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2 = A)**        |
+| Movimentos              | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2 = A)**        |
+| Carga física            | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2 = A)**        |
+| Carga mental            | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2 = A)**        |
+| Organização do trabalho | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2 = A)**        |
+| Ambiente físico         | não especificado       | Não          | —                                     | —             | Sim         | **Sim (Q2 = A)**        |
 | Data da avaliação       | implícito              | Padrão       | `risk_assessments.assessed_at`        | Padrão sim    | Sim         | Não                     |
 | Responsável             | implícito              | **Não**      | não há cadastro de profissional (#36) | Texto livre   | Sim         | Não — resolvido no PLAN |
 | Conclusão geral         | **não pedida**         | Não          | —                                     | —             | —           | Não — não inventar      |
 
-**Recomendação (Q2):** por dimensão, **enum de adequação** (`adequate | inadequate | not_applicable`)
+**Decidido (Q2 = A):** por dimensão, **enum de adequação** (`adequate | inadequate | not_applicable`)
 **mais observação em texto livre**. Registra o julgamento do profissional sem inventar escala
 numérica nem checklist normativo, e é o suficiente para o PDF dizer o que a norma pede. A alternativa
 é texto livre puro por dimensão (mais barato, menos consultável).
@@ -127,7 +127,7 @@ AET completa seria inventar workflow que ninguém pediu.
 - Vínculo com GES: `psychosocial_risk_factors` é por GES; `psychosocial_risks` é por campanha, com
   vínculo opcional a um `risk`.
 
-**Recomendação (Q3):** a avaliação NR-17 referencia o instrumento como **dado real e modesto** —
+**Decidido (Q3 = A):** vínculo agregado opcional com campanha fechada; o instrumento continua como **dado real e modesto** —
 campo de método/instrumento (texto livre, com sugestões incluindo "COPSOQ") e, quando existir campanha
 psicossocial fechada ligada ao mesmo GES, uma **referência agregada** (nome da campanha, período,
 nº de respostas e o nível do fator derivado). Nada de calcular escore normativo que o sistema não
@@ -311,65 +311,50 @@ por #40 e possivelmente por #48. Por isso o lote roda em série, numa branch só
 | Checklist NR-18 virar bloqueio sem requisito   | Informativo por decisão do PLAN                                       |
 | Telas novas fora do padrão visual              | Seção "Padrão visual e UI" do PLAN + checklist no TASK                |
 
-# Perguntas bloqueantes
+# Decisões Q1–Q4 — FECHADAS (27/09/2026)
 
-## Pergunta 1
+As quatro perguntas bloqueantes desta auditoria foram respondidas pelo usuário antes da
+implementação. Ficam registradas aqui como decisão de produto; não são reabertas no lote.
 
-**Issue:** #40
-**Pergunta:** a avaliação NR-17 vira **tabela dedicada** (`ergonomic_evaluations`, 1:N por risco, com
-data/responsável próprios) ou **colunas em `risk_assessments`**, como foi feito com a NR-09?
-**Por que bloqueia:** define schema, migration, UI, API e de onde o PDF lê.
-**Opção A:** colunas em `risk_assessments` — consistente com o Lote 2, sem tabela nova.
-**Opção B:** tabela dedicada ligada ao risco — histórico e vigência próprios, sem inchar a matriz 5×5.
-**Recomendação técnica:** **B**. A AEP é um instrumento com data e autor próprios; `risk_assessments`
-é a matriz de probabilidade × severidade e já recebeu cinco colunas no lote anterior.
+## Q1 — modelo da NR-17 → **OPÇÃO B: tabela dedicada `ergonomic_evaluations`**
 
-## Pergunta 2
+1:N por risco. As dimensões **não** entram em `risk_assessments`.
+Motivos aceitos: a AEP tem ciclo, data e responsável próprios; precisa de histórico/vigência; a
+issue exige vínculo com o risco; `risk_assessments` continua sendo a matriz 5×5 (já ampliada pela
+NR-09) e não vira tabela genérica.
 
-**Issue:** #40
-**Pergunta:** como cada uma das seis dimensões é registrada — **enum de adequação + observação**,
-**texto livre** ou **escala numérica**?
-**Por que bloqueia:** muda schema (enum vs. texto vs. inteiro), formulário e o que o PDF imprime.
-**Opção A:** enum `adequado | inadequado | não aplicável` + observação livre por dimensão.
-**Opção B:** só texto livre por dimensão.
-**Opção C:** escala numérica (1–5) por dimensão.
-**Recomendação técnica:** **A**. Registra julgamento consultável sem inventar escala que a norma não
-fixa. **C está descartada** a menos que você tenha a escala de uma metodologia adotada — não cabe ao
-sistema criar uma.
+## Q2 — formato das seis dimensões → **OPÇÃO A: adequação estruturada + observação**
 
-## Pergunta 3
+Por dimensão: enum `adequate | inadequate | not_applicable` (nullable) + observação textual
+(nullable). Sem escala numérica, sem score, sem checklist normativo inventado e **sem conclusão
+geral automática**.
+Distinção preservada: `NULL` = **não avaliado**; `not_applicable` = o profissional **declarou** que
+não se aplica.
 
-**Issue:** #40
-**Pergunta:** o resultado psicossocial (COPSOQ) entra na avaliação NR-17 como **referência agregada a
-uma campanha existente** ou apenas como **método/observação em texto**?
-**Por que bloqueia:** a primeira opção cria vínculo (campanha ↔ avaliação) e uma consulta agregada; a
-segunda é um campo.
-**Opção A:** referência agregada — a avaliação aponta para uma campanha psicossocial fechada do mesmo
-GES e o PDF mostra período, nº de respostas e níveis dos fatores derivados.
-**Opção B:** texto livre de método/instrumento, como já acontece em `psychosocial_risk_factors`.
-**Recomendação técnica:** **A** se você quer o PGR citando a campanha real; **B** se a intenção é só
-registrar que houve aplicação. Em qualquer caso, o sistema **não** calculará escore COPSOQ — ele não
-implementa a metodologia, e dizer o contrário no documento seria falso.
+## Q3 — psicossocial/COPSOQ → **OPÇÃO A: referência agregada opcional a campanha**
 
-## Pergunta 4
+A avaliação pode (opcionalmente) apontar para uma campanha psicossocial do **mesmo tenant**, do
+**mesmo contexto** (a unidade do GES do risco) e em estado **`closed`** quando usada como resultado
+consolidado. O campo `method`/instrumento continua existindo como texto real informado pelo
+profissional. Sem campanha compatível, a avaliação NR-17 continua válida.
 
-**Issue:** #48 (e fechamento da #47)
-**Pergunta:** a **relação de EPIs** derivada entra como **seção do PDF do PGR** ou fica **só na tela**
-do PGR?
-**Por que bloqueia:** muda o contrato do documento entregue ao cliente e decide se a #48 toca o
-template junto com a #40.
-**Opção A:** seção no PDF (a NR-18 pede a relação como parte do PGR).
-**Opção B:** só na aba Documentos do PGR, sem alterar o documento gerado.
-**Recomendação técnica:** **A** — o 18.4.3 trata do conteúdo do PGR, e a relação derivada não custa
-migration. O template já sabe listar EPIs por risco; a seção nova é a consolidação deduplicada.
+**Regra absoluta (COPSOQ):** o sistema **não** implementa a metodologia oficial. Não calcula escore
+COPSOQ, não chama a média Likert interna de escore COPSOQ, não inventa dimensão normativa nem
+interpretação oficial e não afirma conformidade. Quando há campanha vinculada, o rótulo é
+**"Resultado agregado da campanha psicossocial"** — nunca "Escore COPSOQ".
+
+## Q4 — relação de EPIs → **OPÇÃO A: tela + seção do PDF**
+
+Fonte única e derivada: PGR → GES vinculados → riscos → `epi_risk` → `epi_catalog`. Sem digitação
+paralela, sem cadastro duplicado e sem persistir cópia da relação.
 
 # Classificação final
 
-| Issue   | Dificuldade | Prontidão                                      | Migration                          | Risco      | Cobertura hoje |
-| ------- | ----------- | ---------------------------------------------- | ---------------------------------- | ---------- | -------------- |
-| **#40** | **4/5**     | **NEEDS PRODUCT DECISION** (Q1, Q2, Q3)        | **SIM** (tabela + enum, se Q2 = A) | Médio-alto | ~10%           |
-| **#48** | **2/5**     | **READY COM PREMISSAS** (só Q4 muda o alcance) | **NÃO**                            | Baixo      | ~60%           |
-| **#47** | **2/5**     | **READY APÓS #40** — só falta a seção NR-17    | **NÃO**                            | Médio      | ~80%           |
+| Issue   | Dificuldade | Prontidão                                   | Migration               | Risco      | Cobertura hoje |
+| ------- | ----------- | ------------------------------------------- | ----------------------- | ---------- | -------------- |
+| **#40** | **4/5**     | **READY** — Q1/Q2/Q3 decididas              | **SIM** (tabela + enum) | Médio-alto | ~10%           |
+| **#48** | **2/5**     | **READY** — Q4 = A (relação no PDF)         | **NÃO**                 | Baixo      | ~60%           |
+| **#47** | **2/5**     | **READY APÓS #40** — só falta a seção NR-17 | **NÃO**                 | Médio      | ~80%           |
 
 # Recomendação
 

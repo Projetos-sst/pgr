@@ -11,8 +11,8 @@ As três issues mais fáceis (#33, #42, #56) estão em **três módulos diferent
 
 > **Estado em 27/09/2026:** Lotes 1 e 2 mergeados (PRs #93, #94 e #95) — #33, #56, #42 e #39
 > fechadas; #47 parcial. **Lote 3** auditado e planejado em [lots/lot-03/](lots/lot-03/), na branch
-> única `feature/lot-03-nr17-nr18-pgr`: #40 (NR-17), fechamento da #47 e #48 (NR-18). Implementação
-> aguardando as decisões Q1–Q4.
+> única `feature/lot-03-nr17-nr18-pgr`: #40 (NR-17), fechamento da #47 e #48 (NR-18). Q1–Q4
+> decididas em 27/09/2026 — implementação em curso.
 
 **Escolha: A no Lote 1, B a partir do Lote 2.** As três quick wins não compartilham arquivos, não têm
 migration e são pequenas o bastante para que a troca de contexto custe pouco. Coesão por domínio só
