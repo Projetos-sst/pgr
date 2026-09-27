@@ -54,7 +54,10 @@ PDF é entregável ao cliente; não quebrar cabeçalho ISO nem o worker; empty s
 
 ### Requisitos faltantes
 
-Confirmar preposto = `managerName/managerRole`; confirmar fonte 5W2H = `action_plans`.
+Preposto: **confirmado** = `work_units.manager_name`/`manager_role` (o formulário rotula
+"Gestor/Preposto"). Fonte do 5W2H: **`control_measures`** — `action_plans` foi descartada (a ponte #51
+fabrica `who`/`why`/`where`). Resta Q3: 5 de 7 elementos com dado real, ou 7 de 7 com
+`action_why`/`action_cost` novos em `control_measures`.
 
 ### Dificuldade
 
@@ -62,7 +65,8 @@ Confirmar preposto = `managerName/managerRole`; confirmar fonte 5W2H = `action_p
 
 ### Prontidão
 
-BLOCKED (por #39 e #40), parcialmente desbloqueável
+Parte A (identificação + inventário) **READY**; Parte B (NR-09) **READY APÓS #39**; Parte D (5W2H)
+**NEEDS PRODUCT DECISION** (Q3); Parte C (NR-17) **BLOCKED por #40** → Lote 3
 
 ### Cobertura atual
 
@@ -71,6 +75,25 @@ BLOCKED (por #39 e #40), parcialmente desbloqueável
 ### Lote recomendado
 
 2 (seções 1, 2, 3, 5) → 3 (seção 4 e fechamento)
+
+### Auditoria do Lote 2 (26/09/2026)
+
+Detalhe completo em [../lots/lot-02/AUDIT.md](../lots/lot-02/AUDIT.md).
+
+| Parte | Conteúdo                                  | Situação                 |
+| ----- | ----------------------------------------- | ------------------------ |
+| A     | Seção 1 (identificação) + Seção 2 (NR-01) | READY agora              |
+| B     | Seção 3 (NR-09)                           | READY após #39           |
+| C     | Seção 4 (NR-17)                           | BLOCKED por #40 → Lote 3 |
+| D     | Seção 5 (5W2H)                            | Depende de Q3            |
+
+- 5 dos 7 elementos 5W2H já existem em `control_measures` (o quê, como, quem, quando + "onde"
+  derivado do GES); faltam **por quê** e **quanto**.
+- Identificação: consolidado precisa carregar empresa e unidade completas (sem migration).
+- Inventário: LT, concentração, unidade, código eSocial, EPIs e cobertura #42 já estão no consolidado
+  e só não são impressos.
+- O template tem **dois chamadores** (rota e worker) — ambos precisam ser conferidos.
+- #47 **não fecha** neste lote.
 
 ## Execução
 

@@ -52,7 +52,9 @@ Conflito conceitual com `result` (classificação) e com `concentrationIntensity
 
 ### Requisitos faltantes
 
-Histórico vs. vigente; conclusão calculada vs. informada; LT numérico; anexo de laudo.
+Q1 (uma avaliação NR-09 por linha de `risk_assessments` × tabela dedicada) e Q2 (conclusão informada ×
+calculada). Resolvidos na auditoria do Lote 2: **vigente** é a regra do PGR (igual ao #42); LT fica
+numérico **e** textual; anexo de laudo já funciona (documento vinculado ao risco).
 
 ### Dificuldade
 
@@ -60,7 +62,7 @@ Histórico vs. vigente; conclusão calculada vs. informada; LT numérico; anexo 
 
 ### Prontidão
 
-READY COM PREMISSAS
+NEEDS PRODUCT DECISION (Q1 cardinalidade, Q2 conclusão) — vira READY assim que respondidas
 
 ### Cobertura atual
 
@@ -69,6 +71,20 @@ READY COM PREMISSAS
 ### Lote recomendado
 
 2
+
+### Auditoria do Lote 2 (26/09/2026)
+
+Detalhe completo em [../lots/lot-02/AUDIT.md](../lots/lot-02/AUDIT.md); plano em
+[../lots/lot-02/PLAN.md](../lots/lot-02/PLAN.md).
+
+- Modelo recomendado: **colunas em `risk_assessments`** (`evaluation_method`, `measured_value`,
+  `measured_unit` reusando o enum existente, `tolerance_limit_value`, `nr09_conclusion`), válidas só
+  no critério `quantitative`.
+- `agent_type` e o enum `measurement_unit` são reusados — nada de enum duplicado.
+- Fonte única do valor exibido: a **avaliação**; `risks.concentration_intensity` continua sendo
+  "concentração de referência" do risco.
+- UI: bloco condicional no formulário de avaliação; nenhuma tela nova.
+- Migration: **sim** (colunas + enum + CHECK), sem policy nova.
 
 ## Execução
 

@@ -61,9 +61,10 @@ evidência Playwright das telas; #33 fechada; REVIEW.md escrito; fichas atualiza
 **Escopo:** avaliação quantitativa NR-09 por avaliação de risco; identificação no PDF com responsável
 técnico e **preposto** (`work_units.managerName/managerRole`, já existe); inventário exibindo LT,
 concentração e unidade (já estão no consolidado, só não são impressos); seção NR-09; plano de ação 5W2H
-lido de `action_plans`.
+lido de **`control_measures`** — a auditoria do lote (lots/lot-02/AUDIT.md) descartou `action_plans` como
+fonte: três dos sete campos lá são texto gerado pela ponte #51.
 
-**Dependências:** respostas de #39 e da linha #47 em REQUIREMENTS-GAPS.
+**Dependências:** respostas de Q1/Q2 (#39) e Q3 (#47, seção 5) em [lots/lot-02/AUDIT.md](lots/lot-02/AUDIT.md).
 
 **Definition of Done:** migration com RLS/GRANT/trigger validada em Postgres efêmero; testes unitários do
 template atualizados para a nova ordem; teste de integração da rota de PDF; PDF gerado pelos **dois**
