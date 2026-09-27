@@ -244,13 +244,19 @@ export const controlMeasures = pgTable(
     status: controlMeasureStatus("status"),
     justification: text("justification"),
     monitoring: text("monitoring"),
-    // Plano de ação 5W2H.
+    // Plano de ação 5W2H — completo desde a issue #47: o quê (`action_what`), por quê
+    // (`action_why`), onde (derivado do GES do risco), quando (`action_deadline`), quem
+    // (`action_responsible`), como (`action_how`) e quanto (`action_cost`, custo estimado
+    // em `numeric` como os demais valores de domínio). Nada é obrigatório
+    // retroativamente: medida antiga sem motivo/custo aparece como ausência honesta.
     actionWhat: text("action_what"),
+    actionWhy: text("action_why"),
     actionHow: text("action_how"),
     actionTracking: text("action_tracking"),
     actionMeasurement: text("action_measurement"),
     actionResponsible: text("action_responsible"),
     actionDeadline: date("action_deadline"),
+    actionCost: numeric("action_cost"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

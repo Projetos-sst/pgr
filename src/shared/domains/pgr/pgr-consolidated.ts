@@ -117,13 +117,16 @@ export type ConsolidatedMeasure = {
   status: ControlMeasureStatus | null;
   justification: string | null;
   monitoring: string | null;
-  // Plano 5W2H completo (todos já persistidos em `control_measures`).
+  // Plano 5W2H completo (todos já persistidos em `control_measures`; "onde" é derivado
+  // do GES do risco na montagem do PDF — dado real de cadastro, nunca texto inventado).
   actionWhat: string | null;
+  actionWhy: string | null;
   actionHow: string | null;
   actionTracking: string | null;
   actionMeasurement: string | null;
   actionResponsible: string | null;
   actionDeadline: string | null;
+  actionCost: string | null;
   state: MeasureState; // deriveMeasureState (without_plan | planned | overdue)
 };
 
@@ -156,6 +159,50 @@ export type ConsolidatedGes = {
   risks: ConsolidatedRisk[]; // [] = "GES sem riscos"; ordenados por risk_level desc, sem avaliação por último
 };
 
+/**
+ * Identificação da empresa para a seção 1 do PDF (#47). Tudo já persistido em
+ * `companies` — o consolidado só passou a ler. Campo vazio = "não informado".
+ */
+export type ConsolidatedCompany = {
+  razaoSocial: string;
+  nomeFantasia: string | null;
+  cnpj: string | null;
+  cnae: string | null;
+  mainActivity: string | null;
+  riskGrade: number | null;
+  website: string | null;
+  address: ConsolidatedAddress;
+};
+
+/** Endereço em partes; o template monta a linha. */
+export type ConsolidatedAddress = {
+  zipCode: string | null;
+  street: string | null;
+  number: string | null;
+  complement: string | null;
+  district: string | null;
+  city: string | null;
+  state: string | null;
+};
+
+/**
+ * Unidade/obra da seção 1 (#47). `managerName`/`managerRole` são o **preposto** — é o
+ * rótulo que o formulário de unidade usa ("Gestor/Preposto"), validado na auditoria do
+ * Lote 2. Não existe campo separado e nenhum substituto é inventado.
+ */
+export type ConsolidatedWorkUnit = {
+  name: string;
+  type: string | null;
+  contractNumber: string | null;
+  managerName: string | null;
+  managerRole: string | null;
+  professionalTitle: string | null;
+  professionalRegistration: string | null;
+  startDate: string | null;
+  expectedEndDate: string | null;
+  address: ConsolidatedAddress;
+};
+
 export type PgrConsolidated = {
   pgr: {
     id: string;
@@ -170,6 +217,9 @@ export type PgrConsolidated = {
     registrationNumber: string | null;
     issuedAt: string | null;
     validUntil: string | null;
+    /** Identificação completa (#47, seção 1) — opcional para não quebrar fixtures antigas. */
+    company?: ConsolidatedCompany | null;
+    workUnit?: ConsolidatedWorkUnit | null;
   };
   ges: ConsolidatedGes[]; // [] = "PGR sem GES"
 };

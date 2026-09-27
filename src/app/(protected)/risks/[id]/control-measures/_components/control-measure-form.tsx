@@ -43,11 +43,13 @@ export type ControlMeasureFormInitial = {
   justification?: string | null;
   monitoring?: string | null;
   actionWhat?: string | null;
+  actionWhy?: string | null;
   actionHow?: string | null;
   actionTracking?: string | null;
   actionMeasurement?: string | null;
   actionResponsible?: string | null;
   actionDeadline?: string | null;
+  actionCost?: string | null;
 };
 
 function Textarea({
@@ -131,16 +133,19 @@ export function ControlMeasureForm({
       justification: str("justification"),
       monitoring: str("monitoring"),
       actionWhat: str("actionWhat"),
+      actionWhy: str("actionWhy"),
       actionHow: str("actionHow"),
       actionTracking: str("actionTracking"),
       actionMeasurement: str("actionMeasurement"),
       actionResponsible: str("actionResponsible"),
       actionDeadline: str("actionDeadline"),
+      actionCost: str("actionCost"),
     };
     const ownership = {
       applicable,
       actionResponsible: str("actionResponsible"),
       actionDeadline: str("actionDeadline"),
+      actionCost: str("actionCost"),
     };
     if (isMeasureMissingRequiredPlanFields(ownership, riskClassification)) {
       setFormError(null);
@@ -242,6 +247,12 @@ export function ControlMeasureForm({
           error={errors.actionWhat}
         />
         <Textarea
+          label="Por que a medida é necessária"
+          name="actionWhy"
+          defaultValue={initial.actionWhy}
+          error={errors.actionWhy}
+        />
+        <Textarea
           label="Como será implementada"
           name="actionHow"
           defaultValue={initial.actionHow}
@@ -304,6 +315,21 @@ export function ControlMeasureForm({
             className={inputClass}
           />
           <FieldError message={errors.actionDeadline} />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-text-muted text-sm font-medium">Custo estimado (R$)</span>
+          <input
+            name="actionCost"
+            inputMode="decimal"
+            placeholder="Ex.: 1500.00"
+            defaultValue={initial.actionCost ?? ""}
+            className={inputClass}
+          />
+          <span className="text-text-subtle text-xs">
+            Opcional — completa o 5W2H do PGR (&ldquo;quanto&rdquo;). Em branco sai como
+            não informado.
+          </span>
+          <FieldError message={errors.actionCost} />
         </label>
       </div>
 

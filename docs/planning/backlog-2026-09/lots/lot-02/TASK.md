@@ -73,32 +73,33 @@ Checklist vivo do Lote 2 — atualizado conforme cada item é concluído **e** t
 
 ## 9. #47 — View model (consolidado)
 
-- [ ] `PgrConsolidated.pgr` ganha empresa completa (CNPJ, nome fantasia, CNAE, atividade, grau de
+- [x] `PgrConsolidated.pgr` ganha empresa completa (CNPJ, nome fantasia, CNAE, atividade, grau de
       risco, endereço) e unidade completa (tipo, contrato, endereço, vigência, preposto, título e
       registro profissional)
-- [ ] Repositório amplia a query 1 (sem consulta nova; sem N+1)
-- [ ] Tipos e testes unitários do consolidado atualizados
+- [x] Repositório amplia a query 1 (sem consulta nova; sem N+1)
+- [x] Tipos e testes unitários do consolidado atualizados
 
 ## 10. #47 — Seção 1 (Identificação)
 
-- [ ] `PgrPdfSectionKey` ganha `identification`
-- [ ] Bloco com Empresa, Unidade/Obra, Responsável técnico (nome, registro, ART) e **Preposto**
+- [x] `PgrPdfSectionKey` ganha `identification`
+- [x] Bloco com Empresa, Unidade/Obra, Responsável técnico (nome, registro, ART) e **Preposto**
       (`manager_name` — `manager_role`)
-- [ ] Campo vazio → "não informado"
-- [ ] Sumário reflete a seção
+- [x] Campo vazio → "não informado"
+- [x] Sumário reflete a seção
 
 ## 11. #47 — Seção 2 (NR-01)
 
-- [ ] Inventário passa a imprimir código eSocial, unidade, concentração, LT textual, cobertura do
+- [x] Inventário passa a imprimir código eSocial, unidade, concentração, LT textual, cobertura do
       plano (#42) e EPIs indicados
-- [ ] Layout A4 conferido (tabela não estoura a página)
+- [x] Layout A4 conferido no CSS (cabeçalho de tabela repetido, linha sem quebra); conferência
+      visual do PDF fica na seção 15
 
 ## 12. #47 — Seção 3 (NR-09)
 
-- [ ] Nova seção `nr09` no template, por GES, só com agentes elegíveis
-- [ ] Colunas: agente, descrição, método, resultado + unidade, LT, conclusão, data
-- [ ] Risco elegível sem medição → "sem medição"; GES sem risco elegível → linha única explicando
-- [ ] Nenhum valor herdado do risco nem da avaliação qualitativa
+- [x] Nova seção `nr09` no template, por GES, só com agentes elegíveis
+- [x] Colunas: agente, descrição, método, resultado + unidade, LT, conclusão, data
+- [x] Risco elegível sem medição → "sem medição"; GES sem risco elegível → linha única explicando
+- [x] Nenhum valor herdado do risco nem da avaliação qualitativa
 
 ## 13. #47 — Seção 4 (NR-17)
 
@@ -106,12 +107,12 @@ Checklist vivo do Lote 2 — atualizado conforme cada item é concluído **e** t
 
 ## 14. #47 — Seção 5 (5W2H)
 
-- [ ] Migration `action_why`/`action_cost` em `control_measures` (segunda migration do lote)
-- [ ] Campos no formulário de medida (criar e editar) + validação + 4 superfícies de API
-- [ ] Tabela do plano 5W2H completa (O quê, Por quê, Onde, Quando, Quem, Como, Quanto), lida de
+- [x] Migration `action_why`/`action_cost` em `control_measures` (segunda migration do lote)
+- [x] Campos no formulário de medida (criar e editar) + validação + 4 superfícies de API
+- [x] Tabela do plano 5W2H completa (O quê, Por quê, Onde, Quando, Quem, Como, Quanto), lida de
       `control_measures`
-- [ ] Título da seção descreve exatamente o que ela contém
-- [ ] **Nenhum** dado vindo de `action_plans` / ponte #51
+- [x] Título da seção descreve exatamente o que ela contém
+- [x] **Nenhum** dado vindo de `action_plans` / ponte #51
 
 ## 15. PDF — verificação dos dois chamadores
 
@@ -122,7 +123,7 @@ Checklist vivo do Lote 2 — atualizado conforme cada item é concluído **e** t
 
 ## 16. #47 — Tests
 
-- [ ] Unit do template: ordem das seções, sumário, preposto presente/ausente, NR-09 com/sem medição,
+- [x] Unit do template: ordem das seções, sumário, preposto presente/ausente, NR-09 com/sem medição,
       filtro de agentes, 5W2H conforme Q3, ausência de string fabricada
 - [ ] Integração: rota de PDF e `pdf-batch-core`
 - [ ] `npm run check` + `npm run build` verdes

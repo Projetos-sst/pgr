@@ -2220,7 +2220,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\"\n}"
+              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\",\n  \"actionWhy\": \"Exposição acima do limite medido na avaliação NR-09\",\n  \"actionCost\": \"15000.00\"\n}"
             }
           }
         },
@@ -2363,7 +2363,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\"\n}"
+              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\",\n  \"actionWhy\": \"Exposição acima do limite medido na avaliação NR-09\",\n  \"actionCost\": \"15000.00\"\n}"
             }
           }
         },

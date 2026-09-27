@@ -2,10 +2,17 @@ import { pgrRegistrationTypeLabel } from "./pgr";
 import {
   controlLevelLabel,
   measureStateLabel,
+  measurementUnitLabel,
   riskClassificationLabel,
   riskAgentTypeLabel,
   exposureTimeLabel,
+  planCoverageLabel,
   sortConsolidatedRisks,
+  formatMeasurement,
+  hasNr09Measurement,
+  isNr09EligibleAgent,
+  nr09ConclusionLabel,
+  type ConsolidatedAddress,
   type ConsolidatedGes,
   type ConsolidatedRisk,
   type ControlLevel,
@@ -23,7 +30,12 @@ const CONTROL_LEVEL_ORDER: ControlLevel[] = [
   "ppe",
 ];
 
-export type PgrPdfSectionKey = "risks" | "actionPlan" | "controlHierarchy";
+export type PgrPdfSectionKey =
+  | "identification"
+  | "risks"
+  | "nr09"
+  | "actionPlan"
+  | "controlHierarchy";
 
 export type PgrFormHeader = {
   code?: string | null; // FRM
@@ -45,10 +57,26 @@ export type PgrPdfOptions = {
   generatedAt: string;
 };
 
+/**
+ * Ordem e títulos das seções do documento (#47). A numeração é **sequencial pelo que
+ * existe**: a integração NR-17 (issue #40) ainda não foi implementada e, por decisão do
+ * lote, o PDF não ganha seção vazia nem dado de outro módulo para aparentar atendimento
+ * — quando a #40 chegar, ela entra na ordem e as seguintes se renumeram sozinhas.
+ */
+const SECTION_ORDER: PgrPdfSectionKey[] = [
+  "identification",
+  "risks",
+  "nr09",
+  "actionPlan",
+  "controlHierarchy",
+];
+
 const SECTION_LABELS: Record<PgrPdfSectionKey, string> = {
-  risks: "Inventário de riscos",
-  actionPlan: "Plano de ação",
-  controlHierarchy: "Hierarquia de controles",
+  identification: "Identificação",
+  risks: "Inventário de riscos (NR-01)",
+  nr09: "Avaliação quantitativa de agentes (NR-09)",
+  actionPlan: "Plano de ação (5W2H)",
+  controlHierarchy: "Hierarquia de controles (NR-01)",
 };
 
 function escapeHtml(value: string): string {
@@ -68,7 +96,9 @@ function resolveSections(
   sections?: Partial<Record<PgrPdfSectionKey, boolean>>,
 ): Record<PgrPdfSectionKey, boolean> {
   return {
+    identification: sections?.identification ?? true,
     risks: sections?.risks ?? true,
+    nr09: sections?.nr09 ?? true,
     actionPlan: sections?.actionPlan ?? true,
     controlHierarchy: sections?.controlHierarchy ?? true,
   };
@@ -125,14 +155,109 @@ function formHeaderBlock(header: PgrFormHeader): string {
   </div>`;
 }
 
+/** Seções ligadas, na ordem do documento — usada pelo sumário e pelo corpo. */
+function activeSections(sections: Record<PgrPdfSectionKey, boolean>): PgrPdfSectionKey[] {
+  return SECTION_ORDER.filter((key) => sections[key]);
+}
+
 function summaryBlock(sections: Record<PgrPdfSectionKey, boolean>): string {
-  const items = ["Caracterização dos GES"];
-  (Object.keys(SECTION_LABELS) as PgrPdfSectionKey[]).forEach((key) => {
-    if (sections[key]) items.push(SECTION_LABELS[key]);
-  });
+  const items = activeSections(sections).map((key) => SECTION_LABELS[key]);
   return `<section class="summary"><h2>Sumário</h2><ol>${items
     .map((i) => `<li>${escapeHtml(i)}</li>`)
     .join("")}</ol></section>`;
+}
+
+// ---------------------------------------------------------------------------
+// Seção 1 — Identificação (#47)
+// ---------------------------------------------------------------------------
+
+/** Endereço numa linha; `null` quando não há nenhuma parte preenchida. */
+function formatAddress(address: ConsolidatedAddress | undefined): string | null {
+  if (!address) return null;
+  const street = [address.street, address.number].filter(Boolean).join(", ");
+  const local = [address.district, address.city, address.state]
+    .filter(Boolean)
+    .join(" · ");
+  const line = [street, address.complement, local, address.zipCode]
+    .map((part) => part?.trim())
+    .filter((part) => part && part.length > 0)
+    .join(" — ");
+  return line || null;
+}
+
+/** Tabela rótulo/valor; linhas sem valor saem como "não informado" (estado honesto). */
+function definitionTable(rows: [string, string | null | undefined][]): string {
+  const body = rows
+    .map(
+      ([label, value]) =>
+        `<tr><td>${escapeHtml(label)}</td><td>${
+          value && String(value).trim()
+            ? escapeHtml(String(value).trim())
+            : '<span class="muted">não informado</span>'
+        }</td></tr>`,
+    )
+    .join("");
+  return `<table class="definition">${body}</table>`;
+}
+
+function identificationBlock(data: PgrConsolidated): string {
+  const { pgr } = data;
+  const company = pgr.company ?? null;
+  const unit = pgr.workUnit ?? null;
+  const registration = [
+    pgrRegistrationTypeLabel(pgr.registrationType),
+    pgr.registrationNumber,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const companyRows: [string, string | null | undefined][] = [
+    ["Razão social", company?.razaoSocial ?? pgr.companyName],
+    ["Nome fantasia", company?.nomeFantasia],
+    ["CNPJ", company?.cnpj],
+    ["CNAE", company?.cnae],
+    ["Atividade principal", company?.mainActivity],
+    [
+      "Grau de risco (NR-04)",
+      company?.riskGrade != null ? String(company.riskGrade) : null,
+    ],
+    ["Endereço", formatAddress(company?.address)],
+    ["Site", company?.website ?? pgr.companyWebsite],
+  ];
+
+  const unitRows: [string, string | null | undefined][] = [
+    ["Unidade / obra", unit?.name ?? pgr.workUnitName],
+    ["Nº do contrato", unit?.contractNumber],
+    ["Endereço", formatAddress(unit?.address)],
+    ["Início", unit?.startDate],
+    ["Previsão de término", unit?.expectedEndDate],
+  ];
+
+  const responsibleRows: [string, string | null | undefined][] = [
+    ["Nome", pgr.responsible],
+    ["Registro profissional", registration || null],
+    ["ART anexada", pgr.artDocumentName],
+    ["Emissão do documento", pgr.issuedAt],
+    ["Validade", pgr.validUntil],
+  ];
+
+  // Preposto = `work_units.manager_name`/`manager_role` (rótulo "Gestor/Preposto" no
+  // cadastro da unidade). Sem campo preenchido, fica "não informado" — nunca um nome
+  // emprestado de outro papel.
+  const prepostoRows: [string, string | null | undefined][] = [
+    ["Nome", unit?.managerName],
+    ["Cargo", unit?.managerRole],
+    ["Título profissional", unit?.professionalTitle],
+    ["Registro no conselho", unit?.professionalRegistration],
+  ];
+
+  return `<section class="doc-section">
+    <h2>1. Identificação</h2>
+    <h3>Empresa</h3>${definitionTable(companyRows)}
+    <h3>Unidade / obra</h3>${definitionTable(unitRows)}
+    <h3>Responsável técnico pela elaboração</h3>${definitionTable(responsibleRows)}
+    <h3>Preposto / gestor da unidade</h3>${definitionTable(prepostoRows)}
+  </section>`;
 }
 
 function assessmentLine(risk: ConsolidatedRisk): string {
@@ -140,6 +265,26 @@ function assessmentLine(risk: ConsolidatedRisk): string {
   const a = risk.assessment;
   const result = a.result ? riskClassificationLabel(a.result) : "—";
   return `Prob. ${a.probability} × Sev. ${a.severity} = Nível <strong>${a.riskLevel}</strong> (${escapeHtml(result)})`;
+}
+
+/** Código eSocial + unidade + concentração de referência, já no consolidado (#47). */
+function riskReferenceCell(risk: ConsolidatedRisk): string {
+  const parts = [
+    risk.noxiousAgentCode ? `eSocial ${risk.noxiousAgentCode}` : null,
+    formatMeasurement(risk.concentrationIntensity, risk.measurementUnit),
+    risk.measurementUnit && !risk.concentrationIntensity
+      ? measurementUnitLabel(risk.measurementUnit)
+      : null,
+    risk.assessment?.toleranceLimit ? `LT: ${risk.assessment.toleranceLimit}` : null,
+  ].filter((part): part is string => Boolean(part));
+  return parts.length ? escapeHtml(parts.join(" · ")) : "—";
+}
+
+function riskEpisCell(risk: ConsolidatedRisk): string {
+  if (risk.epis.length === 0) return `<span class="muted">Sem EPI indicado</span>`;
+  return escapeHtml(
+    risk.epis.map((e) => (e.ca ? `${e.name} (CA ${e.ca})` : e.name)).join(", "),
+  );
 }
 
 function riskInventoryBlock(risks: ConsolidatedRisk[]): string {
@@ -152,15 +297,92 @@ function riskInventoryBlock(risks: ConsolidatedRisk[]): string {
         <td>${text(r.sources)}</td>
         <td>${r.exposureTime ? escapeHtml(exposureTimeLabel(r.exposureTime)) : "—"}</td>
         <td>${assessmentLine(r)}</td>
+        <td>${riskReferenceCell(r)}</td>
+        <td>${riskEpisCell(r)}</td>
+        <td>${escapeHtml(planCoverageLabel(r.planCoverage))}</td>
       </tr>`,
     )
     .join("");
   return `<table class="grid">
-    <thead><tr><th>Agente</th><th>Descrição</th><th>Fontes</th><th>Exposição</th><th>Avaliação</th></tr></thead>
+    <thead><tr><th>Agente</th><th>Descrição</th><th>Fontes</th><th>Exposição</th><th>Avaliação</th><th>Referências</th><th>EPIs</th><th>Plano</th></tr></thead>
     <tbody>${rows}</tbody></table>`;
 }
 
-function actionPlanBlock(risks: ConsolidatedRisk[]): string {
+// ---------------------------------------------------------------------------
+// Seção 3 — NR-09 (#39 + #47)
+// ---------------------------------------------------------------------------
+
+/**
+ * Só agentes físicos/químicos/biológicos entram. Risco elegível **sem** medição aparece
+ * como "sem medição" — ausência de medição nunca vira conformidade; risco não elegível
+ * fica fora da tabela e o total é declarado embaixo, em vez de sumir sem explicação.
+ */
+function nr09Block(risks: ConsolidatedRisk[]): string {
+  const eligible = risks.filter((r) => isNr09EligibleAgent(r.agentType));
+  const ineligible = risks.length - eligible.length;
+  const footer = ineligible
+    ? `<p class="muted">${ineligible} risco(s) deste GES não são objeto da NR-09 (agentes ergonômicos, mecânicos, de acidentes ou psicossociais).</p>`
+    : "";
+
+  if (eligible.length === 0) {
+    return `<p class="muted">Nenhum agente físico, químico ou biológico neste GES.</p>${footer}`;
+  }
+
+  const rows = eligible
+    .map((r) => {
+      const a = r.assessment;
+      const measured = formatMeasurement(a?.measuredValue, a?.measuredUnit ?? null);
+      const limit = formatMeasurement(a?.toleranceLimitValue, a?.measuredUnit ?? null);
+      const semMedicao = !a || !hasNr09Measurement(a);
+      if (semMedicao) {
+        return `<tr>
+          <td>${escapeHtml(riskAgentTypeLabel(r.agentType))}</td>
+          <td>${text(r.description)}</td>
+          <td colspan="5"><span class="muted">Sem medição registrada — avaliação quantitativa pendente.</span></td>
+        </tr>`;
+      }
+      return `<tr>
+        <td>${escapeHtml(riskAgentTypeLabel(r.agentType))}</td>
+        <td>${text(r.description)}</td>
+        <td>${text(a?.evaluationMethod)}</td>
+        <td>${measured ? escapeHtml(measured) : "—"}</td>
+        <td>${limit ? escapeHtml(limit) : text(a?.toleranceLimit)}</td>
+        <td>${a?.nr09Conclusion ? escapeHtml(nr09ConclusionLabel(a.nr09Conclusion)) : '<span class="muted">não informada</span>'}</td>
+        <td>${text(a?.assessedAt)}</td>
+      </tr>`;
+    })
+    .join("");
+
+  return `<table class="grid">
+    <thead><tr><th>Agente</th><th>Descrição</th><th>Método</th><th>Resultado</th><th>Limite de tolerância</th><th>Conclusão</th><th>Data</th></tr></thead>
+    <tbody>${rows}</tbody></table>${footer}`;
+}
+
+/** Custo em BRL; `null` quando a medida não tem custo informado (não inventa zero). */
+function formatCost(value: string | null): string | null {
+  if (!value || !value.trim()) return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  });
+}
+
+/**
+ * Plano de ação 5W2H completo (#47), lido **sempre** de `control_measures`:
+ * o quê/por quê/onde/quando/quem/como/quanto. O "onde" é o GES do risco — dado real do
+ * cadastro. A ponte #51 (`action_plans`) **não** alimenta esta seção: lá `who`, `why` e
+ * `where` podem ser texto gerado pelo sistema, e documento legal não leva texto inventado.
+ * Campo vazio sai como "não informado".
+ */
+function actionPlanBlock(risks: ConsolidatedRisk[], gesName: string): string {
+  const cell = (value: string | null | undefined) =>
+    value && String(value).trim()
+      ? escapeHtml(String(value).trim())
+      : '<span class="muted">não informado</span>';
+
   const rows = risks
     .flatMap((r) =>
       r.measures
@@ -168,10 +390,13 @@ function actionPlanBlock(risks: ConsolidatedRisk[]): string {
         .map(
           (m) => `<tr>
             <td>${escapeHtml(controlLevelLabel(m.controlLevel))}</td>
-            <td>${text(m.actionWhat)}</td>
-            <td>${text(m.actionHow)}</td>
-            <td>${text(m.actionResponsible)}</td>
-            <td>${text(m.actionDeadline)}</td>
+            <td>${cell(m.actionWhat)}</td>
+            <td>${cell(m.actionWhy)}</td>
+            <td>${cell(gesName)}</td>
+            <td>${cell(m.actionDeadline)}</td>
+            <td>${cell(m.actionResponsible)}</td>
+            <td>${cell(m.actionHow)}</td>
+            <td>${cell(formatCost(m.actionCost))}</td>
             <td>${escapeHtml(measureStateLabel(m.state))}</td>
           </tr>`,
         ),
@@ -179,7 +404,7 @@ function actionPlanBlock(risks: ConsolidatedRisk[]): string {
     .join("");
   if (!rows) return `<p class="muted">Sem medidas de controle aplicáveis.</p>`;
   return `<table class="grid">
-    <thead><tr><th>Nível</th><th>O quê</th><th>Como</th><th>Responsável</th><th>Prazo</th><th>Situação</th></tr></thead>
+    <thead><tr><th>Nível NR-01</th><th>O quê</th><th>Por quê</th><th>Onde</th><th>Quando</th><th>Quem</th><th>Como</th><th>Quanto</th><th>Situação</th></tr></thead>
     <tbody>${rows}</tbody></table>`;
 }
 
@@ -202,22 +427,41 @@ function controlHierarchyBlock(risks: ConsolidatedRisk[]): string {
   return `<div class="hierarchy">${groups}</div>`;
 }
 
-function gesBlock(
-  ges: ConsolidatedGes,
-  sections: Record<PgrPdfSectionKey, boolean>,
+/** Um bloco por GES dentro de uma seção do documento. */
+function perGesBlock(
+  data: PgrConsolidated,
+  render: (risks: ConsolidatedRisk[], ges: ConsolidatedGes) => string,
 ): string {
-  const risks = sortConsolidatedRisks(ges.risks);
-  const parts = [`<h3>GES — ${text(ges.name)}</h3>`];
-  if (sections.risks) {
-    parts.push(`<h4>Inventário de riscos</h4>${riskInventoryBlock(risks)}`);
+  if (data.ges.length === 0) return `<p class="muted">PGR sem GES cadastrados.</p>`;
+  return data.ges
+    .map((g) => {
+      const risks = sortConsolidatedRisks(g.risks);
+      return `<div class="ges"><h3>GES — ${text(g.name)}</h3>${render(risks, g)}</div>`;
+    })
+    .join("");
+}
+
+function sectionBlock(
+  key: PgrPdfSectionKey,
+  index: number,
+  data: PgrConsolidated,
+): string {
+  const title = `${index}. ${SECTION_LABELS[key]}`;
+  if (key === "identification") {
+    return identificationBlock(data).replace(
+      "<h2>1. Identificação</h2>",
+      `<h2>${escapeHtml(title)}</h2>`,
+    );
   }
-  if (sections.actionPlan) {
-    parts.push(`<h4>Plano de ação</h4>${actionPlanBlock(risks)}`);
-  }
-  if (sections.controlHierarchy) {
-    parts.push(`<h4>Hierarquia de controles</h4>${controlHierarchyBlock(risks)}`);
-  }
-  return `<section class="ges">${parts.join("")}</section>`;
+  const body =
+    key === "risks"
+      ? perGesBlock(data, (risks) => riskInventoryBlock(risks))
+      : key === "nr09"
+        ? perGesBlock(data, (risks) => nr09Block(risks))
+        : key === "actionPlan"
+          ? perGesBlock(data, (risks, ges) => actionPlanBlock(risks, ges.name))
+          : perGesBlock(data, (risks) => controlHierarchyBlock(risks));
+  return `<section class="doc-section"><h2>${escapeHtml(title)}</h2>${body}</section>`;
 }
 
 /**
@@ -230,10 +474,9 @@ export function buildPgrHtml(data: PgrConsolidated, options: PgrPdfOptions): str
   const coverColor = options.coverColor?.trim() || DEFAULT_COVER_COLOR;
   const sections = resolveSections(options.sections);
   const header = options.formHeader ? formHeaderBlock(options.formHeader) : "";
-  const body =
-    data.ges.length === 0
-      ? `<p class="muted">PGR sem GES cadastrados.</p>`
-      : data.ges.map((g) => gesBlock(g, sections)).join("");
+  const body = activeSections(sections)
+    .map((key, i) => sectionBlock(key, i + 1, data))
+    .join("");
 
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <title>PGR — ${text(data.pgr.companyName)}</title>
@@ -255,7 +498,13 @@ h4 { font-size: 12px; margin: 12px 0 4px; }
 .form-control { display: flex; gap: 16px; flex-wrap: wrap; font-size: 10px; border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px; margin-bottom: 12px; }
 .summary ol { margin: 4px 0 0 18px; }
 .summary li { padding: 2px 0; }
+.doc-section { page-break-inside: auto; margin-top: 18px; }
 .ges { page-break-inside: avoid; margin-top: 14px; }
+table.definition { border-collapse: collapse; width: 100%; margin: 4px 0 10px; }
+table.definition td { border-bottom: 1px solid #e8e8e8; padding: 4px 6px; vertical-align: top; }
+table.definition td:first-child { width: 220px; color: #555; font-weight: 600; }
+table.grid thead { display: table-header-group; }
+table.grid tr { page-break-inside: avoid; }
 table.grid { border-collapse: collapse; width: 100%; margin: 4px 0 8px; }
 table.grid th, table.grid td { border: 1px solid #d5d5d5; padding: 4px 6px; text-align: left; vertical-align: top; }
 table.grid th { background: #f3f3f6; font-size: 10px; }
@@ -267,7 +516,6 @@ table.grid th { background: #f3f3f6; font-size: 10px; }
 ${coverBlock(data, { coverColor, generatedAt: options.generatedAt, logoDataUrl: options.logoDataUrl })}
 ${header}
 ${summaryBlock(sections)}
-<h2>Caracterização dos GES e riscos</h2>
 ${body}
 </body></html>`;
 }

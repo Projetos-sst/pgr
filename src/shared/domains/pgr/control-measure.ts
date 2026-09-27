@@ -25,6 +25,16 @@ export type { ControlLevel };
 // `z.coerce.boolean("false") === true` (qualquer string não vazia é truthy) — bug. Por isso
 // usamos um preprocess explícito. Ausente/desconhecido → false.
 // ---------------------------------------------------------------------------
+/** Decimal opcional em string (`""` → `undefined`); a coluna é `numeric`. */
+const optionalDecimal = z
+  .string()
+  .trim()
+  .transform((v) => (v === "" ? undefined : v))
+  .optional()
+  .refine((v) => v === undefined || /^\d+(\.\d{1,2})?$/.test(v), {
+    message: "Custo estimado deve ser um valor em reais (ex.: 1500 ou 1500.00)",
+  });
+
 const TRUTHY = new Set(["true", "on", "1", "yes"]);
 const applicableField = z.preprocess((value) => {
   if (typeof value === "boolean") return value;
@@ -119,11 +129,17 @@ export const controlMeasureInputSchema = z
     justification: optionalString,
     monitoring: optionalString,
     actionWhat: optionalString,
+    // "Por quê" do 5W2H (#47): motivo REAL informado pelo usuário. Nunca é gerado — a
+    // ponte #51 fabricava "Medida de controle nível X", e isso não entra no PGR.
+    actionWhy: optionalString,
     actionHow: optionalString,
     actionTracking: optionalString,
     actionMeasurement: optionalString,
     actionResponsible: optionalString,
     actionDeadline: optionalIsoDate,
+    // "Quanto" do 5W2H (#47): custo estimado em BRL, decimal opcional em string
+    // (coluna `numeric`, mesmo padrão de `concentrationIntensity`).
+    actionCost: optionalDecimal,
   })
   .superRefine((values, ctx) => {
     // Campos mínimos do plano: obrigatórios apenas quando a medida é aplicável (FR-004).
@@ -203,7 +219,9 @@ export type ControlMeasureListItem = {
   actionHow: string | null;
   actionTracking: string | null;
   actionMeasurement: string | null;
+  actionWhy: string | null;
   actionResponsible: string | null;
   actionDeadline: string | null;
+  actionCost: string | null;
   createdAt: Date;
 };

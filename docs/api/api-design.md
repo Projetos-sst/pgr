@@ -914,10 +914,18 @@ espelho: `/api/v1/risks/{id}/control-measures` (GET, POST 201) · `/api/v1/contr
 
 **`ControlMeasureInput`** (mesmo corpo para create e PUT): `controlLevel*` (enum NR-01; ignorado na
 escrita do PUT — imutável), `applicable` (bool), `actionWhat`/`actionHow` (**obrigatórios quando
-`applicable=true`**), `actionTracking?`/`actionMeasurement?`/`actionResponsible?`/`actionDeadline?`
+`applicable=true`**), `actionWhy?` (motivo real da medida — o "por quê" do 5W2H, issue #47),
+`actionCost?` (custo estimado em BRL, decimal em string — o "quanto"),
+`actionTracking?`/`actionMeasurement?`/`actionResponsible?`/`actionDeadline?`
 (`AAAA-MM-DD`)/`justification?`/`monitoring?`. **Não** aceita `riskId` (rota) nem `orgId` (sessão).
 **Erros REST**: 422 (validação/FK `riskId`), 404 (cross-tenant/inexistente), **409** (nível
 duplicado), 403 (`client`).
+
+O 5W2H do PGR é **completo** desde a migration `0050_measure_why_cost`: o quê (`actionWhat`), por quê
+(`actionWhy`), onde (GES do risco, derivado na leitura), quando (`actionDeadline`), quem
+(`actionResponsible`), como (`actionHow`) e quanto (`actionCost`). Nenhum deles é obrigatório
+retroativamente — medida antiga sem motivo/custo aparece como "não informado" no PDF. O módulo
+`action_plans` (ponte #51) **não** alimenta o PGR.
 
 ---
 

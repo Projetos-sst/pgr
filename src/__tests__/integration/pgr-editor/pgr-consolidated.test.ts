@@ -93,6 +93,78 @@ function asOwner(tenantId: string) {
     expect(risk.assessment?.riskLevel).toBe(9);
   });
 
+  it("traz identificação completa da empresa e da unidade, com preposto (#47)", async () => {
+    await admin.unsafe(`
+      update public.companies
+        set nome_fantasia='A Fantasia', cnae='4120-4/00', main_activity='Construção',
+            risk_grade=3, zip_code='20040-020', street='Avenida Rio Branco', number='156',
+            district='Centro', city='Rio de Janeiro', state='RJ'
+      where org_id='org_a' and id='${PGR_IDS.companyA}';
+      update public.work_units
+        set type='site', contract_number='CT-2026/001', manager_name='Fulano Preposto',
+            manager_role='Encarregado de obra', professional_title='Engenheiro Civil',
+            professional_registration='CREA-RJ 99999', start_date='2026-01-02',
+            expected_end_date='2027-01-02', city='Rio de Janeiro', state='RJ'
+      where org_id='org_a' and id='${PGR_IDS.workUnitA}';`);
+
+    const result = await getPgrConsolidatedAction(PGR_IDS.pgrA);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { company, workUnit } = result.data.pgr;
+    expect(company?.cnpj).toBe("11222333000181");
+    expect(company?.nomeFantasia).toBe("A Fantasia");
+    expect(company?.riskGrade).toBe(3);
+    expect(company?.address.city).toBe("Rio de Janeiro");
+    // Preposto = manager_name/manager_role da unidade (validado na auditoria do Lote 2).
+    expect(workUnit?.managerName).toBe("Fulano Preposto");
+    expect(workUnit?.managerRole).toBe("Encarregado de obra");
+    expect(workUnit?.professionalRegistration).toBe("CREA-RJ 99999");
+  });
+
+  it("traz por quê e custo da medida (5W2H completo, #47)", async () => {
+    await admin.unsafe(`
+      update public.control_measures
+        set applicable=true, action_what='Enclausurar compressor',
+            action_why='Exposição acima do limite medido na NHO-01',
+            action_how='Cabine acústica', action_responsible='SESMT',
+            action_deadline='2026-12-31', action_cost=15000.00
+      where org_id='org_a' and id='${PGR_IDS.controlMeasureA}'`);
+
+    const result = await getPgrConsolidatedAction(PGR_IDS.pgrA);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const measure = result.data.ges[0].risks[0].measures[0];
+    expect(measure.actionWhy).toBe("Exposição acima do limite medido na NHO-01");
+    expect(Number(measure.actionCost)).toBe(15000);
+  });
+
+  it("medida sem por quê/custo devolve null — nada é preenchido pelo sistema", async () => {
+    const result = await getPgrConsolidatedAction(PGR_IDS.pgrA);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const measure = result.data.ges[0].risks[0].measures[0];
+    expect(measure.actionWhy).toBeNull();
+    expect(measure.actionCost).toBeNull();
+  });
+
+  it("traz a avaliação quantitativa NR-09 da avaliação vigente (#39)", async () => {
+    await admin.unsafe(`
+      update public.risk_assessments
+        set criterion='quantitative', evaluation_method='NHO-01 (ruído)',
+            measured_value=87.5, measured_unit='db_a', tolerance_limit_value=85,
+            nr09_conclusion='above_limit'
+      where org_id='org_a' and id='${PGR_IDS.riskAssessmentA}'`);
+
+    const result = await getPgrConsolidatedAction(PGR_IDS.pgrA);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const assessment = result.data.ges[0].risks[0].assessment;
+    expect(assessment?.evaluationMethod).toBe("NHO-01 (ruído)");
+    expect(Number(assessment?.measuredValue)).toBe(87.5);
+    expect(assessment?.measuredUnit).toBe("db_a");
+    expect(assessment?.nr09Conclusion).toBe("above_limit");
+  });
+
   it("expõe os campos eSocial S-2240 já persistidos", async () => {
     await admin.unsafe(`
       update public.risks

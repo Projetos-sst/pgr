@@ -60,11 +60,13 @@ export default async function EditControlMeasurePage({
           justification: measure.justification,
           monitoring: measure.monitoring,
           actionWhat: measure.actionWhat,
+          actionWhy: measure.actionWhy,
           actionHow: measure.actionHow,
           actionTracking: measure.actionTracking,
           actionMeasurement: measure.actionMeasurement,
           actionResponsible: measure.actionResponsible,
           actionDeadline: measure.actionDeadline,
+          actionCost: measure.actionCost,
         }}
       />
     </div>

@@ -88,11 +88,13 @@ describe("sortConsolidatedRisks", () => {
       justification: "j",
       monitoring: "mon",
       actionWhat: "o quê",
+      actionWhy: null,
       actionHow: "como",
       actionTracking: "acomp",
       actionMeasurement: "medição",
       actionResponsible: "resp",
       actionDeadline: "2026-12-31",
+      actionCost: null,
       status: "introduced" as const,
       state: "planned" as const,
     };
