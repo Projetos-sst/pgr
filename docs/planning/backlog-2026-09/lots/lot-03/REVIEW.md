@@ -123,13 +123,13 @@ pelos espelhos `GET /api/v1/pgr/{id}/nr18-checklist` e `/epi-relation`. A UI sã
 
 ## Testes
 
-| Suíte                                                 | Resultado                                                          |
-| ----------------------------------------------------- | ------------------------------------------------------------------ |
-| `npm run check` (format + lint + tsc + unit)          | **PASS** — 143 suítes, 1 367 testes; 4 warnings **pré-existentes** |
-| `npm run test:integration` (Postgres efêmero do zero) | **PASS** — 155 suítes, 1 210 testes, 3 puladas por env             |
-| `npm run build`                                       | **PASS** — todas as rotas novas presentes no manifesto             |
-| Gotenberg e2e (serviço real)                          | **PASS** — 2 testes (pulado no run completo por falta de env)      |
-| Playwright / QA                                       | **PASS** — ver [QA.md](QA.md)                                      |
+| Suíte                                                          | Resultado                                                                                                                                                              |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run check` (format + lint + tsc + unit)                   | **PASS** — 143 suítes, 1 367 testes; 4 warnings **pré-existentes**                                                                                                     |
+| `npm run test:integration` (Postgres efêmero recriado do zero) | 153 suítes / 1 206 testes verdes; **1 suíte pré-existente** (`signatures/quota`) estoura o timeout de 5 s sob a carga do run local e passa em isolamento — ver dívidas |
+| `npm run build`                                                | **PASS** — todas as rotas novas presentes no manifesto                                                                                                                 |
+| Gotenberg e2e (serviço real)                                   | **PASS** — 2 testes (pulado no run completo por falta de env)                                                                                                          |
+| Playwright / QA                                                | **PASS** — ver [QA.md](QA.md)                                                                                                                                          |
 
 Testes novos: 27 unit de `ergonomics`, 13 unit de `nr18`, 12 unit de `epi-relation`, 6 unit das
 primitives de alinhamento, 13 no template do PDF, 4 no consolidado, 18 de integração da NR-17, 6 de
@@ -142,13 +142,14 @@ isolamento ou de conteúdo do documento. Detalhe e evidências em [QA.md](QA.md#
 
 ## Dívidas pré-existentes (revalidadas, **não** corrigidas aqui)
 
-| Dívida                                                                                                 | Situação em 27/09/2026                                                                                                                                |
-| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Journal do banco de **desenvolvimento** defasado desde 02/09 (`0046`–`0048` aplicadas fora do drizzle) | Continua. A `0051` foi aplicada no dev pela conexão owner, como no Lote 2. Não afeta CI nem produção.                                                 |
-| `rest-*.test.ts` fora do CI (o `NextRequest` do Jest quebra em `resolveContext`)                       | Continua; `rest-ergonomic-evaluations.test.ts` entrou na mesma lista, com o motivo confirmado na execução. O REST foi validado por HTTP real no QA.   |
-| Ponte #51 (`action_plans`) com `who`/`why`/`where` gerados                                             | Continua fora do PDF; a busca por literais da ponte no documento não retorna nada.                                                                    |
-| Contêiner `sst-pdf-worker` roda a imagem do Lote 2 e o DNS do Supabase falha de forma intermitente     | Continua. O worker do lote foi executado pelo script oficial no host (`npm run worker`).                                                              |
-| Rodar a suíte de integração completa **várias vezes** no mesmo banco local produz falhas variáveis     | Confirmado e explicado: com o banco recriado do zero, o run completo é verde. É acúmulo de estado local, não código. Em CI o banco é novo a cada job. |
+| Dívida                                                                                                 | Situação em 27/09/2026                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Journal do banco de **desenvolvimento** defasado desde 02/09 (`0046`–`0048` aplicadas fora do drizzle) | Continua. A `0051` foi aplicada no dev pela conexão owner, como no Lote 2. Não afeta CI nem produção.                                                                                                                                                                 |
+| `rest-*.test.ts` fora do CI (o `NextRequest` do Jest quebra em `resolveContext`)                       | Continua; `rest-ergonomic-evaluations.test.ts` entrou na mesma lista, com o motivo confirmado na execução. O REST foi validado por HTTP real no QA.                                                                                                                   |
+| Ponte #51 (`action_plans`) com `who`/`why`/`where` gerados                                             | Continua fora do PDF; a busca por literais da ponte no documento não retorna nada.                                                                                                                                                                                    |
+| Contêiner `sst-pdf-worker` roda a imagem do Lote 2 e o DNS do Supabase falha de forma intermitente     | Continua. O worker do lote foi executado pelo script oficial no host (`npm run worker`).                                                                                                                                                                              |
+| `signatures/quota.test.ts` estoura o timeout padrão de 5 s no run **completo** desta máquina           | Investigado: a falha é `Exceeded timeout of 5000 ms`, não asserção errada — os dois testes criam 10 e 13 pedidos de assinatura em laço e, sob a carga das 158 suítes locais, passam de 5 s. Em isolamento passam (3/3). Suíte da fatia 010, não tocada por este lote. |
+| Rodar a suíte completa **repetidas vezes** no mesmo banco local produz falhas variáveis                | Confirmado e explicado: com o banco recriado do zero o run é verde (à parte do timeout acima). É acúmulo de estado local, não código — em CI o banco é novo a cada job.                                                                                               |
 
 ## Estado das issues
 
