@@ -27,7 +27,7 @@ Tudo removido ao fim (seção de limpeza).
 ## Casos
 
 | #   | Caso                                                                                    | Resultado | Evidência                                                                          |
-| --- | --------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------- | ------ | ---------- |
+| --- | --------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------- |
 | A1  | Avaliação qualitativa **não** mostra o bloco NR-09                                      | PASS      | `039-.../desktop/01-form-qualitativo-sem-bloco.png`                                |
 | A2  | Critério quantitativo em agente elegível revela o bloco NR-09                           | PASS      | `039-.../desktop/02-bloco-nr09-com-sugestao.png`                                   |
 | A3  | Sugestão de conclusão aparece com valor + limite e é rotulada como sugestão             | PASS      | mesma captura — aviso âmbar com “Usar sugestão”                                    |
@@ -46,7 +46,7 @@ Tudo removido ao fim (seção de limpeza).
 | C6  | Arquivar no GED: worker processa e o documento nasce `ready` com o mesmo conteúdo       | PASS      | worker `job_done` em 1 tentativa; documento `ready`; texto **idêntico** ao da rota |
 | D1  | Cross-tenant: avaliação/medida de outro escritório → 404                                | PASS      | `404 NOT_FOUND`                                                                    |
 | D2  | PDF de PGR de outro tenant → 404                                                        | PASS      | `404 NOT_FOUND`                                                                    |
-| E1  | Responsivo 1440 / 768 / 375 nas telas alteradas                                         | PASS      | `scrollWidth == clientWidth` nos 3 viewports; capturas em `tablet/` e `mobile/`    | tablet | mobile/\*` |
+| E1  | Responsivo 1440 / 768 / 375 nas telas alteradas                                         | PASS      | `scrollWidth == clientWidth` nos 3 viewports; capturas em desktop, tablet e mobile |
 | F1  | Console/rede sem erro inesperado (só os 4xx dos testes negativos)                       | PASS      | só os 4xx dos testes negativos; 500s explicados (ver Execução)                     |
 
 ## Execução

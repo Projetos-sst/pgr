@@ -244,12 +244,12 @@ real. Faltam **Por quê** e **Quanto**.
 
 ## Divisão de #47
 
-| Parte | Conteúdo                                                    | Situação                                                                       |
-| ----- | ----------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| **A** | Seção 1 (identificação com preposto) + Seção 2 (inventário) | **READY AGORA**                                                                |
-| **B** | Seção 3 (NR-09)                                             | **READY APÓS #39** — mesmo lote                                                |
-| **C** | Seção 4 (NR-17)                                             | **BLOCKED por #40** — Lote 3                                                   |
-| **D** | Seção 5 (5W2H)                                              | **NEEDS PRODUCT DECISION** (Q3): 5/7 com dado real agora, ou 7/7 com migration |
+| Parte | Conteúdo                                                    | Situação                                                               |
+| ----- | ----------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **A** | Seção 1 (identificação com preposto) + Seção 2 (inventário) | **READY AGORA**                                                        |
+| **B** | Seção 3 (NR-09)                                             | **READY APÓS #39** — mesmo lote                                        |
+| **C** | Seção 4 (NR-17)                                             | **BLOCKED por #40** — Lote 3                                           |
+| **D** | Seção 5 (5W2H)                                              | **READY** — D-Q3 decidiu 7/7, com `action_why`/`action_cost` na medida |
 
 ## Migration (#47)
 
@@ -319,5 +319,10 @@ documento mostra ausência honesta em vez de texto inventado.
 
 # Recomendação
 
-Rodar o Lote 2 **em série, duas PRs**: primeiro #39 (dado), depois #47 partes A + B + D (documento),
-deixando #47 aberta até a seção NR-17 do Lote 3. A ponte #51 fica intocada e fora do PDF.
+Rodar #39 (dado) antes de #47 (documento) e deixar #47 aberta até a seção NR-17 do Lote 3. A ponte
+#51 fica intocada e fora do PDF.
+
+> **Executado assim (27/09):** a ordem foi mantida, mas o usuário pediu **branch única e PR única**
+> para o lote — `feature/lot-02-nr09-pgr-pdf` → [PR #95](https://github.com/Projetos-sst/pgr/pull/95).
+> O "primeiro #39, depois #47" virou gate interno (a #39 tinha de estar verde antes de tocar no
+> template), não dois merges.

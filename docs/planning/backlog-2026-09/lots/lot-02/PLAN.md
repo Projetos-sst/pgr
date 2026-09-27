@@ -172,13 +172,15 @@ campos entra no PDF.
 
 ## Migrations previstas
 
-| Migration               | Issue   | Conteúdo                                                          | Condição         |
-| ----------------------- | ------- | ----------------------------------------------------------------- | ---------------- |
-| `00NN_nr09_evaluation`  | #39     | Enum `nr09_conclusion` + 5 colunas em `risk_assessments` + CHECKs | Depende de Q1    |
-| `00NN_measure_why_cost` | #47 (D) | `action_why`, `action_cost` em `control_measures`                 | Só se **Q3 = B** |
+| Migration                   | Issue   | Conteúdo                                                            | Situação     |
+| --------------------------- | ------- | ------------------------------------------------------------------- | ------------ |
+| `0049_nr09_evaluation.sql`  | #39     | Enum `nr09_conclusion` + 5 colunas em `risk_assessments` + 2 CHECKs | Implementada |
+| `0050_measure_why_cost.sql` | #47 (D) | `action_why`, `action_cost` em `control_measures`                   | Implementada |
 
-Número **não** reservado: gerar com `npm run db:generate` só depois de sincronizar `develop`, na hora
-de implementar. RLS/GRANT/trigger são herdados das tabelas existentes — nenhuma policy nova.
+Os números saíram do `npm run db:generate` com a `develop` sincronizada (última migration da base era
+a `0048`), e os arquivos foram renomeados para o padrão descritivo do projeto, com o `tag` do journal
+acompanhando. Todas as colunas são **nullable e sem default**: registro antigo continua válido, sem
+backfill. RLS/GRANT/trigger são herdados das tabelas existentes — nenhuma policy nova.
 
 ## RLS
 
@@ -214,22 +216,25 @@ da auditoria). Tudo — decisões, #39, #47, walkthrough, review, QA — vive ne
 
 ## Estratégia de PRs
 
-**Recomendada — Estratégia B (duas PRs em série):**
+**Adotada: uma única PR — [#95](https://github.com/Projetos-sst/pgr/pull/95).**
 
-| PR    | Conteúdo                                               | Fecha                           |
-| ----- | ------------------------------------------------------ | ------------------------------- |
-| PR #1 | #39 completa (migration, 4 superfícies, UI, testes)    | Fecha **#39**                   |
-| PR #2 | #47 partes A + B + D (template + consolidado + testes) | **Não** fecha #47 — falta NR-17 |
+| PR                                                 | Conteúdo                                                                      | Issues                                     |
+| -------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------ |
+| [#95](https://github.com/Projetos-sst/pgr/pull/95) | Auditoria, decisões, #39 completa, #47 partes A+B+D, walkthrough, review e QA | `Closes #39` · **Partially addresses** #47 |
 
-Por quê: a migration fica isolada numa PR pequena e reversível; a mudança do template — que é o
-entregável visível ao cliente e tem dois chamadores — é revisada sozinha. Uma PR única misturaria
-migration com contrato visual e dificultaria rollback. Uma PR por seção do PDF geraria três rebases
-no mesmo arquivo sem ganho de revisão.
+Auditoria, planejamento, implementação, ajuste visual, walkthrough, review e QA vivem todos na mesma
+branch; nada é mergeado em etapas dentro do lote. **#39 fecha com a PR**; **#47 não fecha** — falta a
+seção NR-17, que depende da #40.
+
+> Nota histórica: a versão original deste plano recomendava duas PRs em série (#39 primeiro, #47
+> depois). O usuário trocou a estratégia operacional em 27/09, antes da implementação, e o lote
+> inteiro passou a caber numa branch e numa PR. O gate entre as duas issues virou interno: a #39
+> tinha de estar verde na branch antes de mexer no template.
 
 ## Dependências
 
 - **Entrada:** decisões D-Q1, D-Q2 e D-Q3 — fechadas.
-- **Interna:** #47 parte B depende de #39 mergeada.
+- **Interna:** #47 parte B depende de #39 **verde na branch** (gate interno, não merge).
 - **Saída:** Lote 3 (#40 + fechamento de #47) começa com a seção 4 e o critério de aceite completo da
   #47.
 
@@ -252,7 +257,7 @@ no mesmo arquivo sem ganho de revisão.
 - #47: PDF com as seções 1, 2, 3 e 5 na ordem, gerado **pela rota e pelo worker**, conferido
   manualmente; template com testes de ordem e de estado honesto; nenhuma string fabricada.
 - `npm run check`, integração e `npm run build` verdes; QA de regressão do PDF/GED registrado.
-- #39 fechada; #47 **aberta**, com comentário do que faltou (NR-17) e link para o Lote 3.
+- #39 fecha pela PR; #47 **permanece aberta**, com comentário do que faltou (NR-17 / #40).
 - `REVIEW.md` e `QA.md` do Lote 2 escritos; fichas 039/047 atualizadas.
 
 ## Itens bloqueados
