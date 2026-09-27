@@ -88,6 +88,6 @@ Detalhe completo em [../lots/lot-02/AUDIT.md](../lots/lot-02/AUDIT.md); plano em
 
 ## Execução
 
-| Branch | PR  | Migration | Testes | CI  | Decisão | Status  |
-| ------ | --- | --------- | ------ | --- | ------- | ------- |
-| —      | —   | —         | —      | —   | —       | Backlog |
+| Branch                        | PR         | Migration              | Testes                  | CI  | Decisão            | Status    |
+| ----------------------------- | ---------- | ---------------------- | ----------------------- | --- | ------------------ | --------- |
+| `feature/lot-02-nr09-pgr-pdf` | PR do lote | `0049_nr09_evaluation` | 31 unit + 13 integração | —   | D-Q1, D-Q2 (27/09) | In review |

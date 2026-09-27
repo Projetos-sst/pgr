@@ -116,34 +116,40 @@ Checklist vivo do Lote 2 — atualizado conforme cada item é concluído **e** t
 
 ## 15. PDF — verificação dos dois chamadores
 
-- [ ] Gerar pela rota `GET /api/v1/pgr/[id]/pdf` e conferir o arquivo
-- [ ] Gerar pelo worker ("Arquivar no GED") e conferir que o documento nasce `ready` e igual
-- [ ] Cabeçalho ISO (`form_controls`) e cor/logo da capa continuam funcionando
-- [ ] Conferência visual do PDF com massa sintética (empresa/obra/GES/riscos com e sem medição)
+- [x] Gerar pela rota `GET /api/v1/pgr/[id]/pdf` e conferir o arquivo
+- [x] Gerar pelo worker ("Arquivar no GED") e conferir que o documento nasce `ready` e igual
+- [x] Cabeçalho ISO (`form_controls`) e cor/logo da capa continuam funcionando
+- [x] Conferência visual do PDF com massa sintética (empresa/obra/GES/riscos com e sem medição)
 
 ## 16. #47 — Tests
 
 - [x] Unit do template: ordem das seções, sumário, preposto presente/ausente, NR-09 com/sem medição,
       filtro de agentes, 5W2H conforme Q3, ausência de string fabricada
-- [ ] Integração: rota de PDF e `pdf-batch-core`
-- [ ] `npm run check` + `npm run build` verdes
+- [x] Integração: rota de PDF e `pdf-batch-core`
+- [x] `npm run check` + `npm run build` verdes
+
+## 16b. Ajuste visual pedido durante o QA
+
+- [x] Formulários de risco, avaliação e medida migrados para as primitives de `_ui/form` (cartões
+      glass, grade de 2 colunas, wrapper de 940px) — o de avaliação ocupava menos da metade da tela
+- [x] Conferido nos três viewports, sem mudança de comportamento (1 297 testes verdes)
 
 ## 17. Regressão
 
-- [ ] Inventário de riscos e cobertura do plano (#42) intactos na tela
-- [ ] GED: arquivar PGR, histórico de versões (#56) e download
-- [ ] Formulário de avaliação segue funcionando no critério qualitativo
+- [x] Inventário de riscos e cobertura do plano (#42) intactos na tela
+- [x] GED: arquivar PGR, histórico de versões (#56) e download
+- [x] Formulário de avaliação segue funcionando no critério qualitativo
 
 ## 18. Walkthrough, review e QA
 
-- [ ] `WALKTHROUGH.md` do lote escrito
-- [ ] `REVIEW.md` do lote escrito
-- [ ] `QA.md` escrito **antes** da execução e preenchido com o resultado real
-- [ ] QA Playwright de #39 (avaliação quantitativa, sugestão, conclusão humana, persistência)
-- [ ] QA Playwright do 5W2H (7 campos, persistência, PDF, ausência honesta)
-- [ ] PDF real conferido pela rota **e** pelo worker
-- [ ] Responsivo 375 / 768 / 1440
-- [ ] Massa sintética removida (dados + Storage)
+- [x] `WALKTHROUGH.md` do lote escrito
+- [x] `REVIEW.md` do lote escrito
+- [x] `QA.md` escrito **antes** da execução e preenchido com o resultado real
+- [x] QA Playwright de #39 (avaliação quantitativa, sugestão, conclusão humana, persistência)
+- [x] QA Playwright do 5W2H (7 campos, persistência, PDF, ausência honesta)
+- [x] PDF real conferido pela rota **e** pelo worker
+- [x] Responsivo 375 / 768 / 1440
+- [x] Massa sintética removida (dados + Storage)
 
 ## 19. Rebase final e PR única
 

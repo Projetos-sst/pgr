@@ -47,6 +47,10 @@ evidência Playwright das telas; #33 fechada; REVIEW.md escrito; fichas atualiza
 
 # Lote 2 — NR-09 + PDF do PGR (parte 1)
 
+**Status (27/09/2026):** implementado e testado na branch `feature/lot-02-nr09-pgr-pdf`, aguardando PR/merge.
+#39 completa; #47 entregue nas seções 1, 2, 3 e 5 (NR-17 segue bloqueada pela #40). Detalhes em
+[lots/lot-02/REVIEW.md](lots/lot-02/REVIEW.md) e [lots/lot-02/QA.md](lots/lot-02/QA.md).
+
 **Issues:** #39, #47 (seções 1, 2, 3 e 5)
 
 | Item                | Valor     |

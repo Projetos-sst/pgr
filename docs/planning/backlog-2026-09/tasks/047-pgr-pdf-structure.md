@@ -97,6 +97,6 @@ Detalhe completo em [../lots/lot-02/AUDIT.md](../lots/lot-02/AUDIT.md).
 
 ## Execução
 
-| Branch | PR  | Migration | Testes | CI  | Decisão | Status  |
-| ------ | --- | --------- | ------ | --- | ------- | ------- |
-| —      | —   | —         | —      | —   | —       | Backlog |
+| Branch                        | PR         | Migration               | Testes                 | CI  | Decisão      | Status                    |
+| ----------------------------- | ---------- | ----------------------- | ---------------------- | --- | ------------ | ------------------------- |
+| `feature/lot-02-nr09-pgr-pdf` | PR do lote | `0050_measure_why_cost` | 10 unit + 4 integração | —   | D-Q3 (27/09) | Parcial — falta NR-17/#40 |
