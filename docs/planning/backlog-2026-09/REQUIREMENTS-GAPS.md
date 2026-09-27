@@ -39,10 +39,10 @@ Critérios 1 e 2 já atendidos e testados; falta listar/exibir o histórico e ap
   medido, unidade reusando o enum `measurement_unit`, LT numérico ao lado do LT textual já existente,
   conclusão), preenchidas só no critério `quantitative`; a seção do PGR mostra a **avaliação
   vigente**.
-- Perguntas ainda abertas (bloqueiam a implementação):
-  1. **Q1** — colunas em `risk_assessments` (recomendado) ou tabela dedicada com N medições por risco?
-  2. **Q2** — conclusão informada pelo técnico (recomendado, com sugestão na UI) ou calculada e
-     persistida pelo servidor?
+- **Decidido em 27/09/2026:**
+  1. **Q1** → colunas em `risk_assessments`; nada de tabela dedicada.
+  2. **Q2** → conclusão **informada/confirmada pelo profissional**; o sistema só sugere, nunca
+     sobrescreve nem recalcula em silêncio.
 - Resolvidas na auditoria do Lote 2: 3. LT — fica **numérico e textual**: `tolerance_limit_value` novo ao lado do `tolerance_limit` atual
   (nem todo agente tem limite numérico). 4. Laudo — **já funciona**: documento vinculado ao risco (`related_entity_type = "risk"`).
 
@@ -52,9 +52,9 @@ Critérios 1 e 2 já atendidos e testados; falta listar/exibir o histórico e ap
 
 - **Fonte do plano:** `control_measures` (decisão do Lote 1). `action_plans` está descartado como
   fonte do PDF — a ponte #51 fabrica `who`/`why`/`where`.
-- Pergunta aberta:
-  1. **Q3** — o PDF sai com **5 dos 7** elementos 5W2H (todos reais) ou queremos **7 de 7**, criando
-     `action_why` e `action_cost` em `control_measures`?
+- **Decidido em 27/09/2026:**
+  1. **Q3** → **7 de 7**, com `action_why` e `action_cost` novos em `control_measures`; sem backfill
+     fictício e sem obrigatoriedade retroativa.
 - Resolvido na auditoria: **preposto = `work_units.manager_name`/`manager_role`** — é o rótulo que o
   próprio formulário de unidade usa ("Gestor/Preposto"); nenhum campo novo.
 

@@ -85,7 +85,7 @@ Nada no repositório menciona NR-09. O que existe é matéria-prima genérica:
   `criterion = quantitative` esperando conteúdo, já tem noção de vigente consumida pelo consolidado e
   pelo #42. A Opção B (tabela `risk_quantitative_evaluations`) duplicaria histórico, "vigente", 4
   superfícies de API e UI para ganhar só a possibilidade de N medições dentro da mesma avaliação —
-  que ninguém pediu. **Decisão do produto (Q1)**, com recomendação técnica A.
+  que ninguém pediu. **Decidido (D-Q1): opção A.**
 - **D2 — Onde mora.** Colunas novas em `risk_assessments`, preenchidas **apenas** quando
   `criterion = 'quantitative'`; CHECK condicional no banco (valor medido exige unidade). Qualitativo
   continua funcionando exatamente como hoje.
@@ -93,7 +93,7 @@ Nada no repositório menciona NR-09. O que existe é matéria-prima genérica:
   houver valor medido e LT numérico na mesma unidade. O servidor **não** infere sozinho
   `resultado > LT ⇒ não conforme` (fatores de correção, dose, jornada e picos mudam o julgamento).
   Formato: enum curto (`below_limit | above_limit | not_applicable`) + o texto livre já existente para
-  a justificativa. **Decisão do produto (Q2)**.
+  a justificativa. **Decidido (D-Q2): informada, com sugestão na UI.**
 - **D4 — LT.** Nem todo agente tem limite numérico (biológicos, por exemplo). Fica `tolerance_limit`
   (texto, já existe) **mais** `tolerance_limit_value numeric` opcional. Resolvido tecnicamente, sem
   pergunta.
@@ -284,53 +284,38 @@ gerando. O PDF do worker e o da rota têm de sair equivalentes — só cor e log
 Arquivos disputados: `pgr-consolidated.ts` (domínio + repositório) e `pgr-pdf-template.ts` — tocados
 por #39 (leitura) e #47 (impressão). Por isso o lote roda **em série**, numa branch por issue.
 
-# Perguntas bloqueantes
+# Decisões tomadas (27/09/2026)
 
-## Pergunta 1
+As três perguntas desta auditoria foram respondidas pelo usuário antes da implementação. Não são mais
+questões em aberto.
 
-**Issue:** #39
-**Pergunta:** a avaliação NR-09 é **parte da avaliação de risco** (uma medição por linha de
-`risk_assessments`) ou um registro próprio, com N medições por risco independentes da matriz 5×5?
-**Por que bloqueia:** define o schema, a migration, a UI e de onde o PDF lê.
-**Opção A:** colunas em `risk_assessments` — reusa histórico, "vigente", API e formulário existentes.
-**Opção B:** tabela `risk_quantitative_evaluations` — separa medição de julgamento, ao custo de nova
-tabela, RLS, 4 superfícies de API, tela e nova regra de "vigente".
-**Recomendação técnica:** **A**. A issue fala em avaliação vinculada ao risco, e
-`criterion = quantitative` já existe sem conteúdo quantitativo — é exatamente o buraco que a NR-09
-preenche.
+## D-Q1 — modelo da avaliação NR-09 → **colunas em `risk_assessments`**
 
-## Pergunta 2
+Nada de tabela dedicada. Motivos aceitos: a tabela já representa uma avaliação do risco, já tem
+histórico por data, já é consumida pelo consolidado e pelas regras da #42, já tem
+`criterion = 'quantitative'`, e a issue não pede várias medições dentro da mesma avaliação — tabela
+separada duplicaria conceito, API, UI e vigência.
 
-**Issue:** #39
-**Pergunta:** a **conclusão** (acima/abaixo do limite) é informada pelo técnico ou calculada pelo
-sistema a partir de resultado × LT?
-**Por que bloqueia:** muda o schema (coluna persistida vs. derivação), a responsabilidade técnica e o
-que o PDF afirma.
-**Opção A:** informada, com sugestão automática na tela quando houver os dois números.
-**Opção B:** calculada e persistida pelo servidor.
-**Recomendação técnica:** **A**. Dose, jornada, picos e fatores de correção fazem parte do julgamento
-do profissional, que assina o PGR. O sistema sugere, ele confirma.
+## D-Q2 — conclusão NR-09 → **informada/confirmada pelo profissional**
 
-## Pergunta 3
+O sistema pode **sugerir** comparando valor medido e limite quando isso for tecnicamente possível, mas
+a sugestão é auxílio: não é autoridade técnica, não substitui a conclusão humana, não sobrescreve uma
+conclusão já escolhida e não é recalculada silenciosamente pelo backend. Persiste-se o que o usuário
+confirmou.
 
-**Issue:** #47 (seção 5)
-**Pergunta:** o Plano de Ação do PDF sai com **5 dos 7** elementos (o quê, como, quem, quando, onde —
-todos reais, "onde" derivado do GES) ou queremos **7 de 7**, criando `action_why` e `action_cost` em
-`control_measures`?
-**Por que bloqueia:** ou muda o schema (migration extra no lote), ou muda o que a seção 5 promete.
-Ler de `action_plans` **não** é opção: três campos lá são texto gerado pela ponte #51.
-**Opção A:** 5 de 7 agora, com rótulo honesto, e "por quê/quanto" em issue futura.
-**Opção B:** 7 de 7 — migration em `control_measures`, dois campos novos no formulário de medida,
-retrabalho pequeno no #42.
-**Recomendação técnica:** **B** se o cliente cobra 5W2H completo no documento (o custo é baixo e o
-campo tem dono claro); **A** se a prioridade é fechar o lote sem tocar no formulário de medida.
+## D-Q3 — plano do PGR → **5W2H completo, 7 de 7, a partir de `control_measures`**
+
+`action_plans` não é fonte. Os dois elementos que faltavam (**Why** e **How much**) passam a ser dados
+reais da própria medida, com colunas novas; sem backfill fictício e sem obrigatoriedade retroativa.
+"Where" continua derivado do GES/contexto real do risco e, onde não houver contexto suficiente, o
+documento mostra ausência honesta em vez de texto inventado.
 
 # Classificação final
 
-| Issue   | Dificuldade | Prontidão                                                                       | Migration                                      | Risco                                               | Cobertura hoje |
-| ------- | ----------- | ------------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------- | -------------- |
-| **#39** | **3/5**     | **NEEDS PRODUCT DECISION** (Q1, Q2) — vira READY assim que responder            | **SIM** (colunas + enum em `risk_assessments`) | Médio                                               | ~25%           |
-| **#47** | **3/5**     | **A e B READY** (B depois de #39) · **D** depende de Q3 · **C BLOCKED por #40** | **NÃO** (ou pequena, se Q3 = 7/7)              | Médio-alto (entregável ao cliente, dois chamadores) | ~50%           |
+| Issue   | Dificuldade | Prontidão                                                               | Migration                                      | Risco                                               | Cobertura hoje |
+| ------- | ----------- | ----------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------- | -------------- |
+| **#39** | **3/5**     | **READY** (Q1 e Q2 decididas em 27/09)                                  | **SIM** (colunas + enum em `risk_assessments`) | Médio                                               | ~25%           |
+| **#47** | **3/5**     | **A, B e D READY** (B depois de #39; D com 7/7) · **C BLOCKED por #40** | **NÃO** (ou pequena, se Q3 = 7/7)              | Médio-alto (entregável ao cliente, dois chamadores) | ~50%           |
 
 # Recomendação
 

@@ -62,7 +62,7 @@ numérico **e** textual; anexo de laudo já funciona (documento vinculado ao ris
 
 ### Prontidão
 
-NEEDS PRODUCT DECISION (Q1 cardinalidade, Q2 conclusão) — vira READY assim que respondidas
+READY — Q1 (colunas em `risk_assessments`) e Q2 (conclusão informada) decididas em 27/09/2026
 
 ### Cobertura atual
 

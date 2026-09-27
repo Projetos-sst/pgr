@@ -3,9 +3,10 @@
 **Issues:** #39 (NR-09) e #47 (PDF do PGR, partes A, B e D) · **Base:** `develop` em `1d7c42e`
 (última migration `0048`) · **Fonte:** [AUDIT.md](AUDIT.md).
 
-> Este plano só começa a valer depois das respostas de **Q1**, **Q2** e **Q3** do AUDIT. O que
-> depende delas está marcado `BLOCKED UNTIL DECISION`. O que não depende está descrito como será
-> feito.
+> **Decisões fechadas em 27/09/2026** (D-Q1, D-Q2, D-Q3 no [AUDIT](AUDIT.md)): dados NR-09 em
+> `risk_assessments`; conclusão informada pelo profissional, com sugestão na UI; plano do PGR com
+> 5W2H **completo (7 de 7)** a partir de `control_measures`. O único bloqueio remanescente é a seção
+> NR-17, que depende da #40.
 
 ## Objetivo
 
@@ -44,9 +45,7 @@ NR-01, NR-09 e plano de ação — com dado real, sem preencher lacuna com texto
 
 ## Arquitetura #39
 
-`BLOCKED UNTIL DECISION (Q1)` — o desenho abaixo assume a recomendação **A** (colunas em
-`risk_assessments`). Se a resposta for B, o PLAN precisa ser reescrito nas seções de modelo, UI e
-migration.
+Decidido (D-Q1): colunas em `risk_assessments`.
 
 Camadas, na ordem do fluxo:
 
@@ -62,7 +61,7 @@ Camadas, na ordem do fluxo:
 
 ## Modelo de dados #39
 
-`BLOCKED UNTIL DECISION (Q1, Q2)`. Desenho recomendado:
+Decidido (D-Q1 e D-Q2):
 
 | Coluna                  | Tipo                          | Nulo | Regra                                                           |
 | ----------------------- | ----------------------------- | ---- | --------------------------------------------------------------- |
@@ -79,7 +78,8 @@ Regras (na aplicação **e** com CHECK no banco onde couber):
   ignora/zera em vez de gravar lixo.
 - `tolerance_limit_value` e `measured_value` comparáveis só quando a unidade é a mesma — a
   comparação é **sugestão de UI**, não verdade persistida.
-- A conclusão é **informada** (Q2 = A). O servidor não a deriva sozinho.
+- A conclusão é **informada pelo profissional** (D-Q2). O servidor não a deriva nem a sobrescreve; a
+  sugestão vive no domínio puro e é oferecida pela UI.
 - **Fonte única:** o valor que a NR-09 exibe é o da avaliação. `risks.concentration_intensity`
   permanece como "concentração de referência" do risco e **não** alimenta a seção 3.
 
@@ -141,8 +141,6 @@ plano (#42) e EPIs indicados. Sem mudança de dados.
 
 ## Seção 3 — NR-09
 
-`BLOCKED UNTIL DECISION (Q1)` — depende do modelo de #39.
-
 Uma tabela por GES, só com riscos de agente `physical | chemical | biological`: agente, descrição,
 método, resultado + unidade, LT (numérico e/ou normativo), conclusão e data da avaliação. Risco
 elegível sem medição aparece como "sem medição"; se nenhum risco do GES for elegível, o bloco diz
@@ -154,16 +152,16 @@ isso em uma linha.
 
 ## Seção 5 — 5W2H
 
-`BLOCKED UNTIL DECISION (Q3)`.
+Decidido (D-Q3): **7 de 7**. `control_measures` ganha `action_why` (motivo real da medida) e
+`action_cost` (custo estimado, `numeric` como os demais valores de domínio do projeto); os dois campos
+entram no formulário de medida, na validação, nas 4 superfícies de API e no consolidado. Sem backfill
+e sem obrigatoriedade retroativa: medida antiga sem motivo/custo aparece como ausência honesta.
 
-- **Se Q3 = A (5 de 7):** tabela com O quê, Como, Quem, Quando e Onde (GES), mais nível NR-01 e
-  situação da medida. O título da seção diz "Plano de ação (5W2H — o quê, como, quem, quando, onde)"
-  para não prometer o que não está lá. Zero migration.
-- **Se Q3 = B (7 de 7):** `control_measures` ganha `action_why text` e `action_cost numeric`
-  (migration pequena, RLS herdada), os dois campos entram no formulário de medida e a tabela sai
-  completa. Some o retrabalho depois.
+Mapa final da seção: **What** `action_what` · **Why** `action_why` · **Where** GES do risco (derivado
+do cadastro; sem contexto → ausência honesta) · **When** `action_deadline` · **Who**
+`action_responsible` · **How** `action_how` · **How much** `action_cost`.
 
-Em ambos os casos, o PDF lê `control_measures` pelo consolidado e **não** toca em `action_plans`.
+O PDF lê `control_measures` pelo consolidado e **não** toca em `action_plans`.
 
 ## Ponte #51
 
@@ -210,12 +208,9 @@ não retorna a medição).
 
 ## Estratégia de branches
 
-1. `feature/39-nr09-quantitative-evaluation` — a partir de `develop`.
-2. `feature/47-pgr-pdf-structure` — a partir de `develop` **depois** do merge de #39 (as duas mexem em
-   `pgr-consolidated.ts`).
-
-Rebase em `origin/develop` antes de cada PR; `--force-with-lease`, nunca `--force`. Merge é do
-usuário.
+**Uma só:** `feature/lot-02-nr09-pgr-pdf` (renomeada de `docs/lot-02-audit-plan`, preservando o commit
+da auditoria). Tudo — decisões, #39, #47, walkthrough, review, QA — vive nela. Rebase em
+`origin/develop` antes da PR; `--force-with-lease`, nunca `--force`. Merge é do usuário.
 
 ## Estratégia de PRs
 
@@ -233,7 +228,7 @@ no mesmo arquivo sem ganho de revisão.
 
 ## Dependências
 
-- **Entrada:** respostas de Q1, Q2 (#39) e Q3 (#47/seção 5).
+- **Entrada:** decisões D-Q1, D-Q2 e D-Q3 — fechadas.
 - **Interna:** #47 parte B depende de #39 mergeada.
 - **Saída:** Lote 3 (#40 + fechamento de #47) começa com a seção 4 e o critério de aceite completo da
   #47.
@@ -251,7 +246,7 @@ no mesmo arquivo sem ganho de revisão.
 
 ## Definition of Done
 
-- Q1, Q2 e Q3 respondidas e registradas no PLAN.
+- Decisões D-Q1, D-Q2 e D-Q3 registradas (feito em 27/09).
 - #39: migration aplicada em Postgres efêmero com RLS verde; 4 superfícies de API (Action, REST,
   `api-design.md`, Postman); formulário funcionando; unit + integração novos.
 - #47: PDF com as seções 1, 2, 3 e 5 na ordem, gerado **pela rota e pelo worker**, conferido
@@ -264,7 +259,6 @@ no mesmo arquivo sem ganho de revisão.
 
 | Item                                | Bloqueio                     |
 | ----------------------------------- | ---------------------------- |
-| Modelo de dados e migration de #39  | `BLOCKED UNTIL DECISION` Q1  |
-| Coluna/semântica da conclusão       | `BLOCKED UNTIL DECISION` Q2  |
-| Forma final da seção 5 (5W2H)       | `BLOCKED UNTIL DECISION` Q3  |
 | Seção 4 (NR-17) e fechamento de #47 | `BLOCKED UNTIL #40` (Lote 3) |
+
+Q1, Q2 e Q3 foram respondidas em 27/09 — ver "Decisões tomadas" no [AUDIT](AUDIT.md).

@@ -1,22 +1,23 @@
 # Lote 2 — Task
 
-Checklist operacional de [PLAN.md](PLAN.md). **Nada marcado**: a implementação só começa depois das
-respostas de Q1, Q2 e Q3 ([AUDIT.md](AUDIT.md)) e da autorização do usuário.
+Checklist vivo do Lote 2 — atualizado conforme cada item é concluído **e** testado. Plano em
+[PLAN.md](PLAN.md); decisões em [AUDIT.md](AUDIT.md). Tudo numa única branch
+(`feature/lot-02-nr09-pgr-pdf`), uma única PR no fim.
 
 ## 0. Decisões (pré-requisito)
 
-- [ ] Q1 respondida — modelo da avaliação NR-09 (colunas em `risk_assessments` vs. tabela nova)
-- [ ] Q2 respondida — conclusão informada vs. calculada
-- [ ] Q3 respondida — 5W2H com 5 de 7 (sem migration) ou 7 de 7 (migration em `control_measures`)
-- [ ] Respostas registradas no PLAN (seções "Modelo de dados #39" e "Seção 5 — 5W2H")
+- [x] Q1 respondida — dados NR-09 em `risk_assessments` (sem tabela dedicada)
+- [x] Q2 respondida — conclusão informada/confirmada pelo profissional, com sugestão na UI
+- [x] Q3 respondida — 5W2H **7 de 7** com `action_why`/`action_cost` em `control_measures`
+- [x] Respostas registradas no AUDIT e no PLAN
 
 ## 1. Preparação
 
-- [ ] `git fetch origin --prune && git checkout develop && git pull --ff-only origin develop`
-- [ ] Conferir a última migration no repositório (era `0048` em 26/09) e **não** reservar número antes
-- [ ] Conferir PRs abertas que toquem `pgr-consolidated.ts`, `pgr-pdf-template.ts` ou `schema/risks.ts`
-- [ ] Criar `feature/39-nr09-quantitative-evaluation` a partir de `develop`
-- [ ] Mover #39 para _In progress_ no board
+- [x] `git fetch origin --prune` — `origin/develop` em `1d7c42e`, base da branch já atualizada
+- [x] Última migration conferida no journal: `0048_form_control_type_status`
+- [x] Nenhuma PR aberta no repositório
+- [x] Branch única do lote: `feature/lot-02-nr09-pgr-pdf` (renomeada de `docs/lot-02-audit-plan`, preservando `743dfc1`)
+- [ ] Mover #39 e #47 para _In progress_ no board
 
 ## 2. #39 — Schema
 
@@ -68,9 +69,8 @@ respostas de Q1, Q2 e Q3 ([AUDIT.md](AUDIT.md)) e da autorização do usuário.
 
 ## 8. #47 — Preparação
 
-- [ ] #39 mergeada em `develop`
-- [ ] Criar `feature/47-pgr-pdf-structure` a partir de `develop` atualizada
-- [ ] Mover #47 para _In progress_
+- [x] N/A — mesma branch do lote; #39 não precisa estar mergeada, só verde
+- [ ] Gate interno da #39 verde antes de tocar no template
 
 ## 9. #47 — View model (consolidado)
 
@@ -103,14 +103,14 @@ respostas de Q1, Q2 e Q3 ([AUDIT.md](AUDIT.md)) e da autorização do usuário.
 
 ## 13. #47 — Seção 4 (NR-17)
 
-- [ ] N/A neste lote — `BLOCKED UNTIL #40` (Lote 3). O template **não** ganha a seção vazia.
+- [ ] BLOCKED — depende da #40. O template **não** ganha seção vazia nem dado de outro módulo.
 
 ## 14. #47 — Seção 5 (5W2H)
 
-- [ ] Se **Q3 = B**: migration `action_why`/`action_cost` em `control_measures` + campos no formulário
-      de medida + validação
-- [ ] Tabela do plano com os elementos disponíveis (O quê, Como, Quem, Quando, Onde e — se Q3 = B —
-      Por quê e Quanto), lidos de `control_measures`
+- [ ] Migration `action_why`/`action_cost` em `control_measures` (segunda migration do lote)
+- [ ] Campos no formulário de medida (criar e editar) + validação + 4 superfícies de API
+- [ ] Tabela do plano 5W2H completa (O quê, Por quê, Onde, Quando, Quem, Como, Quanto), lida de
+      `control_measures`
 - [ ] Título da seção descreve exatamente o que ela contém
 - [ ] **Nenhum** dado vindo de `action_plans` / ponte #51
 
@@ -134,17 +134,28 @@ respostas de Q1, Q2 e Q3 ([AUDIT.md](AUDIT.md)) e da autorização do usuário.
 - [ ] GED: arquivar PGR, histórico de versões (#56) e download
 - [ ] Formulário de avaliação segue funcionando no critério qualitativo
 
-## 18. Rebase e PR
+## 18. Walkthrough, review e QA
 
-- [ ] Rebase em `origin/develop` (`--force-with-lease` no push)
-- [ ] Abrir **PR #2** — #47 partes A + B + D; **não** fecha #47
-- [ ] Comentar em #47 o que ficou para o Lote 3 (seção NR-17)
+- [ ] `WALKTHROUGH.md` do lote escrito
+- [ ] `REVIEW.md` do lote escrito
+- [ ] `QA.md` escrito **antes** da execução e preenchido com o resultado real
+- [ ] QA Playwright de #39 (avaliação quantitativa, sugestão, conclusão humana, persistência)
+- [ ] QA Playwright do 5W2H (7 campos, persistência, PDF, ausência honesta)
+- [ ] PDF real conferido pela rota **e** pelo worker
+- [ ] Responsivo 375 / 768 / 1440
+- [ ] Massa sintética removida (dados + Storage)
+
+## 19. Rebase final e PR única
+
+- [ ] `git fetch origin --prune && git rebase origin/develop` (conflitos resolvidos semanticamente)
+- [ ] Migrations revalidadas após o rebase (journal, snapshots, banco do zero)
+- [ ] Repetir testes e fluxos críticos do Playwright depois do rebase
+- [ ] Push da branch e **uma única PR** (`Closes #39`; #47 apenas parcialmente endereçada)
+- [ ] Board: #39 → In review; #47 continua In progress
 - [ ] Sem merge automático — merge é do usuário
 
-## 19. Encerramento do lote
+## 20. Encerramento do lote
 
-- [ ] `lots/lot-02/REVIEW.md` escrito
-- [ ] `lots/lot-02/QA.md` (roteiro + execução) escrito
 - [ ] Fichas `tasks/039-*.md` e `tasks/047-*.md` com a tabela de execução preenchida
 - [ ] `LOTS.md` / `EXECUTION-PLAN.md` atualizados com o estado real
-- [ ] Board: #39 → Done; #47 continua aberta (Lote 3)
+- [ ] #47 permanece aberta com comentário do que falta (NR-17 / #40)

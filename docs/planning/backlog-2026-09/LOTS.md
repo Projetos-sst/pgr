@@ -64,7 +64,7 @@ concentração e unidade (já estão no consolidado, só não são impressos); s
 lido de **`control_measures`** — a auditoria do lote (lots/lot-02/AUDIT.md) descartou `action_plans` como
 fonte: três dos sete campos lá são texto gerado pela ponte #51.
 
-**Dependências:** respostas de Q1/Q2 (#39) e Q3 (#47, seção 5) em [lots/lot-02/AUDIT.md](lots/lot-02/AUDIT.md).
+**Dependências:** nenhuma pendente — Q1/Q2/Q3 decididas em 27/09 ([lots/lot-02/AUDIT.md](lots/lot-02/AUDIT.md)). Execução em **branch única** `feature/lot-02-nr09-pgr-pdf`, com **uma PR** ao final.
 
 **Definition of Done:** migration com RLS/GRANT/trigger validada em Postgres efêmero; testes unitários do
 template atualizados para a nova ordem; teste de integração da rota de PDF; PDF gerado pelos **dois**

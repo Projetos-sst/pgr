@@ -56,8 +56,8 @@ PDF é entregável ao cliente; não quebrar cabeçalho ISO nem o worker; empty s
 
 Preposto: **confirmado** = `work_units.manager_name`/`manager_role` (o formulário rotula
 "Gestor/Preposto"). Fonte do 5W2H: **`control_measures`** — `action_plans` foi descartada (a ponte #51
-fabrica `who`/`why`/`where`). Resta Q3: 5 de 7 elementos com dado real, ou 7 de 7 com
-`action_why`/`action_cost` novos em `control_measures`.
+fabrica `who`/`why`/`where`). Q3 decidida em 27/09: **7 de 7**, com
+`action_why` e `action_cost` novos em `control_measures`.
 
 ### Dificuldade
 
@@ -65,8 +65,8 @@ fabrica `who`/`why`/`where`). Resta Q3: 5 de 7 elementos com dado real, ou 7 de 
 
 ### Prontidão
 
-Parte A (identificação + inventário) **READY**; Parte B (NR-09) **READY APÓS #39**; Parte D (5W2H)
-**NEEDS PRODUCT DECISION** (Q3); Parte C (NR-17) **BLOCKED por #40** → Lote 3
+Partes A (identificação + inventário), B (NR-09, após #39) e D (5W2H **7 de 7**, decidido em 27/09)
+**READY**; Parte C (NR-17) **BLOCKED por #40** → Lote 3
 
 ### Cobertura atual
 
