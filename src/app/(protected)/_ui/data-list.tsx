@@ -208,7 +208,15 @@ function PlusIcon() {
 
 // ── Grid (cabeçalho + linhas) ───────────────────────────────────────────────
 
-export type GridColumn = { header: string; align?: "left" | "right" };
+/** Alinhamento horizontal de uma coluna/célula do grid. */
+export type CellAlign = "left" | "center" | "right";
+
+export type GridColumn = { header: string; align?: CellAlign };
+
+/** Classe de alinhamento — `left` é o default do grid e não emite classe. */
+function alignClass(align: CellAlign | undefined): string {
+  return align === "right" ? "text-right" : align === "center" ? "text-center" : "";
+}
 
 function gridStyle(template: string): CSSProperties {
   return { gridTemplateColumns: template };
@@ -246,11 +254,7 @@ export function GridHeader({
       className="text-text-subtle grid items-center gap-4 border-b border-[rgba(120,120,150,0.12)] px-6 py-3.5 font-mono text-[10px] tracking-[0.1em] uppercase"
     >
       {columns.map((c, i) => (
-        <span
-          key={i}
-          role="columnheader"
-          className={c.align === "right" ? "text-right" : undefined}
-        >
+        <span key={i} role="columnheader" className={alignClass(c.align) || undefined}>
           {c.header}
         </span>
       ))}
@@ -286,24 +290,29 @@ export function Cell({
   className,
 }: {
   children: ReactNode;
-  align?: "left" | "right";
+  align?: CellAlign;
   className?: string;
 }) {
   return (
-    <span
-      role="cell"
-      className={`${align === "right" ? "text-right" : ""} ${className ?? ""}`}
-    >
+    <span role="cell" className={`${alignClass(align)} ${className ?? ""}`}>
       {children}
     </span>
   );
 }
 
 /** Placa/código em fonte mono indigo, opcionalmente com link. */
-export function MonoCell({ href, children }: { href?: string; children: ReactNode }) {
+export function MonoCell({
+  href,
+  align,
+  children,
+}: {
+  href?: string;
+  align?: CellAlign;
+  children: ReactNode;
+}) {
   const cls = "text-primary font-mono font-semibold";
   return (
-    <span role="cell">
+    <span role="cell" className={alignClass(align) || undefined}>
       {href ? (
         <Link href={href} className={`${cls} hover:underline`}>
           {children}
@@ -478,9 +487,24 @@ export function ListFooter({
 
 // ── Ações de linha ──────────────────────────────────────────────────────────
 
-/** Container das ações da linha (alinhado à direita). */
-export function RowActions({ children }: { children: ReactNode }) {
-  return <span className="flex items-center justify-end gap-1">{children}</span>;
+/**
+ * Container das ações da linha. Default `right` (as listas antigas contam com isso);
+ * `center` acompanha a coluna de ações centralizada adotada a partir do Lote 3.
+ */
+export function RowActions({
+  align = "right",
+  children,
+}: {
+  align?: CellAlign;
+  children: ReactNode;
+}) {
+  const justify =
+    align === "center"
+      ? "justify-center"
+      : align === "left"
+        ? "justify-start"
+        : "justify-end";
+  return <span className={`flex items-center gap-1 ${justify}`}>{children}</span>;
 }
 
 /** Link de ver/editar (ícone olho indigo). */

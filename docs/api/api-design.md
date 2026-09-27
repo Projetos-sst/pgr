@@ -132,6 +132,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/risks` · `/risks/{id}`                                                                                                                                       | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/risks/{id}/epis` · `/risks/{id}/epis/{linkId}`                                                                                                               | GET (`?available=true&search=` p/ EPIs não vinculados), POST · PUT (neutralização), DELETE (vínculo EPI × risco)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `/risks/{id}/assessments` · `/risk-assessments/{id}`                                                                                                           | GET, POST (avaliação 5×5 do risco + bloco NR-09 opcional; 201) · GET, PUT, DELETE (histórico 1:N; `riskLevel`/`result` calculados; sem `/dependents`, sem 409)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `/risks/{id}/ergonomic-evaluations` · `/ergonomic-evaluations/{id}`                                                                                            | GET, POST (avaliação ergonômica NR-17 do risco; 201) · GET, PUT, DELETE (histórico 1:N; vigente = `assessedAt` mais recente; sem `/dependents`, sem 409)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `/risks/{id}/control-measures` · `/control-measures/{id}`                                                                                                      | GET, POST (plano de ação 5W2H por nível NR-01; 201) · GET, PUT, DELETE (nível imutável; **DUPLICATE/409** se nível repetido; sem `/dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/categories` · `/categories/{id}`                                                                                                                             | GET, POST · GET, PUT, DELETE                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/medicos` · `/medicos/{id}`                                                                                                                                   | GET (`?search=` nome/CRM, `?clinic=` empresa/clínica, `?status=active\|inactive`), POST (`201`) · GET, PUT, DELETE (`204`) — CRM único por org (`DUPLICATE`); sem `/dependents`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -384,6 +385,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Dashboard (plataforma)       | `actions/platform/dashboard.ts`              | getDashboardSummaryAction + REST `GET /api/v1/dashboard/summary` (read-model agregado por tenant; sem tabelas novas)                                                                                                                                                                                                                                                                   |
 | EPI × risco (vínculo)        | `actions/pgr/epi-risk.ts`                    | list, available (busca nome/CA), add, update (neutralização), remove + REST `/api/v1/risks/{id}/epis/**`                                                                                                                                                                                                                                                                               |
 | Avaliação de risco (5×5)     | `actions/pgr/risk-assessments.ts`            | list, get, getCurrent, create, update, delete + REST `/api/v1/risks/{id}/assessments` · `/risk-assessments/{id}` (histórico 1:N; snapshot de `result`; sem 409)                                                                                                                                                                                                                        |
+| Avaliação ergonômica (NR-17) | `actions/pgr/ergonomic-evaluations.ts`       | list, get, getCurrent, listLinkableCampaigns, create, update, delete + REST `/api/v1/risks/{id}/ergonomic-evaluations` · `/ergonomic-evaluations/{id}` (histórico 1:N; seis dimensões opcionais; vínculo opcional com campanha psicossocial encerrada)                                                                                                                                 |
 | Medidas de controle (5W2H)   | `actions/pgr/control-measures.ts`            | list, get, create, update, delete + REST `/api/v1/risks/{id}/control-measures` · `/control-measures/{id}` (1 por nível NR-01; estados derivados; **409** por UNIQUE)                                                                                                                                                                                                                   |
 | Categoria                    | `actions/pgr/categories.ts`                  | list, get, create, update, delete (catálogo `epi`/`machine`)                                                                                                                                                                                                                                                                                                                           |
 | Médico                       | `actions/pgr/medicos.ts`                     | list (busca nome/CRM, filtro empresa/clínica e status), options, clinics, get, create, update, delete + REST `/api/v1/medicos/**` (cadastro de médicos do trabalho; CRM único por org → `DUPLICATE`; sem `/dependents`)                                                                                                                                                                |
@@ -887,6 +889,61 @@ Regras (422 quando violadas — a aplicação valida e o banco também tem CHECK
 
 A **conclusão é informada pelo profissional**: o servidor nunca a deriva nem a sobrescreve. A tela
 sugere um valor quando há medição e limite comparáveis, e quem confirma é o usuário.
+
+---
+
+## Avaliação ergonômica (NR-17) — `actions/pgr/ergonomic-evaluations.ts`
+
+Avaliação ergonômica preliminar (**AEP**) vinculada a um risco do inventário — issue #40, migration
+`0051_ergonomic_evaluations` (tabela `ergonomic_evaluations` + enum `ergonomic_adequacy`). **Histórico
+1:N** por risco (sem unique → **sem 409**); a **vigente** é a de `assessedAt` mais recente, com
+desempate determinístico por `createdAt` e `id`. Criar avaliação nova **nunca** sobrescreve a
+anterior. REST espelho: `/api/v1/risks/{id}/ergonomic-evaluations` (GET, POST 201) ·
+`/api/v1/ergonomic-evaluations/{id}` (GET, PUT, DELETE 204).
+
+| Action                                | Entrada                                | Retorno (`data`)                                                              |
+| ------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| `listErgonomicEvaluationsAction`      | `riskId, { page?, pageSize? }`         | `{ rows: ErgonomicEvaluation[]; total }` (`riskId` inválido → `FK_NOT_FOUND`) |
+| `getErgonomicEvaluationAction`        | `id`                                   | `ErgonomicEvaluation` (inexistente/cross-tenant → `NOT_FOUND`)                |
+| `getCurrentErgonomicEvaluationAction` | `riskId`                               | `ErgonomicEvaluation \| null` (null = risco sem avaliação ergonômica)         |
+| `listLinkableCampaignsAction`         | `riskId`                               | campanhas psicossociais **encerradas** da unidade do GES do risco             |
+| `createErgonomicEvaluationAction`     | `riskId, ErgonomicEvaluationInput`     | `ErgonomicEvaluation` (201; `riskId` inválido → `FK_NOT_FOUND`)               |
+| `updateErgonomicEvaluationAction`     | `riskId, id, ErgonomicEvaluationInput` | `ErgonomicEvaluation` (corpo completo; campo omitido é apagado)               |
+| `deleteErgonomicEvaluationAction`     | `riskId, id`                           | `{ id }` (delete físico; não afeta as demais avaliações do histórico)         |
+
+**`ErgonomicEvaluationInput`** (mesmo corpo para create e PUT):
+
+- `assessedAt*` (`AAAA-MM-DD`) — **único obrigatório**, porque é o que define a vigência;
+- `responsible?`, `method?` (texto, até 255; `method` é o instrumento informado pelo profissional);
+- `notes?` (observação geral);
+- `psychosocialCampaignId?` (uuid — vínculo **opcional** com campanha psicossocial);
+- as **seis dimensões**, todas opcionais, cada uma com adequação + observação:
+  `posture`/`postureNotes`, `movements`/`movementsNotes`, `physicalLoad`/`physicalLoadNotes`,
+  `mentalLoad`/`mentalLoadNotes`, `workOrganization`/`workOrganizationNotes`,
+  `physicalEnvironment`/`physicalEnvironmentNotes`.
+
+A adequação é o enum **`adequate` | `inadequate` | `not_applicable`**. **Não existe escala numérica,
+score nem conclusão global** — a NR-17 não fixa nenhum e o sistema não inventa norma. **Ausente
+(`null`) ≠ `not_applicable`**: nulo é "não avaliado" (avaliação parcial é válida), `not_applicable` é
+uma declaração do profissional. Nenhum dos dois é apresentado como conformidade.
+
+**Vínculo com campanha psicossocial** (opcional). Validado **no servidor**, não só na tela:
+
+1. a campanha precisa existir **no tenant ativo** → senão `FK_NOT_FOUND` (422);
+2. precisa ser da **mesma unidade** do GES do risco → senão `VALIDATION` (422);
+3. precisa estar **`closed`** → senão `VALIDATION` (422).
+
+Quando há vínculo, a tela e o PDF mostram **apenas o agregado** da campanha (nome, período, nº de
+respostas e fatores derivados com nível), sob o rótulo "Resultado agregado da campanha psicossocial".
+**Nenhuma resposta individual** é lida ou exibida, e o sistema **não implementa nem calcula escore
+COPSOQ** — quando "COPSOQ" aparece, é o texto que o profissional informou em `method`.
+
+A **AET** (análise ergonômica do trabalho) **não** tem entidade própria: é laudo anexado ao risco pelo
+GED (`related_entity_type = "risk"`), que já versiona. A tela oferece o atalho com `docType`
+pré-preenchido.
+
+**Erros REST**: 422 (validação / FK `riskId` / vínculo de campanha), 404 (cross-tenant/inexistente),
+403 (`client`); **nunca 409**.
 
 ---
 

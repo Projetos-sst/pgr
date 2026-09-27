@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { listFolderTreeAction } from "@/shared/server/actions/documents/folders";
 
@@ -10,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<{
   folderId?: string;
+  docType?: string;
   relatedEntityType?: string;
   relatedEntityId?: string;
   returnTo?: string;
@@ -35,7 +34,7 @@ export default async function NewDocumentPage({
   const folders = foldersResult.ok ? foldersResult.data.folders : [];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-4 py-8 sm:px-8">
+    <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
       <PageHeader
         backHref="/documents"
         title="Novo Documento — GED"
@@ -53,22 +52,17 @@ export default async function NewDocumentPage({
           </svg>
         }
       />
-      <div className="glass-card max-w-2xl rounded-[20px] p-6 sm:p-8">
+      <div className="glass-card rounded-[20px] p-6 sm:p-8">
         <DocumentUploadForm
           folders={folders}
           defaultFolderId={defaultFolderId}
+          defaultDocType={sp.docType ?? null}
           defaultRelatedEntityType={sp.relatedEntityType ?? null}
           defaultRelatedEntityId={sp.relatedEntityId ?? null}
           returnTo={safeReturnTo(sp.returnTo)}
           returnLabel={sp.returnLabel ?? null}
         />
       </div>
-      <Link
-        href="/documents"
-        className="text-text-subtle hover:text-primary flex w-fit items-center gap-1.5 text-xs font-semibold transition-colors sm:text-sm"
-      >
-        ← Voltar para Documentos
-      </Link>
     </div>
   );
 }

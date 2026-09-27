@@ -28,6 +28,7 @@ const LINK_CHECKBOX_LABEL: Record<string, string> = {
 export function DocumentUploadForm({
   folders,
   defaultFolderId,
+  defaultDocType = null,
   defaultRelatedEntityType = null,
   defaultRelatedEntityId = null,
   returnTo = null,
@@ -35,6 +36,8 @@ export function DocumentUploadForm({
 }: {
   folders: FolderNode[];
   defaultFolderId: string | null;
+  /** Tipo sugerido pela tela de origem (ex.: checklist NR-18, laudo de AET). */
+  defaultDocType?: string | null;
   defaultRelatedEntityType?: string | null;
   defaultRelatedEntityId?: string | null;
   returnTo?: string | null;
@@ -106,7 +109,12 @@ export function DocumentUploadForm({
         label="Tipo do documento"
         name="docType"
         required
-        suggestions={SUGGESTED_DOC_TYPES}
+        defaultValue={defaultDocType ?? ""}
+        suggestions={
+          defaultDocType && !SUGGESTED_DOC_TYPES.includes(defaultDocType as never)
+            ? [defaultDocType, ...SUGGESTED_DOC_TYPES]
+            : SUGGESTED_DOC_TYPES
+        }
       />
       <TextField label="Validade (opcional)" name="validUntil" type="date" />
 

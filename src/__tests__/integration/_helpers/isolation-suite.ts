@@ -15,10 +15,15 @@ export type IsolationSuiteOptions = {
   seededCountA: number;
   /** INSERT marked for org_b; must be rejected by WITH CHECK when org_a is active. */
   crossTenantInsertSql: string;
+  /**
+   * Extra rows seeded (as admin) right after `seedPgrBase`, for tables the base seed
+   * does not cover. Must seed BOTH tenants so the A/B assertions stay meaningful.
+   */
+  extraSeedSql?: string;
 };
 
 export function runIsolationSuite(opts: IsolationSuiteOptions): void {
-  const { table, seededCountA, crossTenantInsertSql } = opts;
+  const { table, seededCountA, crossTenantInsertSql, extraSeedSql } = opts;
 
   (shouldRun ? describe : describe.skip)(
     `US1 — ${table} isolation (RLS backstop por org_id)`,
@@ -39,6 +44,7 @@ export function runIsolationSuite(opts: IsolationSuiteOptions): void {
 
       beforeEach(async () => {
         await seedPgrBase(admin);
+        if (extraSeedSql) await admin.unsafe(extraSeedSql);
       });
 
       it("tenant A fixado, select SEM where → só linhas de A", async () => {
