@@ -103,13 +103,26 @@ export type {
   Nr09Conclusion,
 };
 
-/** EPI indicado para um risco (mesma forma de `EpiRiskLinkItem`). */
+/**
+ * EPI indicado para um risco. Os campos técnicos (#48) vêm do MESMO join com
+ * `epi_catalog` — nenhuma query extra e nenhuma digitação paralela: a "especificação
+ * técnica" do EPI é o conjunto de dados já cadastrados. Opcionais para não quebrar
+ * fixtures anteriores à #48.
+ */
 export type ConsolidatedEpi = {
   id: string;
   catalogId: string;
   name: string;
   ca: string | null;
   neutralization: EpiNeutralization;
+  description?: string | null;
+  caValidUntil?: string | null;
+  manufacturer?: string | null;
+  norm?: string | null;
+  material?: string | null;
+  size?: string | null;
+  unitOfMeasure?: string | null;
+  usefulLifeMonths?: number | null;
 };
 
 /** Avaliação vigente detalhada (última por `assessed_at`/`created_at`). */

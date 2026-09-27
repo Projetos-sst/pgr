@@ -1,6 +1,18 @@
 import "server-only";
 
-import { and, desc, eq, gt, ilike, isNull, lt, gte, lte, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  isNull,
+  lt,
+  gte,
+  lte,
+  sql,
+} from "drizzle-orm";
 
 import {
   toDocumentDetail,
@@ -12,6 +24,10 @@ import {
   type UpdateDocumentValues,
 } from "@/shared/domains/documents/documents";
 import type { DocumentRelatedEntityType } from "@/shared/domains/documents/validity";
+import {
+  NR18_DOC_TYPE_LABELS,
+  type Nr18ChecklistDocument,
+} from "@/shared/domains/documents/nr18";
 import {
   computeDocumentKpis,
   validityDateBounds,
@@ -146,6 +162,50 @@ export async function getAcervoKpis(
     });
   };
   return existingTx ? run(existingTx) : withOrg(orgId, run);
+}
+
+/**
+ * Documentos **vigentes** do PGR cujo `doc_type` é um dos tipos da NR-18 (#48).
+ * Uma linha por documento lógico (`currentVersionPredicate`): criar a v2 de um projeto
+ * mantém o requisito atendido, não conta como anexo novo. A comparação é
+ * case-insensitive porque `doc_type` é texto livre no banco — "projeto de spiq" tem de
+ * satisfazer o mesmo requisito que "Projeto de SPIQ". Nenhuma escrita, nenhum tipo novo.
+ */
+export async function listPgrNr18Documents(
+  orgId: string,
+  pgrId: string,
+): Promise<Nr18ChecklistDocument[]> {
+  const labels = NR18_DOC_TYPE_LABELS.map((label) => label.toLowerCase());
+  return withOrg(orgId, async (tx) => {
+    const rows = await tx
+      .select({
+        id: documents.id,
+        documentGroupId: documents.documentGroupId,
+        name: documents.name,
+        docType: documents.docType,
+        version: documents.version,
+        createdAt: documents.createdAt,
+      })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.orgId, orgId),
+          eq(documents.relatedEntityType, "pgr"),
+          eq(documents.relatedEntityId, pgrId),
+          inArray(sql`lower(${documents.docType})`, labels),
+          currentVersionPredicate(tx),
+        ),
+      )
+      .orderBy(desc(documents.createdAt));
+    return rows.map((row) => ({
+      id: row.id,
+      documentGroupId: row.documentGroupId,
+      name: row.name,
+      docType: row.docType,
+      version: row.version,
+      createdAt: row.createdAt.toISOString(),
+    }));
+  });
 }
 
 export async function getDocumentById(

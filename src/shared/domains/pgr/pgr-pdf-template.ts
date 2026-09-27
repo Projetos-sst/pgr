@@ -22,6 +22,13 @@ import {
   type ControlLevel,
   type PgrConsolidated,
 } from "./pgr-consolidated";
+import {
+  EPI_RELATION_EMPTY_LABEL,
+  EPI_RELATION_SOURCE_NOTE,
+  derivePgrEpiRelation,
+  epiCaStatusLabel,
+  formatEpiSpecs,
+} from "./epi-relation";
 
 /** Cor padrão da capa (indigo do design system) — sobrescrita por parâmetro (fatia #40). */
 export const DEFAULT_COVER_COLOR = "#5b63f5";
@@ -40,6 +47,7 @@ export type PgrPdfSectionKey =
   | "nr09"
   | "nr17"
   | "actionPlan"
+  | "epiRelation"
   | "controlHierarchy";
 
 export type PgrFormHeader = {
@@ -74,6 +82,7 @@ const SECTION_ORDER: PgrPdfSectionKey[] = [
   "nr09",
   "nr17",
   "actionPlan",
+  "epiRelation",
   "controlHierarchy",
 ];
 
@@ -83,6 +92,7 @@ const SECTION_LABELS: Record<PgrPdfSectionKey, string> = {
   nr09: "Avaliação quantitativa de agentes (NR-09)",
   nr17: "Avaliação ergonômica (NR-17)",
   actionPlan: "Plano de ação (5W2H)",
+  epiRelation: "Relação de EPIs",
   controlHierarchy: "Hierarquia de controles (NR-01)",
 };
 
@@ -108,6 +118,7 @@ function resolveSections(
     nr09: sections?.nr09 ?? true,
     nr17: sections?.nr17 ?? true,
     actionPlan: sections?.actionPlan ?? true,
+    epiRelation: sections?.epiRelation ?? true,
     controlHierarchy: sections?.controlHierarchy ?? true,
   };
 }
@@ -447,6 +458,52 @@ function nr17Block(risks: ConsolidatedRisk[]): string {
   return `${evaluated.map(nr17RiskBlock).join("")}${pendingBlock}`;
 }
 
+// ---------------------------------------------------------------------------
+// Seção 6 — Relação de EPIs (#48, decisão Q4 = A)
+// ---------------------------------------------------------------------------
+
+/**
+ * Relação **deduplicada** dos EPIs indicados aos riscos do PGR, derivada do cadastro
+ * (PGR → GES → riscos → `epi_risk` → `epi_catalog`). Um EPI que atende vários riscos
+ * ocupa uma linha só, com os contextos agrupados. Nada é digitado à parte: as colunas
+ * são o que existe em `epi_catalog`, e campo vazio sai como "—".
+ *
+ * As especificações são agrupadas numa coluna (material · tamanho · unidade · vida
+ * útil) para a tabela caber em A4 sem virar faixa ilegível.
+ */
+function epiRelationBlock(data: PgrConsolidated, generatedAt: string): string {
+  const items = derivePgrEpiRelation(data, { today: generatedAt });
+  if (items.length === 0) {
+    return `<p class="muted">${escapeHtml(EPI_RELATION_EMPTY_LABEL)}</p>`;
+  }
+  const rows = items
+    .map((item) => {
+      const ca = [
+        item.ca ? `CA ${item.ca}` : null,
+        item.caValidUntil,
+        epiCaStatusLabel(item.caStatus),
+      ]
+        .filter((part): part is string => Boolean(part))
+        .join(" · ");
+      const contexts = item.contexts
+        .map((c) => `${c.gesName} — ${c.riskDescription}`)
+        .join("; ");
+      return `<tr>
+        <td>${text(item.name)}</td>
+        <td>${escapeHtml(ca)}</td>
+        <td>${text(item.manufacturer)}</td>
+        <td>${text(item.norm)}</td>
+        <td>${text(formatEpiSpecs(item))}</td>
+        <td>${text(contexts)}</td>
+      </tr>`;
+    })
+    .join("");
+  return `<table class="grid">
+    <thead><tr><th>EPI</th><th>CA / validade</th><th>Fabricante</th><th>Norma</th><th>Especificações</th><th>Riscos / GES atendidos</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <p class="muted">${escapeHtml(EPI_RELATION_SOURCE_NOTE)}</p>`;
+}
+
 /** Custo em BRL; `null` quando a medida não tem custo informado (não inventa zero). */
 function formatCost(value: string | null): string | null {
   if (!value || !value.trim()) return null;
@@ -534,6 +591,7 @@ function sectionBlock(
   key: PgrPdfSectionKey,
   index: number,
   data: PgrConsolidated,
+  generatedAt: string,
 ): string {
   const title = `${index}. ${SECTION_LABELS[key]}`;
   if (key === "identification") {
@@ -549,9 +607,11 @@ function sectionBlock(
         ? perGesBlock(data, (risks) => nr09Block(risks))
         : key === "nr17"
           ? perGesBlock(data, (risks) => nr17Block(risks))
-          : key === "actionPlan"
-            ? perGesBlock(data, (risks, ges) => actionPlanBlock(risks, ges.name))
-            : perGesBlock(data, (risks) => controlHierarchyBlock(risks));
+          : key === "epiRelation"
+            ? epiRelationBlock(data, generatedAt)
+            : key === "actionPlan"
+              ? perGesBlock(data, (risks, ges) => actionPlanBlock(risks, ges.name))
+              : perGesBlock(data, (risks) => controlHierarchyBlock(risks));
   return `<section class="doc-section"><h2>${escapeHtml(title)}</h2>${body}</section>`;
 }
 
@@ -566,7 +626,7 @@ export function buildPgrHtml(data: PgrConsolidated, options: PgrPdfOptions): str
   const sections = resolveSections(options.sections);
   const header = options.formHeader ? formHeaderBlock(options.formHeader) : "";
   const body = activeSections(sections)
-    .map((key, i) => sectionBlock(key, i + 1, data))
+    .map((key, i) => sectionBlock(key, i + 1, data, options.generatedAt))
     .join("");
 
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">

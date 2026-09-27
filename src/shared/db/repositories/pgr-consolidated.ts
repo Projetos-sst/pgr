@@ -328,6 +328,15 @@ export async function getPgrConsolidated(
           name: epiCatalog.name,
           ca: epiCatalog.ca,
           neutralization: epiRisk.neutralization,
+          // Especificação técnica do EPI (#48) — mesmo join, nenhuma query extra.
+          description: epiCatalog.description,
+          caValidUntil: epiCatalog.caValidUntil,
+          manufacturer: epiCatalog.manufacturer,
+          norm: epiCatalog.norm,
+          material: epiCatalog.material,
+          size: epiCatalog.size,
+          unitOfMeasure: epiCatalog.unitOfMeasure,
+          usefulLifeMonths: epiCatalog.usefulLifeMonths,
         })
         .from(epiRisk)
         .innerJoin(epiCatalog, eq(epiCatalog.id, epiRisk.catalogId))
@@ -341,6 +350,14 @@ export async function getPgrConsolidated(
           name: e.name,
           ca: e.ca,
           neutralization: e.neutralization as EpiNeutralization,
+          description: e.description,
+          caValidUntil: e.caValidUntil,
+          manufacturer: e.manufacturer,
+          norm: e.norm,
+          material: e.material,
+          size: e.size,
+          unitOfMeasure: e.unitOfMeasure,
+          usefulLifeMonths: e.usefulLifeMonths,
         });
         episByRisk.set(e.riskId, list);
       }

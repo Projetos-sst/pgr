@@ -57,6 +57,14 @@ function job(): Job {
   } as Job;
 }
 
+/** Recorta uma seção do documento pelo título numerado. */
+function sectionOf(html: string, title: string): string {
+  const start = html.indexOf(title);
+  if (start === -1) return "";
+  const end = html.indexOf("</section>", start);
+  return html.slice(start, end === -1 ? undefined : end);
+}
+
 /** HTML que o chamador passou ao Gotenberg na última invocação. */
 function lastHtml(): string {
   const calls = htmlToPdf.mock.calls;
@@ -181,6 +189,50 @@ function lastHtml(): string {
     const html = lastHtml();
     expect(html).toContain("Sem avaliação ergonômica registrada");
     expect(html).not.toContain("Resultado agregado da campanha psicossocial");
+  });
+
+  it("seção Relação de EPIs sai deduplicada, com dados do cadastro (#48)", async () => {
+    const risk2 = "11111111-1111-1111-1111-1111111111b4";
+    await admin.unsafe(`
+      update public.epi_catalog
+        set ca='12345', ca_valid_until='2020-01-01', manufacturer='Acme EPI',
+            norm='ABNT NBR 16077', material='Silicone', size='Único',
+            unit_of_measure='par', useful_life_months=12
+      where org_id='org_a' and id='${PGR_IDS.epiCatalogA}';
+
+      insert into public.risks (id, org_id, ges_id, agent_type, description) values
+        ('${risk2}','org_a','${PGR_IDS.gesA}','chemical','Poeira de cimento');
+      insert into public.epi_risk (org_id, catalog_id, risk_id, neutralization) values
+        ('org_a','${PGR_IDS.epiCatalogA}','${risk2}','neutralizes');
+    `);
+
+    await generatePgrPdf("org_a", PGR_IDS.pgrA);
+    const html = lastHtml();
+    const section = sectionOf(html, "6. Relação de EPIs");
+    // Uma linha por EPI, mesmo atendendo a dois riscos.
+    expect(section.split("Capacete CA-123").length - 1).toBe(1);
+    expect(section).toContain("CA 12345");
+    expect(section).toContain("CA vencido");
+    expect(section).toContain("Acme EPI");
+    expect(section).toContain("GES A — Ruído contínuo");
+    expect(section).toContain("GES A — Poeira de cimento");
+    expect(section).toContain("Dados derivados do cadastro de EPIs");
+  });
+
+  it("PGR sem EPI vinculado declara a ausência na seção de EPIs", async () => {
+    await admin.unsafe(`delete from public.epi_risk where org_id = 'org_a'`);
+    await generatePgrPdf("org_a", PGR_IDS.pgrA);
+    expect(lastHtml()).toContain("Nenhum EPI vinculado aos riscos deste PGR");
+  });
+
+  it("worker entrega a seção de EPIs igual à da rota", async () => {
+    await generatePgrPdf("org_a", PGR_IDS.pgrA);
+    const fromRoute = lastHtml();
+    await processPdfBatchJob(job());
+    const fromWorker = lastHtml();
+    expect(fromRoute).toContain("6. Relação de EPIs");
+    expect(fromWorker).toContain("6. Relação de EPIs");
+    expect(fromWorker).toContain("Dados derivados do cadastro de EPIs");
   });
 
   it("PGR de outro tenant não gera documento (NOT_FOUND)", async () => {

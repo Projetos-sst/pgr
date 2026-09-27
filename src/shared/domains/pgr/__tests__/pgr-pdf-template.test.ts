@@ -173,7 +173,8 @@ describe("PDF do PGR — estrutura de seções (#47)", () => {
       "3. Avaliação quantitativa de agentes (NR-09)",
       "4. Avaliação ergonômica (NR-17)",
       "5. Plano de ação (5W2H)",
-      "6. Hierarquia de controles (NR-01)",
+      "6. Relação de EPIs",
+      "7. Hierarquia de controles (NR-01)",
     ];
     const positions = order.map((title) => html.indexOf(title));
     expect(positions.every((pos) => pos > -1)).toBe(true);
@@ -356,6 +357,106 @@ describe("PDF do PGR — estrutura de seções (#47)", () => {
     });
     expect(html).not.toContain("Avaliação ergonômica (NR-17)");
     expect(html).toContain("4. Plano de ação (5W2H)");
+  });
+
+  it("relação de EPIs entra como seção própria, deduplicada e com a fonte declarada", () => {
+    const epi = {
+      id: "l-1",
+      catalogId: "cat-1",
+      name: "Protetor auricular",
+      ca: "12345",
+      neutralization: "neutralizes" as const,
+      caValidUntil: "2027-01-31",
+      manufacturer: "Acme EPI",
+      norm: "ABNT NBR 16077",
+      material: "Silicone",
+      size: "Único",
+      unitOfMeasure: "par",
+      usefulLifeMonths: 12,
+    };
+    const html = buildPgrHtml(
+      makePgrFull([
+        {
+          id: "g1",
+          name: "Produção",
+          risks: [
+            makeRisk({ id: "r-1", description: "Ruído contínuo", epis: [epi] }),
+            makeRisk({
+              id: "r-2",
+              description: "Ruído de impacto",
+              epis: [{ ...epi, id: "l-2" }],
+            }),
+          ],
+        },
+      ]),
+      baseOptions,
+    );
+    const section = sectionOf(html, "6. Relação de EPIs");
+    expect(section).toContain("Protetor auricular");
+    // Deduplicado: uma linha de EPI, dois contextos.
+    expect(section.split("Protetor auricular").length - 1).toBe(1);
+    expect(section).toContain("Produção — Ruído contínuo");
+    expect(section).toContain("Produção — Ruído de impacto");
+    expect(section).toContain("CA 12345");
+    expect(section).toContain("Acme EPI");
+    expect(section).toContain("ABNT NBR 16077");
+    expect(section).toContain("Silicone · Tam. Único · par · 12 mês(es) de vida útil");
+    expect(section).toContain("Dados derivados do cadastro de EPIs");
+  });
+
+  it("relação de EPIs imprime a situação real do CA", () => {
+    const html = buildPgrHtml(
+      makePgrFull([
+        {
+          id: "g1",
+          name: "Produção",
+          risks: [
+            makeRisk({
+              epis: [
+                {
+                  id: "l-1",
+                  catalogId: "cat-v",
+                  name: "EPI vencido",
+                  ca: "111",
+                  neutralization: "neutralizes",
+                  caValidUntil: "2020-01-01",
+                },
+                {
+                  id: "l-2",
+                  catalogId: "cat-s",
+                  name: "EPI sem validade",
+                  ca: "222",
+                  neutralization: "neutralizes",
+                  caValidUntil: null,
+                },
+              ],
+            }),
+          ],
+        },
+      ]),
+      baseOptions,
+    );
+    const section = sectionOf(html, "6. Relação de EPIs");
+    expect(section).toContain("CA vencido");
+    expect(section).toContain("Validade não informada");
+  });
+
+  it("PGR sem EPI vinculado declara a ausência em vez de sumir com a seção", () => {
+    const html = buildPgrHtml(
+      makePgrFull([{ id: "g1", name: "Produção", risks: [makeRisk({ epis: [] })] }]),
+      baseOptions,
+    );
+    const section = sectionOf(html, "6. Relação de EPIs");
+    expect(section).toContain("Nenhum EPI vinculado aos riscos deste PGR");
+  });
+
+  it("relação de EPIs pode ser desligada como qualquer outra seção", () => {
+    const html = buildPgrHtml(makePgrFull([]), {
+      ...baseOptions,
+      sections: { epiRelation: false },
+    });
+    expect(html).not.toContain("Relação de EPIs");
+    expect(html).toContain("6. Hierarquia de controles (NR-01)");
   });
 
   it("identificação imprime empresa, obra, responsável técnico e preposto", () => {

@@ -10,6 +10,10 @@ import { listPgrRevisionsAction } from "@/shared/server/actions/pgr/pgr-revision
 import { getPgrConsolidatedAction } from "@/shared/server/actions/pgr/pgr-consolidated";
 import { getPgrSignatureViewAction } from "@/shared/server/actions/pgr/pgr-signature";
 import { listDocumentsAction } from "@/shared/server/actions/documents/documents";
+import { getPgrNr18ChecklistAction } from "@/shared/server/actions/pgr/pgr-nr18";
+import { isNr18ApplicableUnitType } from "@/shared/domains/documents/nr18";
+import { derivePgrEpiRelation } from "@/shared/domains/pgr/epi-relation";
+import { todayInSaoPaulo } from "@/shared/dates";
 
 import { PgrEditorTabs } from "./_components/pgr-editor-tabs";
 
@@ -38,6 +42,7 @@ export default async function PgrDetailPage({
     signature,
     linkedDocuments,
     technicianDocuments,
+    nr18Checklist,
   ] = await Promise.all([
     getCompanyAction(doc.companyId),
     doc.workUnitId ? getWorkUnitAction(doc.workUnitId) : Promise.resolve(null),
@@ -58,6 +63,9 @@ export default async function PgrDetailPage({
       relatedEntityId: id,
       pageSize: 5,
     }),
+    // Checklist NR-18 (#48) — leitura derivada do GED; o painel só aparece quando a
+    // unidade do PGR é Obra/Canteiro (filtro logo abaixo).
+    getPgrNr18ChecklistAction(id),
   ]);
 
   const companyName = companyResult.ok ? companyResult.data.razaoSocial : doc.companyId;
@@ -65,6 +73,21 @@ export default async function PgrDetailPage({
     workUnitResult && workUnitResult.ok ? workUnitResult.data.name : null;
   const availableGes = gesOptions.ok
     ? gesOptions.data.rows.map((g) => ({ id: g.id, name: g.name }))
+    : [];
+
+  // NR-18 só faz sentido em canteiro de obra; nas demais unidades o painel some
+  // inteiro em vez de exibir um checklist irrelevante.
+  const workUnitType =
+    workUnitResult && workUnitResult.ok ? workUnitResult.data.type : null;
+  const nr18 =
+    isNr18ApplicableUnitType(workUnitType) && nr18Checklist.ok
+      ? nr18Checklist.data
+      : null;
+
+  // Relação de EPIs (#48): derivada da MESMA visão consolidada já carregada acima —
+  // nenhuma query extra, nenhuma digitação paralela.
+  const epiRelation = consolidated.ok
+    ? derivePgrEpiRelation(consolidated.data, { today: todayInSaoPaulo() })
     : [];
 
   return (
@@ -86,6 +109,8 @@ export default async function PgrDetailPage({
         technicianDocumentsTotal={
           technicianDocuments.ok ? technicianDocuments.data.total : 0
         }
+        nr18Checklist={nr18}
+        epiRelation={epiRelation}
       />
     </div>
   );

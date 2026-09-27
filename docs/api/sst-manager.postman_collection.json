@@ -1640,6 +1640,119 @@
       ]
     },
     {
+      "name": "NR-18 e Relacao de EPIs do PGR",
+      "description": "Leituras DERIVADAS do PGR (issue #48) — somente GET, sem escrita e sem tabela nova. O checklist agrupa por doc_type os anexos que o GED já tem (versão vigente; nova versão continua ANEXADO, excluir o grupo volta a FALTANDO) e é informativo: não bloqueia PDF nem assinatura. A relação de EPIs vem de PGR → GES → riscos → epi_risk → epi_catalog, deduplicada por item; para mudar qualquer dado, edite o catálogo de EPI. Tipos NR-18 aceitos como doc_type: 'Projeto da área de vivência', 'Projeto elétrico das instalações temporárias', 'Projetos de proteção coletiva' e 'Projeto de SPIQ'.",
+      "item": [
+        {
+          "name": "GET /pgr/:pgrId/nr18-checklist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/nr18-checklist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "nr18-checklist"]
+            }
+          },
+          "description": "200 com { items[], attachedCount, missingCount, totalCount }. Documento de outro escritório nunca satisfaz o checklist."
+        },
+        {
+          "name": "GET /pgr/:pgrId/nr18-checklist (404 cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "org_b"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/nr18-checklist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "nr18-checklist"]
+            }
+          }
+        },
+        {
+          "name": "GET /pgr/:pgrId/nr18-checklist (403 papel client)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/nr18-checklist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "nr18-checklist"]
+            }
+          }
+        },
+        {
+          "name": "GET /pgr/:pgrId/epi-relation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/epi-relation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "epi-relation"]
+            }
+          },
+          "description": "200 com a relação deduplicada: nome, descrição, CA, validade, caStatus (valid | due_soon | expired | no_expiry), fabricante, norma, material, tamanho, unidade, vida útil e os contextos (risco + GES) atendidos. Lista vazia = PGR sem EPI vinculado."
+        },
+        {
+          "name": "GET /pgr/:pgrId/epi-relation (404 cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "org_b"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/epi-relation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "epi-relation"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Riscos",
       "item": [
         {

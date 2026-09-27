@@ -11,6 +11,8 @@ import type { PgrConsolidated } from "@/shared/domains/pgr/pgr-consolidated";
 import { isPgrEditLocked } from "@/shared/domains/pgr/pgr-lock";
 import type { PgrSignatureView } from "@/shared/domains/pgr/pgr-signature";
 import type { DocumentListItem } from "@/shared/domains/documents/documents";
+import type { Nr18ChecklistSummary } from "@/shared/domains/documents/nr18";
+import type { PgrEpiRelationItem } from "@/shared/domains/pgr/epi-relation";
 import { publishPgrAction } from "@/shared/server/actions/pgr/pgr";
 
 import { PgrBasicInfoTab } from "./pgr-basic-info-tab";
@@ -47,6 +49,8 @@ export function PgrEditorTabs({
   linkedDocumentsTotal,
   technicianDocuments,
   technicianDocumentsTotal,
+  nr18Checklist,
+  epiRelation,
 }: {
   pgrId: string;
   pgr: Pgr;
@@ -62,6 +66,10 @@ export function PgrEditorTabs({
   linkedDocumentsTotal: number;
   technicianDocuments: DocumentListItem[];
   technicianDocumentsTotal: number;
+  /** Checklist NR-18 (#48); `null` quando a unidade do PGR não é Obra/Canteiro. */
+  nr18Checklist: Nr18ChecklistSummary | null;
+  /** Relação de EPIs derivada do cadastro (#48) — nunca digitada. */
+  epiRelation: PgrEpiRelationItem[];
 }) {
   const router = useRouter();
   const [active, setActive] = useState<TabKey>("basic");
@@ -554,6 +562,8 @@ export function PgrEditorTabs({
               pgrLabel={`PGR — ${companyName}`}
               linkedDocuments={linkedDocuments}
               linkedTotal={linkedDocumentsTotal}
+              nr18Checklist={nr18Checklist}
+              epiRelation={epiRelation}
             />
           ) : null}
 
