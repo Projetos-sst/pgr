@@ -257,3 +257,10 @@ export {
   type HealthExam,
   type NewHealthExam,
 } from "./health-exams";
+export {
+  ergonomicEvaluations,
+  ergonomicAdequacy,
+  type ErgonomicEvaluation,
+  type NewErgonomicEvaluation,
+  type ErgonomicAdequacyValue,
+} from "./ergonomics";

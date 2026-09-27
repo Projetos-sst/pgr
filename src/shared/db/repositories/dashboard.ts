@@ -29,13 +29,13 @@ import {
   type DashboardSummary,
 } from "@/shared/domains/platform/dashboard";
 import type { OnboardingCounts } from "@/shared/domains/platform/onboarding";
+import { EPI_CA_DUE_WINDOW_DAYS } from "@/shared/domains/pgr/epi-relation";
 
 const countExpr = sql<number>`count(*)::int`;
 
-// Espelha a janela fixa de 30 dias de `SUMMARY_DUE_WINDOW_DAYS`
-// (training-compliance.ts) — duplicado aqui por ser um valor pequeno e local
-// ao contador de CA de EPI, sem depender de export cruzado entre repositórios.
-const EPI_CA_DUE_WINDOW_DAYS = 30;
+// Janela de "a vencer" do CA de EPI. A constante passou a viver no domínio
+// (`domains/pgr/epi-relation.ts`, #48) para que o KPI do dashboard e a relação de
+// EPIs do PGR não usem prazos diferentes para a mesma pergunta.
 
 /** "Hoje + N dias" (`YYYY-MM-DD`) — mesmo cálculo do `addDays` privado de `domains/pgr/trainings.ts`. */
 function addDaysIso(isoDate: string, days: number): string {

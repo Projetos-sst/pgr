@@ -83,6 +83,10 @@
       "value": ""
     },
     {
+      "key": "ergonomicEvaluationId",
+      "value": ""
+    },
+    {
       "key": "controlMeasureId",
       "value": ""
     },
@@ -1636,6 +1640,119 @@
       ]
     },
     {
+      "name": "NR-18 e Relacao de EPIs do PGR",
+      "description": "Leituras DERIVADAS do PGR (issue #48) — somente GET, sem escrita e sem tabela nova. O checklist agrupa por doc_type os anexos que o GED já tem (versão vigente; nova versão continua ANEXADO, excluir o grupo volta a FALTANDO) e é informativo: não bloqueia PDF nem assinatura. A relação de EPIs vem de PGR → GES → riscos → epi_risk → epi_catalog, deduplicada por item; para mudar qualquer dado, edite o catálogo de EPI. Tipos NR-18 aceitos como doc_type: 'Projeto da área de vivência', 'Projeto elétrico das instalações temporárias', 'Projetos de proteção coletiva' e 'Projeto de SPIQ'.",
+      "item": [
+        {
+          "name": "GET /pgr/:pgrId/nr18-checklist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/nr18-checklist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "nr18-checklist"]
+            }
+          },
+          "description": "200 com { items[], attachedCount, missingCount, totalCount }. Documento de outro escritório nunca satisfaz o checklist."
+        },
+        {
+          "name": "GET /pgr/:pgrId/nr18-checklist (404 cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "org_b"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/nr18-checklist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "nr18-checklist"]
+            }
+          }
+        },
+        {
+          "name": "GET /pgr/:pgrId/nr18-checklist (403 papel client)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/nr18-checklist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "nr18-checklist"]
+            }
+          }
+        },
+        {
+          "name": "GET /pgr/:pgrId/epi-relation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/epi-relation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "epi-relation"]
+            }
+          },
+          "description": "200 com a relação deduplicada: nome, descrição, CA, validade, caStatus (valid | due_soon | expired | no_expiry), fabricante, norma, material, tamanho, unidade, vida útil e os contextos (risco + GES) atendidos. Lista vazia = PGR sem EPI vinculado."
+        },
+        {
+          "name": "GET /pgr/:pgrId/epi-relation (404 cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "org_b"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/epi-relation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "epi-relation"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Riscos",
       "item": [
         {
@@ -2156,6 +2273,278 @@
               "raw": "{{baseUrl}}/api/v1/risk-assessments/{{riskAssessmentId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "risk-assessments", "{{riskAssessmentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Avaliacao Ergonomica (NR-17)",
+      "description": "Avaliação ergonômica preliminar (AEP) por risco — issue #40. Histórico 1:N; a vigente é a de assessedAt mais recente. Só assessedAt é obrigatório: as seis dimensões são opcionais e ausência significa 'não avaliado' (nunca 'adequado'). Adequação = adequate | inadequate | not_applicable. Não há score, escala nem conclusão global, e o sistema não calcula escore COPSOQ. Defina {{ergonomicEvaluationId}} com o id devolvido pelo POST.",
+      "item": [
+        {
+          "name": "GET /risks/:riskId/ergonomic-evaluations (historico)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/ergonomic-evaluations (create, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assessedAt\": \"2026-09-20\",\n  \"responsible\": \"Ergonomista responsável\",\n  \"method\": \"AEP — inspeção do posto de trabalho\",\n  \"posture\": \"inadequate\",\n  \"postureNotes\": \"Bancada abaixo da altura do cotovelo\",\n  \"movements\": \"adequate\",\n  \"movementsNotes\": \"\",\n  \"physicalLoad\": \"not_applicable\",\n  \"mentalLoad\": \"\",\n  \"workOrganization\": \"adequate\",\n  \"physicalEnvironment\": \"inadequate\",\n  \"physicalEnvironmentNotes\": \"Iluminância abaixo do recomendado\",\n  \"notes\": \"Avaliação preliminar do posto de montagem.\",\n  \"psychosocialCampaignId\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/ergonomic-evaluations (422 sem assessedAt)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responsible\": \"Sem data\"\n}"
+            },
+            "description": "assessedAt é o único campo obrigatório → VALIDATION (422)."
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/ergonomic-evaluations (422 adequacao invalida)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assessedAt\": \"2026-09-20\",\n  \"posture\": \"otimo\"\n}"
+            },
+            "description": "Fora do enum adequate|inadequate|not_applicable → VALIDATION (422)."
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/ergonomic-evaluations (422 campanha de outra unidade/aberta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assessedAt\": \"2026-09-20\",\n  \"psychosocialCampaignId\": \"{{psychoCampaignId}}\"\n}"
+            },
+            "description": "Vínculo psicossocial é validado no servidor: campanha de outro tenant → FK_NOT_FOUND (422); de outra unidade ou ainda não encerrada → VALIDATION (422)."
+          }
+        },
+        {
+          "name": "GET /ergonomic-evaluations/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ergonomic-evaluations/{{ergonomicEvaluationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ergonomic-evaluations", "{{ergonomicEvaluationId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /ergonomic-evaluations/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ergonomic-evaluations/{{ergonomicEvaluationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ergonomic-evaluations", "{{ergonomicEvaluationId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assessedAt\": \"2026-09-20\",\n  \"responsible\": \"Ergonomista responsável\",\n  \"method\": \"AEP — inspeção do posto de trabalho\",\n  \"posture\": \"inadequate\",\n  \"postureNotes\": \"Bancada abaixo da altura do cotovelo\",\n  \"movements\": \"adequate\",\n  \"movementsNotes\": \"\",\n  \"physicalLoad\": \"not_applicable\",\n  \"mentalLoad\": \"\",\n  \"workOrganization\": \"adequate\",\n  \"physicalEnvironment\": \"inadequate\",\n  \"physicalEnvironmentNotes\": \"Iluminância abaixo do recomendado\",\n  \"notes\": \"Avaliação preliminar do posto de montagem.\",\n  \"psychosocialCampaignId\": \"\"\n}"
+            },
+            "description": "Corpo completo: campo omitido/vazio é APAGADO (volta a 'não avaliado')."
+          }
+        },
+        {
+          "name": "DELETE /ergonomic-evaluations/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ergonomic-evaluations/{{ergonomicEvaluationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ergonomic-evaluations", "{{ergonomicEvaluationId}}"]
+            }
+          },
+          "description": "Remove só esta avaliação; o restante do histórico permanece."
+        },
+        {
+          "name": "GET /ergonomic-evaluations/:id (404 cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "org_b"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ergonomic-evaluations/{{ergonomicEvaluationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ergonomic-evaluations", "{{ergonomicEvaluationId}}"]
+            }
+          },
+          "description": "Avaliação de outro escritório nunca é lida — 404 NOT_FOUND."
+        },
+        {
+          "name": "GET /risks/:riskId/ergonomic-evaluations (403 papel client)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"]
             }
           }
         }

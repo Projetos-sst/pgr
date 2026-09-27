@@ -12,12 +12,23 @@ import {
   hasNr09Measurement,
   isNr09EligibleAgent,
   nr09ConclusionLabel,
+  NO_ERGONOMIC_EVALUATION_LABEL,
+  PSYCHOSOCIAL_AGGREGATE_LABEL,
+  ergonomicAdequacyText,
+  formatCampaignPeriod,
   type ConsolidatedAddress,
   type ConsolidatedGes,
   type ConsolidatedRisk,
   type ControlLevel,
   type PgrConsolidated,
 } from "./pgr-consolidated";
+import {
+  EPI_RELATION_EMPTY_LABEL,
+  EPI_RELATION_SOURCE_NOTE,
+  derivePgrEpiRelation,
+  epiCaStatusLabel,
+  formatEpiSpecs,
+} from "./epi-relation";
 
 /** Cor padrão da capa (indigo do design system) — sobrescrita por parâmetro (fatia #40). */
 export const DEFAULT_COVER_COLOR = "#5b63f5";
@@ -34,7 +45,9 @@ export type PgrPdfSectionKey =
   | "identification"
   | "risks"
   | "nr09"
+  | "nr17"
   | "actionPlan"
+  | "epiRelation"
   | "controlHierarchy";
 
 export type PgrFormHeader = {
@@ -59,15 +72,17 @@ export type PgrPdfOptions = {
 
 /**
  * Ordem e títulos das seções do documento (#47). A numeração é **sequencial pelo que
- * existe**: a integração NR-17 (issue #40) ainda não foi implementada e, por decisão do
- * lote, o PDF não ganha seção vazia nem dado de outro módulo para aparentar atendimento
- * — quando a #40 chegar, ela entra na ordem e as seguintes se renumeram sozinhas.
+ * existe** — desligar uma seção renumera as seguintes sozinha. A NR-17 (#40) entra
+ * entre a NR-09 e o plano de ação: é avaliação de risco, vem antes do plano que dela
+ * decorre.
  */
 const SECTION_ORDER: PgrPdfSectionKey[] = [
   "identification",
   "risks",
   "nr09",
+  "nr17",
   "actionPlan",
+  "epiRelation",
   "controlHierarchy",
 ];
 
@@ -75,7 +90,9 @@ const SECTION_LABELS: Record<PgrPdfSectionKey, string> = {
   identification: "Identificação",
   risks: "Inventário de riscos (NR-01)",
   nr09: "Avaliação quantitativa de agentes (NR-09)",
+  nr17: "Avaliação ergonômica (NR-17)",
   actionPlan: "Plano de ação (5W2H)",
+  epiRelation: "Relação de EPIs",
   controlHierarchy: "Hierarquia de controles (NR-01)",
 };
 
@@ -99,7 +116,9 @@ function resolveSections(
     identification: sections?.identification ?? true,
     risks: sections?.risks ?? true,
     nr09: sections?.nr09 ?? true,
+    nr17: sections?.nr17 ?? true,
     actionPlan: sections?.actionPlan ?? true,
+    epiRelation: sections?.epiRelation ?? true,
     controlHierarchy: sections?.controlHierarchy ?? true,
   };
 }
@@ -358,6 +377,133 @@ function nr09Block(risks: ConsolidatedRisk[]): string {
     <tbody>${rows}</tbody></table>${footer}`;
 }
 
+// ---------------------------------------------------------------------------
+// Seção 4 — NR-17 (#40 + #47)
+// ---------------------------------------------------------------------------
+
+/**
+ * Resultado **agregado** da campanha psicossocial vinculada à avaliação. Imprime nome,
+ * período, número de respostas e os fatores derivados com nível. Nunca imprime resposta
+ * individual (o view model sequer as carrega) e nunca chama isso de "escore COPSOQ" — o
+ * sistema não implementa a metodologia, e documento legal não leva rótulo falso.
+ */
+function psychosocialAggregateBlock(risk: ConsolidatedRisk): string {
+  const aggregate = risk.ergonomic?.psychosocial;
+  if (!aggregate) return "";
+  const period = formatCampaignPeriod(aggregate.startsAt, aggregate.endsAt);
+  const factors = aggregate.factors.length
+    ? `<table class="grid"><thead><tr><th>Fator psicossocial</th><th>Nível</th></tr></thead><tbody>${aggregate.factors
+        .map(
+          (f) =>
+            `<tr><td>${text(f.factor)}</td><td>${escapeHtml(String(f.level))}</td></tr>`,
+        )
+        .join("")}</tbody></table>`
+    : `<p class="muted">Nenhum fator derivado nesta campanha.</p>`;
+  return `<h5>${escapeHtml(PSYCHOSOCIAL_AGGREGATE_LABEL)}</h5>${definitionTable([
+    ["Campanha", aggregate.name],
+    ["Período", period],
+    ["Respostas recebidas", String(aggregate.responseCount)],
+  ])}${factors}`;
+}
+
+/** Bloco vertical de um risco avaliado — cabe em A4 sem tabela horizontal gigante. */
+function nr17RiskBlock(risk: ConsolidatedRisk): string {
+  const evaluation = risk.ergonomic!;
+  const rows = evaluation.dimensions
+    .map(
+      (d) => `<tr>
+        <td>${escapeHtml(d.label)}</td>
+        <td>${escapeHtml(ergonomicAdequacyText(d.adequacy))}</td>
+        <td>${text(d.notes)}</td>
+      </tr>`,
+    )
+    .join("");
+  const notes = evaluation.notes?.trim()
+    ? `<p><strong>Observações gerais:</strong> ${escapeHtml(evaluation.notes.trim())}</p>`
+    : "";
+  return `<div class="nr17-risk">
+    <h4>${escapeHtml(riskAgentTypeLabel(risk.agentType))} — ${text(risk.description)}</h4>
+    ${definitionTable([
+      ["Data da avaliação", evaluation.assessedAt],
+      ["Responsável", evaluation.responsible],
+      ["Método / instrumento", evaluation.method],
+    ])}
+    <table class="grid">
+      <thead><tr><th>Dimensão</th><th>Situação</th><th>Observação</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${notes}
+    ${psychosocialAggregateBlock(risk)}
+  </div>`;
+}
+
+/**
+ * Seção NR-17 de um GES. Risco avaliado vira bloco completo; risco **sem** avaliação é
+ * declarado nominalmente — ausência de avaliação nunca some do documento nem vira
+ * "adequado". "Não avaliado" (dimensão em branco) e "Não aplicável" (declaração do
+ * profissional) também continuam distintos.
+ */
+function nr17Block(risks: ConsolidatedRisk[]): string {
+  if (risks.length === 0) return `<p class="muted">GES sem riscos.</p>`;
+  const evaluated = risks.filter((r) => r.ergonomic);
+  const pending = risks.filter((r) => !r.ergonomic);
+  const pendingBlock = pending.length
+    ? `<p class="muted">${escapeHtml(NO_ERGONOMIC_EVALUATION_LABEL)}: ${pending
+        .map((r) => text(r.description))
+        .join("; ")}.</p>`
+    : "";
+  if (evaluated.length === 0) {
+    return `<p class="muted">${escapeHtml(NO_ERGONOMIC_EVALUATION_LABEL)} para os riscos deste GES.</p>${pendingBlock}`;
+  }
+  return `${evaluated.map(nr17RiskBlock).join("")}${pendingBlock}`;
+}
+
+// ---------------------------------------------------------------------------
+// Seção 6 — Relação de EPIs (#48, decisão Q4 = A)
+// ---------------------------------------------------------------------------
+
+/**
+ * Relação **deduplicada** dos EPIs indicados aos riscos do PGR, derivada do cadastro
+ * (PGR → GES → riscos → `epi_risk` → `epi_catalog`). Um EPI que atende vários riscos
+ * ocupa uma linha só, com os contextos agrupados. Nada é digitado à parte: as colunas
+ * são o que existe em `epi_catalog`, e campo vazio sai como "—".
+ *
+ * As especificações são agrupadas numa coluna (material · tamanho · unidade · vida
+ * útil) para a tabela caber em A4 sem virar faixa ilegível.
+ */
+function epiRelationBlock(data: PgrConsolidated, generatedAt: string): string {
+  const items = derivePgrEpiRelation(data, { today: generatedAt });
+  if (items.length === 0) {
+    return `<p class="muted">${escapeHtml(EPI_RELATION_EMPTY_LABEL)}</p>`;
+  }
+  const rows = items
+    .map((item) => {
+      const ca = [
+        item.ca ? `CA ${item.ca}` : null,
+        item.caValidUntil,
+        epiCaStatusLabel(item.caStatus),
+      ]
+        .filter((part): part is string => Boolean(part))
+        .join(" · ");
+      const contexts = item.contexts
+        .map((c) => `${c.gesName} — ${c.riskDescription}`)
+        .join("; ");
+      return `<tr>
+        <td>${text(item.name)}</td>
+        <td>${escapeHtml(ca)}</td>
+        <td>${text(item.manufacturer)}</td>
+        <td>${text(item.norm)}</td>
+        <td>${text(formatEpiSpecs(item))}</td>
+        <td>${text(contexts)}</td>
+      </tr>`;
+    })
+    .join("");
+  return `<table class="grid">
+    <thead><tr><th>EPI</th><th>CA / validade</th><th>Fabricante</th><th>Norma</th><th>Especificações</th><th>Riscos / GES atendidos</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <p class="muted">${escapeHtml(EPI_RELATION_SOURCE_NOTE)}</p>`;
+}
+
 /** Custo em BRL; `null` quando a medida não tem custo informado (não inventa zero). */
 function formatCost(value: string | null): string | null {
   if (!value || !value.trim()) return null;
@@ -445,6 +591,7 @@ function sectionBlock(
   key: PgrPdfSectionKey,
   index: number,
   data: PgrConsolidated,
+  generatedAt: string,
 ): string {
   const title = `${index}. ${SECTION_LABELS[key]}`;
   if (key === "identification") {
@@ -458,9 +605,13 @@ function sectionBlock(
       ? perGesBlock(data, (risks) => riskInventoryBlock(risks))
       : key === "nr09"
         ? perGesBlock(data, (risks) => nr09Block(risks))
-        : key === "actionPlan"
-          ? perGesBlock(data, (risks, ges) => actionPlanBlock(risks, ges.name))
-          : perGesBlock(data, (risks) => controlHierarchyBlock(risks));
+        : key === "nr17"
+          ? perGesBlock(data, (risks) => nr17Block(risks))
+          : key === "epiRelation"
+            ? epiRelationBlock(data, generatedAt)
+            : key === "actionPlan"
+              ? perGesBlock(data, (risks, ges) => actionPlanBlock(risks, ges.name))
+              : perGesBlock(data, (risks) => controlHierarchyBlock(risks));
   return `<section class="doc-section"><h2>${escapeHtml(title)}</h2>${body}</section>`;
 }
 
@@ -475,7 +626,7 @@ export function buildPgrHtml(data: PgrConsolidated, options: PgrPdfOptions): str
   const sections = resolveSections(options.sections);
   const header = options.formHeader ? formHeaderBlock(options.formHeader) : "";
   const body = activeSections(sections)
-    .map((key, i) => sectionBlock(key, i + 1, data))
+    .map((key, i) => sectionBlock(key, i + 1, data, options.generatedAt))
     .join("");
 
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
@@ -508,6 +659,10 @@ table.grid tr { page-break-inside: avoid; }
 table.grid { border-collapse: collapse; width: 100%; margin: 4px 0 8px; }
 table.grid th, table.grid td { border: 1px solid #d5d5d5; padding: 4px 6px; text-align: left; vertical-align: top; }
 table.grid th { background: #f3f3f6; font-size: 10px; }
+h5 { font-size: 11px; margin: 10px 0 4px; color: #444; }
+.nr17-risk { page-break-inside: avoid; margin: 8px 0 12px; padding-bottom: 6px; border-bottom: 1px dashed #e0e0e0; }
+.nr17-risk:last-child { border-bottom: none; }
+.nr17-risk h4 { margin: 0 0 4px; }
 .hierarchy { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .hierarchy-level { border: 1px solid #e2e2e2; border-radius: 4px; padding: 6px 8px; }
 .hierarchy-level h4 { margin: 0 0 4px; color: ${coverColor}; }

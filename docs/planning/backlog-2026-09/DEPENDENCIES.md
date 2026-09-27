@@ -37,7 +37,7 @@ PLATAFORMA
 
 | Antes           | Depois         | Motivo                                                                              |
 | --------------- | -------------- | ----------------------------------------------------------------------------------- |
-| #39 e #40       | fechar #47     | Critério de aceite exige as seções NR-09 e NR-17 com dado real                      |
+| #40 (só ela)    | fechar #47     | NR-09 entregue no Lote 2; falta a seção NR-17 para o critério de aceite completo    |
 | #42 (cobertura) | seção 5 de #47 | Plano do PGR = `control_measures` (decidido); PDF mostra cobertura/status no Lote 2 |
 | #58             | #52–#55, #57   | Autor/Revisor/Aprovador/Leitor/Administrador são papéis de #58                      |
 | #52             | #53            | Revisão opera sobre documento com metadados e status de workflow                    |

@@ -219,6 +219,90 @@ function asOwner(tenantId: string) {
     expect(result.ok && result.data.ges).toEqual([]);
   });
 
+  // ── NR-17 (#40 + #47) ───────────────────────────────────────────────────
+  it("traz a avaliação ergonômica VIGENTE do risco, com as seis dimensões", async () => {
+    await admin.unsafe(`
+      insert into public.ergonomic_evaluations
+        (id, org_id, risk_id, assessed_at, responsible, method, notes, posture, posture_notes, movements, physical_load)
+      values
+        ('11111111-1111-1111-1111-1111111111e7','org_a','${PGR_IDS.riskA}','2026-01-10','Antiga','Checklist',null,'adequate',null,'adequate','adequate'),
+        ('11111111-1111-1111-1111-1111111111e8','org_a','${PGR_IDS.riskA}','2026-06-01','Beltrana','RULA','Reavaliar em 6 meses','inadequate','Bancada baixa','adequate','not_applicable');
+    `);
+    const result = await getPgrConsolidatedAction(PGR_IDS.pgrA);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const ergonomic = result.data.ges[0].risks[0].ergonomic;
+    expect(ergonomic?.assessedAt).toBe("2026-06-01");
+    expect(ergonomic?.responsible).toBe("Beltrana");
+    expect(ergonomic?.method).toBe("RULA");
+    expect(ergonomic?.notes).toBe("Reavaliar em 6 meses");
+    expect(ergonomic?.dimensions).toHaveLength(6);
+    const byDimension = Object.fromEntries(
+      (ergonomic?.dimensions ?? []).map((d) => [d.dimension, d]),
+    );
+    expect(byDimension.posture.adequacy).toBe("inadequate");
+    expect(byDimension.posture.notes).toBe("Bancada baixa");
+    expect(byDimension.physicalLoad.adequacy).toBe("not_applicable");
+    // Dimensão nunca preenchida continua null — "não avaliado", não "adequado".
+    expect(byDimension.mentalLoad.adequacy).toBeNull();
+    expect(ergonomic?.psychosocial).toBeNull();
+  });
+
+  it("risco sem avaliação ergonômica → ergonomic null (estado honesto)", async () => {
+    const result = await getPgrConsolidatedAction(PGR_IDS.pgrA);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.ges[0].risks[0].ergonomic).toBeNull();
+  });
+
+  it("campanha vinculada vira agregado — sem nenhuma resposta individual", async () => {
+    await admin.unsafe(`
+      insert into public.psychosocial_campaigns
+        (id, org_id, company_id, work_unit_id, name, status, public_token, starts_at, ends_at)
+      values ('11111111-1111-1111-1111-1111111111e9','org_a','${PGR_IDS.companyA}','${PGR_IDS.workUnitA}','Clima 2026','closed','tok-cons-a','2026-01-01','2026-03-31');
+
+      insert into public.psychosocial_responses (id, org_id, campaign_id) values
+        ('11111111-1111-1111-1111-1111111111ea','org_a','11111111-1111-1111-1111-1111111111e9'),
+        ('11111111-1111-1111-1111-1111111111eb','org_a','11111111-1111-1111-1111-1111111111e9');
+
+      insert into public.psychosocial_risks (id, org_id, campaign_id, factor, level) values
+        ('11111111-1111-1111-1111-1111111111ec','org_a','11111111-1111-1111-1111-1111111111e9','Ritmo de trabalho',3),
+        ('11111111-1111-1111-1111-1111111111ed','org_a','11111111-1111-1111-1111-1111111111e9','Autonomia',2);
+
+      insert into public.ergonomic_evaluations
+        (id, org_id, risk_id, assessed_at, method, psychosocial_campaign_id)
+      values ('11111111-1111-1111-1111-1111111111ee','org_a','${PGR_IDS.riskA}','2026-06-01','COPSOQ','11111111-1111-1111-1111-1111111111e9');
+    `);
+    const result = await getPgrConsolidatedAction(PGR_IDS.pgrA);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const aggregate = result.data.ges[0].risks[0].ergonomic?.psychosocial;
+    expect(aggregate?.name).toBe("Clima 2026");
+    expect(aggregate?.startsAt).toBe("2026-01-01");
+    expect(aggregate?.endsAt).toBe("2026-03-31");
+    expect(aggregate?.responseCount).toBe(2);
+    expect(aggregate?.factors.map((f) => f.factor)).toEqual([
+      "Ritmo de trabalho",
+      "Autonomia",
+    ]);
+    // O view model não tem por onde carregar resposta individual.
+    const serialized = JSON.stringify(result.data);
+    expect(serialized).not.toContain("11111111-1111-1111-1111-1111111111ea");
+    expect(serialized).not.toContain("11111111-1111-1111-1111-1111111111eb");
+    expect(serialized.toLowerCase()).not.toContain("escore");
+  });
+
+  it("avaliação ergonômica de outro tenant nunca entra na consolidada", async () => {
+    await admin.unsafe(`
+      insert into public.ergonomic_evaluations (id, org_id, risk_id, assessed_at, responsible)
+      values ('22222222-2222-2222-2222-2222222222e7','org_b','${PGR_IDS.riskB}','2026-06-01','Do outro escritório');
+    `);
+    const result = await getPgrConsolidatedAction(PGR_IDS.pgrA);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.stringify(result.data)).not.toContain("Do outro escritório");
+  });
+
   it("PGR inexistente/cross-tenant → NOT_FOUND", async () => {
     const result = await getPgrConsolidatedAction(PGR_IDS.pgrB); // pgrB é de org_b
     expect(!result.ok && result.error.code).toBe("NOT_FOUND");

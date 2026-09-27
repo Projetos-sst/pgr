@@ -5,9 +5,23 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import type { DocumentListItem } from "@/shared/domains/documents/documents";
+import {
+  nr18StatusLabel,
+  nr18StatusTone,
+  type Nr18ChecklistSummary,
+} from "@/shared/domains/documents/nr18";
+import {
+  EPI_RELATION_EMPTY_LABEL,
+  EPI_RELATION_SOURCE_NOTE,
+  epiCaStatusLabel,
+  epiCaStatusTone,
+  formatEpiSpecs,
+  type PgrEpiRelationItem,
+} from "@/shared/domains/pgr/epi-relation";
 import { DEFAULT_COVER_COLOR } from "@/shared/domains/pgr/pgr-pdf-template";
 import { enqueuePgrPdfBatchAction } from "@/shared/server/actions/documents/pdf-batch";
 
+import { Cell, DataGrid, GridHeader, GridRow, StatusBadge } from "../../../_ui/data-list";
 import { formatBytes, formatIsoDateBr } from "../../../documents/_components/format";
 import { ValidityBadge } from "../../../documents/_components/validity-badge";
 
@@ -222,7 +236,9 @@ function PgrLinkedDocumentsPanel({
           {linkedDocuments.map((document) => (
             <li
               key={document.id}
-              className="glass-panel flex flex-col gap-2 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              // `min-w-0`: item de grid não encolhe abaixo do min-content por
+              // padrão, e o nome longo do documento empurrava a página no 375px.
+              className="glass-panel flex min-w-0 flex-col gap-2 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <p className="text-text truncate text-sm font-bold">{document.name}</p>
@@ -256,21 +272,200 @@ function PgrLinkedDocumentsPanel({
   );
 }
 
-/** Etapa "Documentos e PDF" do editor de PGR — compõe os dois painéis. */
+/**
+ * Checklist NR-18 (item 18.4.3) — issue #48. **Informativo**: mostra o que já está
+ * anexado e o que falta, com atalho de upload já com o tipo e o vínculo preenchidos.
+ * Não bloqueia PDF, assinatura nem publicação. Só aparece quando a unidade do PGR é
+ * do tipo Obra/Canteiro.
+ */
+function PgrNr18Panel({
+  pgrId,
+  pgrLabel,
+  checklist,
+}: {
+  pgrId: string;
+  pgrLabel: string;
+  checklist: Nr18ChecklistSummary;
+}) {
+  const template = "1.8fr 1fr 1.6fr 0.9fr";
+  const attachHref = (docType: string) =>
+    `/documents/new?${buildRelatedQuery(pgrId)}` +
+    `&docType=${encodeURIComponent(docType)}` +
+    `&returnTo=${encodeURIComponent(`/pgr/${pgrId}`)}` +
+    `&returnLabel=${encodeURIComponent(pgrLabel)}`;
+
+  return (
+    <section className="glass-card flex flex-col gap-5 p-6 sm:p-8">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <SectionHeading title="Documentos complementares (NR-18)">
+          Projetos exigidos para o canteiro de obra. O checklist é informativo — ele{" "}
+          <strong>não</strong> bloqueia a geração do PDF nem a assinatura do PGR. Cada
+          documento é anexado ao acervo, com versionamento.
+        </SectionHeading>
+        <span className="text-text-subtle shrink-0 font-mono text-[11px] tracking-wide uppercase">
+          {checklist.attachedCount} de {checklist.totalCount} anexados
+        </span>
+      </div>
+
+      <div className="min-w-0 overflow-hidden rounded-2xl border border-black/5">
+        <DataGrid minWidth={760}>
+          <GridHeader
+            template={template}
+            columns={[
+              { header: "Documento" },
+              { header: "Situação", align: "center" },
+              { header: "Documento vigente" },
+              { header: "Ação", align: "center" },
+            ]}
+          />
+          {checklist.items.map((item, i) => (
+            <GridRow key={item.key} template={template} striped={i % 2 === 1}>
+              <Cell className="text-text font-semibold">
+                {item.label}
+                <span className="text-text-subtle block text-[11px] font-normal">
+                  {item.description}
+                </span>
+              </Cell>
+              <Cell align="center">
+                <span className="flex justify-center">
+                  <StatusBadge tone={nr18StatusTone(item)}>
+                    {nr18StatusLabel(item)}
+                  </StatusBadge>
+                </span>
+              </Cell>
+              <Cell className="text-text-muted">
+                {item.documents.length > 0
+                  ? item.documents
+                      .map((doc) => `${doc.name} (v${doc.version})`)
+                      .join(", ")
+                  : "—"}
+              </Cell>
+              <Cell align="center">
+                <Link
+                  href={attachHref(item.label)}
+                  className="text-primary text-xs font-bold hover:underline"
+                >
+                  {item.attached ? "Anexar outro" : "Anexar"}
+                </Link>
+              </Cell>
+            </GridRow>
+          ))}
+        </DataGrid>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Relação de EPIs do PGR (#48, decisão Q4 = A) — **somente leitura**. A fonte é o
+ * cadastro de EPI vinculado aos riscos; não há digitação paralela nem botão de editar
+ * aqui. Um EPI que atende vários riscos aparece uma vez, com os contextos agrupados.
+ */
+function PgrEpiRelationPanel({ items }: { items: PgrEpiRelationItem[] }) {
+  // Largura mínima calibrada para caber na coluna do editor de PGR (~915px no 1440):
+  // acima disso a coluna "Riscos / GES" ficava cortada mesmo com scroll interno.
+  const template = "1.3fr 1fr 0.9fr 0.9fr 1.2fr 1.4fr";
+
+  return (
+    <section className="glass-card flex flex-col gap-5 p-6 sm:p-8">
+      <SectionHeading title="Relação de EPIs">
+        {EPI_RELATION_SOURCE_NOTE} Para alterar qualquer dado, edite o item no{" "}
+        <Link href="/epi-catalog" className="text-primary font-bold hover:underline">
+          catálogo de EPI
+        </Link>
+        .
+      </SectionHeading>
+
+      {items.length === 0 ? (
+        <p className="text-text-subtle rounded-2xl border border-dashed border-black/10 px-4 py-6 text-center text-xs">
+          {EPI_RELATION_EMPTY_LABEL}
+        </p>
+      ) : (
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-black/5">
+          <DataGrid minWidth={860}>
+            <GridHeader
+              template={template}
+              columns={[
+                { header: "EPI" },
+                { header: "CA", align: "center" },
+                { header: "Fabricante", align: "center" },
+                { header: "Norma", align: "center" },
+                { header: "Especificações", align: "center" },
+                { header: "Riscos / GES atendidos" },
+              ]}
+            />
+            {items.map((item, i) => (
+              <GridRow key={item.catalogId} template={template} striped={i % 2 === 1}>
+                <Cell className="text-text font-semibold">
+                  {item.name}
+                  {item.description ? (
+                    <span className="text-text-subtle block text-[11px] font-normal">
+                      {item.description}
+                    </span>
+                  ) : null}
+                </Cell>
+                <Cell align="center">
+                  <span className="flex flex-col items-center gap-1">
+                    <span className="text-text-muted font-mono text-[11px]">
+                      {item.ca ?? "—"}
+                    </span>
+                    <StatusBadge tone={epiCaStatusTone(item.caStatus)}>
+                      {epiCaStatusLabel(item.caStatus)}
+                    </StatusBadge>
+                    {item.caValidUntil ? (
+                      <span className="text-text-subtle text-[11px]">
+                        até {formatIsoDateBr(item.caValidUntil)}
+                      </span>
+                    ) : null}
+                  </span>
+                </Cell>
+                <Cell align="center" className="text-text-muted">
+                  {item.manufacturer ?? "—"}
+                </Cell>
+                <Cell align="center" className="text-text-muted">
+                  {item.norm ?? "—"}
+                </Cell>
+                <Cell align="center" className="text-text-muted">
+                  {formatEpiSpecs(item) ?? "—"}
+                </Cell>
+                <Cell className="text-text-subtle">
+                  {item.contexts
+                    .map((c) => `${c.gesName} — ${c.riskDescription}`)
+                    .join("; ")}
+                </Cell>
+              </GridRow>
+            ))}
+          </DataGrid>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Etapa "Documentos e PDF" do editor de PGR — compõe os painéis. */
 export function PgrDocumentsTab({
   pgrId,
   pgrLabel,
   linkedDocuments,
   linkedTotal,
+  nr18Checklist,
+  epiRelation,
 }: {
   pgrId: string;
   pgrLabel: string;
   linkedDocuments: DocumentListItem[];
   linkedTotal: number;
+  /** `null` quando a unidade do PGR não é Obra/Canteiro — o painel some inteiro. */
+  nr18Checklist: Nr18ChecklistSummary | null;
+  epiRelation: PgrEpiRelationItem[];
 }) {
   return (
     <div className="flex flex-col gap-6">
       <PgrPdfPanel pgrId={pgrId} />
+      {nr18Checklist ? (
+        <PgrNr18Panel pgrId={pgrId} pgrLabel={pgrLabel} checklist={nr18Checklist} />
+      ) : null}
+      <PgrEpiRelationPanel items={epiRelation} />
       <PgrLinkedDocumentsPanel
         pgrId={pgrId}
         pgrLabel={pgrLabel}

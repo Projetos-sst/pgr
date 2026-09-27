@@ -97,14 +97,36 @@ Status MANTER/INTRODUZIDA/APRIMORADA e a regra por nível **já existem** em `co
 
 ### #40 — NR-17
 
-Falta o modelo da avaliação. A issue lista dimensões, não campos.
+> Auditada em profundidade em 27/09 — ver [lots/lot-03/AUDIT.md](lots/lot-03/AUDIT.md), que prevalece
+> sobre esta seção.
 
-1. AEP é checklist (sim/não), escala (1–5) ou texto por dimensão (postura, movimentos, carga física,
-   carga mental, organização do trabalho, ambiente físico)?
-2. AET completa é formulário no sistema ou documento anexado (laudo)?
-3. COPSOQ: aplicar o questionário pelas campanhas psicossociais existentes, ou só registrar o resultado
-   agregado por dimensão? Há licença/versão brasileira definida?
-4. Avaliação ergonômica fica por risco (agente `ergonomic`) ou por GES/posto?
+Perguntas respondidas em 27/09/2026 (não reabrir):
+
+1. **Q1 = tabela dedicada** `ergonomic_evaluations`, 1:N por risco.
+2. **Q2 = enum de adequação + observação** por dimensão (`NULL` ≠ `not_applicable`).
+3. **Q3 = referência agregada opcional** a campanha psicossocial fechada; o sistema **nunca**
+   calcula escore COPSOQ.
+
+Resolvidas na auditoria do Lote 3:
+
+4. **AET** = laudo **anexado** pelo GED (já suporta vínculo com risco e versionamento); não vira
+   formulário.
+5. **Granularidade** = por **risco** (critério de aceite da issue), não por GES.
+6. **COPSOQ não está implementado**: o módulo psicossocial tem questionário genérico Likert e uma
+   derivação por limiar do próprio projeto — o sistema **não** calculará escore normativo.
+7. **Conclusão global**: a issue não pede; não será inventada.
+
+### #48 — NR-18
+
+> Ver [lots/lot-03/AUDIT.md](lots/lot-03/AUDIT.md).
+
+Pergunta respondida em 27/09/2026:
+
+1. **Q4 = seção do PDF** — a relação de EPIs derivada aparece na tela do PGR **e** no documento.
+
+Resolvidas na auditoria do Lote 3: **sem migration** (tipos como lista fechada no domínio, relação
+derivada do cadastro); checklist **informativo**, não bloqueante; exibido para unidade `site`;
+autoria/ART por documento fora de escopo.
 
 ## NEEDS PRODUCT DECISION
 

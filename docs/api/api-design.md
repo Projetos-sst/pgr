@@ -132,6 +132,8 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/risks` · `/risks/{id}`                                                                                                                                       | GET, POST · GET, PUT, DELETE (inventário de risco do GES; filtros `companyId`/`workUnitId`/`gesId`; sem `/dependents`, sem 409)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/risks/{id}/epis` · `/risks/{id}/epis/{linkId}`                                                                                                               | GET (`?available=true&search=` p/ EPIs não vinculados), POST · PUT (neutralização), DELETE (vínculo EPI × risco)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `/risks/{id}/assessments` · `/risk-assessments/{id}`                                                                                                           | GET, POST (avaliação 5×5 do risco + bloco NR-09 opcional; 201) · GET, PUT, DELETE (histórico 1:N; `riskLevel`/`result` calculados; sem `/dependents`, sem 409)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `/risks/{id}/ergonomic-evaluations` · `/ergonomic-evaluations/{id}`                                                                                            | GET, POST (avaliação ergonômica NR-17 do risco; 201) · GET, PUT, DELETE (histórico 1:N; vigente = `assessedAt` mais recente; sem `/dependents`, sem 409)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `/pgr/{id}/nr18-checklist` · `/pgr/{id}/epi-relation`                                                                                                          | GET (leituras **derivadas** do PGR: checklist informativo dos projetos da NR-18 por `doc_type` e relação deduplicada de EPIs; somente leitura — sem POST/PUT/DELETE)                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `/risks/{id}/control-measures` · `/control-measures/{id}`                                                                                                      | GET, POST (plano de ação 5W2H por nível NR-01; 201) · GET, PUT, DELETE (nível imutável; **DUPLICATE/409** se nível repetido; sem `/dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/categories` · `/categories/{id}`                                                                                                                             | GET, POST · GET, PUT, DELETE                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/medicos` · `/medicos/{id}`                                                                                                                                   | GET (`?search=` nome/CRM, `?clinic=` empresa/clínica, `?status=active\|inactive`), POST (`201`) · GET, PUT, DELETE (`204`) — CRM único por org (`DUPLICATE`); sem `/dependents`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -384,6 +386,8 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Dashboard (plataforma)       | `actions/platform/dashboard.ts`              | getDashboardSummaryAction + REST `GET /api/v1/dashboard/summary` (read-model agregado por tenant; sem tabelas novas)                                                                                                                                                                                                                                                                   |
 | EPI × risco (vínculo)        | `actions/pgr/epi-risk.ts`                    | list, available (busca nome/CA), add, update (neutralização), remove + REST `/api/v1/risks/{id}/epis/**`                                                                                                                                                                                                                                                                               |
 | Avaliação de risco (5×5)     | `actions/pgr/risk-assessments.ts`            | list, get, getCurrent, create, update, delete + REST `/api/v1/risks/{id}/assessments` · `/risk-assessments/{id}` (histórico 1:N; snapshot de `result`; sem 409)                                                                                                                                                                                                                        |
+| Avaliação ergonômica (NR-17) | `actions/pgr/ergonomic-evaluations.ts`       | list, get, getCurrent, listLinkableCampaigns, create, update, delete + REST `/api/v1/risks/{id}/ergonomic-evaluations` · `/ergonomic-evaluations/{id}` (histórico 1:N; seis dimensões opcionais; vínculo opcional com campanha psicossocial encerrada)                                                                                                                                 |
+| NR-18 + relação de EPIs      | `actions/pgr/pgr-nr18.ts`                    | getPgrNr18Checklist, getPgrEpiRelation + REST `GET /api/v1/pgr/{id}/nr18-checklist` · `GET /api/v1/pgr/{id}/epi-relation` (derivados; nenhuma escrita, nenhuma tabela nova)                                                                                                                                                                                                            |
 | Medidas de controle (5W2H)   | `actions/pgr/control-measures.ts`            | list, get, create, update, delete + REST `/api/v1/risks/{id}/control-measures` · `/control-measures/{id}` (1 por nível NR-01; estados derivados; **409** por UNIQUE)                                                                                                                                                                                                                   |
 | Categoria                    | `actions/pgr/categories.ts`                  | list, get, create, update, delete (catálogo `epi`/`machine`)                                                                                                                                                                                                                                                                                                                           |
 | Médico                       | `actions/pgr/medicos.ts`                     | list (busca nome/CRM, filtro empresa/clínica e status), options, clinics, get, create, update, delete + REST `/api/v1/medicos/**` (cadastro de médicos do trabalho; CRM único por org → `DUPLICATE`; sem `/dependents`)                                                                                                                                                                |
@@ -890,6 +894,61 @@ sugere um valor quando há medição e limite comparáveis, e quem confirma é o
 
 ---
 
+## Avaliação ergonômica (NR-17) — `actions/pgr/ergonomic-evaluations.ts`
+
+Avaliação ergonômica preliminar (**AEP**) vinculada a um risco do inventário — issue #40, migration
+`0051_ergonomic_evaluations` (tabela `ergonomic_evaluations` + enum `ergonomic_adequacy`). **Histórico
+1:N** por risco (sem unique → **sem 409**); a **vigente** é a de `assessedAt` mais recente, com
+desempate determinístico por `createdAt` e `id`. Criar avaliação nova **nunca** sobrescreve a
+anterior. REST espelho: `/api/v1/risks/{id}/ergonomic-evaluations` (GET, POST 201) ·
+`/api/v1/ergonomic-evaluations/{id}` (GET, PUT, DELETE 204).
+
+| Action                                | Entrada                                | Retorno (`data`)                                                              |
+| ------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| `listErgonomicEvaluationsAction`      | `riskId, { page?, pageSize? }`         | `{ rows: ErgonomicEvaluation[]; total }` (`riskId` inválido → `FK_NOT_FOUND`) |
+| `getErgonomicEvaluationAction`        | `id`                                   | `ErgonomicEvaluation` (inexistente/cross-tenant → `NOT_FOUND`)                |
+| `getCurrentErgonomicEvaluationAction` | `riskId`                               | `ErgonomicEvaluation \| null` (null = risco sem avaliação ergonômica)         |
+| `listLinkableCampaignsAction`         | `riskId`                               | campanhas psicossociais **encerradas** da unidade do GES do risco             |
+| `createErgonomicEvaluationAction`     | `riskId, ErgonomicEvaluationInput`     | `ErgonomicEvaluation` (201; `riskId` inválido → `FK_NOT_FOUND`)               |
+| `updateErgonomicEvaluationAction`     | `riskId, id, ErgonomicEvaluationInput` | `ErgonomicEvaluation` (corpo completo; campo omitido é apagado)               |
+| `deleteErgonomicEvaluationAction`     | `riskId, id`                           | `{ id }` (delete físico; não afeta as demais avaliações do histórico)         |
+
+**`ErgonomicEvaluationInput`** (mesmo corpo para create e PUT):
+
+- `assessedAt*` (`AAAA-MM-DD`) — **único obrigatório**, porque é o que define a vigência;
+- `responsible?`, `method?` (texto, até 255; `method` é o instrumento informado pelo profissional);
+- `notes?` (observação geral);
+- `psychosocialCampaignId?` (uuid — vínculo **opcional** com campanha psicossocial);
+- as **seis dimensões**, todas opcionais, cada uma com adequação + observação:
+  `posture`/`postureNotes`, `movements`/`movementsNotes`, `physicalLoad`/`physicalLoadNotes`,
+  `mentalLoad`/`mentalLoadNotes`, `workOrganization`/`workOrganizationNotes`,
+  `physicalEnvironment`/`physicalEnvironmentNotes`.
+
+A adequação é o enum **`adequate` | `inadequate` | `not_applicable`**. **Não existe escala numérica,
+score nem conclusão global** — a NR-17 não fixa nenhum e o sistema não inventa norma. **Ausente
+(`null`) ≠ `not_applicable`**: nulo é "não avaliado" (avaliação parcial é válida), `not_applicable` é
+uma declaração do profissional. Nenhum dos dois é apresentado como conformidade.
+
+**Vínculo com campanha psicossocial** (opcional). Validado **no servidor**, não só na tela:
+
+1. a campanha precisa existir **no tenant ativo** → senão `FK_NOT_FOUND` (422);
+2. precisa ser da **mesma unidade** do GES do risco → senão `VALIDATION` (422);
+3. precisa estar **`closed`** → senão `VALIDATION` (422).
+
+Quando há vínculo, a tela e o PDF mostram **apenas o agregado** da campanha (nome, período, nº de
+respostas e fatores derivados com nível), sob o rótulo "Resultado agregado da campanha psicossocial".
+**Nenhuma resposta individual** é lida ou exibida, e o sistema **não implementa nem calcula escore
+COPSOQ** — quando "COPSOQ" aparece, é o texto que o profissional informou em `method`.
+
+A **AET** (análise ergonômica do trabalho) **não** tem entidade própria: é laudo anexado ao risco pelo
+GED (`related_entity_type = "risk"`), que já versiona. A tela oferece o atalho com `docType`
+pré-preenchido.
+
+**Erros REST**: 422 (validação / FK `riskId` / vínculo de campanha), 404 (cross-tenant/inexistente),
+403 (`client`); **nunca 409**.
+
+---
+
 ## Medidas de controle (5W2H) — `actions/pgr/control-measures.ts`
 
 Plano de ação 5W2H por risco, uma medida por **nível da hierarquia NR-01** (`control_level`:
@@ -926,6 +985,61 @@ O 5W2H do PGR é **completo** desde a migration `0050_measure_why_cost`: o quê 
 (`actionResponsible`), como (`actionHow`) e quanto (`actionCost`). Nenhum deles é obrigatório
 retroativamente — medida antiga sem motivo/custo aparece como "não informado" no PDF. O módulo
 `action_plans` (ponte #51) **não** alimenta o PGR.
+
+---
+
+## NR-18 e relação de EPIs do PGR — `actions/pgr/pgr-nr18.ts`
+
+Issue #48, **zero migration**. Duas leituras derivadas do que já existe — nenhuma tabela, nenhum
+`doc_type` novo no banco, nenhuma escrita.
+
+### Checklist dos documentos complementares (NR-18, item 18.4.3)
+
+Lista **fechada** de quatro tipos, definida no domínio (`domains/documents/nr18.ts`): projeto da
+área de vivência, projeto elétrico das instalações temporárias, projetos de proteção coletiva e
+projeto de SPIQ (este último "quando aplicável", como diz a norma). Os rótulos são exatamente o
+`doc_type` gravado no GED; o casamento ignora caixa e espaços das pontas e **não** faz adivinhação —
+tipo diferente não satisfaz requisito.
+
+- Fonte: documentos do acervo com `related_entity_type = "pgr"` e `related_entity_id = {pgrId}`, na
+  **versão vigente** (#56). Nova versão mantém o requisito **anexado** (não conta como anexo novo);
+  excluir o grupo devolve o requisito a **faltando**.
+- O painel só aparece quando a unidade do PGR é `work_units.type = 'site'` (Obra/Canteiro).
+- O checklist é **informativo**: não bloqueia PDF, assinatura, publicação nem arquivamento.
+- Documento de outro tenant **nunca** satisfaz o checklist (leitura sob `withOrg` + RLS).
+
+| Action                      | Entrada | Retorno (`data`)                                                                        |
+| --------------------------- | ------- | --------------------------------------------------------------------------------------- |
+| `getPgrNr18ChecklistAction` | `pgrId` | `{ items[], attachedCount, missingCount, totalCount }` (PGR cross-tenant → `NOT_FOUND`) |
+
+REST espelho: `GET /api/v1/pgr/{id}/nr18-checklist` (200; 404 cross-tenant; 403 `client`).
+
+### Relação de EPIs
+
+**Derivada, nunca digitada**: PGR → GES vinculados → riscos → `epi_risk` → `epi_catalog`, sobre a
+mesma visão consolidada já usada pelo PDF (sem query extra, sem N+1). Deduplicada por item de
+catálogo: um EPI que atende três riscos vira **uma** linha com os três contextos (risco + GES).
+
+Campos por linha: nome, descrição, CA, validade do CA, situação do CA, fabricante, norma, material,
+tamanho, unidade e vida útil em meses — todos vindos de `epi_catalog`. "Especificação técnica" não é
+um campo: é esse conjunto. Campo vazio aparece como ausência, nunca como valor inventado.
+
+Situação do CA: `expired` (validade < hoje) · `due_soon` (vence dentro de **30 dias**, a mesma
+janela que o KPI de EPI do dashboard já usava) · `valid` · `no_expiry` (validade não informada —
+estado próprio, que não vira "válido" nem "vencido"). Fuso `America/Sao_Paulo`, fronteiras
+inclusivas.
+
+| Action                    | Entrada | Retorno (`data`)                                                         |
+| ------------------------- | ------- | ------------------------------------------------------------------------ |
+| `getPgrEpiRelationAction` | `pgrId` | `PgrEpiRelationItem[]` (vazio = PGR sem EPI; cross-tenant → `NOT_FOUND`) |
+
+REST espelho: `GET /api/v1/pgr/{id}/epi-relation` (200; 404 cross-tenant; 403 `client`). **Sem
+POST/PUT/DELETE de propósito** — para alterar qualquer dado, edita-se o catálogo de EPI
+(`/api/v1/epi-catalog`).
+
+A relação também é **seção do PDF do PGR** (decisão Q4 do Lote 3), com as mesmas colunas agrupadas
+para caber em A4. Os documentos da NR-18 continuam **anexos no GED**: o PDF os referencia, não os
+incorpora.
 
 ---
 

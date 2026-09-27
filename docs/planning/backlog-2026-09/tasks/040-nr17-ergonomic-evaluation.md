@@ -48,7 +48,11 @@ Modelar errado a AEP gera retrabalho em schema; licença do COPSOQ.
 
 ### Requisitos faltantes
 
-Formato de cada dimensão; AET formulário vs. anexo; COPSOQ via campanhas vs. resultado agregado; granularidade (risco vs. GES).
+Q1 (tabela dedicada × colunas em `risk_assessments`), Q2 (enum de adequação + observação × texto ×
+escala) e Q3 (COPSOQ como referência agregada × método em texto). Resolvidos na auditoria do Lote 3:
+**AET = laudo anexado** pelo GED (não formulário); **granularidade por risco** (critério de aceite da
+issue); **sem conclusão global** (a issue não pede); **responsável em texto** (não há cadastro de
+profissional — #36).
 
 ### Dificuldade
 
@@ -56,7 +60,8 @@ Formato de cada dimensão; AET formulário vs. anexo; COPSOQ via campanhas vs. r
 
 ### Prontidão
 
-NEEDS CONTEXT
+READY — Q1/Q2/Q3 decididas em 27/09/2026 (tabela dedicada; adequação + observação; campanha agregada opcional); ver
+[../lots/lot-03/AUDIT.md](../lots/lot-03/AUDIT.md)
 
 ### Cobertura atual
 
@@ -66,8 +71,29 @@ NEEDS CONTEXT
 
 3
 
+### Auditoria do Lote 3 (27/09/2026)
+
+Detalhe em [../lots/lot-03/AUDIT.md](../lots/lot-03/AUDIT.md); plano em
+[../lots/lot-03/PLAN.md](../lots/lot-03/PLAN.md).
+
+- Nada de NR-17/AEP/AET existe; `ergonomic` é só agente de risco.
+- O módulo psicossocial é questionário genérico Likert com respostas **anônimas** (sem vínculo com
+  funcionário) e derivação por limiar **do projeto** — **não** é metodologia COPSOQ e não pode ser
+  apresentada como tal no PGR.
+- Modelo recomendado: **tabela dedicada** `ergonomic_evaluations` (1:N por risco, vigente = mais
+  recente), com seis dimensões, método, responsável e data.
+- Migration: **SIM** (tabela + enum, se Q2 = enum). Nenhuma criada ainda.
+- UI: seção no **detalhe do risco**, no padrão visual global (`data-list` + `_ui/form`).
+
 ## Execução
 
-| Branch | PR  | Migration | Testes | CI  | Decisão | Status  |
-| ------ | --- | --------- | ------ | --- | ------- | ------- |
-| —      | —   | —         | —      | —   | —       | Backlog |
+| Branch                         | PR           | Migration                    | Testes                         | CI         | Decisão          | Status    |
+| ------------------------------ | ------------ | ---------------------------- | ------------------------------ | ---------- | ---------------- | --------- |
+| `feature/lot-03-nr17-nr18-pgr` | PR do Lote 3 | `0051_ergonomic_evaluations` | unit + integração + Playwright | aguardando | Q1=B, Q2=A, Q3=A | In review |
+
+### Entrega (27/09/2026)
+
+Implementada no Lote 3. Tabela dedicada `ergonomic_evaluations` (migration `0051`), domínio puro,
+repositório, Server Actions, REST espelho, docs/Postman e UI (seção no detalhe do risco, histórico e
+formulário de 940 px). Vínculo opcional com campanha psicossocial **encerrada da mesma unidade**,
+exibido só como agregado. Walkthrough, review e QA em [../lots/lot-03/](../lots/lot-03/).

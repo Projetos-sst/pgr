@@ -9,9 +9,11 @@ As três issues mais fáceis (#33, #42, #56) estão em **três módulos diferent
 | A — quick wins puros         | #42, #56, #33      | 3                | Baixo |
 | B — coesão por domínio (PGR) | #42 + parte de #47 | 1                | Médio |
 
-> **Estado em 27/09/2026:** Lote 1 mergeado (PRs #93 e #94). Lote 2 implementado e testado numa
-> **branch única** (`feature/lot-02-nr09-pgr-pdf`), com **uma PR** ao final — #39 completa, #47 parcial
-> (NR-17 depende da #40). Documentos em [lots/lot-02/](lots/lot-02/).
+> **Estado em 27/09/2026:** Lotes 1 e 2 mergeados (PRs #93, #94 e #95) — #33, #56, #42 e #39
+> fechadas; #47 parcial. **Lote 3** auditado e planejado em [lots/lot-03/](lots/lot-03/), na branch
+> única `feature/lot-03-nr17-nr18-pgr`: #40 (NR-17), fechamento da #47 e #48 (NR-18). Q1–Q4
+> decididas em 27/09/2026; lote **implementado, revisado e com QA aprovado**, numa PR aguardando
+> merge (migration `0051_ergonomic_evaluations`).
 
 **Escolha: A no Lote 1, B a partir do Lote 2.** As três quick wins não compartilham arquivos, não têm
 migration e são pequenas o bastante para que a troca de contexto custe pouco. Coesão por domínio só

@@ -358,6 +358,13 @@
       "when": 1790481864097,
       "tag": "0050_measure_why_cost",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1790526241366,
+      "tag": "0051_ergonomic_evaluations",
+      "breakpoints": true
     }
   ]
 }

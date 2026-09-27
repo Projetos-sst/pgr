@@ -13,17 +13,10 @@ import {
 import { PageHeader } from "../../_ui/list";
 import { DeleteRisk } from "../_components/delete-risk";
 import { DocumentAttachmentsSection } from "../../documents/_components/document-attachments-section";
+import { ErgonomicEvaluationSection } from "./_components/ergonomic-evaluation-section";
+import { riskShortLabel } from "./_components/risk-short-label";
 
 export const dynamic = "force-dynamic";
-
-const RISK_LABEL_MAX_LENGTH = 60;
-
-/** Rótulo curto do risco para telas de retorno/vínculo (ex.: anexo do GED). */
-function riskShortLabel(description: string): string {
-  return description.length > RISK_LABEL_MAX_LENGTH
-    ? `${description.slice(0, RISK_LABEL_MAX_LENGTH - 1)}…`
-    : description;
-}
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
@@ -54,12 +47,20 @@ export default async function RiskDetailPage({
         title="Risco"
         description={`GES: ${gesName}`}
         action={
-          <div className="flex gap-2">
+          // `flex-wrap`: com seis ações a barra estourava a largura em 375px (a
+          // NR-17 entrou aqui no Lote 3, mas as cinco anteriores já não cabiam).
+          <div className="flex flex-wrap gap-2">
             <Link
               href={`/risks/${risk.id}/assessments`}
               className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
             >
               Avaliações
+            </Link>
+            <Link
+              href={`/risks/${risk.id}/ergonomic-evaluations`}
+              className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
+            >
+              NR-17
             </Link>
             <Link
               href={`/risks/${risk.id}/control-measures`}
@@ -103,6 +104,11 @@ export default async function RiskDetailPage({
         />
         <Field label="Concentração/intensidade" value={risk.concentrationIntensity} />
       </section>
+
+      <ErgonomicEvaluationSection
+        riskId={risk.id}
+        riskLabel={riskShortLabel(risk.description)}
+      />
 
       <DocumentAttachmentsSection
         relatedEntityType="risk"

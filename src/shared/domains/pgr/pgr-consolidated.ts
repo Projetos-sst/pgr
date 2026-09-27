@@ -36,6 +36,18 @@ import {
   formatMeasurement,
   type Nr09Conclusion,
 } from "./nr09";
+import {
+  NO_ERGONOMIC_EVALUATION_LABEL,
+  PSYCHOSOCIAL_AGGREGATE_LABEL,
+  ergonomicAdequacyText,
+  ergonomicDimensionLabel,
+  formatCampaignPeriod,
+  listErgonomicDimensions,
+  type ErgonomicAdequacy,
+  type ErgonomicDimension,
+  type ErgonomicDimensionEntry,
+  type PsychosocialAggregate,
+} from "./ergonomics";
 
 /**
  * Domínio da visão consolidada do PGR — issue #27 / fatia 022. Estrutura **derivada** (não
@@ -65,8 +77,18 @@ export {
   isNr09EligibleAgent,
   nr09ConclusionLabel,
   formatMeasurement,
+  NO_ERGONOMIC_EVALUATION_LABEL,
+  PSYCHOSOCIAL_AGGREGATE_LABEL,
+  ergonomicAdequacyText,
+  ergonomicDimensionLabel,
+  formatCampaignPeriod,
+  listErgonomicDimensions,
 };
 export type {
+  ErgonomicAdequacy,
+  ErgonomicDimension,
+  ErgonomicDimensionEntry,
+  PsychosocialAggregate,
   ControlLevel,
   ControlMeasureStatus,
   MeasureState,
@@ -81,13 +103,26 @@ export type {
   Nr09Conclusion,
 };
 
-/** EPI indicado para um risco (mesma forma de `EpiRiskLinkItem`). */
+/**
+ * EPI indicado para um risco. Os campos técnicos (#48) vêm do MESMO join com
+ * `epi_catalog` — nenhuma query extra e nenhuma digitação paralela: a "especificação
+ * técnica" do EPI é o conjunto de dados já cadastrados. Opcionais para não quebrar
+ * fixtures anteriores à #48.
+ */
 export type ConsolidatedEpi = {
   id: string;
   catalogId: string;
   name: string;
   ca: string | null;
   neutralization: EpiNeutralization;
+  description?: string | null;
+  caValidUntil?: string | null;
+  manufacturer?: string | null;
+  norm?: string | null;
+  material?: string | null;
+  size?: string | null;
+  unitOfMeasure?: string | null;
+  usefulLifeMonths?: number | null;
 };
 
 /** Avaliação vigente detalhada (última por `assessed_at`/`created_at`). */
@@ -107,6 +142,22 @@ export type ConsolidatedAssessment = {
   measuredUnit: MeasurementUnit | null;
   toleranceLimitValue: string | null;
   nr09Conclusion: Nr09Conclusion | null;
+};
+
+/**
+ * Avaliação ergonômica **vigente** do risco (NR-17, #40) — já achatada para leitura:
+ * as seis dimensões vêm como lista ordenada com rótulo, estado e observação, e o bloco
+ * psicossocial (quando há campanha vinculada) vem **agregado**. Nenhuma resposta
+ * individual entra neste view model — não há por onde vazar para a tela nem para o PDF.
+ */
+export type ConsolidatedErgonomicEvaluation = {
+  id: string;
+  assessedAt: string;
+  responsible: string | null;
+  method: string | null;
+  notes: string | null;
+  dimensions: ErgonomicDimensionEntry[];
+  psychosocial: PsychosocialAggregate | null;
 };
 
 export type ConsolidatedMeasure = {
@@ -151,6 +202,12 @@ export type ConsolidatedRisk = {
   // Cobertura do plano do PGR (#42), derivada de `result` + `measures` — nunca persistida.
   planCoverage: RiskPlanCoverage;
   epis: ConsolidatedEpi[]; // [] = "Sem EPIs indicados"
+  /**
+   * Avaliação ergonômica vigente (#40). `null`/ausente = risco sem avaliação — o PDF
+   * imprime "sem avaliação ergonômica registrada", nunca conformidade. Opcional para
+   * não quebrar fixtures anteriores à #40.
+   */
+  ergonomic?: ConsolidatedErgonomicEvaluation | null;
 };
 
 export type ConsolidatedGes = {

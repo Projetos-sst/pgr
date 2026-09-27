@@ -78,6 +78,10 @@ chamadores (rota síncrona e worker) conferido; #47 permanece aberta até o Lote
 
 # Lote 3 — NR-17 + NR-18 + fechamento do PDF
 
+**Status (27/09/2026):** **implementado, revisado e com QA aprovado** em
+[lots/lot-03/](lots/lot-03/); branch única `feature/lot-03-nr17-nr18-pgr`, uma PR aguardando merge.
+Q1–Q4 decididas. #40, #47 e #48 concluídas.
+
 **Issues:** #40, #48, #47 (seção 4 e fechamento)
 
 | Item                | Valor                    |
@@ -88,8 +92,8 @@ chamadores (rota síncrona e worker) conferido; #47 permanece aberta até o Lote
 
 **Por que juntas:** fecham o conjunto normativo do PGR e a estrutura final do PDF de uma vez.
 
-**Dependências:** #40 está em NEEDS CONTEXT — **não iniciar o Lote 3 sem as respostas de #40**. Se elas
-atrasarem, #48 pode ser antecipada sozinha.
+**Dependências:** Q1–Q4 resolvidas. Ordem interna: #40 → seção NR-17 no PDF (fecha #47) → #48
+(tipos NR-18 + relação de EPIs, que também entra no PDF).
 
 **Definition of Done:** as 5 seções do PDF na ordem da issue, com dado real; checklist NR-18 para
 unidades `site`; relação de EPIs derivada do cadastro; #47 fechável.

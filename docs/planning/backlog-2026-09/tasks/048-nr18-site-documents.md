@@ -37,7 +37,8 @@ Checklist NR-18 na aba Documentos quando a unidade for `site`; seção "Relaçã
 
 ### Migration
 
-INCERTO — nenhuma se os tipos forem constantes do domínio.
+**NÃO** — confirmado na auditoria do Lote 3: tipos viram lista fechada no domínio, o repositório já
+filtra por `doc_type`/`relatedEntityType`, e a relação de EPIs é consulta derivada.
 
 ### Testes necessários
 
@@ -61,7 +62,8 @@ Checklist informativo vs. bloqueante; campos de especificação; relação no PD
 
 ### Prontidão
 
-READY COM PREMISSAS
+READY — Q4 decidida em 27/09/2026: a relação de EPIs vai para a tela **e** para o PDF; ver
+[../lots/lot-03/AUDIT.md](../lots/lot-03/AUDIT.md)
 
 ### Cobertura atual
 
@@ -71,8 +73,26 @@ READY COM PREMISSAS
 
 3
 
+### Auditoria do Lote 3 (27/09/2026)
+
+- **Sem tabela nova**: `construction_site_documents` foi descartada — o GED já cobre arquivo, versão,
+  vínculo (`related_entity_type = 'pgr'`) e tipo, e criar tabela quebraria o versionamento da #56.
+- "Organizados por tipo" = checklist/agrupamento por `doc_type` (filtro já existe no repositório),
+  **informativo**, exibido quando a unidade do PGR é `site`.
+- Relação de EPIs: **100% derivável** (PGR → GES → riscos → `epi_risk` → `epi_catalog`), com CA,
+  validade, fabricante, norma, material/tamanho e vida útil já no cadastro.
+- Autoria/ART por documento **fora de escopo** (a issue pede o documento, não a autoria estruturada).
+
 ## Execução
 
-| Branch | PR  | Migration | Testes | CI  | Decisão | Status  |
-| ------ | --- | --------- | ------ | --- | ------- | ------- |
-| —      | —   | —         | —      | —   | —       | Backlog |
+| Branch                         | PR  | Migration | Testes | CI  | Decisão   | Status  |
+| ------------------------------ | --- | --------- | ------ | --- | --------- | ------- |
+| `feature/lot-03-nr17-nr18-pgr` | —   | não       | —      | —   | Q4 aberta | Backlog |
+
+### Entrega (27/09/2026)
+
+Implementada no Lote 3, **sem migration**: lista fechada dos quatro projetos do 18.4.3 no domínio,
+checklist informativo derivado dos anexos vigentes do GED (só em unidade `site`) e relação de EPIs
+derivada e deduplicada — na tela e como seção do PDF. Duas leituras REST novas
+(`/api/v1/pgr/{id}/nr18-checklist` e `/epi-relation`), nenhuma escrita nova. Detalhes em
+[../lots/lot-03/](../lots/lot-03/).

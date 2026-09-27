@@ -76,6 +76,19 @@ Partes A (identificação + inventário), B (NR-09, após #39) e D (5W2H **7 de 
 
 2 (seções 1, 2, 3, 5) → 3 (seção 4 e fechamento)
 
+### Fechamento no Lote 3 (27/09/2026)
+
+A seção **NR-17** entrou entre a NR-09 e o plano de ação, e a **Relação de EPIs** (decisão Q4)
+entrou depois do plano. Ordem final do documento: Identificação · NR-01 · NR-09 · NR-17 · 5W2H ·
+Relação de EPIs · Hierarquia de controles. Verificado nos **dois** chamadores (rota síncrona e
+worker `pdf_batch`), com texto idêntico. A issue fecha pela PR do Lote 3.
+
+### Estado após o Lote 2 (PR #95 mergeada em 27/09/2026)
+
+Entregues as seções 1 (identificação com preposto), 2 (inventário NR-01), 3 (NR-09) e o plano 5W2H
+completo. **Falta só a seção NR-17**, que o Lote 3 entrega junto da #40 — a issue fecha lá. Ver
+[../lots/lot-03/AUDIT.md](../lots/lot-03/AUDIT.md).
+
 ### Auditoria do Lote 2 (26/09/2026)
 
 Detalhe completo em [../lots/lot-02/AUDIT.md](../lots/lot-02/AUDIT.md).
