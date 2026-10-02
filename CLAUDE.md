@@ -55,6 +55,19 @@ concluiu que, para fatias de escopo pequeno/CRUD simples, uma spec curta + plano
 sem a cerimônia completa. As fatias abaixo, da mais recente para a mais antiga, já estão todas
 mergeadas em `develop`:
 
+Fatia (`030` — pgr-docx-templates, branch `feature/pgr-docx-templates`) — **PGR em DOCX por
+template** na identidade PGR-e, réplica estrutural do `PGR 2026.pdf`, com as categorias do PGR 2026.1:
+fixo (texto do template), semi-fixo (tag com default em `domains/pgr/pgr-docx/defaults.ts`, trocável
+por `overrides`) e dinâmico (banco). **Zero migration.** Template **gerado por código**
+(`scripts/pgr-docx`, lib `docx`; nunca editar o `.docx` à mão) em `templates/pgr/` (+ anotado e
+exemplo fictício; réplica com dado real só em `docs/_local-refs/`). Preenchimento local por
+**docxtemplater** (`integrations/docx`, delimitadores `{{ }}` do Salesbud, loops de linha de tabela);
+PDF via Gotenberg/LibreOffice (padrão) ou Google Docs por Service Account (`integrations/google`:
+config, retry 429/503/408, Drive/Docs, fluxo `replaceAllText` do Salesbud). REST
+`GET`/`POST /api/v1/pgr/{id}/docx` (sem Server Action — binário, precedente do `/pdf`). Mapeador puro
+`from-consolidated.ts` (consolidada + `repositories/pgr-docx-extras.ts`). Detalhes:
+`templates/pgr/README.md` e `.specs/030-pgr-docx-templates/spec.md`.
+
 Fatia anterior (`027` — occupational-health) — **Gestão de Saúde Ocupacional (exames/ASO)**, parte
 do redesign (#181, mockup `gestao-saude.dc.html`). Base empilhada em `feature/medicos` (usa a FK do
 médico responsável). Tabela `health_exams` (`employee_id` CASCADE, `doctor_id → medicos` nullable
