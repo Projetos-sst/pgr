@@ -1,0 +1,174 @@
+/**
+ * @jest-environment node
+ *
+ * Orquestração do PGR em DOCX com deps mockadas (sem DB/Storage/Gotenberg/Google
+ * reais): escolha do provedor de PDF, nome do arquivo e erros mapeados. O template e
+ * o motor de preenchimento são os de verdade.
+ */
+import type { PgrConsolidated } from "@/shared/domains/pgr/pgr-consolidated";
+import type { PgrDocxExtras } from "@/shared/domains/pgr/pgr-docx/from-consolidated";
+
+const getPgrConsolidated = jest.fn();
+const getPgrDocxExtras = jest.fn();
+const downloadCompanyLogo = jest.fn();
+const docxToPdf = jest.fn();
+const convertDocxWithGoogle = jest.fn();
+const getGoogleDocsConfig = jest.fn();
+
+jest.mock("@/shared/db/repositories/pgr-consolidated", () => ({
+  getPgrConsolidated: (...a: unknown[]) => getPgrConsolidated(...a),
+}));
+jest.mock("@/shared/db/repositories/pgr-docx-extras", () => ({
+  getPgrDocxExtras: (...a: unknown[]) => getPgrDocxExtras(...a),
+}));
+jest.mock("@/shared/integrations/storage/company-logo-storage", () => ({
+  downloadCompanyLogo: (...a: unknown[]) => downloadCompanyLogo(...a),
+}));
+jest.mock("@/shared/integrations/storage/documents-storage", () =>
+  jest.requireActual("@/shared/integrations/storage/documents-storage"),
+);
+jest.mock("@/shared/supabase/admin", () => ({
+  getRlsBypassingSupabaseClient: jest.fn(),
+}));
+jest.mock("@/shared/integrations/pdf/gotenberg", () => ({
+  docxToPdf: (...a: unknown[]) => docxToPdf(...a),
+}));
+jest.mock("@/shared/integrations/google/config", () => ({
+  getGoogleDocsConfig: () => getGoogleDocsConfig(),
+}));
+jest.mock("@/shared/integrations/google/drive-docs", () => ({
+  DOCX_MIME: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  createGoogleDocsClient: () => ({}),
+  convertDocxWithGoogle: (...a: unknown[]) => convertDocxWithGoogle(...a),
+}));
+
+import { NotFoundError } from "@/shared/errors/not-found-error";
+import { ReportUnavailableError } from "@/shared/errors/report-unavailable-error";
+import { extractDocxText } from "@/shared/integrations/docx/template-engine";
+import {
+  emittedAtInSaoPaulo,
+  generatePgrDocx,
+  getPgrDocxPdfProvider,
+  pgrDocxBaseName,
+} from "@/shared/server/platform/pgr-docx-core";
+
+const consolidated: PgrConsolidated = {
+  pgr: {
+    id: "pgr-1",
+    companyName: "Construtora S.A.",
+    workUnitName: "Obra Centro",
+    responsible: "Eng. Fulano",
+    registrationType: "crea",
+    registrationNumber: "123",
+    issuedAt: "2026-10-01",
+    validUntil: "2028-09-30",
+  },
+  ges: [],
+};
+const extras: PgrDocxExtras = {
+  company: { phone: null, logoPath: "org_a/logos/x.png" },
+  revisions: [],
+  ges: {},
+  requiredTrainings: [],
+};
+
+const env = process.env;
+
+beforeEach(() => {
+  process.env = { ...env, PGR_DOCX_PDF_PROVIDER: "" };
+  for (const fn of [
+    getPgrConsolidated,
+    getPgrDocxExtras,
+    downloadCompanyLogo,
+    docxToPdf,
+    convertDocxWithGoogle,
+    getGoogleDocsConfig,
+  ]) {
+    fn.mockReset();
+  }
+  getPgrConsolidated.mockResolvedValue(consolidated);
+  getPgrDocxExtras.mockResolvedValue(extras);
+  downloadCompanyLogo.mockResolvedValue(null);
+});
+
+afterAll(() => {
+  process.env = env;
+});
+
+describe("helpers", () => {
+  it("data de emissão no fuso de São Paulo", () => {
+    expect(emittedAtInSaoPaulo(new Date("2026-10-02T02:30:00Z"))).toBe(
+      "01/10/2026 23:30",
+    );
+  });
+
+  it("nome do arquivo não confunde 'S.A.' com extensão", () => {
+    expect(pgrDocxBaseName(consolidated.pgr, "02/10/2026 09:30")).toBe(
+      "pgr-construtora-s-a-obra-centro-2026-10-02",
+    );
+  });
+
+  it("provedor de PDF: gotenberg por padrão, google só quando pedido", () => {
+    expect(getPgrDocxPdfProvider()).toBe("gotenberg");
+    process.env.PGR_DOCX_PDF_PROVIDER = "Google";
+    expect(getPgrDocxPdfProvider()).toBe("google");
+  });
+});
+
+describe("generatePgrDocx", () => {
+  it("gera o DOCX do tenant e busca o logo da empresa", async () => {
+    const result = await generatePgrDocx("org_a", "pgr-1");
+    expect(getPgrConsolidated).toHaveBeenCalledWith("org_a", "pgr-1");
+    expect(getPgrDocxExtras).toHaveBeenCalledWith("org_a", "pgr-1");
+    expect(downloadCompanyLogo).toHaveBeenCalledWith("org_a/logos/x.png");
+    expect(result.fileName).toMatch(
+      /^pgr-construtora-s-a-obra-centro-\d{4}-\d{2}-\d{2}\.docx$/,
+    );
+    expect(extractDocxText(result.file)).toContain("Construtora S.A.");
+    expect(docxToPdf).not.toHaveBeenCalled();
+  });
+
+  it("PGR inexistente/de outro tenant → NOT_FOUND", async () => {
+    getPgrDocxExtras.mockResolvedValue(null);
+    await expect(generatePgrDocx("org_b", "pgr-1")).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("PDF pelo Gotenberg (padrão)", async () => {
+    docxToPdf.mockResolvedValue(Buffer.from("%PDF"));
+    const result = await generatePgrDocx("org_a", "pgr-1", { format: "pdf" });
+    expect(result.contentType).toBe("application/pdf");
+    expect(result.file.toString()).toBe("%PDF");
+    expect(convertDocxWithGoogle).not.toHaveBeenCalled();
+  });
+
+  it("PDF pelo Google Docs quando PGR_DOCX_PDF_PROVIDER=google", async () => {
+    process.env.PGR_DOCX_PDF_PROVIDER = "google";
+    getGoogleDocsConfig.mockReturnValue({
+      credentials: {},
+      subject: null,
+      folderId: null,
+    });
+    convertDocxWithGoogle.mockResolvedValue(Buffer.from("%PDF-google"));
+    const result = await generatePgrDocx("org_a", "pgr-1", { format: "pdf" });
+    expect(result.file.toString()).toBe("%PDF-google");
+    expect(docxToPdf).not.toHaveBeenCalled();
+  });
+
+  it("Google pedido mas sem Service Account, ou falhando → REPORT_UNAVAILABLE", async () => {
+    process.env.PGR_DOCX_PDF_PROVIDER = "google";
+    getGoogleDocsConfig.mockReturnValue(null);
+    await expect(
+      generatePgrDocx("org_a", "pgr-1", { format: "pdf" }),
+    ).rejects.toBeInstanceOf(ReportUnavailableError);
+
+    getGoogleDocsConfig.mockReturnValue({
+      credentials: {},
+      subject: null,
+      folderId: null,
+    });
+    convertDocxWithGoogle.mockRejectedValue(new Error("quota detalhada do Google"));
+    await expect(
+      generatePgrDocx("org_a", "pgr-1", { format: "pdf" }),
+    ).rejects.toBeInstanceOf(ReportUnavailableError);
+  });
+});

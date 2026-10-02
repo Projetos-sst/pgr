@@ -66,3 +66,21 @@ export async function getSignedCompanyLogoUrl(
   if (error) throw new Error(`company logo sign url failed: ${error.message}`);
   return data.signedUrl;
 }
+
+/**
+ * Baixa o binário do logo (cabeçalho do PGR em DOCX). `null` quando o objeto não existe
+ * ou o Storage falha — o documento sai com o logo padrão em vez de quebrar a geração.
+ * O CHAMADOR garante que `storagePath` pertence ao tenant ativo (veio de `withOrg`).
+ */
+export async function downloadCompanyLogo(storagePath: string): Promise<Buffer | null> {
+  try {
+    const supabase = getRlsBypassingSupabaseClient();
+    const { data, error } = await supabase.storage
+      .from(COMPANY_LOGOS_BUCKET)
+      .download(storagePath);
+    if (error || !data) return null;
+    return Buffer.from(await data.arrayBuffer());
+  } catch {
+    return null;
+  }
+}

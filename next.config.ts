@@ -66,6 +66,10 @@ const nextConfig: NextConfig = {
   // `@mastra/core` é Node puro (execa, ws, croner) e quebra se o bundler tentar
   // empacotá-lo; roda só no servidor, nos agentes de IA.
   serverExternalPackages: ["zod", "@mastra/core"],
+  // O PGR em DOCX lê o template do disco (`fs.readFile`), que o trace não enxerga.
+  outputFileTracingIncludes: {
+    "/api/v1/pgr/\\[id\\]/docx": ["./templates/pgr/pgr-template.docx"],
+  },
   experimental: {
     authInterrupts: true,
     // GED upload: teto de ARQUIVO do módulo é 25 MiB (`MAX_FILE_BYTES` em
