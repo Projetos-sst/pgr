@@ -9,6 +9,12 @@ Cada tarefa traz: **req.** (ID do requisito) · **módulo** · **dep.** (depend�
 
 Marcado abaixo só o que **realmente aconteceu** nesta execução (seção 1).
 
+> **Atualização de 09/10/2026 — Portal público.** Parte dos lotes C, D e E foi implementada e
+> está documentada em [`portal-publico/`](portal-publico/PORTAL-TASK.md): landing, páginas das
+> duas vertentes (R04/R09), correções do login (R05/R06) e o pré-cadastro de interessados. As
+> decisões 3, 4 e 8 da seção 0 foram resolvidas lá. O checklist funcional **deste** arquivo
+> continua valendo para o que ainda não foi feito.
+
 ---
 
 ## 0. Decisões bloqueantes

@@ -32,6 +32,15 @@
   --color-text-muted: #52576e;
   --color-text-subtle: #8c91a8;
 
+  /*
+   * Acento da vertente Medicina do Trabalho (portal público). Teal e não verde
+   * de status: precisa parecer uma *área* da mesma plataforma ao lado do indigo,
+   * sem se confundir com o `accent-green` dos badges de sucesso. A variante
+   * `-strong` é a que passa contraste AA em texto sobre fundo claro.
+   */
+  --color-accent-teal: #14a098;
+  --color-accent-teal-strong: #0b7a74;
+
   /* acentos de status (badges) */
   --color-danger: #d33a3f;
   --color-accent-green: #0e9f6e;

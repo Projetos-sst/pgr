@@ -1,30 +1,30 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+
+import { BrandMark } from "@/app/(public)/_components/brand-mark";
+import { Icon } from "@/app/(public)/_components/icon";
+import { AUTH_HIGHLIGHTS } from "@/app/(public)/_content/platform";
 
 /**
- * Moldura das telas de autenticação/onboarding (split 1fr/1fr do `login.dc.html`
- * e `primeiros-passos.dc.html`): painel de marca em gradiente à esquerda + slot
- * do componente do Clerk à direita. Em telas estreitas colapsa para uma coluna
- * (o painel de marca é ocultado). É só markup nosso — o form é do Clerk.
+ * Moldura das telas de autenticação/onboarding: painel de marca em gradiente à
+ * esquerda + slot do componente do Clerk à direita. É só markup nosso — o form
+ * é do Clerk.
+ *
+ * Duas correções de responsividade feitas aqui (medidas no navegador, não
+ * supostas):
+ *
+ * - **O split passou de `md:` para `lg:`.** Em 768px exatos cada coluna ficava
+ *   com 384px e, descontado o `p-8`, sobravam 320px para um cartão do Clerk que
+ *   pede 400px — o que produzia barra horizontal. A partir de 1024px há espaço
+ *   para as duas colunas de verdade.
+ * - **O respiro lateral encolhe no mobile** (`px-4` em vez de `p-8`) e a coluna
+ *   do formulário ganhou `min-w-0`, para poder ceder largura em vez de empurrar
+ *   o layout.
+ *
+ * O selo da marca e os ícones vêm dos mesmos componentes do portal público, para
+ * login e landing não divergirem com o tempo.
  */
 const BRAND_GRADIENT = "bg-[linear-gradient(150deg,#4f46e5_0%,#5b63f5_48%,#7c7bf7_100%)]";
-
-const HIGHLIGHTS = [
-  {
-    title: "Gestão centralizada e rastreável",
-    detail: "EPIs, assinaturas digitais e relatórios em um só lugar.",
-    icon: "M20 6L9 17l-5-5",
-  },
-  {
-    title: "Análise inteligente de riscos",
-    detail: "IA com 92% de precisão na detecção proativa.",
-    icon: "M3 12h4l3 7 4-14 3 7h4",
-  },
-  {
-    title: "Conformidade legal garantida",
-    detail: "Alinhado às Normas Regulamentadoras vigentes.",
-    icon: "M12 2l9 4v6c0 5-4 9-9 10-5-1-9-5-9-10V6z",
-  },
-];
 
 export function AuthFrame({
   eyebrow,
@@ -36,9 +36,9 @@ export function AuthFrame({
   children: ReactNode;
 }) {
   return (
-    <main className="grid min-h-screen w-full flex-1 md:grid-cols-2">
+    <main className="grid min-h-screen w-full flex-1 lg:grid-cols-2">
       <aside
-        className={`relative hidden flex-col justify-between overflow-hidden p-11 text-white md:flex lg:p-16 ${BRAND_GRADIENT}`}
+        className={`relative hidden flex-col justify-between overflow-hidden p-11 text-white lg:flex lg:p-14 xl:p-16 ${BRAND_GRADIENT}`}
       >
         <div
           aria-hidden
@@ -49,39 +49,27 @@ export function AuthFrame({
           className="pointer-events-none absolute -bottom-[70px] -left-[50px] h-[220px] w-[220px] rounded-full bg-white/[0.08]"
         />
 
-        <div className="relative flex items-center gap-3">
-          <span className="flex h-[38px] w-[38px] items-center justify-center rounded-[12px] border border-white/35 bg-white/20 text-base font-extrabold backdrop-blur">
-            P
-          </span>
-          <span className="text-lg font-extrabold tracking-tight">PGR-e</span>
+        <div className="relative">
+          <BrandMark tone="light" />
         </div>
 
         <div className="relative">
           <p className="font-mono text-[11px] tracking-[0.16em] text-white/70 uppercase">
             {eyebrow}
           </p>
-          <p className="mt-4 text-[34px] leading-[1.12] font-extrabold tracking-tight">
-            Gestão de PGR simplificada e 100% rastreável
+          <p className="mt-4 text-[clamp(1.75rem,2.6vw,2.125rem)] leading-[1.12] font-extrabold tracking-tight">
+            Saúde e segurança do trabalho em uma só plataforma
           </p>
           <ul className="mt-6 flex flex-col gap-4">
-            {HIGHLIGHTS.map((item) => (
+            {AUTH_HIGHLIGHTS.map((item) => (
               <li key={item.title} className="flex items-start gap-3">
                 <span
                   aria-hidden
                   className="mt-0.5 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] border border-white/30 bg-white/[0.18]"
                 >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#fff"
-                    strokeWidth="1.9"
-                  >
-                    <path d={item.icon} />
-                  </svg>
+                  <Icon name={item.icon} className="h-4 w-4" strokeWidth={1.9} />
                 </span>
-                <span>
+                <span className="min-w-0">
                   <span className="block text-sm font-bold">{item.title}</span>
                   <span className="mt-0.5 block text-xs text-white/70">
                     {item.detail}
@@ -92,7 +80,10 @@ export function AuthFrame({
           </ul>
         </div>
 
-        <p className="relative flex items-center gap-2 text-xs text-white/70">
+        <Link
+          href="/orcamento"
+          className="relative flex w-fit items-center gap-2 rounded-full text-xs text-white/70 transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+        >
           <svg
             width="15"
             height="15"
@@ -100,21 +91,28 @@ export function AuthFrame({
             fill="none"
             stroke="currentColor"
             strokeWidth="1.8"
+            aria-hidden
           >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          Precisa de ajuda? Fale Conosco
-        </p>
+          Ainda não tem acesso? Solicitar orçamento
+        </Link>
       </aside>
 
-      <section className="flex flex-col justify-center gap-6 bg-white/55 p-8 backdrop-blur-[34px] sm:p-12 lg:p-16">
-        <div className="mx-auto w-full max-w-[400px]">
+      <section className="flex min-w-0 flex-col justify-center gap-6 bg-white/55 px-4 py-10 backdrop-blur-[34px] sm:px-8 sm:py-12 lg:px-10 xl:px-16">
+        {/* A marca aparece só no mobile: na coluna larga ela já está no painel
+            de gradiente, que não é renderizado abaixo de `lg`. */}
+        <div className="mx-auto w-full max-w-[400px] lg:hidden">
+          <BrandMark size="sm" />
+        </div>
+
+        <div className="mx-auto w-full max-w-[400px] min-w-0">
           {title ? (
             <h1 className="text-text mb-6 text-2xl font-extrabold tracking-tight">
               {title}
             </h1>
           ) : null}
-          <div className="flex justify-center">{children}</div>
+          <div className="flex min-w-0 justify-center">{children}</div>
         </div>
       </section>
     </main>

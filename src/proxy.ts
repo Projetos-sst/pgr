@@ -63,6 +63,12 @@ function checkSandboxBasicAuth(request: NextRequest): NextResponse | null {
 
 const isPublicRoute = createRouteMatcher([
   "/",
+  // Portal publico comercial (grupo de rotas `(public)/(marketing)`): landing,
+  // paginas das duas vertentes e o pedido de orcamento. Sao paginas de
+  // apresentacao, sem dado de tenant — precisam abrir sem sessao Clerk.
+  "/seguranca-do-trabalho",
+  "/medicina-do-trabalho",
+  "/orcamento",
   "/sign-in(.*)",
   "/sign-up(.*)",
   // Assinatura publica de entrega de EPI: a credencial e o proprio token HMAC
