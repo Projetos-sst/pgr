@@ -181,6 +181,20 @@ Imagens dangling restantes: **0**.
 Containers depois da limpeza: `pmpa-backend` 954,8 MiB · `pmpa-frontend` 119,2 MiB ·
 `pmpa-postgres` 46,59 MiB · `pmpa-db-admin` 11,52 MiB.
 
+Medição adicional **após intervalo de estabilização** (ao final de toda a sessão, com o dev server do
+PGR e o trabalho de navegador já encerrados):
+
+| Item                | Valor estabilizado                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| RAM em uso          | **19,84 GB (83,4%)**                                                               |
+| `vmmemWSL`          | **4.314 MB**                                                                       |
+| Soma dos containers | 1,336 GiB (`pmpa-backend` subiu para 1,182 GiB sozinho, por uso próprio do Strapi) |
+
+Leitura honesta desses números: a RAM total caiu de 21,45 GB para 19,84 GB, mas **não por causa da
+limpeza do Docker** — caiu porque o dev server do PGR e o trabalho de navegador da auditoria foram
+encerrados. O `vmmemWSL` ficou praticamente igual (4.326 → 4.314 MB), e o `pmpa-backend` até cresceu
+por conta própria.
+
 **A limpeza de disco não reduziu RAM — e não era esperado que reduzisse.** Imagens e cache de build
 ocupam disco dentro do VHDX, não memória. A oscilação de ~200 MB no `vmmemWSL` é page cache normal.
 Para efetivamente reduzir memória existem só dois caminhos, ambos descritos na seção 7 e **ambos
