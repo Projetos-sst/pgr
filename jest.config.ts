@@ -59,7 +59,11 @@ const config: Config = {
         "<rootDir>/src/__tests__/unit/**/*.test.ts?(x)",
       ],
       testPathIgnorePatterns: ["/node_modules/", "/.next/", "/__tests__/integration/"],
-      moduleNameMapper: { "^@/(.*)$": "<rootDir>/src/$1" },
+      moduleNameMapper: {
+        "^@/(.*)$": "<rootDir>/src/$1",
+        // CSS importado por componente: o Jest nao transforma folhas de estilo.
+        "\\.(css|scss|sass)$": "<rootDir>/jest.style-stub.js",
+      },
       transform: { "^.+\\.(t|j)sx?$": swcTransform },
       setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
     },
@@ -78,7 +82,11 @@ const config: Config = {
         "/.next/",
         ...KNOWN_LIMITATION_INTEGRATION_SUITES,
       ],
-      moduleNameMapper: { "^@/(.*)$": "<rootDir>/src/$1" },
+      moduleNameMapper: {
+        "^@/(.*)$": "<rootDir>/src/$1",
+        // CSS importado por componente: o Jest nao transforma folhas de estilo.
+        "\\.(css|scss|sass)$": "<rootDir>/jest.style-stub.js",
+      },
       transform: { "^.+\\.(t|j)sx?$": swcTransform },
       setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
     },
