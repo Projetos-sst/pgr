@@ -1,180 +1,201 @@
 # Portal público — walkthrough
 
+Implementação do design **aprovado por Douglas (Tech Lead) e Expedito** no Claude Design.
 O que foi entregue, como navegar e por que cada decisão foi tomada.
 
+> **Histórico.** A primeira versão do portal (commit `4de6eb5`) foi construída sobre o design
+> system do sistema autenticado, antes de existir o design aprovado. Ela foi **substituída**
+> por esta. O commit anterior permanece no histórico da branch e a tag
+> `portal-v1-pre-claude-design` aponta para ele.
+
 ---
 
-## 1. Como abrir
+## 1. Fonte de verdade visual
+
+```
+C:\Users\carlo\OneDrive\Documentos\redesign\PGR-e — Portal público.html
+```
+
+Export do Claude Design, 1.598.122 bytes, com **seis pranchas**: Home, Segurança do Trabalho,
+Medicina do Trabalho, Login, Solicitar orçamento e Design system público. O arquivo original
+**não foi alterado** — foi apenas servido e lido.
+
+### 1.1 Como a referência foi extraída
+
+O export é um bundle que monta as pranchas em `<iframe>` no navegador — o HTML não está no
+código-fonte. O caminho usado:
+
+1. servir o arquivo localmente e abri-lo com Playwright;
+2. extrair, de cada `<iframe>`, o DOM renderizado e as regras CSS acessíveis;
+3. salvar seis arquivos autônomos (`ref/*.html`) e capturar as referências em 375, 768 e 1440;
+4. separar o CSS **autoral** do CSS do bundler (prefixos `sc-*`, `#dc-root`), e descartar as
+   `@font-face` em base64 — Manrope e JetBrains Mono já vêm do `next/font`;
+5. converter o DOM em JSX preservando classes e estilos do design;
+6. capturar os estados que não estão no DOM inicial: menu mobile aberto, itens do FAQ e o
+   fluxo interativo do PGR.
+
+Nada disso vive no código de produção: os arquivos intermediários ficaram fora do repositório.
+
+---
+
+## 2. Como abrir
 
 ```bash
-npm run dev -- -p 3001     # a porta 3000 é do Site-PMPA, em container
-# ou, como foi validado:
-npm run build && npx next start -p 3001
+npm run build && npx next start -p 3001   # a porta 3000 é do Site-PMPA, em container
 ```
 
-| Rota                     | O que é                                                       |
-| ------------------------ | ------------------------------------------------------------- |
-| `/`                      | landing da plataforma inteira                                 |
-| `/seguranca-do-trabalho` | vertente Segurança, com o PGR no centro                       |
-| `/medicina-do-trabalho`  | vertente Medicina, com o que existe e o que é planejado       |
-| `/orcamento`             | pedido de orçamento (aceita `?interesse=seguranca\|medicina`) |
-| `/sign-in`, `/sign-up`   | Clerk, com a moldura `AuthFrame` ajustada                     |
+| Rota                     | Prancha de origem      |
+| ------------------------ | ---------------------- |
+| `/`                      | Home                   |
+| `/seguranca-do-trabalho` | Segurança do Trabalho  |
+| `/medicina-do-trabalho`  | Medicina do Trabalho   |
+| `/orcamento`             | Solicitar orçamento    |
+| `/sign-in`, `/sign-up`   | Login (com Clerk real) |
 
 ---
 
-## 2. A landing, seção por seção
-
-| Seção              | O que mostra                                                                            |
-| ------------------ | --------------------------------------------------------------------------------------- |
-| **Header**         | marca, 4 itens, "Entrar" e "Solicitar orçamento". Sticky, com sombra ao rolar           |
-| **Hero**           | promessa, parágrafo, 6 capacidades e 3 CTAs; à direita, a composição do produto         |
-| **Duas vertentes** | dois cartões — indigo e teal — com resumo, 4 destaques e link para a página da vertente |
-| **Benefícios**     | 6 razões para centralizar, sem número inventado                                         |
-| **Recursos**       | 8 módulos disponíveis, cada um com selo, e dois links para as listas completas          |
-| **Como funciona**  | 5 passos na ordem real das telas                                                        |
-| **CTA**            | faixa comercial em gradiente de marca                                                   |
-| **FAQ**            | 6 perguntas em accordion nativo                                                         |
-| **Rodapé**         | marca, descrição e duas colunas de links reais                                          |
-
-### 2.1 O hero não tem dashboard falso
-
-Em vez de inventar gráficos, a peça da direita mostra **a cadeia real do produto** — Estrutura →
-Risco → Controle → PGR — e as **cinco classes de risco** que a metodologia usa de verdade
-(`risk_classification`, em `schema/risk-methodology.ts`), com a observação de que a classe
-intolerável leva à interrupção da atividade.
-
-É informação verificável no código, e explica o produto melhor do que um print genérico.
-
----
-
-## 3. As duas vertentes
-
-Mesma estrutura dos dois lados, para nenhuma parecer de segunda linha:
+## 3. Arquitetura
 
 ```
-breadcrumb → selo da vertente → h1 → parágrafo → CTAs → painel lateral
-fluxo numerado → módulos com selo → seção de aprofundamento → faixa de CTA
+src/app/(public)/
+├── (marketing)/              ← shell comercial; as rotas por token ficam de fora
+│   ├── layout.tsx            ← wrapper `.pg` + header + footer + skip link
+│   ├── page.tsx              ← Home
+│   ├── seguranca-do-trabalho/
+│   ├── medicina-do-trabalho/
+│   └── orcamento/
+└── _portal/
+    ├── portal.css            ← folha do design, 100% escopada sob `.pg`
+    ├── routes.ts             ← `Main.dc.html` → `/`, etc.
+    ├── portal-header.tsx     ← client: menu mobile e item ativo
+    ├── portal-footer.tsx     ← completo e compacto
+    ├── portal-footer-slot.tsx← escolhe a variante pela rota
+    ├── portal-faq.tsx        ← client: accordion de 7 perguntas
+    ├── pgr-flow.tsx          ← client: tablist de 5 etapas
+    └── quote-form.tsx        ← client: visual do design, backend real
 ```
 
-|                | Segurança                        | Medicina                                     |
-| -------------- | -------------------------------- | -------------------------------------------- |
-| Acento         | indigo `#5b63f5`                 | teal `#14a098`                               |
-| Painel do hero | hierarquia de controle, 4 níveis | o que o registro do ASO guarda               |
-| Fluxo          | 5 passos                         | 4 passos                                     |
-| Módulos        | 12 (todos com rota)              | 5 disponíveis/em evolução + **3 planejados** |
-| Aprofundamento | o PGR + 6 normas de referência   | integração entre as áreas + psicossocial     |
+**Quatro Client Components**, cada um por estado real: menu, FAQ, fluxo do PGR e formulário.
+Todo o resto é Server Component — Home, Segurança e Medicina saem **pré-renderizadas**.
 
-### 3.1 Como a Medicina fica honesta sem ficar pobre
+### 3.1 `.pg` é a fronteira do tema
 
-A página **diz na primeira dobra** que a vertente está em construção, num aviso destacado que
-nomeia o que falta: PCMSO, absenteísmo e portal de clínicas. Mais abaixo, esses três aparecem num
-bloco separado sob o título "Planejado — ainda não implementado", visualmente apagados e com selo.
+Os tokens do design (fundo `#F2F1EE`, tinta `#16171D`, raios 10/12/20/28, container 1240) são
+**diferentes** dos tokens do sistema autenticado. Toda a folha vive sob `.pg`, que só existe no
+portal e na moldura de autenticação.
 
-O resto da página é sobre o que funciona: ASO com tipo/aptidão/validade/médico, cadastro de
-médicos, e a avaliação psicossocial anônima.
+Verificado no bundle gerado: **149 de 149 seletores escopados, zero globais**. E o
+`globals.css` ficou **byte a byte idêntico à `develop`** — os tokens teal que a v1 havia
+adicionado foram revertidos, porque o design traz as próprias cores literais.
 
 ---
 
-## 4. Orçamento
+## 4. Design system aplicado (valores medidos no CSS da referência)
 
-O formulário coleta **nome, empresa, e-mail, telefone, área de interesse** e uma mensagem
-opcional. Sem CPF, sem data de nascimento, sem nada de saúde.
+| Item       | Valor                                                                   |
+| ---------- | ----------------------------------------------------------------------- |
+| Tipografia | Manrope + JetBrains Mono — **as mesmas do sistema**                     |
+| Indigo     | 500 `#5B63F5` · 600 `#4A51E0` · 700 `#3E44C9` · 100 `#E6E7FE`           |
+| Teal       | 500 `#14B8A6` · 600 `#0E9384` · 700 `#0B7A6E`                           |
+| Neutros    | ink `#16171D` · texto 2 `#4A4D5A` · legenda `#565966` · borda `#E4E2DD` |
+| Fundo      | `#F2F1EE` · superfície `#FAFAF8`                                        |
+| Escala     | h1 68/1.02/-0.04em · h2 44/1.08/-0.03em · h3 28/1.15 · corpo 19/1.6     |
+| Container  | 1240px + 24px de margem                                                 |
+| Botões     | 48px (42px no header) · raio 12px (11px no `sm`) · alvo mínimo 44px     |
+| Header     | 72px, sticky, `rgba(242,241,238,0.88)` + `blur(10px)`                   |
+| Movimento  | hover 150–220ms · entrada sobe 10px, 450–550ms · foco anel indigo 3px   |
 
-Os botões "Solicitar orçamento" das vertentes chegam com `?interesse=seguranca` ou
-`?interesse=medicina`, e a área já vem marcada.
+---
+
+## 5. Interações portadas
+
+| Interação        | Como ficou                                                                        |
+| ---------------- | --------------------------------------------------------------------------------- |
+| Menu mobile      | painel montado só quando aberto; `Escape` fecha e devolve o foco; rolagem travada |
+| FAQ              | 7 perguntas, primeira aberta; clicar na aberta fecha — igual ao protótipo         |
+| **Fluxo do PGR** | `role="tablist"` de 5 etapas, anterior/próxima, barra de progresso                |
+| Formulário       | validação por campo, resumo de erros, contador 0/500, estado de envio             |
+| Âncoras          | `scroll-margin-top: 72px`, como o design define                                   |
+
+### 5.1 O fluxo do PGR não virou imagem
+
+A prancha de Segurança tem uma navegação por etapas com conteúdo próprio em cada uma. Ela foi
+implementada como componente real, com as cinco etapas e seus textos aprovados. Acréscimo nosso
+sobre o protótipo: **navegação por teclado** (setas, `Home`/`End`) e `tabIndex` roving, como a
+prática de ARIA exige para `tablist`. O visual não muda.
+
+---
+
+## 6. Login — visual aprovado, Clerk real
+
+O protótipo traz uma autenticação **demonstrativa**: botão Google decorativo, campo de e-mail e
+um `setTimeout` simulando acesso. **Nada disso foi copiado.**
+
+| O que veio do design                          | O que é real                                   |
+| --------------------------------------------- | ---------------------------------------------- |
+| Painel de marca em gradiente, com 3 destaques | `<SignIn>` do Clerk dentro do cartão           |
+| Cartão branco, raio 22px, sombra              | Google, e-mail, recuperação, redirects, tenant |
+| "Ainda não tem acesso? Solicitar orçamento"   | link real para `/orcamento`                    |
+| "Autenticação protegida por Clerk"            | é verdade                                      |
+
+O Clerk v7 desenha o próprio cartão por CSS-in-JS, o que produzia **um cartão dentro do outro**.
+Resolvido neutralizando só a superfície (`cl-card`, `cl-cardBox`, `cl-footer`) por CSS, pelos
+nomes de classe públicos do Clerk — tematização, não manipulação de DOM, e sem tocar em
+autenticação.
+
+Correções anteriores **preservadas e reverificadas**: sem overflow em 375px e 768px; o widget diz
+"para continuar em **PGR-e**", não "sst-manager".
+
+---
+
+## 7. Orçamento — visual aprovado, backend da PR #97
 
 ```
-valida no cliente → Server Action → revalida no servidor → janela por IP → grava
+valida no cliente → Server Action → revalida com Zod → janela por IP → grava
 ```
 
-Três detalhes que vale conhecer:
+Preservado da entrega anterior: tabela global `platform_leads`, `GRANT INSERT` **sem SELECT**,
+deduplicação `(lower(email), submitted_on)`, janela de 3 envios/10min por IP **hasheado só em
+memória**. O protótipo simula o envio; aqui a confirmação só aparece com `ok` do servidor.
 
-1. **O IP nunca é guardado.** Ele só vira chave hasheada de um mapa em memória, para a janela de
-   3 envios por 10 minutos.
-2. **O banco é a barreira que não depende de instância.** `UNIQUE (lower(email), submitted_on)`
-   impede dois pedidos do mesmo e-mail no mesmo dia.
-3. **Duplicata não vira erro para o visitante.** Devolve sucesso, porque o pedido dele do dia já
-   está registrado — e dizer "já existe" vazaria que aquele e-mail se cadastrou.
+**Validado de ponta a ponta** contra Postgres real: o pedido foi gravado com o interesse vindo
+de `?interesse=medicina` e o e-mail normalizado.
 
-### 4.1 O que ainda falta decidir
+### 7.1 Melhoria encontrada durante o QA
 
-O pedido **fica gravado e não notifica ninguém**: o projeto não tem capacidade de envio de e-mail
-e não há endereço comercial definido. É a pendência nº 1 do `PORTAL-AUDIT.md`. Nada foi simulado:
-não existe "envio" fingido, e a mensagem de confirmação diz exatamente o que aconteceu — que o
-pedido ficou registrado na base de interessados.
+Com o banco fora do ar, a ação deixava o erro subir e o visitante via uma tela 500. Agora falha
+de conectividade vira o **estado de erro do próprio design** (`role="alert"`), com o erro
+registrado no log do servidor. Não silencia nada: só não derruba a página de quem queria pedir
+um orçamento.
 
 ---
 
-## 5. Login
+## 8. Divergências intencionais
 
-| O que mudou                                                  | O que **não** mudou                   |
-| ------------------------------------------------------------ | ------------------------------------- |
-| Split de colunas passou de `md:` para `lg:` (overflow 768px) | o Clerk continua sendo o autenticador |
-| `px-4` no mobile e `min-w-0` na coluna (overflow 375px)      | nenhuma regra de autenticação         |
-| Marca aparece no topo quando o painel não é renderizado      | nenhuma permissão                     |
-| "sst-manager" → "PGR-e" na localização do Clerk              | nenhum fluxo de tenant/organização    |
-| Pitch sem a afirmação de "92% de precisão"                   | o `clerkAppearance` segue o mesmo     |
-| Rodapé do painel virou link para `/orcamento`                |                                       |
+Três, todas para não publicar informação que não existe:
 
-### 5.1 Por que a marca estava errada, e como foi corrigida
+1. **Coluna "Institucional" do rodapé.** O design traz um link para
+   `#politica-de-privacidade` e dois marcadores literais — `[CONTATO — A DEFINIR]` e
+   `[RAZÃO SOCIAL E CNPJ — A CONFIRMAR]`. Não há página de privacidade, e inventar CNPJ,
+   endereço ou texto jurídico seria pior. A coluna fica de fora até existirem os dados. É o que
+   explica os ~12px de diferença de altura do rodapé.
+2. **Consentimento do formulário.** O design diz "Li e concordo com a Política de Privacidade",
+   apontando para a mesma página inexistente. O aceite continua **obrigatório e validado**, mas
+   o rótulo descreve o uso real: "Autorizo o uso dos meus dados de contato para responder a esta
+   solicitação."
+3. **Título do painel de login.** Era `<h1>` no design; virou `<p>` com estilo idêntico, porque
+   o Clerk já renderiza "Entrar" como `h1` e duas marcações de nível 1 quebram a navegação por
+   cabeçalho.
 
-`sst-manager` é o **nome da aplicação no painel do Clerk**, que ele injeta em 18 strings do pt-BR
-pelo placeholder `{{applicationName}}`. Não estava em lugar nenhum do repositório — por isso a
-auditoria anterior não localizou a origem.
-
-A correção definitiva é renomear a aplicação no painel (configuração externa, registrada como
-pendência). Enquanto isso, `src/app/_components/clerk-localization.ts` substitui o placeholder
-pelo nome da marca **na camada oficial de localização do Clerk** — não há manipulação de DOM nem
-CSS escondendo texto. Quando o painel for renomeado, o módulo pode sumir sem efeito visível.
+Acréscimos de acessibilidade que o protótipo não tinha e que não mudam o visual: link "pular
+para o conteúdo", bloco `prefers-reduced-motion` e navegação por teclado no fluxo do PGR.
 
 ---
 
-## 6. Interações
+## 9. O que não foi tocado
 
-| Interação              | Como foi feita                                                        |
-| ---------------------- | --------------------------------------------------------------------- |
-| Header ao rolar        | sombra aparece depois de 8px; leitura inicial num `rAF`               |
-| Menu mobile            | painel montado só quando aberto, `Escape` fecha e devolve o foco      |
-| Hover dos cartões      | `.hover-lift` que já existia no design system                         |
-| Seta do cartão de área | desliza 4px no hover, com `motion-reduce` desligando                  |
-| FAQ                    | `<details>`/`<summary>` nativos, exclusivos por `name="faq"`          |
-| Entrada das seções     | `IntersectionObserver`, escalonado em 60–90ms                         |
-| Âncoras                | `scroll-margin-top: 80px` para o header fixo não cobrir o título      |
-| Formulário             | erros por campo, "Enviando…" no botão, confirmação em `role="status"` |
+PDF, template e a integração DOCX/Google do Douglas (`feature/pgr-docx-templates`) ·
+CNAE/CBO (`feature/lot-04-cnae-cbo`, congelada em `8dd86a9`) · GED · módulos clínicos ·
+`globals.css` · regras de autenticação, tenant e RLS · as três rotas públicas por token.
 
-**Nenhuma biblioteca de animação foi instalada.** Tudo é CSS/Tailwind sobre os keyframes que o
-`globals.css` já tinha.
-
-### 6.1 O cuidado com o `Reveal`
-
-A entrada de seção é o tipo de efeito que esconde conteúdo quando algo dá errado. O componente
-foi escrito para não conseguir fazer isso:
-
-- renderiza **visível** no servidor e só esconde depois de montar;
-- só esconde o que está abaixo da dobra;
-- com `prefers-reduced-motion`, nem instala o observer;
-- tem um temporizador de 2,5s que revela o conteúdo de qualquer jeito.
-
-Sem JavaScript, a página inteira continua legível.
-
----
-
-## 7. Defeitos encontrados durante a revisão visual
-
-Três não vieram de relatório: vieram de olhar a tela e medir.
-
-1. **Cartões de grade com alturas desiguais** — as linhas de "Recursos" não alinhavam porque o
-   card não acompanhava a altura do item do grid. Corrigido com `h-full` no card e no wrapper.
-2. **`Reveal` quebrando a semântica das listas** — ao receber `h-full`, o wrapper virou um `<div>`
-   entre `<ol>` e `<li>` (HTML inválido) e, pior, cada passo passou a ocupar 430px em vez de 86px.
-   O componente virou polimórfico: dentro de lista ele **é** o `<li>`, e o `h-full` virou opcional.
-3. **Link "pular para o conteúdo" com 20px de altura ao focar** — o `not-sr-only` do Tailwind zera
-   `padding`. O padding foi para dentro do variante `focus:`; o alvo passou a 160 × 44px.
-
----
-
-## 8. O que não foi tocado
-
-PDF e template (Douglas) · CNAE/CBO · GED · módulos clínicos internos · visual do dashboard
-autenticado · regras de autenticação, tenant e RLS das tabelas de tenant · as três rotas públicas
-por token.
+Nenhum arquivo de `(protected)/` no diff.

@@ -1,31 +1,22 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 
-import { BrandMark } from "@/app/(public)/_components/brand-mark";
-import { Icon } from "@/app/(public)/_components/icon";
-import { AUTH_HIGHLIGHTS } from "@/app/(public)/_content/platform";
+import "@/app/(public)/_portal/portal.css";
 
 /**
- * Moldura das telas de autenticação/onboarding: painel de marca em gradiente à
- * esquerda + slot do componente do Clerk à direita. É só markup nosso — o form
- * é do Clerk.
+ * Moldura das telas de autenticação — porte fiel da prancha "Login" aprovada.
  *
- * Duas correções de responsividade feitas aqui (medidas no navegador, não
- * supostas):
+ * O protótipo traz uma autenticação **demonstrativa** (botão Google decorativo,
+ * campo de e-mail e um `setTimeout` simulando acesso). Nada disso foi copiado:
+ * o que entra no cartão é o componente real do Clerk, recebido por `children`.
+ * O design contribui com a composição — painel de marca em gradiente à
+ * esquerda, cartão branco à direita, rodapé "Solicitar orçamento" e a nota
+ * "Autenticação protegida por Clerk".
  *
- * - **O split passou de `md:` para `lg:`.** Em 768px exatos cada coluna ficava
- *   com 384px e, descontado o `p-8`, sobravam 320px para um cartão do Clerk que
- *   pede 400px — o que produzia barra horizontal. A partir de 1024px há espaço
- *   para as duas colunas de verdade.
- * - **O respiro lateral encolhe no mobile** (`px-4` em vez de `p-8`) e a coluna
- *   do formulário ganhou `min-w-0`, para poder ceder largura em vez de empurrar
- *   o layout.
- *
- * O selo da marca e os ícones vêm dos mesmos componentes do portal público, para
- * login e landing não divergirem com o tempo.
+ * A folha do portal é importada aqui porque estas rotas vivem fora do grupo
+ * `(marketing)` e, portanto, não passam pelo layout que a carrega. O wrapper
+ * `.pg` continua sendo a fronteira do tema.
  */
-const BRAND_GRADIENT = "bg-[linear-gradient(150deg,#4f46e5_0%,#5b63f5_48%,#7c7bf7_100%)]";
-
 export function AuthFrame({
   eyebrow,
   title,
@@ -36,43 +27,217 @@ export function AuthFrame({
   children: ReactNode;
 }) {
   return (
-    <main className="grid min-h-screen w-full flex-1 lg:grid-cols-2">
+    <div className="pg auth">
       <aside
-        className={`relative hidden flex-col justify-between overflow-hidden p-11 text-white lg:flex lg:p-14 xl:p-16 ${BRAND_GRADIENT}`}
+        className="auth-side"
+        aria-label="Sobre a plataforma"
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          background:
+            "linear-gradient(160deg, rgb(78, 85, 236) 0%, rgb(91, 99, 245) 55%, rgb(107, 114, 246) 100%)",
+          color: "rgb(255, 255, 255)",
+          padding: "48px clamp(32px, 5vw, 72px)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          gap: "48px",
+          minWidth: "0px",
+        }}
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-[120px] -right-[90px] h-[340px] w-[340px] rounded-full bg-white/10 blur-[6px]"
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            right: "-140px",
+            top: "-140px",
+            width: "420px",
+            height: "420px",
+            borderRadius: "50%",
+            background: "rgba(255, 255, 255, 0.07)",
+          }}
         />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-[70px] -left-[50px] h-[220px] w-[220px] rounded-full bg-white/[0.08]"
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: "-90px",
+            bottom: "-110px",
+            width: "280px",
+            height: "280px",
+            borderRadius: "50%",
+            background: "rgba(255, 255, 255, 0.06)",
+          }}
+        />
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: "0px",
+            backgroundImage:
+              "radial-gradient(rgba(255, 255, 255, 0.12) 1px, rgba(0, 0, 0, 0) 1.2px)",
+            backgroundSize: "22px 22px",
+            opacity: 0.6,
+          }}
         />
 
-        <div className="relative">
-          <BrandMark tone="light" />
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
+          <Link
+            href="/"
+            aria-label="PGR-e, voltar ao site"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              textDecoration: "none",
+              color: "rgb(255, 255, 255)",
+            }}
+          >
+            <span
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                background: "rgba(255, 255, 255, 0.16)",
+                border: "1px solid rgba(255, 255, 255, 0.35)",
+                display: "grid",
+                placeItems: "center",
+                fontWeight: 800,
+                fontSize: "15px",
+              }}
+            >
+              P
+            </span>
+            <span style={{ fontWeight: 800, fontSize: "18px", letterSpacing: "-0.02em" }}>
+              PGR-e
+            </span>
+          </Link>
+          <Link className="side-link" href="/">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M19 12H5M11 6l-6 6 6 6" />
+            </svg>
+            Voltar ao site
+          </Link>
         </div>
 
-        <div className="relative">
-          <p className="font-mono text-[11px] tracking-[0.16em] text-white/70 uppercase">
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+          }}
+        >
+          <span className="mono" style={{ color: "rgba(255, 255, 255, 0.82)" }}>
             {eyebrow}
+          </span>
+          {/*
+            `<p>` e nao `<h1>`: o Clerk renderiza o proprio titulo ("Entrar")
+            como `h1`, e duas marcacoes de nivel 1 na mesma pagina quebram a
+            navegacao por cabecalho. O estilo e identico ao do design — muda
+            so a semantica, e o h1 da pagina passa a ser a acao principal.
+          */}
+          <p
+            className="side-title"
+            style={{
+              fontSize: "clamp(30px, 3.2vw, 42px)",
+              lineHeight: 1.08,
+              letterSpacing: "-0.035em",
+              fontWeight: 800,
+              textWrap: "balance",
+            }}
+          >
+            Saúde e segurança do trabalho em uma só plataforma.
           </p>
-          <p className="mt-4 text-[clamp(1.75rem,2.6vw,2.125rem)] leading-[1.12] font-extrabold tracking-tight">
-            Saúde e segurança do trabalho em uma só plataforma
-          </p>
-          <ul className="mt-6 flex flex-col gap-4">
-            {AUTH_HIGHLIGHTS.map((item) => (
-              <li key={item.title} className="flex items-start gap-3">
+          <ul
+            className="feat"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "18px",
+              marginTop: "6px",
+            }}
+          >
+            {[
+              {
+                t: "Gestão centralizada",
+                d: "PGR, EPI, inspeções e planos de ação em um só lugar.",
+                icone: <path d="M5 12.5l4.5 4.5L19 7.5" />,
+              },
+              {
+                t: "Informações conectadas",
+                d: "Do inventário de riscos ao documento do PGR.",
+                icone: (
+                  <>
+                    <path d="M12 3l9 5-9 5-9-5 9-5z" />
+                    <path d="M3 13l9 5 9-5" />
+                  </>
+                ),
+              },
+              {
+                t: "Segurança e Medicina do Trabalho",
+                d: "Duas áreas, o mesmo acesso.",
+                icone: <path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z" />,
+              },
+            ].map((item) => (
+              <li
+                key={item.t}
+                style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}
+              >
                 <span
-                  aria-hidden
-                  className="mt-0.5 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] border border-white/30 bg-white/[0.18]"
+                  style={{
+                    flex: "0 0 auto",
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "10px",
+                    background: "rgba(255, 255, 255, 0.16)",
+                    border: "1px solid rgba(255, 255, 255, 0.3)",
+                    display: "grid",
+                    placeItems: "center",
+                  }}
                 >
-                  <Icon name={item.icon} className="h-4 w-4" strokeWidth={1.9} />
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    {item.icone}
+                  </svg>
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-bold">{item.title}</span>
-                  <span className="mt-0.5 block text-xs text-white/70">
-                    {item.detail}
+                <span style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                  <span style={{ fontWeight: 800, fontSize: "15.5px" }}>{item.t}</span>
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      lineHeight: 1.55,
+                      color: "rgba(255, 255, 255, 0.84)",
+                    }}
+                  >
+                    {item.d}
                   </span>
                 </span>
               </li>
@@ -80,41 +245,120 @@ export function AuthFrame({
           </ul>
         </div>
 
-        <Link
-          href="/orcamento"
-          className="relative flex w-fit items-center gap-2 rounded-full text-xs text-white/70 transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            aria-hidden
-          >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          Ainda não tem acesso? Solicitar orçamento
-        </Link>
+        <div className="side-foot" style={{ position: "relative" }}>
+          <Link className="side-link" href="/orcamento">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
+            </svg>
+            Precisa de ajuda? Fale conosco
+          </Link>
+        </div>
       </aside>
 
-      <section className="flex min-w-0 flex-col justify-center gap-6 bg-white/55 px-4 py-10 backdrop-blur-[34px] sm:px-8 sm:py-12 lg:px-10 xl:px-16">
-        {/* A marca aparece só no mobile: na coluna larga ela já está no painel
-            de gradiente, que não é renderizado abaixo de `lg`. */}
-        <div className="mx-auto w-full max-w-[400px] lg:hidden">
-          <BrandMark size="sm" />
-        </div>
+      <main
+        className="auth-main"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "48px 24px",
+          background:
+            "radial-gradient(700px 400px at 70% 10%, rgba(91, 99, 245, 0.07), rgba(91, 99, 245, 0) 70%), rgb(242, 241, 238)",
+          minWidth: "0px",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "420px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            minWidth: "0px",
+          }}
+        >
+          <div
+            style={{
+              background: "rgb(255, 255, 255)",
+              border: "1px solid rgb(228, 226, 221)",
+              borderRadius: "22px",
+              boxShadow:
+                "rgba(30, 32, 70, 0.45) 0px 30px 60px -40px, rgba(30, 32, 70, 0.04) 0px 2px 6px",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                padding: "clamp(24px, 5vw, 36px)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "22px",
+                minWidth: 0,
+              }}
+            >
+              {title ? (
+                <h2
+                  style={{ fontSize: "24px", fontWeight: 800, letterSpacing: "-0.02em" }}
+                >
+                  {title}
+                </h2>
+              ) : null}
+              {children}
+            </div>
+          </div>
 
-        <div className="mx-auto w-full max-w-[400px] min-w-0">
-          {title ? (
-            <h1 className="text-text mb-6 text-2xl font-extrabold tracking-tight">
-              {title}
-            </h1>
-          ) : null}
-          <div className="flex min-w-0 justify-center">{children}</div>
+          <div
+            style={{
+              textAlign: "center",
+              fontSize: "14.5px",
+              color: "rgb(74, 77, 90)",
+            }}
+          >
+            Ainda não tem acesso?{" "}
+            <Link href="/orcamento" style={{ fontWeight: 700 }}>
+              Solicitar orçamento
+            </Link>
+          </div>
+
+          <p
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "7px",
+              fontSize: "12.5px",
+              color: "rgb(106, 109, 121)",
+              marginTop: "4px",
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+            Autenticação protegida por Clerk
+          </p>
         </div>
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }

@@ -1,5 +1,11 @@
 # Portal público — arquitetura implementada
 
+> **Atualização de 13/10/2026.** A arquitetura de rotas, o escopo do shell comercial, o fluxo de
+> orçamento e o SEO descritos aqui **continuam valendo**. O que mudou foi a camada visual: os
+> componentes de `(public)/_components/` e o módulo `_content/platform.ts` foram substituídos
+> por `(public)/_portal/`, portado do HTML aprovado pelo Claude Design. A arquitetura
+> definitiva está em [`PORTAL-WALKTHROUGH.md §3`](PORTAL-WALKTHROUGH.md).
+
 > Complemento do [`../PLAN.md`](../PLAN.md). Aquele documento planeja os 8 lotes da reunião; este
 > descreve **o que foi construído** no recorte do portal público (parte dos lotes C, D e E).
 

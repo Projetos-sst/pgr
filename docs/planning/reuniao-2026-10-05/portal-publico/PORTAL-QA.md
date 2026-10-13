@@ -1,298 +1,231 @@
 # Portal público — QA
 
-Execução em **09/10/2026**, contra o **build de produção** (`npm run build` + `next start -p 3001`),
-não contra o dev server. Base de dados: **Postgres efêmero em container** — o banco remoto do PGR
-não foi tocado em nenhum momento desta execução.
+Execução em **13/10/2026**, contra o **build de produção** (`npm run build` + `next start -p 3001`).
+Banco: **Postgres efêmero em container**, criado para a execução e removido no fim. O banco
+remoto do PGR **não foi tocado** — a migration `0052` segue não aplicada lá (verificado por
+leitura de catálogo: `to_regclass('public.platform_leads')` → `null`).
 
-Ferramentas: **Chrome DevTools MCP** (inspeção de CSS, medição de overflow, console, cabeçalhos),
-**Playwright MCP** (fluxos de interação) e um script Playwright do próprio projeto
-(`node_modules/playwright`) para a matriz de viewports e as capturas.
+Ferramentas: **Chrome DevTools MCP** (inspeção de CSS, cascata, cabeçalhos, redirect de rota
+protegida), **Playwright MCP** (interações) e scripts Playwright do projeto (matriz de
+viewports, comparação geométrica e capturas determinísticas).
 
 ---
 
-## 1. Testes técnicos
+## 1. Comparação com a referência aprovada
 
-| Comando                             | Resultado                                                              |
-| ----------------------------------- | ---------------------------------------------------------------------- |
-| `npm run check`                     | **PASS** (exit 0) — format + lint + typecheck + unit                   |
-| ↳ lint                              | **0 erros**, 4 avisos — os mesmos 4 preexistentes da `develop`         |
-| ↳ typecheck                         | **0 erros**                                                            |
-| ↳ unit                              | **145 suítes / 1393 testes PASS** (baseline era 143 / 1367 → +2 / +26) |
-| `npm run build`                     | **PASS** (exit 0)                                                      |
-| Integração `platform/leads.test.ts` | **9 / 9 PASS** contra Postgres real                                    |
+Método: a mesma página é aberta na referência (prancha extraída) e na implementação, no mesmo
+viewport, com fontes carregadas (`document.fonts.ready`), rolagem completa para disparar as
+animações, retorno ao topo e animações zeradas. Compara-se a geometria e a tipografia das
+âncoras — header, `h1`, primeiro parágrafo, botões, rodapé — e a posição e o tamanho de cada
+`h2`.
 
-### 1.1 Avisos preexistentes (não são regressão)
+### 1.1 Resultado em 1440 × 900
 
-`no-img-element` em `company-form.tsx`, `employee-form.tsx` e `epi-catalog-form.tsx`; `Company`
-não usado em `domains/pgr/companies.ts`. Todos já estavam na `develop`; nenhum arquivo desses foi
-tocado.
+| Página    | Altura ref | Altura impl | Δ       | Âncoras                | `h2`                         |
+| --------- | ---------- | ----------- | ------- | ---------------------- | ---------------------------- |
+| Home      | 5932       | 5920        | **−12** | só o rodapé (ver §1.4) | 6/6 texto, posição e tamanho |
+| Segurança | 3744       | 3732        | **−12** | só o rodapé            | 4/4                          |
+| Medicina  | 3592       | 3580        | **−12** | só o rodapé            | 4/4                          |
+| Orçamento | 1153       | 1158        | **+5**  | **idênticas**          | 1/1                          |
 
-### 1.2 Saída do build para as rotas novas
+### 1.2 Resultado em 768 × 1024
+
+| Página    | Δ altura | Diferença restante |
+| --------- | -------- | ------------------ |
+| Home      | −122     | só o rodapé (−121) |
+| Segurança | −122     | só o rodapé        |
+| Medicina  | −121     | só o rodapé        |
+| Orçamento | +6       | **nenhuma**        |
+
+### 1.3 Resultado em 375 × 812
+
+| Página    | Δ altura | Diferença restante    |
+| --------- | -------- | --------------------- |
+| Home      | −179     | só o rodapé (−179)    |
+| Segurança | −179     | só o rodapé           |
+| Medicina  | −179     | só o rodapé           |
+| Orçamento | +19      | rodapé compacto (−30) |
+
+**Em nenhuma das 12 combinações há divergência de `h1`, `h2`, parágrafo, botão, header,
+tipografia ou cor.** Tamanho de fonte, peso, entrelinha, espaçamento entre letras e cor batem
+exatamente.
+
+### 1.4 A única diferença recorrente, explicada
+
+O rodapé é 12px (desktop), 121px (tablet) e 179px (mobile) mais curto. Causa única: a coluna
+"Institucional" do design, que traz um link para uma página de privacidade inexistente e dois
+marcadores literais `[A DEFINIR]`. Divergência intencional — ver `PORTAL-REVIEW.md`.
+
+### 1.5 Correções que vieram da comparação
+
+A primeira medição acusou desvio acumulado (12px na primeira seção, chegando a 59px no fim da
+Home) e cores erradas. Três causas, todas corrigidas:
+
+| Defeito medido                                  | Causa                                                                       |
+| ----------------------------------------------- | --------------------------------------------------------------------------- |
+| Texto `rgb(27,31,46)` em vez de `rgb(22,23,29)` | a regra `.pg` que carrega cor e fonte tinha sido descartada na deduplicação |
+| `line-height: 24px` em vez de `normal`          | o preflight do Tailwind impõe 1.5 no `body`; o design parte de `normal`     |
+| Desvio crescente seção a seção                  | consequência do item acima — cada bloco de texto ficava alguns px maior     |
+| Menu hambúrguer visível em 1440px               | a prancha de Login redefine `.btn` e a regra vazava para as outras páginas  |
+
+A última levou ao escopo em três níveis (`.pg`, `.pg.auth`, `.pg .pg-medicina`).
+
+---
+
+## 2. Testes técnicos
+
+| Comando                             | Resultado                                                    |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `npm run check`                     | **PASS** (exit 0)                                            |
+| ↳ lint                              | **0 erros**, 4 avisos — os mesmos preexistentes da `develop` |
+| ↳ typecheck                         | **0 erros**                                                  |
+| ↳ unit                              | **144 suítes / 1381 testes PASS**                            |
+| `npm run build`                     | **PASS**                                                     |
+| Integração `platform/leads.test.ts` | **9 / 9 PASS** contra Postgres real                          |
+
+A suíte caiu de 145/1393 para 144/1381 porque o teste de conteúdo da v1
+(`public-portal-content.test.ts`) foi removido junto com o módulo que ele testava
+(`_content/platform.ts`). Os 22 casos de lead (unit + integração) continuam.
+
+### 2.1 Rotas no build
 
 ```
 ┌ ○ /                        (estática)
 ├ ○ /seguranca-do-trabalho   (estática)
 ├ ○ /medicina-do-trabalho    (estática)
-├ ƒ /orcamento               (dinâmica — lê searchParams)
-├ ○ /robots.txt              (estática)
-└ ○ /sitemap.xml             (estática)
-```
-
-As três páginas de apresentação saem **pré-renderizadas**, que é o melhor caso para quem chega
-pela internet.
-
----
-
-## 2. Matriz de responsividade
-
-Script: `qa-viewports.mjs` — para cada combinação, carrega a página, rola até o fim (dispara as
-animações de entrada), volta ao topo e mede
-`document.documentElement.scrollWidth <= clientWidth`.
-
-| viewport        | /   | /seguranca-do-trabalho | /medicina-do-trabalho | /orcamento | /sign-in |
-| --------------- | --- | ---------------------- | --------------------- | ---------- | -------- |
-| **320 × 700**   | ok  | ok                     | ok                    | ok         | ok       |
-| **375 × 812**   | ok  | ok                     | ok                    | ok         | ok       |
-| **768 × 1024**  | ok  | ok                     | ok                    | ok         | ok       |
-| **1440 × 900**  | ok  | ok                     | ok                    | ok         | ok       |
-| **1920 × 1080** | ok  | ok                     | ok                    | ok         | ok       |
-
-**Barra horizontal indevida: 0 de 25 combinações.** Em todas, `scrollWidth == clientWidth`.
-
-Medido junto, nas mesmas 25 combinações:
-
-- **exatamente um `<h1>`** por página;
-- **nenhum salto de nível de cabeçalho** (sem `h1 → h3`);
-- **0 imagens sem `alt`**.
-
-Nenhum `overflow-x: hidden` global foi usado. Os círculos decorativos que ultrapassam a borda
-ficam contidos pelo `overflow-hidden` da própria seção — por isso não geram barra.
-
-### 2.1 Correção de overflow do login, antes e depois
-
-| viewport | antes (auditoria anterior)             | depois (medido agora) |
-| -------- | -------------------------------------- | --------------------- |
-| 375px    | `scrollWidth` 399 × 360 — **overflow** | 375 × 375 — ok        |
-| 768px    | `scrollWidth` 765 × 753 — **overflow** | 768 × 768 — ok        |
-
----
-
-## 3. Fluxos no Playwright MCP
-
-| #   | Fluxo                       | Resultado | Evidência                                                              |
-| --- | --------------------------- | --------- | ---------------------------------------------------------------------- |
-| 1   | Abrir a página inicial      | **PASS**  | título "PGR-e — Saúde e segurança do trabalho em uma só plataforma"    |
-| 2   | Abrir Segurança do Trabalho | **PASS**  | h1 "Do levantamento do risco ao PGR assinado"                          |
-| 3   | Voltar para a landing       | **PASS**  | navegação pelo logo e pelo breadcrumb                                  |
-| 4   | Abrir Medicina do Trabalho  | **PASS**  | h1 "A saúde ocupacional sobre os mesmos cadastros"                     |
-| 5   | Navegação do header         | **PASS**  | `aria-current="page"` aplicado ao item da rota ativa                   |
-| 6   | Todos os CTAs               | **PASS**  | 8 destinos distintos, todos HTTP 200 (ver §4)                          |
-| 7   | FAQ                         | **PASS**  | 6 perguntas, abre por clique, comportamento **exclusivo** confirmado   |
-| 8   | Rolagem e âncoras           | **PASS**  | 7 âncoras existem; `#perguntas-frequentes` para a seção a 80px do topo |
-| 9   | Menu mobile                 | **PASS**  | ver §3.1                                                               |
-| 10  | Navegação por teclado       | **PASS**  | ver §3.2                                                               |
-| 11  | Abrir o login               | **PASS**  | Clerk renderiza; marca correta                                         |
-| 12  | Estado não autenticado      | **PASS**  | landing e vertentes abrem sem sessão                                   |
-| 13  | Redirects de rota protegida | **PASS**  | `/dashboard`, `/pgr`, `/companies` → **307** para o Clerk              |
-| 14  | Orçamento                   | **PASS**  | ver §3.3                                                               |
-| 15  | Estados de erro             | **PASS**  | ver §3.3                                                               |
-| 16  | Links quebrados             | **PASS**  | nenhum — ver §4                                                        |
-
-### 3.1 Menu mobile (375 × 812)
-
-| Verificação                              | Resultado                                          |
-| ---------------------------------------- | -------------------------------------------------- |
-| Botão visível e com alvo confortável     | 40 × 40px                                          |
-| `aria-expanded` alterna                  | `false` → `true` → `false`                         |
-| `aria-label` alterna                     | "Abrir menu" → "Fechar menu"                       |
-| Painel montado só quando aberto          | sim (`#public-mobile-menu` ausente quando fechado) |
-| Itens                                    | 6 (4 de navegação + Entrar + Solicitar orçamento)  |
-| Rolagem do corpo travada enquanto aberto | `body.style.overflow = "hidden"`                   |
-| `Escape` fecha                           | sim                                                |
-| `Escape` devolve o foco ao botão         | sim (`document.activeElement === botão`)           |
-| Rolagem destravada ao fechar             | sim                                                |
-| Clicar num item navega e fecha o menu    | sim → `/medicina-do-trabalho`, painel desmontado   |
-| Overflow horizontal com o menu aberto    | nenhum                                             |
-
-### 3.2 Teclado
-
-Ordem de tabulação a partir do topo da landing:
-
-```
-1 Ir para o conteúdo (#conteudo)   ← primeiro foco, como manda o padrão
-2 PGR-e (logo, /)
-3 Segurança do Trabalho
-4 Medicina do Trabalho
-5 Recursos
-6 Como funciona
-7 Entrar
-8 Solicitar orçamento
-9 Conhecer Segurança do Trabalho (primeiro CTA do hero)
-```
-
-O link de pular conteúdo, ao receber foco, aparece em `(12, 12)` com **160 × 44px**.
-
-> **Defeito encontrado e corrigido durante o QA.** Na primeira medição esse link reaparecia com
-> **160 × 20px**: o utilitário `not-sr-only` do Tailwind zera `padding`, anulando o `px-5 py-2.5`
-> que estava fora do variante. O padding passou para dentro do `focus:`.
-
-### 3.3 Orçamento — fim a fim
-
-Executado contra o Postgres efêmero, com a migration `0052` aplicada ali.
-
-| Cenário                                       | Esperado                                                      | Resultado |
-| --------------------------------------------- | ------------------------------------------------------------- | --------- |
-| `?interesse=medicina` pré-seleciona a área    | rádio `health` marcado                                        | **PASS**  |
-| Envio vazio                                   | 4 erros de campo, sem chamada ao servidor                     | **PASS**  |
-| Erros com ligação ARIA                        | `aria-invalid` + `aria-describedby` apontando alvo real       | **PASS**  |
-| E-mail `ana@`                                 | "E-mail inválido."                                            | **PASS**  |
-| Telefone `9999`                               | "Informe DDD e número (ex.: (11) 99999-9999)."                | **PASS**  |
-| Envio válido                                  | confirmação em `role="status"`, formulário some               | **PASS**  |
-| **Gravação real no banco**                    | 1 linha                                                       | **PASS**  |
-| Normalização do e-mail                        | `Ana.Souza@Exemplo-QA.com.br` → `ana.souza@exemplo-qa.com.br` | **PASS**  |
-| Interesse vindo da URL                        | `health`                                                      | **PASS**  |
-| Reenvio com o **mesmo e-mail em outra caixa** | **nenhuma linha nova** (total segue 1)                        | **PASS**  |
-| Reenvio não revela que o e-mail já existe     | mostra "Solicitação registrada"; sem "já existe"              | **PASS**  |
-
-Linha gravada (dado sintético de QA, removido junto com o container):
-
-```
-name      | company                  | email                       | interest | source | submitted_on
-Ana Souza | Consultoria SST de Teste | ana.souza@exemplo-qa.com.br | health   | quote  | 2026-10-09
+├ ƒ /orcamento               (dinâmica — lê ?interesse=)
+├ ƒ /sign-in/[[...sign-in]]  (dinâmica — Clerk)
 ```
 
 ---
 
-## 4. Links
+## 3. Matriz de responsividade
 
-Coletados do HTML servido das 4 páginas do portal: **22 links distintos, todos internos**. Nenhum
-`href="#"`, nenhum link externo, nenhum destino inventado.
+25 combinações: 5 páginas × 320/375/768/1440/1920.
 
-| Destino                          | HTTP |
-| -------------------------------- | ---- |
-| `/`                              | 200  |
-| `/seguranca-do-trabalho`         | 200  |
-| `/medicina-do-trabalho`          | 200  |
-| `/orcamento`                     | 200  |
-| `/orcamento?interesse=seguranca` | 200  |
-| `/orcamento?interesse=medicina`  | 200  |
-| `/sign-in`                       | 200  |
-| `/sign-up`                       | 200  |
+| Métrica                       | Resultado             |
+| ----------------------------- | --------------------- |
+| **Barra horizontal indevida** | **0 de 25**           |
+| `<h1>` por página             | exatamente 1 em todas |
+| Salto de nível de cabeçalho   | nenhum                |
+| Imagens sem `alt`             | 0                     |
+| Erros de console              | **0**                 |
+| Respostas HTTP ≥ 400          | **0**                 |
 
-Âncoras verificadas no HTML: `#conteudo`, `#vertentes`, `#recursos`, `#como-funciona`,
-`#perguntas-frequentes` (landing) e `#modulos` (nas duas vertentes) — **todas existem**.
+Nenhum `overflow-x: hidden` improvisado: o `.pg` usa `overflow-x: clip`, que é a regra do
+próprio design.
 
----
+> Na primeira passagem, `/sign-in` acusou **2 `<h1>`** — o do painel de marca e o que o Clerk
+> renderiza. Corrigido: o título do painel virou `<p>` com estilo idêntico.
 
-## 5. Console e rede
-
-Nas 25 combinações da matriz, com rolagem completa de cada página:
-
-| Métrica              | Resultado                                    |
-| -------------------- | -------------------------------------------- |
-| **Erros de console** | **0**                                        |
-| Respostas HTTP ≥ 400 | **0**                                        |
-| Imagens quebradas    | nenhuma (o portal não usa arquivo de imagem) |
-| Requisições "falhas" | 128, **todas** `?_rsc=…` — ver abaixo        |
-
-As 128 são **prefetch do App Router cancelado** (`net::ERR_ABORTED`) quando o script navega antes
-do prefetch concluir. É comportamento normal do Next, não requisição com erro: nenhuma delas
-retornou status de erro, e o contador de respostas ≥ 400 é zero.
-
-Avisos de console observados (2, ambos de ambiente):
-
-1. `Clerk has been loaded with development keys` — instância de desenvolvimento;
-2. aviso de preload de fonte do `next/font` em `next start` local.
+As 72 requisições "falhas" registradas são todas `?_rsc=…` com `net::ERR_ABORTED`: prefetch do
+App Router cancelado quando o script navega antes de concluir. Nenhuma devolveu erro — o
+contador de respostas ≥400 é zero.
 
 ---
 
-## 6. Acessibilidade verificada no navegador
+## 4. Interações (Playwright MCP)
 
-| Item                                            | Resultado                                              |
-| ----------------------------------------------- | ------------------------------------------------------ |
-| Link "pular para o conteúdo" como primeiro foco | sim, visível ao focar, 160 × 44px                      |
-| Um `<h1>` por página                            | sim, nas 25 combinações                                |
-| Hierarquia de cabeçalhos sem salto              | sim, nas 25 combinações                                |
-| Landmarks                                       | `header`, `nav[aria-label]`, `main#conteudo`, `footer` |
-| `aria-current` no item ativo                    | sim                                                    |
-| Menu mobile acessível                           | ver §3.1                                               |
-| FAQ acessível                                   | `<details>`/`<summary>` nativos                        |
-| Campos com rótulo                               | 8 de 8                                                 |
-| `autocomplete` nos campos de contato            | `name`, `organization`, `email`, `tel`                 |
-| Erros com `aria-invalid` + `aria-describedby`   | sim, alvos existem                                     |
-| Confirmação anunciada                           | `role="status"`                                        |
-| Erro de envio anunciado                         | `role="alert"`                                         |
-| Imagens sem `alt`                               | 0                                                      |
+| Fluxo                             | Resultado | Evidência                                                        |
+| --------------------------------- | --------- | ---------------------------------------------------------------- |
+| Fluxo do PGR — estado inicial     | **PASS**  | 5 abas, etapa 01, "anterior" desabilitado, `tabIndex` roving     |
+| Fluxo do PGR — botão próxima      | **PASS**  | etapa 02, título, itens e módulos trocam; 2 barras preenchidas   |
+| Fluxo do PGR — seta do teclado    | **PASS**  | `ArrowDown` → etapa 03 e foco em `fluxo-tab-2`                   |
+| Menu mobile — abrir               | **PASS**  | `aria-expanded=true`, 6 itens, rolagem travada, sem overflow     |
+| Menu mobile — `Escape`            | **PASS**  | fecha, destrava a rolagem e devolve o foco ao botão              |
+| FAQ                               | **PASS**  | 7 perguntas, primeira aberta — igual ao protótipo                |
+| Orçamento — `?interesse=medicina` | **PASS**  | rádio "Medicina do Trabalho" pré-selecionado                     |
+| Orçamento — envio vazio           | **PASS**  | "5 campos precisam de atenção" + 5 erros com `aria-invalid`      |
+| Orçamento — envio válido          | **PASS**  | confirmação em `role="status"`, formulário some                  |
+| Orçamento — **gravação real**     | **PASS**  | 1 linha no banco, `interest=health`, e-mail normalizado          |
+| Rotas protegidas sem sessão       | **PASS**  | `/dashboard` → 307 para o Clerk                                  |
+| Links                             | **PASS**  | todos internos; 7 rotas e 8 âncoras conferidas, nenhuma quebrada |
 
-### 6.1 `prefers-reduced-motion` — medição A/B
+Linha gravada (dado sintético, removida junto com o container):
 
-| Preferência     | CTA do hero: `transition-property`    | duração | Blocos do `Reveal`                     |
-| --------------- | ------------------------------------- | ------- | -------------------------------------- |
-| `no-preference` | `transform, translate, scale, rotate` | `0.2s`  | animam ao entrar                       |
-| **`reduce`**    | **`none`**                            | —       | `opacity: 1`, `0s`, **nada escondido** |
+```
+Mariana Souza | Consultoria SST QA | mariana.qa@exemplo-design.com.br | health | quote
+```
 
-Com a preferência ativa o `Reveal` nem instala o observer: o conteúdo nasce visível.
+---
+
+## 5. Regressão no sistema autenticado
+
+A verificação **visual** das telas internas ficou **BLOQUEADA**: o navegador disponível não tem
+sessão Google ativa, e não foram usadas credenciais. Em lugar dela, duas verificações objetivas
+e mais fortes que uma captura:
+
+| Verificação                                       | Resultado                         |
+| ------------------------------------------------- | --------------------------------- |
+| `globals.css` vs `origin/develop`                 | **byte a byte idêntico**          |
+| Seletores do bundle do portal escopados sob `.pg` | **149 de 149 — zero globais**     |
+| `clerkAppearance` usado fora de sign-in/sign-up   | **não** — só nessas duas telas    |
+| Arquivos de `(protected)/` no diff                | **zero**                          |
+| Colisão de `@keyframes` com o `globals.css`       | nenhuma (`rise`/`spin` são novos) |
+
+Sem token global alterado e sem seletor fora de `.pg`, não existe caminho pelo qual o portal
+altere a aparência de uma tela autenticada.
+
+Mudanças que **alcançam** a área autenticada, e são só textuais:
+`layout.tsx` troca `ptBR` por `clerkLocalization` (onde aparecia `sst-manager`, agora aparece
+`PGR-e`) e define `title.template`, que as telas internas não usam.
+
+---
+
+## 6. Acessibilidade
+
+| Item                                                      | Resultado                        |
+| --------------------------------------------------------- | -------------------------------- |
+| Link "pular para o conteúdo" como primeiro foco           | ok                               |
+| Um `<h1>` por página, sem salto de nível (25 medições)    | ok                               |
+| Landmarks `header`/`nav[aria-label]`/`main`/`footer`      | ok                               |
+| `aria-current="page"` no item ativo                       | ok                               |
+| Menu mobile: `aria-expanded`, `Escape`, devolução de foco | ok                               |
+| Fluxo do PGR: `tablist`, setas, `Home`/`End`, roving      | ok                               |
+| FAQ: `aria-expanded` + `role="region"`                    | ok                               |
+| Campos com rótulo e `autocomplete`                        | 8 de 8                           |
+| Erros com `aria-invalid` + `aria-describedby`             | ok                               |
+| `role="status"` na confirmação, `role="alert"` nos erros  | ok                               |
+| Foco visível (anel indigo 3px, offset 3px, do design)     | ok                               |
+| Imagens sem `alt`                                         | 0                                |
+| `prefers-reduced-motion`                                  | bloco próprio na folha do portal |
+
+**Não executados:** auditoria automatizada de contraste e teste com leitor de tela real. A
+conformidade com WCAG 2.2 AA foi buscada por construção e verificada nos itens acima; não é
+afirmada como certificada.
 
 ---
 
 ## 7. Capturas
 
-Em `docs/planning/reuniao-2026-10-05/portal-publico/capturas/` — página inteira, JPEG:
+Em `docs/planning/reuniao-2026-10-05/portal-publico/capturas/` — página inteira, JPEG, do build
+de produção:
 
-| Arquivo                  | Página    | Viewport   |
-| ------------------------ | --------- | ---------- |
-| `landing-375x812.jpg`    | landing   | 375 × 812  |
-| `landing-768x1024.jpg`   | landing   | 768 × 1024 |
-| `landing-1440x900.jpg`   | landing   | 1440 × 900 |
-| `seguranca-375x812.jpg`  | Segurança | 375 × 812  |
-| `seguranca-1440x900.jpg` | Segurança | 1440 × 900 |
-| `medicina-375x812.jpg`   | Medicina  | 375 × 812  |
-| `medicina-1440x900.jpg`  | Medicina  | 1440 × 900 |
-| `orcamento-375x812.jpg`  | Orçamento | 375 × 812  |
-| `orcamento-1440x900.jpg` | Orçamento | 1440 × 900 |
-| `login-375x812.jpg`      | Login     | 375 × 812  |
-| `login-768x1024.jpg`     | Login     | 768 × 1024 |
+`landing-375x812` · `landing-768x1024` · `landing-1440x900` · `seguranca-375x812` ·
+`seguranca-1440x900` · `medicina-375x812` · `medicina-1440x900` · `orcamento-375x812` ·
+`orcamento-1440x900` · `login-375x812` · `login-768x1024`
 
-As duas de login são a evidência direta das correções de overflow.
+As capturas da referência ficaram fora do repositório (são reprodutíveis a partir do HTML
+aprovado com os scripts descritos no `PORTAL-WALKTHROUGH.md §1.1`).
 
 ---
 
-## 8. Cabeçalhos de segurança observados
+## 8. Itens BLOQUEADOS
 
-Medidos com `curl -I` no build de produção (configuração preexistente, não alterada):
-
-- `Content-Security-Policy` com `frame-ancestors 'none'`, `object-src 'none'`, `base-uri 'self'`,
-  `form-action 'self'`;
-- `X-Frame-Options: DENY`;
-- `/sign-in` com `no-store, no-cache, must-revalidate, private`;
-- `X-Powered-By` e `Server` removidos pelo `proxy.ts`.
-
-> Efeito colateral útil observado durante o QA: a tentativa de medir os viewports dentro de um
-> `<iframe>` falhou com `contentDocument` nulo — justamente porque o `frame-ancestors 'none'` está
-> em vigor. A matriz passou a ser medida com navegação real.
+| Item                                          | Por quê                                                                   |
+| --------------------------------------------- | ------------------------------------------------------------------------- |
+| Envio do formulário contra o banco **real**   | a migration `0052` não foi aplicada em produção — e não deve ser aqui     |
+| Verificação **visual** das telas autenticadas | sem sessão no navegador; substituída pelas provas objetivas do §5         |
+| `sitemap.xml` com URLs                        | `NEXT_PUBLIC_APP_URL` não definido — sai vazio por decisão                |
+| `robots.txt` liberando indexação              | `APP_ENV=local`; fora de produção bloqueia tudo, como projetado           |
+| Página de Política de Privacidade             | não existe conteúdo jurídico aprovado                                     |
+| Renomear a aplicação no painel do Clerk       | configuração externa; a página hospedada do Clerk ainda diz "sst-manager" |
 
 ---
 
-## 9. Itens BLOQUEADOS
+## 9. Ambiente
 
-| Item                                               | Por quê                                                                    |
-| -------------------------------------------------- | -------------------------------------------------------------------------- |
-| Envio do formulário contra o **banco real** do PGR | a migration `0052` não foi aplicada em produção (e não deveria ser aqui)   |
-| `sitemap.xml` com URLs                             | `NEXT_PUBLIC_APP_URL` não definido — sai vazio por decisão                 |
-| `robots.txt` liberando indexação                   | `APP_ENV=local` — fora de produção o arquivo bloqueia tudo, como projetado |
-| Fluxo autenticado além do redirect                 | não faz parte deste escopo; nenhuma credencial foi usada                   |
-
-`GET /api/v1/companies` responde **200 sem sessão** neste ambiente. **Não é regressão**: é o
-bypass de desenvolvimento da REST (`APP_ENV=local` + `DEV_API_AUTH_BYPASS=true`), que o
-`proxy.ts` desliga em produção. Nenhuma linha dessa lógica foi tocada.
-
----
-
-## 10. Ambiente usado no QA
-
-- Build de produção do PGR em `localhost:3001` (porta 3000 é do Site-PMPA, em container).
-- Postgres **efêmero** em container (`postgres:16`, `--rm`), criado para esta execução e
-  **removido no fim**. Nenhum container existente foi apagado; o `qa-pg16` foi apenas iniciado
-  para inspeção e **devolvido ao estado parado**.
-- Nenhuma imagem removida, nenhum volume apagado, nenhum `prune`, nenhuma alteração de
-  `.wslconfig`, nenhum `wsl --shutdown`.
+Porta 3001 (a 3000 é do Site-PMPA). Postgres **efêmero** (`postgres:16`, `--rm`) criado para a
+execução e **removido no fim**; nenhum container existente foi apagado. Nenhuma imagem removida,
+nenhum volume apagado, nenhum `prune`, nenhuma alteração de `.wslconfig`, nenhum `wsl --shutdown`.
+O Docker Desktop estava parado e foi iniciado para rodar o Postgres de teste.

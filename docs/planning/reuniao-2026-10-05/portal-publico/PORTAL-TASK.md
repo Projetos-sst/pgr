@@ -1,184 +1,163 @@
 # Portal público — checklist
 
-Estado real em **09/10/2026**. Só é marcado o que foi executado e verificado; o que depende de
-terceiro fica como **BLOQUEADO**, nunca como feito.
+Estado real em **13/10/2026**, após a implementação do design aprovado por Douglas (Tech Lead)
+e Expedito. Só é marcado o que foi executado e verificado; o que depende de terceiro fica como
+**BLOQUEADO**, nunca como feito.
 
 ---
 
-## 1. Auditoria
+## 1. Referência aprovada
 
-- [x] Auditar o design system no código (`globals.css`, `layout.tsx`)
-- [x] Auditar a landing anterior (42 linhas) e as rotas públicas existentes
-- [x] Confirmar fonte, cores, raios, sombras, superfícies e animações reais
-- [x] Reproduzir e medir os dois overflows do login (375px e 768px)
-- [x] Localizar a origem do "sst-manager" (nome da aplicação no painel do Clerk)
-- [x] Inventariar os módulos reais a partir das rotas e dos schemas
-- [x] Confirmar o que **não** existe: PCMSO, absenteísmo, portal de clínicas, envio de e-mail
-- [x] Auditar se já havia fluxo de orçamento/leads — não havia
-- [x] Visitar o ESO em navegador real e registrar a arquitetura aproveitada
-- [x] Registrar a limitação encontrada no ESO (Cloudflare; site não responsivo)
+- [x] HTML oficial localizado em `Documentos/redesign/PGR-e — Portal público.html`
+- [x] Arquivo original **preservado intacto** (só servido e lido)
+- [x] Seis pranchas analisadas: Home, Segurança, Medicina, Login, Orçamento, Design system
+- [x] DOM e CSS de cada prancha extraídos para arquivos de referência fora do repositório
+- [x] Estados não visíveis no DOM inicial capturados: menu mobile, FAQ, fluxo do PGR
+- [x] Capturas da referência em 375, 768 e 1440
+- [x] Design system extraído do CSS real (cores, escala, raios, container, botões, movimento)
+- [x] CSS do bundler (`sc-*`, `#dc-root`) separado do CSS autoral
+- [x] `@font-face` em base64 descartadas — as fontes vêm do `next/font`
 
 ## 2. Base visual
 
-- [x] Grupo de rotas `(public)/(marketing)/` sem afetar as rotas por token
-- [x] `PublicHeader` sticky, com menu mobile
-- [x] `PublicFooter` só com links reais
-- [x] `Section` / `SectionHeading` / `Eyebrow` (ritmo vertical único)
-- [x] Conjunto de 22 ícones no traço do menu autenticado
-- [x] `BrandMark` compartilhado entre portal e login
-- [x] Par de tokens teal para a vertente Medicina
+- [x] Folha do portal escopada sob `.pg`
+- [x] Escopo em três níveis: `.pg`, `.pg.auth`, `.pg .pg-medicina`
+- [x] **149 de 149 seletores escopados** no bundle — zero globais
+- [x] `globals.css` revertido: byte a byte idêntico à `develop`
+- [x] Tipografia via `--font-sans`/`--font-mono` (Manrope + JetBrains Mono já no projeto)
+- [x] Header fiel (72px, sticky, blur, nav em pílula, dois CTAs)
+- [x] Footer fiel (completo e variante compacta do Orçamento)
 - [x] Nenhuma dependência nova
 
-## 3. Landing
+## 3. Home
 
-- [x] Hero com promessa, 6 capacidades e 3 CTAs
-- [x] Composição do hero sem dashboard fictício
+- [x] Hero: selo, h1 68px com destaque indigo, parágrafo, 2 CTAs, link de entrar
+- [x] Ilustração conceitual do hero (3 cartões + trama pontilhada + rótulo)
 - [x] Seção das duas vertentes
-- [x] Benefícios (6), sem número inventado
-- [x] Recursos em destaque com selo de disponibilidade
-- [x] Como funciona (5 passos reais)
-- [x] Faixa de CTA comercial
-- [x] FAQ acessível (6 perguntas)
-- [x] Rodapé
-- [x] Página antiga removida (sem rota órfã)
+- [x] Benefícios
+- [x] Bento de funcionalidades com o PGR em destaque
+- [x] Como funciona (passos numerados)
+- [x] CTA de fechamento
+- [x] FAQ com as 7 perguntas aprovadas, primeira aberta
+- [x] Ordem e composição preservadas — nenhuma seção acrescentada ou removida
 
 ## 4. Segurança do Trabalho
 
-- [x] Hero próprio com breadcrumb e selo da vertente
-- [x] Painel da hierarquia de controle (4 níveis reais do enum)
-- [x] Fluxo narrativo de 5 etapas
-- [x] 12 módulos com selo de disponibilidade
-- [x] Seção do PGR + normas de referência
-- [x] CTA com `?interesse=seguranca`
+- [x] Breadcrumb, hero e ilustração
+- [x] **Fluxo interativo do PGR** — 5 etapas, anterior/próxima, barra de progresso
+- [x] Conteúdo das 5 etapas conforme o design
+- [x] Cards de módulos
+- [x] Seção de responsabilidade técnica
+- [x] CTA final e rodapé
 
 ## 5. Medicina do Trabalho
 
-- [x] Hero próprio, com aviso de maturidade na primeira dobra
-- [x] Painel do registro do ASO
-- [x] Fluxo de 4 etapas que existem hoje
-- [x] Módulos disponíveis separados dos planejados
-- [x] PCMSO, absenteísmo e clínicas marcados como **Planejado**
-- [x] Seção de integração entre as vertentes
-- [x] Acabamento visual equivalente ao da Segurança
-- [x] CTA com `?interesse=medicina`
+- [x] Breadcrumb, hero, selo "Área em expansão"
+- [x] Composição do ASO
+- [x] Seção "Disponível hoje" — conferida contra o sistema real
+- [x] Seção "Próximas etapas" com os 5 itens marcados como planejados
+- [x] Conexão com Segurança
+- [x] Acentos teal escopados à área, sem virar segunda marca
 
 ## 6. Login
 
-- [x] Overflow em 375px corrigido e medido
-- [x] Overflow em 768px corrigido e medido
-- [x] "sst-manager" substituído pela marca real
-- [x] Afirmação "IA com 92% de precisão" removida
-- [x] Marca visível também no mobile
-- [x] Rodapé do painel vira link para `/orcamento`
-- [x] Clerk, regras de autenticação e permissões intactos
-- [ ] **BLOQUEADO** — renomear a aplicação no painel do Clerk (configuração externa)
+- [x] Painel de marca em gradiente, com os 3 destaques do design
+- [x] Cartão branco, "Ainda não tem acesso?", "Autenticação protegida por Clerk"
+- [x] **Clerk real** — autenticação demonstrativa do protótipo não copiada
+- [x] Google, e-mail, redirects, tenant e permissões preservados
+- [x] Cartão duplicado do Clerk neutralizado por CSS (sem manipulação de DOM)
+- [x] Overflow em 375px e 768px — reverificado, ausente
+- [x] "sst-manager" não aparece no widget (diz "para continuar em PGR-e")
+- [x] Um único `<h1>` por página
+- [ ] **BLOQUEADO** — renomear a aplicação no painel do Clerk (a página hospedada ainda diz "sst-manager")
 
-## 7. Orçamento
+## 7. Solicitar orçamento
 
-- [x] Tabela `platform_leads` (global, sem `org_id`)
-- [x] Migration `0052_platform_leads` gerada por `drizzle-kit`
-- [x] `GRANT INSERT` sem `SELECT` como SQL custom
-- [x] RLS com policy única de `INSERT`
-- [x] Índice único `(lower(email), submitted_on)`
-- [x] Schema Zod sem dado sensível
-- [x] Repositório sem função de leitura (de propósito)
-- [x] Server Action pública com revalidação no servidor
-- [x] Janela por IP hasheado, sem persistir o endereço
-- [x] Duplicata não vira erro nem revela que o e-mail já existe
-- [x] Formulário com erros por campo, estado de envio e confirmação
-- [x] Pré-seleção da área por `?interesse=`
-- [x] Página `noindex`
-- [x] Fim a fim validado contra Postgres real
+- [x] Breadcrumb, título, passos, aviso de privacidade
+- [x] Formulário com os campos e estados do design
+- [x] Cartões de rádio da área de interesse, com estado selecionado
+- [x] Contador 0/500 em mono
+- [x] Resumo de erros e erro por campo
+- [x] Estado de envio e confirmação
+- [x] Rodapé compacto, como na prancha
+- [x] **Backend real preservado** (`platform_leads`, INSERT sem SELECT)
+- [x] Validação Zod no servidor, janela por IP hasheado, deduplicação no banco
+- [x] Pré-seleção por `?interesse=`
+- [x] **Fim a fim validado** contra Postgres real
+- [x] Falha de banco vira o estado de erro do design, não uma página 500
 - [ ] **BLOQUEADO** — destino do pedido (e-mail? tela administrativa?) — decisão do interessado
-- [ ] **BLOQUEADO** — aplicar a migration no banco (fora desta execução)
-- [ ] Tela administrativa de leads — depende da decisão acima
+- [ ] **BLOQUEADO** — aplicar a migration `0052` no banco
+- [ ] **BLOQUEADO** — Política de Privacidade (link e consentimento do design dependem dela)
 
 ## 8. Interações
 
-- [x] Hover nos cartões (reusa `.hover-lift`)
-- [x] Transições nos botões
-- [x] Menu mobile animado e acessível
-- [x] Estados de foco visíveis
-- [x] Accordion do FAQ
-- [x] Âncoras com `scroll-margin-top`
-- [x] Header com realce ao rolar
-- [x] Entrada discreta das seções, sem esconder conteúdo
-- [x] Estados de carregamento e retorno do formulário
-- [x] `prefers-reduced-motion` respeitado (medição A/B)
-- [x] Nenhuma biblioteca de animação instalada
+- [x] Menu mobile com `Escape`, devolução de foco e trava de rolagem
+- [x] FAQ exclusivo, primeira pergunta aberta
+- [x] Fluxo do PGR com teclado (setas, `Home`/`End`, `tabIndex` roving)
+- [x] Hover, foco e transições do design
+- [x] `prefers-reduced-motion` respeitado
+- [x] Nenhum botão decorativo com aparência de funcional
 
 ## 9. SEO
 
-- [x] `title` por página com `template: "%s"` na raiz
-- [x] `description` por página
-- [x] `canonical` por página
-- [x] Open Graph nas 3 páginas de apresentação
-- [x] `metadataBase` a partir de `NEXT_PUBLIC_APP_URL`
-- [x] `robots.ts` por ambiente
-- [x] `sitemap.ts`
-- [x] `/orcamento` como `noindex`
-- [ ] **BLOQUEADO** — `NEXT_PUBLIC_APP_URL` não definido: sitemap sai vazio e não há canonical absoluto
+- [x] `title`, `description`, `canonical` e Open Graph por página
+- [x] `robots.ts` por ambiente · `sitemap.ts` · `/orcamento` como `noindex`
+- [ ] **BLOQUEADO** — `NEXT_PUBLIC_APP_URL` não definido: sitemap vazio, sem canonical absoluto
 
 ## 10. Acessibilidade
 
-- [x] Link "pular para o conteúdo" (e correção do alvo de 20px encontrada no QA)
-- [x] Landmarks semânticos
-- [x] Um `<h1>` por página, sem salto de nível
-- [x] Foco visível em todo controle
-- [x] Navegação por teclado verificada
-- [x] Menu mobile acessível
-- [x] FAQ acessível
+- [x] Skip link, landmarks, um `h1` por página, sem salto de nível
+- [x] Foco visível, navegação por teclado, alvos de 44px
 - [x] Rótulos, `autocomplete`, `aria-invalid`, `aria-describedby`
 - [x] `role="status"` e `role="alert"`
-- [x] Zoom e `reduced motion`
-- [ ] Auditoria automatizada de contraste e teste com leitor de tela real — **não executados**
+- [x] 0 imagens sem `alt`
+- [ ] Auditoria automatizada de contraste e leitor de tela real — **não executados**
 
-## 11. Testes
+## 11. Comparação pixel-perfect
 
-- [x] Unit: schema e `parseInterestParam` do lead (13 casos)
-- [x] Unit: invariantes de honestidade do conteúdo (13 casos)
-- [x] Integração: contrato de segurança de `platform_leads` (9 casos, Postgres real)
-- [x] `npm run check` — PASS
-- [x] `npm run build` — PASS
-- [x] 1393 testes unitários passando
+- [x] Comparação objetiva referência × implementação em 375, 768 e 1440
+- [x] Geometria e tipografia das âncoras conferidas (header, h1, p, botões, rodapé)
+- [x] Posição e tamanho de **todos os `h2`** conferidos
+- [x] 4 defeitos encontrados na comparação e corrigidos
+- [x] Diferença restante: só a altura do rodapé, pela divergência documentada
 
-## 12. QA no navegador
+## 12. Testes
 
-- [x] Chrome DevTools MCP: CSS, overflow, console, cabeçalhos
-- [x] Playwright MCP: menu mobile, FAQ, teclado, formulário, redirects
-- [x] Script Playwright: matriz de 25 combinações + capturas
-- [x] 375 × 812, 768 × 1024, 1440 × 900 (obrigatórios)
-- [x] 320 × 700 e 1920 × 1080 (adicionais)
-- [x] Zero overflow horizontal em todas
-- [x] Zero erro de console; zero resposta ≥ 400
-- [x] Zero link quebrado; todas as âncoras existem
-- [x] 11 capturas revisadas
-- [x] 3 defeitos visuais encontrados na revisão e corrigidos
+- [x] `npm run check` — **PASS** (0 erros de lint, 1381 testes)
+- [x] `npm run build` — **PASS**
+- [x] Integração de `platform_leads` — **9/9** contra Postgres real
+- [x] Matriz 25 combinações — **0 com problema**
+- [x] 0 erro de console · 0 resposta ≥400 · 0 link quebrado
 
-## 13. Documentação
+## 13. Regressão no sistema autenticado
 
-- [x] `PORTAL-AUDIT.md`
-- [x] `PORTAL-PLAN.md`
+- [x] `globals.css` idêntico à `develop`
+- [x] Seletores do portal 100% escopados
+- [x] `clerkAppearance` só em sign-in/sign-up
+- [x] Zero arquivos de `(protected)/` no diff
+- [ ] **BLOQUEADO** — conferência **visual** das telas internas: sem sessão no navegador
+
+## 14. Documentação
+
+- [x] `PORTAL-WALKTHROUGH.md` reescrito para a implementação definitiva
+- [x] `PORTAL-QA.md` reescrito com a comparação e os testes desta execução
+- [x] `PORTAL-REVIEW.md` reescrito
 - [x] `PORTAL-TASK.md` (este)
-- [x] `PORTAL-WALKTHROUGH.md`
-- [x] `PORTAL-REVIEW.md`
-- [x] `PORTAL-QA.md`
-- [x] Capturas em `capturas/`
+- [x] `PORTAL-AUDIT.md` e `PORTAL-PLAN.md` anotados como históricos, sem apagar rastro
+- [x] 11 capturas do build de produção
 
-## 14. Git
+## 15. Git
 
-- [x] `feature/lot-04-cnae-cbo` intacta
-- [x] Nenhum arquivo de PDF/template tocado
-- [x] Nenhum arquivo de GED tocado
-- [x] Nenhum arquivo de `(protected)/` tocado
-- [x] Sincronizado com `origin/develop`
-- [x] PR aberta após implementação, review e QA
+- [x] `feature/lot-04-cnae-cbo` intacta (`8dd86a9`)
+- [x] `feature/pgr-docx-templates` do Douglas intacta — zero arquivos em comum
+- [x] Nenhum arquivo de PDF/DOCX tocado
+- [x] v1 preservada no histórico (`4de6eb5`) e na tag `portal-v1-pre-claude-design`
+- [x] PR #97 atualizada — **nenhuma PR nova**
 - [x] **Nenhum merge realizado**
 
 ---
 
-## 15. Fora deste escopo (não iniciados)
+## 16. Fora deste escopo
 
-- Lote 4 CNAE/CBO · GED dos Lotes 5–7 · divisão Saúde × Segurança no menu autenticado (Lote G) ·
-  hub de EPI (Lote F) · contrato de dados por função (Lote A) · visão de função na UI (Lote B) ·
-  modelos de inspeção do Expedito (Lote H).
+Lote 4 CNAE/CBO · GED · divisão Saúde × Segurança no menu autenticado · hub de EPI ·
+contrato de dados por função · modelos de inspeção do Expedito.

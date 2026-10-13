@@ -1,5 +1,13 @@
 # Portal público — auditoria focalizada
 
+> **Atualização de 13/10/2026.** Esta auditoria descreve o estado **anterior ao design
+> aprovado** e segue válida como registro do que existia e do que foi herdado (identidade real
+> confirmada no código, defeitos do login, inventário de módulos, auditoria do fluxo de
+> orçamento). A direção visual descrita nas seções 2.1, 3 e 6.3 foi **substituída** pelo HTML
+> aprovado por Douglas e Expedito — ver [`PORTAL-WALKTHROUGH.md`](PORTAL-WALKTHROUGH.md) e
+> [`PORTAL-REVIEW.md`](PORTAL-REVIEW.md). O que permanece em vigor desta auditoria: o inventário
+> de módulos reais (§4), a auditoria do orçamento (§5) e as áreas intocáveis (§7).
+
 > Complemento do [`../AUDIT.md`](../AUDIT.md) (auditoria dos 16 requisitos da reunião de
 > 05/10/2026). Este documento **não** repete aquela auditoria: cobre só o recorte do portal
 > público — landing, páginas das duas vertentes, login, orçamento, navegação, design system,

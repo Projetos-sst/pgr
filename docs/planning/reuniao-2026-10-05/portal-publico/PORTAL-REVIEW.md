@@ -1,191 +1,189 @@
 # Portal público — review
 
-Revisão do próprio diff antes da PR: segurança, acessibilidade, regressões e os pontos em que um
-revisor deveria olhar com atenção.
+Revisão do próprio diff antes de atualizar a PR #97: segurança, acessibilidade, regressões e os
+pontos em que um revisor deve olhar com atenção.
 
 ---
 
-## 1. Superfície da mudança
+## 1. O que mudou nesta entrega
 
-| Categoria                                                 | Arquivos                                                    |
-| --------------------------------------------------------- | ----------------------------------------------------------- |
-| Portal (layout, 4 páginas, 9 componentes, conteúdo)       | 15                                                          |
-| Fluxo de leads (schema, migration, domínio, repo, action) | 5                                                           |
-| Correções de login e marca                                | 3 (`auth-frame.tsx`, `clerk-localization.ts`, `layout.tsx`) |
-| SEO                                                       | 3 (`robots.ts`, `sitemap.ts`, `site-url.ts`)                |
-| Rotas públicas                                            | 1 (`proxy.ts`)                                              |
-| Tokens                                                    | 1 (`globals.css`)                                           |
-| Testes                                                    | 3                                                           |
-| Documentação                                              | 5 + 11 capturas                                             |
+A PR #97 passou a conter **o design aprovado pelo Claude Design** (Douglas + Expedito), no lugar
+da primeira versão do portal. O commit `4de6eb5` segue no histórico e a tag
+`portal-v1-pre-claude-design` aponta para ele.
 
-**Arquivos de `(protected)/` alterados: zero.** **Arquivos de PDF/template alterados: zero.**
+| Categoria                                     | Arquivos |
+| --------------------------------------------- | -------- |
+| Portal novo (`_portal/` + 4 páginas + layout) | 11       |
+| **Removidos** — componentes e conteúdo da v1  | 13       |
+| Login (moldura + aparência + localização)     | 3        |
+| Backend de leads (preservado, 1 ajuste)       | 4        |
+| Schema e migration (preservados)              | 3        |
+| SEO (preservado)                              | 3        |
+| `proxy.ts` (preservado)                       | 1        |
+| Testes                                        | 2        |
+| Documentação + capturas                       | 17       |
+
+**`globals.css` voltou a ser idêntico à `develop`.** Os tokens teal que a v1 havia adicionado
+foram revertidos: o design traz as próprias cores literais e não precisa deles.
 
 ---
 
 ## 2. Segurança
 
-### 2.1 O que foi preservado
+### 2.1 Preservado integralmente
 
-| Item                               | Verificação                                                        |
-| ---------------------------------- | ------------------------------------------------------------------ |
-| Clerk como autenticador            | nenhuma linha de autenticação alterada                             |
-| `proxy.ts`                         | só a lista de rotas públicas ganhou 3 caminhos de apresentação     |
-| `auth.protect()`                   | intacto — `/dashboard`, `/pgr`, `/companies` devolvem **307**      |
-| Isolamento multi-tenant / RLS      | nenhuma tabela de tenant tocada; nenhuma policy existente alterada |
-| Papéis e permissões                | nenhuma mudança                                                    |
-| Rotas públicas por token           | fora do grupo `(marketing)` — não herdam nada do shell comercial   |
-| Basic auth de sandbox              | intacto                                                            |
-| CSP, `X-Frame-Options`, `no-store` | intactos (confirmados por `curl -I`)                               |
+| Item                               | Verificação                                                            |
+| ---------------------------------- | ---------------------------------------------------------------------- |
+| Clerk como autenticador            | nenhuma linha de autenticação alterada; a demo do protótipo não entrou |
+| `proxy.ts`                         | inalterado nesta etapa (as 3 rotas públicas já haviam sido declaradas) |
+| `auth.protect()`                   | `/dashboard` → **307** para o Clerk, verificado                        |
+| Isolamento multi-tenant / RLS      | nenhuma tabela de tenant tocada                                        |
+| Papéis e permissões                | nenhuma mudança                                                        |
+| Rotas públicas por token           | fora de `(marketing)` — não herdam o shell comercial                   |
+| CSP, `X-Frame-Options`, `no-store` | intactos                                                               |
 
-### 2.2 A superfície nova, e por que ela é estreita
+### 2.2 A superfície pública continua estreita
 
-A única porta nova para o mundo é `submitPlatformLead`. O desenho inteiro gira em torno de uma
-frase: **a aplicação pode escrever um lead e não pode ler nenhum.**
+A única porta para o mundo segue sendo `submitPlatformLead`, com a mesma regra:
+**a aplicação escreve um lead e não consegue ler nenhum.**
 
 ```sql
 GRANT INSERT ON public.platform_leads TO app_runtime;   -- e nada mais
 ```
 
-Provado em Postgres real (`src/__tests__/integration/platform/leads.test.ts`, 9/9):
+Reprovado em Postgres real nesta execução (9/9): `SELECT`, `UPDATE`, `DELETE` e
+`INSERT … RETURNING` devolvem _permission denied_; a deduplicação por
+`(lower(email), submitted_on)` funciona inclusive com caixa diferente.
 
-| Operação como `app_runtime`           | Resultado                          |
-| ------------------------------------- | ---------------------------------- |
-| `INSERT`                              | funciona                           |
-| `SELECT *`                            | **permission denied**              |
-| `SELECT count(*)`                     | **permission denied**              |
-| `UPDATE`                              | **permission denied**              |
-| `DELETE`                              | **permission denied**              |
-| `INSERT … RETURNING id`               | **permission denied**              |
-| 2º `INSERT` com o mesmo e-mail no dia | `23505` (índice único)             |
-| mesmo e-mail em outra caixa           | `23505` (índice em `lower(email)`) |
+### 2.3 Uma mudança de comportamento no erro — leia
 
-Mais: RLS habilitado com **uma única policy**, de `INSERT` (`polcmd = 'a'`); nenhuma policy de
-`SELECT` existe; a tabela **não tem `org_id`** (é global por natureza — o visitante não tem
-tenant).
+Com o banco indisponível, a ação deixava o erro subir e o visitante via uma página 500. Agora
+falhas de **conectividade** (`ECONNREFUSED`, `ETIMEDOUT`, `ECONNRESET`…) viram
+`UNAVAILABLE` com mensagem amigável, e o erro é registrado com `console.error`.
 
-> **Achado do próprio teste.** A primeira versão usava o helper `appRuntimeClient()`, que — apesar
-> do nome — conecta com `INTEGRATION_DATABASE_URL`, a URL de administração. A asserção de "não
-> consegue ler" teria passado por engano, com o superusuário. O teste agora abre a conexão
-> explicitamente com `INTEGRATION_APP_RUNTIME_URL`, e o comentário no arquivo explica por quê.
+Por que isso é seguro: só falhas de conexão são capturadas — erro de dados, violação de
+constraint não mapeada ou bug de código **continuam subindo**. A regra do projeto (não silenciar
+o inesperado) permanece.
 
-### 2.3 Dados pessoais
+### 2.4 Dados pessoais
 
-- coletados: nome, empresa, e-mail, telefone, área de interesse, mensagem opcional;
-- **não** coletados: CPF, data de nascimento, endereço, qualquer dado de saúde;
-- o **IP não é persistido** — só existe hasheado, em memória, com expiração;
-- nenhum lead é legível pela aplicação;
-- a página de orçamento é `noindex`.
+Coletados: nome, empresa, e-mail, telefone, área de interesse, mensagem opcional e o aceite.
+Não coletados: CPF, data de nascimento, endereço, qualquer dado de saúde — e a própria página
+afirma isso ("Não solicitamos informações de saúde neste formulário"), o que é verdade.
+O **IP não é persistido**: existe só hasheado, em memória, com expiração.
 
-### 2.4 Conteúdo público
+### 2.5 Conteúdo público
 
 Nenhum nome de empresa real, nenhum dado de cliente, nenhum print do sistema com dado real,
-nenhum token, nenhuma informação administrativa. O conteúdo descreve capacidades, não clientes.
-
-### 2.5 Desvio consciente da regra das 4 superfícies
-
-O `CLAUDE.md` exige Server Action + REST + `api-design.md` + Postman para todo CRUD. Entregamos
-**só a Server Action**: não é um CRUD (não há list/update/delete nem tela administrativa), e um
-espelho REST criaria um endpoint público de escrita (spam) e, com `GET`, contradiria a exigência
-de não permitir consulta pública de leads. Quando existir a tela administrativa, ela será um CRUD
-de verdade e as quatro superfícies se aplicam. Registrado em `PORTAL-AUDIT.md §5.2`.
+nenhum token. As ilustrações do hero são composições do design, rotuladas "Ilustração
+conceitual" pelo próprio design.
 
 ---
 
-## 3. Acessibilidade
+## 3. Honestidade do conteúdo
 
-Verificado no navegador, não por inspeção de código:
+O conteúdo aprovado foi conferido contra o sistema real antes do porte:
 
-| Item                                                                                       | Resultado |
-| ------------------------------------------------------------------------------------------ | --------- |
-| Link de pular conteúdo como primeiro foco, 160 × 44px                                      | ok        |
-| Um `<h1>` por página, sem salto de nível (25 medições)                                     | ok        |
-| Landmarks `header`/`nav[aria-label]`/`main`/`footer`                                       | ok        |
-| `aria-current="page"` no item ativo                                                        | ok        |
-| Menu mobile: `aria-expanded`, `aria-controls`, Escape, devolução de foco, trava de rolagem | ok        |
-| Painel mobile montado só quando aberto                                                     | ok        |
-| FAQ em `<details>` nativo                                                                  | ok        |
-| 8 de 8 campos com rótulo; `autocomplete` nos de contato                                    | ok        |
-| Erros com `aria-invalid` + `aria-describedby`                                              | ok        |
-| `role="status"` na confirmação, `role="alert"` no erro                                     | ok        |
-| 0 imagens sem `alt`                                                                        | ok        |
-| `prefers-reduced-motion` respeitado (medição A/B)                                          | ok        |
+| Afirmação do design                                    | Estado real                                          | Ação                           |
+| ------------------------------------------------------ | ---------------------------------------------------- | ------------------------------ |
+| Segurança: PGR, riscos, controles, EPI, inspeções      | existem                                              | mantida                        |
+| Medicina: ASO e exames; profissionais de saúde         | `health_exams`, `medicos` existem                    | mantida                        |
+| PCMSO, CAT, clínicas, exames, absenteísmo "planejados" | não implementados                                    | mantida                        |
+| "Não garante conformidade com as NRs" (FAQ)            | correto e prudente                                   | mantida                        |
+| CAT como "planejado"                                   | há campos internos em incidentes, sem evento eSocial | mantida — subdeclarar é seguro |
 
-Contraste: os pares usados são o indigo `#5b63f5` sobre branco (botão, texto branco) e os
-`-strong` (`#4f46e5`, `#0b7a74`, `#c9820a`) para texto colorido sobre fundo claro — foi por isso
-que o teal ganhou a variante `-strong`, em vez de usar `#14a098` em texto.
-
-### 3.1 O que **não** foi verificado
-
-Nenhuma auditoria automatizada de contraste pixel a pixel e nenhum teste com leitor de tela real.
-A conformidade com WCAG 2.2 AA foi buscada por construção e verificada nos itens acima; não é
-afirmada como certificada.
+Nenhum texto precisou de correção factual. O design é honesto.
 
 ---
 
-## 4. Regressões
+## 4. Acessibilidade
 
-| Risco                                      | Verificação                                                             |
-| ------------------------------------------ | ----------------------------------------------------------------------- |
-| Rotas por token herdarem o shell comercial | **não** — grupo aninhado; `/sign/[token]` e irmãs fora de `(marketing)` |
-| Rota antiga `/` quebrada                   | **não** — a nova serve `/`; a antiga foi removida no mesmo commit       |
-| Suíte unitária                             | 1393 testes PASS (eram 1367; +26 novos)                                 |
-| Lint                                       | 0 erros; os mesmos 4 avisos preexistentes                               |
-| Build                                      | PASS; as 3 páginas saem estáticas                                       |
-| Dependências novas                         | **nenhuma** — `package.json` inalterado                                 |
-| Mudança de identidade visual               | **não** — único token novo é o par teal                                 |
-| Dashboard autenticado                      | nenhum arquivo de `(protected)/` tocado                                 |
+Verificado no navegador — ver `PORTAL-QA.md §6`. Destaques do que foi **acrescentado** ao
+protótipo sem alterar o visual:
 
-### 4.1 Mudança com alcance além do portal — leia com atenção
+- link "pular para o conteúdo";
+- bloco `prefers-reduced-motion` (o design especifica a regra; o export não a traz);
+- navegação por teclado completa no `tablist` do fluxo do PGR (setas, `Home`/`End`, roving);
+- `Escape` e devolução de foco no menu mobile;
+- título do painel de login rebaixado a `<p>` para a página ter um único `h1`.
 
-Duas alterações saem do recorte do portal e merecem o olhar do revisor:
-
-1. **`layout.tsx` troca `localization={ptBR}` por `clerkLocalization`.** Afeta **todas** as telas
-   do Clerk, inclusive dentro da área autenticada. O efeito é só textual: onde aparecia
-   `sst-manager`, passa a aparecer `PGR-e`. Verificado em `/sign-in`.
-2. **`layout.tsx` ganha `title: { default, template: "%s" }`.** As telas autenticadas não exportam
-   `metadata` própria, então continuam com o título `PGR-e`; só as páginas que definem título
-   passam a usá-lo sem sufixo.
+**Não executados:** auditoria automatizada de contraste e teste com leitor de tela real.
 
 ---
 
-## 5. Qualidade do código
+## 5. Regressões
 
-| Verificação                   | Resultado                                                                |
-| ----------------------------- | ------------------------------------------------------------------------ |
-| `any`                         | nenhum introduzido                                                       |
-| `console.log`                 | nenhum                                                                   |
-| Código morto                  | nenhum; a `(public)/page.tsx` antiga foi **removida**, não deixada órfã  |
-| Client Components             | 3, cada um justificado (menu, observer, formulário)                      |
-| Duplicação de conteúdo        | zero — tudo vem de `_content/platform.ts`                                |
-| Reimplementação de componente | nenhuma — `.app-nav`, `.glass-*`, `.btn-primary`, `.hover-lift` reusados |
-| Arquivo gigante               | maior página tem ~250 linhas, composta de componentes                    |
-| Migration                     | gerada por `drizzle-kit`, não escrita à mão; `GRANT` como SQL custom     |
+| Risco                                      | Verificação                                                                      |
+| ------------------------------------------ | -------------------------------------------------------------------------------- |
+| Tokens do portal vazarem para o sistema    | **149 de 149 seletores escopados sob `.pg`**; `globals.css` idêntico à `develop` |
+| Rotas por token herdarem o shell comercial | não — grupo aninhado                                                             |
+| Colisão de `@keyframes`                    | nenhuma (`rise`/`spin` não existem no `globals.css`)                             |
+| Suíte unitária                             | 1381 PASS                                                                        |
+| Lint                                       | 0 erros; os mesmos 4 avisos preexistentes                                        |
+| Build                                      | PASS; 3 páginas estáticas                                                        |
+| Dependências novas                         | **nenhuma** — `package.json` inalterado                                          |
+| Arquivos de `(protected)/`                 | zero no diff                                                                     |
+| PDF/DOCX do Douglas                        | zero no diff; `feature/pgr-docx-templates` sem arquivo em comum                  |
+
+### 5.1 Mudanças com alcance além do portal
+
+1. **`layout.tsx`** usa `clerkLocalization` no lugar de `ptBR`. Alcança todas as telas do Clerk,
+   inclusive internas. Efeito só textual: `sst-manager` → `PGR-e`.
+2. **`layout.tsx`** define `title: { default, template: "%s" }`. Telas internas não exportam
+   metadata própria, então seguem com `PGR-e`.
+3. **`clerk-appearance.ts`** foi reescrito para os tokens do design — mas é importado **somente**
+   por `/sign-in` e `/sign-up`.
 
 ---
 
-## 6. Pontos de atenção para quem revisar
+## 6. Qualidade do código
 
-1. **`platform_leads` é a segunda tabela global do projeto.** A primeira (`caepi_certificates`) é
-   SELECT-only; esta é INSERT-only. Vale conferir se a justificativa convence: o visitante não
-   tem tenant, então não há `org_id` para isolar.
-2. **A janela por IP é best-effort.** Em memória, por instância. A barreira real é o índice
-   único. Se o deploy tiver várias instâncias, o limite por janela se dilui — está documentado.
-3. **O lead não notifica ninguém ainda.** É decisão de produto em aberto, não esquecimento.
+| Verificação       | Resultado                                                      |
+| ----------------- | -------------------------------------------------------------- |
+| `any`             | nenhum                                                         |
+| `console.log`     | nenhum (há um `console.error` deliberado, §2.3)                |
+| Código morto      | os 13 arquivos da v1 foram **removidos**, não deixados órfãos  |
+| Client Components | 4, cada um por estado real                                     |
+| Dependência nova  | nenhuma                                                        |
+| Folha do portal   | 36KB, ~150 regras, escopo em 3 níveis documentado no cabeçalho |
+| Migration         | preservada; **não aplicada em banco nenhum**                   |
+
+### 6.1 Sobre os estilos inline
+
+As páginas carregam muito `style={{…}}`. É deliberado: são os valores do design, portados sem
+reinterpretação. Simplificá-los em classes utilitárias significaria reescrever o design à mão —
+exatamente o que a missão proíbe. O que é estrutural e se repete (`.btn`, `.nav-link`, `.field`,
+`.lift`, `.step-tab`) está na folha; o que é posicionamento de uma peça específica ficou inline,
+como no original.
+
+---
+
+## 7. Pontos de atenção para quem revisar
+
+1. **O escopo em três níveis** (`.pg`, `.pg.auth`, `.pg .pg-medicina`) é o que impede as
+   pranchas de se atropelarem — a prancha de Login redefine `.btn` com padding menor, e isso
+   vazava para as outras páginas antes do escopo.
+2. **Seletor repetido entre pranchas fica com a primeira definição.** São variações acidentais
+   do export, não intenção de design — exceto as teal da Medicina, que foram escopadas.
+3. **Neutralização do cartão do Clerk** usa `!important` em quatro regras. É o mínimo para
+   vencer o CSS-in-JS do Clerk, e só sobre superfície (fundo, sombra, borda, padding).
 4. **A migration `0052` não foi aplicada em lugar nenhum.** O formulário só grava depois disso.
-5. **`clerk-localization.ts` é um contorno temporário.** Quando o painel do Clerk for renomeado,
-   o arquivo pode ser apagado.
-6. **As capturas somam ~1,4 MB no repositório.** Entraram para a PR ser revisável sem subir o
+5. **O lead não notifica ninguém ainda** — decisão de produto em aberto.
+6. **As capturas somam ~1,8 MB** no repositório. Entraram para a PR ser revisável sem subir o
    ambiente; se o time preferir, saem em um commit.
 
 ---
 
-## 7. Melhorias que ficaram de fora, de propósito
+## 8. Divergências intencionais — resumo
 
-| Ideia                                         | Por que não agora                                                   |
-| --------------------------------------------- | ------------------------------------------------------------------- |
-| Tela administrativa de leads                  | precisa da decisão de destino; e aí vira CRUD completo              |
-| Notificação por e-mail do lead                | o projeto não tem capacidade de e-mail; exige dependência nova      |
-| Capturas reais do sistema na landing          | mostrariam dado de cliente; precisaria de um tenant de demonstração |
-| Depoimentos e logos de clientes               | não temos; inventar é fraude                                        |
-| Blog / páginas de conteúdo                    | fora do escopo                                                      |
-| Divisão Saúde × Segurança no menu autenticado | é o Lote G do `../PLAN.md`, não deste recorte                       |
+| #   | Divergência                                         | Razão                                                 |
+| --- | --------------------------------------------------- | ----------------------------------------------------- |
+| 1   | Coluna "Institucional" do rodapé fora               | link para página inexistente + `[A DEFINIR]` literais |
+| 2   | Rótulo do consentimento reescrito                   | não há Política de Privacidade para referenciar       |
+| 3   | Título do painel de login vira `<p>`                | o Clerk já renderiza um `h1`                          |
+| 4   | Autenticação demonstrativa do protótipo não copiada | o login é o Clerk real                                |
+| 5   | Envio simulado do protótipo não copiado             | o formulário grava de verdade                         |
+| 6   | Ano do copyright calculado                          | o design fixa 2026                                    |
+
+As divergências 1 e 2 explicam toda a diferença de altura medida entre referência e
+implementação. Nenhuma outra existe.

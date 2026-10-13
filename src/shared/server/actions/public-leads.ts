@@ -53,6 +53,29 @@ function withinRateLimit(key: string, now: number): boolean {
   return true;
 }
 
+const FALHAS_DE_CONEXAO = new Set([
+  "ECONNREFUSED",
+  "ENOTFOUND",
+  "ETIMEDOUT",
+  "ECONNRESET",
+  "EHOSTUNREACH",
+  "CONNECTION_CLOSED",
+  "CONNECT_TIMEOUT",
+]);
+
+/** `true` quando o erro é de conectividade com o banco, não de dados. */
+function isBancoIndisponivel(error: unknown): boolean {
+  let atual: unknown = error;
+  for (let i = 0; i < 5 && atual; i += 1) {
+    if (typeof atual === "object" && "code" in atual) {
+      const code = (atual as { code: unknown }).code;
+      if (typeof code === "string" && FALHAS_DE_CONEXAO.has(code)) return true;
+    }
+    atual = (atual as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 /** `true` quando o erro é a violação do índice único de deduplicação. */
 function isDuplicateSubmission(error: unknown): boolean {
   const mapped = toActionError(error);
@@ -83,6 +106,18 @@ export async function submitPlatformLead(
     }
     const mapped = toActionError(error);
     if (mapped) return { ok: false, error: mapped };
+    if (isBancoIndisponivel(error)) {
+      /*
+       * Banco fora do ar. Rethrow aqui viraria uma tela de erro 500 para quem
+       * só queria pedir um orçamento — e o design já tem o estado de erro do
+       * formulário para isso. O erro continua visível no log do servidor.
+       */
+      console.error("[public-leads] banco indisponível ao gravar pedido", error);
+      return fail(
+        "UNAVAILABLE",
+        "Não foi possível registrar sua solicitação agora. Tente novamente em alguns minutos.",
+      );
+    }
     throw error;
   }
 }

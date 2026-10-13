@@ -1,6 +1,6 @@
 import { ptBR } from "@clerk/localizations";
 
-import { BRAND } from "@/app/(public)/_content/platform";
+import { BRAND_NAME } from "@/app/(public)/_portal/routes";
 
 /**
  * Localização do Clerk em pt-BR com a marca correta.
@@ -32,7 +32,7 @@ function replaceBrand<T>(node: T): T {
   // `replace` direto (sem `test` antes): um regex global guarda `lastIndex`, e
   // `test` o deixaria avancado para a string seguinte.
   if (typeof node === "string") {
-    return node.replace(PLACEHOLDER, BRAND.name) as unknown as T;
+    return node.replace(PLACEHOLDER, BRAND_NAME) as unknown as T;
   }
   if (Array.isArray(node)) return node.map(replaceBrand) as unknown as T;
   if (node && typeof node === "object") {
