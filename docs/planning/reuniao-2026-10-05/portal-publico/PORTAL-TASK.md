@@ -116,6 +116,7 @@ e Expedito. Só é marcado o que foi executado e verificado; o que depende de te
 ## 11. Comparação pixel-perfect
 
 - [x] Comparação objetiva referência × implementação em 375, 768 e 1440
+- [x] Comparação também em 320 e 1920 — mesmo resultado
 - [x] Geometria e tipografia das âncoras conferidas (header, h1, p, botões, rodapé)
 - [x] Posição e tamanho de **todos os `h2`** conferidos
 - [x] 4 defeitos encontrados na comparação e corrigidos

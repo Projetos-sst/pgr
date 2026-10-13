@@ -46,17 +46,28 @@ animações, retorno ao topo e animações zeradas. Compara-se a geometria e a t
 | Medicina  | −179     | só o rodapé           |
 | Orçamento | +19      | rodapé compacto (−30) |
 
-**Em nenhuma das 12 combinações há divergência de `h1`, `h2`, parágrafo, botão, header,
+### 1.4 Resultado em 320 × 700 e 1920 × 1080 (adicionais)
+
+| Página    | Δ em 320 | Δ em 1920 | Diferença restante           |
+| --------- | -------- | --------- | ---------------------------- |
+| Home      | −179     | −12       | só o rodapé                  |
+| Segurança | −179     | −12       | só o rodapé                  |
+| Medicina  | −179     | −12       | só o rodapé                  |
+| Orçamento | +41      | +5        | rodapé compacto (−30 em 320) |
+
+Em 1920 o Orçamento tem as **âncoras idênticas**, sem nenhuma diferença.
+
+**Em nenhuma das 20 combinações há divergência de `h1`, `h2`, parágrafo, botão, header,
 tipografia ou cor.** Tamanho de fonte, peso, entrelinha, espaçamento entre letras e cor batem
 exatamente.
 
-### 1.4 A única diferença recorrente, explicada
+### 1.5 A única diferença recorrente, explicada
 
 O rodapé é 12px (desktop), 121px (tablet) e 179px (mobile) mais curto. Causa única: a coluna
 "Institucional" do design, que traz um link para uma página de privacidade inexistente e dois
 marcadores literais `[A DEFINIR]`. Divergência intencional — ver `PORTAL-REVIEW.md`.
 
-### 1.5 Correções que vieram da comparação
+### 1.6 Correções que vieram da comparação
 
 A primeira medição acusou desvio acumulado (12px na primeira seção, chegando a 59px no fim da
 Home) e cores erradas. Três causas, todas corrigidas:
