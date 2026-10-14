@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useEffect, useRef, type ReactNode } from "react";
 
-const fieldClass =
+/**
+ * Classe única de campo do sistema (altura, raio, tipografia, foco). Exportada
+ * para telas que montam o próprio arranjo de campos — ex.: as linhas em grade
+ * da Metodologia de Risco — e que, sem isto, acabariam reinventando um input
+ * com altura e raio próprios.
+ */
+export const fieldClass =
   "glass-input text-text placeholder:text-text-subtle rounded-field h-[46px] w-full px-3.5 text-[13px] outline-none";
 const labelClass = "text-text-muted mb-1.5 block text-xs font-semibold";
 const actionButtonClass =
@@ -42,11 +48,14 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
  */
 export function FormSection({
   title,
+  description,
   children,
   columns = 2,
   hidden,
 }: {
   title: string;
+  /** Linha de apoio sob o título — para seções que precisam de contexto. */
+  description?: string;
   children: ReactNode;
   columns?: 1 | 2 | 3;
   hidden?: boolean;
@@ -61,10 +70,15 @@ export function FormSection({
       className="glass-card animate-fade-slide-up rounded-[20px] p-5 sm:p-6"
       hidden={hidden}
     >
-      <h2 className="text-primary mb-4 font-mono text-[11px] tracking-[0.14em] uppercase">
+      <h2 className="text-primary font-mono text-[11px] tracking-[0.14em] uppercase">
         {title}
       </h2>
-      <div className={`grid gap-3.5 ${columnsClass}`}>{children}</div>
+      {description ? (
+        <p className="text-text-muted mt-1.5 text-[13px] leading-relaxed">
+          {description}
+        </p>
+      ) : null}
+      <div className={`mt-4 grid gap-3.5 ${columnsClass}`}>{children}</div>
     </section>
   );
 }
