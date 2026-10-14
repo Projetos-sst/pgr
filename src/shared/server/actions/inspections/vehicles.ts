@@ -18,6 +18,28 @@ import { NotFoundError } from "@/shared/errors/not-found-error";
 import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
 import type { Paginated } from "@/shared/pagination";
+import {
+  getVehiclePhotoUrl,
+  uploadVehiclePhoto,
+} from "@/shared/server/inspections/vehicle-photo-core";
+
+export async function uploadVehiclePhotoAction(
+  formData: FormData,
+): Promise<ActionResult<{ path: string; url: string }>> {
+  return officeAction(
+    "inspections.vehicles.upload_photo",
+    ({ tenantId }) => uploadVehiclePhoto(tenantId, formData),
+    { audit: true },
+  );
+}
+
+export async function getVehiclePhotoUrlAction(
+  id: string,
+): Promise<ActionResult<{ url: string | null }>> {
+  return officeAction("inspections.vehicles.photo_url", ({ tenantId }) =>
+    getVehiclePhotoUrl(tenantId, id),
+  );
+}
 
 export type VehicleOption = { value: string; label: string };
 

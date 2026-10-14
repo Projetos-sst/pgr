@@ -8,7 +8,7 @@ import {
 import { resolvePageParams } from "@/shared/pagination";
 import { listVehicularInspectionsAction } from "@/shared/server/actions/inspections/vehicular-inspections";
 
-import { AutoSubmitSelect } from "../_ui/auto-submit-select";
+import { ToolbarSearch, ToolbarSelect } from "../_ui/data-list";
 import {
   EmptyState,
   ListCard,
@@ -68,51 +68,23 @@ export default async function InspecoesVeicularesPage({
 
       <ListCard>
         <ListToolbar>
-          <form
-            action={BASE}
-            method="get"
-            className="flex flex-1 flex-wrap items-center gap-3"
-          >
-            <div className="glass-input rounded-card flex h-11 min-w-[200px] flex-1 items-center gap-2.5 px-4 focus-within:border-[var(--color-primary)] focus-within:shadow-[0_0_0_3px_var(--color-primary-ring)]">
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.9"
-                aria-hidden
-                className="text-text-subtle shrink-0"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="M21 21l-4-4" />
-              </svg>
-              <label htmlFor="search" className="sr-only">
-                Buscar inspeções
-              </label>
-              <input
-                id="search"
-                name="search"
-                defaultValue={sp.search ?? ""}
-                placeholder="Buscar por placa ou responsável…"
-                className="text-text placeholder:text-text-subtle w-full bg-transparent text-[13px] outline-none"
-              />
-            </div>
-
-            <label htmlFor="status" className="sr-only">
-              Filtrar por status
-            </label>
-            <AutoSubmitSelect
-              id="status"
-              name="status"
-              defaultValue={sp.status}
-              emptyLabel="Todos os Status"
-              options={Object.entries(INSPECTION_STATUS_LABELS).map(([value, label]) => ({
-                value,
-                label,
-              }))}
-            />
-          </form>
+          <ToolbarSearch
+            basePath={BASE}
+            placeholder="Buscar por placa ou responsável…"
+            defaultValue={sp.search}
+            hidden={{ status: sp.status }}
+          />
+          <ToolbarSelect
+            basePath={BASE}
+            name="status"
+            defaultValue={sp.status}
+            emptyLabel="Todos os Status"
+            hidden={{ search: sp.search }}
+            options={Object.entries(INSPECTION_STATUS_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
 
           <PrimaryLink href={`${BASE}/new`}>
             <svg

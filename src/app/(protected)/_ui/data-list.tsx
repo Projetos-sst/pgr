@@ -67,6 +67,7 @@ export function ToolbarSearch({
       <SearchIcon />
       <input
         name="search"
+        aria-label={placeholder}
         defaultValue={defaultValue ?? ""}
         placeholder={placeholder}
         className="text-text placeholder:text-text-subtle w-full bg-transparent text-[13px] outline-none"
@@ -118,6 +119,9 @@ export function ToolbarSelect({
         options={options}
         emptyLabel={emptyLabel}
       />
+      <label htmlFor={name} className="sr-only">
+        {emptyLabel}
+      </label>
     </form>
   );
 }

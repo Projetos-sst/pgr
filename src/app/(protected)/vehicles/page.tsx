@@ -23,7 +23,8 @@ import {
   ToolbarButton,
   ToolbarSearch,
   ToolbarSelect,
-  ViewIcon,
+  EditIconLink,
+  RowActions,
   type StatusTone,
 } from "../_ui/data-list";
 import { DeleteVehicle } from "./_components/delete-vehicle";
@@ -66,7 +67,7 @@ export default async function VeiculosPage({
   const params = { search: sp.search, company: sp.company };
 
   return (
-    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
+    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-[22px] px-5 pt-8 pb-10 sm:px-[30px]">
       <PageHeader
         icon={<VehicleIcon />}
         title="Veículos"
@@ -95,6 +96,7 @@ export default async function VeiculosPage({
         {rows.length === 0 ? (
           <div className="p-6">
             <EmptyState
+              isFlat
               message={
                 sp.search || sp.company
                   ? "Nenhum veículo encontrado para o filtro."
@@ -136,17 +138,10 @@ export default async function VeiculosPage({
                     </StatusBadge>
                   </Cell>
                   <Cell align="right">
-                    <span className="flex items-center justify-end gap-1">
-                      <a
-                        href={`/vehicles/${row.id}/edit`}
-                        aria-label="Ver/editar veículo"
-                        title="Ver/editar"
-                        className="text-primary flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-white/50"
-                      >
-                        <ViewIcon />
-                      </a>
+                    <RowActions>
+                      <EditIconLink href={`/vehicles/${row.id}/edit`} />
                       <DeleteVehicle id={row.id} />
-                    </span>
+                    </RowActions>
                   </Cell>
                 </GridRow>
               ))}

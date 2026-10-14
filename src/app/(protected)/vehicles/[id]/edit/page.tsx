@@ -4,6 +4,7 @@ import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { formatPlate } from "@/shared/domains/inspections/vehicles";
 import {
   getVehicleAction,
+  getVehiclePhotoUrlAction,
   listVehicleCompanyOptionsAction,
   listVehicleInspectionPlanOptionsAction,
   listVehicleWorkUnitOptionsAction,
@@ -30,6 +31,9 @@ export default async function EditVehiclePage({
   ]);
   if (!result.ok) notFound();
   const v = result.data;
+  const photoResult = v.photoPath
+    ? await getVehiclePhotoUrlAction(id).catch(() => null)
+    : null;
 
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
@@ -41,6 +45,7 @@ export default async function EditVehiclePage({
       />
       <VehicleForm
         id={v.id}
+        photoUrl={photoResult?.ok ? photoResult.data.url : null}
         companies={companiesRes.ok ? companiesRes.data : []}
         workUnits={workUnitsRes.ok ? workUnitsRes.data : []}
         inspectionPlans={plansRes.ok ? plansRes.data : []}
@@ -59,6 +64,7 @@ export default async function EditVehiclePage({
           inspectionFrequency: v.inspectionFrequency,
           initialKm: v.initialKm,
           notes: v.notes,
+          photoPath: v.photoPath,
         }}
       />
     </div>

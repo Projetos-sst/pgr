@@ -16,6 +16,13 @@ import {
   updateVehicle,
 } from "@/shared/db/repositories/vehicles";
 import type { VehicleValues } from "@/shared/domains/inspections/vehicles";
+import { vehicleInputSchema } from "@/shared/domains/inspections/vehicles";
+import { getVehiclePhotoUrl } from "@/shared/server/inspections/vehicle-photo-core";
+import { getSignedDownloadUrl } from "@/shared/integrations/storage/documents-storage";
+
+jest.mock("@/shared/integrations/storage/documents-storage", () => ({
+  getSignedDownloadUrl: jest.fn(async () => "https://storage.test/photo.png"),
+}));
 
 import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS } from "../_helpers/pgr-seed";
@@ -67,6 +74,52 @@ function input(overrides: Partial<VehicleValues> = {}): VehicleValues {
     expect(await updateVehicle("org_b", v.id, input({ plate: "ZZZ9999" }))).toBeNull();
     expect(await deleteVehicle("org_b", v.id)).toBe(false);
     expect(await getVehicle("org_a", v.id)).not.toBeNull();
+  });
+
+  it("foto é preservada na edição e campo vazio limpa o vínculo para null", async () => {
+    const photoPath = "org_a/vehicles/11111111-1111-4111-8111-111111111111/foto.png";
+    const vehicle = await createVehicle("org_a", input({ photoPath }));
+    await updateVehicle(
+      "org_a",
+      vehicle.id,
+      input({ photoPath, model: "Modelo atualizado" }),
+    );
+    expect((await getVehicle("org_a", vehicle.id))?.photoPath).toBe(photoPath);
+    await updateVehicle(
+      "org_a",
+      vehicle.id,
+      vehicleInputSchema.parse({ plate: vehicle.plate, photoPath: "" }),
+    );
+    expect((await getVehicle("org_a", vehicle.id))?.photoPath).toBeNull();
+  });
+
+  it("preview consulta o veículo no tenant e não assina foto cross-tenant", async () => {
+    const photoPath = "org_a/vehicles/11111111-1111-4111-8111-111111111111/foto.png";
+    const vehicle = await createVehicle("org_a", input({ photoPath }));
+    jest.mocked(getSignedDownloadUrl).mockClear();
+    await expect(getVehiclePhotoUrl("org_b", vehicle.id)).rejects.toThrow();
+    expect(getSignedDownloadUrl).not.toHaveBeenCalled();
+    await expect(getVehiclePhotoUrl("org_a", vehicle.id)).resolves.toEqual({
+      url: "https://storage.test/photo.png",
+    });
+    expect(getSignedDownloadUrl).toHaveBeenCalledWith(photoPath, { ttlSeconds: 3600 });
+  });
+
+  it("rejeita vínculo com foto de outro tenant e caminhos fora do módulo", async () => {
+    await expect(
+      createVehicle(
+        "org_a",
+        input({
+          photoPath: "org_b/vehicles/11111111-1111-4111-8111-111111111111/foto.png",
+        }),
+      ),
+    ).rejects.toThrow("Foto inválida");
+    await expect(
+      createVehicle(
+        "org_a",
+        input({ photoPath: "org_a/vehicles/../documentos/confidencial.pdf" }),
+      ),
+    ).rejects.toThrow("Foto inválida");
   });
 
   it("placa duplicada na mesma org viola unique", async () => {
