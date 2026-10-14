@@ -96,28 +96,36 @@ export async function putDocumentObject(
   return { storagePath, sizeBytes: file.size };
 }
 
-/** Path determinístico do PDF gerado por job (idempotência da #39). */
-export function generatedPdfPath(orgId: string, documentId: string): string {
-  return `${orgId}/documentos/generated/${documentId}.pdf`;
+/** Formato do arquivo gerado por job (extensão do path). */
+export type GeneratedDocumentFormat = "docx" | "pdf";
+
+/** Path determinístico do arquivo gerado por job (idempotência da #39 via upsert). */
+export function generatedDocumentPath(
+  orgId: string,
+  documentId: string,
+  format: GeneratedDocumentFormat,
+): string {
+  return `${orgId}/documentos/generated/${documentId}.${format}`;
 }
 
 /**
- * Grava (ou sobrescreve) o PDF gerado por um job em lote (#39) no path
- * determinístico. `upsert:true` torna o reprocessamento idempotente — nunca
- * duplica objeto. `orgId` sempre da linha do job (`job.org_id`).
+ * Grava (ou sobrescreve) o arquivo gerado por um job em lote (#39) no path
+ * determinístico do formato. `upsert:true` torna o reprocessamento idempotente —
+ * nunca duplica objeto. `orgId` sempre da linha do job (`job.org_id`).
  */
-export async function putGeneratedPdf(
+export async function putGeneratedDocument(
   orgId: string,
   documentId: string,
-  pdf: Buffer,
+  file: Buffer,
+  options: { format: GeneratedDocumentFormat; contentType: string },
 ): Promise<StoredObject> {
-  const storagePath = generatedPdfPath(orgId, documentId);
+  const storagePath = generatedDocumentPath(orgId, documentId, options.format);
   const supabase = getRlsBypassingSupabaseClient();
   const { error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
-    .upload(storagePath, pdf, { contentType: "application/pdf", upsert: true });
-  if (error) throw new Error(`generated pdf upload failed: ${error.message}`);
-  return { storagePath, sizeBytes: pdf.byteLength };
+    .upload(storagePath, file, { contentType: options.contentType, upsert: true });
+  if (error) throw new Error(`generated document upload failed: ${error.message}`);
+  return { storagePath, sizeBytes: file.byteLength };
 }
 
 /** Remove um objeto (compensação de órfão / limpeza pós-exclusão). */

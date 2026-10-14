@@ -20,6 +20,10 @@ services:
       - gotenberg
       - --api-timeout=120s
       - --chromium-max-queue-size=0
+    # Fontes do PGR em DOCX (Manrope/JetBrains Mono): o LibreOffice só usa fonte
+    # instalada — sem isto a conversão DOCX→PDF troca a Manrope por uma substituta.
+    volumes:
+      - ./templates/pgr/fonts:/usr/local/share/fonts/pgr:ro
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
       interval: 10s

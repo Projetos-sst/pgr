@@ -75,3 +75,6 @@ next-env.d.ts
 AGENTS.md
 
 novas-correcoes
+
+# PGR em DOCX: intermediário do gerador (scripts/pgr-docx/build-template.ts)
+/templates/pgr/build/
