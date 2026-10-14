@@ -12,6 +12,7 @@ jest.mock("@/shared/tenant/provision-personal-tenant", () => ({
 jest.mock("@/shared/tenant/audit-log", () => ({ logTenantEvent: jest.fn() }));
 
 import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 
 import { listTenantMembershipsByUser } from "@/shared/db/repositories/org-memberships";
 import { logTenantEvent } from "@/shared/tenant/audit-log";
@@ -23,6 +24,14 @@ const mockedList = listTenantMembershipsByUser as jest.MockedFunction<
   typeof listTenantMembershipsByUser
 >;
 const mockedLog = logTenantEvent as jest.MockedFunction<typeof logTenantEvent>;
+const mockedCookies = cookies as unknown as jest.Mock;
+
+/** Cookie de tenant ativo: ausente por padrão, presente no cenário de perda de acesso. */
+function activeOrgCookie(value: string | undefined) {
+  mockedCookies.mockResolvedValueOnce({
+    get: () => (value === undefined ? undefined : { value }),
+  });
+}
 
 function authenticated() {
   mockedAuth.mockResolvedValue({
@@ -37,6 +46,23 @@ describe("requireTenantContext — bloqueio sem tenant ativo (FR-024)", () => {
 
   it("autenticado sem membership resolvível (self-heal falho) → NoTenantContextError + log blocked", async () => {
     authenticated();
+    activeOrgCookie(undefined);
+    mockedList.mockResolvedValue([]);
+
+    await expect(requireTenantContext()).rejects.toBeInstanceOf(NoTenantContextError);
+    // Conta ainda sem organização: o evento de auditoria continua saindo (FR-026),
+    // em `info` — é estado de onboarding, não falha do sistema.
+    expect(mockedLog).toHaveBeenCalledWith("info", {
+      operation: "tenant.context",
+      outcome: "blocked",
+      userId: "user_1",
+      reason: "no_membership",
+    });
+  });
+
+  it("tinha tenant ativo no cookie e perdeu acesso → bloqueio auditado em error (FR-024)", async () => {
+    authenticated();
+    activeOrgCookie("tenant_antigo");
     mockedList.mockResolvedValue([]);
 
     await expect(requireTenantContext()).rejects.toBeInstanceOf(NoTenantContextError);
@@ -44,6 +70,7 @@ describe("requireTenantContext — bloqueio sem tenant ativo (FR-024)", () => {
       operation: "tenant.context",
       outcome: "blocked",
       userId: "user_1",
+      reason: "lost_access",
     });
   });
 
@@ -60,6 +87,7 @@ describe("requireTenantContext — bloqueio sem tenant ativo (FR-024)", () => {
 
   it("autenticado com 1 membership → resolve contexto (sem bloqueio)", async () => {
     authenticated();
+    activeOrgCookie(undefined);
     mockedList.mockResolvedValue([
       {
         orgId: "tenant_1",

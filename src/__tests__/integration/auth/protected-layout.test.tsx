@@ -86,11 +86,14 @@ describe("ProtectedLayout (gate Modelo B via requireTenantContext)", () => {
     expect(mockedRedirect).toHaveBeenCalledWith("/sign-in?redirect_url=%2Fdashboard");
   });
 
-  it("(b) sem tenant ativo (NoTenantContextError) → redirect('/sign-in') (FR-024)", async () => {
+  it("(b) sem tenant ativo (NoTenantContextError) → redirect('/no-organization') (FR-024)", async () => {
     mockedRequire.mockRejectedValue(new NoTenantContextError());
 
-    await expect(renderLayout()).rejects.toThrow(/__redirect:\/sign-in/);
-    expect(mockedRedirect).toHaveBeenCalledWith("/sign-in");
+    await expect(renderLayout()).rejects.toThrow(/__redirect:\/no-organization/);
+    // Nunca `/sign-in`: a sessão existe, e o Clerk devolveria a pessoa para cá
+    // — laço de redirecionamento. O bloqueio da FR-024 continua valendo.
+    expect(mockedRedirect).toHaveBeenCalledWith("/no-organization");
+    expect(mockedRedirect).not.toHaveBeenCalledWith("/sign-in");
   });
 
   it("(c) tenant ativo resolvido → renderiza children, sem onboarding nem switcher duplicado", async () => {

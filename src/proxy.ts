@@ -63,6 +63,12 @@ function checkSandboxBasicAuth(request: NextRequest): NextResponse | null {
 
 const isPublicRoute = createRouteMatcher([
   "/",
+  // Portal publico comercial (grupo de rotas `(public)/(marketing)`): landing,
+  // paginas das duas vertentes e o pedido de orcamento. Sao paginas de
+  // apresentacao, sem dado de tenant — precisam abrir sem sessao Clerk.
+  "/seguranca-do-trabalho",
+  "/medicina-do-trabalho",
+  "/orcamento",
   "/sign-in(.*)",
   "/sign-up(.*)",
   // Assinatura publica de entrega de EPI: a credencial e o proprio token HMAC
@@ -97,7 +103,14 @@ export default clerkMiddleware(async (auth, request) => {
   const { pathname } = request.nextUrl;
 
   if (!isPublicRoute(request)) {
-    await auth.protect();
+    // Destino explicito do visitante anonimo. Sem isto, o Clerk manda para a
+    // *account portal* hospedada (`...accounts.dev`), que ignora a tela de login
+    // do produto e ainda exibe o nome antigo da aplicacao. O app tem a propria
+    // rota publica `/sign-in` (design aprovado, Clerk real embutido) — e para la
+    // que ele vai, com o retorno preservado.
+    const signInUrl = new URL("/sign-in", request.nextUrl.origin);
+    signInUrl.searchParams.set("redirect_url", request.nextUrl.href);
+    await auth.protect({ unauthenticatedUrl: signInUrl.toString() });
   }
 
   if (NO_STORE_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {

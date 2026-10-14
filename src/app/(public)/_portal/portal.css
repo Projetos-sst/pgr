@@ -1,0 +1,1773 @@
+/*
+ * Folha de estilo do portal publico, portada do HTML aprovado pelo Claude Design
+ * (Douglas + Expedito). Fonte de verdade visual:
+ *   Documentos/redesign/PGR-e - Portal publico.html
+ *
+ * ESCOPO - tres niveis, para as pranchas nao se atropelarem:
+ *   `.pg`             estilos do portal (nunca alcancam a area autenticada)
+ *   `.pg.auth`        so o login: a prancha redefine `.btn` com padding menor
+ *   `.pg .pg-medicina` so a Medicina: variacoes teal de hover proprias
+ * Seletor global repetido entre pranchas fica com a PRIMEIRA definicao - as
+ * demais sao variacoes acidentais do export, nao intencao de design.
+ *
+ * Fontes via `--font-sans`/`--font-mono` (next/font); as @font-face base64 do
+ * export foram descartadas.
+ */
+
+/* ---------- _shared ---------- */
+.pg x-dc {
+  display: none !important;
+}
+.pg {
+  margin: 0px;
+  background: rgb(242, 241, 238);
+  font-family: var(--font-sans), Manrope, "Segoe UI", system-ui, sans-serif;
+  color: rgb(22, 23, 29);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  /*
+   * `normal` reproduz a linha-base do design. A folha do produto
+   * (`globals.css` + preflight do Tailwind) impoe 1.5 no `body`, o que
+   * engordava header e rodape e empurrava as secoes alguns pixels por
+   * bloco - era a causa do desvio acumulado medido na comparacao.
+   */
+  line-height: normal;
+}
+.pg * {
+  box-sizing: border-box;
+}
+.pg a {
+  color: rgb(74, 81, 224);
+}
+.pg a:hover {
+  color: rgb(54, 60, 196);
+}
+.pg .pg ul {
+  padding: 0px;
+  list-style: none;
+}
+.pg .pg a:focus-visible,
+.pg .pg button:focus-visible {
+  outline: rgb(91, 99, 245) solid 3px;
+  outline-offset: 3px;
+}
+.pg .mono {
+  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, Menlo, monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
+}
+.pg .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0px 22px;
+  border-radius: 12px;
+  font:
+    700 15px / 1.1 var(--font-sans),
+    Manrope,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color 0.18s,
+    box-shadow 0.18s,
+    transform 0.18s,
+    border-color 0.18s,
+    color 0.18s;
+}
+.pg .btn-sm {
+  min-height: 42px;
+  padding: 0px 16px;
+  font-size: 14px;
+  border-radius: 11px;
+}
+.pg .btn-primary {
+  background: rgb(91, 99, 245);
+  color: rgb(255, 255, 255);
+  box-shadow: rgba(91, 99, 245, 0.65) 0px 8px 18px -8px;
+}
+.pg .btn-primary:active {
+  background: rgb(62, 68, 201);
+  transform: none;
+}
+.pg .btn-secondary {
+  background: rgb(255, 255, 255);
+  color: rgb(22, 23, 29);
+  border-color: rgb(220, 218, 212);
+}
+.pg .btn-ghost {
+  background: transparent;
+  color: rgb(22, 23, 29);
+}
+.pg .btn-ghost:hover {
+  background: rgba(22, 23, 29, 0.06);
+  color: rgb(22, 23, 29);
+}
+.pg .nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0px 13px;
+  border-radius: 10px;
+  color: rgb(63, 66, 77);
+  font-weight: 600;
+  font-size: 14.5px;
+  text-decoration: none;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.pg .nav-link:hover {
+  background: rgba(22, 23, 29, 0.06);
+  color: rgb(22, 23, 29);
+}
+.pg .m-link:hover {
+  color: rgb(62, 68, 201);
+}
+.pg .nav-desktop {
+  display: flex;
+}
+.pg .nav-toggle {
+  display: none;
+}
+.pg .m-panel {
+  display: block;
+}
+@media (min-width: 1081px) {
+  .pg .m-panel {
+    display: none;
+  }
+}
+
+/* ---------- home ---------- */
+.pg .pg {
+  font-family: var(--font-sans), Manrope, "Segoe UI", system-ui, sans-serif;
+  color: rgb(22, 23, 29);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  background: rgb(242, 241, 238);
+}
+.pg .pg h1,
+.pg .pg h2,
+.pg .pg h3,
+.pg .pg h4,
+.pg .pg p,
+.pg .pg ul {
+  margin: 0px;
+}
+.pg .btn svg {
+  flex: 0 0 auto;
+}
+.pg .btn-primary:hover {
+  background: rgb(74, 81, 224);
+  color: rgb(255, 255, 255);
+  transform: translateY(-1px);
+  box-shadow: rgba(91, 99, 245, 0.7) 0px 12px 24px -10px;
+}
+.pg .btn-secondary:hover {
+  border-color: rgb(180, 183, 250);
+  color: rgb(22, 23, 29);
+  background: rgb(251, 251, 255);
+}
+.pg .btn-light {
+  background: rgb(255, 255, 255);
+  color: rgb(62, 68, 201);
+}
+.pg .btn-light:hover {
+  background: rgb(238, 239, 254);
+  color: rgb(62, 68, 201);
+}
+.pg .btn-outline-light {
+  background: transparent;
+  color: rgb(255, 255, 255);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+.pg .btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgb(255, 255, 255);
+}
+.pg .nav-link.is-active {
+  background: rgb(230, 231, 254);
+  color: rgb(62, 68, 201);
+}
+.pg .m-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0px 4px;
+  border-bottom: 1px solid rgb(236, 234, 229);
+  color: rgb(22, 23, 29);
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+}
+.pg .lift {
+  transition:
+    transform 0.22s,
+    box-shadow 0.22s,
+    border-color 0.22s;
+}
+.pg .lift:hover {
+  transform: translateY(-3px);
+  box-shadow: rgba(30, 32, 70, 0.4) 0px 22px 44px -26px;
+  border-color: rgb(207, 208, 251);
+}
+.pg .tlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  min-height: 44px;
+}
+.pg .tlink svg {
+  transition: transform 0.18s;
+}
+.pg .tlink:hover svg {
+  transform: translateX(3px);
+}
+.pg .faq-q {
+  color-scheme: unset;
+  forced-color-adjust: unset;
+  math-depth: unset;
+  position: unset;
+  position-anchor: unset;
+  text-size-adjust: unset;
+  appearance: unset;
+  font-palette: unset;
+  font-synthesis: unset;
+  position-area: unset;
+  text-orientation: unset;
+  text-rendering: unset;
+  text-spacing-trim: unset;
+  -webkit-font-smoothing: unset;
+  -webkit-locale: unset;
+  -webkit-text-orientation: unset;
+  -webkit-writing-mode: unset;
+  writing-mode: unset;
+  zoom: unset;
+  accent-color: unset;
+  align-content: unset;
+  place-self: unset;
+  alignment-baseline: unset;
+  anchor-name: unset;
+  anchor-scope: unset;
+  animation-composition: unset;
+  animation: unset;
+  animation-trigger: unset;
+  app-region: unset;
+  aspect-ratio: unset;
+  backdrop-filter: unset;
+  backface-visibility: unset;
+  background: unset;
+  background-blend-mode: unset;
+  baseline-shift: unset;
+  baseline-source: unset;
+  block-size: unset;
+  border-block: unset;
+  border: unset;
+  border-radius: unset;
+  border-collapse: unset;
+  border-end-end-radius: unset;
+  border-end-start-radius: unset;
+  border-inline: unset;
+  border-shape: unset;
+  border-start-end-radius: unset;
+  border-start-start-radius: unset;
+  inset: unset;
+  box-decoration-break: unset;
+  box-shadow: unset;
+  break-after: unset;
+  break-before: unset;
+  break-inside: unset;
+  buffered-rendering: unset;
+  caption-side: unset;
+  caret-animation: unset;
+  caret-color: unset;
+  caret-shape: unset;
+  clear: unset;
+  clip: unset;
+  clip-path: unset;
+  clip-rule: unset;
+  color-interpolation: unset;
+  color-interpolation-filters: unset;
+  color-rendering: unset;
+  columns: unset;
+  column-fill: unset;
+  rule-break: unset;
+  rule: unset;
+  rule-inset: unset;
+  rule-visibility-items: unset;
+  column-span: unset;
+  contain: unset;
+  contain-intrinsic-block-size: unset;
+  contain-intrinsic-size: unset;
+  contain-intrinsic-inline-size: unset;
+  container: unset;
+  content: unset;
+  content-visibility: unset;
+  corner-shape: unset;
+  corner-block-end-shape: unset;
+  corner-block-start-shape: unset;
+  counter-increment: unset;
+  counter-reset: unset;
+  counter-set: unset;
+  cx: unset;
+  cy: unset;
+  d: unset;
+  dominant-baseline: unset;
+  dynamic-range-limit: unset;
+  empty-cells: unset;
+  field-sizing: unset;
+  fill: unset;
+  fill-opacity: unset;
+  fill-rule: unset;
+  filter: unset;
+  flex: unset;
+  flex-flow: unset;
+  float: unset;
+  flood-color: unset;
+  flood-opacity: unset;
+  grid: unset;
+  grid-area: unset;
+  height: unset;
+  hyphenate-character: unset;
+  hyphenate-limit-chars: unset;
+  hyphens: unset;
+  image-orientation: unset;
+  image-rendering: unset;
+  initial-letter: unset;
+  inline-size: unset;
+  inset-block: unset;
+  inset-inline: unset;
+  interactivity: unset;
+  interest-delay: unset;
+  interpolate-size: unset;
+  isolation: unset;
+  justify-items: unset;
+  letter-spacing: unset;
+  lighting-color: unset;
+  line-break: unset;
+  list-style: unset;
+  margin-block: unset;
+  margin: unset;
+  margin-inline: unset;
+  marker: unset;
+  mask: unset;
+  mask-type: unset;
+  math-shift: unset;
+  math-style: unset;
+  max-block-size: unset;
+  max-height: unset;
+  max-inline-size: unset;
+  max-width: unset;
+  min-block-size: unset;
+  min-height: unset;
+  min-inline-size: unset;
+  min-width: unset;
+  mix-blend-mode: unset;
+  object-fit: unset;
+  object-position: unset;
+  object-view-box: unset;
+  offset: unset;
+  opacity: unset;
+  order: unset;
+  orphans: unset;
+  outline: unset;
+  outline-offset: unset;
+  overflow-anchor: unset;
+  overflow-block: unset;
+  overflow-clip-margin: unset;
+  overflow-inline: unset;
+  overflow-wrap: unset;
+  overflow: unset;
+  overlay: unset;
+  overscroll-behavior-block: unset;
+  overscroll-behavior-inline: unset;
+  overscroll-behavior: unset;
+  padding-block: unset;
+  padding-inline: unset;
+  page: unset;
+  page-orientation: unset;
+  paint-order: unset;
+  perspective: unset;
+  perspective-origin: unset;
+  pointer-events: unset;
+  position-try: unset;
+  position-visibility: unset;
+  print-color-adjust: unset;
+  quotes: unset;
+  r: unset;
+  reading-flow: unset;
+  reading-order: unset;
+  resize: unset;
+  rotate: unset;
+  ruby-align: unset;
+  ruby-position: unset;
+  rule-overlap: unset;
+  rx: unset;
+  ry: unset;
+  scale: unset;
+  scroll-behavior: unset;
+  scroll-initial-target: unset;
+  scroll-margin-block: unset;
+  scroll-margin: unset;
+  scroll-margin-inline: unset;
+  scroll-marker-group: unset;
+  scroll-padding-block: unset;
+  scroll-padding: unset;
+  scroll-padding-inline: unset;
+  scroll-snap-align: unset;
+  scroll-snap-stop: unset;
+  scroll-snap-type: unset;
+  scroll-target-group: unset;
+  scroll-timeline: unset;
+  scrollbar-color: unset;
+  scrollbar-gutter: unset;
+  scrollbar-width: unset;
+  shape-image-threshold: unset;
+  shape-margin: unset;
+  shape-outside: unset;
+  shape-rendering: unset;
+  size: unset;
+  speak: unset;
+  stop-color: unset;
+  stop-opacity: unset;
+  stroke: unset;
+  stroke-dasharray: unset;
+  stroke-dashoffset: unset;
+  stroke-linecap: unset;
+  stroke-linejoin: unset;
+  stroke-miterlimit: unset;
+  stroke-opacity: unset;
+  stroke-width: unset;
+  tab-size: unset;
+  table-layout: unset;
+  text-align: unset;
+  text-align-last: unset;
+  text-anchor: unset;
+  text-autospace: unset;
+  text-box: unset;
+  text-combine-upright: unset;
+  text-decoration: unset;
+  text-decoration-skip-ink: unset;
+  text-emphasis: unset;
+  text-emphasis-position: unset;
+  text-indent: unset;
+  text-justify: unset;
+  text-overflow: unset;
+  text-shadow: unset;
+  text-transform: unset;
+  text-underline-offset: unset;
+  text-underline-position: unset;
+  text-wrap: unset;
+  timeline-scope: unset;
+  timeline-trigger: unset;
+  touch-action: unset;
+  transform: unset;
+  transform-box: unset;
+  transform-origin: unset;
+  transform-style: unset;
+  transition: unset;
+  translate: unset;
+  trigger-scope: unset;
+  user-select: unset;
+  vector-effect: unset;
+  vertical-align: unset;
+  view-timeline: unset;
+  view-transition-class: unset;
+  view-transition-group: unset;
+  view-transition-name: unset;
+  view-transition-scope: unset;
+  visibility: unset;
+  border-spacing: unset;
+  -webkit-box-align: unset;
+  -webkit-box-decoration-break: unset;
+  -webkit-box-direction: unset;
+  -webkit-box-flex: unset;
+  -webkit-box-ordinal-group: unset;
+  -webkit-box-orient: unset;
+  -webkit-box-pack: unset;
+  -webkit-box-reflect: unset;
+  -webkit-line-break: unset;
+  -webkit-line-clamp: unset;
+  -webkit-mask-box-image: unset;
+  -webkit-rtl-ordering: unset;
+  -webkit-ruby-position: unset;
+  -webkit-tap-highlight-color: unset;
+  -webkit-text-combine: unset;
+  -webkit-text-decorations-in-effect: unset;
+  -webkit-text-fill-color: unset;
+  -webkit-text-security: unset;
+  -webkit-text-stroke: unset;
+  -webkit-user-drag: unset;
+  white-space-collapse: unset;
+  widows: unset;
+  will-change: unset;
+  word-break: unset;
+  word-spacing: unset;
+  x: unset;
+  y: unset;
+  z-index: unset;
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 0px;
+  cursor: pointer;
+  font:
+    700 17px / 1.4 Manrope,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  color: rgb(22, 23, 29);
+}
+.pg .faq-q:hover {
+  color: rgb(62, 68, 201);
+}
+.pg .faq-q:focus-visible {
+  outline: rgb(91, 99, 245) solid 3px;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+.pg .foot-link {
+  color: rgb(63, 66, 77);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14.5px;
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+}
+.pg .foot-link:hover {
+  color: rgb(62, 68, 201);
+}
+.pg .bento {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0px, 1fr));
+  gap: 16px;
+}
+.pg .bento .b-big {
+  grid-area: span 2 / span 2;
+}
+.pg .bento .b-wide {
+  grid-column: span 2;
+}
+.pg .hero-art {
+  position: relative;
+  min-height: 560px;
+}
+.pg .hero-art .c {
+  position: absolute;
+}
+@media (max-width: 1080px) {
+  .pg .nav-desktop {
+    display: none;
+  }
+  .pg .nav-toggle {
+    display: inline-flex;
+  }
+  .pg .bento {
+    grid-template-columns: repeat(2, minmax(0px, 1fr));
+  }
+  .pg .bento .b-big {
+    grid-row: span 1;
+  }
+}
+@media (max-width: 640px) {
+  .pg .bento {
+    grid-template-columns: minmax(0px, 1fr);
+  }
+  .pg .bento .b-big,
+  .pg .bento .b-wide {
+    grid-column: auto;
+  }
+}
+@media (max-width: 720px) {
+  .pg .hero-art {
+    min-height: 0px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px !important;
+  }
+  .pg .hero-art .c {
+    position: static;
+    width: auto !important;
+    transform: none !important;
+  }
+  .pg .hero-art .tag {
+    position: static !important;
+    align-self: flex-start;
+  }
+}
+@keyframes rise {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pg .rise {
+  animation: 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) 0s 1 normal both running rise;
+}
+.pg .rise-2 {
+  animation-delay: 0.08s;
+}
+.pg .rise-3 {
+  animation-delay: 0.16s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg * {
+    transition: none !important;
+    animation: auto ease 0s 1 normal none running none !important;
+  }
+}
+
+/* ---------- seguranca ---------- */
+.pg .btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.pg .step-tab {
+  color-scheme: unset;
+  forced-color-adjust: unset;
+  math-depth: unset;
+  position: unset;
+  position-anchor: unset;
+  text-size-adjust: unset;
+  appearance: unset;
+  color: unset;
+  font: unset;
+  font-palette: unset;
+  font-synthesis: unset;
+  position-area: unset;
+  text-orientation: unset;
+  text-rendering: unset;
+  text-spacing-trim: unset;
+  -webkit-font-smoothing: unset;
+  -webkit-locale: unset;
+  -webkit-text-orientation: unset;
+  -webkit-writing-mode: unset;
+  writing-mode: unset;
+  zoom: unset;
+  accent-color: unset;
+  place-content: unset;
+  place-self: unset;
+  alignment-baseline: unset;
+  anchor-name: unset;
+  anchor-scope: unset;
+  animation-composition: unset;
+  animation: unset;
+  animation-trigger: unset;
+  app-region: unset;
+  aspect-ratio: unset;
+  backdrop-filter: unset;
+  backface-visibility: unset;
+  background: unset;
+  background-blend-mode: unset;
+  baseline-shift: unset;
+  baseline-source: unset;
+  block-size: unset;
+  border-block: unset;
+  border-collapse: unset;
+  border-end-end-radius: unset;
+  border-end-start-radius: unset;
+  border-inline: unset;
+  border-shape: unset;
+  border-start-end-radius: unset;
+  border-start-start-radius: unset;
+  inset: unset;
+  box-decoration-break: unset;
+  box-shadow: unset;
+  break-after: unset;
+  break-before: unset;
+  break-inside: unset;
+  buffered-rendering: unset;
+  caption-side: unset;
+  caret-animation: unset;
+  caret-color: unset;
+  caret-shape: unset;
+  clear: unset;
+  clip: unset;
+  clip-path: unset;
+  clip-rule: unset;
+  color-interpolation: unset;
+  color-interpolation-filters: unset;
+  color-rendering: unset;
+  columns: unset;
+  column-fill: unset;
+  rule-break: unset;
+  rule: unset;
+  rule-inset: unset;
+  rule-visibility-items: unset;
+  column-span: unset;
+  contain: unset;
+  contain-intrinsic-block-size: unset;
+  contain-intrinsic-size: unset;
+  contain-intrinsic-inline-size: unset;
+  container: unset;
+  content: unset;
+  content-visibility: unset;
+  corner-shape: unset;
+  corner-block-end-shape: unset;
+  corner-block-start-shape: unset;
+  counter-increment: unset;
+  counter-reset: unset;
+  counter-set: unset;
+  cx: unset;
+  cy: unset;
+  d: unset;
+  dominant-baseline: unset;
+  dynamic-range-limit: unset;
+  empty-cells: unset;
+  field-sizing: unset;
+  fill: unset;
+  fill-opacity: unset;
+  fill-rule: unset;
+  filter: unset;
+  flex: unset;
+  flex-flow: unset;
+  float: unset;
+  flood-color: unset;
+  flood-opacity: unset;
+  grid: unset;
+  grid-area: unset;
+  height: unset;
+  hyphenate-character: unset;
+  hyphenate-limit-chars: unset;
+  hyphens: unset;
+  image-orientation: unset;
+  image-rendering: unset;
+  initial-letter: unset;
+  inline-size: unset;
+  inset-block: unset;
+  inset-inline: unset;
+  interactivity: unset;
+  interest-delay: unset;
+  interpolate-size: unset;
+  isolation: unset;
+  justify-items: unset;
+  letter-spacing: unset;
+  lighting-color: unset;
+  line-break: unset;
+  list-style: unset;
+  margin-block: unset;
+  margin: unset;
+  margin-inline: unset;
+  marker: unset;
+  mask: unset;
+  mask-type: unset;
+  math-shift: unset;
+  math-style: unset;
+  max-block-size: unset;
+  max-height: unset;
+  max-inline-size: unset;
+  max-width: unset;
+  min-block-size: unset;
+  min-height: unset;
+  min-inline-size: unset;
+  min-width: unset;
+  mix-blend-mode: unset;
+  object-fit: unset;
+  object-position: unset;
+  object-view-box: unset;
+  offset: unset;
+  opacity: unset;
+  order: unset;
+  orphans: unset;
+  outline: unset;
+  outline-offset: unset;
+  overflow-anchor: unset;
+  overflow-block: unset;
+  overflow-clip-margin: unset;
+  overflow-inline: unset;
+  overflow-wrap: unset;
+  overflow: unset;
+  overlay: unset;
+  overscroll-behavior-block: unset;
+  overscroll-behavior-inline: unset;
+  overscroll-behavior: unset;
+  padding-block: unset;
+  padding-inline: unset;
+  page: unset;
+  page-orientation: unset;
+  paint-order: unset;
+  perspective: unset;
+  perspective-origin: unset;
+  pointer-events: unset;
+  position-try: unset;
+  position-visibility: unset;
+  print-color-adjust: unset;
+  quotes: unset;
+  r: unset;
+  reading-flow: unset;
+  reading-order: unset;
+  resize: unset;
+  rotate: unset;
+  ruby-align: unset;
+  ruby-position: unset;
+  rule-overlap: unset;
+  rx: unset;
+  ry: unset;
+  scale: unset;
+  scroll-behavior: unset;
+  scroll-initial-target: unset;
+  scroll-margin-block: unset;
+  scroll-margin: unset;
+  scroll-margin-inline: unset;
+  scroll-marker-group: unset;
+  scroll-padding-block: unset;
+  scroll-padding: unset;
+  scroll-padding-inline: unset;
+  scroll-snap-align: unset;
+  scroll-snap-stop: unset;
+  scroll-snap-type: unset;
+  scroll-target-group: unset;
+  scroll-timeline: unset;
+  scrollbar-color: unset;
+  scrollbar-gutter: unset;
+  scrollbar-width: unset;
+  shape-image-threshold: unset;
+  shape-margin: unset;
+  shape-outside: unset;
+  shape-rendering: unset;
+  size: unset;
+  speak: unset;
+  stop-color: unset;
+  stop-opacity: unset;
+  stroke: unset;
+  stroke-dasharray: unset;
+  stroke-dashoffset: unset;
+  stroke-linecap: unset;
+  stroke-linejoin: unset;
+  stroke-miterlimit: unset;
+  stroke-opacity: unset;
+  stroke-width: unset;
+  tab-size: unset;
+  table-layout: unset;
+  text-align: unset;
+  text-align-last: unset;
+  text-anchor: unset;
+  text-autospace: unset;
+  text-box: unset;
+  text-combine-upright: unset;
+  text-decoration: unset;
+  text-decoration-skip-ink: unset;
+  text-emphasis: unset;
+  text-emphasis-position: unset;
+  text-indent: unset;
+  text-justify: unset;
+  text-overflow: unset;
+  text-shadow: unset;
+  text-transform: unset;
+  text-underline-offset: unset;
+  text-underline-position: unset;
+  text-wrap: unset;
+  timeline-scope: unset;
+  timeline-trigger: unset;
+  touch-action: unset;
+  transform: unset;
+  transform-box: unset;
+  transform-origin: unset;
+  transform-style: unset;
+  translate: unset;
+  trigger-scope: unset;
+  user-select: unset;
+  vector-effect: unset;
+  vertical-align: unset;
+  view-timeline: unset;
+  view-transition-class: unset;
+  view-transition-group: unset;
+  view-transition-name: unset;
+  view-transition-scope: unset;
+  visibility: unset;
+  border-spacing: unset;
+  -webkit-box-align: unset;
+  -webkit-box-decoration-break: unset;
+  -webkit-box-direction: unset;
+  -webkit-box-flex: unset;
+  -webkit-box-ordinal-group: unset;
+  -webkit-box-orient: unset;
+  -webkit-box-pack: unset;
+  -webkit-box-reflect: unset;
+  -webkit-line-break: unset;
+  -webkit-line-clamp: unset;
+  -webkit-mask-box-image: unset;
+  -webkit-rtl-ordering: unset;
+  -webkit-ruby-position: unset;
+  -webkit-tap-highlight-color: unset;
+  -webkit-text-combine: unset;
+  -webkit-text-decorations-in-effect: unset;
+  -webkit-text-fill-color: unset;
+  -webkit-text-security: unset;
+  -webkit-text-stroke: unset;
+  -webkit-user-drag: unset;
+  white-space-collapse: unset;
+  widows: unset;
+  will-change: unset;
+  word-break: unset;
+  word-spacing: unset;
+  x: unset;
+  y: unset;
+  z-index: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.18s,
+    border-color 0.18s;
+}
+.pg .step-tab:hover {
+  background: rgb(255, 255, 255);
+  border-color: rgb(228, 226, 221);
+}
+.pg .step-tab:focus-visible {
+  outline: rgb(91, 99, 245) solid 3px;
+  outline-offset: 2px;
+}
+.pg .step-tab.is-on {
+  background: rgb(255, 255, 255);
+  border-color: rgb(207, 208, 251);
+  box-shadow: rgba(91, 99, 245, 0.6) 0px 14px 30px -22px;
+}
+@media (max-width: 1080px) {
+  .pg .nav-desktop {
+    display: none;
+  }
+  .pg .nav-toggle {
+    display: inline-flex;
+  }
+}
+
+/* ---------- medicina ---------- */
+.pg .pg-medicina .pg {
+  font-family: var(--font-sans), Manrope, "Segoe UI", system-ui, sans-serif;
+  color: rgb(22, 23, 29);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  background: rgb(242, 241, 238);
+}
+.pg .pg-medicina .pg h1,
+.pg .pg-medicina .pg h2,
+.pg .pg-medicina .pg h3,
+.pg .pg-medicina .pg h4,
+.pg .pg-medicina .pg p,
+.pg .pg-medicina .pg ul {
+  margin: 0px;
+}
+.pg .pg-medicina .btn svg {
+  flex: 0 0 auto;
+}
+.pg .pg-medicina .btn-primary:hover {
+  background: rgb(74, 81, 224);
+  color: rgb(255, 255, 255);
+  transform: translateY(-1px);
+  box-shadow: rgba(91, 99, 245, 0.7) 0px 12px 24px -10px;
+}
+.pg .pg-medicina .btn-secondary:hover {
+  border-color: rgb(158, 216, 207);
+  color: rgb(22, 23, 29);
+  background: rgb(251, 254, 253);
+}
+.pg .pg-medicina .btn-light {
+  background: rgb(255, 255, 255);
+  color: rgb(62, 68, 201);
+}
+.pg .pg-medicina .btn-light:hover {
+  background: rgb(238, 239, 254);
+  color: rgb(62, 68, 201);
+}
+.pg .pg-medicina .btn-outline-light {
+  background: transparent;
+  color: rgb(255, 255, 255);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+.pg .pg-medicina .btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgb(255, 255, 255);
+}
+.pg .pg-medicina .nav-link.is-active {
+  background: rgb(230, 231, 254);
+  color: rgb(62, 68, 201);
+}
+.pg .pg-medicina .m-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0px 4px;
+  border-bottom: 1px solid rgb(236, 234, 229);
+  color: rgb(22, 23, 29);
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+}
+.pg .pg-medicina .lift {
+  transition:
+    transform 0.22s,
+    box-shadow 0.22s,
+    border-color 0.22s;
+}
+.pg .pg-medicina .lift:hover {
+  transform: translateY(-3px);
+  box-shadow: rgba(15, 70, 64, 0.35) 0px 22px 44px -26px;
+  border-color: rgb(185, 227, 219);
+}
+.pg .pg-medicina .foot-link {
+  color: rgb(63, 66, 77);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14.5px;
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+}
+.pg .pg-medicina .foot-link:hover {
+  color: rgb(62, 68, 201);
+}
+.pg .pg-medicina .integ {
+  display: grid;
+  grid-template-columns: minmax(0px, 1fr) 220px minmax(0px, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+@media (max-width: 1080px) {
+  .pg .pg-medicina .nav-desktop {
+    display: none;
+  }
+  .pg .pg-medicina .nav-toggle {
+    display: inline-flex;
+  }
+}
+@media (max-width: 860px) {
+  .pg .pg-medicina .integ {
+    grid-template-columns: minmax(0px, 1fr);
+  }
+  .pg .pg-medicina .integ .mid {
+    flex-direction: row !important;
+    justify-content: center;
+  }
+  .pg .pg-medicina .integ .mid .line {
+    width: 40px !important;
+    height: 2px !important;
+  }
+}
+.pg .pg-medicina .rise {
+  animation: 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0s 1 normal both running rise;
+}
+.pg .pg-medicina .rise-2 {
+  animation-delay: 0.08s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg .pg-medicina * {
+    transition: none !important;
+    animation: auto ease 0s 1 normal none running none !important;
+  }
+}
+
+/* ---------- login ---------- */
+.pg.auth .pg {
+  font-family: var(--font-sans), Manrope, "Segoe UI", system-ui, sans-serif;
+  color: rgb(22, 23, 29);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+.pg.auth .pg h1,
+.pg.auth .pg h2,
+.pg.auth .pg h3,
+.pg.auth .pg p,
+.pg.auth .pg ul {
+  margin: 0px;
+}
+.pg.auth .auth-side a:focus-visible {
+  outline-color: rgb(255, 255, 255);
+}
+.pg.auth .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0px 20px;
+  border-radius: 12px;
+  font:
+    700 15px / 1.1 var(--font-sans),
+    Manrope,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color 0.18s,
+    box-shadow 0.18s,
+    border-color 0.18s,
+    color 0.18s;
+}
+.pg.auth .btn-primary:hover {
+  background: rgb(74, 81, 224);
+  color: rgb(255, 255, 255);
+}
+.pg.auth .btn-primary:active {
+  background: rgb(62, 68, 201);
+}
+.pg.auth .btn-secondary:hover {
+  border-color: rgb(180, 183, 250);
+  background: rgb(251, 251, 255);
+  color: rgb(22, 23, 29);
+}
+.pg.auth .btn[disabled] {
+  cursor: progress;
+  opacity: 0.85;
+}
+.pg.auth .linkbtn {
+  color-scheme: unset;
+  forced-color-adjust: unset;
+  math-depth: unset;
+  position: unset;
+  position-anchor: unset;
+  text-size-adjust: unset;
+  appearance: unset;
+  font-family: unset;
+  font-feature-settings: unset;
+  font-kerning: unset;
+  font-language-override: unset;
+  font-optical-sizing: unset;
+  font-palette: unset;
+  font-size-adjust: unset;
+  font-stretch: unset;
+  font-style: unset;
+  font-synthesis: unset;
+  font-variant: unset;
+  font-variation-settings: unset;
+  position-area: unset;
+  text-orientation: unset;
+  text-rendering: unset;
+  text-spacing-trim: unset;
+  -webkit-font-smoothing: unset;
+  -webkit-locale: unset;
+  -webkit-text-orientation: unset;
+  -webkit-writing-mode: unset;
+  writing-mode: unset;
+  zoom: unset;
+  accent-color: unset;
+  place-content: unset;
+  place-self: unset;
+  alignment-baseline: unset;
+  anchor-name: unset;
+  anchor-scope: unset;
+  animation-composition: unset;
+  animation: unset;
+  animation-trigger: unset;
+  app-region: unset;
+  aspect-ratio: unset;
+  backdrop-filter: unset;
+  backface-visibility: unset;
+  background: unset;
+  background-blend-mode: unset;
+  baseline-shift: unset;
+  baseline-source: unset;
+  block-size: unset;
+  border-block: unset;
+  border: unset;
+  border-collapse: unset;
+  border-end-end-radius: unset;
+  border-end-start-radius: unset;
+  border-inline: unset;
+  border-shape: unset;
+  border-start-end-radius: unset;
+  border-start-start-radius: unset;
+  inset: unset;
+  box-decoration-break: unset;
+  box-shadow: unset;
+  box-sizing: unset;
+  break-after: unset;
+  break-before: unset;
+  break-inside: unset;
+  buffered-rendering: unset;
+  caption-side: unset;
+  caret-animation: unset;
+  caret-color: unset;
+  caret-shape: unset;
+  clear: unset;
+  clip: unset;
+  clip-path: unset;
+  clip-rule: unset;
+  color-interpolation: unset;
+  color-interpolation-filters: unset;
+  color-rendering: unset;
+  columns: unset;
+  column-fill: unset;
+  gap: unset;
+  rule-break: unset;
+  rule: unset;
+  rule-inset: unset;
+  rule-visibility-items: unset;
+  column-span: unset;
+  contain: unset;
+  contain-intrinsic-block-size: unset;
+  contain-intrinsic-size: unset;
+  contain-intrinsic-inline-size: unset;
+  container: unset;
+  content: unset;
+  content-visibility: unset;
+  corner-shape: unset;
+  corner-block-end-shape: unset;
+  corner-block-start-shape: unset;
+  counter-increment: unset;
+  counter-reset: unset;
+  counter-set: unset;
+  cx: unset;
+  cy: unset;
+  d: unset;
+  dominant-baseline: unset;
+  dynamic-range-limit: unset;
+  empty-cells: unset;
+  field-sizing: unset;
+  fill: unset;
+  fill-opacity: unset;
+  fill-rule: unset;
+  filter: unset;
+  flex: unset;
+  flex-flow: unset;
+  float: unset;
+  flood-color: unset;
+  flood-opacity: unset;
+  grid: unset;
+  grid-area: unset;
+  height: unset;
+  hyphenate-character: unset;
+  hyphenate-limit-chars: unset;
+  hyphens: unset;
+  image-orientation: unset;
+  image-rendering: unset;
+  initial-letter: unset;
+  inline-size: unset;
+  inset-block: unset;
+  inset-inline: unset;
+  interactivity: unset;
+  interest-delay: unset;
+  interpolate-size: unset;
+  isolation: unset;
+  justify-items: unset;
+  letter-spacing: unset;
+  lighting-color: unset;
+  line-break: unset;
+  line-height: unset;
+  list-style: unset;
+  margin-block: unset;
+  margin: unset;
+  margin-inline: unset;
+  marker: unset;
+  mask: unset;
+  mask-type: unset;
+  math-shift: unset;
+  math-style: unset;
+  max-block-size: unset;
+  max-height: unset;
+  max-inline-size: unset;
+  max-width: unset;
+  min-block-size: unset;
+  min-inline-size: unset;
+  min-width: unset;
+  mix-blend-mode: unset;
+  object-fit: unset;
+  object-position: unset;
+  object-view-box: unset;
+  offset: unset;
+  opacity: unset;
+  order: unset;
+  orphans: unset;
+  outline: unset;
+  outline-offset: unset;
+  overflow-anchor: unset;
+  overflow-block: unset;
+  overflow-clip-margin: unset;
+  overflow-inline: unset;
+  overflow-wrap: unset;
+  overflow: unset;
+  overlay: unset;
+  overscroll-behavior-block: unset;
+  overscroll-behavior-inline: unset;
+  overscroll-behavior: unset;
+  padding-block: unset;
+  padding: unset;
+  padding-inline: unset;
+  page: unset;
+  page-orientation: unset;
+  paint-order: unset;
+  perspective: unset;
+  perspective-origin: unset;
+  pointer-events: unset;
+  position-try: unset;
+  position-visibility: unset;
+  print-color-adjust: unset;
+  quotes: unset;
+  r: unset;
+  reading-flow: unset;
+  reading-order: unset;
+  resize: unset;
+  rotate: unset;
+  ruby-align: unset;
+  ruby-position: unset;
+  rule-overlap: unset;
+  rx: unset;
+  ry: unset;
+  scale: unset;
+  scroll-behavior: unset;
+  scroll-initial-target: unset;
+  scroll-margin-block: unset;
+  scroll-margin: unset;
+  scroll-margin-inline: unset;
+  scroll-marker-group: unset;
+  scroll-padding-block: unset;
+  scroll-padding: unset;
+  scroll-padding-inline: unset;
+  scroll-snap-align: unset;
+  scroll-snap-stop: unset;
+  scroll-snap-type: unset;
+  scroll-target-group: unset;
+  scroll-timeline: unset;
+  scrollbar-color: unset;
+  scrollbar-gutter: unset;
+  scrollbar-width: unset;
+  shape-image-threshold: unset;
+  shape-margin: unset;
+  shape-outside: unset;
+  shape-rendering: unset;
+  size: unset;
+  speak: unset;
+  stop-color: unset;
+  stop-opacity: unset;
+  stroke: unset;
+  stroke-dasharray: unset;
+  stroke-dashoffset: unset;
+  stroke-linecap: unset;
+  stroke-linejoin: unset;
+  stroke-miterlimit: unset;
+  stroke-opacity: unset;
+  stroke-width: unset;
+  tab-size: unset;
+  table-layout: unset;
+  text-align: unset;
+  text-align-last: unset;
+  text-anchor: unset;
+  text-autospace: unset;
+  text-box: unset;
+  text-combine-upright: unset;
+  text-decoration: unset;
+  text-decoration-skip-ink: unset;
+  text-emphasis: unset;
+  text-emphasis-position: unset;
+  text-indent: unset;
+  text-justify: unset;
+  text-overflow: unset;
+  text-shadow: unset;
+  text-transform: unset;
+  text-underline-offset: unset;
+  text-underline-position: unset;
+  text-wrap: unset;
+  timeline-scope: unset;
+  timeline-trigger: unset;
+  touch-action: unset;
+  transform: unset;
+  transform-box: unset;
+  transform-origin: unset;
+  transform-style: unset;
+  transition: unset;
+  translate: unset;
+  trigger-scope: unset;
+  user-select: unset;
+  vector-effect: unset;
+  vertical-align: unset;
+  view-timeline: unset;
+  view-transition-class: unset;
+  view-transition-group: unset;
+  view-transition-name: unset;
+  view-transition-scope: unset;
+  visibility: unset;
+  border-spacing: unset;
+  -webkit-box-align: unset;
+  -webkit-box-decoration-break: unset;
+  -webkit-box-direction: unset;
+  -webkit-box-flex: unset;
+  -webkit-box-ordinal-group: unset;
+  -webkit-box-orient: unset;
+  -webkit-box-pack: unset;
+  -webkit-box-reflect: unset;
+  -webkit-line-break: unset;
+  -webkit-line-clamp: unset;
+  -webkit-mask-box-image: unset;
+  -webkit-rtl-ordering: unset;
+  -webkit-ruby-position: unset;
+  -webkit-tap-highlight-color: unset;
+  -webkit-text-combine: unset;
+  -webkit-text-decorations-in-effect: unset;
+  -webkit-text-fill-color: unset;
+  -webkit-text-security: unset;
+  -webkit-text-stroke: unset;
+  -webkit-user-drag: unset;
+  white-space-collapse: unset;
+  widows: unset;
+  width: unset;
+  will-change: unset;
+  word-break: unset;
+  word-spacing: unset;
+  x: unset;
+  y: unset;
+  z-index: unset;
+  cursor: pointer;
+  color: rgb(62, 68, 201);
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 6px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+.pg.auth .linkbtn:hover {
+  color: rgb(47, 53, 176);
+  text-decoration: underline;
+}
+.pg.auth .linkbtn:focus-visible {
+  outline: rgb(91, 99, 245) solid 3px;
+  outline-offset: 2px;
+}
+.pg.auth .field {
+  width: 100%;
+  height: 50px;
+  border-radius: 12px;
+  border: 1px solid rgb(214, 212, 206);
+  background: rgb(255, 255, 255);
+  padding: 0px 14px;
+  font:
+    500 15.5px Manrope,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  color: rgb(22, 23, 29);
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.pg.auth .field::placeholder {
+  color: rgb(139, 141, 151);
+}
+.pg.auth .field:hover {
+  border-color: rgb(189, 187, 180);
+}
+.pg.auth .field:focus {
+  border-color: rgb(91, 99, 245);
+  box-shadow: rgba(91, 99, 245, 0.18) 0px 0px 0px 4px;
+}
+.pg.auth .field.is-error {
+  border-color: rgb(217, 45, 32);
+  box-shadow: rgba(217, 45, 32, 0.12) 0px 0px 0px 4px;
+}
+.pg.auth .side-link {
+  color: rgb(255, 255, 255);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  opacity: 0.92;
+}
+.pg.auth .side-link:hover {
+  color: rgb(255, 255, 255);
+  opacity: 1;
+  text-decoration: underline;
+}
+.pg.auth {
+  display: grid;
+  grid-template-columns: minmax(0px, 1fr) minmax(0px, 1fr);
+  min-height: 100vh;
+}
+@media (max-width: 960px) {
+  .pg.auth {
+    grid-template-columns: minmax(0px, 1fr);
+  }
+  .pg.auth .auth-side {
+    padding: 20px 20px 28px !important;
+    gap: 20px !important;
+  }
+  .pg.auth .auth-side .feat,
+  .pg.auth .auth-side .side-foot {
+    display: none !important;
+  }
+  .pg.auth .auth-side .side-title {
+    font-size: 24px !important;
+  }
+  .pg.auth .auth-main {
+    padding: 28px 16px 40px !important;
+    align-items: flex-start !important;
+  }
+}
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.pg.auth .spin {
+  animation: 0.8s linear 0s infinite normal none running spin;
+}
+.pg.auth .rise {
+  animation: 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) 0s 1 normal both running rise;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg.auth * {
+    transition: none !important;
+    animation: auto ease 0s 1 normal none running none !important;
+  }
+  .pg.auth .spin {
+    animation: 1.6s linear 0s infinite normal none running spin !important;
+  }
+}
+
+/* ---------- orcamento ---------- */
+.pg .pg h1,
+.pg .pg h2,
+.pg .pg h3,
+.pg .pg p,
+.pg .pg ul {
+  margin: 0px;
+}
+.pg .lbl {
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  gap: 4px;
+}
+.pg .req {
+  color: rgb(180, 35, 24);
+}
+.pg .field {
+  width: 100%;
+  height: 50px;
+  border-radius: 12px;
+  border: 1px solid rgb(214, 212, 206);
+  background: rgb(255, 255, 255);
+  padding: 0px 14px;
+  font:
+    500 15.5px Manrope,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  color: rgb(22, 23, 29);
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.pg textarea.field {
+  height: auto;
+  min-height: 120px;
+  padding: 12px 14px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.pg .field::placeholder {
+  color: rgb(139, 141, 151);
+}
+.pg .field:hover {
+  border-color: rgb(189, 187, 180);
+}
+.pg .field:focus {
+  border-color: rgb(91, 99, 245);
+  box-shadow: rgba(91, 99, 245, 0.18) 0px 0px 0px 4px;
+}
+.pg .field.is-error {
+  border-color: rgb(217, 45, 32);
+  box-shadow: rgba(217, 45, 32, 0.1) 0px 0px 0px 4px;
+}
+.pg .err {
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: rgb(180, 35, 24);
+  line-height: 1.45;
+}
+.pg .opt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgb(214, 212, 206);
+  background: rgb(255, 255, 255);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    background-color 0.15s;
+  min-height: 44px;
+}
+.pg .opt:hover {
+  border-color: rgb(180, 183, 250);
+}
+.pg .opt.is-on {
+  border-color: rgb(91, 99, 245);
+  background: rgb(246, 246, 255);
+  box-shadow: rgb(91, 99, 245) 0px 0px 0px 1px;
+}
+.pg .opt.is-error {
+  border-color: rgb(233, 163, 156);
+}
+.pg .opt:has(input:focus-visible) {
+  outline: rgb(91, 99, 245) solid 3px;
+  outline-offset: 2px;
+}
+.pg .sr {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0px;
+  pointer-events: none;
+}
+.pg .check {
+  width: 20px;
+  height: 20px;
+  accent-color: rgb(91, 99, 245);
+  margin: 1px 0px 0px;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.pg .spin {
+  animation: 0.8s linear 0s infinite normal none running spin;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg * {
+    transition: none !important;
+    animation: auto ease 0s 1 normal none running none !important;
+  }
+  .pg .spin {
+    animation: 1.6s linear 0s infinite normal none running spin !important;
+  }
+}
+
+/* ---------- acréscimos nossos ao design (documentados) ---------- */
+
+/*
+ * Link de pular para o conteúdo. O protótipo não tem — é um acréscimo de
+ * acessibilidade (WCAG 2.4.1), invisível até receber foco, então não altera o
+ * visual aprovado. Usa o mesmo indigo e o mesmo raio dos botões do design.
+ */
+.pg .skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: rgb(91, 99, 245);
+  color: rgb(255, 255, 255);
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+}
+.pg .skip-link:focus {
+  left: 16px;
+  top: 16px;
+}
+
+/*
+ * Respeito a `prefers-reduced-motion`. O design especifica a regra ("reduced
+ * motion remove transições"), mas o export não a inclui no CSS.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .pg *,
+  .pg *::before,
+  .pg *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pg .lift:hover {
+    transform: none;
+  }
+}
+
+/*
+ * Resumo de erros do formulário. O design especifica o componente
+ * ("2 campos precisam de atenção", role=alert) e as cores de erro
+ * (#B42318 sobre #FEF1F0), mas o export só traz o estado sem erro — então a
+ * regra é escrita aqui com os tokens do próprio design system aprovado.
+ */
+.pg .form-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgb(254, 241, 240);
+  border: 1px solid rgb(250, 211, 207);
+  color: rgb(180, 35, 24);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/*
+ * Clerk dentro da moldura do design.
+ *
+ * O cartão branco, a borda e a sombra são da nossa moldura (`AuthFrame`); o
+ * Clerk v7 desenha o próprio cartão por CSS-in-JS, com precedência maior que as
+ * classes utilitárias passadas em `appearance.elements` — o resultado era um
+ * cartão dentro de outro. Estas regras neutralizam só a superfície, pelos nomes
+ * de classe públicos do Clerk (`cl-card`, `cl-cardBox`, `cl-footer`). É
+ * tematização por CSS, não manipulação de DOM, e não toca em nada de
+ * autenticação.
+ */
+.pg.auth .cl-cardBox {
+  box-shadow: none !important;
+  border: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.pg.auth .cl-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+.pg.auth .cl-footer {
+  background: transparent !important;
+  border: 0 !important;
+}
+.pg.auth .cl-footerItem {
+  border: 0 !important;
+}

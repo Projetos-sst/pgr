@@ -30,12 +30,17 @@ describe("proxy.ts — deny-by-default", () => {
     },
   );
 
-  it.each(["/dashboard", "/select-organization", "/api/me", "/api/anything"])(
-    "rota privada %s exige auth.protect()",
-    (path) => {
-      expect(isPublic(path)).toBe(false);
-    },
-  );
+  // `/no-organization` atende quem já está autenticado mas ainda não tem
+  // organização: exige sessão (não é pública), só não exige tenant.
+  it.each([
+    "/dashboard",
+    "/select-organization",
+    "/no-organization",
+    "/api/me",
+    "/api/anything",
+  ])("rota privada %s exige auth.protect()", (path) => {
+    expect(isPublic(path)).toBe(false);
+  });
 
   // Espelha a lista real de `src/proxy.ts` (fatia 022: `/signature-requests/(.*)` liberada) SEM o bypass dev.
   const REAL_PUBLIC = [
