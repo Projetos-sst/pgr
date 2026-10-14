@@ -8,6 +8,12 @@ export type TenantAuditFields = {
   userId?: string | null;
   /** Mensagem do erro inesperado (sem stack/PII) — sem isso o 500 é indiagnosticável. */
   error?: string;
+  /**
+   * Condição concreta por trás do `outcome` (ex.: `no_membership` vs
+   * `lost_access` num bloqueio). Sem isso, dois estados muito diferentes ficam
+   * indistinguíveis no log. Identificador fixo, nunca texto livre com PII.
+   */
+  reason?: string;
 };
 
 export function logTenantEvent(level: "info" | "error", fields: TenantAuditFields): void {

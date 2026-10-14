@@ -264,3 +264,10 @@ export {
   type NewErgonomicEvaluation,
   type ErgonomicAdequacyValue,
 } from "./ergonomics";
+export {
+  platformLeads,
+  leadInterest,
+  leadSource,
+  type PlatformLead,
+  type NewPlatformLead,
+} from "./platform-leads";
