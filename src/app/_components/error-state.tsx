@@ -18,35 +18,42 @@ export function ErrorState({
   title,
   description,
   actions = [],
+  children,
 }: {
-  code: string;
+  /** Código HTTP, quando existir um. Estados que não são erro de rota (ex.: a
+      conta ainda sem organização) omitem — inventar um número seria mentira. */
+  code?: string;
   eyebrow: string;
   title: string;
   description: string;
   actions?: ErrorAction[];
+  /** Ação que precisa de cliente (ex.: sair da conta), ao lado das demais. */
+  children?: React.ReactNode;
 }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-16">
       <div className="glass-card rounded-glass w-full max-w-md p-8 sm:p-10">
         <div className="flex items-start gap-5">
           <span
-            className="bg-primary mt-1.5 h-16 w-1 shrink-0 rounded-full"
+            className={`bg-primary mt-1.5 w-1 shrink-0 rounded-full ${code ? "h-16" : "h-6"}`}
             aria-hidden
           />
           <div className="flex flex-col">
             <span className="text-text-subtle font-mono text-[11px] tracking-[0.18em] uppercase">
               {eyebrow}
             </span>
-            <span className="text-primary-strong mt-1 font-mono text-6xl font-bold tracking-tight tabular-nums sm:text-7xl">
-              {code}
-            </span>
+            {code ? (
+              <span className="text-primary-strong mt-1 font-mono text-6xl font-bold tracking-tight tabular-nums sm:text-7xl">
+                {code}
+              </span>
+            ) : null}
           </div>
         </div>
 
         <h1 className="text-text mt-8 text-2xl font-extrabold tracking-tight">{title}</h1>
         <p className="text-text-muted mt-2 text-sm leading-relaxed">{description}</p>
 
-        {actions.length > 0 ? (
+        {actions.length > 0 || children ? (
           <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:items-center">
             {actions.map((action) => {
               const isQuiet = action.variant === "quiet";
@@ -69,6 +76,7 @@ export function ErrorState({
                 </button>
               );
             })}
+            {children}
           </div>
         ) : null}
       </div>

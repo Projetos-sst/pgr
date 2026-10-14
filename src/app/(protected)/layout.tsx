@@ -26,7 +26,11 @@ export default async function ProtectedLayout({
       redirect(`/sign-in?redirect_url=${encodeURIComponent(pathname)}`);
     }
     if (err instanceof NoTenantContextError) {
-      redirect("/sign-in");
+      // NÃO é `/sign-in`: quem chega aqui JÁ está autenticado, e o Clerk devolve
+      // sessão ativa para a área autenticada — que é este mesmo layout. O destino
+      // antigo fechava um laço de redirecionamento em cima de um estado que tem
+      // tratamento próprio (FR-024 exige o bloqueio, não um destino específico).
+      redirect("/no-organization");
     }
     throw err;
   }

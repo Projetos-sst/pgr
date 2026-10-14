@@ -71,11 +71,13 @@ describe("Modelo B — onboarding superseded (US1: sem onboarding para free)", (
     expect(mockedRedirect).not.toHaveBeenCalled();
   });
 
-  it("sem tenant ativo → bloqueio em '/sign-in' (nunca '/onboarding') (FR-024)", async () => {
+  it("sem tenant ativo → bloqueio em '/no-organization' (nunca '/onboarding') (FR-024)", async () => {
     mockedRequire.mockRejectedValue(new NoTenantContextError());
 
-    await expect(runLayout()).rejects.toThrow(/__redirect:\/sign-in/);
-    expect(mockedRedirect).toHaveBeenCalledWith("/sign-in");
+    await expect(runLayout()).rejects.toThrow(/__redirect:\/no-organization/);
+    expect(mockedRedirect).toHaveBeenCalledWith("/no-organization");
+    // A rota `/onboarding` segue aposentada; o estado sem organização tem tela
+    // própria, que exige sessão e não exige tenant.
     expect(mockedRedirect).not.toHaveBeenCalledWith("/onboarding");
   });
 });
