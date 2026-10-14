@@ -1,27 +1,30 @@
 /**
  * Conteúdo do documento do PGR pelos **dois chamadores** (issue #47): a rota síncrona
- * (`generatePgrPdf`) e o worker de arquivamento (`processPdfBatchJob`). O template é
- * compartilhado, mas os dois caminhos montam o HTML por conta própria — este teste
+ * HTML (`generatePgrPdf`, legado REST) e o worker de arquivamento (`processPdfBatchJob`),
+ * que desde a fatia 030 preenche o template DOCX (`generatePgrDocx`). Este teste
  * prova que ambos veem os mesmos dados reais do Postgres efêmero.
  *
- * Gotenberg e Storage são mockados (o HTML é capturado antes de virar binário); a
- * leitura consolidada é a **de verdade**.
+ * Gotenberg e Storage são mockados (o HTML/DOCX é capturado antes de virar binário/
+ * upload); a leitura consolidada e o template DOCX são os **de verdade**.
  */
 jest.mock("@/shared/db/env", () => ({
   getDatabaseUrl: () => process.env.INTEGRATION_APP_RUNTIME_URL,
 }));
 
 const htmlToPdf = jest.fn();
-const putGeneratedPdf = jest.fn();
+const docxToPdf = jest.fn();
+const putGeneratedDocument = jest.fn();
 
 jest.mock("@/shared/integrations/pdf/gotenberg", () => ({
   htmlToPdf: (...a: unknown[]) => htmlToPdf(...a),
+  docxToPdf: (...a: unknown[]) => docxToPdf(...a),
 }));
 jest.mock("@/shared/integrations/storage/documents-storage", () => ({
-  generatedPdfPath: (orgId: string, documentId: string) =>
-    `${orgId}/documentos/generated/${documentId}.pdf`,
-  putGeneratedPdf: (...a: unknown[]) => putGeneratedPdf(...a),
+  putGeneratedDocument: (...a: unknown[]) => putGeneratedDocument(...a),
   slugifyFileName: (name: string) => name.toLowerCase().replace(/[^a-z0-9.]+/g, "-"),
+}));
+jest.mock("@/shared/integrations/storage/company-logo-storage", () => ({
+  downloadCompanyLogo: async () => null,
 }));
 
 import type postgres from "postgres";
@@ -29,6 +32,10 @@ import type postgres from "postgres";
 import { generatePgrPdf } from "@/shared/server/platform/pgr-pdf-core";
 import { processPdfBatchJob } from "@/shared/server/platform/pdf-batch-core";
 import type { Job } from "@/shared/db/schema/jobs";
+import {
+  extractDocxText,
+  findLeftoverMarkers,
+} from "@/shared/integrations/docx/template-engine";
 
 import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS } from "../_helpers/pgr-seed";
@@ -48,7 +55,12 @@ function job(): Job {
     orgId: "org_a",
     jobType: "pdf_batch",
     status: "processing",
-    payload: { documentId: DOCUMENT_ID, kind: "pgr", pgrId: PGR_IDS.pgrA },
+    payload: {
+      documentId: DOCUMENT_ID,
+      kind: "pgr",
+      pgrId: PGR_IDS.pgrA,
+      format: "docx",
+    },
     result: null,
     attempts: 1,
     lockedAt: new Date(),
@@ -63,6 +75,13 @@ function sectionOf(html: string, title: string): string {
   if (start === -1) return "";
   const end = html.indexOf("</section>", start);
   return html.slice(start, end === -1 ? undefined : end);
+}
+
+/** Texto do DOCX preenchido que o worker mandou ao Storage na última invocação. */
+function lastWorkerDocxText(): string {
+  const calls = putGeneratedDocument.mock.calls;
+  expect(calls.length).toBeGreaterThan(0);
+  return extractDocxText(calls[calls.length - 1][2] as Buffer);
 }
 
 /** HTML que o chamador passou ao Gotenberg na última invocação. */
@@ -87,9 +106,13 @@ function lastHtml(): string {
   beforeEach(async () => {
     await seedPgrBase(admin);
     htmlToPdf.mockReset().mockResolvedValue(FAKE_PDF);
-    putGeneratedPdf
+    docxToPdf.mockReset().mockResolvedValue(FAKE_PDF);
+    putGeneratedDocument
       .mockReset()
-      .mockResolvedValue({ storagePath: "org_a/x.pdf", sizeBytes: FAKE_PDF.byteLength });
+      .mockImplementation(async (_o: string, _d: string, file: Buffer) => ({
+        storagePath: `org_a/documentos/generated/${DOCUMENT_ID}.docx`,
+        sizeBytes: file.byteLength,
+      }));
 
     await admin.unsafe(`
       insert into public.documents
@@ -114,6 +137,12 @@ function lastHtml(): string {
       values
         ('${EVALUATION_ID}','org_a','${PGR_IDS.riskA}','2026-06-01','Ergonomista Beltrana','COPSOQ',
          'Reavaliar em 6 meses','inadequate','Bancada abaixo do cotovelo','adequate','not_applicable','${CAMPAIGN_ID}');
+
+      update public.control_measures set applicable=true, action_what='Enclausurar fonte',
+        action_why='Reduzir exposição', action_how='Instalar barreira', action_cost='2500.00'
+        where id='${PGR_IDS.controlMeasureA}';
+      update public.epi_catalog set manufacturer='Fabricante cadastrado', ca_valid_until='2020-01-01'
+        where id='${PGR_IDS.epiCatalogA}';
     `);
   });
 
@@ -159,28 +188,49 @@ function lastHtml(): string {
     for (const row of responses) expect(html).not.toContain(String(row.id));
   });
 
-  it("worker produz o MESMO conteúdo da rota e marca o documento como ready", async () => {
+  it("worker preenche o template DOCX com os mesmos dados da rota e marca ready", async () => {
     await generatePgrPdf("org_a", PGR_IDS.pgrA);
     const fromRoute = lastHtml();
+    htmlToPdf.mockClear();
 
     const result = await processPdfBatchJob(job());
-    const fromWorker = lastHtml();
-    expect(result.documentId).toBe(DOCUMENT_ID);
+    expect(result).toMatchObject({ documentId: DOCUMENT_ID, format: "docx" });
+    // O worker não passa mais pelo HTML: o documento sai do template DOCX.
+    expect(htmlToPdf).not.toHaveBeenCalled();
+    expect(docxToPdf).not.toHaveBeenCalled();
 
-    for (const excerpt of [
-      "4. Avaliação ergonômica (NR-17)",
-      "Ergonomista Beltrana",
-      "Resultado agregado da campanha psicossocial",
-      "Bancada abaixo do cotovelo",
-    ]) {
+    const fromWorker = lastWorkerDocxText();
+    expect(findLeftoverMarkers(fromWorker)).toEqual([]);
+    for (const excerpt of ["A Ltda", "Ruído contínuo"]) {
       expect(fromRoute).toContain(excerpt);
       expect(fromWorker).toContain(excerpt);
     }
+    expect(fromWorker).not.toContain("B Ltda");
+    for (const detail of [
+      "Avaliação ergonômica (NR-17)",
+      "Ergonomista Beltrana",
+      "COPSOQ",
+      "Bancada abaixo do cotovelo",
+      "Reavaliar em 6 meses",
+      "Inadequado",
+      "Não avaliado",
+      "Resultado agregado da campanha psicossocial",
+      "Clima 2026",
+      "Ritmo de trabalho",
+      "Reduzir exposição",
+      "Instalar barreira",
+      "2500.00",
+      "Fabricante cadastrado",
+      "01-01-2020",
+    ])
+      expect(fromWorker).toContain(detail);
+    expect(fromWorker).not.toMatch(/escore/i);
 
     const [doc] = await admin.unsafe(
-      `select status from public.documents where id = '${DOCUMENT_ID}'`,
+      `select status, storage_path from public.documents where id = '${DOCUMENT_ID}'`,
     );
     expect(doc.status).toBe("ready");
+    expect(doc.storage_path).toBe(`org_a/documentos/generated/${DOCUMENT_ID}.docx`);
   });
 
   it("risco sem avaliação ergonômica sai como ausência declarada, nunca como conforme", async () => {
@@ -225,14 +275,13 @@ function lastHtml(): string {
     expect(lastHtml()).toContain("Nenhum EPI vinculado aos riscos deste PGR");
   });
 
-  it("worker entrega a seção de EPIs igual à da rota", async () => {
+  it("worker entrega os EPIs do cadastro no DOCX, como a rota", async () => {
     await generatePgrPdf("org_a", PGR_IDS.pgrA);
     const fromRoute = lastHtml();
     await processPdfBatchJob(job());
-    const fromWorker = lastHtml();
-    expect(fromRoute).toContain("6. Relação de EPIs");
-    expect(fromWorker).toContain("6. Relação de EPIs");
-    expect(fromWorker).toContain("Dados derivados do cadastro de EPIs");
+    const fromWorker = lastWorkerDocxText();
+    expect(fromRoute).toContain("Capacete CA-123");
+    expect(fromWorker).toContain("Capacete CA-123");
   });
 
   it("PGR de outro tenant não gera documento (NOT_FOUND)", async () => {

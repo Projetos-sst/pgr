@@ -31,3 +31,36 @@ export async function htmlToPdf(html: string, fileName = "index.html"): Promise<
   if (!response.ok) throw new ReportUnavailableError();
   return Buffer.from(await response.arrayBuffer());
 }
+
+const DOCX_MIME =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+/**
+ * DOCX → PDF via LibreOffice do Gotenberg (`/forms/libreoffice/convert`) — a
+ * conversão do PGR em DOCX quando o provedor não é o Google Docs. Mesmo contrato de
+ * falha do `htmlToPdf` (`ReportUnavailableError`).
+ */
+export async function docxToPdf(
+  docx: Buffer,
+  fileName = "document.docx",
+): Promise<Buffer> {
+  const config = getGotenbergConfig();
+  if (!config) throw new ReportUnavailableError();
+
+  const form = new FormData();
+  form.append("files", new Blob([new Uint8Array(docx)], { type: DOCX_MIME }), fileName);
+
+  let response: Response;
+  try {
+    response = await fetch(`${config.url}/forms/libreoffice/convert`, {
+      method: "POST",
+      headers: config.token ? { Authorization: `Bearer ${config.token}` } : undefined,
+      body: form,
+    });
+  } catch {
+    throw new ReportUnavailableError();
+  }
+
+  if (!response.ok) throw new ReportUnavailableError();
+  return Buffer.from(await response.arrayBuffer());
+}

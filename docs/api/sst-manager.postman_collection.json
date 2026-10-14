@@ -1636,6 +1636,74 @@
               }
             }
           ]
+        },
+        {
+          "name": "PGR · DOCX (template)",
+          "description": "PGR preenchido pelo template DOCX (templates/pgr/pgr-template.docx). Fixos vêm do template; SEMI-FIXOS (laranja no PGR 2026.1) usam o default de domains/pgr/pgr-docx/defaults.ts ou o override do POST; DINÂMICOS vêm do banco (consolidada + extras). PDF pelo provedor PGR_DOCX_PDF_PROVIDER (gotenberg padrão | google). Use 'Send and Download' no Postman para salvar o arquivo.",
+          "item": [
+            {
+              "name": "GET /pgr/:id/docx (?format=docx|pdf; semi-fixos padrão; 404/422/503)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx?format=docx",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "docx"],
+                  "query": [
+                    {
+                      "key": "format",
+                      "value": "docx",
+                      "description": "docx (padrão) ou pdf"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/docx (semi-fixos alterados; chave desconhecida → 422)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"format\": \"docx\",\n  \"overrides\": {\n    \"titles\": {\n      \"introduction\": \"1 - APRESENTAÇÃO\"\n    },\n    \"labels\": {\n      \"company\": \"Contratada:\"\n    },\n    \"texts\": {\n      \"objective\": \"## Escopo\\nObjetivo específico desta obra da {empresa}.\\na) eliminar riscos na fonte;\\nb) treinar as equipes.\"\n    },\n    \"campaigns\": [\n      {\n        \"month\": \"Março\",\n        \"theme\": \"Março Lilás\",\n        \"actions\": \"• Palestra sobre prevenção do câncer do colo do útero\"\n      }\n    ]\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "docx"]
+                }
+              }
+            }
+          ]
         }
       ]
     },

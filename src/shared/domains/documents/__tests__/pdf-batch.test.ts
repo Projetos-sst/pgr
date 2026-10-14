@@ -1,4 +1,7 @@
 import {
+  DEFAULT_PDF_BATCH_FORMAT,
+  LEGACY_PDF_BATCH_FORMAT,
+  pdfBatchFormatSchema,
   pdfBatchPayloadSchema,
   enqueuePgrPdfBatchSchema,
 } from "@/shared/domains/documents/pdf-batch";
@@ -25,6 +28,44 @@ describe("pdfBatchPayloadSchema", () => {
     expect(() =>
       pdfBatchPayloadSchema.parse({ documentId: "x", kind: "pgr", pgrId: UUID }),
     ).toThrow();
+  });
+
+  it("payload legado sem format continua válido e vira pdf (path .pdf já pré-gravado)", () => {
+    const parsed = pdfBatchPayloadSchema.parse({
+      documentId: UUID,
+      kind: "pgr",
+      pgrId: UUID,
+    });
+    expect(parsed.format).toBe("pdf");
+    expect(LEGACY_PDF_BATCH_FORMAT).toBe("pdf");
+  });
+
+  it("preserva o format explícito do job novo (docx)", () => {
+    const parsed = pdfBatchPayloadSchema.parse({
+      documentId: UUID,
+      kind: "pgr",
+      pgrId: UUID,
+      format: "docx",
+    });
+    expect(parsed.format).toBe("docx");
+  });
+
+  it("rejeita format desconhecido", () => {
+    expect(() =>
+      pdfBatchPayloadSchema.parse({
+        documentId: UUID,
+        kind: "pgr",
+        pgrId: UUID,
+        format: "odt",
+      }),
+    ).toThrow();
+  });
+});
+
+describe("pdfBatchFormatSchema", () => {
+  it("aceita só docx e pdf; jobs novos saem em pdf por padrão", () => {
+    expect(pdfBatchFormatSchema.options).toEqual(["docx", "pdf"]);
+    expect(DEFAULT_PDF_BATCH_FORMAT).toBe("pdf");
   });
 });
 
