@@ -66,71 +66,35 @@ export function configureDeployment(values, run = gh, deploy = false) {
 
   const environment = values.DEPLOY_ENVIRONMENT;
   const branch = environment === "production" ? "main" : "develop";
-  const environments = JSON.parse(run(["api", `repos/${repository}/environments`]));
-  if (!environments.environments.some((item) => item.name === environment)) {
-    run(
-      [
-        "api",
-        "--method",
-        "PUT",
-        `repos/${repository}/environments/${environment}`,
-        "--input",
-        "-",
-      ],
-      JSON.stringify({
-        deployment_branch_policy: {
-          protected_branches: false,
-          custom_branch_policies: true,
-        },
-      }),
-    );
-    run(
-      [
-        "api",
-        "--method",
-        "POST",
-        `repos/${repository}/environments/${environment}/deployment-branch-policies`,
-        "--input",
-        "-",
-      ],
-      JSON.stringify({ name: branch, type: "branch" }),
-    );
+  const prefix = environment === "develop" ? "VERCEL_DEVELOP_" : "VERCEL_";
+  const secretMappings = secretNames.map((name) => ({
+    localName: name,
+    githubName: prefix + name.slice("VERCEL_".length),
+  }));
+  for (const { localName, githubName } of secretMappings) {
+    run(["secret", "set", githubName, "--repo", repository], values[localName]);
   }
-  // Environments existentes mantêm revisores, regras e restrições de branch.
-  for (const name of secretNames) {
-    run(
-      ["secret", "set", name, "--repo", repository, "--env", environment],
-      values[name],
-    );
-  }
-  run(
-    ["variable", "set", "VERCEL_TARGET", "--repo", repository, "--env", environment],
-    values.VERCEL_TARGET,
-  );
+  const targetName = prefix + "TARGET";
+  run(["variable", "set", targetName, "--repo", repository], values.VERCEL_TARGET);
 
   const storedSecrets = JSON.parse(
-    run(["secret", "list", "--repo", repository, "--env", environment, "--json", "name"]),
+    run(["secret", "list", "--repo", repository, "--json", "name"]),
   );
-  if (secretNames.some((name) => !storedSecrets.some((item) => item.name === name))) {
+  if (
+    secretMappings.some(
+      ({ githubName }) => !storedSecrets.some((item) => item.name === githubName),
+    )
+  ) {
     throw new Error(
       "O GitHub não confirmou todos os secrets. Reexecute o setup; valores não serão exibidos.",
     );
   }
   const storedVariables = JSON.parse(
-    run([
-      "variable",
-      "list",
-      "--repo",
-      repository,
-      "--env",
-      environment,
-      "--json",
-      "name,value",
-    ]),
+    run(["variable", "list", "--repo", repository, "--json", "name,value"]),
   );
   if (
     !storedVariables.some(
-      (item) => item.name === "VERCEL_TARGET" && item.value === values.VERCEL_TARGET,
+      (item) => item.name === targetName && item.value === values.VERCEL_TARGET,
     )
   ) {
     throw new Error("O GitHub não confirmou VERCEL_TARGET. Reexecute o setup.");

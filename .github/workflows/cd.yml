@@ -1,5 +1,5 @@
 # Adaptado do CD do Postify: CI -> configuração real -> build -> deploy prebuilt.
-# Configure os environments develop e production conforme docs/deploy/vercel.md.
+# Configure os secrets do repositório conforme docs/deploy/vercel.md.
 name: CD
 
 on:
@@ -26,15 +26,14 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment:
-      name: ${{ github.ref_name == 'main' && 'production' || 'develop' }}
-      url: ${{ steps.publish.outputs.url }}
     env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # Escolhe a CHAVE antes de ler o secret: main sem configuração não cai
+      # nas credenciais de homologação. Repo privado no Free não usa Environments.
+      VERCEL_TOKEN: ${{ secrets[github.ref_name == 'main' && 'VERCEL_TOKEN' || 'VERCEL_DEVELOP_TOKEN'] }}
+      VERCEL_ORG_ID: ${{ secrets[github.ref_name == 'main' && 'VERCEL_ORG_ID' || 'VERCEL_DEVELOP_ORG_ID'] }}
+      VERCEL_PROJECT_ID: ${{ secrets[github.ref_name == 'main' && 'VERCEL_PROJECT_ID' || 'VERCEL_DEVELOP_PROJECT_ID'] }}
       # Obrigatório: develop pode ser preview ou production de um projeto separado.
-      VERCEL_TARGET: ${{ vars.VERCEL_TARGET }}
+      VERCEL_TARGET: ${{ vars[github.ref_name == 'main' && 'VERCEL_TARGET' || 'VERCEL_DEVELOP_TARGET'] }}
       VERCEL_CLI_VERSION: 64.0.2
       NEXT_TELEMETRY_DISABLED: 1
     steps:
@@ -43,7 +42,7 @@ jobs:
         run: |
           for key in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_TARGET; do
             if [[ -z "${!key}" ]]; then
-              echo "::error::Configure $key no environment deste deploy. Consulte docs/deploy/vercel.md."
+              echo "::error::Configure $key para esta branch com npm run deploy:setup. Consulte docs/deploy/vercel.md."
               exit 1
             fi
           done

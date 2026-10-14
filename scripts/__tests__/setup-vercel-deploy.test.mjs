@@ -10,34 +10,27 @@ VERCEL_PROJECT_ID=prj_pgr_teste
 VERCEL_TARGET=production
 `;
 
-function fakeGitHub({
-  existing = false,
-  repo = "Projetos-sst/pgr",
-  confirm = true,
-} = {}) {
+function fakeGitHub({ repo = "Projetos-sst/pgr", confirm = true } = {}) {
   const calls = [];
+  const secrets = new Set();
+  const variables = new Map();
   const run = (args, input) => {
     calls.push({ args, input });
     if (args[0] === "repo") return repo;
-    if (args[0] === "api" && args[1].endsWith("/environments")) {
-      return JSON.stringify({ environments: existing ? [{ name: "develop" }] : [] });
-    }
+    if (args[0] === "secret" && args[1] === "set") secrets.add(args[2]);
+    if (args[0] === "variable" && args[1] === "set") variables.set(args[2], input);
     if (args[0] === "secret" && args[1] === "list") {
-      return JSON.stringify(
-        confirm
-          ? ["VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID"].map((name) => ({
-              name,
-            }))
-          : [],
-      );
+      return JSON.stringify(confirm ? [...secrets].map((name) => ({ name })) : []);
     }
     if (args[0] === "variable" && args[1] === "list") {
-      return JSON.stringify([{ name: "VERCEL_TARGET", value: "production" }]);
+      return JSON.stringify([...variables].map(([name, value]) => ({ name, value })));
     }
     return "";
   };
   return { calls, run };
 }
+
+const writes = (calls) => calls.filter(({ args }) => args[1] === "set");
 
 test("recusa credenciais ausentes sem incluir os outros valores na mensagem", () => {
   assert.throws(
@@ -61,29 +54,31 @@ test("main não pode apontar para Preview", () => {
   );
 });
 
-test("credenciais vão por stdin ao environment correto e não disparam deploy por padrão", () => {
+test("credenciais vão por stdin ao repo correto sem depender de GitHub Environments", () => {
   const github = fakeGitHub();
   const values = readConfiguration(example);
   configureDeployment(values, github.run);
-  const secretWrites = github.calls.filter(
-    ({ args }) => args[0] === "secret" && args[1] === "set",
+  const secretWrites = writes(github.calls).filter(({ args }) => args[0] === "secret");
+  assert.deepEqual(
+    secretWrites.map(({ args }) => args[2]),
+    ["VERCEL_DEVELOP_TOKEN", "VERCEL_DEVELOP_ORG_ID", "VERCEL_DEVELOP_PROJECT_ID"],
   );
-  assert.equal(secretWrites.length, 3);
   for (const { args, input } of secretWrites) {
-    assert.equal(input, values[args[2]]);
-    assert.equal(args.at(-1), "develop");
+    assert.equal(input, values[args[2].replace("VERCEL_DEVELOP_", "VERCEL_")]);
+    assert.equal(args.at(-1), "Projetos-sst/pgr");
     assert.ok(!args.includes(input));
+    assert.ok(!args.includes("--env"));
   }
-  const policy = github.calls.find(({ args }) => args.includes("POST"));
-  assert.deepEqual(JSON.parse(policy.input), { name: "develop", type: "branch" });
-  assert.ok(!github.calls.some(({ args }) => args[0] === "workflow"));
+  assert.ok(
+    !github.calls.some(({ args }) => args[0] === "api" || args[0] === "workflow"),
+  );
 });
 
-test("preserva as proteções de um environment existente", () => {
-  const github = fakeGitHub({ existing: true });
+test("configurar develop não altera os secrets de produção", () => {
+  const github = fakeGitHub();
   configureDeployment(readConfiguration(example), github.run);
   assert.ok(
-    !github.calls.some(({ args }) => args.includes("PUT") || args.includes("POST")),
+    writes(github.calls).every(({ args }) => args[2].startsWith("VERCEL_DEVELOP_")),
   );
 });
 
@@ -116,7 +111,7 @@ test("só dispara o CD quando solicitado e após confirmar a configuração", ()
   assert.ok(!missing.calls.some(({ args }) => args[0] === "workflow"));
 });
 
-test("production cadastra credenciais isoladas e dispara apenas a main", () => {
+test("production usa os nomes do Postify e dispara apenas a main", () => {
   const github = fakeGitHub();
   configureDeployment(
     readConfiguration(
@@ -126,9 +121,8 @@ test("production cadastra credenciais isoladas e dispara apenas a main", () => {
     true,
   );
   assert.equal(github.calls.at(-1).args.at(-1), "main");
-  for (const { args } of github.calls.filter(
-    ({ args }) => args[0] === "secret" && args[1] === "set",
-  )) {
-    assert.equal(args.at(-1), "production");
-  }
+  assert.deepEqual(
+    writes(github.calls).map(({ args }) => args[2]),
+    ["VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID", "VERCEL_TARGET"],
+  );
 });
