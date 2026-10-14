@@ -56,11 +56,11 @@ export default async function CategoriesPage({
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
 
   return (
-    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
+    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-[22px] px-5 pt-8 pb-10 sm:px-[30px]">
       <PageHeader
         icon={<CategoryIcon />}
         title="Categorias"
-        description="Catálogo de EPIs e máquinas do escritório"
+        description="Catálogo de EPIs, máquinas e insumos do escritório"
       />
 
       <ListCard>
@@ -71,7 +71,7 @@ export default async function CategoriesPage({
             defaultValue={sp.search}
             hidden={{ type: sp.type }}
           />
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             {TYPE_FILTERS.map((filter) => {
               const active = (sp.type ?? "") === filter.value;
               const query = new URLSearchParams();
@@ -99,8 +99,9 @@ export default async function CategoriesPage({
         {rows.length === 0 ? (
           <div className="p-6">
             <EmptyState
+              isFlat
               message={
-                sp.search
+                sp.search || type
                   ? "Nenhuma categoria encontrada para a busca."
                   : "Nenhuma categoria cadastrada."
               }

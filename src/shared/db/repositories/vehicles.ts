@@ -7,7 +7,11 @@ import type {
   VehicleListItem,
   VehicleValues,
 } from "@/shared/domains/inspections/vehicles";
-import { toVehicleListItem } from "@/shared/domains/inspections/vehicles";
+import {
+  toVehicleListItem,
+  isVehiclePhotoPathForTenant,
+} from "@/shared/domains/inspections/vehicles";
+import { ValidationError } from "@/shared/errors/validation-error";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { resolvePageParams, type Paginated } from "@/shared/pagination";
 import { todayInSaoPaulo } from "@/shared/dates";
@@ -55,6 +59,9 @@ async function assertRefs(
   orgId: string,
   input: VehicleValues,
 ): Promise<void> {
+  if (input.photoPath && !isVehiclePhotoPathForTenant(input.photoPath, orgId)) {
+    throw new ValidationError("Foto inválida para o escritório ativo.");
+  }
   if (input.companyId) {
     const [row] = await tx
       .select({ id: companies.id })

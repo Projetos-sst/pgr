@@ -180,6 +180,14 @@ export const vehicleInputSchema = z.object({
 export type VehicleInput = z.input<typeof vehicleInputSchema>;
 export type VehicleValues = z.output<typeof vehicleInputSchema>;
 
+export function isVehiclePhotoPathForTenant(path: string, tenantId: string): boolean {
+  const prefix = `${tenantId}/vehicles/`;
+  return (
+    path.startsWith(prefix) &&
+    /^[0-9a-f-]{36}\/foto\.(png|jpg)$/.test(path.slice(prefix.length))
+  );
+}
+
 export const vehicleFiltersSchema = z
   .object({
     search: z.string().trim().optional(),

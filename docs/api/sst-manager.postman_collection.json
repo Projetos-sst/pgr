@@ -5436,6 +5436,61 @@
               "path": ["api", "v1", "vehicles", "{{vehicleId}}"]
             }
           }
+        },
+        {
+          "name": "Enviar foto de veículo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/photo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "photo"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "description": "Envia PNG/JPG de até 5 MB e devolve path e URL assinada. Envie path no photoPath do CRUD para confirmar o vínculo."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter URL da foto de veículo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}/photo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "{{vehicleId}}", "photo"]
+            }
+          },
+          "response": []
         }
       ]
     },

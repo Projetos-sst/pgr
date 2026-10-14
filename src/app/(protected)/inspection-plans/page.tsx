@@ -61,7 +61,7 @@ export default async function PlanosInspecaoPage({
   const params = { search: sp.search, category: sp.category };
 
   return (
-    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
+    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-[22px] px-5 pt-8 pb-10 sm:px-[30px]">
       <PageHeader
         icon={<InspectionPlanIcon />}
         title="Planos de Inspeção"
@@ -90,6 +90,7 @@ export default async function PlanosInspecaoPage({
         {rows.length === 0 ? (
           <div className="p-6">
             <EmptyState
+              isFlat
               message={
                 sp.search || sp.category
                   ? "Nenhum plano encontrado para o filtro."

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent, type ChangeEvent } from "react";
 
 import {
   INSPECTION_FREQUENCY_LABELS,
@@ -10,12 +10,14 @@ import {
 import {
   createVehicleAction,
   updateVehicleAction,
+  uploadVehiclePhotoAction,
 } from "@/shared/server/actions/inspections/vehicles";
 
 import {
   CancelLink,
   FormActions,
   FormError,
+  FieldError,
   FormSection,
   SelectField,
   SubmitButton,
@@ -48,6 +50,7 @@ export type VehicleFormInitial = {
   inspectionFrequency: string | null;
   initialKm: number;
   notes: string | null;
+  photoPath: string | null;
 };
 
 export function VehicleForm({
@@ -56,20 +59,50 @@ export function VehicleForm({
   workUnits,
   inspectionPlans,
   initial,
+  photoUrl = null,
 }: {
   id?: string;
   companies: Option[];
   workUnits: Option[];
   inspectionPlans: Option[];
   initial?: VehicleFormInitial;
+  photoUrl?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [photoPath, setPhotoPath] = useState(initial?.photoPath ?? "");
+  const [photoPreview, setPhotoPreview] = useState(photoUrl);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  async function onPhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setPhotoUploading(true);
+    setPhotoError(null);
+    const data = new FormData();
+    data.set("file", file);
+    try {
+      const result = await uploadVehiclePhotoAction(data);
+      if (result.ok) {
+        setPhotoPath(result.data.path);
+        setPhotoPreview(result.data.url);
+      } else {
+        setPhotoError(result.error.message);
+      }
+    } catch {
+      setPhotoError("Falha ao enviar a foto. Tente novamente.");
+    } finally {
+      setPhotoUploading(false);
+    }
+  }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (photoUploading || pending) return;
     const fd = new FormData(event.currentTarget);
     const str = (k: string) => (fd.get(k) as string)?.trim() || undefined;
     const input = {
@@ -87,6 +120,7 @@ export function VehicleForm({
       inspectionFrequency: str("inspectionFrequency"),
       initialKm: (fd.get("initialKm") as string) ?? "0",
       notes: str("notes"),
+      photoPath,
     };
     startTransition(async () => {
       const result = id
@@ -201,6 +235,52 @@ export function VehicleForm({
       </FormSection>
 
       <FormSection title="Dados operacionais">
+        <div className="sm:col-span-full">
+          <label
+            htmlFor="vehicle-photo"
+            className="text-text-muted mb-1.5 block text-xs font-semibold"
+          >
+            Foto do veículo
+          </label>
+          {photoPreview ? (
+            <img
+              src={photoPreview}
+              alt="Foto do veículo"
+              className="glass-panel rounded-card mb-3 h-40 w-full max-w-sm object-contain"
+            />
+          ) : null}
+          <input
+            id="vehicle-photo"
+            type="file"
+            accept="image/png,image/jpeg"
+            onChange={onPhotoChange}
+            disabled={photoUploading || pending}
+            className="glass-input rounded-card max-w-full p-3 text-sm"
+          />
+          <p className="text-text-subtle mt-1 text-xs">
+            PNG ou JPG, até 5 MB. Salve o veículo para confirmar a alteração da foto.
+          </p>
+          {photoUploading ? (
+            <p role="status" className="text-text-muted mt-2 text-sm">
+              Enviando foto…
+            </p>
+          ) : null}
+          {photoPath ? (
+            <button
+              type="button"
+              disabled={photoUploading || pending}
+              onClick={() => {
+                setPhotoPath("");
+                setPhotoPreview(null);
+                setPhotoError(null);
+              }}
+              className="text-primary mt-2 text-sm font-semibold disabled:opacity-50"
+            >
+              Remover foto
+            </button>
+          ) : null}
+          <FieldError message={photoError ?? errors.photoPath} />
+        </div>
         <TextField
           label="Proprietário"
           name="owner"
@@ -228,7 +308,10 @@ export function VehicleForm({
 
       <FormActions>
         <CancelLink href="/vehicles" />
-        <SubmitButton pending={pending} label={id ? "Salvar veículo" : "Criar veículo"} />
+        <SubmitButton
+          pending={pending || photoUploading}
+          label={id ? "Salvar veículo" : "Criar veículo"}
+        />
       </FormActions>
     </form>
   );
