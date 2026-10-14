@@ -14,8 +14,7 @@ export async function listTenantProbes(orgId: string): Promise<TenantProbe[]> {
 }
 
 export type InsertTenantProbeResult =
-  | { ok: true; probe: TenantProbe }
-  | { ok: false; error: "CROSS_TENANT_REJECTED" };
+  { ok: true; probe: TenantProbe } | { ok: false; error: "CROSS_TENANT_REJECTED" };
 
 export async function insertTenantProbe(
   orgId: string,

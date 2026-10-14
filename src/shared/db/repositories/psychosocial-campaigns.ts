@@ -482,9 +482,7 @@ export type PublicCampaignView = {
 
 // Estado da rota pública ao resolver (campaignId, token).
 export type PublicResolution =
-  | { kind: "ok"; view: PublicCampaignView }
-  | { kind: "invalid" }
-  | { kind: "not_open" };
+  { kind: "ok"; view: PublicCampaignView } | { kind: "invalid" } | { kind: "not_open" };
 
 function isWithinPeriod(startsAt: string | null, endsAt: string | null): boolean {
   const today = todayInSaoPaulo();

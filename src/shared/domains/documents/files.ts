@@ -19,11 +19,7 @@ export const ALLOWED_FILE_TYPES: Record<string, string> = {
 export type FileMeta = { name: string; size: number; type: string };
 
 export type FileValidationError =
-  | "MISSING_FILE"
-  | "EMPTY_FILE"
-  | "MISSING_NAME"
-  | "TYPE_NOT_ALLOWED"
-  | "TOO_LARGE";
+  "MISSING_FILE" | "EMPTY_FILE" | "MISSING_NAME" | "TYPE_NOT_ALLOWED" | "TOO_LARGE";
 
 export type FileValidationResult =
   | { ok: true; extension: string }

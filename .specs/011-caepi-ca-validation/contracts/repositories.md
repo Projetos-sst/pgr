@@ -11,8 +11,7 @@ carrega `server-only`).
 export type CaepiCertificate = InferSelectModel<typeof caepiCertificates>;
 
 export type GetByCaResult =
-  | { record: CaepiCertificate }
-  | { record: null; baseEmpty: boolean };
+  { record: CaepiCertificate } | { record: null; baseEmpty: boolean };
 
 /** SELECT por PK na tabela global. SEM withOrg — dado público (exceção documentada). */
 export async function getByCa(ca: string): Promise<GetByCaResult>;
