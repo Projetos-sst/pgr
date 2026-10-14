@@ -119,16 +119,15 @@ Join escopado por tenant (`withOrg`):
 `epi_deliveries × epi_delivery_items × epi_catalog`, filtrado por `employee_id` (do tenant).
 
 Colunas por linha (`EpiRecordRow`):
-
-| Campo             | Origem                                                     |
-| ----------------- | ---------------------------------------------------------- |
-| `ca`              | `epi_catalog.ca`                                           |
-| `epiName`         | `epi_catalog.name`                                         |
-| `size`            | `epi_catalog.size`                                         |
-| `quantity`        | `epi_delivery_items.quantity`                              |
-| `deliveryDate`    | `epi_deliveries.delivery_date`                             |
-| `returnedAt`      | `epi_delivery_items.returned_at` (0010; `null` = pendente) |
-| `signatureStatus` | `epi_deliveries.signature_status` (+ label)                |
+| Campo | Origem |
+| --- | --- |
+| `ca` | `epi_catalog.ca` |
+| `epiName` | `epi_catalog.name` |
+| `size` | `epi_catalog.size` |
+| `quantity` | `epi_delivery_items.quantity` |
+| `deliveryDate` | `epi_deliveries.delivery_date` |
+| `returnedAt` | `epi_delivery_items.returned_at` (0010; `null` = pendente) |
+| `signatureStatus` | `epi_deliveries.signature_status` (+ label) |
 
 - Ordenação: `delivery_date DESC` (mais recente primeiro). Paginação offset (`{rows,total}`,
   `resolvePageParams`, pageSize padrão 20).

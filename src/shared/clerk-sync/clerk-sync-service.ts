@@ -26,7 +26,9 @@ import {
 import { logClerkSync } from "./log";
 
 export type ClerkSyncResult =
-  { status: "ok" } | { status: "ignored" } | { status: "invalid_payload" };
+  | { status: "ok" }
+  | { status: "ignored" }
+  | { status: "invalid_payload" };
 
 const OK: ClerkSyncResult = { status: "ok" };
 const IGNORED: ClerkSyncResult = { status: "ignored" };

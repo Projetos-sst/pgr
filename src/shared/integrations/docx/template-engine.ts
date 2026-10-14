@@ -16,7 +16,13 @@ import { replaceImageByName } from "./image";
 export const DOCX_DELIMITERS = { start: "{{", end: "}}" } as const;
 
 type Scope =
-  Record<string, unknown> | unknown[] | string | number | boolean | null | undefined;
+  | Record<string, unknown>
+  | unknown[]
+  | string
+  | number
+  | boolean
+  | null
+  | undefined;
 
 /**
  * Parser de caminho pontuado (`company.razaoSocial`) — o parser padrão do docxtemplater

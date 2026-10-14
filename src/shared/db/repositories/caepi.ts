@@ -8,7 +8,8 @@ import { caepiCertificates, type CaepiCertificate } from "../schema";
 export type { CaepiCertificate };
 
 export type GetByCaResult =
-  { record: CaepiCertificate } | { record: null; baseEmpty: boolean };
+  | { record: CaepiCertificate }
+  | { record: null; baseEmpty: boolean };
 
 /**
  * SELECT por PK na tabela GLOBAL `caepi_certificates` — SEM `withOrg` de

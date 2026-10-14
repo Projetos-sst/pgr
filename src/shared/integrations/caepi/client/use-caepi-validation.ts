@@ -6,7 +6,13 @@ import { isValidCa, normalizeCa } from "../normalize";
 import type { CaLookupResult } from "../types";
 
 export type CaepiValidationStatus =
-  "idle" | "loading" | "valid" | "expired" | "not_found" | "error" | "invalid";
+  | "idle"
+  | "loading"
+  | "valid"
+  | "expired"
+  | "not_found"
+  | "error"
+  | "invalid";
 
 export type CaFound = Extract<CaLookupResult, { status: "valid" | "expired" }>;
 

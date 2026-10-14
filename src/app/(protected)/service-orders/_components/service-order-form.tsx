@@ -159,7 +159,8 @@ export function ServiceOrderForm({
     const openedAt = (fd.get("openedAt") as string) ?? "";
     const dueDate = (fd.get("dueDate") as string)?.trim() || undefined;
     const osType = ((fd.get("osType") as string)?.trim() || undefined) as
-      ExamType | undefined;
+      | ExamType
+      | undefined;
     const workUnitId = (fd.get("workUnitId") as string)?.trim() || null;
     const assignedEmployeeId = employeeId ? employeeId : null;
     const payloadItems = items.map((i) => ({

@@ -19,7 +19,10 @@ export function safetyInspectionNumber(id: string): string {
 export const CRITICAL_OCCURRENCE_THRESHOLD = 4;
 
 export type SafetyInspectionOutcome =
-  "in_progress" | "compliant" | "pending_items" | "critical";
+  | "in_progress"
+  | "compliant"
+  | "pending_items"
+  | "critical";
 
 export const SAFETY_OUTCOME_LABELS: Record<SafetyInspectionOutcome, string> = {
   in_progress: "Em andamento",

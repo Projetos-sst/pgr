@@ -5,10 +5,14 @@
  */
 
 export type ProviderFailureReason =
-  "not_found" | "timeout" | "upstream_error" | "invalid_payload";
+  | "not_found"
+  | "timeout"
+  | "upstream_error"
+  | "invalid_payload";
 
 export type ProviderResult<T> =
-  { ok: true; data: T } | { ok: false; reason: ProviderFailureReason };
+  | { ok: true; data: T }
+  | { ok: false; reason: ProviderFailureReason };
 
 /** Endereço retornado pelo ViaCEP (sem número — o usuário preenche). */
 export type CepAddress = {

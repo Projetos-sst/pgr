@@ -15,7 +15,10 @@ export const ALLOWED_LOGO_TYPES: Record<string, string> = {
 export type LogoFileMeta = { name: string; size: number; type: string };
 
 export type LogoValidationError =
-  "MISSING_FILE" | "EMPTY_FILE" | "TYPE_NOT_ALLOWED" | "TOO_LARGE";
+  | "MISSING_FILE"
+  | "EMPTY_FILE"
+  | "TYPE_NOT_ALLOWED"
+  | "TOO_LARGE";
 
 export type LogoValidationResult =
   | { ok: true; extension: string }

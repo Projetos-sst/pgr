@@ -34,10 +34,10 @@ job-role-required-trainings}.ts`.
 
 Consumo por Server Component; expor action de listagem quando útil à UI. Sem escrita.
 
-| Função | Assinatura | Retorno |
+| Função                                                    | Assinatura                                 | Retorno                                                       |
 | --------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- | -------- | ----------------------------------------------------------------- |
 | `listTrainingExpiryAction` (ou query de Server Component) | `(params: { employeeId?; dueWithinDays: 30 | 60                                                            | 90 }) → ActionResult<TrainingStatusRow[]>` | último registro por par (D5) classificado por D2 (`expired | due_soon | ok`); exclui `single` (`valid_until IS NULL`); escopado ao tenant |
-| `getTrainingDueSummaryAction` | `() → ActionResult<TrainingDueSummary>` | `{ expired, dueSoon }` (contagens do tenant) — dashboard (D7) |
+| `getTrainingDueSummaryAction`                             | `() → ActionResult<TrainingDueSummary>`    | `{ expired, dueSoon }` (contagens do tenant) — dashboard (D7) |
 
 ## US4 — `job-role-required-trainings.ts` + conformidade
 

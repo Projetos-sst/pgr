@@ -59,7 +59,12 @@ Arquivo: `src/app/api/integrations/caepi/[ca]/route.ts` (molde `cep/[cep]`), reu
 
 ```ts
 export type CaepiValidationStatus =
-  "idle" | "loading" | "valid" | "expired" | "not_found" | "error";
+  | "idle"
+  | "loading"
+  | "valid"
+  | "expired"
+  | "not_found"
+  | "error";
 
 export function useCaepiValidation(opts: {
   onFound: (data: Extract<CaLookupResult, { status: "valid" | "expired" }>) => void;

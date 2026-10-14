@@ -61,7 +61,9 @@ export function PlanForm({ id, initial }: { id?: string; initial?: PlanFormIniti
       description: (fd.get("description") as string) ?? "",
       frequency: (fd.get("frequency") as string)?.trim() || undefined,
       status: ((fd.get("status") as string) || "active") as
-        "active" | "draft" | "inactive",
+        | "active"
+        | "draft"
+        | "inactive",
       items: items.filter((it) => it.description.trim() !== ""),
     };
     startTransition(async () => {

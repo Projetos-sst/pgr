@@ -77,7 +77,8 @@ export function requiresRiskAuditJustification(to: RiskAuditStatus): boolean {
 }
 
 export type RiskAuditTransitionCheck =
-  { ok: true } | { ok: false; reason: "invalid_transition" | "justification_required" };
+  | { ok: true }
+  | { ok: false; reason: "invalid_transition" | "justification_required" };
 
 /**
  * Validação **pura** de uma transição (sem throw): o repositório mapeia `invalid_transition`

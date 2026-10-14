@@ -16,7 +16,10 @@ export const ALLOWED_PHOTO_TYPES: Record<string, string> = {
 export type PhotoFileMeta = { name: string; size: number; type: string };
 
 export type PhotoValidationError =
-  "MISSING_FILE" | "EMPTY_FILE" | "TYPE_NOT_ALLOWED" | "TOO_LARGE";
+  | "MISSING_FILE"
+  | "EMPTY_FILE"
+  | "TYPE_NOT_ALLOWED"
+  | "TOO_LARGE";
 
 export type PhotoValidationResult =
   | { ok: true; extension: string }

@@ -15,7 +15,10 @@ export const ALLOWED_EPI_CATALOG_PHOTO_TYPES: Record<string, string> = {
 export type EpiCatalogPhotoFileMeta = { size: number; type: string };
 
 export type EpiCatalogPhotoValidationError =
-  "MISSING_FILE" | "EMPTY_FILE" | "TYPE_NOT_ALLOWED" | "TOO_LARGE";
+  | "MISSING_FILE"
+  | "EMPTY_FILE"
+  | "TYPE_NOT_ALLOWED"
+  | "TOO_LARGE";
 
 export type EpiCatalogPhotoValidationResult =
   | { ok: true; extension: string }
