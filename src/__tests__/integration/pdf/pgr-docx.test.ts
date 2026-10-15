@@ -89,10 +89,10 @@ const FAKE_PDF = Buffer.from("%PDF-1.4 fake");
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     );
     expect(result.fileName).toMatch(/^pgr-a-ltda-wu-a-\d{4}-\d{2}-\d{2}\.docx$/);
-    const text = extractDocxText(result.file);
+    const text = extractDocxText(result.file).replace(/\u00A0/g, " ");
     expect(findLeftoverMarkers(text)).toEqual([]);
     for (const expected of [
-      "A Ltda",
+      "A LTDA",
       "11.222.333/0001-81",
       "(11) 4000-0000",
       "CT-77/2026",
@@ -100,7 +100,7 @@ const FAKE_PDF = Buffer.from("%PDF-1.4 fake");
       "Eng. Fulano",
       "01 - Revisão anual",
       "10/2026 a 09/2028",
-      "GES 1 - GES A",
+      "GES A",
       "Concretagem de lajes",
       "Pedreiro",
       "Executa alvenaria",
@@ -113,7 +113,7 @@ const FAKE_PDF = Buffer.from("%PDF-1.4 fake");
       expect(text).toContain(expected);
     }
     // nada do outro tenant
-    expect(text).not.toContain("B Ltda");
+    expect(text).not.toContain("B LTDA");
     expect(text).not.toContain("NR 33");
     expect(docxToPdf).not.toHaveBeenCalled();
   });
@@ -125,7 +125,7 @@ const FAKE_PDF = Buffer.from("%PDF-1.4 fake");
         texts: { objective: "Objetivo próprio da obra." },
       },
     });
-    const text = extractDocxText(result.file);
+    const text = extractDocxText(result.file).replace(/\u00A0/g, " ");
     expect(text).toContain("1 - APRESENTAÇÃO");
     expect(text).not.toContain("1 - INTRODUÇÃO");
     expect(text).toContain("Objetivo próprio da obra.");
@@ -140,7 +140,7 @@ const FAKE_PDF = Buffer.from("%PDF-1.4 fake");
     expect(docxToPdf).toHaveBeenCalledTimes(1);
     const [docx, name] = docxToPdf.mock.calls[0] as [Buffer, string];
     expect(name).toMatch(/\.docx$/);
-    expect(extractDocxText(docx)).toContain("A Ltda");
+    expect(extractDocxText(docx)).toContain("A LTDA");
   });
 
   it("PGR de outro tenant → NOT_FOUND (sem vazar dado)", async () => {

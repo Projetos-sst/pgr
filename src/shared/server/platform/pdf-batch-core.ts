@@ -1,11 +1,12 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { documents } from "@/shared/db/schema/documents";
 import type { Job } from "@/shared/db/schema/jobs";
 import { withOrg } from "@/shared/db/with-org";
 import {
+  PROVISIONAL_PGR_DOCUMENT_NAME,
   pdfBatchPayloadSchema,
   type PdfBatchFormat,
 } from "@/shared/domains/documents/pdf-batch";
@@ -50,7 +51,7 @@ export async function processPdfBatchJob(job: Job): Promise<ProcessResult> {
         status: "ready",
         sizeBytes: stored.sizeBytes,
         storagePath: stored.storagePath,
-        name: generated.title,
+        name: sql`case when ${documents.name} = ${PROVISIONAL_PGR_DOCUMENT_NAME} then ${generated.title} else ${documents.name} end`,
       })
       .where(and(eq(documents.orgId, job.orgId), eq(documents.id, payload.documentId)));
   });
@@ -60,4 +61,20 @@ export async function processPdfBatchJob(job: Job): Promise<ProcessResult> {
     sizeBytes: stored.sizeBytes,
     format: payload.format,
   };
+}
+
+export async function discardPdfBatchDocument(job: Job): Promise<void> {
+  const parsed = pdfBatchPayloadSchema.safeParse(job.payload);
+  if (!parsed.success) return;
+  await withOrg(job.orgId, async (tx) => {
+    await tx
+      .delete(documents)
+      .where(
+        and(
+          eq(documents.orgId, job.orgId),
+          eq(documents.id, parsed.data.documentId),
+          eq(documents.status, "generating"),
+        ),
+      );
+  });
 }

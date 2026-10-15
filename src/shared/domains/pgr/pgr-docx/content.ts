@@ -1,3 +1,5 @@
+import type { ClassificationBand } from "../methodology";
+
 import type { PgrDocxAgentKey, PgrDocxRiskClass } from "./theme";
 
 /**
@@ -74,6 +76,7 @@ export type PgrDocxContent = {
   jobRolesTotal: string;
   trainingMatrix: PgrDocxTrainingMatrix;
   ges: PgrDocxGes[];
+  classificationBands?: ClassificationBand[];
 };
 
 export type PgrDocxRevision = {
@@ -143,8 +146,6 @@ export type PgrDocxRisk = {
   controlNeed: string;
   result: string;
   toleranceLimit: string;
-  /** Avaliações e detalhes já cadastrados, preservados da exportação anterior. */
-  assessmentDetails?: string;
 };
 
 export type PgrDocxMeasureLevel = {

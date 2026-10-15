@@ -1,14 +1,11 @@
 import { formatCnpj } from "../companies";
+import type { ClassificationBand } from "../methodology";
 import {
   assessmentCriterionLabel,
   epiNeutralizationLabel,
   exposureTimeLabel,
   formatMeasurement,
   measureStateLabel,
-  measurementUnitLabel,
-  nr09ConclusionLabel,
-  ergonomicAdequacyText,
-  formatCampaignPeriod,
   type ConsolidatedAddress,
   type ConsolidatedMeasure,
   type ConsolidatedRisk,
@@ -16,8 +13,11 @@ import {
   type PgrConsolidated,
   type RiskAgentType,
 } from "../pgr-consolidated";
-import { pgrRegistrationTypeLabel, uncertaintyDegreeLabel } from "../risks";
-import { isNr09EligibleAgent } from "../nr09";
+import {
+  measurementUnitEsocialLabel,
+  pgrRegistrationTypeLabel,
+  uncertaintyDegreeLabel,
+} from "../risks";
 
 import type {
   PgrDocxAction,
@@ -31,7 +31,8 @@ import type {
   PgrDocxTrainingMatrix,
 } from "./content";
 import { DEFAULT_METHODOLOGY, type PgrDocxMethodology } from "./defaults";
-import { PGR_DOCX_RISK_CLASS_COLORS, type PgrDocxAgentKey } from "./theme";
+import { riskLevelLabels } from "./risk-bands";
+import type { PgrDocxAgentKey } from "./theme";
 
 /**
  * Banco → conteúdo do template. Junta a visão consolidada do PGR (`getPgrConsolidated`,
@@ -76,6 +77,7 @@ export type PgrDocxContentOptions = {
   emittedAt: string;
   /** Metodologia usada para os textos de probabilidade/severidade/controle. */
   methodology?: PgrDocxMethodology;
+  classificationBands?: ClassificationBand[];
 };
 
 const NOT_INFORMED = "Não informado";
@@ -135,85 +137,49 @@ const LEVELS: {
 ];
 
 /** "Tolerável (3-8)" — `null` (sem avaliação) → "Não avaliado". */
-export function riskLevelText(risk: Pick<ConsolidatedRisk, "result">): string {
+export function riskLevelText(
+  risk: Pick<ConsolidatedRisk, "result">,
+  bands?: ClassificationBand[],
+): string {
   if (!risk.result) return NOT_ASSESSED;
-  const { label, range } = PGR_DOCX_RISK_CLASS_COLORS[risk.result];
-  return `${label} (${range})`;
+  return riskLevelLabels(bands)[risk.result];
 }
 
 const withoutFinalPeriod = (value: string) => value.replace(/\.\s*$/, "");
 
-/** Preserva dados da exportação anterior que não cabem nas células do cartão. */
-function assessmentDetails(risk: ConsolidatedRisk): string {
-  const lines: string[] = [];
-  const field = (label: string, value: string | null | undefined) =>
-    lines.push(`${label}: ${orNotInformed(value)}`);
-  const assessment = risk.assessment;
-  if (isNr09EligibleAgent(risk.agentType)) {
-    lines.push("Avaliação quantitativa (NR-09)");
-    field("Data", formatDocxDate(assessment?.assessedAt));
-    field("Método", assessment?.evaluationMethod);
-    if (assessment?.measuredValue == null) lines.push("Sem medição registrada");
-    field(
-      "Conclusão registrada",
-      assessment?.nr09Conclusion ? nr09ConclusionLabel(assessment.nr09Conclusion) : null,
-    );
-  }
+const decimalComma = (value: string) => value.replace(/(\d)\.(\d)/g, "$1,$2");
 
-  lines.push("Avaliação ergonômica (NR-17)");
-  const ergonomic = risk.ergonomic;
-  if (!ergonomic) {
-    lines.push("Sem avaliação ergonômica registrada");
-  } else {
-    field("Data", formatDocxDate(ergonomic.assessedAt));
-    field("Responsável", ergonomic.responsible);
-    field("Método", ergonomic.method);
-    for (const dimension of ergonomic.dimensions) {
-      lines.push(`${dimension.label}: ${ergonomicAdequacyText(dimension.adequacy)}`);
-      if (text(dimension.notes)) field("Observações", dimension.notes);
-    }
-    field("Observações gerais", ergonomic.notes);
-    const aggregate = ergonomic.psychosocial;
-    if (aggregate) {
-      lines.push("Resultado agregado da campanha psicossocial");
-      field("Campanha", aggregate.name);
-      field("Período", formatCampaignPeriod(aggregate.startsAt, aggregate.endsAt));
-      lines.push(`Respostas: ${aggregate.responseCount}`);
-      for (const factor of aggregate.factors) {
-        lines.push(`${factor.factor}: nível registrado ${factor.level}`);
-      }
-    }
-  }
+const measurement = (...args: Parameters<typeof formatMeasurement>) => {
+  const formatted = formatMeasurement(...args);
+  return formatted === null ? null : decimalComma(formatted);
+};
 
-  for (const measure of risk.measures.filter((item) => item.applicable)) {
-    if (!text(measure.actionWhat)) continue;
-    lines.push(`Plano 5W2H — ${measure.actionWhat}`);
-    field("Por quê", measure.actionWhy);
-    field("Como", measure.actionHow);
-    field("Quanto", measure.actionCost);
+const gesTitle = (name: string, index: number) => {
+  let upper = name.trim().toLocaleUpperCase("pt-BR");
+  const duplicated = /^GES\s*(\d+)\s*-?\s*GES(?![A-ZÀ-Ý])\s*(\d*)\s*-?\s*(.*)$/;
+  for (let m = upper.match(duplicated); m; m = upper.match(duplicated)) {
+    upper = `GES ${m[2] || m[1]} - ${m[3]}`.trim();
   }
-  for (const epi of risk.epis) {
-    lines.push(`Detalhes do EPI — ${epi.name}`);
-    field("Descrição", epi.description);
-    field("Validade do CA", formatDocxDate(epi.caValidUntil));
-    field("Fabricante", epi.manufacturer);
-    field("Norma", epi.norm);
-    field("Material", epi.material);
-    field("Tamanho", epi.size);
-    field("Unidade de medida", epi.unitOfMeasure);
-    field("Vida útil (meses)", epi.usefulLifeMonths?.toString());
+  const numbered = upper.match(/^GES\s*(\d+)\s*-?\s*(.*)$/);
+  if (numbered) {
+    const number = numbered[1].padStart(2, "0");
+    return numbered[2] ? `GES ${number} - ${numbered[2]}` : `GES ${number}`;
   }
-  return lines.join("\n");
-}
+  return /^GES(?![A-ZÀ-Ý])/.test(upper)
+    ? upper
+    : `GES ${String(index + 1).padStart(2, "0")} - ${upper}`;
+};
 
 function mapRisk(
   risk: ConsolidatedRisk,
   number: number,
   methodology: PgrDocxMethodology,
+  bands: ClassificationBand[] | undefined,
 ): PgrDocxRisk {
   const agent = AGENT[risk.agentType];
   const assessment = risk.assessment;
-  const unitLabel = ERGONOMIC_AGENTS.has(risk.agentType)
+  const ergonomic = ERGONOMIC_AGENTS.has(risk.agentType);
+  const unitLabel = ergonomic
     ? "GRUPO DE RISCO ERGONÔMICO:"
     : "UNIDADE DE MEDIDA (eSOCIAL):";
 
@@ -247,11 +213,10 @@ function mapRisk(
   }
 
   return {
-    assessmentDetails: assessmentDetails(risk),
     number,
     agentType: agent.label,
     agentKey: agent.key,
-    riskLevel: riskLevelText(risk),
+    riskLevel: riskLevelText(risk, bands),
     riskClass: risk.result,
     hazard: orNotInformed(risk.hazard),
     risk: risk.description,
@@ -262,19 +227,20 @@ function mapRisk(
     criterion: assessment ? assessmentCriterionLabel(assessment.criterion) : NOT_ASSESSED,
     esocialCode: orNotInformed(risk.noxiousAgentCode),
     unitLabel,
-    unitValue: risk.measurementUnit
-      ? measurementUnitLabel(risk.measurementUnit)
-      : NOT_INFORMED,
+    unitValue:
+      !ergonomic && risk.measurementUnit
+        ? measurementUnitEsocialLabel(risk.measurementUnit)
+        : NOT_INFORMED,
     uncertainty,
     probability,
     severity,
     controlNeed,
     result:
-      formatMeasurement(assessment?.measuredValue, assessment?.measuredUnit) ??
-      formatMeasurement(risk.concentrationIntensity, risk.measurementUnit) ??
+      measurement(assessment?.measuredValue, assessment?.measuredUnit) ??
+      measurement(risk.concentrationIntensity, risk.measurementUnit) ??
       "",
     toleranceLimit:
-      formatMeasurement(assessment?.toleranceLimitValue, assessment?.measuredUnit) ??
+      measurement(assessment?.toleranceLimitValue, assessment?.measuredUnit) ??
       text(assessment?.toleranceLimit),
   };
 }
@@ -308,7 +274,7 @@ function mapMeasures(risk: ConsolidatedRisk, number: number): PgrDocxRiskMeasure
 
 function mapEpis(risk: ConsolidatedRisk, number: number): PgrDocxEpi[] {
   return risk.epis.map((epi) => ({
-    riskRef: `Risco ${number}`,
+    riskRef: `RISCO ${number}`,
     hazard: text(risk.hazard) || risk.description,
     epi: epi.name,
     ca: text(epi.ca) || "—",
@@ -316,13 +282,17 @@ function mapEpis(risk: ConsolidatedRisk, number: number): PgrDocxEpi[] {
   }));
 }
 
-function mapActions(risk: ConsolidatedRisk, number: number): PgrDocxAction[] {
+function mapActions(
+  risk: ConsolidatedRisk,
+  number: number,
+  bands: ClassificationBand[] | undefined,
+): PgrDocxAction[] {
   return risk.measures
     .filter((measure) => measure.applicable && text(measure.actionWhat))
     .map((measure) => ({
-      riskRef: `Risco ${number}`,
+      riskRef: `RISCO ${number}`,
       occupationalRisk: risk.description,
-      riskLevel: riskLevelText(risk),
+      riskLevel: riskLevelText(risk, bands),
       action: text(measure.actionWhat),
       tracking: text(measure.actionTracking),
       measurement: text(measure.actionMeasurement),
@@ -337,11 +307,12 @@ function mapGes(
   index: number,
   extras: PgrDocxGesExtras | undefined,
   methodology: PgrDocxMethodology,
+  bands: ClassificationBand[] | undefined,
 ): PgrDocxGes {
   const numbered = ges.risks.map((risk, i) => ({ risk, number: i + 1 }));
   return {
-    title: `GES ${index + 1} - ${ges.name}`,
-    processDescription: text(extras?.processDescription),
+    title: gesTitle(ges.name, index),
+    processDescription: orNotInformed(extras?.processDescription),
     construction: {
       buildingType: orNotInformed(extras?.constructionType),
       ceilingHeight: orNotInformed(extras?.ceilingHeight?.replace(".", ",")),
@@ -355,10 +326,10 @@ function mapGes(
       name: role.title,
       description: text(role.description),
     })),
-    risks: numbered.map(({ risk, number }) => mapRisk(risk, number, methodology)),
+    risks: numbered.map(({ risk, number }) => mapRisk(risk, number, methodology, bands)),
     measures: numbered.map(({ risk, number }) => mapMeasures(risk, number)),
     epis: numbered.flatMap(({ risk, number }) => mapEpis(risk, number)),
-    actions: numbered.flatMap(({ risk, number }) => mapActions(risk, number)),
+    actions: numbered.flatMap(({ risk, number }) => mapActions(risk, number, bands)),
   };
 }
 
@@ -519,10 +490,13 @@ export function buildPgrDocxContent(
       workload,
       employeeCount,
     })),
-    jobRolesTotal: totalText,
+    jobRolesTotal: String(total),
     trainingMatrix: buildTrainingMatrix(extras, jobRoles),
     ges: data.ges.map((ges, index) =>
-      mapGes(ges, index, extras.ges[ges.id], methodology),
+      mapGes(ges, index, extras.ges[ges.id], methodology, options.classificationBands),
     ),
+    ...(options.classificationBands
+      ? { classificationBands: options.classificationBands }
+      : {}),
   };
 }

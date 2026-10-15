@@ -13,7 +13,10 @@ import {
   recoverStaleJobs,
   returnJobToPending,
 } from "@/shared/db/repositories/jobs-admin";
-import { processPdfBatchJob } from "@/shared/server/platform/pdf-batch-core";
+import {
+  discardPdfBatchDocument,
+  processPdfBatchJob,
+} from "@/shared/server/platform/pdf-batch-core";
 
 import { createOwnerDb } from "./owner-db";
 
@@ -71,6 +74,9 @@ async function main(): Promise<void> {
         log("job_done", { jobId: job.id, documentId: result.documentId });
       } catch (error) {
         if (job.attempts >= MAX_ATTEMPTS) {
+          await discardPdfBatchDocument(job).catch((discardError) =>
+            logError("discard_failed", discardError),
+          );
           await markJobFailed(db, job.id, {
             message: errorMessage(error),
             attempts: job.attempts,

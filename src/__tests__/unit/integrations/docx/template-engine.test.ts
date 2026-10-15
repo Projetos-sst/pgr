@@ -8,6 +8,7 @@ import PizZip from "pizzip";
 
 import { buildPgrDocxData } from "@/shared/domains/pgr/pgr-docx/build-data";
 import { PGR_DOCX_EXAMPLE_CONTENT } from "@/shared/domains/pgr/pgr-docx/example-content";
+import { paragraph, run } from "@/shared/domains/pgr/pgr-docx/ooxml";
 import { buildPgrDocxPreviewContent } from "@/shared/domains/pgr/pgr-docx/preview";
 import {
   PGR_DOCX_LOGO_PLACEHOLDER,
@@ -33,6 +34,12 @@ function png(width: number, height: number): Buffer {
   buffer.writeUInt32BE(width, 16);
   buffer.writeUInt32BE(height, 20);
   return buffer;
+}
+
+function rowOf(xml: string, marker: string) {
+  const at = xml.indexOf(marker);
+  const start = Math.max(xml.lastIndexOf("<w:tr>", at), xml.lastIndexOf("<w:tr ", at));
+  return xml.slice(start, xml.indexOf("</w:tr>", at) + "</w:tr>".length);
 }
 
 describe("dottedPathParser", () => {
@@ -62,7 +69,7 @@ describe("template do PGR", () => {
       template,
       buildPgrDocxData(PGR_DOCX_EXAMPLE_CONTENT),
     );
-    const text = extractDocxText(buffer);
+    const text = extractDocxText(buffer).replace(/\u00A0/g, " ");
     expect(missingTags).toEqual([]);
     expect(findLeftoverMarkers(text)).toEqual([]);
     expect(text).toContain("CONSTRUTORA HORIZONTE EXEMPLO LTDA");
@@ -86,7 +93,7 @@ describe("template do PGR", () => {
       template,
       buildPgrDocxData(PGR_DOCX_EXAMPLE_CONTENT),
     );
-    const text = extractDocxText(buffer);
+    const text = extractDocxText(buffer).replace(/\u00A0/g, " ");
     for (const role of PGR_DOCX_EXAMPLE_CONTENT.jobRoles)
       expect(text).toContain(role.name);
     const riskCount = PGR_DOCX_EXAMPLE_CONTENT.ges.reduce(
@@ -118,5 +125,80 @@ describe("template do PGR", () => {
     });
     expect(extents.length).toBeGreaterThan(0);
     for (const ratio of extents) expect(ratio).toBeCloseTo(4, 1);
+  });
+
+  it("quadro de funções: cada pedaço numa linha que não parte; só o último com borda de baixo", () => {
+    const base = buildPgrDocxData(PGR_DOCX_EXAMPLE_CONTENT);
+    const role = base.jobRoles[0];
+    const { buffer } = renderDocxTemplate(template, {
+      ...base,
+      jobRoles: [
+        {
+          ...role,
+          parts: [
+            {
+              name: "FUNCAO TESTE",
+              description: "PEDACO UM",
+              descriptionXml: paragraph(run("PEDACO UM")),
+              workload: "CARGA TESTE",
+              employeeCount: "3",
+              last: false,
+              whole: false,
+              head: true,
+              body: false,
+              tail: false,
+            },
+            {
+              name: "",
+              description: "PEDACO MEIO",
+              descriptionXml: paragraph(run("PEDACO MEIO")),
+              workload: "",
+              employeeCount: "",
+              last: false,
+              whole: false,
+              head: false,
+              body: true,
+              tail: false,
+            },
+            {
+              name: "",
+              description: "PEDACO DOIS",
+              descriptionXml: paragraph(run("PEDACO DOIS")),
+              workload: "",
+              employeeCount: "",
+              last: true,
+              whole: false,
+              head: false,
+              body: false,
+              tail: true,
+            },
+          ],
+        },
+      ],
+    });
+    const xml = new PizZip(buffer).file("word/document.xml")!.asText();
+    const cantSplit = /<w:cantSplit(\/>| w:val="(true|1|on)")/;
+    const top = (row: string) =>
+      Number(row.match(/<w:tcMar><w:top w:type="dxa" w:w="(\d+)"\/>/)?.[1]);
+    const bottom = (row: string) =>
+      Number(row.match(/<w:tcMar>.*?<w:bottom w:type="dxa" w:w="(\d+)"\/>/)?.[1]);
+    const first = rowOf(xml, "PEDACO UM");
+    const middle = rowOf(xml, "PEDACO MEIO");
+    const second = rowOf(xml, "PEDACO DOIS");
+    expect(first).toMatch(cantSplit);
+    expect(middle).toMatch(cantSplit);
+    expect(second).toMatch(cantSplit);
+    expect(first).toContain("FUNCAO TESTE");
+    expect(first).toContain("CARGA TESTE");
+    expect(second).not.toContain("FUNCAO TESTE");
+    expect(first).not.toMatch(/<w:bottom [^>]*w:val="single"/);
+    expect(middle).not.toMatch(/<w:bottom [^>]*w:val="single"/);
+    expect(second).toMatch(/<w:bottom [^>]*w:val="single"/);
+    expect([top(first), bottom(first)]).toEqual([50, 0]);
+    expect([top(middle), bottom(middle)]).toEqual([0, 0]);
+    expect([top(second), bottom(second)]).toEqual([0, 50]);
+    expect(xml.indexOf("PEDACO UM")).toBeLessThan(xml.indexOf("PEDACO MEIO"));
+    expect(xml.indexOf("PEDACO MEIO")).toBeLessThan(xml.indexOf("PEDACO DOIS"));
+    expect(xml.split("FUNCAO TESTE")).toHaveLength(2);
   });
 });

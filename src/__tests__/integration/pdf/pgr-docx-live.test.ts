@@ -107,18 +107,20 @@ const context = (id = PGR_IDS.pgrA) => ({ params: Promise.resolve({ id }) });
     );
     expect(docx.status).toBe(200);
     expect(docx.headers.get("content-disposition")).toMatch(/\.docx"$/);
-    const text = engine.extractDocxText(Buffer.from(await docx.arrayBuffer()));
+    const text = engine
+      .extractDocxText(Buffer.from(await docx.arrayBuffer()))
+      .replace(/\u00A0/g, " ");
     expect(engine.findLeftoverMarkers(text)).toEqual([]);
     for (const value of [
-      "A Ltda",
+      "A LTDA",
       "Pedreiro",
       "Ruído contínuo",
       "Capacete CA-123",
-      "Sem avaliação ergonômica registrada",
+      "Não informado",
     ]) {
       expect(text).toContain(value);
     }
-    expect(text).not.toContain("B Ltda");
+    expect(text).not.toContain("B LTDA");
     const consolidated = await consolidatedRepo.getPgrConsolidated("org_a", PGR_IDS.pgrA);
     const extras = await extrasRepo.getPgrDocxExtras("org_a", PGR_IDS.pgrA);
     const data = mapper.buildPgrDocxContent(consolidated!, extras!, {

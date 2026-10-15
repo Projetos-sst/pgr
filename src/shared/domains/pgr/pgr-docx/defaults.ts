@@ -144,6 +144,10 @@ export const SUMMARY_ORDER: PgrDocxTitleKey[] = Object.keys(
   DEFAULT_TITLES,
 ) as PgrDocxTitleKey[];
 
+export const RISK_MATRIX_ASYMMETRY_NOTE = p(
+  "**Obs.:** suponha-se que os valores fossem invertidos (severidade 3 e probabilidade 2), o nível do risco ainda seria 6 (3x2), porém o nível do risco seria tolerável (6), ao invés de Moderado (6). Isso se deve ao fato de a severidade ter maior relevância ao se definir o nível de risco.",
+);
+
 export const DEFAULT_TEXTS = {
   introduction: [
     p(
@@ -567,11 +571,11 @@ export const DEFAULT_TEXTS = {
     p(
       "A Matriz de Risco utilizada neste Programa de Gerenciamento de Riscos é uma matriz no formato 5x5, baseada nas estimativas de gradações de Severidade e Probabilidade da AIHA – American Industrial Hygiene Association, AS/NZS 4360 e European Comission (recomendadas pela Fundacentro). Esta matriz funciona para avaliações qualitativas e quantitativas, pois as tabelas de gradações sugeridas possuem as estimativas adequadas para ambas as avaliações. Os níveis de risco presentes na matriz são 5 (cinco):",
     ),
-    item("- Trivial (1-3);"),
-    item("- Tolerável (3-8);"),
-    item("- Moderado (4-12);"),
-    item("- Substancial (10-15);"),
-    item("- Intolerável (15-25)."),
+    item("- Trivial ({faixaTrivial});"),
+    item("- Tolerável ({faixaToleravel});"),
+    item("- Moderado ({faixaModerado});"),
+    item("- Substancial ({faixaSubstancial});"),
+    item("- Intolerável ({faixaIntoleravel})."),
     p(
       "Cada nível de risco possui o seu método de controle sugerido, baseado na estimativa (grau de certeza) da avaliação, onde os riscos de níveis mais altos têm prioridade de ação.",
     ),
@@ -585,11 +589,9 @@ export const DEFAULT_TEXTS = {
       "2. Severidade: a severidade de uma doença que possa surgir de um ruído ocupacional classifica-se como “Lesão ou doenças críticas irreversíveis que podem limitar a capacidade funcional”, de acordo com a tabela sugerida, classificando-a como severidade de nível 3 (moderada).",
     ),
     item(
-      "3. Nível do Risco: o nível do risco é a probabilidade x (vezes) a severidade. No caso, 2 x 3, resultando em 6 (moderado) de acordo com a matriz.",
+      "3. Nível do Risco: o nível do risco é a probabilidade x (vezes) a severidade. No caso, 2 x 3, resultando em 6 ({classeExemplo}) de acordo com a matriz.",
     ),
-    p(
-      "**Obs.:** suponha-se que os valores fossem invertidos (severidade 3 e probabilidade 2), o nível do risco ainda seria 6 (3x2), porém o nível do risco seria tolerável (6), ao invés de Moderado (6). Isso se deve ao fato de a severidade ter maior relevância ao se definir o nível de risco.",
-    ),
+    RISK_MATRIX_ASYMMETRY_NOTE,
     sub("Análise de Suficiência de Controle dos Riscos"),
     p(
       "Os métodos de controle são classificados de acordo com o nível do risco e grau de incerteza da estimativa da avaliação. Os níveis de risco mais altos devem ter prioridade no plano de ação ao final do documento. A Priorização da ação de controle é classificada de acordo com a estimativa, que pode ser: certa (0), incerta (1) e altamente incerta (2). Esta classificação padrão dos métodos de controle funciona apenas para o Inventário de Riscos e não deve ser adotada como método único para priorização do Plano de Ação. Contudo, como as ações de controle serão feitas baseadas no inventário, estas classificações servem para definir a prioridade das ações.",

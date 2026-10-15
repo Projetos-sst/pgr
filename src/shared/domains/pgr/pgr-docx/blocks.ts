@@ -16,7 +16,9 @@ import {
   PGR_DOCX_RISK_CLASSES,
   PGR_DOCX_RISK_MATRIX,
   PGR_DOCX_SIZES,
+  type PgrDocxRiskClass,
 } from "./theme";
+import { balancedLines, textWidth } from "./text-fit";
 
 /**
  * Blocos de tabela montados em código e injetados por tag crua (`{{@...}}`): têm
@@ -32,9 +34,28 @@ const header = (text: string, width: number, extra: { gridSpan?: number } = {}) 
       color: PGR_DOCX_COLORS.white,
       size: PGR_DOCX_SIZES.tableSmall,
       align: "center",
+      keepNext: true,
     }),
     { width, fill: PGR_DOCX_COLORS.primary, ...extra },
   );
+
+const verticalHeader = (text: string, width: number) => {
+  const label = cellParagraph(text, {
+    bold: true,
+    color: PGR_DOCX_COLORS.white,
+    size: PGR_DOCX_SIZES.tableSmall,
+    align: "center",
+    keepNext: true,
+  });
+  return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${PGR_DOCX_COLORS.primary}"/><w:textDirection w:val="btLr"/><w:vAlign w:val="center"/></w:tcPr>${label}</w:tc>`;
+};
+
+const TRAINING_MIN_MARK_WIDTH = 380;
+const TRAINING_HEADER_MAX = 2600;
+const TRAINING_LINE_HEIGHT = 200;
+const CELL_TEXT_MARGIN = 140;
+
+type TrainingPlacement = { column: number; width: number };
 
 /** Seção 5 — funções × treinamentos obrigatórios ("X" quando aplicável). */
 export function trainingMatrixXml(
@@ -48,58 +69,137 @@ export function trainingMatrixXml(
     });
   }
   const indexWidth = 420;
-  const roleWidth = 2300;
-  const markWidth = Math.floor(
-    (PGR_DOCX_CONTENT_WIDTH - indexWidth - roleWidth) / matrix.columns.length,
+  const widest = matrix.rows.reduce(
+    (max, item) => Math.max(max, textWidth(item.name, PGR_DOCX_SIZES.table, true)),
+    0,
   );
-  const widths = [indexWidth, roleWidth, ...matrix.columns.map(() => markWidth)];
-  const headerRow = row(
-    [
+  const roleWidth = Math.min(4200, Math.max(2300, Math.ceil(widest + 160)));
+  const available = PGR_DOCX_CONTENT_WIDTH - indexWidth - roleWidth;
+  const perBlock = Math.max(1, Math.floor(available / TRAINING_MIN_MARK_WIDTH));
+  const blockCount = Math.ceil(matrix.columns.length / perBlock);
+  const blockSize = Math.ceil(matrix.columns.length / blockCount);
+  const blocks: TrainingPlacement[][] = [];
+  for (let start = 0; start < matrix.columns.length; start += blockSize) {
+    const columns = Array.from(
+      { length: Math.min(blockSize, matrix.columns.length - start) },
+      (_, position) => start + position,
+    );
+    const markWidths = splitWidth(available, columns.length);
+    blocks.push(
+      columns.map((column, position) => ({ column, width: markWidths[position] })),
+    );
+  }
+  const labelWidth = (label: string) => textWidth(label, PGR_DOCX_SIZES.tableSmall, true);
+  const vertical = blocks.some((block) =>
+    block.some(({ column, width }) => labelWidth(matrix.columns[column]) + 160 > width),
+  );
+  const columnWidths = new Map(
+    blocks.flat().map(({ column, width }) => [column, width] as const),
+  );
+  const fitted = matrix.columns.map((label, column) =>
+    fitVerticalLabel(label, columnWidths.get(column) ?? TRAINING_MIN_MARK_WIDTH),
+  );
+  const widestLine = Math.max(
+    ...fitted.flatMap((label) => label.split("\n").map((line) => labelWidth(line))),
+  );
+  const headerHeight = Math.min(TRAINING_HEADER_MAX, Math.ceil(widestLine + 200));
+  const headerRow = (block: TrainingPlacement[]) => {
+    const height = vertical
+      ? `<w:trHeight w:val="${headerHeight}" w:hRule="atLeast"/>`
+      : "";
+    const cells = [
       header(labels.index, indexWidth),
       header(labels.role, roleWidth),
-      ...matrix.columns.map((column) => header(column, markWidth)),
-    ],
-    { header: true },
-  );
-  const bodyRows = matrix.rows.map((item, index) =>
-    row([
-      cell(
-        cellParagraph(String(index + 1), {
-          size: PGR_DOCX_SIZES.tableSmall,
-          align: "center",
-        }),
-        {
-          width: indexWidth,
-          fill: index % 2 === 1 ? PGR_DOCX_COLORS.surfaceAlt : undefined,
-        },
+      ...block.map(({ column, width }) =>
+        vertical
+          ? verticalHeader(fitted[column], width)
+          : header(matrix.columns[column], width),
       ),
-      cell(
-        cellParagraph(item.name, {
-          size: PGR_DOCX_SIZES.tableSmall,
-          shading: options.shading,
-        }),
-        {
-          width: roleWidth,
-          fill: index % 2 === 1 ? PGR_DOCX_COLORS.surfaceAlt : undefined,
-        },
-      ),
-      ...matrix.columns.map((_, column) =>
+    ];
+    return `<w:tr><w:trPr><w:cantSplit/>${height}<w:tblHeader/></w:trPr>${cells.join("")}</w:tr>`;
+  };
+  const bodyRows = (block: TrainingPlacement[]) =>
+    matrix.rows.map((item, index) => {
+      const keepNext =
+        matrix.rows.length >= 2 && (index === 0 || index === matrix.rows.length - 2);
+      return row([
         cell(
-          cellParagraph(item.marks[column] ? "X" : "", {
-            bold: true,
-            color: PGR_DOCX_COLORS.primaryStrong,
+          cellParagraph(String(index + 1), {
             size: PGR_DOCX_SIZES.tableSmall,
             align: "center",
+            keepNext,
           }),
           {
-            width: markWidth,
+            width: indexWidth,
             fill: index % 2 === 1 ? PGR_DOCX_COLORS.surfaceAlt : undefined,
           },
         ),
+        cell(
+          cellParagraph(item.name, {
+            size: PGR_DOCX_SIZES.tableSmall,
+            shading: options.shading,
+            keepNext,
+          }),
+          {
+            width: roleWidth,
+            fill: index % 2 === 1 ? PGR_DOCX_COLORS.surfaceAlt : undefined,
+          },
+        ),
+        ...block.map(({ column, width }) =>
+          cell(
+            cellParagraph(item.marks[column] ? "X" : "", {
+              bold: true,
+              color: PGR_DOCX_COLORS.primaryStrong,
+              size: PGR_DOCX_SIZES.tableSmall,
+              align: "center",
+              keepNext,
+            }),
+            {
+              width,
+              fill: index % 2 === 1 ? PGR_DOCX_COLORS.surfaceAlt : undefined,
+            },
+          ),
+        ),
+      ]);
+    });
+  const spacer = paragraph("", { style: PGR_DOCX_STYLE_IDS.body, after: 120 });
+  return blocks
+    .map((block) =>
+      table(
+        [headerRow(block), ...bodyRows(block)],
+        [indexWidth, roleWidth, ...block.map(({ width }) => width)],
       ),
-    ]),
+    )
+    .join(spacer);
+}
+
+function splitWidth(total: number, count: number): number[] {
+  const width = Math.floor(total / count);
+  return Array.from({ length: count }, (_, position) =>
+    position === count - 1 ? total - width * (count - 1) : width,
   );
-  return table([headerRow, ...bodyRows], widths);
+}
+
+function fitVerticalLabel(label: string, width: number): string {
+  const size = PGR_DOCX_SIZES.tableSmall;
+  const limit = TRAINING_HEADER_MAX - 200;
+  if (textWidth(label, size, true) <= limit) return label;
+  const maxLines = Math.max(
+    1,
+    Math.floor((width - CELL_TEXT_MARGIN) / TRAINING_LINE_HEIGHT),
+  );
+  const lines = balancedLines(label, { size, width: limit, bold: true });
+  if (lines.length <= maxLines) return lines.join("\n");
+  const kept = lines.slice(0, maxLines - 1);
+  const words = lines
+    .slice(maxLines - 1)
+    .join(" ")
+    .split(" ");
+  const fits = (count: number) =>
+    textWidth(`${words.slice(0, count).join(" ")}…`, size, true) <= limit;
+  let count = words.length;
+  while (count > 1 && !fits(count)) count -= 1;
+  return [...kept, `${words.slice(0, count).join(" ")}…`].join("\n");
 }
 
 /**
@@ -109,7 +209,12 @@ export function trainingMatrixXml(
 export function riskMatrixXml(
   methodology: PgrDocxMethodology["matrix"],
   labels: { probability: string; severity: string; legend: string },
+  scale: {
+    matrix?: readonly (readonly PgrDocxRiskClass[])[];
+    ranges?: Partial<Record<PgrDocxRiskClass, string>>;
+  } = {},
 ): string {
+  const matrix = scale.matrix ?? PGR_DOCX_RISK_MATRIX;
   const titleWidth = 1300;
   const probLabelWidth = 1500;
   const levelWidth = 600;
@@ -126,6 +231,8 @@ export function riskMatrixXml(
       align: "center",
       keepNext: true,
     });
+  const keptEmpty = () =>
+    cellParagraph("", { size: PGR_DOCX_SIZES.tableSmall, keepNext: true });
 
   const head = [
     row([
@@ -149,13 +256,13 @@ export function riskMatrixXml(
       }),
     ]),
     row([
-      cell("", { width: leftWidth, gridSpan: 3, vMerge: "continue" }),
+      cell(keptEmpty(), { width: leftWidth, gridSpan: 3, vMerge: "continue" }),
       ...methodology.severityLabels.map((label) =>
         cell(muted(label), { width: sevWidth, fill: PGR_DOCX_COLORS.surfaceAlt }),
       ),
     ]),
     row([
-      cell("", { width: leftWidth, gridSpan: 3, vMerge: "continue" }),
+      cell(keptEmpty(), { width: leftWidth, gridSpan: 3, vMerge: "continue" }),
       ...[1, 2, 3, 4, 5].map((level) =>
         cell(muted(String(level), true), {
           width: sevWidth,
@@ -165,10 +272,10 @@ export function riskMatrixXml(
     ]),
   ];
 
-  const body = PGR_DOCX_RISK_MATRIX.map((classes, index) => {
+  const body = matrix.map((classes, index) => {
     const probability = 5 - index;
     return row([
-      cell(index === 0 ? muted(labels.probability, true) : "", {
+      cell(index === 0 ? muted(labels.probability, true) : keptEmpty(), {
         width: titleWidth,
         vMerge: index === 0 ? "restart" : "continue",
         fill: PGR_DOCX_COLORS.primarySoft,
@@ -209,7 +316,7 @@ export function riskMatrixXml(
     const last = index === PGR_DOCX_RISK_CLASSES.length - 1;
     return row([
       cell(
-        cellParagraph(colors.range, {
+        cellParagraph(scale.ranges?.[riskClass] ?? colors.range, {
           bold: true,
           size: PGR_DOCX_SIZES.tableSmall,
           align: "center",
@@ -217,7 +324,11 @@ export function riskMatrixXml(
         }),
         { width: titleWidth + probLabelWidth, gridSpan: 2 },
       ),
-      cell("", { width: levelWidth + sevWidth * 2, gridSpan: 3, fill: colors.strong }),
+      cell(last ? cellParagraph("", { size: PGR_DOCX_SIZES.tableSmall }) : keptEmpty(), {
+        width: levelWidth + sevWidth * 2,
+        gridSpan: 3,
+        fill: colors.strong,
+      }),
       cell(
         cellParagraph(colors.label, {
           bold: true,
@@ -274,18 +385,32 @@ export function campaignsXml(
   if (campaigns.length === 0) return paragraph("");
   const perRow = 4;
   const width = Math.floor(PGR_DOCX_CONTENT_WIDTH / perRow);
+  const textLimit = width - CELL_TEXT_MARGIN;
   const widths = Array(perRow).fill(width);
   const rows: string[] = [];
+  const BULLET = "• ";
+  const bulletIndent = Math.ceil(textWidth(BULLET, PGR_DOCX_SIZES.tableSmall));
   for (let start = 0; start < campaigns.length; start += perRow) {
     const chunk = campaigns.slice(start, start + perRow);
     const pad = perRow - chunk.length;
+    const lastChunk = start + perRow >= campaigns.length;
     const filler = Array.from({ length: pad }, () => cell("", { width }));
     rows.push(
       row([
         ...chunk.map((campaign) => {
           const colors = campaignColors(campaign.theme);
+          const title =
+            textWidth(campaign.theme, PGR_DOCX_SIZES.table, true) <= textLimit
+              ? `**${campaign.theme}**`
+              : balancedLines(campaign.theme, {
+                  size: PGR_DOCX_SIZES.table,
+                  width: textLimit,
+                  bold: true,
+                })
+                  .map((line) => `**${line}**`)
+                  .join("\n");
           return cell(
-            cellParagraph(`**${campaign.theme}**`, {
+            cellParagraph(title, {
               color: options.shading ? PGR_DOCX_COLORS.text : colors.text,
               size: PGR_DOCX_SIZES.table,
               align: "center",
@@ -304,20 +429,25 @@ export function campaignsXml(
             .split(";")
             .map((action) => action.trim().replace(/\.$/, ""))
             .filter(Boolean)
-            .map((action) => `• ${action.charAt(0).toUpperCase()}${action.slice(1)}`);
+            .map((action) => `${action.charAt(0).toUpperCase()}${action.slice(1)}`);
           return cell(
             [
               cellParagraph(`**${labels.actions}**`, {
                 size: PGR_DOCX_SIZES.tableSmall,
                 color: PGR_DOCX_COLORS.muted,
                 shading: options.shading,
+                keepNext: !lastChunk,
               }),
-              ...actions.map((action) =>
-                cellParagraph(action, {
+              ...actions.map((action) => {
+                const itemLines = balancedItemLines(action, textLimit - bulletIndent);
+                return cellParagraph(`${BULLET}${itemLines.join("\n")}`, {
                   size: PGR_DOCX_SIZES.tableSmall,
                   shading: options.shading,
-                }),
-              ),
+                  indent: bulletIndent,
+                  hanging: bulletIndent,
+                  keepNext: !lastChunk,
+                });
+              }),
             ].join(""),
             { width, fill: colors.soft, vAlign: "top" },
           );
@@ -327,4 +457,17 @@ export function campaignsXml(
     );
   }
   return table(rows, widths, PGR_DOCX_COLORS.white);
+}
+
+function balancedItemLines(text: string, width: number): string[] {
+  const size = PGR_DOCX_SIZES.tableSmall;
+  if (textWidth(text, size) <= width) return [text];
+  const lines = balancedLines(text, { size, width });
+  const words = text.split(" ").filter(Boolean);
+  const last = lines[lines.length - 1];
+  if (words.length < 3 || last.includes(" ")) return lines;
+  return [
+    ...balancedLines(words.slice(0, -2).join(" "), { size, width }),
+    words.slice(-2).join(" "),
+  ];
 }

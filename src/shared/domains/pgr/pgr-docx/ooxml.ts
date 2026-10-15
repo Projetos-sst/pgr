@@ -37,8 +37,7 @@ export type RunOptions = {
   shading?: string;
 };
 
-/** Um `w:r`. Quebras de linha (`\n`) viram `w:br`. */
-export function run(text: string, options: RunOptions = {}): string {
+function runProperties(options: RunOptions): string {
   const props = [
     `<w:rFonts w:ascii="${PGR_DOCX_FONT}" w:hAnsi="${PGR_DOCX_FONT}" w:cs="${PGR_DOCX_FONT}"/>`,
     options.bold ? "<w:b/><w:bCs/>" : "",
@@ -51,11 +50,19 @@ export function run(text: string, options: RunOptions = {}): string {
       ? `<w:shd w:val="clear" w:color="auto" w:fill="${options.shading}"/>`
       : "",
   ].join("");
+  return `<w:rPr>${props}</w:rPr>`;
+}
+
+export function run(text: string, options: RunOptions = {}): string {
   const content = text
     .split("\n")
     .map((line) => `<w:t xml:space="preserve">${xmlEscape(line)}</w:t>`)
     .join("<w:br/>");
-  return `<w:r><w:rPr>${props}</w:rPr>${content}</w:r>`;
+  return `<w:r>${runProperties(options)}${content}</w:r>`;
+}
+
+export function lineBreak(options: RunOptions = {}): string {
+  return `<w:r>${runProperties(options)}<w:br/></w:r>`;
 }
 
 /**
@@ -80,6 +87,7 @@ export type ParagraphOptions = {
   keepNext?: boolean;
   /** Recuo à esquerda em twips (sobrepõe o do estilo). */
   indent?: number;
+  hanging?: number;
 };
 
 export function paragraph(runs: string, options: ParagraphOptions = {}): string {
@@ -91,7 +99,11 @@ export function paragraph(runs: string, options: ParagraphOptions = {}): string 
           options.after !== undefined ? ` w:after="${options.after}"` : ""
         }/>`
       : "",
-    options.indent !== undefined ? `<w:ind w:left="${options.indent}"/>` : "",
+    options.indent !== undefined
+      ? `<w:ind w:left="${options.indent}"${
+          options.hanging !== undefined ? ` w:hanging="${options.hanging}"` : ""
+        }/>`
+      : "",
     options.align ? `<w:jc w:val="${options.align}"/>` : "",
   ].join("");
   return `<w:p>${props ? `<w:pPr>${props}</w:pPr>` : ""}${runs}</w:p>`;
@@ -157,12 +169,15 @@ export function table(
 /** Parágrafo de célula de tabela no tamanho/estilo padrão das tabelas do PGR. */
 export function cellParagraph(
   text: string,
-  options: RunOptions & Pick<ParagraphOptions, "align" | "keepNext"> = {},
+  options: RunOptions &
+    Pick<ParagraphOptions, "align" | "keepNext" | "indent" | "hanging"> = {},
 ): string {
-  const { align, keepNext, ...runOptions } = options;
+  const { align, keepNext, indent, hanging, ...runOptions } = options;
   return paragraph(richRuns(text, { size: PGR_DOCX_SIZES.table, ...runOptions }), {
     style: PGR_DOCX_STYLE_IDS.tableText,
     align,
     keepNext,
+    indent,
+    hanging,
   });
 }

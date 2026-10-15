@@ -1,3 +1,4 @@
+import type { ClassificationBand } from "@/shared/domains/pgr/methodology";
 import type {
   ConsolidatedMeasure,
   ConsolidatedRisk,
@@ -195,6 +196,14 @@ const extras: PgrDocxExtras = {
 
 const content = buildPgrDocxContent(data, extras, { emittedAt: "02/10/2026 09:30" });
 
+const fundacentro: ClassificationBand[] = [
+  { classification: "trivial", maxLevel: 2 },
+  { classification: "tolerable", maxLevel: 6 },
+  { classification: "moderate", maxLevel: 12 },
+  { classification: "substantial", maxLevel: 20 },
+  { classification: "intolerable", maxLevel: 25 },
+];
+
 describe("formatadores", () => {
   it("datas no padrão do documento", () => {
     expect(formatDocxDate("2026-10-01")).toBe("01-10-2026");
@@ -207,6 +216,15 @@ describe("formatadores", () => {
   it("nível de risco com a faixa da matriz", () => {
     expect(riskLevelText({ result: "substantial" })).toBe("Substancial (10-15)");
     expect(riskLevelText({ result: null })).toBe("Não avaliado");
+  });
+
+  it("nível de risco com as faixas da metodologia da organização", () => {
+    expect(riskLevelText({ result: "trivial" }, fundacentro)).toBe("Trivial (1-2)");
+    expect(riskLevelText({ result: "moderate" }, fundacentro)).toBe("Moderado (7-12)");
+    expect(riskLevelText({ result: "intolerable" }, fundacentro)).toBe(
+      "Intolerável (21-25)",
+    );
+    expect(riskLevelText({ result: null }, fundacentro)).toBe("Não avaliado");
   });
 });
 
@@ -260,6 +278,100 @@ describe("buildPgrDocxContent", () => {
     expect(content.revisions).toEqual([]);
   });
 
+  it("sem funções nos GES: total 0 e nenhum número inventado para a CIPA", () => {
+    const empty = buildPgrDocxContent(
+      data,
+      { ...extras, ges: { g1: { ...extras.ges.g1, jobRoles: [] } } },
+      { emittedAt: "x" },
+    );
+    expect(empty.jobRoles).toEqual([]);
+    expect(empty.jobRolesTotal).toBe("0");
+    expect(empty.cipa?.employeeCount).toBeUndefined();
+    expect(empty.contract.employees).toBe("");
+  });
+
+  it("GES sem extras: descrição 'Não informado'", () => {
+    const withoutExtras = buildPgrDocxContent(
+      data,
+      { ...extras, ges: {} },
+      { emittedAt: "x" },
+    );
+    expect(withoutExtras.ges[0].processDescription).toBe("Não informado");
+    expect(content.ges[0].processDescription).toBe("Concretagem");
+  });
+
+  it("título do GES com 2 dígitos e em caixa alta, sem repetir o prefixo", () => {
+    const named = buildPgrDocxContent(
+      {
+        ...data,
+        ges: [
+          { id: "g1", name: "Estrutura e alvenaria", risks: [] },
+          { id: "g2", name: "ges 02 - Frente de serviço", risks: [] },
+          { id: "g3", name: "Gestão administrativa", risks: [] },
+        ],
+      },
+      extras,
+      { emittedAt: "x" },
+    );
+    expect(named.ges.map((ges) => ges.title)).toEqual([
+      "GES 01 - ESTRUTURA E ALVENARIA",
+      "GES 02 - FRENTE DE SERVIÇO",
+      "GES 03 - GESTÃO ADMINISTRATIVA",
+    ]);
+  });
+
+  it("título do GES com número no nome: nunca repete o prefixo GES", () => {
+    const numbered = buildPgrDocxContent(
+      {
+        ...data,
+        ges: [
+          { id: "g1", name: "Oficina", risks: [] },
+          { id: "g2", name: "GES1 - Oficina", risks: [] },
+          { id: "g3", name: "Gestão de obras", risks: [] },
+          { id: "g4", name: "GES01 Oficina", risks: [] },
+          { id: "g5", name: "GES 01 - GES 01 - Oficina", risks: [] },
+          { id: "g6", name: "GES 5", risks: [] },
+          { id: "g7", name: "GES 1 - GES Administrativo", risks: [] },
+          { id: "g8", name: "GES 01 GES 01 Oficina", risks: [] },
+          { id: "g9", name: "GES 2 - GES 02 - Pátio", risks: [] },
+        ],
+      },
+      { ...extras, ges: {} },
+      { emittedAt: "x" },
+    );
+    expect(numbered.ges.map((ges) => ges.title)).toEqual([
+      "GES 01 - OFICINA",
+      "GES 01 - OFICINA",
+      "GES 03 - GESTÃO DE OBRAS",
+      "GES 01 - OFICINA",
+      "GES 01 - OFICINA",
+      "GES 05",
+      "GES 01 - ADMINISTRATIVO",
+      "GES 01 - OFICINA",
+      "GES 02 - PÁTIO",
+    ]);
+  });
+
+  it("título do GES com GES colado ao número não se repete", () => {
+    const glued = buildPgrDocxContent(
+      {
+        ...data,
+        ges: [
+          { id: "h1", name: "GES 1 - GES01 - Oficina", risks: [] },
+          { id: "h2", name: "GES 1 - GES2 Pátio", risks: [] },
+          { id: "h3", name: "Gestão de obras", risks: [] },
+        ],
+      },
+      { ...extras, ges: {} },
+      { emittedAt: "x" },
+    );
+    expect(glued.ges.map((ges) => ges.title)).toEqual([
+      "GES 01 - OFICINA",
+      "GES 02 - PÁTIO",
+      "GES 03 - GESTÃO DE OBRAS",
+    ]);
+  });
+
   it("matriz de treinamento só com funções do PGR", () => {
     expect(content.trainingMatrix).toEqual({
       columns: ["NR 35", "NR 18"],
@@ -272,7 +384,7 @@ describe("buildPgrDocxContent", () => {
 
   it("risco avaliado no vocabulário do documento", () => {
     const [ges] = content.ges;
-    expect(ges.title).toBe("GES 1 - ESTRUTURA");
+    expect(ges.title).toBe("GES 01 - ESTRUTURA");
     expect(ges.construction.ceilingHeight).toBe("2,80");
     expect(ges.construction.roof).toBe("Não informado");
     expect(ges.risks[0]).toMatchObject({
@@ -283,14 +395,76 @@ describe("buildPgrDocxContent", () => {
       riskClass: "tolerable",
       criterion: "Quantitativo",
       unitLabel: "UNIDADE DE MEDIDA (eSOCIAL):",
-      unitValue: "dB(A)",
+      unitValue: "4 - decibel (A) (dB(A))",
       uncertainty: "1 - Incerta",
       probability: "3 - Exposição moderada",
       severity: "2 - Lesão ou doenças sérias reversíveis",
       controlNeed: "Informação adicional necessária",
-      result: "83.4 dB(A)",
+      result: "83,4 dB(A)",
       toleranceLimit: "85 dB(A)",
     });
+    expect(ges.risks[0]).not.toHaveProperty("assessmentDetails");
+  });
+
+  it("unidade do eSocial com código e grupo ergonômico sem a unidade de medida", () => {
+    const vibration: ConsolidatedRisk = {
+      ...noise,
+      id: "r3",
+      measurementUnit: "qualitative_na",
+      concentrationIntensity: "0.45",
+      assessment: null,
+    };
+    const posture: ConsolidatedRisk = {
+      ...noise,
+      id: "r4",
+      agentType: "ergonomic",
+      measurementUnit: "qualitative_na",
+    };
+    const psychosocial: ConsolidatedRisk = {
+      ...noise,
+      id: "r5",
+      agentType: "psychosocial",
+      measurementUnit: null,
+    };
+    const accelerated: ConsolidatedRisk = {
+      ...noise,
+      id: "r6",
+      measurementUnit: "m_s2",
+      concentrationIntensity: "1.25",
+      assessment: null,
+    };
+    const [ges] = buildPgrDocxContent(
+      {
+        ...data,
+        ges: [
+          { id: "g1", name: "X", risks: [vibration, posture, psychosocial, accelerated] },
+        ],
+      },
+      extras,
+      { emittedAt: "x" },
+    ).ges;
+    expect(ges.risks.map((risk) => [risk.unitLabel, risk.unitValue])).toEqual([
+      ["UNIDADE DE MEDIDA (eSOCIAL):", "0 - Não aplicável"],
+      ["GRUPO DE RISCO ERGONÔMICO:", "Não informado"],
+      ["GRUPO DE RISCO ERGONÔMICO:", "Não informado"],
+      ["UNIDADE DE MEDIDA (eSOCIAL):", "5 - metro por segundo ao quadrado (m/s²)"],
+    ]);
+    expect(ges.risks[0].result).toBe("0,45");
+    expect(ges.risks[3].result).toBe("1,25 m/s²");
+  });
+
+  it("faixas da metodologia da organização no selo e no plano de ação", () => {
+    const withBands = buildPgrDocxContent(data, extras, {
+      emittedAt: "x",
+      classificationBands: fundacentro,
+    });
+    expect(withBands.classificationBands).toEqual(fundacentro);
+    expect(withBands.ges[0].risks[0]).toMatchObject({
+      riskLevel: "Tolerável (3-6)",
+      riskClass: "tolerable",
+    });
+    expect(withBands.ges[0].actions[0].riskLevel).toBe("Tolerável (3-6)");
+    expect(content).not.toHaveProperty("classificationBands");
   });
 
   it("risco sem avaliação não inventa classificação", () => {
@@ -331,7 +505,7 @@ describe("buildPgrDocxContent", () => {
     });
     expect(ges.epis).toEqual([
       {
-        riskRef: "Risco 1",
+        riskRef: "RISCO 1",
         hazard: "RUÍDO",
         epi: "Protetor auricular",
         ca: "12345",
@@ -340,7 +514,7 @@ describe("buildPgrDocxContent", () => {
     ]);
     expect(ges.actions).toEqual([
       {
-        riskRef: "Risco 1",
+        riskRef: "RISCO 1",
         occupationalRisk: "Ruído de betoneira",
         riskLevel: "Tolerável (3-8)",
         action: "Enclausurar a betoneira",

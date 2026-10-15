@@ -188,7 +188,7 @@ function lastHtml(): string {
     for (const row of responses) expect(html).not.toContain(String(row.id));
   });
 
-  it("worker preenche o template DOCX com os mesmos dados da rota e marca ready", async () => {
+  it("worker preenche o template DOCX sem o bloco de avaliação NR-09/NR-17 e marca ready", async () => {
     await generatePgrPdf("org_a", PGR_IDS.pgrA);
     const fromRoute = lastHtml();
     htmlToPdf.mockClear();
@@ -201,29 +201,26 @@ function lastHtml(): string {
 
     const fromWorker = lastWorkerDocxText();
     expect(findLeftoverMarkers(fromWorker)).toEqual([]);
-    for (const excerpt of ["A Ltda", "Ruído contínuo"]) {
-      expect(fromRoute).toContain(excerpt);
-      expect(fromWorker).toContain(excerpt);
+    for (const [routeText, workerText] of [
+      ["A Ltda", "A LTDA"],
+      ["Ruído contínuo", "Ruído contínuo"],
+    ]) {
+      expect(fromRoute).toContain(routeText);
+      expect(fromWorker).toContain(workerText);
     }
-    expect(fromWorker).not.toContain("B Ltda");
-    for (const detail of [
+    expect(fromWorker).not.toContain("B LTDA");
+    expect(fromWorker).toContain("Enclausurar fonte");
+    for (const removed of [
+      "Avaliação quantitativa (NR-09)",
       "Avaliação ergonômica (NR-17)",
+      "Resultado agregado da campanha psicossocial",
+      "Plano 5W2H",
+      "Detalhes do EPI",
       "Ergonomista Beltrana",
       "COPSOQ",
       "Bancada abaixo do cotovelo",
-      "Reavaliar em 6 meses",
-      "Inadequado",
-      "Não avaliado",
-      "Resultado agregado da campanha psicossocial",
-      "Clima 2026",
-      "Ritmo de trabalho",
-      "Reduzir exposição",
-      "Instalar barreira",
-      "2500.00",
-      "Fabricante cadastrado",
-      "01-01-2020",
     ])
-      expect(fromWorker).toContain(detail);
+      expect(fromWorker).not.toContain(removed);
     expect(fromWorker).not.toMatch(/escore/i);
 
     const [doc] = await admin.unsafe(

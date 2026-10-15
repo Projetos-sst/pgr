@@ -90,4 +90,4 @@ Criar o documento do PGR passa a usar o template:
 
 Detalhes de uso, catálogo de tags e regeneração: `templates/pgr/README.md`.
 
-A integração atual acrescenta o teste opt-in com Gotenberg, worker e Storage reais descrito em `templates/pgr/README.md`, além da regressão do PDF padrão no GED e da preservação dos detalhes NR-09/NR-17/5W2H/EPI.
+A integração atual acrescenta o teste opt-in com Gotenberg, worker e Storage reais descrito em `templates/pgr/README.md`, além da regressão do PDF padrão no GED. Os detalhes NR-09/NR-17/5W2H/EPI ficam só no PDF padrão (HTML); o DOCX e o PDF do template seguem o cartão de risco do PGR 2026, sem esse bloco, e o teste do worker garante a ausência.

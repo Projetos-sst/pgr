@@ -24,7 +24,9 @@ A réplica do PGR 2026 com os dados reais do cliente fica fora do repositório, 
 | **Semi-fixo** (placeholder editável) | laranja       | `{{labels.*}}`, `{{titles.*}}`, `{{@texts.*}}`, metodologia, campanhas | Padrão em `src/shared/domains/pgr/pgr-docx/defaults.ts`. Cada PGR pode trocar via `overrides` (`POST .../docx`). |
 | **Dinâmico**                         | sem marcação  | `{{company.razaoSocial}}`, loops `{{#ges}}…{{/ges}}`                   | Banco: `getPgrConsolidated` + `getPgrDocxExtras` → `buildPgrDocxContent`.                                        |
 
-Os textos semi-fixos aceitam **tokens com chave simples**, trocados antes do preenchimento: `{empresa}`, `{grauRisco}`, `{numeroEmpregados}`, `{cipaTitulares}`, `{cipaSuplentes}`, `{cipaHorasTreinamento}` (mínimo da NR-05 pelo grau de risco: 8/12/16/20h) e `{anosVigencia}`. Assim um texto editado pelo cliente continua recebendo o dado do PGR.
+Os textos semi-fixos aceitam **tokens com chave simples**, trocados antes do preenchimento: `{empresa}`, `{grauRisco}`, `{numeroEmpregados}`, `{cipaTitulares}`, `{cipaSuplentes}`, `{cipaHorasTreinamento}` (mínimo da NR-05 pelo grau de risco: 8/12/16/20h), `{anosVigencia}`, as faixas `{faixaTrivial}`, `{faixaToleravel}`, `{faixaModerado}`, `{faixaSubstancial}`, `{faixaIntoleravel}` e `{classeExemplo}` (classe do exemplo 2 × 3). Assim um texto editado pelo cliente continua recebendo o dado do PGR.
+
+A classificação usa as faixas da metodologia da organização (`getRiskMethodologyView`; sem configuração, o preset padrão): selos dos riscos, matriz 5×5 com legenda, faixas listadas na seção 17 e dashboard saem das mesmas faixas, e a classe de cada risco é a gravada na avaliação (a mesma da tela do PGR). Conteúdo sem `classificationBands` (réplica, exemplo fictício) mantém a matriz de referência do PGR 2026.
 
 ## Fluxo de geração
 
@@ -86,8 +88,9 @@ Catálogo (lista completa via `listTemplateTags`):
   - `#summary` → `title`;
   - `titles.*` (24);
   - `@texts.*` (19);
-  - `#jobRoles` → `name, description, workload, employeeCount` + `jobRolesTotal`;
+  - `#jobRoles` → `name, description, workload, employeeCount` + `#parts` (`name, description, workload, employeeCount`, `last` e as marcas `whole`, `head`, `body`, `tail`) + `jobRolesTotal`;
   - `@trainingMatrixXml`, `@riskMatrixXml`, `@campaignsXml`;
+  - `#annexActions` → `gesTitle, riskRef, occupationalRisk, action, responsible, deadline, status` (Anexo I);
   - `methodology.*` (tabelas da seção 17 e necessidade de controle).
 - **Inventário (`#ges`):**
   - `title`, `processDescription`, `construction.*`, `#jobRoles` → `name`;
@@ -95,7 +98,7 @@ Catálogo (lista completa via `listTemplateTags`):
   - `#measures` → `riskLabel`, `riskName`, `{elimination,collective,administrative,individual}.{applies,measures,monitoring}`;
   - `#epis` → `riskRef, hazard, epi, ca, neutralizes`;
   - `#actions` → `riskRef, occupationalRisk, riskLevel, action, tracking, measurement, responsible, deadline, status`;
-  - `dashboard.{total, trivial, tolerable, moderate, substantial, intolerable}`.
+  - `dashboard.{total, trivial, tolerable, moderate, substantial, intolerable}` e os rótulos `riskLevelLabels.*`.
 - **Logo:** imagem placeholder com `docPr name="pgr-company-logo"` nos cabeçalhos. Depois do preenchimento ela é trocada pelo logo da empresa (`companies.logo_path`), proporcional à caixa. Sem logo, fica o do PGR-e.
 
 ## Como o Salesbud faz, e o que veio para cá
@@ -159,13 +162,16 @@ O `render-samples.ts` falha se algum documento final sair com `{{marcador}}` sob
   - inscrição estadual;
   - contratante, CNPJ da contratante, gestor, fiscal, objeto e e-mail do contrato;
   - coautor;
-  - composição da CIPA (titulares/suplentes): o texto mostra "—" até existir dado ou o dimensionamento pelo Quadro I da NR-05.
-- **Bloco do contrato.** Só aparece quando a obra tem número de contrato. Linhas sem valor ficam com o rótulo e o valor vazio, como no documento de referência.
+  - composição da CIPA (titulares/suplentes): sem dado, o texto usa "representantes titulares e suplentes", sem número; com 1, a frase vai para o singular.
+- **Bloco do contrato.** Aparece quando há qualquer dado de contrato (`contract.hasAny`). Linha sem valor mostra "Não informado". Na identificação, os opcionais vazios (inscrição estadual, telefone, contrato da unidade) somem, e os demais mostram "Não informado". Na revisão, data, validade, descrição e responsável vazios mostram "—".
 - **Textos do PGR 2026.** Foram preservados os textos fixos e semi-fixos; referências específicas à terraplenagem foram generalizadas para não atribuir essa atividade a todas as empresas.
 - **Paginação.**
   - O LibreOffice não suporta `SECTIONPAGES`, então o rodapé usa numeração contínua ("Página X de Y").
-  - Tabelas e grupos de linhas usam `keepNext` para não se partirem. Por isso a réplica tem mais páginas que o original (246 páginas × 220 do original), com leitura melhor.
-- **Fontes.** O LibreOffice só usa fonte instalada (`templates/pgr/fonts` montada no Gotenberg). No Word, sem Manrope instalada, o DOCX cai na fonte substituta. O PDF é a saída canônica.
+  - Tabelas e grupos de linhas usam `keepNext` para não se partirem. Por isso a réplica tem mais páginas que o original (272 páginas × 220 do original), com leitura melhor.
+  - O LibreOffice ignora viúva/órfã dentro de linha de tabela que pode partir. Por isso o quadro de funções sai em `parts`, cada parte numa linha de tabela que não parte: a função com até 14 linhas estimadas é uma parte só (`whole`), e a mais longa vira partes de 6 linhas. A primeira (`head`) leva nome, carga horária e quantidade; as do meio (`body`) e a última (`tail`) só continuam a descrição. Entre as partes a margem de célula é zero, para a descrição seguir sem vão, e só `whole` e `tail` têm borda de baixo.
+  - Nas células dinâmicas, as duas últimas palavras são unidas por espaço não separável (U+00A0) quando o par mede até 70% da largura útil da coluna, ou, quando o texto ocupa mais de uma linha, sempre que o par com a folga do LibreOffice (par × 1,03) cabe na largura útil e a penúltima linha continua com duas palavras ou mais em toda a faixa de folga (da largura útil até 3% acima dela). Se a penúltima ficaria com uma palavra só, a palavra anterior também é unida à seguinte. Antes dessa medição, a barra precedida de espaço (" / " ou " /fornecedores") e o traço colado à palavra seguinte (como em "GES 07 -Pintor") ficam presos à palavra anterior por U+00A0, para que nenhuma linha da célula comece por barra ou traço. Nomes em coluna estreita (risco da tabela de medidas, GES/Risco/Responsável do Anexo I, nome da função) são equilibrados em linhas. Dentro das palavras unidas, o hífen entre letras vira hífen não separável (U+2011). Na carga horária do quadro de funções, "-feira" também usa U+2011, e o travessão entre dois horários fica preso aos dois lados por U+00A0. Quem buscar ou copiar texto do DOCX (por exemplo "porta-a-porta" ou "Segunda-feira") deve considerar esses caracteres.
+  - A grade de campanhas põe `keepNext` na linha de título e, nas linhas de ações, em todos os blocos menos o último, para não se partir entre páginas.
+- **Fontes.** O DOCX do template embute a Manrope Regular e a Bold (`scripts/pgr-docx/embed-fonts.ts`, aplicado por `build-template.ts`), então o Word usa a fonte do próprio arquivo, mesmo sem a Manrope instalada. Os DOCX preenchidos herdam as fontes, porque o preenchimento não remove arquivos do pacote. A JetBrains Mono não aparece no documento e não é embutida. O LibreOffice do Gotenberg continua usando a fonte instalada a partir de `templates/pgr/fonts`.
 - **Google Docs como conversor.** Não foi validado contra uma conta real, porque não há credenciais neste ambiente. A importação do Docs pode tratar diferente a imagem flutuante da capa e os campos de página. Valide a primeira geração antes de trocar o provedor padrão.
 
 ## Publicação da integração
@@ -177,7 +183,7 @@ O `render-samples.ts` falha se algum documento final sair com `{{marcador}}` sob
 5. O worker usa `DATABASE_URL` (app_runtime), `DATABASE_URL_UNPOOLED` (owner), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `SUPABASE_SECRET_KEY`. O bucket privado `documents` já é o usado pelo GED.
 6. Não há migration nova. Jobs antigos sem formato continuam em PDF; jobs com formato DOCX explícito continuam sendo respeitados. Documentos já existentes são preservados.
 
-O cartão de cada risco preserva as avaliações NR-09/NR-17, o agregado psicossocial (sem respostas individuais), os detalhes de EPI e os campos complementares do plano 5W2H. Falta de avaliação, propagação ou medida não vira conformidade nem "não aplicável". Revisões não cadastradas não são criadas na exportação; validade e responsável históricos ficam vazios porque o histórico não os armazena.
+O cartão de cada risco segue os campos do PGR 2026, sem bloco extra de avaliação NR-09/NR-17. Listas vazias (funções, GES, riscos, medidas, ações do Anexo I) saem com mensagem explícita. Falta de avaliação, propagação ou medida não vira conformidade nem "não aplicável". Revisões não cadastradas não são criadas na exportação; validade e responsável históricos ficam vazios porque o histórico não os armazena.
 
 ## Validação com serviços reais
 

@@ -22,6 +22,7 @@ import {
 } from "docx";
 
 import { PGR_DOCX_STYLE_IDS } from "@/shared/domains/pgr/pgr-docx/ooxml";
+import { keepLastWords } from "@/shared/domains/pgr/pgr-docx/rich-text";
 import { PGR_DOCX_LOGO_PLACEHOLDER } from "@/shared/domains/pgr/pgr-docx/template-file";
 import {
   PGR_DOCX_AGENT_COLORS,
@@ -70,6 +71,8 @@ const MARGINS = {
   header: 360,
   footer: 380,
 };
+
+const WIDOW_CONTROL = { widowControl: true };
 
 // ---------------------------------------------------------------- cabeçalho / rodapé
 
@@ -187,57 +190,64 @@ function cover(kit: Kit) {
       1500,
     ),
     right([kit.label("documentSubtitle", { size: 46, color: C.text })], 120),
-    right(
-      [
-        kit.label("validity", { size: 26, bold: true, color: C.primaryStrong }),
-        kit.fx(" "),
-        kit.dy("validity", { size: 26, color: C.text }),
-      ],
-      480,
-    ),
-    right([kit.dy("company.razaoSocial", { size: 24, bold: true, color: C.text })]),
-    right([kit.dy("company.nomeFantasia", { size: 19, color: C.muted })]),
-    right([kit.dy("company.cityState", { size: 19, color: C.muted })], 240),
-    right([kit.dy("workUnit.name", { size: 19, color: C.muted })]),
-    right([
-      kit.label("contract", { size: 19, bold: true, color: C.primaryStrong }),
-      kit.fx(" "),
-      kit.dy("workUnit.contractNumbers", { size: 19, color: C.muted }),
-    ]),
+    raw(kit, "cover.validityXml"),
+    raw(kit, "cover.razaoSocialXml"),
+    raw(kit, "cover.nomeFantasiaXml"),
+    raw(kit, "cover.cityStateXml"),
+    raw(kit, "cover.workUnitXml"),
+    raw(kit, "cover.contractXml"),
   ];
 }
 
 // ---------------------------------------------------------------- identificação
 
-function kv(kit: Kit, labelKey: Parameters<Kit["label"]>[0], tag: string) {
-  return [kit.label(labelKey, { bold: true }), kit.fx(" "), kit.dy(tag)];
+function kv(
+  kit: Kit,
+  labelKey: Parameters<Kit["label"]>[0],
+  tag: string,
+  fallback?: string,
+) {
+  return [
+    kit.label(labelKey, { bold: true }),
+    kit.fx(" "),
+    kit.dy(tag),
+    ...(fallback ? [kit.ctl(`^${tag}`), kit.fx(fallback), kit.ctl(`/${tag}`)] : []),
+  ];
 }
 const SEP = (kit: Kit) => kit.fx("   |   ", { color: C.subtle });
+const NOT_INFORMED = "Não informado";
+function optionalKv(kit: Kit, labelKey: Parameters<Kit["label"]>[0], tag: string) {
+  return [kit.ctl(`#${tag}`), SEP(kit), ...kv(kit, labelKey, tag), kit.ctl(`/${tag}`)];
+}
 
 function identification(kit: Kit) {
   const line = (children: ParagraphChild[]) => body(children, { align: "left" });
   const contractLine = (key: Parameters<Kit["label"]>[0], tag: string) =>
-    line([kit.label(key, { color: C.primaryStrong }), kit.fx(" "), kit.dy(tag)]);
+    line([
+      kit.label(key, { color: C.primaryStrong }),
+      kit.fx(" "),
+      kit.dy(tag),
+      kit.ctl(`^${tag}`),
+      kit.fx(NOT_INFORMED),
+      kit.ctl(`/${tag}`),
+    ]);
   const respWidth = [WIDTH * 0.62, WIDTH * 0.38].map(Math.round);
   return [
     heading([kit.label("employerSection")]),
-    line(kv(kit, "company", "company.razaoSocial")),
-    line(kv(kit, "address", "company.address")),
+    line(kv(kit, "company", "company.razaoSocial", NOT_INFORMED)),
+    line(kv(kit, "address", "company.address", NOT_INFORMED)),
     line([
-      ...kv(kit, "cnpj", "company.cnpj"),
-      SEP(kit),
-      ...kv(kit, "stateRegistration", "company.stateRegistration"),
-      SEP(kit),
-      ...kv(kit, "phone", "company.phone"),
+      ...kv(kit, "cnpj", "company.cnpj", NOT_INFORMED),
+      ...optionalKv(kit, "stateRegistration", "company.stateRegistration"),
+      ...optionalKv(kit, "phone", "company.phone"),
     ]),
-    line(kv(kit, "cnae", "company.cnae")),
-    line(kv(kit, "riskGrade", "company.riskGrade")),
+    line(kv(kit, "cnae", "company.cnae", NOT_INFORMED)),
+    line(kv(kit, "riskGrade", "company.riskGrade", NOT_INFORMED)),
 
     heading([kit.label("workUnitSection")]),
     line([
-      ...kv(kit, "workUnit", "workUnit.name"),
-      SEP(kit),
-      ...kv(kit, "workUnitContract", "workUnit.contractNumbers"),
+      ...kv(kit, "workUnit", "workUnit.name", NOT_INFORMED),
+      ...optionalKv(kit, "workUnitContract", "workUnit.contractNumbers"),
     ]),
     control(kit, "#contract.hasAny"),
     line([kit.label("contractDescription", { bold: true })]),
@@ -254,8 +264,7 @@ function identification(kit: Kit) {
     contractLine("executionPlace", "contract.executionPlace"),
     control(kit, "/contract.hasAny"),
     line([kit.label("workUnitAddress", { bold: true })]),
-    line([kit.dy("workUnit.address")]),
-    line([kit.dy("workUnit.addressCity")]),
+    raw(kit, "workUnitAddressXml"),
 
     heading([kit.label("responsiblesSection")]),
     grid(
@@ -264,9 +273,8 @@ function identification(kit: Kit) {
           tc(
             [
               tp([
-                ...kv(kit, "author", "responsibles.author"),
-                SEP(kit),
-                ...kv(kit, "coauthors", "responsibles.coauthors"),
+                ...kv(kit, "author", "responsibles.author", NOT_INFORMED),
+                ...optionalKv(kit, "coauthors", "responsibles.coauthors"),
               ]),
             ],
             { width: respWidth[0] },
@@ -274,21 +282,49 @@ function identification(kit: Kit) {
           tc(
             [
               tp([
-                ...kv(kit, "registration", "responsibles.authorRegistration"),
-                SEP(kit),
-                ...kv(kit, "registration", "responsibles.coauthorRegistration"),
+                ...kv(
+                  kit,
+                  "registration",
+                  "responsibles.authorRegistration",
+                  NOT_INFORMED,
+                ),
+                ...optionalKv(kit, "registration", "responsibles.coauthorRegistration"),
               ]),
             ],
             { width: respWidth[1] },
           ),
         ]),
         tr([
-          tc([tp(kv(kit, "companyResponsible", "responsibles.companyResponsible"))], {
-            width: respWidth[0],
-          }),
-          tc([tp(kv(kit, "registrationType", "responsibles.registrationType"))], {
-            width: respWidth[1],
-          }),
+          tc(
+            [
+              tp(
+                kv(
+                  kit,
+                  "companyResponsible",
+                  "responsibles.companyResponsible",
+                  NOT_INFORMED,
+                ),
+              ),
+            ],
+            {
+              width: respWidth[0],
+            },
+          ),
+          tc(
+            [
+              tp(
+                kv(
+                  kit,
+                  "registrationType",
+                  "responsibles.registrationType",
+                  NOT_INFORMED,
+                ),
+              ),
+            ],
+            {
+              width: respWidth[1],
+            },
+          ),
         ]),
       ],
       respWidth,
@@ -315,10 +351,47 @@ function revisionsTable(kit: Kit) {
         tc([tp([kit.ctl("#revisions"), kit.dy("number", { bold: true })])], {
           width: widths[0],
         }),
-        tc([tp([kit.dy("date")])], { width: widths[1] }),
-        tc([tp([kit.dy("validUntil")])], { width: widths[2] }),
-        tc([tp([kit.dy("description")])], { width: widths[3] }),
-        tc([tp([kit.dy("responsible"), kit.ctl("/revisions")])], { width: widths[4] }),
+        tc([tp([kit.dy("date"), kit.ctl("^date"), kit.fx("—"), kit.ctl("/date")])], {
+          width: widths[1],
+        }),
+        tc(
+          [
+            tp([
+              kit.dy("validUntil"),
+              kit.ctl("^validUntil"),
+              kit.fx("—"),
+              kit.ctl("/validUntil"),
+            ]),
+          ],
+          {
+            width: widths[2],
+          },
+        ),
+        tc(
+          [
+            tp([
+              kit.dy("description"),
+              kit.ctl("^description"),
+              kit.fx("—"),
+              kit.ctl("/description"),
+            ]),
+          ],
+          {
+            width: widths[3],
+          },
+        ),
+        tc(
+          [
+            tp([
+              kit.dy("responsible"),
+              kit.ctl("^responsible"),
+              kit.fx("—"),
+              kit.ctl("/responsible"),
+              kit.ctl("/revisions"),
+            ]),
+          ],
+          { width: widths[4] },
+        ),
       ]),
     ],
     widths,
@@ -349,20 +422,77 @@ const rawText = (kit: Kit, key: PgrDocxTextKey) =>
 const raw = (kit: Kit, tag: string) => new Paragraph({ children: [kit.ctl(`@${tag}`)] });
 
 /** Parágrafo de texto FIXO (amarelo), com `{{company.razaoSocial}}` onde o texto cita a empresa. */
-function fixedParagraph(kit: Kit, text: string) {
+function fixedParagraph(kit: Kit, text: string, keepNext = false) {
   const parts = text.split("{empresa}");
   const children: ParagraphChild[] = [];
   parts.forEach((part, index) => {
     if (index > 0) children.push(kit.dy("company.razaoSocial"));
-    children.push(...kit.fxRich(part));
+    children.push(...kit.fxRich(keepLastWords(part)));
   });
-  return new Paragraph({ style: PGR_DOCX_STYLE_IDS.body, children });
+  return new Paragraph({
+    style: PGR_DOCX_STYLE_IDS.body,
+    keepNext: keepNext || text.trim().endsWith(":"),
+    children,
+  });
 }
-const fixedItem = (kit: Kit, text: string) =>
-  new Paragraph({ style: PGR_DOCX_STYLE_IDS.item, children: kit.fxRich(text) });
+const fixedItem = (kit: Kit, text: string, keepNext = false) =>
+  new Paragraph({
+    style: PGR_DOCX_STYLE_IDS.item,
+    keepNext: keepNext || undefined,
+    children: kit.fxRich(keepLastWords(text)),
+  });
 
 function jobRolesTable(kit: Kit) {
-  const widths = [2100, 5566, 1700, 1100];
+  const widths = [2300, 4400, 2500, 1266];
+  const dataRow = (
+    open: string[],
+    close: string[],
+    edges: { top: number; bottom: number; border: boolean },
+  ) =>
+    tr(
+      [
+        tc([tp([...open.map((tag) => kit.ctl(tag)), kit.dy("name", { bold: true })])], {
+          width: widths[0],
+          vAlign: "top",
+          bottomBorder: edges.border,
+          marginTop: edges.top,
+          marginBottom: edges.bottom,
+        }),
+        tc([raw(kit, "descriptionXml")], {
+          width: widths[1],
+          vAlign: "top",
+          bottomBorder: edges.border,
+          marginTop: edges.top,
+          marginBottom: edges.bottom,
+        }),
+        tc([tp([kit.dy("workload")])], {
+          width: widths[2],
+          vAlign: "top",
+          bottomBorder: edges.border,
+          marginTop: edges.top,
+          marginBottom: edges.bottom,
+        }),
+        tc(
+          [
+            tp(
+              [
+                kit.dy("employeeCount", { bold: true }),
+                ...close.map((tag) => kit.ctl(tag)),
+              ],
+              { align: "center" },
+            ),
+          ],
+          {
+            width: widths[3],
+            vAlign: "top",
+            bottomBorder: edges.border,
+            marginTop: edges.top,
+            marginBottom: edges.bottom,
+          },
+        ),
+      ],
+      { cantSplit: true },
+    );
   return [
     grid(
       [
@@ -372,34 +502,40 @@ function jobRolesTable(kit: Kit) {
           { children: [kit.label("jobRoleWorkload", HEAD)], width: widths[2] },
           { children: [kit.label("jobRoleCount", HEAD)], width: widths[3] },
         ]),
-        tr(
-          [
-            tc([tp([kit.ctl("#jobRoles"), kit.dy("name", { bold: true })])], {
-              width: widths[0],
-              vAlign: "top",
-            }),
-            tc([tp([kit.dy("description")], { align: "left" })], {
-              width: widths[1],
-              vAlign: "top",
-            }),
-            tc([tp([kit.dy("workload")])], { width: widths[2], vAlign: "top" }),
-            tc(
-              [
-                tp([kit.dy("employeeCount", { bold: true }), kit.ctl("/jobRoles")], {
-                  align: "center",
+        dataRow(["#jobRoles", "#parts", "#whole"], ["/whole"], {
+          top: 50,
+          bottom: 50,
+          border: true,
+        }),
+        dataRow(["#head"], ["/head"], { top: 50, bottom: 0, border: false }),
+        dataRow(["#body"], ["/body"], { top: 0, bottom: 0, border: false }),
+        dataRow(["#tail"], ["/tail", "/parts", "/jobRoles"], {
+          top: 0,
+          bottom: 50,
+          border: true,
+        }),
+        tr([
+          tc(
+            [
+              tp([
+                kit.ctl("^jobRoles"),
+                kit.fx("Nenhuma função vinculada aos GES deste PGR.", {
+                  italics: true,
+                  ...MUTED,
                 }),
-              ],
-              {
-                width: widths[3],
-                vAlign: "top",
-              },
-            ),
-          ],
-          { cantSplit: false },
-        ),
+              ]),
+            ],
+            { width: WIDTH - widths[3], span: 3, openRight: true, bottomBorder: true },
+          ),
+          tc([tp([kit.ctl("/jobRoles")])], {
+            width: widths[3],
+            openLeft: true,
+            bottomBorder: true,
+          }),
+        ]),
       ],
       widths,
-      BORDERS.rows,
+      BORDERS.rowsOpen,
     ),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
@@ -536,7 +672,7 @@ function methodologyTable(
 }
 
 function controlNeedTable(kit: Kit) {
-  const first = 2300;
+  const first = 1900;
   const rest = Math.floor((WIDTH - first) / 3);
   const widths = [first, rest, rest, WIDTH - first - rest * 2];
   const order: [(typeof PGR_DOCX_RISK_CLASSES)[number], string][] = [
@@ -649,6 +785,52 @@ function controlNeedTable(kit: Kit) {
   );
 }
 
+function annexActionsTable(kit: Kit) {
+  const widths = [1800, 1900, 2966, 1550, 1000, 1250];
+  return grid(
+    [
+      headerRow([
+        { children: [kit.fx("GES", HEAD)], width: widths[0] },
+        { children: [kit.fx("Risco", HEAD)], width: widths[1] },
+        { children: [kit.fx("Ação", HEAD)], width: widths[2] },
+        { children: [kit.fx("Responsável", HEAD)], width: widths[3] },
+        { children: [kit.fx("Prazo", HEAD)], width: widths[4] },
+        { children: [kit.fx("Status", HEAD)], width: widths[5] },
+      ]),
+      tr([
+        tc([tp([kit.ctl("#annexActions"), kit.dy("gesTitle", { bold: true })])], {
+          width: widths[0],
+          vAlign: "top",
+        }),
+        tc([tp([kit.dy("riskRef", { bold: true })]), tp([kit.dy("occupationalRisk")])], {
+          width: widths[1],
+          vAlign: "top",
+        }),
+        tc([tp([kit.dy("action")])], { width: widths[2], vAlign: "top" }),
+        tc([tp([kit.dy("responsible")])], { width: widths[3], vAlign: "top" }),
+        tc([tp([kit.dy("deadline")])], { width: widths[4], vAlign: "top" }),
+        tc([tp([kit.dy("status"), kit.ctl("/annexActions")])], {
+          width: widths[5],
+          vAlign: "top",
+        }),
+      ]),
+      tr([
+        tc(
+          [
+            tp([
+              kit.ctl("^annexActions"),
+              kit.fx("Nenhuma ação planejada neste PGR.", { italics: true, ...MUTED }),
+            ]),
+          ],
+          { width: WIDTH - widths[5], span: 5, openRight: true },
+        ),
+        tc([tp([kit.ctl("/annexActions")])], { width: widths[5], openLeft: true }),
+      ]),
+    ],
+    widths,
+  );
+}
+
 function sections(kit: Kit) {
   const fp = (text: string) => fixedParagraph(kit, text);
   const fsub = (key: Parameters<Kit["label"]>[0]) => subtitle([kit.label(key)]);
@@ -660,7 +842,7 @@ function sections(kit: Kit) {
     heading([kit.title("responsibilities")]),
     rawText(kit, "responsibilities"),
 
-    heading([kit.title("jobRoles")], { pageBreakBefore: true }),
+    heading([kit.title("jobRoles")]),
     ...jobRolesTable(kit),
     heading([kit.title("trainingMatrix")]),
     raw(kit, "trainingMatrixXml"),
@@ -716,6 +898,7 @@ function sections(kit: Kit) {
         { label: "methodologyPrevention", field: "prevention", width: WIDTH - 4300 },
       ],
     }),
+    spacer(),
     rawText(kit, "riskCategorySeverity"),
     methodologyTable(kit, {
       titleKey: "severityTable",
@@ -730,8 +913,10 @@ function sections(kit: Kit) {
         { label: "methodologyDefinition", field: "definition", width: WIDTH - 1000 },
       ],
     }),
+    spacer(),
     rawText(kit, "riskCategoryMatrix"),
     raw(kit, "riskMatrixXml"),
+    spacer(),
     rawText(kit, "riskCategoryExample"),
     controlNeedTable(kit),
 
@@ -741,7 +926,7 @@ function sections(kit: Kit) {
     ),
     subtitle(kit.fxRich("Detalhamento da metodologia de avaliação:")),
     fp(
-      "A metodologia aplicada estará baseada no estudo dos locais de trabalho, análise dos setores e funções expostas, avaliação dos possíveis riscos aos que os empregados poderão estar expostos, segundo os conceitos técnicos adotados pela Portaria MTP nº 816, de 13 de abril de 2022, em sua Norma Regulamentadora NR – 0 e seus anexos, e NHO´S (Normas de Higiene Ocupacional) da Fundacentro e de acordo com os procedimentos da Contratante.",
+      "A metodologia aplicada estará baseada no estudo dos locais de trabalho, análise dos setores e funções expostas, avaliação dos possíveis riscos aos que os empregados poderão estar expostos, segundo os conceitos técnicos adotados pela Portaria MTP nº 816, de 13 de abril de 2022, em sua Norma Regulamentadora NR\u00A0–\u00A00 e seus anexos, e NHO´S (Normas de Higiene Ocupacional) da Fundacentro e de acordo com os procedimentos da Contratante.",
     ),
     subtitle(kit.fxRich("Monitoração de Agentes Ambientais")),
     fp(
@@ -766,6 +951,7 @@ function sections(kit: Kit) {
     fixedItem(
       kit,
       "a) os meios e recursos necessários para os primeiros socorros, encaminhamento de acidentados e abandono;",
+      true,
     ),
     fixedItem(
       kit,
@@ -830,13 +1016,16 @@ function sections(kit: Kit) {
     fp(
       "Este anexo constitui parte integrante do PGR e deverá ser atualizado sempre que houver necessidade de revisão do programa, em decorrência de mudanças nos processos, alterações legais, ocorrência de acidentes, identificação de novos riscos ou demais situações previstas na NR 01.",
     ),
+    annexActionsTable(kit),
 
     heading([kit.title("finalProvisions")]),
-    fp(
+    fixedParagraph(
+      kit,
       "Sempre que vários empregados realizarem simultaneamente atividades no mesmo local, estes deverão executar ações integradas para aplicação de medidas prevencionistas contidas no PGR visando à proteção de todos os trabalhadores expostos aos riscos ambientais.",
+      true,
     ),
     fp(
-      "Será garantido que a ocorrência de riscos ambientais nos locais de trabalho que coloquem em situação de risco grave iminente um ou mais colaboradores, que eles possam interromper de imediato suas atividades, preenchendo formulário – Direito de Recusa, comunicando o fato à chefia imediata para as devidas providências.",
+      "Será garantido que a ocorrência de riscos ambientais nos locais de trabalho que coloquem em situação de risco grave iminente um ou mais colaboradores, que eles possam interromper de imediato suas atividades, preenchendo formulário – Direito\u00A0de\u00A0Recusa, comunicando o fato à chefia imediata para as devidas providências.",
     ),
   ];
 }
@@ -1000,21 +1189,32 @@ function riskCard(kit: Kit) {
         tr([
           tc(
             [
-              tp([kit.fx("CONCENTRAÇÃO / INTENSIDADE", SMALL_LABEL)], { after: 10 }),
-              tp([kit.fx("Resultado Encontrado: ", MUTED), kit.dy("result")]),
+              tp([kit.fx("CONCENTRAÇÃO / INTENSIDADE", SMALL_LABEL)], {
+                after: 10,
+                keepNext: true,
+              }),
+              tp([kit.fx("Resultado Encontrado: ", MUTED), kit.dy("result")], {
+                keepNext: true,
+              }),
             ],
             { width: HALF, vAlign: "top" },
           ),
-          tc([tp([kit.fx("Limite de Tolerância: ", MUTED), kit.dy("toleranceLimit")])], {
-            width: WIDTH - HALF,
-            vAlign: "bottom",
-          }),
+          tc(
+            [
+              tp([kit.fx("Limite de Tolerância: ", MUTED), kit.dy("toleranceLimit")], {
+                keepNext: true,
+              }),
+            ],
+            {
+              width: WIDTH - HALF,
+              vAlign: "bottom",
+            },
+          ),
         ]),
       ],
       [HALF, WIDTH - HALF],
       BORDERS.card,
     ),
-    body([kit.dy("assessmentDetails")], { align: "left" }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { before: 60, after: 160 },
@@ -1029,16 +1229,16 @@ function riskCard(kit: Kit) {
 }
 
 const HIERARCHY = [
-  ["elimination", "I. É possível eliminação dos fatores de risco?"],
+  ["elimination", "I. É possível eliminação dos fatores de\u00A0risco?"],
   [
     "collective",
-    "II. Minimização e controle dos fatores de risco, com a adoção de medidas de proteção coletiva?",
+    "II. Minimização e controle dos fatores de risco, com a adoção de medidas de proteção\u00A0coletiva?",
   ],
   [
     "administrative",
-    "III. Minimização e controle dos fatores de risco, com a adoção de medidas administrativas ou de organização do trabalho?",
+    "III. Minimização e controle dos fatores de risco, com a adoção de medidas administrativas ou de organização do\u00A0trabalho?",
   ],
-  ["individual", "IV. Adoção de medidas de proteção individual?"],
+  ["individual", "IV. Adoção de medidas de proteção\u00A0individual?"],
 ] as const;
 
 function measuresTable(kit: Kit) {
@@ -1117,6 +1317,21 @@ function measuresTable(kit: Kit) {
           ),
         ]),
       ),
+      tr([
+        tc(
+          [
+            tp([
+              kit.ctl("^measures"),
+              kit.fx("Nenhuma medida de prevenção cadastrada neste GES.", {
+                italics: true,
+                ...MUTED,
+              }),
+            ]),
+          ],
+          { width: WIDTH - widths[4], span: 4, openRight: true },
+        ),
+        tc([tp([kit.ctl("/measures")])], { width: widths[4], openLeft: true }),
+      ]),
     ],
     widths,
   );
@@ -1153,9 +1368,9 @@ function episTable(kit: Kit) {
               }),
             ]),
           ],
-          { width: WIDTH - widths[4], span: 4 },
+          { width: WIDTH - widths[4], span: 4, openRight: true },
         ),
-        tc([tp([kit.ctl("/epis")])], { width: widths[4] }),
+        tc([tp([kit.ctl("/epis")])], { width: widths[4], openLeft: true }),
       ]),
     ],
     widths,
@@ -1173,43 +1388,48 @@ function actionsTable(kit: Kit) {
     });
   const valueCell = (children: ParagraphChild[], index: number, keepNext = true) =>
     tc([tp(children, { keepNext })], { width: widths[index], vAlign: "center" });
+  const riskCell = (
+    children: ParagraphChild[],
+    keepNext: boolean,
+    edges: { openTop?: boolean; openBottom?: boolean },
+    vAlign: "top" | "center" | "bottom" = "center",
+  ) =>
+    tc([tp(children, { align: "center", keepNext })], {
+      width: first,
+      fill: C.primarySofter,
+      vAlign,
+      ...edges,
+    });
   return grid(
     [
       tr([
-        tc(
-          [
-            tp([kit.ctl("#actions"), kit.dy("riskRef", { bold: true })], {
-              align: "center",
-              keepNext: true,
-            }),
-          ],
-          {
-            width: first,
-            vMerge: "restart",
-            fill: C.primarySofter,
-          },
-        ),
+        riskCell([kit.ctl("#actions")], true, { openBottom: true }),
         labelCell("Risco Ocupacional", 1),
         labelCell("Nível de risco", 2),
         labelCell("Ação", 3),
         labelCell("Formas de acompanhamento", 4),
       ]),
       tr([
-        tc([tp([], { keepNext: true })], { width: first, vMerge: "continue" }),
+        riskCell(
+          [kit.dy("riskRef", { bold: true })],
+          true,
+          { openTop: true, openBottom: true },
+          "bottom",
+        ),
         valueCell([kit.dy("occupationalRisk")], 1),
         valueCell([kit.dy("riskLevel")], 2),
         valueCell([kit.dy("action")], 3),
         valueCell([kit.dy("tracking")], 4),
       ]),
       tr([
-        tc([tp([], { keepNext: true })], { width: first, vMerge: "continue" }),
+        riskCell([], true, { openTop: true, openBottom: true }),
         labelCell("Aferição de resultados", 1),
         labelCell("Responsável", 2),
         labelCell("Prazo para execução", 3),
         labelCell("Status", 4),
       ]),
       tr([
-        tc([], { width: first, vMerge: "continue" }),
+        riskCell([], false, { openTop: true }),
         valueCell([kit.dy("measurement")], 1, false),
         valueCell([kit.dy("responsible")], 2, false),
         valueCell([kit.dy("deadline")], 3, false),
@@ -1226,9 +1446,9 @@ function actionsTable(kit: Kit) {
               }),
             ]),
           ],
-          { width: WIDTH - widths[4], span: 4 },
+          { width: WIDTH - widths[4], span: 4, openRight: true },
         ),
-        tc([tp([kit.ctl("/actions")])], { width: widths[4] }),
+        tc([tp([kit.ctl("/actions")])], { width: widths[4], openLeft: true }),
       ]),
     ],
     widths,
@@ -1236,9 +1456,10 @@ function actionsTable(kit: Kit) {
 }
 
 function dashboard(kit: Kit) {
-  const cards: { label: string; tag: string; fill: string; text: string }[] = [
+  const labelRun = { bold: true, size: S.tableSmall };
+  const cards: { label: ParagraphChild; tag: string; fill: string; text: string }[] = [
     {
-      label: "Riscos Totais",
+      label: kit.fx("Riscos Totais", { ...labelRun, color: C.primaryStrong }),
       tag: "dashboard.total",
       fill: C.primarySoft,
       text: C.primaryStrong,
@@ -1246,7 +1467,10 @@ function dashboard(kit: Kit) {
     ...PGR_DOCX_RISK_CLASSES.map((riskClass) => {
       const colors = PGR_DOCX_RISK_CLASS_COLORS[riskClass];
       return {
-        label: `${colors.label} (${colors.range})`,
+        label: kit.semi(`riskLevelLabels.${riskClass}`, {
+          ...labelRun,
+          color: colors.text,
+        }),
         tag: `dashboard.${riskClass}`,
         fill: colors.soft,
         text: colors.text,
@@ -1263,9 +1487,7 @@ function dashboard(kit: Kit) {
         cards.map((card, index) =>
           tc(
             [
-              tp([
-                kit.fx(card.label, { bold: true, size: S.tableSmall, color: card.text }),
-              ]),
+              tp([card.label]),
               tp([kit.dy(card.tag, { bold: true, size: 36, color: card.text })], {
                 align: "right",
               }),
@@ -1285,8 +1507,10 @@ function dashboard(kit: Kit) {
 
 function inventory(kit: Kit) {
   const constructionWidths = [3489, 3489, WIDTH - 6978];
-  const cField = (label: string, tag: string) =>
-    tp([kit.fx(label, { bold: true }), kit.fx(" "), kit.dy(tag)]);
+  const cField = (label: string, tag: string, keepNext = true) =>
+    tp([kit.fx(label, { bold: true }), kit.fx(" "), kit.dy(tag)], {
+      keepNext: keepNext || undefined,
+    });
   return [
     heading([kit.label("inventoryHeaderTitle")]),
     new Paragraph({
@@ -1306,10 +1530,20 @@ function inventory(kit: Kit) {
           children: [kit.fx(text, { bold: true, color: C.text })],
         }),
     ),
+    control(kit, "^ges"),
+    body([kit.fx("Nenhum GES cadastrado neste PGR.", { italics: true, ...MUTED })]),
+    new Paragraph({
+      spacing: { before: 0, after: 0, line: 20, lineRule: LineRuleType.EXACT },
+      run: { size: 2 },
+      children: [],
+    }),
+    control(kit, "/ges"),
     control(kit, "#ges"),
     heading([kit.dy("title")]),
     subheading([kit.fx(INVENTORY_BLOCKS[0])]),
-    body([kit.fx("Descrição: ", { bold: true }), kit.dy("processDescription")]),
+    body([kit.fx("Descrição: ", { bold: true }), kit.dy("processDescription")], {
+      keepNext: true,
+    }),
     subheading([kit.fx(INVENTORY_BLOCKS[1])]),
     grid(
       [
@@ -1334,7 +1568,7 @@ function inventory(kit: Kit) {
           }),
         ]),
         tr([
-          tc([cField("Outras características:", "construction.other")], {
+          tc([cField("Outras características:", "construction.other", false)], {
             width: WIDTH,
             span: 3,
           }),
@@ -1354,12 +1588,33 @@ function inventory(kit: Kit) {
           }),
           tc([tp([kit.dy("name"), kit.ctl("/jobRoles")])], { width: WIDTH - 1700 }),
         ]),
+        tr([
+          tc([tp([kit.ctl("^jobRoles"), kit.fx("Cargo/Função:", { bold: true })])], {
+            width: 1700,
+            fill: C.surfaceAlt,
+          }),
+          tc(
+            [
+              tp([
+                kit.fx("Nenhuma função vinculada a este GES.", {
+                  italics: true,
+                  ...MUTED,
+                }),
+                kit.ctl("/jobRoles"),
+              ]),
+            ],
+            { width: WIDTH - 1700 },
+          ),
+        ]),
       ],
       [1700, WIDTH - 1700],
       BORDERS.rows,
     ),
     subheading([kit.fx(INVENTORY_BLOCKS[3])]),
     ...riskCard(kit),
+    control(kit, "^risks"),
+    body([kit.fx("Nenhum risco identificado neste GES.", { italics: true, ...MUTED })]),
+    control(kit, "/risks"),
     subheading([kit.fx(INVENTORY_BLOCKS[4])]),
     measuresTable(kit),
     subheading([kit.fx(INVENTORY_BLOCKS[5])]),
@@ -1398,7 +1653,7 @@ export function buildTemplateDocument(mode: TemplateMode): Document {
       default: {
         document: {
           run: { font: PGR_DOCX_FONT, size: S.body, color: C.text },
-          paragraph: { spacing: { after: 0, line: 259 } },
+          paragraph: { ...WIDOW_CONTROL, spacing: { after: 0, line: 259 } },
         },
       },
       paragraphStyles: [
@@ -1409,6 +1664,7 @@ export function buildTemplateDocument(mode: TemplateMode): Document {
           quickFormat: true,
           run: { font: PGR_DOCX_FONT, size: S.body, color: C.text },
           paragraph: {
+            ...WIDOW_CONTROL,
             alignment: AlignmentType.JUSTIFIED,
             spacing: { after: 100, line: 276 },
           },
@@ -1418,7 +1674,11 @@ export function buildTemplateDocument(mode: TemplateMode): Document {
           name: "PGR Item",
           basedOn: PGR_DOCX_STYLE_IDS.body,
           quickFormat: true,
-          paragraph: { indent: { left: 284 }, spacing: { after: 60, line: 276 } },
+          paragraph: {
+            ...WIDOW_CONTROL,
+            indent: { left: 284 },
+            spacing: { after: 60, line: 276 },
+          },
         },
         {
           id: PGR_DOCX_STYLE_IDS.subtitle,
@@ -1431,6 +1691,7 @@ export function buildTemplateDocument(mode: TemplateMode): Document {
             alignment: AlignmentType.LEFT,
             spacing: { before: 160, after: 80 },
             keepNext: true,
+            keepLines: true,
           },
         },
         {
@@ -1451,6 +1712,7 @@ export function buildTemplateDocument(mode: TemplateMode): Document {
           paragraph: {
             spacing: { before: 240, after: 120 },
             keepNext: true,
+            keepLines: true,
             outlineLevel: 0,
             indent: { left: 80, right: 80 },
           },
@@ -1465,6 +1727,7 @@ export function buildTemplateDocument(mode: TemplateMode): Document {
           paragraph: {
             spacing: { before: 160, after: 80 },
             keepNext: true,
+            keepLines: true,
             outlineLevel: 1,
             indent: { left: 60, right: 60 },
           },

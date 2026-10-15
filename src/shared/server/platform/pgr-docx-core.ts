@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { getPgrConsolidated } from "@/shared/db/repositories/pgr-consolidated";
 import { getPgrDocxExtras } from "@/shared/db/repositories/pgr-docx-extras";
+import { getRiskMethodologyView } from "@/shared/db/repositories/risk-methodology";
 import {
   buildPgrDocxData,
   type PgrDocxOverrides,
@@ -137,14 +138,18 @@ export async function generatePgrDocx(
   pgrId: string,
   options: GeneratePgrDocxOptions = {},
 ): Promise<GeneratedPgrDocx> {
-  const [consolidated, extras] = await Promise.all([
+  const [consolidated, extras, methodology] = await Promise.all([
     getPgrConsolidated(orgId, pgrId),
     getPgrDocxExtras(orgId, pgrId),
+    getRiskMethodologyView(orgId),
   ]);
   if (!consolidated || !extras) throw new NotFoundError();
 
   const emittedAt = emittedAtInSaoPaulo();
-  const content = buildPgrDocxContent(consolidated, extras, { emittedAt });
+  const content = buildPgrDocxContent(consolidated, extras, {
+    emittedAt,
+    classificationBands: methodology.classificationBands,
+  });
   const data = buildPgrDocxData(content, { overrides: options.overrides });
 
   let template: Buffer;

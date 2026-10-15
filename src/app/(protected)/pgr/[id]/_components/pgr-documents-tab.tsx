@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 
 import type { DocumentListItem } from "@/shared/domains/documents/documents";
 import {
@@ -26,6 +26,7 @@ import { ValidityBadge } from "../../../documents/_components/validity-badge";
 
 const ARCHIVE_QUEUED_MESSAGE =
   "Geração enfileirada. O PDF aparece aqui como versão do GED assim que o processamento terminar.";
+const ARCHIVE_FAILED_MESSAGE = "Não foi possível enfileirar a geração. Tente novamente.";
 
 function buildRelatedQuery(pgrId: string): string {
   return `relatedEntityType=pgr&relatedEntityId=${pgrId}`;
@@ -54,25 +55,31 @@ function SectionHeading({
  */
 function PgrPdfPanel({ pgrId }: { pgrId: string }) {
   const router = useRouter();
-  const [isArchivePending, startArchive] = useTransition();
+  const [isArchivePending, setIsArchivePending] = useState(false);
   const [archiveNotice, setArchiveNotice] = useState<string | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
 
   const docxHref = `/api/v1/pgr/${pgrId}/docx?format=docx`;
   const pdfHref = `/api/v1/pgr/${pgrId}/docx?format=pdf`;
 
-  function handleArchive() {
-    startArchive(async () => {
-      setArchiveError(null);
-      setArchiveNotice(null);
+  async function handleArchive() {
+    setArchiveError(null);
+    setArchiveNotice(null);
+    setIsArchivePending(true);
+    try {
       const result = await enqueuePgrPdfBatchAction([pgrId]);
       if (!result.ok) {
         setArchiveError(result.error.message);
         return;
       }
       setArchiveNotice(ARCHIVE_QUEUED_MESSAGE);
-      router.refresh();
-    });
+    } catch {
+      setArchiveError(ARCHIVE_FAILED_MESSAGE);
+      return;
+    } finally {
+      setIsArchivePending(false);
+    }
+    router.refresh();
   }
 
   return (

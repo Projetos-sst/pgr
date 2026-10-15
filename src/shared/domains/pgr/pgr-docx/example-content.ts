@@ -175,7 +175,7 @@ export const PGR_DOCX_EXAMPLE_CONTENT: PgrDocxContent = {
       epis: [],
       actions: [
         {
-          riskRef: "Risco 1",
+          riskRef: "RISCO 1",
           occupationalRisk: "Postura inadequada prolongada",
           riskLevel: "Tolerável (3-8)",
           action:
@@ -303,7 +303,7 @@ export const PGR_DOCX_EXAMPLE_CONTENT: PgrDocxContent = {
       ],
       actions: [
         {
-          riskRef: "Risco 1",
+          riskRef: "RISCO 1",
           occupationalRisk: "Queda de diferente nível",
           riskLevel: "Substancial (10-15)",
           action:
@@ -316,7 +316,7 @@ export const PGR_DOCX_EXAMPLE_CONTENT: PgrDocxContent = {
           status: "Em andamento",
         },
         {
-          riskRef: "Risco 2",
+          riskRef: "RISCO 2",
           occupationalRisk: "Exposição ao ruído",
           riskLevel: "Moderado (4-12)",
           action: "Realizar dosimetria de ruído por função e emitir laudo.",

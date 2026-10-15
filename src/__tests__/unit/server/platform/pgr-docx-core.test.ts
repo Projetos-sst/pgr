@@ -10,6 +10,7 @@ import type { PgrDocxExtras } from "@/shared/domains/pgr/pgr-docx/from-consolida
 
 const getPgrConsolidated = jest.fn();
 const getPgrDocxExtras = jest.fn();
+const getRiskMethodologyView = jest.fn();
 const downloadCompanyLogo = jest.fn();
 const docxToPdf = jest.fn();
 const convertDocxWithGoogle = jest.fn();
@@ -20,6 +21,9 @@ jest.mock("@/shared/db/repositories/pgr-consolidated", () => ({
 }));
 jest.mock("@/shared/db/repositories/pgr-docx-extras", () => ({
   getPgrDocxExtras: (...a: unknown[]) => getPgrDocxExtras(...a),
+}));
+jest.mock("@/shared/db/repositories/risk-methodology", () => ({
+  getRiskMethodologyView: (...a: unknown[]) => getRiskMethodologyView(...a),
 }));
 jest.mock("@/shared/integrations/storage/company-logo-storage", () => ({
   downloadCompanyLogo: (...a: unknown[]) => downloadCompanyLogo(...a),
@@ -42,6 +46,7 @@ jest.mock("@/shared/integrations/google/drive-docs", () => ({
   convertDocxWithGoogle: (...a: unknown[]) => convertDocxWithGoogle(...a),
 }));
 
+import { defaultRiskMethodology } from "@/shared/domains/pgr/methodology-presets";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ReportUnavailableError } from "@/shared/errors/report-unavailable-error";
 import { extractDocxText } from "@/shared/integrations/docx/template-engine";
@@ -79,6 +84,7 @@ beforeEach(() => {
   for (const fn of [
     getPgrConsolidated,
     getPgrDocxExtras,
+    getRiskMethodologyView,
     downloadCompanyLogo,
     docxToPdf,
     convertDocxWithGoogle,
@@ -88,6 +94,10 @@ beforeEach(() => {
   }
   getPgrConsolidated.mockResolvedValue(consolidated);
   getPgrDocxExtras.mockResolvedValue(extras);
+  getRiskMethodologyView.mockResolvedValue({
+    configured: false,
+    ...defaultRiskMethodology(),
+  });
   downloadCompanyLogo.mockResolvedValue(null);
 });
 
@@ -125,8 +135,28 @@ describe("generatePgrDocx", () => {
       /^pgr-construtora-s-a-obra-centro-\d{4}-\d{2}-\d{2}\.docx$/,
     );
     expect(result.title).toBe("PGR — Construtora S.A. — Obra Centro");
-    expect(extractDocxText(result.file)).toContain("Construtora S.A.");
+    expect(extractDocxText(result.file)).toContain("CONSTRUTORA S.A.");
     expect(docxToPdf).not.toHaveBeenCalled();
+  });
+
+  it("usa as faixas da metodologia da organização", async () => {
+    getRiskMethodologyView.mockResolvedValue({
+      configured: true,
+      ...defaultRiskMethodology(),
+      classificationBands: [
+        { classification: "trivial", maxLevel: 3 },
+        { classification: "tolerable", maxLevel: 8 },
+        { classification: "moderate", maxLevel: 11 },
+        { classification: "substantial", maxLevel: 16 },
+        { classification: "intolerable", maxLevel: 25 },
+      ],
+    });
+    const result = await generatePgrDocx("org_a", "pgr-1");
+    expect(getRiskMethodologyView).toHaveBeenCalledWith("org_a");
+    const text = extractDocxText(result.file).replace(/\u00A0/g, " ");
+    expect(text).toContain("Moderado (9-11)");
+    expect(text).toContain("Nenhum GES cadastrado neste PGR.");
+    expect(text).toContain("Nenhuma ação planejada neste PGR.");
   });
 
   it("PGR inexistente/de outro tenant → NOT_FOUND", async () => {
