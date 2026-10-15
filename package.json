@@ -20,6 +20,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "worker": "node --conditions=react-server --import tsx worker/index.ts",
+    "deploy:setup": "node scripts/setup-vercel-deploy.mjs",
+    "deploy:validate": "node scripts/setup-vercel-deploy.mjs --check",
+    "test:deploy": "node --test scripts/__tests__/*vercel*.test.mjs",
     "pgr-docx:template": "tsx scripts/pgr-docx/build-template.ts",
     "pgr-docx:samples": "node --conditions=react-server --import tsx scripts/pgr-docx/render-samples.ts"
   },
