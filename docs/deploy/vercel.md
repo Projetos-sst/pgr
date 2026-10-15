@@ -26,9 +26,6 @@ migrations pendentes no banco do ambiente com `drizzle-kit migrate` (conexão
 interrompe o CD antes do deploy; o drizzle aplica as pendentes numa transação.
 Build e deploy ficam no mesmo job, preservando arquivos ocultos e links sem
 exportar variáveis privadas em artefatos do Actions. O resumo registra URL e SHA.
-O deploy roda numa cópia do output fora do checkout: sem `.git`, a CLI não envia
-o autor do commit, que o plano Hobby bloqueia quando não é membro do time Vercel.
-SHA e branch seguem nos metadados `githubCommit*`.
 
 Deploys de uma branch são sequenciais. Actions → CD → Run workflow permite
 republicar `develop` ou `main`; outras branches não publicam. `main` recebe
