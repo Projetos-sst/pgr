@@ -2,11 +2,13 @@ import {
   pgTable,
   text,
   uuid,
+  integer,
   boolean,
   numeric,
   date,
   timestamp,
   index,
+  uniqueIndex,
   pgPolicy,
   pgEnum,
 } from "drizzle-orm/pg-core";
@@ -30,6 +32,7 @@ export const accidentCategory = pgEnum("accident_category", [
   "fatal",
 ]);
 export const accidentSeverity = pgEnum("accident_severity", [
+  "no_injury",
   "minor",
   "moderate",
   "severe",
@@ -52,6 +55,8 @@ export const accidents = pgTable(
     orgId: text("org_id")
       .notNull()
       .references(() => orgs.id, { onDelete: "cascade" }),
+    // Número sequencial por tenant (max+1 sob lock da linha de orgs; ver repositório).
+    number: integer("number").notNull(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
@@ -95,6 +100,7 @@ export const accidents = pgTable(
     index("idx_accidents_org_status").on(table.orgId, table.status),
     index("idx_accidents_company").on(table.orgId, table.companyId),
     index("idx_accidents_occurred").on(table.orgId, table.occurredAt),
+    uniqueIndex("uq_accidents_org_id_number").on(table.orgId, table.number),
     pgPolicy("accidents_isolation", {
       for: "all",
       to: appRuntimeRole,

@@ -76,6 +76,18 @@ export const assessmentCriterion = pgEnum("assessment_criterion", [
 ]);
 
 /**
+ * Conclusão da avaliação quantitativa NR-09 (item 9.4.3) — issue #39. Três estados,
+ * deliberadamente curtos: abaixo do limite, acima do limite e não aplicável (agente
+ * sem limite numérico). É **informada pelo profissional**; o sistema apenas sugere
+ * (`suggestNr09Conclusion`, domínio puro) e nunca sobrescreve a escolha humana.
+ */
+export const nr09Conclusion = pgEnum("nr09_conclusion", [
+  "below_limit",
+  "above_limit",
+  "not_applicable",
+]);
+
+/**
  * Nível da hierarquia de controle (NR-01, 4 níveis): I Eliminação · II Proteção
  * Coletiva · III Medidas Administrativas/Organização · IV EPI.
  */
@@ -84,6 +96,17 @@ export const controlLevel = pgEnum("control_level", [
   "collective_protection",
   "administrative",
   "ppe",
+]);
+
+/**
+ * Status da medida de controle (#42): mantida / introduzida / aprimorada. Preenchido
+ * pela regra de negócio a partir do nível de risco (fatia seguinte) — nullable aqui,
+ * sem default forçado.
+ */
+export const controlMeasureStatus = pgEnum("control_measure_status", [
+  "maintain",
+  "introduced",
+  "improved",
 ]);
 
 /**
@@ -152,6 +175,16 @@ export const riskAssessments = pgTable(
     uncertaintyDegree: smallint("uncertainty_degree").notNull().default(0),
     toleranceLimit: text("tolerance_limit"),
     result: text("result"),
+    // --- Avaliação quantitativa NR-09 (issue #39) -------------------------------
+    // Só fazem sentido no critério `quantitative`; todos nullable porque a avaliação
+    // qualitativa (maioria) continua exatamente como era. O valor medido mora AQUI (é
+    // um evento datado), não em `risks.concentration_intensity`, que segue como
+    // concentração de referência do risco.
+    evaluationMethod: text("evaluation_method"),
+    measuredValue: numeric("measured_value"),
+    measuredUnit: measurementUnit("measured_unit"),
+    toleranceLimitValue: numeric("tolerance_limit_value"),
+    nr09Conclusion: nr09Conclusion("nr09_conclusion"),
     assessedAt: date("assessed_at").notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -169,6 +202,17 @@ export const riskAssessments = pgTable(
     check(
       "risk_assessments_uncertainty_degree_check",
       sql`uncertainty_degree between 0 and 2`,
+    ),
+    // NR-09 (#39): valor medido exige unidade, e a unidade não pode ser a marca de
+    // "qualitativo/não aplicável" — medição sem unidade não é medição.
+    check(
+      "risk_assessments_measured_unit_check",
+      sql`measured_value is null or (measured_unit is not null and measured_unit <> 'qualitative_na')`,
+    ),
+    // Campo quantitativo preenchido exige `criterion = 'quantitative'`.
+    check(
+      "risk_assessments_quantitative_criterion_check",
+      sql`criterion = 'quantitative' or (measured_value is null and measured_unit is null and tolerance_limit_value is null and nr09_conclusion is null and evaluation_method is null)`,
     ),
     pgPolicy("risk_assessments_isolation", {
       for: "all",
@@ -197,15 +241,22 @@ export const controlMeasures = pgTable(
       .references(() => risks.id, { onDelete: "cascade" }),
     controlLevel: controlLevel("control_level").notNull(),
     applicable: boolean("applicable").notNull().default(false),
+    status: controlMeasureStatus("status"),
     justification: text("justification"),
     monitoring: text("monitoring"),
-    // Plano de ação 5W2H.
+    // Plano de ação 5W2H — completo desde a issue #47: o quê (`action_what`), por quê
+    // (`action_why`), onde (derivado do GES do risco), quando (`action_deadline`), quem
+    // (`action_responsible`), como (`action_how`) e quanto (`action_cost`, custo estimado
+    // em `numeric` como os demais valores de domínio). Nada é obrigatório
+    // retroativamente: medida antiga sem motivo/custo aparece como ausência honesta.
     actionWhat: text("action_what"),
+    actionWhy: text("action_why"),
     actionHow: text("action_how"),
     actionTracking: text("action_tracking"),
     actionMeasurement: text("action_measurement"),
     actionResponsible: text("action_responsible"),
     actionDeadline: date("action_deadline"),
+    actionCost: numeric("action_cost"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

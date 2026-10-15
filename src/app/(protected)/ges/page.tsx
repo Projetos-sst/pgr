@@ -1,20 +1,28 @@
-import Link from "next/link";
-
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
 import { listGesAction } from "@/shared/server/actions/pgr/ges";
 
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  PrimaryLink,
-  SearchForm,
-  Table,
-} from "../_ui/list";
+  AvatarBadge,
+  Cell,
+  DataGrid,
+  EditIconLink,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  RowActions,
+  ToolbarButton,
+  ToolbarSearch,
+} from "../_ui/data-list";
+import { EmptyState, PageHeader } from "../_ui/list";
 import { DeleteGes } from "./_components/delete-ges";
+import { GesIcon } from "./_components/ges-icon";
 
 export const dynamic = "force-dynamic";
+
+const TEMPLATE = "1.8fr 2.4fr 0.9fr 84px";
 
 type SearchParams = Promise<{
   search?: string;
@@ -39,65 +47,78 @@ export default async function GesPage({ searchParams }: { searchParams: SearchPa
     ? result.data
     : { rows: [], total: 0, totalWorkers: 0 };
 
+  const filters = { companyId: sp.companyId, workUnitId: sp.workUnitId };
+
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
+        icon={<GesIcon />}
         title="GES"
-        description="Grupos de Exposição Similar (caracterização ambiental)."
-        action={<PrimaryLink href="/ges/new">Novo GES</PrimaryLink>}
+        description={`Grupos de Exposição Similar · ${totalWorkers} trabalhador(es) exposto(s)`}
       />
 
-      <div className="glass-card w-fit px-5 py-3">
-        <p className="text-text-muted text-sm">Total de Trabalhadores</p>
-        <p className="text-text text-2xl font-semibold">{totalWorkers}</p>
-      </div>
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSearch
+            basePath="/ges"
+            placeholder="Buscar por nome ou descrição…"
+            defaultValue={sp.search}
+            hidden={filters}
+          />
+          <ToolbarButton href="/ges/new">Novo GES</ToolbarButton>
+        </ListToolbar>
 
-      <SearchForm
-        basePath="/ges"
-        placeholder="Buscar por nome ou descrição"
-        defaultValue={sp.search}
-        hidden={{ companyId: sp.companyId, workUnitId: sp.workUnitId }}
-      />
-
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhum GES encontrado." />
-      ) : (
-        <Table headers={["Nome", "Descrição do processo", "Expostos", ""]}>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2">
-                <Link
-                  href={`/ges/${row.id}/edit`}
-                  className="font-medium hover:underline"
-                >
-                  {row.name}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.processDescription ?? "—"}</td>
-              <td className="px-4 py-2">{row.exposedWorkers}</td>
-              <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/ges/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Gerenciar
-                  </Link>
-                  <DeleteGes id={row.id} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
-
-      <Pagination
-        basePath="/ges"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={{ search: sp.search, companyId: sp.companyId, workUnitId: sp.workUnitId }}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              message={
+                sp.search
+                  ? "Nenhum GES encontrado para a busca."
+                  : "Nenhum GES cadastrado."
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={760}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Setor / GES" },
+                  { header: "Descrição do processo" },
+                  { header: "Expostos" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <Cell>
+                    <span className="flex items-center gap-3">
+                      <AvatarBadge name={row.name} />
+                      <span className="text-text font-semibold">{row.name}</span>
+                    </span>
+                  </Cell>
+                  <Cell className="text-text-muted">{row.processDescription ?? "—"}</Cell>
+                  <Cell className="text-text-subtle">{row.exposedWorkers}</Cell>
+                  <Cell align="right">
+                    <RowActions>
+                      <EditIconLink href={`/ges/${row.id}/edit`} />
+                      <DeleteGes id={row.id} />
+                    </RowActions>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/ges"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={{ search: sp.search, ...filters }}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }

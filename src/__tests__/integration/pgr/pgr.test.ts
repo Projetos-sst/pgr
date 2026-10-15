@@ -20,6 +20,7 @@ import {
   createPgrAction,
   updatePgrAction,
   deletePgrAction,
+  publishPgrAction,
 } from "@/shared/server/actions/pgr/pgr";
 import type { PgrCreateInput } from "@/shared/domains/pgr/pgr";
 
@@ -77,6 +78,37 @@ function createInput(overrides: Partial<PgrCreateInput> = {}): PgrCreateInput {
     }
   });
 
+  it("busca ampla: por razão social da empresa e por responsável", async () => {
+    await createPgrAction(createInput({ responsible: "Eng. Fulano Busca" }));
+    const byCompany = await listPgrAction({ search: "A Ltda" });
+    expect(byCompany.ok && byCompany.data.total >= 1).toBe(true);
+    const byResp = await listPgrAction({ search: "Fulano Busca" });
+    expect(byResp.ok && byResp.data.total).toBe(1);
+    const none = await listPgrAction({ search: "inexistente-zzz" });
+    expect(none.ok && none.data.total).toBe(0);
+  });
+
+  it("filtra por tipo de registro", async () => {
+    await createPgrAction(
+      createInput({ registrationType: "crea", registrationNumber: "SP-1" }),
+    );
+    const crea = await listPgrAction({ registrationType: "crea" });
+    expect(crea.ok && crea.data.rows.every((r) => r.registrationType === "crea")).toBe(
+      true,
+    );
+    expect(crea.ok && crea.data.total).toBe(1);
+    const mte = await listPgrAction({ registrationType: "mte" });
+    expect(mte.ok && mte.data.total).toBe(0);
+  });
+
+  it("persiste o autor (created_by) e a listagem o expõe", async () => {
+    const created = await createPgrAction(createInput());
+    expect(created.ok).toBe(true);
+    const list = await listPgrAction({});
+    const mine = list.ok ? list.data.rows.find((r) => r.createdBy === "u") : undefined;
+    expect(mine).toBeDefined();
+  });
+
   it("getById do PGR do tenant retorna o registro", async () => {
     const result = await getPgrAction(PGR_IDS.pgrA);
     expect(result.ok).toBe(true);
@@ -123,6 +155,18 @@ function createInput(overrides: Partial<PgrCreateInput> = {}): PgrCreateInput {
     expect(result.ok).toBe(true);
     const after = await getPgrAction(PGR_IDS.pgrA);
     expect(after.ok && after.data.responsible).toBe("Eng. Atualizado");
+  });
+
+  // Publicar um PGR não assinado produziria documento travado que ninguém assinou.
+  // A UI só mostra o botão quando assinado, mas a action é chamável direto.
+  // O caminho feliz (assinar → publicar → idempotência) vive em `pgr-signature.test.ts`,
+  // única suíte com a máquina de assinatura.
+  it("publish sem assinatura → VALIDATION e publishedAt segue nulo", async () => {
+    const res = await publishPgrAction(PGR_IDS.pgrA);
+    expect(!res.ok && res.error.code).toBe("VALIDATION");
+
+    const after = await getPgrAction(PGR_IDS.pgrA);
+    expect(after.ok && after.data.publishedAt).toBeNull();
   });
 
   it("delete remove e getById seguinte → NOT_FOUND", async () => {

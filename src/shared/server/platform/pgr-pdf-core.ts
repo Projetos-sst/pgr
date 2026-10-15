@@ -4,11 +4,26 @@ import { getPgrConsolidated } from "@/shared/db/repositories/pgr-consolidated";
 import { buildPgrHtml, type PgrPdfOptions } from "@/shared/domains/pgr/pgr-pdf-template";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { htmlToPdf } from "@/shared/integrations/pdf/gotenberg";
+import { slugifyFileName } from "@/shared/integrations/storage/documents-storage";
 import { todayInSaoPaulo } from "@/shared/dates";
 
 export type GeneratedReport = { fileName: string; pdf: Buffer };
 
 export type PgrPdfInput = Omit<PgrPdfOptions, "generatedAt">;
+
+/**
+ * Nome legível para quem baixa: `pgr-<empresa>-<unidade>-<data>.pdf`. O UUID do PGR
+ * não entra — não diz nada para o usuário e o arquivo acaba salvo em disco/e-mail.
+ */
+function buildPgrPdfFileName(
+  data: { pgr: { companyName: string; workUnitName: string | null } },
+  generatedAt: string,
+): string {
+  const parts = ["pgr", data.pgr.companyName, data.pgr.workUnitName, generatedAt].filter(
+    (part): part is string => Boolean(part && part.trim()),
+  );
+  return slugifyFileName(`${parts.join(" ")}.pdf`);
+}
 
 /**
  * Gera o PDF do PGR (fatia #40). Reusa a leitura consolidada (fatia 022) — o HTML é
@@ -27,5 +42,5 @@ export async function generatePgrPdf(
   const generatedAt = todayInSaoPaulo();
   const html = buildPgrHtml(data, { ...options, generatedAt });
   const pdf = await htmlToPdf(html);
-  return { fileName: `pgr-${pgrId}-${generatedAt}.pdf`, pdf };
+  return { fileName: buildPgrPdfFileName(data, generatedAt), pdf };
 }

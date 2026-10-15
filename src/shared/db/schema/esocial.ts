@@ -3,8 +3,12 @@ import {
   pgEnum,
   text,
   uuid,
+  integer,
+  boolean,
+  date,
   timestamp,
   index,
+  uniqueIndex,
   pgPolicy,
 } from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
@@ -49,6 +53,12 @@ export const esocialBatchStatus = pgEnum("esocial_batch_status", [
   "sent",
   "processed",
   "error",
+]);
+
+// Ambiente de transmissão do eSocial (parâmetro de configuração por tenant).
+export const esocialEnvironment = pgEnum("esocial_environment", [
+  "production",
+  "homologation",
 ]);
 
 // ── Lote de envio ───────────────────────────────────────────────────────────
@@ -105,6 +115,41 @@ export const esocialEvents = pgTable(
   ],
 ).enableRLS();
 
+// ── Configuração do eSocial (singleton por tenant) ──────────────────────────
+// Parâmetros de transmissão persistidos por escritório. Config apenas — NÃO
+// executa transmissão nem agenda envio; `auto_send`/`check_frequency_hours`
+// registram a PREFERÊNCIA do usuário (a automação em si é capacidade futura,
+// não simulada aqui). `certificate_*` são metadados informativos (nome + validade
+// para o alerta de vencimento) — sem upload do arquivo .pfx nem credencial.
+export const esocialConfig = pgTable(
+  "esocial_config",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    environment: esocialEnvironment("environment").notNull().default("homologation"),
+    employerCnpj: text("employer_cnpj"),
+    taxClassification: text("tax_classification"),
+    certificateName: text("certificate_name"),
+    certificateExpiresAt: date("certificate_expires_at"),
+    // Conjunto de códigos de evento habilitados (subconjunto de esocial_event_type).
+    enabledEvents: text("enabled_events")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    // Preferência de envio automático (não aciona worker nesta fatia).
+    autoSend: boolean("auto_send").notNull().default(false),
+    checkFrequencyHours: integer("check_frequency_hours").notNull().default(24),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("uq_esocial_config_org").on(table.orgId),
+    isolationPolicy("esocial_config_isolation"),
+  ],
+).enableRLS();
+
 export type EsocialEvent = InferSelectModel<typeof esocialEvents>;
 export type NewEsocialEvent = InferInsertModel<typeof esocialEvents>;
 export type EsocialEventType = EsocialEvent["eventType"];
@@ -112,3 +157,6 @@ export type EsocialEventStatus = EsocialEvent["status"];
 export type EsocialBatch = InferSelectModel<typeof esocialBatches>;
 export type NewEsocialBatch = InferInsertModel<typeof esocialBatches>;
 export type EsocialBatchStatus = EsocialBatch["status"];
+export type EsocialConfig = InferSelectModel<typeof esocialConfig>;
+export type NewEsocialConfig = InferInsertModel<typeof esocialConfig>;
+export type EsocialEnvironment = EsocialConfig["environment"];

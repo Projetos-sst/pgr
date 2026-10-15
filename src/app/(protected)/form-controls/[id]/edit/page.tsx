@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
@@ -35,9 +34,12 @@ export default async function EditFormControlPage({
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/form-controls"
         title={`Editar controle · ${control.frmCode}`}
         description="Altere os dados do cabeçalho ISO ou exclua este controle."
-        action={<DeleteFormControl id={control.id} redirectTo="/form-controls" />}
+        action={
+          <DeleteFormControl id={control.id} redirectTo="/form-controls" hasLabel />
+        }
       />
       <FormControlForm
         id={control.id}
@@ -52,12 +54,11 @@ export default async function EditFormControlPage({
           nonConformityNumber: control.nonConformityNumber,
           gesId: control.gesId,
           position: control.position,
+          type: control.type,
+          status: control.status,
           notes: control.notes,
         }}
       />
-      <Link href="/form-controls" className="text-text-subtle text-sm hover:underline">
-        ← Voltar
-      </Link>
     </div>
   );
 }

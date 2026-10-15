@@ -96,6 +96,23 @@ async function freshStockNoMovements(
     expect(await countMovements(admin, I.epiStockA)).toBe(2); // seed(1) + 1
   });
 
+  it("entrada persiste o lote (#23) e aparece no histórico", async () => {
+    const res = await registerStockEntryAction({
+      stockId: I.epiStockA,
+      quantity: "2",
+      movementDate: DATE,
+      batch: "LOTE-77",
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data.movement.batch).toBe("LOTE-77");
+
+    const history = await listStockMovementsAction(I.epiStockA, {});
+    expect(history.ok).toBe(true);
+    if (!history.ok) return;
+    expect(history.data.rows[0].batch).toBe("LOTE-77");
+  });
+
   it("entrada com quantidade <= 0 → VALIDATION (nada gravado)", async () => {
     const res = await registerStockEntryAction({
       stockId: I.epiStockA,

@@ -27,7 +27,7 @@ export default async function EditarPermissaoTrabalhoPage({
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title={`Editar PT ${permit.number}`} />
+      <PageHeader backHref="/work-permits" title={`Editar PT ${permit.number}`} />
       <PermitForm
         id={id}
         companies={companies}

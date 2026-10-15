@@ -1,0 +1,20 @@
+# Imagem própria do Gotenberg para homolog/prod (Constituição, emenda 1.4.0).
+# Mesma base usada em local (docker-compose.yml), com os flags de execução já
+# fixados na imagem — não depende da plataforma de deploy suportar override de
+# CMD/args. Consumido por `src/shared/integrations/pdf/gotenberg.ts` via
+# `GOTENBERG_URL` (+ `GOTENBERG_TOKEN`, validado pelo proxy reverso na frente
+# dele — o Gotenberg em si não tem auth).
+#
+# --api-port=43217: porta não-padrão — o Easypanel do VPS já ocupa a 3000 com
+# outro serviço, então o Gotenberg passa a escutar em 43217 (dentro do
+# container). Mantenha em sincronia com o healthcheck do docker-compose.homolog.yml
+# e com o Caddyfile em ./gotenberg-proxy/ (cenário B).
+FROM gotenberg/gotenberg:8
+
+# O LibreOffice precisa das mesmas fontes usadas pelo template em todos os ambientes.
+USER root
+COPY templates/pgr/fonts/ /usr/local/share/fonts/pgr/
+RUN fc-cache -f
+USER gotenberg
+
+CMD ["gotenberg", "--api-timeout=120s", "--chromium-max-queue-size=0", "--api-port=43217"]

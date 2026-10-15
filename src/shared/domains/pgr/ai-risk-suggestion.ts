@@ -1,7 +1,8 @@
 import { z } from "zod";
 
+import { aliasPreprocessor } from "./enum-aliases";
 import { riskInputSchema, type RiskValues } from "./risk";
-import { riskAgentTypeSchema } from "./risks";
+import { riskAgentTypeSchema, type RiskAgentType } from "./risks";
 
 /**
  * Domínio puro da sugestão de riscos por IA. Espelha o **subconjunto** de `risks`
@@ -22,9 +23,40 @@ const optionalText = z.preprocess(
   z.string().trim().min(1).optional(),
 );
 
+/**
+ * Sinônimos aceitos para o grupo do agente. O prompt pede o valor em inglês (o enum do
+ * banco), mas a conversa toda acontece em português e o modelo às vezes responde
+ * `"Físico"`, `"risco químico"` ou o plural. Sem este mapa, o Zod rejeitava **item a
+ * item** e uma resposta inteira e correta virava lista vazia — indistinguível, na tela, de
+ * "a IA não encontrou nada".
+ */
+const AGENT_TYPE_ALIASES: Record<string, RiskAgentType> = {
+  fisico: "physical",
+  fisicos: "physical",
+  quimico: "chemical",
+  quimicos: "chemical",
+  biologico: "biological",
+  biologicos: "biological",
+  ergonomico: "ergonomic",
+  ergonomicos: "ergonomic",
+  mecanico: "mechanical",
+  mecanicos: "mechanical",
+  acidente: "accident",
+  acidentes: "accident",
+  psicossocial: "psychosocial",
+  psicossociais: "psychosocial",
+  "fatores psicossociais": "psychosocial",
+};
+
+/** Prefixos de ruído que o modelo anexa ao grupo: "risco físico", "agente químico". */
+const AGENT_TYPE_NOISE = /^(risco|agente|riscos|agentes)\s+/;
+
+/** Grupo do agente tolerante a pt-BR; valor irreconhecível segue para o enum reprovar. */
+export const normalizeAgentType = aliasPreprocessor(AGENT_TYPE_ALIASES, AGENT_TYPE_NOISE);
+
 /** Um risco sugerido pela IA — só os campos que o modelo produz. */
 export const suggestedRiskSchema = z.object({
-  agentType: riskAgentTypeSchema,
+  agentType: z.preprocess(normalizeAgentType, riskAgentTypeSchema),
   hazard: optionalText,
   description: z.string().trim().min(1, "Descrição é obrigatória"),
   sources: optionalText,

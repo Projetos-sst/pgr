@@ -43,6 +43,7 @@ export function TrainingCatalogForm({ training }: { training?: TrainingCatalog }
       referenceNorm: value("referenceNorm"),
       workloadHours: value("workloadHours"),
       periodicity: value("periodicity") as TrainingCatalogInput["periodicity"],
+      isActive: value("isActive") === "true",
       description: value("description"),
     };
 
@@ -91,6 +92,16 @@ export function TrainingCatalogForm({ training }: { training?: TrainingCatalog }
         defaultValue={training?.periodicity}
         options={PERIODICITY_OPTIONS}
         error={errors.periodicity}
+      />
+      <SelectField
+        label="Status"
+        name="isActive"
+        defaultValue={training ? String(training.isActive) : "true"}
+        options={[
+          { value: "true", label: "Vigente" },
+          { value: "false", label: "Inativo" },
+        ]}
+        error={errors.isActive}
       />
       <TextField
         label="Descrição"

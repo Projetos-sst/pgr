@@ -2,6 +2,7 @@ import {
   documentMetadataSchema,
   downloadFileName,
   moveDocumentSchema,
+  parseRelatedEntityFilter,
   toDocumentListItem,
   updateDocumentSchema,
 } from "@/shared/domains/documents/documents";
@@ -187,5 +188,28 @@ describe("downloadFileName (issue #35 — nome de exibição do download)", () =
 
   it("sem extensão detectável no path, devolve o nome como está", () => {
     expect(downloadFileName("Laudo", "org_a/documentos/g1/v1-semextensao")).toBe("Laudo");
+  });
+});
+
+describe("parseRelatedEntityFilter (filtro de listagem por vínculo)", () => {
+  it("aceita o par completo e bem formado", () => {
+    expect(parseRelatedEntityFilter("pgr", PGR_ID)).toEqual({
+      relatedEntityType: "pgr",
+      relatedEntityId: PGR_ID,
+    });
+  });
+
+  it("ignora o par incompleto (espelha o CHECK completo-ou-vazio)", () => {
+    expect(parseRelatedEntityFilter("pgr", null)).toEqual({});
+    expect(parseRelatedEntityFilter(null, PGR_ID)).toEqual({});
+  });
+
+  it("ignora tipo fora do conjunto fechado", () => {
+    expect(parseRelatedEntityFilter("employee", PGR_ID)).toEqual({});
+  });
+
+  it("ignora id que não é UUID — evitaria 22P02 (500) na coluna uuid", () => {
+    expect(parseRelatedEntityFilter("pgr", "abc")).toEqual({});
+    expect(parseRelatedEntityFilter("pgr", "'; drop table documents; --")).toEqual({});
   });
 });

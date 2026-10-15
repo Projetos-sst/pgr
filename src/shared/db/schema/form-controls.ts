@@ -26,6 +26,22 @@ export const formControlPosition = pgEnum("form_control_position", [
   "both",
 ]);
 
+// Categoria do formulário (Ficha/Checklist/Documento) — metadado de catálogo do
+// redesign. NÃO afeta o pipeline ISO/Gotenberg (que usa frm_code/revision/position).
+export const formControlType = pgEnum("form_control_type", [
+  "ficha",
+  "checklist",
+  "documento",
+]);
+
+// Situação do formulário no catálogo (Rascunho/Publicado/Arquivado) — metadado do
+// redesign; substitui o "Ativo" fixo da lista por estado real.
+export const formControlStatus = pgEnum("form_control_status", [
+  "draft",
+  "published",
+  "archived",
+]);
+
 export const formControls = pgTable(
   "form_controls",
   {
@@ -43,6 +59,9 @@ export const formControls = pgTable(
     nonConformityNumber: text("non_conformity_number"),
     gesId: uuid("ges_id").references(() => ges.id, { onDelete: "set null" }),
     position: formControlPosition("position").notNull().default("top"),
+    // Metadados de catálogo do redesign (não usados pelo pipeline Gotenberg).
+    type: formControlType("type").notNull().default("documento"),
+    status: formControlStatus("status").notNull().default("published"),
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

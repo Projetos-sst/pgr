@@ -3,6 +3,8 @@ import { z } from "zod";
 import { optionalString } from "@/shared/domains/pgr/form-fields";
 import type { Inspection, InspectionStatus } from "@/shared/db/schema";
 
+import { inspectionNumber } from "./inspection-number";
+
 const uuid = z.string().uuid({ message: "Identificador inválido" });
 
 // Passo 1 — cabeçalho da inspeção veicular (veículo + plano + dados de rota).
@@ -52,6 +54,10 @@ export const INSPECTION_STATUS_LABELS: Record<InspectionStatus, string> = {
 
 export function inspectionStatusLabel(value: string): string {
   return INSPECTION_STATUS_LABELS[value as InspectionStatus] ?? value;
+}
+
+export function vehicularInspectionNumber(id: string): string {
+  return inspectionNumber("IV", id);
 }
 
 export type VehicularInspectionListItem = {

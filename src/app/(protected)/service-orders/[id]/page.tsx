@@ -53,7 +53,7 @@ export default async function ServiceOrderDetailPage({
               >
                 Editar
               </Link>
-              <DeleteServiceOrder id={id} redirectTo="/service-orders" />
+              <DeleteServiceOrder id={id} redirectTo="/service-orders" hasLabel />
             </div>
           )
         }

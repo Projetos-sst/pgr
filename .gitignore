@@ -36,6 +36,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+!.env.deploy.example
 
 # vercel
 .vercel
@@ -73,3 +74,8 @@ next-env.d.ts
 .maestri/
 # Espelho local do CLAUDE.md gerado pelo Maestri para agentes (nao versionar)
 AGENTS.md
+
+novas-correcoes
+
+# PGR em DOCX: intermediário do gerador (scripts/pgr-docx/build-template.ts)
+/templates/pgr/build/

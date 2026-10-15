@@ -42,6 +42,7 @@ export function EpiStockForm({
         : await createEpiStockAction({
             catalogId: String(fd.get("catalogId") ?? ""),
             minimumQuantity,
+            initialQuantity: String(fd.get("initialQuantity") ?? ""),
           });
       if (result.ok) {
         router.push("/epi-stock");
@@ -87,6 +88,17 @@ export function EpiStockForm({
         defaultValue={isEdit ? String(stock!.minimumQuantity) : "0"}
         error={errors.minimumQuantity}
       />
+
+      {isEdit ? null : (
+        <TextField
+          label="Quantidade inicial"
+          name="initialQuantity"
+          type="number"
+          defaultValue="0"
+          placeholder="0"
+          error={errors.initialQuantity}
+        />
+      )}
 
       {isEdit ? (
         <p className="text-text-subtle text-sm">

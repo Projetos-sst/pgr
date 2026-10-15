@@ -4,7 +4,15 @@ import { deleteRiskAction } from "@/shared/server/actions/pgr/risks";
 
 import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 
-export function DeleteRisk({ id, redirectTo }: { id: string; redirectTo?: string }) {
+export function DeleteRisk({
+  id,
+  redirectTo,
+  hasLabel,
+}: {
+  id: string;
+  redirectTo?: string;
+  hasLabel?: boolean;
+}) {
   return (
     <ConfirmDeleteButton
       id={id}
@@ -12,6 +20,7 @@ export function DeleteRisk({ id, redirectTo }: { id: string; redirectTo?: string
       deleteAction={deleteRiskAction}
       description="Esta ação é permanente. Avaliações e medidas de controle vinculadas a este risco são removidas em cascata."
       redirectTo={redirectTo}
+      hasLabel={hasLabel}
     />
   );
 }

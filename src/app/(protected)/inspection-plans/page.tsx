@@ -1,22 +1,44 @@
-import Link from "next/link";
-
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
-import { listPlansAction } from "@/shared/server/actions/inspections/plans";
-
+import type { PlanStatus } from "@/shared/domains/inspections/plans";
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  PrimaryLink,
-  SearchForm,
-  Table,
-} from "../_ui/list";
+  listPlanCategoriesAction,
+  listPlansAction,
+} from "@/shared/server/actions/inspections/plans";
+
+import { EmptyState, PageHeader } from "../_ui/list";
+import {
+  Cell,
+  DataGrid,
+  EditIconLink,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  MonoCell,
+  RowActions,
+  StatusBadge,
+  ToolbarButton,
+  ToolbarSearch,
+  ToolbarSelect,
+  type StatusTone,
+} from "../_ui/data-list";
 import { DeletePlan } from "./_components/delete-plan";
+import { InspectionPlanIcon } from "./_components/inspection-plan-icon";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ search?: string; page?: string }>;
+const TEMPLATE = "0.9fr 1.8fr 1.2fr 0.8fr 1.1fr 1fr 84px";
+
+// Status do plano → tom: Ativo verde, Rascunho âmbar, Inativo neutro.
+const STATUS_TONE: Record<PlanStatus, StatusTone> = {
+  active: "green",
+  draft: "amber",
+  inactive: "neutral",
+};
+
+type SearchParams = Promise<{ search?: string; category?: string; page?: string }>;
 
 export default async function PlanosInspecaoPage({
   searchParams,
@@ -28,61 +50,104 @@ export default async function PlanosInspecaoPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const result = await listPlansAction({ search: sp.search, page });
+  const [result, categoriesResult] = await Promise.all([
+    listPlansAction({ search: sp.search, category: sp.category, page }),
+    listPlanCategoriesAction(),
+  ]);
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
+  const categories = categoriesResult.ok
+    ? categoriesResult.data.map((c) => ({ value: c, label: c }))
+    : [];
+  const params = { search: sp.search, category: sp.category };
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-[22px] px-5 pt-8 pb-10 sm:px-[30px]">
       <PageHeader
-        title="Planos de inspeção"
-        description="Checklists reutilizáveis das inspeções veiculares e de equipamentos."
-        action={<PrimaryLink href="/inspection-plans/new">Novo plano</PrimaryLink>}
-      />
-      <SearchForm
-        basePath="/inspection-plans"
-        placeholder="Buscar por título"
-        defaultValue={sp.search}
+        icon={<InspectionPlanIcon />}
+        title="Planos de Inspeção"
+        description="Modelos de inspeção reutilizáveis por categoria de ativo"
       />
 
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhum plano de inspeção." />
-      ) : (
-        <Table headers={["Título", "Tipo", "Itens", ""]}>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2">
-                <Link
-                  href={`/inspection-plans/${row.id}/edit`}
-                  className="font-medium hover:underline"
-                >
-                  {row.title}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.typeLabel}</td>
-              <td className="px-4 py-2 tabular-nums">{row.itemCount}</td>
-              <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/inspection-plans/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
-                  <DeletePlan id={row.id} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSearch
+            basePath="/inspection-plans"
+            placeholder="Buscar por plano…"
+            defaultValue={sp.search}
+            hidden={{ category: sp.category }}
+          />
+          <ToolbarSelect
+            basePath="/inspection-plans"
+            name="category"
+            defaultValue={sp.category}
+            options={categories}
+            emptyLabel="Todas as Categorias"
+            hidden={{ search: sp.search }}
+          />
+          <ToolbarButton href="/inspection-plans/new">Novo Plano</ToolbarButton>
+        </ListToolbar>
 
-      <Pagination
-        basePath="/inspection-plans"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={{ search: sp.search }}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              isFlat
+              message={
+                sp.search || sp.category
+                  ? "Nenhum plano encontrado para o filtro."
+                  : "Nenhum plano de inspeção."
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={940}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Código" },
+                  { header: "Plano" },
+                  { header: "Categoria" },
+                  { header: "Itens" },
+                  { header: "Frequência" },
+                  { header: "Status" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <MonoCell href={`/inspection-plans/${row.id}/edit`}>
+                    {row.code}
+                  </MonoCell>
+                  <Cell className="text-text font-semibold">{row.title}</Cell>
+                  <Cell>{row.subtype ?? "—"}</Cell>
+                  <Cell className="text-text-muted font-mono">{row.itemCount} itens</Cell>
+                  <Cell>{row.frequencyLabel}</Cell>
+                  <Cell>
+                    <StatusBadge
+                      tone={STATUS_TONE[row.status as PlanStatus] ?? "neutral"}
+                    >
+                      {row.statusLabel}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell align="right">
+                    <RowActions>
+                      <EditIconLink href={`/inspection-plans/${row.id}/edit`} />
+                      <DeletePlan id={row.id} />
+                    </RowActions>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/inspection-plans"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={params}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }

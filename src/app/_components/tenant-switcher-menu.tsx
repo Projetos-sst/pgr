@@ -8,7 +8,7 @@ import type { TenantOption } from "@/shared/tenant/switcher";
 
 function PlanBadge({ plan }: { plan: TenantOption["plan"] }) {
   return (
-    <span className="text-text-muted rounded-sm bg-white/60 px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase">
+    <span className="text-text-muted hidden rounded-sm bg-white/60 px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase sm:inline-flex">
       {plan}
     </span>
   );
@@ -60,8 +60,10 @@ export function TenantSwitcherMenu({
 
   if (!canSwitch) {
     return (
-      <span className="glass-panel text-text-muted rounded-card inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium">
-        {active.name}
+      <span className="flex h-[40px] items-center gap-2 rounded-[12px] border border-white/50 bg-white/34 px-2.5 text-[13px] font-semibold text-[#52576e] shadow-xs saturate-[170%] backdrop-blur-[20px] sm:px-4">
+        <span className="max-w-[4.5rem] truncate text-xs sm:max-w-[10rem] sm:text-[13px] xl:max-w-[14rem]">
+          {active.name}
+        </span>
         <PlanBadge plan={active.plan} />
       </span>
     );
@@ -74,11 +76,18 @@ export function TenantSwitcherMenu({
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="glass-panel text-text rounded-card focus-visible:ring-primary-ring inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="flex h-[40px] items-center gap-1.5 rounded-[12px] border border-white/50 bg-white/34 px-2.5 text-[13px] font-semibold text-[#52576e] saturate-[170%] backdrop-blur-[20px] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/55 focus-visible:outline-none active:scale-[0.97] sm:gap-2 sm:px-4"
       >
-        <span className="max-w-[14rem] truncate">{active.name}</span>
+        <span className="max-w-[4.5rem] truncate text-xs sm:max-w-[10rem] sm:text-[13px] xl:max-w-[14rem]">
+          {active.name}
+        </span>
         <PlanBadge plan={active.plan} />
-        <span aria-hidden className="text-text-subtle">
+        <span
+          aria-hidden
+          className={`inline-block text-[#9095ad] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        >
           ▾
         </span>
       </button>
@@ -87,7 +96,7 @@ export function TenantSwitcherMenu({
         <ul
           role="listbox"
           aria-label="Trocar de organização"
-          className="glass-menu absolute right-0 z-50 mt-2 w-72 overflow-hidden py-1"
+          className="glass-menu animate-modal-pop absolute right-0 z-50 mt-2 w-72 overflow-hidden py-1"
         >
           {options.map((option) => (
             <li key={option.orgId} role="option" aria-selected={option.isActive}>

@@ -13,6 +13,7 @@ import {
   type ActionPlanCreateInput,
   type ActionPlanDetail,
   type ActionPlanFilters,
+  type ActionPlanKpis,
   type ActionPlanListItem,
   type ActionPlanStatusTransitionInput,
   type ActionPlanUpdateInput,
@@ -49,6 +50,13 @@ export async function listIncidentOriginOptionsAction(): Promise<
       label: `${accidentTypeLabel(a.type)} — ${a.occurredAt.slice(0, 10)}`,
     }));
   });
+}
+
+/** Contagens dos KPIs do topo da lista (por status + a vencer em 30d). */
+export async function listActionPlanKpisAction(): Promise<ActionResult<ActionPlanKpis>> {
+  return officeAction("safety.action_plans.kpis", ({ tenantId }) =>
+    repo.listActionPlanKpis(tenantId),
+  );
 }
 
 export async function listActionPlansAction(

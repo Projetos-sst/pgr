@@ -3,6 +3,7 @@ jest.mock("@/shared/db/repositories/org-memberships", () => ({
   ensureOwnerMembership: jest.fn(),
   listTenantMembershipsByUser: jest.fn(),
 }));
+jest.mock("@/shared/db/repositories/users", () => ({ upsertUser: jest.fn() }));
 jest.mock("@/shared/tenant/audit-log", () => ({ logTenantEvent: jest.fn() }));
 
 import { createTenant } from "@/shared/db/repositories/orgs";
@@ -11,6 +12,7 @@ import {
   listTenantMembershipsByUser,
   type TenantMembershipRow,
 } from "@/shared/db/repositories/org-memberships";
+import { upsertUser } from "@/shared/db/repositories/users";
 import { logTenantEvent } from "@/shared/tenant/audit-log";
 import { provisionPersonalTenant } from "@/shared/tenant/provision-personal-tenant";
 
@@ -21,6 +23,7 @@ const mockedEnsureOwner = ensureOwnerMembership as jest.MockedFunction<
 const mockedList = listTenantMembershipsByUser as jest.MockedFunction<
   typeof listTenantMembershipsByUser
 >;
+const mockedUpsertUser = upsertUser as jest.MockedFunction<typeof upsertUser>;
 const mockedLog = logTenantEvent as jest.MockedFunction<typeof logTenantEvent>;
 
 function membership(over: Partial<TenantMembershipRow>): TenantMembershipRow {
@@ -61,6 +64,7 @@ describe("provisionPersonalTenant", () => {
     const result = await provisionPersonalTenant({ userId: "user_1", name: "Ada" });
 
     expect(result).toEqual({ tenantId: "tenant_new", created: true });
+    expect(mockedUpsertUser).toHaveBeenCalledWith({ id: "user_1" });
     expect(mockedCreateTenant).toHaveBeenCalledWith({ name: "Ada" });
     expect(mockedEnsureOwner).toHaveBeenCalledWith({
       orgId: "tenant_new",
@@ -80,6 +84,7 @@ describe("provisionPersonalTenant", () => {
     const result = await provisionPersonalTenant({ userId: "user_1" });
 
     expect(result).toEqual({ tenantId: "tenant_existing", created: false });
+    expect(mockedUpsertUser).not.toHaveBeenCalled();
     expect(mockedCreateTenant).not.toHaveBeenCalled();
     expect(mockedEnsureOwner).not.toHaveBeenCalled();
     expect(mockedLog).not.toHaveBeenCalled();

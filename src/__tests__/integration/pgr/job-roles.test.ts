@@ -44,6 +44,54 @@ const asOwner = (tenantId: string) =>
     asOwner("org_a");
   });
 
+  it("lista expõe gesNames (agregado) + employeeCount e status default active", async () => {
+    const list = await listJobRolesAction({});
+    expect(list.ok).toBe(true);
+    if (list.ok) {
+      const pedreiro = list.data.rows.find((r) => r.id === PGR_IDS.jobRoleA);
+      expect(pedreiro?.gesNames).toBe("GES A"); // seed: jobRoleA ↔ gesA
+      expect(pedreiro?.employeeCount).toBe(1); // seed: employeeA
+      expect(pedreiro?.isActive).toBe(true);
+    }
+  });
+
+  it("persiste setor/situação e vincula GES inline (aditivo)", async () => {
+    const created = await createJobRoleAction({
+      companyId: PGR_IDS.companyA,
+      title: "Soldador",
+      sector: "Obra Civil",
+      isActive: "false",
+      gesId: PGR_IDS.gesA,
+    });
+    expect(created.ok && created.data.sector).toBe("Obra Civil");
+    expect(created.ok && created.data.isActive).toBe(false);
+    // o vínculo GES aparece no gesNames da listagem
+    const list = await listJobRolesAction({ gesId: PGR_IDS.gesA });
+    expect(list.ok && list.data.rows.some((r) => r.title === "Soldador")).toBe(true);
+  });
+
+  it("filtra por situação (isActive) e por GES", async () => {
+    await createJobRoleAction({
+      companyId: PGR_IDS.companyA,
+      title: "Inativo",
+      isActive: "false",
+    });
+    const inactive = await listJobRolesAction({ isActive: false });
+    expect(inactive.ok && inactive.data.rows.every((r) => r.isActive === false)).toBe(
+      true,
+    );
+  });
+
+  it("GES-inline de outro tenant → FK_NOT_FOUND", async () => {
+    const result = await createJobRoleAction({
+      companyId: PGR_IDS.companyA,
+      title: "Com GES inválido",
+      gesId: PGR_IDS.gesB,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("FK_NOT_FOUND");
+  });
+
   it("título duplicado na mesma empresa → DUPLICATE", async () => {
     const result = await createJobRoleAction({
       companyId: PGR_IDS.companyA,

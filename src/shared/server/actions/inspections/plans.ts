@@ -22,6 +22,13 @@ export async function listPlansAction(
   );
 }
 
+/** Categorias distintas (subtype) para o filtro "Todas as Categorias" da lista. */
+export async function listPlanCategoriesAction(): Promise<ActionResult<string[]>> {
+  return officeAction("inspections.plans.categories", ({ tenantId }) =>
+    repo.listPlanCategories(tenantId),
+  );
+}
+
 export async function getPlanAction(id: string): Promise<ActionResult<PlanWithItems>> {
   return officeAction("inspections.plans.get", async ({ tenantId }) => {
     const row = await repo.getPlanWithItems(tenantId, id);

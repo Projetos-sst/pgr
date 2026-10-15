@@ -1,8 +1,12 @@
 import "server-only";
 
-import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, ilike, or, sql, type SQL } from "drizzle-orm";
 
-import type { WorkUnitValues } from "@/shared/domains/pgr/work-units";
+import type {
+  WorkUnitValues,
+  WorkUnitListItem,
+  WorkUnitStatus,
+} from "@/shared/domains/pgr/work-units";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
@@ -12,7 +16,11 @@ import { companies } from "../schema/companies";
 import { ges } from "../schema/ges";
 import { auditedTenantWrite } from "./audited-write";
 
-export type ListWorkUnitsParams = PageParams & { companyId?: string; search?: string };
+export type ListWorkUnitsParams = PageParams & {
+  companyId?: string;
+  status?: WorkUnitStatus;
+  search?: string;
+};
 
 function toWorkUnitColumns(input: WorkUnitValues) {
   return {
@@ -20,6 +28,14 @@ function toWorkUnitColumns(input: WorkUnitValues) {
     name: input.name,
     description: input.description,
     contractNumber: input.contractNumber ?? null,
+    type: input.type ?? null,
+    status: input.status,
+    startDate: input.startDate ?? null,
+    expectedEndDate: input.expectedEndDate ?? null,
+    managerName: input.managerName ?? null,
+    managerRole: input.managerRole ?? null,
+    professionalTitle: input.professionalTitle ?? null,
+    professionalRegistration: input.professionalRegistration ?? null,
     zipCode: input.zipCode ?? null,
     street: input.street ?? null,
     number: input.number ?? null,
@@ -46,10 +62,11 @@ async function assertCompanyInTenant(
 export async function listWorkUnits(
   orgId: string,
   params: ListWorkUnitsParams = {},
-): Promise<Paginated<WorkUnit>> {
+): Promise<Paginated<WorkUnitListItem>> {
   const { limit, offset } = resolvePageParams(params);
   const filters: SQL[] = [eq(workUnits.orgId, orgId)];
   if (params.companyId) filters.push(eq(workUnits.companyId, params.companyId));
+  if (params.status) filters.push(eq(workUnits.status, params.status));
   const search = params.search?.trim();
   if (search) {
     const term = `%${search}%`;
@@ -62,11 +79,16 @@ export async function listWorkUnits(
     );
   }
   const where = and(...filters);
+  const companyJoin = and(
+    eq(companies.id, workUnits.companyId),
+    eq(companies.orgId, orgId),
+  );
 
   return withOrg(orgId, async (tx) => {
     const rows = await tx
-      .select()
+      .select({ ...getTableColumns(workUnits), companyName: companies.razaoSocial })
       .from(workUnits)
+      .innerJoin(companies, companyJoin)
       .where(where)
       .orderBy(desc(workUnits.createdAt))
       .limit(limit)

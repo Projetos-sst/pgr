@@ -16,6 +16,7 @@ export default async function NovaCampanhaPage() {
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/psychosocial/campaigns"
         title="Nova campanha psicossocial"
         description="Aba Informações — depois monte o questionário na aba Perguntas."
       />

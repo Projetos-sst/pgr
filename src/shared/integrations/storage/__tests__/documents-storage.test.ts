@@ -6,8 +6,12 @@ import { getRlsBypassingSupabaseClient } from "@/shared/supabase/admin";
 import {
   buildStoragePath,
   DOCUMENTS_BUCKET,
+  generatedDocumentPath,
   getSignedDownloadUrl,
+  isStorageObjectExistsError,
   putDocumentObject,
+  putGeneratedDocument,
+  StorageObjectExistsError,
   removeDocumentObject,
   SIGNED_DOWNLOAD_URL_TTL_SECONDS,
   slugifyFileName,
@@ -63,6 +67,64 @@ describe("buildStoragePath", () => {
   });
 });
 
+describe("generatedDocumentPath (path determinístico do job, idempotência)", () => {
+  it("usa a extensão do formato gerado", () => {
+    expect(generatedDocumentPath("org_a", "d1", "docx")).toBe(
+      "org_a/documentos/generated/d1.docx",
+    );
+    expect(generatedDocumentPath("org_a", "d1", "pdf")).toBe(
+      "org_a/documentos/generated/d1.pdf",
+    );
+  });
+});
+
+describe("putGeneratedDocument (upload do arquivo gerado por job)", () => {
+  beforeEach(() => mockedClient.mockReset());
+
+  it("grava com upsert no path do formato e com o contentType informado", async () => {
+    const client = storageClient();
+    mockedClient.mockReturnValue({
+      storage: { from: client.from },
+    } as unknown as ReturnType<typeof getRlsBypassingSupabaseClient>);
+    const docxMime =
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    const file = Buffer.from("PK fake docx");
+
+    const result = await putGeneratedDocument("org_a", "d1", file, {
+      format: "docx",
+      contentType: docxMime,
+    });
+
+    expect(client.from).toHaveBeenCalledWith(DOCUMENTS_BUCKET);
+    expect(client.upload).toHaveBeenCalledWith(
+      "org_a/documentos/generated/d1.docx",
+      file,
+      {
+        contentType: docxMime,
+        upsert: true,
+      },
+    );
+    expect(result).toEqual({
+      storagePath: "org_a/documentos/generated/d1.docx",
+      sizeBytes: file.byteLength,
+    });
+  });
+
+  it("erro do provedor → lança sem path parcial", async () => {
+    const client = storageClient({ message: "bucket unreachable" });
+    mockedClient.mockReturnValue({
+      storage: { from: client.from },
+    } as unknown as ReturnType<typeof getRlsBypassingSupabaseClient>);
+
+    await expect(
+      putGeneratedDocument("org_a", "d1", Buffer.from("x"), {
+        format: "docx",
+        contentType: "application/octet-stream",
+      }),
+    ).rejects.toThrow(/generated document upload failed: bucket unreachable/);
+  });
+});
+
 describe("putDocumentObject (ordem upload→insert; aqui só o upload)", () => {
   beforeEach(() => mockedClient.mockReset());
 
@@ -97,6 +159,39 @@ describe("putDocumentObject (ordem upload→insert; aqui só o upload)", () => {
     await expect(putDocumentObject("org_a", "group_1", 1, file)).rejects.toThrow(
       /bucket unreachable/,
     );
+  });
+
+  it("path já ocupado (corrida de mesmo nome, #56) → StorageObjectExistsError", async () => {
+    const client = storageClient({
+      message: "The resource already exists",
+      status: 400,
+      statusCode: "409",
+    });
+    mockedClient.mockReturnValue({
+      storage: { from: client.from },
+    } as unknown as ReturnType<typeof getRlsBypassingSupabaseClient>);
+
+    const file = new File(["x"], "a.pdf", { type: "application/pdf" });
+    const attempt = putDocumentObject("org_a", "group_1", 2, file);
+    await expect(attempt).rejects.toBeInstanceOf(StorageObjectExistsError);
+    await expect(attempt).rejects.toMatchObject({
+      storagePath: "org_a/documentos/group_1/v2-a.pdf",
+    });
+  });
+});
+
+describe("isStorageObjectExistsError", () => {
+  it("reconhece status 409, statusCode '409' e a mensagem do provedor", () => {
+    expect(isStorageObjectExistsError({ status: 409 })).toBe(true);
+    expect(isStorageObjectExistsError({ status: 400, statusCode: "409" })).toBe(true);
+    expect(isStorageObjectExistsError({ message: "The resource already exists" })).toBe(
+      true,
+    );
+  });
+
+  it("não confunde outros erros do provedor com conflito", () => {
+    expect(isStorageObjectExistsError({ message: "bucket unreachable" })).toBe(false);
+    expect(isStorageObjectExistsError({ status: 500, statusCode: "500" })).toBe(false);
   });
 });
 

@@ -47,6 +47,14 @@
       "value": ""
     },
     {
+      "key": "medicoId",
+      "value": ""
+    },
+    {
+      "key": "healthExamId",
+      "value": ""
+    },
+    {
       "key": "formControlId",
       "value": ""
     },
@@ -63,11 +71,19 @@
       "value": ""
     },
     {
+      "key": "pgrRevisionId",
+      "value": ""
+    },
+    {
       "key": "riskId",
       "value": ""
     },
     {
       "key": "riskAssessmentId",
+      "value": ""
+    },
+    {
+      "key": "ergonomicEvaluationId",
       "value": ""
     },
     {
@@ -205,6 +221,10 @@
     {
       "key": "riskAuditId",
       "value": ""
+    },
+    {
+      "key": "riskFactorId",
+      "value": ""
     }
   ],
   "item": [
@@ -226,13 +246,23 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/companies?search=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/companies?search=&state=&status=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "companies"],
               "query": [
                 {
                   "key": "search",
                   "value": ""
+                },
+                {
+                  "key": "state",
+                  "value": "",
+                  "description": "UF (ex.: SP)"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "active | pending | inactive"
                 },
                 {
                   "key": "page",
@@ -387,13 +417,18 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/work-units?companyId={{companyId}}&search=&page=1",
+              "raw": "{{baseUrl}}/api/v1/work-units?companyId={{companyId}}&status=&search=&page=1",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "work-units"],
               "query": [
                 {
                   "key": "companyId",
                   "value": "{{companyId}}"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "active | suspended | closed"
                 },
                 {
                   "key": "search",
@@ -548,13 +583,22 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/job-roles?companyId={{companyId}}&search=&page=1",
+              "raw": "{{baseUrl}}/api/v1/job-roles?companyId={{companyId}}&gesId=&isActive=&search=&page=1",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "job-roles"],
               "query": [
                 {
                   "key": "companyId",
                   "value": "{{companyId}}"
+                },
+                {
+                  "key": "gesId",
+                  "value": ""
+                },
+                {
+                  "key": "isActive",
+                  "value": "",
+                  "description": "true | false"
                 },
                 {
                   "key": "search",
@@ -1145,10 +1189,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/pgr?companyId=&workUnitId=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/pgr?search=&registrationType=&companyId=&workUnitId=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "pgr"],
               "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "registrationType",
+                  "value": "",
+                  "description": "crm | crea | mte | not_applicable"
+                },
                 {
                   "key": "companyId",
                   "value": ""
@@ -1348,6 +1401,35 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"revisedAt\": \"2026-07-14\",\n  \"notes\": \"Cliente antigo\",\n  \"revisionNumber\": 99\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT /pgr/:id/revisions/:revisionId/archive (arquiva, #46 → 200, idempotente)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/revisions/{{pgrRevisionId}}/archive",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "v1",
+                    "pgr",
+                    "{{pgrId}}",
+                    "revisions",
+                    "{{pgrRevisionId}}",
+                    "archive"
+                  ]
                 }
               }
             }
@@ -1554,6 +1636,187 @@
               }
             }
           ]
+        },
+        {
+          "name": "PGR · DOCX (template)",
+          "description": "PGR preenchido pelo template DOCX (templates/pgr/pgr-template.docx). Fixos vêm do template; SEMI-FIXOS (laranja no PGR 2026.1) usam o default de domains/pgr/pgr-docx/defaults.ts ou o override do POST; DINÂMICOS vêm do banco (consolidada + extras). PDF pelo provedor PGR_DOCX_PDF_PROVIDER (gotenberg padrão | google). Use 'Send and Download' no Postman para salvar o arquivo.",
+          "item": [
+            {
+              "name": "GET /pgr/:id/docx (?format=docx|pdf; semi-fixos padrão; 404/422/503)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx?format=docx",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "docx"],
+                  "query": [
+                    {
+                      "key": "format",
+                      "value": "docx",
+                      "description": "docx (padrão) ou pdf"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "POST /pgr/:id/docx (semi-fixos alterados; chave desconhecida → 422)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-dev-tenant",
+                    "value": "{{devTenant}}"
+                  },
+                  {
+                    "key": "x-dev-role",
+                    "value": "{{devRole}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"format\": \"docx\",\n  \"overrides\": {\n    \"titles\": {\n      \"introduction\": \"1 - APRESENTAÇÃO\"\n    },\n    \"labels\": {\n      \"company\": \"Contratada:\"\n    },\n    \"texts\": {\n      \"objective\": \"## Escopo\\nObjetivo específico desta obra da {empresa}.\\na) eliminar riscos na fonte;\\nb) treinar as equipes.\"\n    },\n    \"campaigns\": [\n      {\n        \"month\": \"Março\",\n        \"theme\": \"Março Lilás\",\n        \"actions\": \"• Palestra sobre prevenção do câncer do colo do útero\"\n      }\n    ]\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pgr", "{{pgrId}}", "docx"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NR-18 e Relacao de EPIs do PGR",
+      "description": "Leituras DERIVADAS do PGR (issue #48) — somente GET, sem escrita e sem tabela nova. O checklist agrupa por doc_type os anexos que o GED já tem (versão vigente; nova versão continua ANEXADO, excluir o grupo volta a FALTANDO) e é informativo: não bloqueia PDF nem assinatura. A relação de EPIs vem de PGR → GES → riscos → epi_risk → epi_catalog, deduplicada por item; para mudar qualquer dado, edite o catálogo de EPI. Tipos NR-18 aceitos como doc_type: 'Projeto da área de vivência', 'Projeto elétrico das instalações temporárias', 'Projetos de proteção coletiva' e 'Projeto de SPIQ'.",
+      "item": [
+        {
+          "name": "GET /pgr/:pgrId/nr18-checklist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/nr18-checklist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "nr18-checklist"]
+            }
+          },
+          "description": "200 com { items[], attachedCount, missingCount, totalCount }. Documento de outro escritório nunca satisfaz o checklist."
+        },
+        {
+          "name": "GET /pgr/:pgrId/nr18-checklist (404 cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "org_b"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/nr18-checklist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "nr18-checklist"]
+            }
+          }
+        },
+        {
+          "name": "GET /pgr/:pgrId/nr18-checklist (403 papel client)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/nr18-checklist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "nr18-checklist"]
+            }
+          }
+        },
+        {
+          "name": "GET /pgr/:pgrId/epi-relation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/epi-relation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "epi-relation"]
+            }
+          },
+          "description": "200 com a relação deduplicada: nome, descrição, CA, validade, caStatus (valid | due_soon | expired | no_expiry), fabricante, norma, material, tamanho, unidade, vida útil e os contextos (risco + GES) atendidos. Lista vazia = PGR sem EPI vinculado."
+        },
+        {
+          "name": "GET /pgr/:pgrId/epi-relation (404 cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "org_b"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/epi-relation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pgr", "{{pgrId}}", "epi-relation"]
+            }
+          }
         }
       ]
     },
@@ -1835,8 +2098,68 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"uncertaintyDegree\": 0,\n  \"toleranceLimit\": \"85 dB(A) / NEN 8h\",\n  \"assessedAt\": \"2026-07-08\"\n}"
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"uncertaintyDegree\": 0,\n  \"toleranceLimit\": \"85 dB(A) / NEN 8h\",\n  \"assessedAt\": \"2026-07-08\",\n  \"evaluationMethod\": \"NHO-01 (ruído)\",\n  \"measuredValue\": \"87.5\",\n  \"measuredUnit\": \"db_a\",\n  \"toleranceLimitValue\": \"85\",\n  \"nr09Conclusion\": \"above_limit\"\n}"
             }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/assessments (422 NR-09 sem critério quantitativo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"qualitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"uncertaintyDegree\": 0,\n  \"toleranceLimit\": \"85 dB(A) / NEN 8h\",\n  \"assessedAt\": \"2026-07-08\",\n  \"evaluationMethod\": \"NHO-01 (ruído)\",\n  \"measuredValue\": \"87.5\",\n  \"measuredUnit\": \"db_a\",\n  \"toleranceLimitValue\": \"85\",\n  \"nr09Conclusion\": \"above_limit\"\n}"
+            },
+            "description": "Bloco NR-09 exige criterion='quantitative' (VALIDATION 422). Mesma regra tem CHECK no banco."
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/assessments (422 NR-09 medição sem unidade)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criterion\": \"quantitative\",\n  \"probability\": 3,\n  \"severity\": 3,\n  \"uncertaintyDegree\": 0,\n  \"toleranceLimit\": \"85 dB(A) / NEN 8h\",\n  \"assessedAt\": \"2026-07-08\",\n  \"evaluationMethod\": \"NHO-01 (ruído)\",\n  \"measuredValue\": \"87.5\",\n  \"toleranceLimitValue\": \"85\",\n  \"nr09Conclusion\": \"above_limit\"\n}"
+            },
+            "description": "Valor medido sem unidade quantitativa → VALIDATION 422."
           }
         },
         {
@@ -2024,6 +2347,278 @@
       ]
     },
     {
+      "name": "Avaliacao Ergonomica (NR-17)",
+      "description": "Avaliação ergonômica preliminar (AEP) por risco — issue #40. Histórico 1:N; a vigente é a de assessedAt mais recente. Só assessedAt é obrigatório: as seis dimensões são opcionais e ausência significa 'não avaliado' (nunca 'adequado'). Adequação = adequate | inadequate | not_applicable. Não há score, escala nem conclusão global, e o sistema não calcula escore COPSOQ. Defina {{ergonomicEvaluationId}} com o id devolvido pelo POST.",
+      "item": [
+        {
+          "name": "GET /risks/:riskId/ergonomic-evaluations (historico)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/ergonomic-evaluations (create, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assessedAt\": \"2026-09-20\",\n  \"responsible\": \"Ergonomista responsável\",\n  \"method\": \"AEP — inspeção do posto de trabalho\",\n  \"posture\": \"inadequate\",\n  \"postureNotes\": \"Bancada abaixo da altura do cotovelo\",\n  \"movements\": \"adequate\",\n  \"movementsNotes\": \"\",\n  \"physicalLoad\": \"not_applicable\",\n  \"mentalLoad\": \"\",\n  \"workOrganization\": \"adequate\",\n  \"physicalEnvironment\": \"inadequate\",\n  \"physicalEnvironmentNotes\": \"Iluminância abaixo do recomendado\",\n  \"notes\": \"Avaliação preliminar do posto de montagem.\",\n  \"psychosocialCampaignId\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/ergonomic-evaluations (422 sem assessedAt)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responsible\": \"Sem data\"\n}"
+            },
+            "description": "assessedAt é o único campo obrigatório → VALIDATION (422)."
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/ergonomic-evaluations (422 adequacao invalida)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assessedAt\": \"2026-09-20\",\n  \"posture\": \"otimo\"\n}"
+            },
+            "description": "Fora do enum adequate|inadequate|not_applicable → VALIDATION (422)."
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/ergonomic-evaluations (422 campanha de outra unidade/aberta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assessedAt\": \"2026-09-20\",\n  \"psychosocialCampaignId\": \"{{psychoCampaignId}}\"\n}"
+            },
+            "description": "Vínculo psicossocial é validado no servidor: campanha de outro tenant → FK_NOT_FOUND (422); de outra unidade ou ainda não encerrada → VALIDATION (422)."
+          }
+        },
+        {
+          "name": "GET /ergonomic-evaluations/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ergonomic-evaluations/{{ergonomicEvaluationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ergonomic-evaluations", "{{ergonomicEvaluationId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /ergonomic-evaluations/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ergonomic-evaluations/{{ergonomicEvaluationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ergonomic-evaluations", "{{ergonomicEvaluationId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assessedAt\": \"2026-09-20\",\n  \"responsible\": \"Ergonomista responsável\",\n  \"method\": \"AEP — inspeção do posto de trabalho\",\n  \"posture\": \"inadequate\",\n  \"postureNotes\": \"Bancada abaixo da altura do cotovelo\",\n  \"movements\": \"adequate\",\n  \"movementsNotes\": \"\",\n  \"physicalLoad\": \"not_applicable\",\n  \"mentalLoad\": \"\",\n  \"workOrganization\": \"adequate\",\n  \"physicalEnvironment\": \"inadequate\",\n  \"physicalEnvironmentNotes\": \"Iluminância abaixo do recomendado\",\n  \"notes\": \"Avaliação preliminar do posto de montagem.\",\n  \"psychosocialCampaignId\": \"\"\n}"
+            },
+            "description": "Corpo completo: campo omitido/vazio é APAGADO (volta a 'não avaliado')."
+          }
+        },
+        {
+          "name": "DELETE /ergonomic-evaluations/:id (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ergonomic-evaluations/{{ergonomicEvaluationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ergonomic-evaluations", "{{ergonomicEvaluationId}}"]
+            }
+          },
+          "description": "Remove só esta avaliação; o restante do histórico permanece."
+        },
+        {
+          "name": "GET /ergonomic-evaluations/:id (404 cross-tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "org_b"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ergonomic-evaluations/{{ergonomicEvaluationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ergonomic-evaluations", "{{ergonomicEvaluationId}}"]
+            }
+          },
+          "description": "Avaliação de outro escritório nunca é lida — 404 NOT_FOUND."
+        },
+        {
+          "name": "GET /risks/:riskId/ergonomic-evaluations (403 papel client)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/ergonomic-evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "ergonomic-evaluations"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Medidas de Controle",
       "item": [
         {
@@ -2082,7 +2677,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\"\n}"
+              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\",\n  \"actionWhy\": \"Exposição acima do limite medido na avaliação NR-09\",\n  \"actionCost\": \"15000.00\"\n}"
             }
           }
         },
@@ -2225,7 +2820,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\"\n}"
+              "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\",\n  \"actionWhy\": \"Exposição acima do limite medido na avaliação NR-09\",\n  \"actionCost\": \"15000.00\"\n}"
             }
           }
         },
@@ -2448,7 +3043,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/categories?search=&type=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/categories?search=&type=&isActive=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "categories"],
               "query": [
@@ -2458,7 +3053,13 @@
                 },
                 {
                   "key": "type",
-                  "value": ""
+                  "value": "",
+                  "description": "epi | machine | supply"
+                },
+                {
+                  "key": "isActive",
+                  "value": "",
+                  "description": "true | false"
                 },
                 {
                   "key": "page",
@@ -2575,6 +3176,299 @@
       ]
     },
     {
+      "name": "Medico",
+      "item": [
+        {
+          "name": "GET /medicos (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos?search=&clinic=&status=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicos"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "clinic",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /medicos (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicos"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dra. Helena Marques\",\n  \"crm\": \"CRM 12.345/MA\",\n  \"specialty\": \"Medicina do Trabalho\",\n  \"clinic\": \"Clinica SanaVida\",\n  \"phone\": \"(98) 3232-1010\",\n  \"status\": \"active\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /medicos/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicos", "{{medicoId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /medicos/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicos", "{{medicoId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dra. Helena M. Marques\",\n  \"crm\": \"CRM 12.345/MA\",\n  \"specialty\": \"Medicina do Trabalho\",\n  \"clinic\": \"Clinica SanaVida\",\n  \"phone\": \"(98) 3232-1010\",\n  \"status\": \"inactive\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /medicos/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicos", "{{medicoId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Saude Ocupacional (ASO)",
+      "item": [
+        {
+          "name": "GET /health-exams (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams?search=&examType=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Nome do funcionário ou rótulo do tipo de exame (ex.: periód)"
+                },
+                {
+                  "key": "examType",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /health-exams (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"doctorId\": \"{{medicoId}}\",\n  \"examType\": \"admissional\",\n  \"performedAt\": \"2026-01-14\",\n  \"validUntil\": \"2027-01-14\",\n  \"aptitude\": \"fit\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /health-exams/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /health-exams/:id (corpo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"examType\": \"periodic\",\n  \"performedAt\": \"2026-02-03\",\n  \"aptitude\": \"fit_with_restrictions\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /health-exams/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Controle de Formulario (ISO)",
       "item": [
         {
@@ -2592,7 +3486,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/form-controls?search=&formType=&companyId=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/form-controls?search=&formType=&companyId=&page=1&pageSize=20&status=&type=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "form-controls"],
               "query": [
@@ -2615,6 +3509,16 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "draft|published|archived"
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "ficha|checklist|documento"
                 }
               ]
             }
@@ -2645,7 +3549,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\"\n}"
+              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\",\n  \"type\": \"documento\",\n  \"status\": \"published\"\n}"
             }
           }
         },
@@ -2674,7 +3578,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formType\": \"OS\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\"\n}"
+              "raw": "{\n  \"formType\": \"OS\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"00\",\n  \"issueDate\": \"2026-01-15\",\n  \"position\": \"top\",\n  \"type\": \"documento\",\n  \"status\": \"published\"\n}"
             }
           }
         },
@@ -2724,7 +3628,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"01\",\n  \"issueDate\": \"2026-02-01\",\n  \"nonConformityNumber\": \"NC-002\",\n  \"position\": \"both\",\n  \"notes\": \"atualizado\"\n}"
+              "raw": "{\n  \"formType\": \"PGR\",\n  \"frmCode\": \"FRM-001\",\n  \"revision\": \"01\",\n  \"issueDate\": \"2026-02-01\",\n  \"nonConformityNumber\": \"NC-002\",\n  \"position\": \"both\",\n  \"notes\": \"atualizado\",\n  \"type\": \"documento\",\n  \"status\": \"published\"\n}"
             }
           }
         },
@@ -2769,7 +3673,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/documents?folderId=&search=&docType=&validity=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/documents?folderId=&search=&docType=&validity=&relatedEntityType=&relatedEntityId=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "documents"],
               "query": [
@@ -2790,12 +3694,51 @@
                   "value": ""
                 },
                 {
+                  "key": "relatedEntityType",
+                  "value": ""
+                },
+                {
+                  "key": "relatedEntityId",
+                  "value": ""
+                },
+                {
                   "key": "page",
                   "value": "1"
                 },
                 {
                   "key": "pageSize",
                   "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /documents?relatedEntity (anexos de um PGR)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents?relatedEntityType=pgr&relatedEntityId={{pgrId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"],
+              "query": [
+                {
+                  "key": "relatedEntityType",
+                  "value": "pgr"
+                },
+                {
+                  "key": "relatedEntityId",
+                  "value": "{{pgrId}}"
                 }
               ]
             }
@@ -2921,6 +3864,28 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "documents", "{{documentId}}"]
             }
+          }
+        },
+        {
+          "name": "GET /documents/:id/versions (historico, #56)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/versions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}", "versions"]
+            },
+            "description": "Historico do documento logico: mais nova primeiro, isCurrent em exatamente uma. Qualquer versao do grupo serve de entrada; outro escritorio -> 404. Versao antiga e somente leitura: PUT /documents/{idAntigo} -> 409 DOCUMENT_VERSION_READ_ONLY."
           }
         },
         {
@@ -3114,7 +4079,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/training-catalog?search=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/training-catalog?search=&page=1&pageSize=20&norm=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "training-catalog"],
               "query": [
@@ -3129,6 +4094,11 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "norm",
+                  "value": "",
+                  "description": "filtra por norma (referenceNorm exato)"
                 }
               ]
             }
@@ -3159,7 +4129,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"NR-35 Trabalho em Altura\",\n  \"referenceNorm\": \"NR-35\",\n  \"workloadHours\": 8,\n  \"periodicity\": \"biennial\",\n  \"description\": \"Capacitacao obrigatoria para trabalho em altura\"\n}"
+              "raw": "{\n  \"name\": \"NR-35 Trabalho em Altura\",\n  \"referenceNorm\": \"NR-35\",\n  \"workloadHours\": 8,\n  \"periodicity\": \"biennial\",\n  \"description\": \"Capacitacao obrigatoria para trabalho em altura\",\n  \"isActive\": true\n}"
             }
           }
         },
@@ -3178,9 +4148,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}",
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}&norm=",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-catalog", "{{trainingId}}"]
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}"],
+              "query": [
+                {
+                  "key": "norm",
+                  "value": "",
+                  "description": "filtra por norma (referenceNorm exato)"
+                }
+              ]
             }
           }
         },
@@ -3249,9 +4226,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}/dependents",
+              "raw": "{{baseUrl}}/api/v1/training-catalog/{{trainingId}}/dependents&norm=",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "training-catalog", "{{trainingId}}", "dependents"]
+              "path": ["api", "v1", "training-catalog", "{{trainingId}}", "dependents"],
+              "query": [
+                {
+                  "key": "norm",
+                  "value": "",
+                  "description": "filtra por norma (referenceNorm exato)"
+                }
+              ]
             }
           }
         }
@@ -3571,6 +4555,172 @@
       ]
     },
     {
+      "name": "Sugestao de medidas de controle (IA)",
+      "item": [
+        {
+          "name": "POST /risks/{id}/control-measure-suggestions (sugere por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measure-suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measure-suggestions"]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/{id}/control-measure-suggestions/accept (grava, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suggestions\": [\n    {\n      \"controlLevel\": \"engineering\",\n      \"actionWhat\": \"Enclausurar a fonte de ruido\",\n      \"actionHow\": \"Instalar cabine acustica na esmerilhadeira e verificar a atenuacao com dosimetria\",\n      \"monitoring\": \"Dosimetria semestral\",\n      \"justification\": \"Controle de engenharia precede o EPI na hierarquia da NR-01\",\n      \"actionResponsible\": \"SESMT\",\n      \"actionDeadline\": \"2026-12-31\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measure-suggestions/accept",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "risks",
+                "{{riskId}}",
+                "control-measure-suggestions",
+                "accept"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sugestao de treinamentos obrigatorios (IA)",
+      "item": [
+        {
+          "name": "POST /job-roles/{id}/training-suggestions (sugere por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}/training-suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-roles", "{{jobRoleId}}", "training-suggestions"]
+            }
+          }
+        },
+        {
+          "name": "POST /job-roles/{id}/training-suggestions/accept (vincula, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suggestions\": [\n    {\n      \"name\": \"NR-35 - Trabalho em Altura\",\n      \"referenceNorm\": \"NR-35\",\n      \"periodicity\": \"biennial\",\n      \"workloadHours\": 8,\n      \"rationale\": \"Atividade acima de 2 m com risco de queda\",\n      \"trainingId\": null\n    },\n    {\n      \"name\": \"NR-06 - Uso de EPI\",\n      \"referenceNorm\": \"NR-06\",\n      \"periodicity\": \"annual\",\n      \"workloadHours\": 4,\n      \"trainingId\": \"{{trainingId}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-roles/{{jobRoleId}}/training-suggestions/accept",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "job-roles",
+                "{{jobRoleId}}",
+                "training-suggestions",
+                "accept"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sugestao de instrucoes de OS (IA)",
+      "item": [
+        {
+          "name": "POST /service-orders/{id}/instruction-suggestions (redige por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-orders/{{serviceOrderId}}/instruction-suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "service-orders",
+                "{{serviceOrderId}}",
+                "instruction-suggestions"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Catalogo de EPI (epi-catalog)",
       "item": [
         {
@@ -3588,7 +4738,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/epi-catalog?search=&type=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/epi-catalog?search=&type=&categoryId=&page=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "epi-catalog"],
               "query": [
@@ -3599,7 +4749,11 @@
                 {
                   "key": "type",
                   "value": "",
-                  "description": "epi|machine"
+                  "description": "epi|machine|supply"
+                },
+                {
+                  "key": "categoryId",
+                  "value": ""
                 },
                 {
                   "key": "page",
@@ -4225,7 +5379,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/vehicles?page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/vehicles?page=1&pageSize=20&search=&companyId=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "vehicles"],
               "query": [
@@ -4241,6 +5395,11 @@
                   "key": "search",
                   "value": "",
                   "disabled": true
+                },
+                {
+                  "key": "companyId",
+                  "value": "",
+                  "description": "filtra por empresa"
                 }
               ]
             }
@@ -4271,7 +5430,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"type\": \"truck\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH\",\n  \"initialKm\": 1000\n}"
+              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"renavam\": \"12345678901\",\n  \"brand\": \"Mercedes-Benz\",\n  \"model\": \"Actros 2651\",\n  \"type\": \"truck\",\n  \"year\": 2022,\n  \"color\": \"Branco\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"inspectionFrequency\": \"monthly\",\n  \"initialKm\": 1000,\n  \"notes\": \"Frota própria\"\n}"
             }
           }
         },
@@ -4321,7 +5480,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"type\": \"truck\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH\",\n  \"initialKm\": 1000\n}"
+              "raw": "{\n  \"plate\": \"ABC1D23\",\n  \"renavam\": \"12345678901\",\n  \"brand\": \"Mercedes-Benz\",\n  \"model\": \"Actros 2651\",\n  \"type\": \"truck\",\n  \"year\": 2022,\n  \"color\": \"Branco\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"inspectionFrequency\": \"monthly\",\n  \"initialKm\": 1000,\n  \"notes\": \"Frota própria\"\n}"
             }
           }
         },
@@ -4345,6 +5504,61 @@
               "path": ["api", "v1", "vehicles", "{{vehicleId}}"]
             }
           }
+        },
+        {
+          "name": "Enviar foto de veículo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/photo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "photo"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "description": "Envia PNG/JPG de até 5 MB e devolve path e URL assinada. Envie path no photoPath do CRUD para confirmar o vínculo."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter URL da foto de veículo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}/photo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "{{vehicleId}}", "photo"]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -4366,7 +5580,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/inspection-plans?search=&type=&page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/inspection-plans?search=&type=&page=1&pageSize=20&status=&category=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "inspection-plans"],
               "query": [
@@ -4385,6 +5599,16 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "active|draft|inactive"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "categoria (subtype exato)"
                 }
               ]
             }
@@ -4415,7 +5639,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota\",\n  \"description\": \"Inspeção pré-uso\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Pneus\",\n      \"defaultValue\": false\n    },\n    {\n      \"description\": \"Luzes\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Trabalho em Altura\",\n  \"title\": \"Inspeção de Andaimes\",\n  \"description\": \"\",\n  \"frequency\": \"biweekly\",\n  \"status\": \"active\",\n  \"items\": [\n    {\n      \"description\": \"Travamento dos módulos\",\n      \"defaultValue\": true\n    }\n  ]\n}"
             }
           }
         },
@@ -4465,7 +5689,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Caminhão\",\n  \"title\": \"Checklist diário de frota (v2)\",\n  \"description\": \"Revisado\",\n  \"items\": [\n    {\n      \"description\": \"Freios\",\n      \"defaultValue\": true\n    },\n    {\n      \"description\": \"Documentação\",\n      \"defaultValue\": false\n    }\n  ]\n}"
+              "raw": "{\n  \"type\": \"vehicular\",\n  \"subtype\": \"Trabalho em Altura\",\n  \"title\": \"Inspeção de Andaimes\",\n  \"description\": \"\",\n  \"frequency\": \"biweekly\",\n  \"status\": \"active\",\n  \"items\": [\n    {\n      \"description\": \"Travamento dos módulos\",\n      \"defaultValue\": true\n    }\n  ]\n}"
             }
           }
         },
@@ -5583,6 +6807,179 @@
       ]
     },
     {
+      "name": "Fatores de Risco Psicossocial (catalogo)",
+      "item": [
+        {
+          "name": "GET /psychosocial-risk-factors (list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors?search=&level=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "level",
+                  "value": "",
+                  "description": "low|medium|high"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /psychosocial-risk-factors (?level=high)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors?level=high",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors"],
+              "query": [
+                {
+                  "key": "level",
+                  "value": "high"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /psychosocial-risk-factors (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sobrecarga de trabalho\",\n  \"gesId\": \"{{gesId}}\",\n  \"level\": \"high\",\n  \"assessmentMethod\": \"Questionario COPSOQ\",\n  \"status\": \"in_action\",\n  \"description\": \"Fator mapeado por GES conforme NR-01\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /psychosocial-risk-factors/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors/{{riskFactorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors", "{{riskFactorId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /psychosocial-risk-factors/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors/{{riskFactorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors", "{{riskFactorId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sobrecarga de trabalho\",\n  \"gesId\": \"{{gesId}}\",\n  \"level\": \"medium\",\n  \"assessmentMethod\": \"Questionario COPSOQ\",\n  \"status\": \"monitored\",\n  \"description\": \"Fator mapeado por GES conforme NR-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /psychosocial-risk-factors/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/psychosocial-risk-factors/{{riskFactorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "psychosocial-risk-factors", "{{riskFactorId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "eSocial (SST)",
       "item": [
         {
@@ -5787,6 +7184,82 @@
             "body": {
               "mode": "raw",
               "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET /esocial-dashboard (painel agregado)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-dashboard"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "eSocial — Configuração (singleton)",
+      "item": [
+        {
+          "name": "GET /esocial-config",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-config",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-config"]
+            }
+          }
+        },
+        {
+          "name": "PUT /esocial-config (upsert)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/esocial-config",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "esocial-config"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"environment\": \"homologation\",\n  \"employerCnpj\": \"12.345.678/0001-90\",\n  \"taxClassification\": \"01 — Lucro Real\",\n  \"certificateName\": \"EMPRESA_A1.pfx\",\n  \"certificateExpiresAt\": \"2026-11-18\",\n  \"enabledEvents\": [\n    \"S-2210\",\n    \"S-2220\",\n    \"S-2240\"\n  ],\n  \"autoSend\": false,\n  \"checkFrequencyHours\": 24\n}"
             }
           }
         }
@@ -6071,7 +7544,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-orders?page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/service-orders?page=1&pageSize=20&search=&signed=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "service-orders"],
               "query": [
@@ -6082,6 +7555,16 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Nome do funcionário, empresa (razão social), título ou nº exato"
+                },
+                {
+                  "key": "signed",
+                  "value": "",
+                  "description": "true = OS Assinadas · false = OS Abertas (abas)"
                 }
               ]
             }
@@ -6112,7 +7595,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"OS manutencao prensa\",\n  \"openedAt\": \"2026-07-15\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
+              "raw": "{\n  \"title\": \"OS manutencao prensa\",\n  \"osType\": \"admissional\",\n  \"openedAt\": \"2026-07-15\",\n  \"assignedEmployeeId\": \"{{employeeId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
             }
           }
         },
@@ -6162,7 +7645,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"OS manutencao prensa (rev)\",\n  \"openedAt\": \"2026-07-15\",\n  \"status\": \"in_progress\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
+              "raw": "{\n  \"title\": \"OS manutencao prensa (rev)\",\n  \"osType\": \"periodic\",\n  \"openedAt\": \"2026-07-15\",\n  \"status\": \"in_progress\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"items\": [\n    {\n      \"description\": \"Trocar protetor auricular\"\n    }\n  ]\n}"
             }
           }
         },
@@ -6344,7 +7827,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/incidents?page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/incidents?page=1&pageSize=20&search=&severity=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "incidents"],
               "query": [
@@ -6355,6 +7838,16 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Nº do incidente, local, área ou nº CAT (nunca funcionário)"
+                },
+                {
+                  "key": "severity",
+                  "value": "",
+                  "description": "no_injury|minor|moderate|severe|fatal"
                 }
               ]
             }
@@ -6567,7 +8060,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/action-plans?page=1&pageSize=20",
+              "raw": "{{baseUrl}}/api/v1/action-plans?page=1&pageSize=20&type=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "action-plans"],
               "query": [
@@ -6578,6 +8071,11 @@
                 {
                   "key": "pageSize",
                   "value": "20"
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "corrective|preventive"
                 }
               ]
             }
@@ -6608,7 +8106,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"{{riskId}}\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
+              "raw": "{\n  \"originType\": \"risk\",\n  \"originId\": \"{{riskId}}\",\n  \"type\": \"corrective\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
             }
           }
         },
@@ -6637,7 +8135,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"originType\": \"incident\",\n  \"originId\": \"{{incidentId}}\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
+              "raw": "{\n  \"originType\": \"incident\",\n  \"originId\": \"{{incidentId}}\",\n  \"type\": \"corrective\",\n  \"what\": \"Instalar enclausuramento acústico\",\n  \"why\": \"Reduzir exposição ao ruído\",\n  \"who\": \"SESMT\",\n  \"where\": \"Usinagem\",\n  \"how\": \"Barreira acústica na fonte\",\n  \"when\": \"2026-09-30\",\n  \"priority\": 2\n}"
             }
           }
         },
@@ -6714,9 +8212,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/action-plans/{{actionPlanId}}",
+              "raw": "{{baseUrl}}/api/v1/action-plans/{{actionPlanId}}&type=",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "action-plans", "{{actionPlanId}}"]
+              "path": ["api", "v1", "action-plans", "{{actionPlanId}}"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "corrective|preventive"
+                }
+              ]
             }
           }
         },

@@ -1,8 +1,12 @@
 import "server-only";
 
-import { and, desc, eq, ilike, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 
-import type { PgrValues, PgrListItem } from "@/shared/domains/pgr/pgr";
+import type {
+  PgrValues,
+  PgrListItem,
+  PgrRegistrationType,
+} from "@/shared/domains/pgr/pgr";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
@@ -15,6 +19,7 @@ import { auditedTenantWrite } from "./audited-write";
 export type ListPgrParams = PageParams & {
   companyId?: string;
   workUnitId?: string;
+  registrationType?: PgrRegistrationType;
   search?: string;
 };
 
@@ -73,9 +78,26 @@ export async function listPgr(
   const filters: SQL[] = [eq(pgr.orgId, orgId)];
   if (params.companyId) filters.push(eq(pgr.companyId, params.companyId));
   if (params.workUnitId) filters.push(eq(pgr.workUnitId, params.workUnitId));
+  if (params.registrationType) {
+    filters.push(eq(pgr.registrationType, params.registrationType));
+  }
   const search = params.search?.trim();
-  if (search) filters.push(ilike(pgr.responsible, `%${search}%`));
+  if (search) {
+    // Busca ampla: empresa (razão social), obra/contrato e responsável.
+    filters.push(
+      or(
+        ilike(companies.razaoSocial, `%${search}%`),
+        ilike(workUnits.name, `%${search}%`),
+        ilike(pgr.responsible, `%${search}%`),
+      ) as SQL,
+    );
+  }
   const where = and(...filters);
+
+  // Joins compartilhados por linhas e contagem (a busca varre colunas juntadas,
+  // então a contagem também precisa dos joins).
+  const companyJoin = and(eq(companies.id, pgr.companyId), eq(companies.orgId, orgId));
+  const workUnitJoin = and(eq(workUnits.id, pgr.workUnitId), eq(workUnits.orgId, orgId));
 
   return withOrg(orgId, async (tx) => {
     const rows = await tx
@@ -90,16 +112,11 @@ export async function listPgr(
         registrationNumber: pgr.registrationNumber,
         issuedAt: pgr.issuedAt,
         validUntil: pgr.validUntil,
+        createdBy: pgr.createdBy,
       })
       .from(pgr)
-      .innerJoin(
-        companies,
-        and(eq(companies.id, pgr.companyId), eq(companies.orgId, orgId)),
-      )
-      .leftJoin(
-        workUnits,
-        and(eq(workUnits.id, pgr.workUnitId), eq(workUnits.orgId, orgId)),
-      )
+      .innerJoin(companies, companyJoin)
+      .leftJoin(workUnits, workUnitJoin)
       .where(where)
       .orderBy(desc(pgr.createdAt))
       .limit(limit)
@@ -107,6 +124,8 @@ export async function listPgr(
     const [{ total }] = await tx
       .select({ total: sql<number>`count(*)::int` })
       .from(pgr)
+      .innerJoin(companies, companyJoin)
+      .leftJoin(workUnits, workUnitJoin)
       .where(where);
     return { rows, total };
   });
@@ -123,7 +142,11 @@ export async function getPgrById(orgId: string, id: string): Promise<Pgr | null>
   });
 }
 
-export async function createPgr(orgId: string, input: PgrValues): Promise<Pgr> {
+export async function createPgr(
+  orgId: string,
+  input: PgrValues,
+  createdBy?: string,
+): Promise<Pgr> {
   return auditedTenantWrite(orgId, "pgr.write_rejected", () =>
     withOrg(orgId, async (tx) => {
       await assertCompanyInTenant(tx, orgId, input.companyId);
@@ -132,7 +155,7 @@ export async function createPgr(orgId: string, input: PgrValues): Promise<Pgr> {
       }
       const [row] = await tx
         .insert(pgr)
-        .values({ orgId, ...toPgrColumns(input) })
+        .values({ orgId, ...toPgrColumns(input), createdBy: createdBy ?? null })
         .returning();
       return row;
     }),
@@ -168,6 +191,20 @@ export async function deletePgr(orgId: string, id: string): Promise<boolean> {
         .where(and(eq(pgr.orgId, orgId), eq(pgr.id, id)))
         .returning({ id: pgr.id });
       return rows.length > 0;
+    }),
+  );
+}
+
+/** Marca o PGR como publicado (idempotente: só atualiza se ainda não publicado). */
+export async function publishPgr(orgId: string, id: string): Promise<Pgr | null> {
+  return auditedTenantWrite(orgId, "pgr.write_rejected", () =>
+    withOrg(orgId, async (tx) => {
+      const [row] = await tx
+        .update(pgr)
+        .set({ publishedAt: new Date(), updatedAt: new Date() })
+        .where(and(eq(pgr.orgId, orgId), eq(pgr.id, id), isNull(pgr.publishedAt)))
+        .returning();
+      return row ?? null;
     }),
   );
 }

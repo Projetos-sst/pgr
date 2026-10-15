@@ -16,7 +16,7 @@ import {
   type ActionPlanSuggestion,
 } from "@/shared/domains/safety/action-plan-suggestion";
 import type { ActionPlanOriginType } from "@/shared/domains/safety/action-plan-origin";
-import { requestActionPlanSuggestion } from "@/shared/integrations/ai/anthropic";
+import { requestActionPlanSuggestion } from "@/shared/integrations/agents";
 import {
   countAiUsageInCurrentMonth,
   recordAiUsage,
@@ -40,7 +40,13 @@ export async function runSuggestActionPlan(
 ): Promise<SuggestActionPlanResult> {
   // Isolamento: origem de outra org é invisível pela RLS → FK_NOT_FOUND antes de cota/LLM.
   const raw = await getSuggestionOriginContext(ctx.tenantId, originType, originId);
-  if (!raw) throw new ReferenceNotFoundError("origin");
+  // Vínculo polimórfico não tem FK: apagar o risco/incidente deixa a auditoria apontando
+  // para o vazio. A mensagem diz isso — antes vinha só "origin" na tela do usuário.
+  if (!raw) {
+    throw new ReferenceNotFoundError(
+      "A origem desta auditoria não existe mais (o risco ou incidente foi removido), então não há contexto para sugerir um plano.",
+    );
+  }
 
   // Cota por organização (mês corrente), checada ANTES da chamada externa.
   const used = await countAiUsageInCurrentMonth(

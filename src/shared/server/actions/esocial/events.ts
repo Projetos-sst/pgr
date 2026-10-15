@@ -7,6 +7,7 @@ import { buildEsocialXml } from "@/shared/domains/esocial/builders";
 import {
   eventTypeSchema,
   listFiltersSchema,
+  type EsocialDashboard,
   type EventListItem,
   type ListFilters,
 } from "@/shared/domains/esocial/events";
@@ -31,6 +32,15 @@ export async function listEventsAction(
     });
     return repo.listEvents(tenantId, { ...filters, page: params.page });
   });
+}
+
+/** Painel do eSocial (#218) — KPIs/por tipo/recentes, agregados no repositório. */
+export async function getEsocialDashboardAction(): Promise<
+  ActionResult<EsocialDashboard>
+> {
+  return officeAction("esocial.dashboard", ({ tenantId }) =>
+    repo.getEsocialDashboard(tenantId),
+  );
 }
 
 export async function getEventAction(id: string): Promise<ActionResult<EsocialEvent>> {

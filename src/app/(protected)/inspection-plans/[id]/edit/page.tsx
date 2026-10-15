@@ -21,7 +21,7 @@ export default async function EditarPlanoPage({
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Editar plano de inspeção" />
+      <PageHeader backHref="/inspection-plans" title="Editar plano de inspeção" />
       <PlanForm
         id={plan.id}
         initial={{
@@ -29,6 +29,8 @@ export default async function EditarPlanoPage({
           subtype: plan.subtype,
           title: plan.title,
           description: plan.description,
+          frequency: plan.frequency,
+          status: plan.status,
           items: items.map((it) => ({
             description: it.description,
             defaultValue: it.defaultValue,

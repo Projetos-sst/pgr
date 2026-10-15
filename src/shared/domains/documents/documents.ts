@@ -6,6 +6,7 @@ import { requiredString, optionalIsoDate } from "@/shared/domains/pgr/form-field
 import {
   classifyDocumentValidity,
   documentRelatedEntityTypeSchema,
+  type DocumentRelatedEntityType,
   type DocumentValidityStatus,
 } from "./validity";
 
@@ -36,6 +37,43 @@ const nullableEntityId = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? null : (value ?? null)),
   z.string().regex(UUID_FORMAT, "Vínculo inválido").nullable(),
 );
+
+/**
+ * Filtro de listagem por vínculo polimórfico. Só devolve o par quando ele está
+ * COMPLETO e bem formado — espelha o CHECK `documents_related_entity_check`. O id
+ * precisa ser UUID porque `related_entity_id` é coluna `uuid`: um valor solto faria
+ * o Postgres estourar `22P02` (viraria 500) em vez de apenas não filtrar nada.
+ * Usado tanto pela página quanto pelo Route Handler — a regra vive num lugar só.
+ */
+export function parseRelatedEntityFilter(
+  relatedEntityType: string | null | undefined,
+  relatedEntityId: string | null | undefined,
+): { relatedEntityType?: DocumentRelatedEntityType; relatedEntityId?: string } {
+  const type = documentRelatedEntityTypeSchema.safeParse(relatedEntityType);
+  if (!type.success || !relatedEntityId || !UUID_FORMAT.test(relatedEntityId)) return {};
+  return { relatedEntityType: type.data, relatedEntityId };
+}
+
+/**
+ * Tipos de documento usuais no acervo de SST. É apenas SUGESTÃO de preenchimento
+ * (`docType` continua texto livre no banco, para não travar o acervo de cada
+ * escritório) — serve para que os mesmos documentos não sejam gravados com dez
+ * grafias diferentes, o que inutiliza o filtro por tipo e os KPIs.
+ */
+export const SUGGESTED_DOC_TYPES = [
+  "ART",
+  "PGR",
+  "LTCAT",
+  "Laudo de insalubridade",
+  "Laudo de periculosidade",
+  "Relatório de medição",
+  "Ordem de serviço",
+  "Certificado de treinamento",
+  "ASO",
+  "PCMSO",
+  "Ficha de EPI",
+  "Contrato",
+] as const;
 
 /**
  * Metadados de documento (criação e base da edição). O vínculo polimórfico é

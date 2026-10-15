@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import * as repo from "@/shared/db/repositories/service-orders";
 import { listEmployees } from "@/shared/db/repositories/employees";
+import { listWorkUnits } from "@/shared/db/repositories/work-units";
 import {
   serviceOrderCreateSchema,
   serviceOrderFiltersSchema,
@@ -33,6 +34,19 @@ export async function listEmployeeOptionsAction(): Promise<
   return officeAction("safety.service_orders.employee_options", async ({ tenantId }) => {
     const { rows } = await listEmployees(tenantId, { pageSize: 100 });
     return rows.map((e) => ({ value: e.id, label: e.fullName }));
+  });
+}
+
+/** Opções de unidade/obra para o campo "Unidade / Obra" do formulário. */
+export async function listWorkUnitOptionsAction(): Promise<
+  ActionResult<EmployeeOption[]>
+> {
+  return officeAction("safety.service_orders.work_unit_options", async ({ tenantId }) => {
+    const { rows } = await listWorkUnits(tenantId, { pageSize: 100 });
+    return rows.map((u) => ({
+      value: u.id,
+      label: u.companyName ? `${u.name} · ${u.companyName}` : u.name,
+    }));
   });
 }
 

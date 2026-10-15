@@ -2,8 +2,19 @@ import "server-only";
 
 import { and, desc, eq, gte, inArray, lte, sql, type SQL } from "drizzle-orm";
 
-import type { EventListItem, ListFilters } from "@/shared/domains/esocial/events";
-import { toEventListItem } from "@/shared/domains/esocial/events";
+import type {
+  EsocialDashboard,
+  EventListItem,
+  ListFilters,
+} from "@/shared/domains/esocial/events";
+import {
+  EVENT_TYPES,
+  computeConformityPercent,
+  esocialReferenceKind,
+  eventStatusLabel,
+  eventTypeDescription,
+  toEventListItem,
+} from "@/shared/domains/esocial/events";
 import { generateToken } from "@/shared/domains/signatures/token";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
@@ -44,6 +55,10 @@ export async function listEvents(
   }
   const where = and(...filters);
   return withOrg(orgId, async (tx) => {
+    // Ambos os JOINs são many-to-one (evento → 1 lote; reference_id → 1
+    // funcionário), então NÃO multiplicam a linha do evento. O join de
+    // funcionário é escopado ao tenant; o `reference_id` é polimórfico, então o
+    // domínio decide se o nome se aplica ao tipo (S-2240 aponta para risco).
     const rows = await tx
       .select({
         id: esocialEvents.id,
@@ -52,8 +67,25 @@ export async function listEvents(
         referenceId: esocialEvents.referenceId,
         batchId: esocialEvents.batchId,
         createdAt: esocialEvents.createdAt,
+        employeeName: employees.fullName,
+        sentAt: esocialBatches.sentAt,
+        protocolNumber: esocialBatches.protocolNumber,
       })
       .from(esocialEvents)
+      .leftJoin(
+        employees,
+        and(
+          eq(employees.id, esocialEvents.referenceId),
+          eq(employees.orgId, esocialEvents.orgId),
+        ),
+      )
+      .leftJoin(
+        esocialBatches,
+        and(
+          eq(esocialBatches.id, esocialEvents.batchId),
+          eq(esocialBatches.orgId, esocialEvents.orgId),
+        ),
+      )
       .where(where)
       .orderBy(desc(esocialEvents.createdAt))
       .limit(limit)
@@ -88,6 +120,87 @@ export async function listEsocialEventsForReport(
       .where(eq(esocialEvents.orgId, orgId))
       .orderBy(desc(esocialEvents.createdAt));
     return rows.map(toEventListItem);
+  });
+}
+
+/**
+ * Painel do eSocial (#218) — KPIs, contagem por tipo e feed recente, TUDO
+ * derivado de `esocial_events` por agregação (nenhuma coluna/КPI persistido).
+ * Três queries escopadas por `withOrg` (+ RLS), sem N+1.
+ */
+export async function getEsocialDashboard(orgId: string): Promise<EsocialDashboard> {
+  const scope = eq(esocialEvents.orgId, orgId);
+  return withOrg(orgId, async (tx) => {
+    const [agg] = await tx
+      .select({
+        total: countExpr,
+        transmitted: sql<number>`count(*) filter (where ${esocialEvents.status} in ('sent','accepted'))::int`,
+        pending: sql<number>`count(*) filter (where ${esocialEvents.status} in ('draft','pending'))::int`,
+        failed: sql<number>`count(*) filter (where ${esocialEvents.status} in ('rejected','error'))::int`,
+        accepted: sql<number>`count(*) filter (where ${esocialEvents.status} = 'accepted')::int`,
+        rejected: sql<number>`count(*) filter (where ${esocialEvents.status} = 'rejected')::int`,
+        errored: sql<number>`count(*) filter (where ${esocialEvents.status} = 'error')::int`,
+      })
+      .from(esocialEvents)
+      .where(scope);
+
+    const typeRows = await tx
+      .select({ eventType: esocialEvents.eventType, count: countExpr })
+      .from(esocialEvents)
+      .where(scope)
+      .groupBy(esocialEvents.eventType);
+
+    const recentRows = await tx
+      .select({
+        id: esocialEvents.id,
+        eventType: esocialEvents.eventType,
+        status: esocialEvents.status,
+        createdAt: esocialEvents.createdAt,
+        employeeName: employees.fullName,
+      })
+      .from(esocialEvents)
+      .leftJoin(
+        employees,
+        and(
+          eq(employees.id, esocialEvents.referenceId),
+          eq(employees.orgId, esocialEvents.orgId),
+        ),
+      )
+      .where(scope)
+      .orderBy(desc(esocialEvents.createdAt))
+      .limit(6);
+
+    const byTypeMap = new Map(typeRows.map((r) => [r.eventType, r.count]));
+    return {
+      total: agg?.total ?? 0,
+      transmitted: agg?.transmitted ?? 0,
+      pending: agg?.pending ?? 0,
+      failed: agg?.failed ?? 0,
+      conformityPercent: computeConformityPercent({
+        accepted: agg?.accepted ?? 0,
+        rejected: agg?.rejected ?? 0,
+        error: agg?.errored ?? 0,
+      }),
+      // Ordem canônica do catálogo (tipos sem evento aparecem com 0) — o mockup
+      // mostra uma lista fixa; aqui a lista é a REAL do enum do sistema.
+      byType: EVENT_TYPES.map((t) => ({
+        eventType: t,
+        description: eventTypeDescription(t),
+        count: byTypeMap.get(t) ?? 0,
+      })),
+      recent: recentRows.map((r) => ({
+        id: r.id,
+        eventType: r.eventType,
+        description: eventTypeDescription(r.eventType),
+        status: r.status,
+        statusLabel: eventStatusLabel(r.status),
+        employeeName:
+          esocialReferenceKind(r.eventType) === "employee"
+            ? (r.employeeName ?? null)
+            : null,
+        createdAt: r.createdAt.toISOString(),
+      })),
+    };
   });
 }
 

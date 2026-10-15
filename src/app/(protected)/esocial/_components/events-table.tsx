@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -11,11 +10,35 @@ import {
   sendBatchAction,
 } from "@/shared/server/actions/esocial/events";
 
+import {
+  Cell,
+  DataGrid,
+  EditIconLink,
+  GridHeader,
+  GridRow,
+  ListCard,
+  StatusBadge,
+  type StatusTone,
+} from "../../_ui/data-list";
+
 type BatchRow = {
   id: string;
   protocolNumber: string | null;
   status: string;
   createdAt: string;
+};
+
+// Colunas do redesign (#217): Evento · Descrição · Funcionário · Data Envio ·
+// Protocolo · Status · Opções (+ checkbox de seleção para o lote).
+const TEMPLATE = "44px 0.9fr 1.7fr 1.2fr 1fr 1.1fr 1fr 84px";
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  draft: "neutral",
+  pending: "amber",
+  sent: "indigo",
+  accepted: "green",
+  rejected: "red",
+  error: "red",
 };
 
 export function EventsTable({
@@ -88,7 +111,7 @@ export function EventsTable({
           type="button"
           disabled={pending || selected.size === 0}
           onClick={onSend}
-          className="btn-primary rounded-pill px-4 py-2 text-sm font-semibold disabled:opacity-40"
+          className="btn-primary flex h-11 items-center rounded-xl px-4 text-[13px] font-bold transition-colors disabled:opacity-40"
         >
           Enviar selecionados ({selected.size})
         </button>
@@ -96,61 +119,73 @@ export function EventsTable({
           type="button"
           disabled={pending}
           onClick={onReport}
-          className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
+          className="text-text-muted hover:text-text h-11 rounded-xl border border-white/70 bg-white/50 px-4 text-[13px] font-semibold transition-colors disabled:opacity-50"
         >
           Gerar relatório
         </button>
       </div>
 
-      {message ? <p className="text-sm text-green-700">{message}</p> : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {message ? <p className="text-sm text-[#0e9f6e]">{message}</p> : null}
+      {error ? <p className="text-sm text-[#d33a3f]">{error}</p> : null}
 
-      <div className="glass-card overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
-          <thead className="border-b border-white/50 text-left">
-            <tr>
-              <th className="px-3 py-2"></th>
-              <th className="px-3 py-2 font-medium">Tipo</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">Criado</th>
-              <th className="px-3 py-2 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-text-subtle px-3 py-6 text-center">
-                  Nenhum evento eSocial.
-                </td>
-              </tr>
-            ) : (
-              events.map((e) => (
-                <tr key={e.id} className="border-t border-white/50">
-                  <td className="px-3 py-2">
-                    <input
-                      type="checkbox"
-                      disabled={e.status !== "pending"}
-                      checked={selected.has(e.id)}
-                      onChange={() => toggle(e.id)}
-                    />
-                  </td>
-                  <td className="px-3 py-2">{e.eventTypeLabel}</td>
-                  <td className="px-3 py-2">{e.statusLabel}</td>
-                  <td className="px-3 py-2 tabular-nums">{e.createdAt.slice(0, 10)}</td>
-                  <td className="px-3 py-2 text-right">
-                    <Link
-                      href={`/esocial/detail/${e.id}`}
-                      className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                    >
-                      Detalhe
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ListCard>
+        {events.length === 0 ? (
+          <p className="text-text-subtle px-6 py-12 text-center text-sm">
+            Nenhum evento eSocial.
+          </p>
+        ) : (
+          <DataGrid minWidth={1040}>
+            <GridHeader
+              template={TEMPLATE}
+              columns={[
+                { header: "" },
+                { header: "Evento" },
+                { header: "Descrição" },
+                { header: "Funcionário" },
+                { header: "Data Envio" },
+                { header: "Protocolo" },
+                { header: "Status" },
+                { header: "Opções", align: "right" },
+              ]}
+            />
+            {events.map((e, i) => (
+              <GridRow key={e.id} template={TEMPLATE} striped={i % 2 === 1}>
+                <Cell>
+                  <input
+                    type="checkbox"
+                    aria-label="Selecionar evento"
+                    disabled={e.status !== "pending"}
+                    checked={selected.has(e.id)}
+                    onChange={() => toggle(e.id)}
+                    className="accent-primary size-4"
+                  />
+                </Cell>
+                <Cell className="text-primary font-mono font-semibold">
+                  {e.eventType}
+                </Cell>
+                <Cell className="text-text font-semibold">{e.description}</Cell>
+                <Cell className="text-text-muted">{e.employeeName ?? "—"}</Cell>
+                <Cell className="text-text-muted font-mono">
+                  {e.sentAt ? e.sentAt.slice(0, 10) : "—"}
+                </Cell>
+                <Cell className="text-text-muted font-mono text-[12px]">
+                  {e.protocolNumber ?? "—"}
+                </Cell>
+                <Cell>
+                  <StatusBadge tone={STATUS_TONE[e.status] ?? "neutral"}>
+                    {e.statusLabel}
+                  </StatusBadge>
+                </Cell>
+                <Cell align="right">
+                  <span className="flex justify-end">
+                    <EditIconLink href={`/esocial/detail/${e.id}`} />
+                  </span>
+                </Cell>
+              </GridRow>
+            ))}
+          </DataGrid>
+        )}
+      </ListCard>
 
       <p className="text-text-subtle text-xs">
         {selectablePending.length} evento(s) pendente(s) selecionável(is).
@@ -158,22 +193,25 @@ export function EventsTable({
 
       {batches.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <h2 className="text-sm font-medium">Lotes enviados</h2>
+          <h2 className="text-text text-sm font-bold">Lotes enviados</h2>
           <ul className="flex flex-col gap-2">
             {batches.map((b) => (
               <li
                 key={b.id}
-                className="glass-card flex flex-wrap items-center justify-between gap-2 p-3"
+                className="glass-card flex flex-wrap items-center justify-between gap-2 rounded-[14px] p-3.5"
               >
-                <span className="text-sm">
-                  {b.protocolNumber ?? "—"} · {b.status}
+                <span className="flex items-center gap-2 text-sm">
+                  <span className="text-primary font-mono font-semibold">
+                    {b.protocolNumber ?? "—"}
+                  </span>
+                  <span className="text-text-subtle">· {b.status}</span>
                 </span>
                 {b.status === "sent" ? (
                   <button
                     type="button"
                     disabled={pending}
                     onClick={() => onQuery(b.id)}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-50"
+                    className="text-text-muted hover:text-text rounded-xl border border-white/70 bg-white/50 px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-50"
                   >
                     Consultar retorno
                   </button>
@@ -187,7 +225,9 @@ export function EventsTable({
       ) : null}
 
       {report ? (
-        <pre className="glass-card max-h-80 overflow-auto p-3 text-xs">{report}</pre>
+        <pre className="glass-card max-h-80 overflow-auto rounded-[14px] p-4 text-xs">
+          {report}
+        </pre>
       ) : null}
     </div>
   );

@@ -22,9 +22,21 @@ export function DeleteVehicle({ id }: { id: string }) {
       type="button"
       onClick={onDelete}
       disabled={pending}
-      className="rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
+      aria-label="Remover veículo"
+      title="Remover"
+      className="text-text-subtle flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-red-50 hover:text-[#d33a3f] disabled:opacity-50"
     >
-      Remover
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        aria-hidden="true"
+      >
+        <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+      </svg>
     </button>
   );
 }

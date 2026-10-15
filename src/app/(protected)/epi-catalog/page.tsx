@@ -2,40 +2,61 @@ import Link from "next/link";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
+import { todayInSaoPaulo } from "@/shared/dates";
+import {
+  classifyDocumentValidity,
+  type DocumentValidityStatus,
+} from "@/shared/domains/documents/validity";
 import { listEpiCatalogAction } from "@/shared/server/actions/pgr/epi-catalog";
 import type { CategoryType } from "@/shared/domains/pgr/epi-catalog";
 
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  PrimaryLink,
-  SearchForm,
-  Table,
-} from "../_ui/list";
+  Cell,
+  DataGrid,
+  EditIconLink,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  MonoCell,
+  RowActions,
+  StatusBadge,
+  ToolbarButton,
+  ToolbarSearch,
+} from "../_ui/data-list";
+import { EmptyState, PageHeader } from "../_ui/list";
 import { DeleteEpiCatalog } from "./_components/delete-epi-catalog";
+import { EpiIcon } from "./_components/epi-icon";
 
 export const dynamic = "force-dynamic";
-
-const TYPE_LABELS: Record<CategoryType, string> = {
-  epi: "EPI",
-  machine: "Máquinas e Equipamentos",
-};
 
 const TYPE_FILTERS: { value: string; label: string }[] = [
   { value: "", label: "Todos" },
   { value: "epi", label: "EPI" },
-  { value: "machine", label: "Máquinas e Equipamentos" },
+  { value: "machine", label: "Máquinas" },
 ];
+
+const TEMPLATE = "0.9fr 2fr 0.7fr 1.3fr 1.2fr 1fr 84px";
 
 function parseType(value?: string): CategoryType | undefined {
   return value === "epi" || value === "machine" ? value : undefined;
 }
 
-function formatDate(value: string | null): string {
+/** Validade do CA em MM/AAAA (granularidade do certificado), fiel ao mockup. */
+function formatMonthYear(value: string | null): string {
   if (!value) return "—";
-  return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR");
+  const [year, month] = value.split("-");
+  return `${month}/${year}`;
 }
+
+/** Cor semântica da Validade derivada na leitura (verde/âmbar/vermelho/cinza). */
+const VALIDITY_COLOR: Record<DocumentValidityStatus, string> = {
+  ok: "text-accent-green font-semibold",
+  due_soon: "text-accent-amber-strong font-semibold",
+  expired: "text-danger font-semibold",
+  no_expiry: "text-text-subtle",
+};
 
 type SearchParams = Promise<{ search?: string; page?: string; type?: string }>;
 
@@ -53,105 +74,118 @@ export default async function EpiCatalogPage({
   });
   const result = await listEpiCatalogAction({ search: sp.search, type, page });
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
+  const today = todayInSaoPaulo();
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
+        icon={<EpiIcon />}
         title="Catálogo de EPI"
-        description="Itens de EPI e de máquinas/equipamentos do escritório."
-        action={<PrimaryLink href="/epi-catalog/new">Novo item</PrimaryLink>}
+        description="Itens de EPI e de máquinas/equipamentos do escritório"
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        {TYPE_FILTERS.map((filter) => {
-          const active = (sp.type ?? "") === filter.value;
-          const query = new URLSearchParams();
-          if (filter.value) query.set("type", filter.value);
-          if (sp.search) query.set("search", sp.search);
-          const qs = query.toString();
-          return (
-            <Link
-              key={filter.label}
-              href={`/epi-catalog${qs ? `?${qs}` : ""}`}
-              className={`rounded-pill px-3 py-1 text-sm font-semibold transition-colors ${
-                active ? "btn-primary" : "glass-panel text-text-muted hover:text-text"
-              }`}
-            >
-              {filter.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      <SearchForm
-        basePath="/epi-catalog"
-        placeholder="Buscar por nome, CA ou categoria"
-        defaultValue={sp.search}
-        hidden={{ type: sp.type }}
-      />
-
-      {rows.length === 0 ? (
-        <EmptyState
-          message={
-            hasFilters
-              ? "Nenhum item encontrado para a busca/filtro."
-              : "Nenhum item no catálogo ainda. Cadastre o primeiro item de EPI ou equipamento."
-          }
-        />
-      ) : (
-        <Table
-          headers={[
-            "CA",
-            "Nome",
-            "Tam.",
-            "Fabricante",
-            "Tipo",
-            "Categoria",
-            "Und. Medida",
-            "Validade",
-            "Opções",
-          ]}
-        >
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2">{row.ca ?? "—"}</td>
-              <td className="px-4 py-2">
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSearch
+            basePath="/epi-catalog"
+            placeholder="Buscar por CA, nome ou fabricante…"
+            defaultValue={sp.search}
+            hidden={{ type: sp.type }}
+          />
+          <div className="flex items-center gap-1.5">
+            {TYPE_FILTERS.map((filter) => {
+              const active = (sp.type ?? "") === filter.value;
+              const query = new URLSearchParams();
+              if (filter.value) query.set("type", filter.value);
+              if (sp.search) query.set("search", sp.search);
+              const qs = query.toString();
+              return (
                 <Link
-                  href={`/epi-catalog/${row.id}/edit`}
-                  className="font-medium hover:underline"
+                  key={filter.label}
+                  href={`/epi-catalog${qs ? `?${qs}` : ""}`}
+                  className={`rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                    active
+                      ? "btn-primary"
+                      : "text-text-muted hover:text-text border border-white/70 bg-white/50"
+                  }`}
                 >
-                  {row.name}
+                  {filter.label}
                 </Link>
-              </td>
-              <td className="px-4 py-2">{row.size ?? "—"}</td>
-              <td className="px-4 py-2">{row.manufacturer ?? "—"}</td>
-              <td className="px-4 py-2">{TYPE_LABELS[row.type]}</td>
-              <td className="px-4 py-2">{row.categoryName}</td>
-              <td className="px-4 py-2">{row.unitOfMeasure ?? "—"}</td>
-              <td className="px-4 py-2">{formatDate(row.caValidUntil)}</td>
-              <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/epi-catalog/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
-                  <DeleteEpiCatalog id={row.id} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
+              );
+            })}
+          </div>
+          <ToolbarButton href="/epi-catalog/new">Novo Item</ToolbarButton>
+        </ListToolbar>
 
-      <Pagination
-        basePath="/epi-catalog"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={{ search: sp.search, type: sp.type }}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              message={
+                hasFilters
+                  ? "Nenhum item encontrado para a busca/filtro."
+                  : "Nenhum item no catálogo ainda. Cadastre o primeiro item de EPI ou equipamento."
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={940}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "CA" },
+                  { header: "Nome" },
+                  { header: "Tam." },
+                  { header: "Fabricante" },
+                  { header: "Categoria" },
+                  { header: "Validade" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <MonoCell href={`/epi-catalog/${row.id}/edit`}>
+                    {row.ca ?? "—"}
+                  </MonoCell>
+                  <Cell className="text-text font-semibold">{row.name}</Cell>
+                  <Cell>{row.size ?? "—"}</Cell>
+                  <Cell>{row.manufacturer ?? "—"}</Cell>
+                  <Cell>
+                    <StatusBadge tone={row.type === "epi" ? "indigo" : "neutral"}>
+                      {row.categoryName}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell
+                    className={
+                      VALIDITY_COLOR[
+                        classifyDocumentValidity(row.caValidUntil, {
+                          today,
+                          dueWindowDays: 30,
+                        })
+                      ]
+                    }
+                  >
+                    {formatMonthYear(row.caValidUntil)}
+                  </Cell>
+                  <Cell align="right">
+                    <RowActions>
+                      <EditIconLink href={`/epi-catalog/${row.id}/edit`} />
+                      <DeleteEpiCatalog id={row.id} />
+                    </RowActions>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/epi-catalog"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={{ search: sp.search, type: sp.type }}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }

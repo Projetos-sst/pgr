@@ -4,9 +4,34 @@ import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
 import { listCampaignsAction } from "@/shared/server/actions/psychosocial/campaigns";
 
-import { EmptyState, PageHeader, Pagination, PrimaryLink, Table } from "../../_ui/list";
+import { EmptyState, PageHeader } from "../../_ui/list";
+import {
+  Cell,
+  DataGrid,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  StatusBadge,
+  ToolbarButton,
+  ToolbarSelect,
+  ViewIcon,
+  type StatusTone,
+} from "../../_ui/data-list";
+import { CAMPAIGN_STATUS_LABELS } from "@/shared/domains/psychosocial/campaigns";
+import { PsychosocialIcon } from "../_components/psychosocial-icon";
 
 export const dynamic = "force-dynamic";
+
+const TEMPLATE = "1.8fr 1.4fr 1.3fr 1fr 1fr 0.9fr 1fr 84px";
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  draft: "neutral",
+  active: "green",
+  closed: "indigo",
+  archived: "neutral",
+};
 
 type SearchParams = Promise<{ page?: string; status?: string }>;
 
@@ -24,54 +49,100 @@ export default async function CampanhasPsicossociaisPage({
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-[22px] px-5 pt-8 pb-10 sm:px-[30px]">
       <PageHeader
-        title="Campanhas psicossociais"
-        description="Mapeamento de riscos psicossociais (NR-01/GRO) por campanha e questionário."
-        action={
-          <PrimaryLink href="/psychosocial/campaigns/new">Nova campanha</PrimaryLink>
-        }
+        icon={<PsychosocialIcon />}
+        title="Campanhas Psicossociais"
+        description="Mapeamento de riscos psicossociais (NR-01/GRO) por campanha e questionário"
       />
 
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhuma campanha psicossocial." />
-      ) : (
-        <Table headers={["Início", "Fim", "Empresa", "Obra", "Perguntas", "Status", ""]}>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2 tabular-nums">{row.startsAt ?? "—"}</td>
-              <td className="px-4 py-2 tabular-nums">{row.endsAt ?? "—"}</td>
-              <td className="px-4 py-2">{row.companyName ?? "—"}</td>
-              <td className="px-4 py-2">
-                <Link
-                  href={`/psychosocial/campaigns/${row.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {row.workUnitName ?? row.name}
-                </Link>
-              </td>
-              <td className="px-4 py-2 tabular-nums">{row.questionCount}</td>
-              <td className="px-4 py-2">{row.statusLabel}</td>
-              <td className="px-4 py-2 text-right">
-                <Link
-                  href={`/psychosocial/campaigns/${row.id}`}
-                  className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                >
-                  Abrir
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSelect
+            basePath="/psychosocial/campaigns"
+            name="status"
+            defaultValue={sp.status}
+            emptyLabel="Todos os status"
+            options={Object.entries(CAMPAIGN_STATUS_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
+          <ToolbarButton href="/psychosocial/campaigns/new">Nova Campanha</ToolbarButton>
+        </ListToolbar>
 
-      <Pagination
-        basePath="/psychosocial/campaigns"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={{ status: sp.status }}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              isFlat
+              message={
+                sp.status
+                  ? "Nenhuma campanha encontrada para o filtro."
+                  : "Nenhuma campanha psicossocial cadastrada."
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={1080}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Campanha" },
+                  { header: "Empresa" },
+                  { header: "Unidade / Obra" },
+                  { header: "Início" },
+                  { header: "Fim" },
+                  { header: "Perguntas" },
+                  { header: "Status" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <Cell className="text-text font-semibold">
+                    <Link
+                      href={`/psychosocial/campaigns/${row.id}`}
+                      className="hover:underline"
+                    >
+                      {row.name}
+                    </Link>
+                  </Cell>
+                  <Cell className={row.companyName ? undefined : "text-text-subtle"}>
+                    {row.companyName ?? "—"}
+                  </Cell>
+                  <Cell>{row.workUnitName ?? "—"}</Cell>
+                  <Cell className="tabular-nums">{row.startsAt ?? "—"}</Cell>
+                  <Cell className="tabular-nums">{row.endsAt ?? "—"}</Cell>
+                  <Cell className="tabular-nums">{row.questionCount}</Cell>
+                  <Cell>
+                    <StatusBadge tone={STATUS_TONE[row.status] ?? "neutral"}>
+                      {row.statusLabel}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell align="right">
+                    <Link
+                      href={`/psychosocial/campaigns/${row.id}`}
+                      aria-label="Abrir campanha"
+                      title="Abrir"
+                      className="text-primary flex h-8 w-8 items-center justify-center justify-self-end rounded-[9px] transition-colors hover:bg-white/50"
+                    >
+                      <ViewIcon />
+                    </Link>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/psychosocial/campaigns"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={{ status: sp.status }}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }

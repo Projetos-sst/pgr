@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { AgentProgress } from "@/app/(protected)/_ui/agent-progress";
+import { Skeleton } from "@/app/(protected)/_ui/skeleton";
 import { ACTION_PLAN_PRIORITY_LABELS } from "@/shared/domains/safety/action-plan";
 import type { ActionPlanOriginType } from "@/shared/domains/safety/action-plan-origin";
 import { createActionPlanAction } from "@/shared/server/actions/safety/action-plans";
@@ -37,7 +39,20 @@ const EMPTY: Fields = {
  * (`createActionPlanAction`). A sugestão por IA apenas **preenche** os campos — a persistência
  * exige o clique em "Criar plano". Se a IA estiver indisponível, o preenchimento manual
  * continua disponível (a auditoria nunca é bloqueada).
+ *
+ * Enquanto o agente roda (~8–10s), os campos dão lugar ao esqueleto do formulário: são
+ * exatamente esses campos que serão sobrescritos pela sugestão, então deixá-los editáveis
+ * durante a espera só convidaria o usuário a digitar algo que seria perdido.
  */
+
+/** Roteiro fixo exibido enquanto o agente 5W2H roda (ver `agent-stages.ts`). */
+const ACTION_PLAN_AGENT_STAGES = [
+  "Pensando…",
+  "Analisando a origem…",
+  "Definindo as ações corretivas…",
+  "Montando o 5W2H…",
+  "Estimando prazo e custo…",
+] as const;
 export function AuditPlanCreator({
   originType,
   originId,
@@ -75,7 +90,7 @@ export function AuditPlanCreator({
       } else {
         setError(
           result.error.code === "AI_UNAVAILABLE"
-            ? "IA indisponível no momento. Preencha o plano manualmente e clique em Criar plano."
+            ? "A IA pgr-e está indisponível no momento. Preencha o plano manualmente e clique em Criar plano."
             : result.error.message,
         );
       }
@@ -112,13 +127,22 @@ export function AuditPlanCreator({
           onClick={suggest}
           className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-50"
         >
-          {suggesting ? "Sugerindo…" : "Sugerir 5W2H com IA"}
+          {suggesting ? "Sugerindo…" : "Sugerir 5W2H com a IA pgr-e"}
         </button>
       </div>
       {info ? <p className="text-xs text-emerald-700">{info}</p> : null}
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {suggesting ? (
+        <>
+          <AgentProgress stages={ACTION_PLAN_AGENT_STAGES} />
+          <FieldsSkeleton />
+        </>
+      ) : null}
+
+      <div
+        className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${suggesting ? "hidden" : ""}`}
+      >
         <label className="flex flex-col gap-1 sm:col-span-2">
           <span className="text-text-muted text-sm font-semibold">O quê</span>
           <textarea
@@ -201,13 +225,41 @@ export function AuditPlanCreator({
       <div className="flex justify-end">
         <button
           type="button"
-          disabled={creating}
+          disabled={creating || suggesting}
           onClick={create}
           className="btn-primary rounded-pill px-4 py-2 text-sm font-semibold disabled:opacity-50"
         >
           {creating ? "Criando…" : "Criar plano"}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Espelha o grid dos 8 campos 5W2H para que a troca de esqueleto → formulário preenchido
+ * não desloque o restante da página.
+ */
+function FieldsSkeleton() {
+  const field = (key: string, wide: boolean, lines: number) => (
+    <div key={key} className={`flex flex-col gap-2 ${wide ? "sm:col-span-2" : ""}`}>
+      <Skeleton className="h-4 w-20" />
+      {Array.from({ length: lines }, (_, line) => (
+        <Skeleton key={line} className="h-8 w-full rounded-lg" />
+      ))}
+    </div>
+  );
+
+  return (
+    <div aria-hidden="true" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {field("what", true, 2)}
+      {field("why", true, 2)}
+      {field("who", false, 1)}
+      {field("where", false, 1)}
+      {field("how", true, 2)}
+      {field("when", false, 1)}
+      {field("howMuch", false, 1)}
+      {field("priority", false, 1)}
     </div>
   );
 }

@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
-import { jobRoleInputSchema, type JobRoleInput } from "@/shared/domains/pgr/job-roles";
+import {
+  jobRoleInputSchema,
+  type JobRoleInput,
+  type JobRoleListItem,
+} from "@/shared/domains/pgr/job-roles";
 import type { Paginated } from "@/shared/pagination";
 import * as repo from "@/shared/db/repositories/job-roles";
 import type { JobRole } from "@/shared/db/schema/job-roles";
@@ -14,7 +18,7 @@ const BASE_PATH = "/job-roles";
 
 export async function listJobRolesAction(
   params: repo.ListJobRolesParams = {},
-): Promise<ActionResult<Paginated<JobRole>>> {
+): Promise<ActionResult<Paginated<JobRoleListItem>>> {
   return officeAction("pgr.job_roles.list", ({ tenantId }) =>
     repo.listJobRoles(tenantId, params),
   );

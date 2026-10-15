@@ -9,7 +9,11 @@ export default async function NewScheduleEventPage() {
   await requireOfficeStaffPage();
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Novo evento" description="Agende um compromisso de SST." />
+      <PageHeader
+        backHref="/schedule"
+        title="Novo evento"
+        description="Agende um compromisso de SST."
+      />
       <ScheduleEventForm />
     </div>
   );

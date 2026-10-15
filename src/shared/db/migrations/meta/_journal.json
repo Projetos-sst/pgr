@@ -197,6 +197,181 @@
       "when": 1784448304145,
       "tag": "0027_form_controls",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1785079625695,
+      "tag": "0028_pgr_published_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1785693659214,
+      "tag": "0029_medicos",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1785699227221,
+      "tag": "0030_health_exams",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1788017775967,
+      "tag": "0031_epgr_correcoes_grupo_a",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1788025472481,
+      "tag": "0032_epgr_correcoes_lote2_grupo_1",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1788182040977,
+      "tag": "0033_pgr_created_by",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1788186099229,
+      "tag": "0034_companies_status_esocial",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1788188901668,
+      "tag": "0035_work_units_type_status_dates",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1788197331831,
+      "tag": "0036_category_supply_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1788201426941,
+      "tag": "0037_job_roles_status_sector",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1788205173801,
+      "tag": "0038_epi_company_useful_life",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1788224898050,
+      "tag": "0039_service_order_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1788226202820,
+      "tag": "0040_accidents_number_severity",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1788312155402,
+      "tag": "0041_vehicles_company_inspection",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1788323226492,
+      "tag": "0042_action_plan_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1788326016129,
+      "tag": "0043_inspection_plan_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1788327113016,
+      "tag": "0044_training_catalog_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1788344164976,
+      "tag": "0045_storage_buckets",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1789483045460,
+      "tag": "0046_psychosocial_risk_factors",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1789515396710,
+      "tag": "0047_esocial_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1789516321912,
+      "tag": "0048_form_control_type_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1790479723324,
+      "tag": "0049_nr09_evaluation",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1790481864097,
+      "tag": "0050_measure_why_cost",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1790526241366,
+      "tag": "0051_ergonomic_evaluations",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1791521827882,
+      "tag": "0052_platform_leads",
+      "breakpoints": true
     }
   ]
 }

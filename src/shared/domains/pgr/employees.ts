@@ -60,6 +60,10 @@ export type EmployeeListItem = {
   status: string;
   companyName: string;
   gesName: string | null;
+  /** Função (subtítulo do Nome no #195) — join `job_roles.title`. */
+  jobRoleTitle: string | null;
+  /** Nº de OS emitidas para o funcionário — derivado (COUNT), sem coluna. */
+  serviceOrderCount: number;
 };
 
 export function toEmployeeListItem(row: EmployeeListItem): EmployeeListItem {
@@ -69,5 +73,27 @@ export function toEmployeeListItem(row: EmployeeListItem): EmployeeListItem {
     status: row.status,
     companyName: row.companyName,
     gesName: row.gesName,
+    jobRoleTitle: row.jobRoleTitle,
+    serviceOrderCount: row.serviceOrderCount,
   };
+}
+
+/**
+ * Aplica máscara de digitação progressiva ao CPF.
+ * Remove tudo que não for dígito, trunca para 11 dígitos máximo,
+ * e aplica a máscara 000.000.000-00 conforme a quantidade de dígitos.
+ * Funciona com qualquer quantidade de dígitos de 0 a 11 (idempotente).
+ */
+export function maskCpfInput(value: string): string {
+  // Remove tudo que não for dígito
+  const digits = value.replace(/\D/g, "");
+
+  // Trunca para máximo 11 dígitos
+  if (digits.length === 0) return "";
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9)
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  // 10 ou 11 dígitos
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
 }

@@ -105,3 +105,74 @@ describe("DocumentUploadForm — erro de transporte (corpo grande demais)", () =
     expect(screen.queryByText(UPLOAD_TRANSPORT_ERROR_MESSAGE)).not.toBeInTheDocument();
   });
 });
+
+/**
+ * Issue #45 (fatia 028): a tela de upload generaliza o pré-vínculo para
+ * qualquer entidade do enum (`pgr`/`ges`/`risk`), não mais só "pgr" hardcoded.
+ */
+describe("DocumentUploadForm — pré-vínculo genérico por entidade (issue #45)", () => {
+  beforeEach(() => {
+    mockedAction.mockReset();
+    mockPush.mockReset();
+    mockRefresh.mockReset();
+  });
+
+  it('pré-vinculado a relatedEntityType="ges" → hidden input carrega "ges", não mais "pgr" fixo', () => {
+    const { container } = render(
+      <DocumentUploadForm
+        folders={[]}
+        defaultFolderId={null}
+        defaultRelatedEntityType="ges"
+        defaultRelatedEntityId="ges-123"
+        returnLabel="Setor de Pintura"
+      />,
+    );
+
+    const typeInput = container.querySelector<HTMLInputElement>(
+      'input[name="relatedEntityType"]',
+    );
+    const idInput = container.querySelector<HTMLInputElement>(
+      'input[name="relatedEntityId"]',
+    );
+    expect(typeInput?.value).toBe("ges");
+    expect(idInput?.value).toBe("ges-123");
+    expect(screen.getByText("Setor de Pintura")).toBeInTheDocument();
+  });
+
+  it('pré-vinculado a relatedEntityType="risk" → hidden input carrega "risk"', () => {
+    const { container } = render(
+      <DocumentUploadForm
+        folders={[]}
+        defaultFolderId={null}
+        defaultRelatedEntityType="risk"
+        defaultRelatedEntityId="risk-456"
+        returnLabel="Ruído acima do limite"
+      />,
+    );
+
+    const typeInput = container.querySelector<HTMLInputElement>(
+      'input[name="relatedEntityType"]',
+    );
+    expect(typeInput?.value).toBe("risk");
+  });
+
+  it("fluxo manual de PGR (sem pré-vínculo) continua idêntico: checkbox off por padrão, ligar mostra campo de ID e fixa relatedEntityType=pgr", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <DocumentUploadForm folders={[]} defaultFolderId={null} />,
+    );
+
+    // Sem pré-vínculo, nenhum hidden input existe até o checkbox ser marcado.
+    expect(
+      container.querySelector('input[name="relatedEntityType"]'),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText(/Vincular a um PGR/i));
+
+    const typeInput = container.querySelector<HTMLInputElement>(
+      'input[name="relatedEntityType"]',
+    );
+    expect(typeInput?.value).toBe("pgr");
+    expect(screen.getByLabelText(/ID do PGR/i)).toBeInTheDocument();
+  });
+});

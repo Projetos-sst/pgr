@@ -45,6 +45,17 @@ const asOwner = (tenantId: string) =>
     asOwner("org_a");
   });
 
+  it("lista expõe jobRoleTitle (join) e serviceOrderCount (derivado)", async () => {
+    const list = await listEmployeesAction({});
+    expect(list.ok).toBe(true);
+    if (list.ok) {
+      const func = list.data.rows.find((r) => r.id === PGR_IDS.employeeA);
+      expect(func?.jobRoleTitle).toBe("Pedreiro"); // seed: employeeA → jobRoleA "Pedreiro"
+      expect(typeof func?.serviceOrderCount).toBe("number");
+      expect(func?.serviceOrderCount).toBe(0); // sem OS no seed
+    }
+  });
+
   it("create sem GES/função é permitido", async () => {
     const result = await createEmployeeAction({
       companyId: PGR_IDS.companyA,

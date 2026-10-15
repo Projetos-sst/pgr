@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useId, useState, useTransition, type FormEvent, type ReactNode } from "react";
 
 import {
   buildMatrix,
   methodologyBaseLabel,
   riskClassificationLabel,
   RISK_CLASSIFICATION_ORDER,
+  type ClassificationBand,
   type MethodologyBase,
+  type MethodologyGrade,
   type RiskClassification,
   type RiskMethodologyView,
 } from "@/shared/domains/pgr/methodology";
@@ -17,7 +19,14 @@ import {
 } from "@/shared/domains/pgr/methodology-presets";
 import { saveRiskMethodologyAction } from "@/shared/server/actions/pgr/risk-methodology";
 
-import { FormError, SelectField, SubmitButton } from "../../_ui/form";
+import {
+  fieldClass,
+  FieldError,
+  FormError,
+  FormSection,
+  SelectField,
+  SubmitButton,
+} from "../../_ui/form";
 
 /** Cores por classe (strings literais para o Tailwind v4 capturar no scan). */
 const CLASSIFICATION_STYLE: Record<RiskClassification, string> = {
@@ -28,6 +37,15 @@ const CLASSIFICATION_STYLE: Record<RiskClassification, string> = {
   intolerable: "bg-red-100 text-red-900",
 };
 
+/** Ponto de cor da faixa — a cor nunca é o único indicador, acompanha o nome. */
+const CLASSIFICATION_DOT: Record<RiskClassification, string> = {
+  trivial: "bg-green-500",
+  tolerable: "bg-lime-500",
+  moderate: "bg-yellow-500",
+  substantial: "bg-orange-500",
+  intolerable: "bg-red-500",
+};
+
 const BASE_OPTIONS: { value: MethodologyBase; label: string }[] = [
   { value: "aiha", label: methodologyBaseLabel("aiha") },
   { value: "as_nzs_4360", label: methodologyBaseLabel("as_nzs_4360") },
@@ -35,7 +53,8 @@ const BASE_OPTIONS: { value: MethodologyBase; label: string }[] = [
   { value: "custom", label: methodologyBaseLabel("custom") },
 ];
 
-const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
+const columnHeadClass =
+  "text-text-muted font-mono text-[10px] tracking-[0.14em] uppercase";
 
 type State = Omit<RiskMethodologyView, "configured">;
 
@@ -97,189 +116,375 @@ export function MethodologyEditor({ initial }: { initial: RiskMethodologyView })
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-8">
+    <form onSubmit={onSubmit} className="flex flex-col gap-[22px]">
       {!initial.configured ? (
-        <p className="rounded-card border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Sua organização ainda não configurou uma metodologia — exibindo os valores
-          padrão ({methodologyBaseLabel(state.base)}). Ajuste e salve para adotá-la.
-        </p>
+        <NotConfiguredNotice baseLabel={methodologyBaseLabel(state.base)} />
       ) : null}
 
-      <section className="max-w-xs">
-        <SelectField
-          label="Base da metodologia"
-          name="base"
-          value={state.base}
-          onChange={onBaseChange}
-          options={BASE_OPTIONS}
-          emptyLabel="— selecione —"
-        />
-        <p className="text-text-subtle mt-1 text-xs">
-          Selecionar uma base preenche gradações e faixas com os valores padrão
-          (editáveis).
-        </p>
-      </section>
+      <FormSection
+        title="Base da metodologia"
+        description="Selecionar uma base preenche gradações e faixas com os valores padrão (editáveis)."
+        columns={1}
+      >
+        <div className="sm:max-w-[340px]">
+          <SelectField
+            label="Base da metodologia"
+            name="base"
+            value={state.base}
+            onChange={onBaseChange}
+            options={BASE_OPTIONS}
+            emptyLabel="— selecione —"
+          />
+        </div>
+      </FormSection>
 
       <GradeSection
-        title="Gradação de Probabilidade (1–5)"
+        title="Gradação de probabilidade (1–5)"
+        description="Como a organização descreve cada nível da dimensão probabilidade."
+        axisName="probabilidade"
         grades={state.probabilityGrades}
         onChange={(i, field, v) => updateGrade("probabilityGrades", i, field, v)}
       />
 
       <GradeSection
-        title="Gradação de Severidade (1–5)"
+        title="Gradação de severidade (1–5)"
+        description="Como a organização descreve cada nível da dimensão severidade."
+        axisName="severidade"
         grades={state.severityGrades}
         onChange={(i, field, v) => updateGrade("severityGrades", i, field, v)}
       />
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-text text-lg font-semibold">Matriz 5×5</h2>
-        <div className="overflow-x-auto">
-          <table className="border-separate border-spacing-1 text-center text-sm">
-            <thead>
-              <tr>
-                <th className="text-text-subtle p-2 text-xs font-medium">P \ S</th>
-                {state.severityGrades.map((g) => (
-                  <th key={g.level} className="p-2 text-xs font-medium">
-                    {g.level}. {g.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {state.probabilityGrades.map((pg) => (
-                <tr key={pg.level}>
-                  <th className="p-2 text-left text-xs font-medium whitespace-nowrap">
-                    {pg.level}. {pg.label}
-                  </th>
-                  {state.severityGrades.map((sg) => {
-                    const cell = matrix.find(
-                      (c) => c.probability === pg.level && c.severity === sg.level,
-                    )!;
-                    return (
-                      <td
-                        key={sg.level}
-                        className={`min-w-24 rounded-md p-2 ${CLASSIFICATION_STYLE[cell.classification]}`}
-                        title={riskClassificationLabel(cell.classification)}
-                      >
-                        <div className="font-semibold">{cell.level}</div>
-                        <div className="text-xs">
-                          {riskClassificationLabel(cell.classification)}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <FormSection
+        title="Matriz de riscos 5×5"
+        description="Nível de risco = probabilidade × severidade. A classe de cada célula vem das faixas abaixo e acompanha o que for editado."
+        columns={1}
+      >
+        <MatrixTable
+          probabilityGrades={state.probabilityGrades}
+          severityGrades={state.severityGrades}
+          matrix={matrix}
+        />
+      </FormSection>
 
-        <div className="flex flex-col gap-2">
-          <h3 className="text-text text-sm font-medium">
-            Faixas de classificação (limite superior)
-          </h3>
-          <div className="flex flex-wrap gap-3">
-            {state.classificationBands.map((band, index) => {
-              const prev =
-                index === 0 ? 1 : state.classificationBands[index - 1].maxLevel + 1;
-              const isLast = index === RISK_CLASSIFICATION_ORDER.length - 1;
-              return (
-                <label
-                  key={band.classification}
-                  className={`flex flex-col gap-1 rounded-md p-2 ${CLASSIFICATION_STYLE[band.classification]}`}
-                >
-                  <span className="text-xs font-medium">
-                    {riskClassificationLabel(band.classification)} ({prev}–{band.maxLevel}
-                    )
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={25}
-                    value={band.maxLevel}
-                    disabled={isLast}
-                    onChange={(e) => updateBand(index, Number(e.target.value))}
-                    className={`w-20 ${inputClass} disabled:opacity-60`}
-                  />
-                </label>
-              );
-            })}
-          </div>
-          <p className="text-text-subtle text-xs">
-            Os limites devem ser crescentes; a última faixa fecha sempre em 25.
-          </p>
-        </div>
-      </section>
+      <FormSection
+        title="Faixas de classificação"
+        description="Limite superior de cada classe. Os limites devem ser crescentes; a última faixa fecha sempre em 25."
+        columns={1}
+      >
+        <BandCards bands={state.classificationBands} onChange={updateBand} />
+      </FormSection>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-text text-lg font-semibold">
-          Controle de Riscos (hierarquia NR-01)
-        </h2>
-        <ol className="flex flex-col gap-2">
-          {NR01_CONTROL_HIERARCHY.map((item) => (
-            <li key={item.level} className="glass-card px-3 py-2 text-sm">
-              <span className="text-text font-medium">{item.label}</span>
-              <span className="text-text-muted"> — {item.description}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <FormSection
+        title="Controle de riscos — hierarquia NR-01"
+        description="Ordem de prioridade das medidas de controle. Conteúdo normativo, apenas informativo."
+        columns={1}
+      >
+        <ControlHierarchy />
+      </FormSection>
 
-      <div className="flex flex-col gap-2">
-        <FormError message={error} />
-        {saved ? (
-          <p
-            role="status"
-            className="rounded-card border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-700"
-          >
-            Metodologia salva.
-          </p>
-        ) : null}
-        <div>
-          <SubmitButton pending={pending} label="Salvar metodologia" />
+      <div className="glass-card animate-fade-slide-up flex flex-col gap-3 rounded-[20px] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="min-w-0 flex-1">
+          {error ? (
+            <FormError message={error} />
+          ) : saved ? (
+            <p
+              role="status"
+              className="rounded-field border-accent-green/35 bg-accent-green/10 text-accent-green border px-3.5 py-2.5 text-[13px] font-semibold"
+            >
+              Metodologia salva.
+            </p>
+          ) : (
+            <p className="text-text-muted text-[13px]">
+              As alterações só valem para novas avaliações depois de salvas.
+            </p>
+          )}
         </div>
+        <SubmitButton pending={pending} label="Salvar metodologia" />
       </div>
     </form>
   );
 }
 
+/**
+ * Aviso de "ainda sem metodologia". Usa o mesmo vocabulário do aviso inline do
+ * sistema (`ges-form`): amber-300 / amber-50 / amber-800 — a combinação com
+ * contraste suficiente para texto de 13px.
+ */
+function NotConfiguredNotice({ baseLabel }: { baseLabel: string }) {
+  return (
+    <p className="animate-fade-slide-up rounded-[20px] border border-amber-300 bg-amber-50/80 px-5 py-3.5 text-[13px] leading-relaxed text-amber-800">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        aria-hidden
+        className="-mt-0.5 mr-2 inline-block align-middle"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 8v5M12 16.5v.01" />
+      </svg>
+      Sua organização ainda não configurou uma metodologia — exibindo os valores padrão (
+      {baseLabel}). Ajuste e salve para adotá-la.
+    </p>
+  );
+}
+
 function GradeSection({
   title,
+  description,
+  axisName,
   grades,
   onChange,
 }: {
   title: string;
-  grades: { level: number; label: string; description?: string }[];
+  description: string;
+  /** Entra nos rótulos de acessibilidade: "Rótulo do nível 3 de severidade". */
+  axisName: string;
+  grades: MethodologyGrade[];
   onChange: (index: number, field: "label" | "description", value: string) => void;
 }) {
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-text text-lg font-semibold">{title}</h2>
-      <div className="flex flex-col gap-2">
-        {grades.map((grade, index) => (
-          <div
-            key={grade.level}
-            className="grid grid-cols-[2rem_1fr_2fr] items-center gap-3"
+    <FormSection title={title} description={description} columns={1}>
+      {/* Cabeçalho da grade: só onde as colunas existem. No mobile cada campo
+          carrega o próprio rótulo (abaixo). */}
+      <div
+        aria-hidden
+        className="hidden grid-cols-[2.75rem_minmax(0,1.05fr)_minmax(0,1.95fr)] gap-3.5 px-1 sm:grid"
+      >
+        <span className={columnHeadClass}>Nível</span>
+        <span className={columnHeadClass}>Rótulo</span>
+        <span className={columnHeadClass}>Descrição</span>
+      </div>
+
+      {grades.map((grade, index) => (
+        <div
+          key={grade.level}
+          className="grid grid-cols-1 items-center gap-2.5 sm:grid-cols-[2.75rem_minmax(0,1.05fr)_minmax(0,1.95fr)] sm:gap-3.5"
+        >
+          <span
+            aria-hidden
+            className="bg-primary-ring text-primary flex h-9 w-9 items-center justify-center rounded-[11px] text-[13px] font-extrabold"
           >
-            <span className="text-text-muted text-sm font-semibold">{grade.level}</span>
+            {grade.level}
+          </span>
+          <label className="block">
+            <span className="text-text-muted mb-1 block text-[11px] font-semibold sm:hidden">
+              Rótulo
+            </span>
             <input
-              aria-label={`Rótulo do nível ${grade.level}`}
+              aria-label={`Rótulo do nível ${grade.level} de ${axisName}`}
               value={grade.label}
               onChange={(e) => onChange(index, "label", e.target.value)}
-              className={inputClass}
+              className={fieldClass}
               placeholder="Rótulo"
             />
+          </label>
+          <label className="block">
+            <span className="text-text-muted mb-1 block text-[11px] font-semibold sm:hidden">
+              Descrição
+            </span>
             <input
-              aria-label={`Descrição do nível ${grade.level}`}
+              aria-label={`Descrição do nível ${grade.level} de ${axisName}`}
               value={grade.description ?? ""}
               onChange={(e) => onChange(index, "description", e.target.value)}
-              className={inputClass}
+              className={fieldClass}
               placeholder="Descrição"
             />
-          </div>
-        ))}
+          </label>
+        </div>
+      ))}
+    </FormSection>
+  );
+}
+
+function MatrixTable({
+  probabilityGrades,
+  severityGrades,
+  matrix,
+}: {
+  probabilityGrades: MethodologyGrade[];
+  severityGrades: MethodologyGrade[];
+  matrix: ReturnType<typeof buildMatrix>;
+}) {
+  return (
+    /* `min-w-0` nos dois níveis: item de grid/flex tem `min-width: auto` e, sem
+       isto, a largura mínima da tabela empurra o cartão — e a página inteira —
+       para fora da viewport em vez de rolar aqui dentro. */
+    <div className="flex min-w-0 flex-col gap-2.5">
+      {/* A rolagem fica DENTRO do cartão — a página nunca ganha barra horizontal. */}
+      <div className="-mx-1 min-w-0 overflow-x-auto px-1 pb-1">
+        <table className="w-full min-w-[680px] table-fixed border-separate border-spacing-1.5 text-center">
+          <caption className="sr-only">
+            Matriz de risco 5×5: as linhas são os níveis de probabilidade e as colunas os
+            de severidade; cada célula traz o nível de risco e a classe correspondente.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" className="w-[140px] p-1 text-left sm:w-[164px]">
+                <span className={`${columnHeadClass} block`}>Prob. ↓</span>
+                <span className={`${columnHeadClass} block`}>Sev. →</span>
+              </th>
+              {severityGrades.map((g) => (
+                <th
+                  key={g.level}
+                  scope="col"
+                  className="text-text-muted p-1 align-bottom text-[11px] leading-tight font-semibold"
+                >
+                  <span className="font-mono">{g.level}.</span> {g.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {probabilityGrades.map((pg) => (
+              <tr key={pg.level}>
+                <th
+                  scope="row"
+                  className="text-text-muted p-1 text-left text-[11px] leading-tight font-semibold"
+                >
+                  <span className="font-mono">{pg.level}.</span> {pg.label}
+                </th>
+                {severityGrades.map((sg) => {
+                  const cell = matrix.find(
+                    (c) => c.probability === pg.level && c.severity === sg.level,
+                  )!;
+                  return (
+                    <td
+                      key={sg.level}
+                      className={`h-[62px] rounded-[12px] px-2 py-2 ring-1 ring-black/5 ring-inset ${CLASSIFICATION_STYLE[cell.classification]}`}
+                    >
+                      <div className="text-[17px] leading-none font-extrabold">
+                        {cell.level}
+                      </div>
+                      <div className="mt-1 text-[11px] leading-tight font-semibold">
+                        {riskClassificationLabel(cell.classification)}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </section>
+      <p className="text-text-muted text-[11px] lg:hidden">
+        Role a matriz para o lado para ver todas as colunas.
+      </p>
+    </div>
+  );
+}
+
+function BandCards({
+  bands,
+  onChange,
+}: {
+  bands: ClassificationBand[];
+  onChange: (index: number, maxLevel: number) => void;
+}) {
+  const idPrefix = useId();
+  return (
+    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+      {bands.map((band, index) => {
+        const from = index === 0 ? 1 : bands[index - 1].maxLevel + 1;
+        const isLast = index === RISK_CLASSIFICATION_ORDER.length - 1;
+        // Espelha a regra do servidor (limites estritamente crescentes) para o
+        // erro aparecer junto do campo; o servidor continua sendo a autoridade.
+        const isOutOfOrder = index > 0 && band.maxLevel <= bands[index - 1].maxLevel;
+        const inputId = `${idPrefix}-${band.classification}`;
+        return (
+          <div
+            key={band.classification}
+            className="glass-input rounded-[14px] p-3.5 sm:p-4"
+          >
+            <div className="flex items-center gap-2">
+              <span
+                aria-hidden
+                className={`h-2.5 w-2.5 shrink-0 rounded-full ${CLASSIFICATION_DOT[band.classification]}`}
+              />
+              <span className="text-text truncate text-[13px] font-bold">
+                {riskClassificationLabel(band.classification)}
+              </span>
+            </div>
+            <p className="text-text-muted mt-1 font-mono text-[11px]">
+              nível {from}–{band.maxLevel}
+            </p>
+            <label
+              htmlFor={inputId}
+              className="text-text-muted mt-3 mb-1 block text-[11px] font-semibold"
+            >
+              Limite superior
+            </label>
+            <input
+              id={inputId}
+              type="number"
+              min={1}
+              max={25}
+              value={band.maxLevel}
+              disabled={isLast}
+              aria-invalid={isOutOfOrder || undefined}
+              aria-describedby={isLast ? `${inputId}-hint` : undefined}
+              onChange={(e) => onChange(index, Number(e.target.value))}
+              className={`${fieldClass} font-mono disabled:opacity-60`}
+            />
+            {isLast ? (
+              <p id={`${inputId}-hint`} className="text-text-muted mt-1 text-[11px]">
+                Fixo em 25.
+              </p>
+            ) : null}
+            <FieldError
+              message={
+                isOutOfOrder
+                  ? `Deve ser maior que ${bands[index - 1].maxLevel}.`
+                  : undefined
+              }
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Separa o algarismo romano do nome na etiqueta canônica ("I — Eliminação"),
+ * só para a apresentação: o rótulo do domínio é compartilhado com as telas de
+ * medidas de controle e não muda. Sem o separador, devolve a etiqueta inteira.
+ */
+export function splitControlLabel(label: string): { index: string; name: string } {
+  const match = /^([IVX]+)\s+—\s+(.*)$/.exec(label);
+  return match ? { index: match[1], name: match[2] } : { index: "", name: label };
+}
+
+function ControlHierarchy(): ReactNode {
+  return (
+    <ol className="grid gap-2.5">
+      {NR01_CONTROL_HIERARCHY.map((item) => {
+        const { index, name } = splitControlLabel(item.label);
+        return (
+          <li
+            key={item.level}
+            className="glass-input flex items-start gap-3.5 rounded-[14px] p-3.5"
+          >
+            {index ? (
+              <span
+                aria-hidden
+                className="bg-primary-ring text-primary mt-0.5 flex h-8 w-9 shrink-0 items-center justify-center rounded-[10px] font-mono text-[12px] font-bold"
+              >
+                {index}
+              </span>
+            ) : null}
+            <div className="min-w-0">
+              <span className="text-text block text-[13px] font-bold">{name}</span>
+              <span className="text-text-muted block text-[12px] leading-relaxed">
+                {item.description}
+              </span>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

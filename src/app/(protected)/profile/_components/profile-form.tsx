@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 
 import { updateProfile } from "@/shared/server/actions/platform/profile";
+import { maskCpfInput } from "@/shared/domains/pgr/employees";
 
 import { FormActions, FormError, SubmitButton, TextField } from "../../_ui/form";
 
@@ -14,6 +15,7 @@ export function ProfileForm({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [cpf, setCpf] = useState(initial.cpf ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -23,7 +25,7 @@ export function ProfileForm({
     const fd = new FormData(event.currentTarget);
     const input = {
       phone: (fd.get("phone") as string) ?? "",
-      cpf: (fd.get("cpf") as string) ?? "",
+      cpf,
       jobTitle: (fd.get("jobTitle") as string) ?? "",
     };
     startTransition(async () => {
@@ -55,7 +57,13 @@ export function ProfileForm({
         defaultValue={initial.phone}
         error={errors.phone}
       />
-      <TextField label="CPF" name="cpf" defaultValue={initial.cpf} error={errors.cpf} />
+      <TextField
+        label="CPF"
+        name="cpf"
+        value={cpf}
+        onChange={(value) => setCpf(maskCpfInput(value))}
+        error={errors.cpf}
+      />
       <TextField
         label="Cargo"
         name="jobTitle"

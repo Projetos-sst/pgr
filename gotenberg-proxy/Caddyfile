@@ -1,0 +1,16 @@
+# Reverse proxy p/ o Gotenberg em homolog — cenário B do docker-compose.homolog.yml
+# (app fora do VPS, precisa alcançar o Gotenberg pela internet).
+# {$GOTENBERG_TOKEN} é substituído pelo valor da env var no container `proxy`.
+:8080 {
+	@authorized {
+		header Authorization "Bearer {$GOTENBERG_TOKEN}"
+	}
+
+	handle @authorized {
+		reverse_proxy gotenberg:43217
+	}
+
+	handle {
+		respond "unauthorized" 401
+	}
+}

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { useCepLookup } from "@/shared/integrations/client/use-cep-lookup";
 
-import { TextField } from "./form";
+import { FormSection, TextField } from "./form";
 
 export type AddressValue = {
   zipCode: string;
@@ -54,11 +54,13 @@ export function AddressFields({
   onChange,
   errors = {},
   headerSlot,
+  hidden,
 }: {
   value: AddressValue;
   onChange: (next: AddressValue) => void;
   errors?: Record<string, string>;
   headerSlot?: ReactNode;
+  hidden?: boolean;
 }) {
   const cep = useCepLookup((found) => onChange(mergeCepResult(value, found)));
 
@@ -67,59 +69,56 @@ export function AddressFields({
   }
 
   return (
-    <fieldset className="glass-panel rounded-card grid gap-4 p-4">
-      <legend className="text-text-muted px-1 text-sm font-semibold">Endereço</legend>
-      {headerSlot}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="flex flex-col gap-1">
-          <TextField
-            label="CEP"
-            name="zipCode"
-            value={value.zipCode}
-            onChange={setField("zipCode")}
-            onBlur={() => cep.lookup(value.zipCode)}
-            error={errors.zipCode}
-          />
-          <CepStatus status={cep.status} />
-        </div>
+    <FormSection title="Endereço" columns={3} hidden={hidden}>
+      {headerSlot ? <div className="sm:col-span-full">{headerSlot}</div> : null}
+      <div>
         <TextField
-          label="Logradouro"
-          name="street"
-          value={value.street}
-          onChange={setField("street")}
-          error={errors.street}
+          label="CEP"
+          name="zipCode"
+          value={value.zipCode}
+          onChange={setField("zipCode")}
+          onBlur={() => cep.lookup(value.zipCode)}
+          placeholder="00000-000"
+          isMono
+          error={errors.zipCode}
         />
-        <TextField
-          label="Número"
-          name="number"
-          value={value.number}
-          onChange={setField("number")}
-          error={errors.number}
-        />
+        <CepStatus status={cep.status} />
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <TextField
-          label="Complemento"
-          name="complement"
-          value={value.complement}
-          onChange={setField("complement")}
-          error={errors.complement}
-        />
-        <TextField
-          label="Bairro"
-          name="district"
-          value={value.district}
-          onChange={setField("district")}
-          error={errors.district}
-        />
-        <TextField
-          label="Cidade"
-          name="city"
-          value={value.city}
-          onChange={setField("city")}
-          error={errors.city}
-        />
-      </div>
+      <TextField
+        label="Logradouro"
+        name="street"
+        value={value.street}
+        onChange={setField("street")}
+        error={errors.street}
+      />
+      <TextField
+        label="Número"
+        name="number"
+        value={value.number}
+        onChange={setField("number")}
+        error={errors.number}
+      />
+      <TextField
+        label="Complemento"
+        name="complement"
+        value={value.complement}
+        onChange={setField("complement")}
+        error={errors.complement}
+      />
+      <TextField
+        label="Bairro"
+        name="district"
+        value={value.district}
+        onChange={setField("district")}
+        error={errors.district}
+      />
+      <TextField
+        label="Cidade"
+        name="city"
+        value={value.city}
+        onChange={setField("city")}
+        error={errors.city}
+      />
       <TextField
         label="UF"
         name="state"
@@ -127,7 +126,7 @@ export function AddressFields({
         onChange={setField("state")}
         error={errors.state}
       />
-    </fieldset>
+    </FormSection>
   );
 }
 

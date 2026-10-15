@@ -41,9 +41,9 @@ const INSP_B = "bbbbbbbb-0000-0000-0000-0000000000b3";
     await admin.unsafe(`
       insert into public.vehicles (id, org_id, plate) values
         ('${VEH_A}','org_a','ABC1D23'), ('${VEH_B}','org_b','XYZ9K88');
-      insert into public.inspection_plans (id, org_id, type, title) values
-        ('${PLAN_A}','org_a','vehicular','Plano A'),
-        ('${PLAN_B}','org_b','equipment','Plano B');
+      insert into public.inspection_plans (id, org_id, number, type, title) values
+        ('${PLAN_A}','org_a',1,'vehicular','Plano A'),
+        ('${PLAN_B}','org_b',1,'equipment','Plano B');
       insert into public.inspections (id, org_id, type, inspected_at, vehicle_id, plan_id) values
         ('${INSP_A}','org_a','vehicular','2026-07-01','${VEH_A}','${PLAN_A}'),
         ('${INSP_B}','org_b','equipment','2026-07-01',null,'${PLAN_B}');

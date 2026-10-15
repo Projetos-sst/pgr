@@ -9,12 +9,15 @@ import * as repo from "@/shared/db/repositories/epi-catalog";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function filtersFrom(req: NextRequest): Pick<ListEpiCatalogParams, "search" | "type"> {
+function filtersFrom(
+  req: NextRequest,
+): Pick<ListEpiCatalogParams, "search" | "type" | "categoryId"> {
   const sp = req.nextUrl.searchParams;
   const type = categoryTypeSchema.safeParse(sp.get("type"));
   return {
     search: sp.get("search") ?? undefined,
     type: type.success ? type.data : undefined,
+    categoryId: sp.get("categoryId") ?? undefined,
   };
 }
 
@@ -27,9 +30,11 @@ export function GET(req: NextRequest) {
 export function POST(req: NextRequest) {
   return restHandler(
     req,
-    async ({ tenantId }) => {
+    async ({ tenantId, userId }) => {
       const input = epiCatalogInputSchema.parse(await req.json());
-      return repo.createEpiCatalog(tenantId, input);
+      // `createdBy` (issue #27) vem sempre do contexto autenticado, nunca do
+      // corpo da requisição — mesma regra da Server Action.
+      return repo.createEpiCatalog(tenantId, input, { createdBy: userId });
     },
     { status: 201 },
   );

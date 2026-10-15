@@ -8,6 +8,7 @@ import {
   listPgrRevisions,
   createPgrRevision,
 } from "@/shared/db/repositories/pgr-revisions";
+import { assertPgrEditable } from "@/shared/server/pgr/pgr-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export function POST(req: NextRequest, { params }: Ctx) {
     req,
     async ({ tenantId }) => {
       const { id: pgrId } = await params;
-      if (!(await getPgrById(tenantId, pgrId))) throw new NotFoundError();
+      await assertPgrEditable(tenantId, pgrId); // vale como guard de existência/tenant
       const values = pgrRevisionInputSchema.parse(await req.json());
       return createPgrRevision(tenantId, pgrId, values);
     },

@@ -1,26 +1,52 @@
 import Link from "next/link";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
-import {
-  serviceOrderStatusSchema,
-  SERVICE_ORDER_STATUS_LABELS,
-} from "@/shared/domains/safety/service-order";
+import type { ServiceOrderSignatureState } from "@/shared/domains/safety/service-order-signature";
 import { resolvePageParams } from "@/shared/pagination";
 import { listServiceOrdersAction } from "@/shared/server/actions/safety/service-orders";
 
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  PrimaryLink,
-  SearchForm,
-  Table,
-} from "../_ui/list";
+  AvatarBadge,
+  Cell,
+  DataGrid,
+  EditIconLink,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  RowActions,
+  StatusBadge,
+  ToolbarButton,
+  ToolbarSearch,
+  type StatusTone,
+} from "../_ui/data-list";
+import { EmptyState, PageHeader } from "../_ui/list";
 import { DeleteServiceOrder } from "./_components/delete-service-order";
+import { ServiceOrderIcon } from "./_components/service-order-icon";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ page?: string; search?: string; status?: string }>;
+const TEMPLATE = "1.6fr 1.4fr 1.2fr 1fr 0.9fr 1.4fr 84px";
+
+// "Dias aberta" como pílula colorida (espelha o mockup): quanto mais tempo em
+// aberto, mais urgente — verde recente, âmbar intermediário, vermelho longo.
+function daysOpenTone(days: number): StatusTone {
+  if (days <= 10) return "green";
+  if (days <= 20) return "amber";
+  return "red";
+}
+
+// Status de assinatura → tom (mockup: Pendente âmbar, Enviada azul, Assinada verde).
+const SIGNATURE_TONE: Record<ServiceOrderSignatureState, StatusTone> = {
+  none: "amber",
+  pending: "indigo",
+  signed: "green",
+  expired: "amber",
+  cancelled: "amber",
+};
+
+type SearchParams = Promise<{ page?: string; search?: string; tab?: string }>;
 
 export default async function ServiceOrdersPage({
   searchParams,
@@ -32,113 +58,113 @@ export default async function ServiceOrdersPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const parsedStatus = serviceOrderStatusSchema.safeParse(sp.status);
-  const status = parsedStatus.success ? parsedStatus.data : undefined;
+  // Abas do mockup: "OS Abertas" (não assinadas, padrão) e "OS Assinadas".
+  const signed = sp.tab === "assinadas";
 
-  const result = await listServiceOrdersAction({ page, q: sp.search, status });
+  const result = await listServiceOrdersAction({ page, q: sp.search, signed });
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
-  const params = { search: sp.search, status: sp.status };
+  const params = { search: sp.search, tab: sp.tab };
+
+  const TABS = [
+    { key: undefined, label: "OS Abertas", active: !signed },
+    { key: "assinadas", label: "OS Assinadas", active: signed },
+  ] as const;
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-[22px] px-[30px] pt-8 pb-10">
       <PageHeader
-        title="Ordens de Serviço"
-        description="Documente a entrega de EPIs e instruções ao trabalhador com checklist e número por escritório."
-        action={<PrimaryLink href="/service-orders/new">Nova OS</PrimaryLink>}
+        icon={<ServiceOrderIcon />}
+        title="Gestão de OS"
+        description="Acompanhe o progresso e gerencie as Ordens de Serviço registradas."
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <SearchForm
-          basePath="/service-orders"
-          placeholder="Buscar por título ou número"
-          defaultValue={sp.search}
-          hidden={{ status: sp.status }}
-        />
-        <nav className="flex flex-wrap gap-2 text-sm">
-          <Link
-            href="/service-orders"
-            className={`glass-panel rounded-card px-3 py-1 font-semibold transition-colors ${
-              !sp.status ? "text-primary-strong" : "text-text-muted hover:text-text"
-            }`}
-          >
-            Todas
-          </Link>
-          {Object.entries(SERVICE_ORDER_STATUS_LABELS).map(([value, label]) => (
-            <Link
-              key={value}
-              href={`/service-orders?status=${value}`}
-              className={`glass-panel rounded-card px-3 py-1 font-semibold transition-colors ${
-                sp.status === value
-                  ? "text-primary-strong"
-                  : "text-text-muted hover:text-text"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-      </div>
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSearch
+            basePath="/service-orders"
+            placeholder="Buscar por nome, empresa ou tipo de OS…"
+            defaultValue={sp.search}
+            hidden={{ tab: sp.tab }}
+          />
+          <div className="flex flex-wrap items-center gap-1.5">
+            {TABS.map((tab) => (
+              <Link
+                key={tab.label}
+                href={tab.key ? `/service-orders?tab=${tab.key}` : "/service-orders"}
+                className={`rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                  tab.active
+                    ? "btn-primary"
+                    : "text-text-muted hover:text-text border border-white/70 bg-white/50"
+                }`}
+              >
+                {tab.label}
+              </Link>
+            ))}
+          </div>
+          <ToolbarButton href="/service-orders/new">Nova OS</ToolbarButton>
+        </ListToolbar>
 
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhuma Ordem de Serviço encontrada." />
-      ) : (
-        <Table
-          headers={[
-            "Nº",
-            "Título",
-            "Funcionário",
-            "Aberta em",
-            "Dias",
-            "Itens",
-            "Status",
-            "",
-          ]}
-        >
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2 tabular-nums">#{row.number}</td>
-              <td className="px-4 py-2">
-                <Link
-                  href={`/service-orders/${row.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {row.title}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.employeeName ?? "—"}</td>
-              <td className="px-4 py-2 tabular-nums">{row.openedAt}</td>
-              <td className="px-4 py-2 tabular-nums">{row.daysOpen}</td>
-              <td className="px-4 py-2 tabular-nums">{row.itemCount}</td>
-              <td className="px-4 py-2">{row.statusLabel}</td>
-              <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/service-orders/${row.id}`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Abrir
-                  </Link>
-                  <Link
-                    href={`/service-orders/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
-                  <DeleteServiceOrder id={row.id} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
-
-      <Pagination
-        basePath="/service-orders"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={params}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState message="Nenhuma Ordem de Serviço encontrada." />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={1000}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Funcionário" },
+                  { header: "Empresa" },
+                  { header: "Tipo OS" },
+                  { header: "Data Emissão" },
+                  { header: "Dias Aberta" },
+                  { header: "Status Assinatura" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <Cell>
+                    <span className="flex items-center gap-3">
+                      <AvatarBadge name={row.employeeName ?? "?"} />
+                      <span className="text-text font-semibold">
+                        {row.employeeName ?? "—"}
+                      </span>
+                    </span>
+                  </Cell>
+                  <Cell>{row.companyName ?? "—"}</Cell>
+                  <Cell>{row.osTypeLabel ?? "—"}</Cell>
+                  <Cell className="text-text-muted font-mono">{row.openedAt}</Cell>
+                  <Cell>
+                    <StatusBadge tone={daysOpenTone(row.daysOpen)}>
+                      {row.daysOpen} {row.daysOpen === 1 ? "dia" : "dias"}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell>
+                    <StatusBadge tone={SIGNATURE_TONE[row.signatureState] ?? "neutral"}>
+                      {row.signatureLabel}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell align="right">
+                    <RowActions>
+                      <EditIconLink href={`/service-orders/${row.id}`} />
+                      <DeleteServiceOrder id={row.id} />
+                    </RowActions>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/service-orders"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={params}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }

@@ -3,10 +3,31 @@ import { z } from "zod";
 import type { Company } from "@/shared/db/schema";
 
 import { cnpjSchema, riskGradeSchema } from "./validation";
-import { optionalString, requiredString } from "./form-fields";
+import { optionalString, optionalUrl, requiredString } from "./form-fields";
 
 export type { Company } from "@/shared/db/schema";
 export type { CompanyOption } from "@/shared/db/repositories/companies";
+
+export const COMPANY_STATUSES = ["active", "pending", "inactive"] as const;
+export type CompanyStatus = (typeof COMPANY_STATUSES)[number];
+
+export const companyStatusSchema = z.enum(COMPANY_STATUSES, {
+  error: "Situação inválida",
+});
+
+/** Rótulos pt-BR da situação cadastral (enum em inglês no banco → UI pt-BR). */
+export const COMPANY_STATUS_LABELS: Record<CompanyStatus, string> = {
+  active: "Ativa",
+  pending: "Pendente",
+  inactive: "Inativa",
+};
+
+/** Tom do badge por situação (verde/âmbar/cinza), fiel ao mockup #188. */
+export const COMPANY_STATUS_TONE: Record<CompanyStatus, "green" | "amber" | "neutral"> = {
+  active: "green",
+  pending: "amber",
+  inactive: "neutral",
+};
 
 const cnpjOptional = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
@@ -27,6 +48,9 @@ export const companyInputSchema = z.object({
   mainActivity: optionalString,
   riskGrade: riskGradeInput,
   logoPath: optionalString,
+  website: optionalUrl,
+  status: companyStatusSchema.default("active"),
+  taxClassification: optionalString,
   zipCode: optionalString,
   street: optionalString,
   number: optionalString,
@@ -45,14 +69,39 @@ export type CompanyListItem = {
   cnpj: string | null;
   city: string | null;
   state: string | null;
+  status: CompanyStatus;
+  /** Contagens derivadas na leitura (sem coluna) — colunas Funcion./GES do #188. */
+  employeeCount: number;
+  gesCount: number;
 };
 
-export function toCompanyListItem(row: Company): CompanyListItem {
-  return {
-    id: row.id,
-    razaoSocial: row.razaoSocial,
-    cnpj: row.cnpj,
-    city: row.city,
-    state: row.state,
-  };
+/** Formata CNPJ (14 dígitos) para exibição: 00.000.000/0000-00. */
+export function formatCnpj(cnpj: string | null): string {
+  if (!cnpj) return "—";
+  const d = cnpj.replace(/\D/g, "");
+  if (d.length !== 14) return cnpj;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+/**
+ * Aplica máscara de digitação progressiva ao CNPJ.
+ * Remove tudo que não for dígito, trunca para 14 dígitos máximo,
+ * e aplica a máscara 00.000.000/0000-00 conforme a quantidade de dígitos.
+ * Funciona com qualquer quantidade de dígitos de 0 a 14 (idempotente).
+ */
+export function maskCnpjInput(value: string): string {
+  // Remove tudo que não for dígito
+  const digits = value.replace(/\D/g, "");
+
+  // Trunca para máximo 14 dígitos
+  if (digits.length === 0) return "";
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 8)
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  if (digits.length <= 12) {
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  }
+  // 13 ou 14 dígitos
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`;
 }

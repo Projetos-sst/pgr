@@ -31,6 +31,8 @@ const base = (frmCode: string) => ({
   revision: "00",
   issueDate: "2026-01-15",
   position: "top" as const,
+  type: "documento" as const,
+  status: "published" as const,
 });
 
 (shouldRun ? describe : describe.skip)("controle de formulário (ISO) — CRUD", () => {
@@ -111,5 +113,31 @@ const base = (frmCode: string) => ({
 
     const listedFromB = await listFormControls("org_b", {});
     expect(listedFromB.rows.some((r) => r.id === id)).toBe(false);
+  });
+
+  it("tipo/situação persistem e o filtro de status funciona", async () => {
+    const { id: pubId } = await createFormControl("org_a", {
+      ...base("FRM-PUB"),
+      type: "checklist",
+      status: "published",
+    });
+    await createFormControl("org_a", {
+      ...base("FRM-DRAFT"),
+      type: "ficha",
+      status: "draft",
+    });
+
+    const detail = await getFormControlById("org_a", pubId);
+    expect(detail!.control.type).toBe("checklist");
+    expect(detail!.control.status).toBe("published");
+
+    const drafts = await listFormControls("org_a", { status: "draft" });
+    expect(drafts.rows.length).toBe(1);
+    expect(drafts.rows[0].frmCode).toBe("FRM-DRAFT");
+    expect(drafts.rows[0].statusLabel).toBe("Rascunho");
+    expect(drafts.rows[0].typeLabel).toBe("Ficha");
+
+    const published = await listFormControls("org_a", { status: "published" });
+    expect(published.rows.every((r) => r.status === "published")).toBe(true);
   });
 });

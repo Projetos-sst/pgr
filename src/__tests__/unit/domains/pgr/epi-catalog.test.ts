@@ -1,4 +1,9 @@
-import { epiCatalogInputSchema } from "@/shared/domains/pgr/epi-catalog";
+import {
+  epiCatalogInputSchema,
+  summarizeEpiCatalogChanges,
+  EPI_CATALOG_CREATED_SUMMARY,
+  type EpiCatalogAuditSnapshot,
+} from "@/shared/domains/pgr/epi-catalog";
 
 const CATEGORY_ID = "11111111-1111-1111-1111-1111111111a5";
 
@@ -14,6 +19,24 @@ describe("epiCatalogInputSchema (US1)", () => {
     expect(parsed.caValidUntil).toBeUndefined();
     expect(parsed.norm).toBeUndefined();
     expect(parsed.photoPath).toBeUndefined();
+  });
+
+  it("companyId opcional + usefulLifeMonths coage e exige > 0", () => {
+    const COMPANY = "22222222-2222-2222-2222-2222222222aa";
+    const parsed = epiCatalogInputSchema.parse({
+      ...base,
+      companyId: COMPANY,
+      usefulLifeMonths: "12",
+    });
+    expect(parsed.companyId).toBe(COMPANY);
+    expect(parsed.usefulLifeMonths).toBe(12);
+    expect(epiCatalogInputSchema.parse(base).companyId).toBeUndefined();
+    expect(
+      epiCatalogInputSchema.parse({ ...base, usefulLifeMonths: "" }).usefulLifeMonths,
+    ).toBeUndefined();
+    expect(() =>
+      epiCatalogInputSchema.parse({ ...base, usefulLifeMonths: "0" }),
+    ).toThrow();
   });
 
   it("aceita todos os opcionais preenchidos, incluindo caValidUntil ISO", () => {
@@ -71,5 +94,78 @@ describe("epiCatalogInputSchema (US1)", () => {
     expect(parsed.caValidUntil).toBeUndefined();
     expect(parsed.norm).toBeUndefined();
     expect(parsed.size).toBeUndefined();
+  });
+
+  it("aceita replacementDate ISO opcional (issue #24) — mesmo padrão de caValidUntil", () => {
+    const withDate = epiCatalogInputSchema.parse({
+      ...base,
+      replacementDate: "2027-06-30",
+    });
+    expect(withDate.replacementDate).toBe("2027-06-30");
+
+    const withoutDate = epiCatalogInputSchema.parse(base);
+    expect(withoutDate.replacementDate).toBeUndefined();
+
+    expect(() =>
+      epiCatalogInputSchema.parse({ ...base, replacementDate: "31/12/2027" }),
+    ).toThrow();
+  });
+});
+
+describe("summarizeEpiCatalogChanges (US1/issue #25)", () => {
+  const snapshot = (
+    patch: Partial<EpiCatalogAuditSnapshot> = {},
+  ): EpiCatalogAuditSnapshot => ({
+    type: "epi",
+    categoryId: "11111111-1111-1111-1111-1111111111a5",
+    name: "Capacete",
+    ca: "12345",
+    caValidUntil: "2026-12-31",
+    manufacturer: "ACME",
+    norm: "NR-6",
+    material: null,
+    size: "G",
+    unitOfMeasure: "unidade",
+    description: null,
+    photoPath: null,
+    replacementDate: null,
+    ...patch,
+  });
+
+  it("descreve cada campo alterado com valor antigo e novo", () => {
+    const before = snapshot();
+    const after = snapshot({ name: "Capacete G", size: "GG" });
+    const summary = summarizeEpiCatalogChanges(before, after);
+    expect(summary).toContain('nome de "Capacete" para "Capacete G"');
+    expect(summary).toContain('tamanho de "G" para "GG"');
+    expect(summary.startsWith("Alterou ")).toBe(true);
+  });
+
+  it("resolve categoryId para o nome legível quando informado", () => {
+    const before = snapshot({ categoryId: "cat-old" });
+    const after = snapshot({ categoryId: "cat-new" });
+    const summary = summarizeEpiCatalogChanges(before, after, {
+      old: "Capacetes",
+      new: "Luvas",
+    });
+    expect(summary).toContain('categoria de "Capacetes" para "Luvas"');
+  });
+
+  it("usa o rótulo pt-BR do tipo (EPI / Máquinas e Equipamentos)", () => {
+    const before = snapshot({ type: "epi" });
+    const after = snapshot({ type: "machine" });
+    const summary = summarizeEpiCatalogChanges(before, after);
+    expect(summary).toContain('tipo de "EPI" para "Máquinas e Equipamentos"');
+  });
+
+  it("sem diferenças → mensagem neutra, sem 'Alterou'", () => {
+    const same = snapshot();
+    expect(summarizeEpiCatalogChanges(same, snapshot())).toBe(
+      "Item salvo sem alterações de dados.",
+    );
+  });
+
+  it("EPI_CATALOG_CREATED_SUMMARY é o resumo fixo do create", () => {
+    expect(EPI_CATALOG_CREATED_SUMMARY).toBe("Item cadastrado.");
   });
 });

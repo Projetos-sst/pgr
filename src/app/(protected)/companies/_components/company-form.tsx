@@ -1,19 +1,27 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition, type FormEvent } from "react";
+import { useState, useTransition, type ChangeEvent, type FormEvent } from "react";
 
 import {
   createCompanyAction,
   updateCompanyAction,
+  uploadCompanyLogoAction,
 } from "@/shared/server/actions/pgr/companies";
 import type { CompanyInput, Company } from "@/shared/domains/pgr/companies";
+import {
+  maskCnpjInput,
+  COMPANY_STATUSES,
+  COMPANY_STATUS_LABELS,
+} from "@/shared/domains/pgr/companies";
 import { useCnpjLookup } from "@/shared/integrations/client/use-cnpj-lookup";
 
 import {
+  CancelLink,
   FieldError,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
@@ -24,6 +32,31 @@ const RISK_GRADE_OPTIONS = [1, 2, 3, 4].map((n) => ({
   value: String(n),
   label: `Grau ${n}`,
 }));
+
+const STATUS_OPTIONS = COMPANY_STATUSES.map((s) => ({
+  value: s,
+  label: COMPANY_STATUS_LABELS[s],
+}));
+
+// Códigos mais comuns de classificação tributária do eSocial (S-1000 `classTrib`).
+// Texto livre com sugestões — não bloqueia outros códigos.
+const TAX_CLASSIFICATION_SUGGESTIONS = [
+  "00",
+  "01",
+  "02",
+  "03",
+  "04",
+  "06",
+  "07",
+  "08",
+  "09",
+  "10",
+  "11",
+  "60",
+  "70",
+  "80",
+  "99",
+] as const;
 
 // Campos preenchidos pela consulta de CNPJ — controlados para permitir o autofill.
 type CnpjFields = {
@@ -56,13 +89,49 @@ function addressFrom(company?: Company): AddressValue {
   };
 }
 
-export function CompanyForm({ company }: { company?: Company }) {
+export function CompanyForm({
+  company,
+  logoUrl = null,
+}: {
+  company?: Company;
+  /** URL assinada do logo já persistido (calculada no server, ver edit/page.tsx). */
+  logoUrl?: string | null;
+}) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [fields, setFields] = useState<CnpjFields>(cnpjFieldsFrom(company));
   const [address, setAddress] = useState<AddressValue>(addressFrom(company));
+  const [logoPath, setLogoPath] = useState(company?.logoPath ?? "");
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(logoUrl);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+
+  async function handleLogoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    // Permite reenviar o mesmo arquivo depois de um erro.
+    event.target.value = "";
+    if (!file) return;
+
+    setLogoError(null);
+    setLogoUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const result = await uploadCompanyLogoAction(formData);
+      if (result.ok) {
+        setLogoPath(result.data.storagePath);
+        setLogoPreviewUrl(result.data.url);
+      } else {
+        setLogoError(result.error.message);
+      }
+    } catch {
+      setLogoError("Falha ao enviar a imagem. Tente novamente.");
+    } finally {
+      setLogoUploading(false);
+    }
+  }
 
   const cnpjLookup = useCnpjLookup((found) => {
     setFields((prev) => ({
@@ -100,7 +169,10 @@ export function CompanyForm({ company }: { company?: Company }) {
       cnae: fields.cnae,
       mainActivity: fields.mainActivity,
       riskGrade: value("riskGrade"),
-      logoPath: value("logoPath"),
+      status: value("status") as CompanyInput["status"],
+      taxClassification: value("taxClassification"),
+      logoPath,
+      website: value("website"),
       ...address,
     };
 
@@ -119,23 +191,27 @@ export function CompanyForm({ company }: { company?: Company }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <FormError message={formError} />
-      <TextField
-        label="Razão social"
-        name="razaoSocial"
-        required
-        value={fields.razaoSocial}
-        onChange={setField("razaoSocial")}
-        error={errors.razaoSocial}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1">
+
+      <FormSection title="Identificação">
+        <TextField
+          label="Razão social"
+          name="razaoSocial"
+          required
+          isFullWidth
+          value={fields.razaoSocial}
+          onChange={setField("razaoSocial")}
+          error={errors.razaoSocial}
+        />
+        <div>
           <TextField
             label="CNPJ"
             name="cnpj"
+            isMono
+            placeholder="00.000.000/0000-00"
             value={fields.cnpj}
-            onChange={setField("cnpj")}
+            onChange={(value) => setField("cnpj")(maskCnpjInput(value))}
             onBlur={() => cnpjLookup.lookup(fields.cnpj)}
             error={errors.cnpj}
           />
@@ -148,8 +224,6 @@ export function CompanyForm({ company }: { company?: Company }) {
           onChange={setField("nomeFantasia")}
           error={errors.nomeFantasia}
         />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
           label="Grau de Risco (NR-04)"
           name="riskGrade"
@@ -158,6 +232,13 @@ export function CompanyForm({ company }: { company?: Company }) {
           options={RISK_GRADE_OPTIONS}
           error={errors.riskGrade}
         />
+        <SelectField
+          label="Situação"
+          name="status"
+          defaultValue={company?.status ?? "active"}
+          options={STATUS_OPTIONS}
+          error={errors.status}
+        />
         <TextField
           label="CNAE"
           name="cnae"
@@ -165,15 +246,17 @@ export function CompanyForm({ company }: { company?: Company }) {
           onChange={setField("cnae")}
           error={errors.cnae}
         />
-      </div>
-      <TextField
-        label="Atividade principal"
-        name="mainActivity"
-        value={fields.mainActivity}
-        onChange={setField("mainActivity")}
-        error={errors.mainActivity}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          label="Atividade principal"
+          name="mainActivity"
+          isFullWidth
+          value={fields.mainActivity}
+          onChange={setField("mainActivity")}
+          error={errors.mainActivity}
+        />
+      </FormSection>
+
+      <FormSection title="Contato & marca">
         <TextField
           label="Telefone"
           name="phone"
@@ -183,22 +266,73 @@ export function CompanyForm({ company }: { company?: Company }) {
         <TextField
           label="E-mail"
           name="email"
+          type="email"
           defaultValue={company?.email}
           error={errors.email}
         />
-      </div>
+        <TextField
+          label="Site / portal"
+          name="website"
+          type="url"
+          placeholder="https://www.empresa.com.br"
+          defaultValue={company?.website}
+          error={errors.website}
+        />
+        <div className="block sm:col-span-full">
+          <span className="text-text-muted mb-1.5 block text-xs font-semibold">
+            Logo da empresa
+          </span>
+          {logoPreviewUrl ? (
+            <img
+              src={logoPreviewUrl}
+              alt="Logo da empresa"
+              className="glass-panel rounded-card mb-2 h-24 w-24 object-contain p-2"
+            />
+          ) : null}
+          <input
+            type="file"
+            name="logoFile"
+            accept="image/png,image/jpeg"
+            onChange={handleLogoChange}
+            disabled={logoUploading}
+            className="glass-input text-text rounded-card file:rounded-card file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer px-3.5 py-2.5 text-sm outline-none file:mr-4 file:border-0 file:px-3 file:py-1 file:text-xs file:font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+          />
+          <span className="text-text-subtle mt-1 block text-xs">
+            PNG ou JPG — até 5 MB.
+          </span>
+          {logoUploading ? (
+            <span className="text-text-subtle mt-1 block text-xs">Enviando…</span>
+          ) : null}
+          <FieldError message={logoError ?? errors.logoPath} />
+        </div>
+      </FormSection>
+
+      <FormSection title="eSocial">
+        <TextField
+          label="Classificação tributária (S-1000)"
+          name="taxClassification"
+          isMono
+          placeholder="Ex.: 01"
+          suggestions={TAX_CLASSIFICATION_SUGGESTIONS}
+          defaultValue={company?.taxClassification}
+          error={errors.taxClassification}
+        />
+        <div className="block">
+          <span className="text-text-muted mb-1.5 block text-xs font-semibold">
+            Certificado digital A1 (.pfx)
+          </span>
+          <span className="glass-input rounded-field text-text-subtle flex h-[46px] items-center px-3.5 text-[13px]">
+            Em breve — envio seguro do certificado
+          </span>
+        </div>
+      </FormSection>
 
       <AddressFields value={address} onChange={setAddress} errors={errors} />
 
-      <TextField
-        label="Logo (caminho)"
-        name="logoPath"
-        defaultValue={company?.logoPath}
-        error={errors.logoPath}
-      />
       <FieldError message={errors._} />
 
       <FormActions>
+        <CancelLink href="/companies" />
         <SubmitButton
           pending={pending}
           label={company ? "Salvar alterações" : "Criar empresa"}
@@ -214,18 +348,18 @@ function CnpjStatus({
   status: "idle" | "loading" | "success" | "error" | "invalid";
 }) {
   if (status === "loading") {
-    return <span className="text-text-subtle text-xs">Buscando…</span>;
+    return <span className="text-text-subtle mt-1 block text-xs">Buscando…</span>;
   }
   if (status === "error") {
     return (
-      <span className="text-xs text-amber-600">
+      <span className="mt-1 block text-xs text-amber-600">
         CNPJ não encontrado. Preencha manualmente.
       </span>
     );
   }
   if (status === "invalid") {
     return (
-      <span className="text-xs text-amber-600 dark:text-amber-400">
+      <span className="mt-1 block text-xs text-amber-600">
         CNPJ inválido — confira os dígitos.
       </span>
     );

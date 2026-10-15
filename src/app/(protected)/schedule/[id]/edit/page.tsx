@@ -21,7 +21,7 @@ export default async function EditScheduleEventPage({
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
-      <PageHeader title="Editar evento" />
+      <PageHeader backHref="/schedule" title="Editar evento" />
       <ScheduleEventForm
         id={event.id}
         initial={{

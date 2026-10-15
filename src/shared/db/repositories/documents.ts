@@ -6,14 +6,13 @@ import {
   eq,
   gt,
   ilike,
+  inArray,
   isNull,
   lt,
   gte,
   lte,
-  notExists,
   sql,
 } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
 
 import {
   toDocumentDetail,
@@ -24,6 +23,11 @@ import {
   type DocumentValidityFilter,
   type UpdateDocumentValues,
 } from "@/shared/domains/documents/documents";
+import type { DocumentRelatedEntityType } from "@/shared/domains/documents/validity";
+import {
+  NR18_DOC_TYPE_LABELS,
+  type Nr18ChecklistDocument,
+} from "@/shared/domains/documents/nr18";
 import {
   computeDocumentKpis,
   validityDateBounds,
@@ -33,6 +37,8 @@ import {
   putDocumentObject,
   removeDocumentObject,
 } from "@/shared/integrations/storage/documents-storage";
+import { DocumentVersionReadOnlyError } from "@/shared/errors/document-version-read-only-error";
+import { DuplicateError } from "@/shared/errors/duplicate-error";
 import { todayInSaoPaulo } from "@/shared/dates";
 import { logTenantEvent } from "@/shared/tenant/audit-log";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
@@ -40,6 +46,7 @@ import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pag
 import { withOrg, type TenantTransaction } from "../with-org";
 import { documents, folders } from "../schema/documents";
 import { auditedTenantWrite } from "./audited-write";
+import { currentVersionPredicate, getCurrentVersionTx } from "./document-versions";
 import { assertFolderInTenant } from "./folders";
 
 export type ListDocumentsParams = PageParams & {
@@ -47,6 +54,8 @@ export type ListDocumentsParams = PageParams & {
   search?: string;
   docType?: string;
   validity?: DocumentValidityFilter;
+  relatedEntityType?: DocumentRelatedEntityType;
+  relatedEntityId?: string;
 };
 
 export type DocumentListResult = Paginated<DocumentListItem> & { kpis: DocumentKpis };
@@ -66,22 +75,6 @@ function validityPredicate(validity: DocumentValidityFilter, today: string) {
   }
 }
 
-function currentVersionPredicate(tx: TenantTransaction) {
-  const newer = alias(documents, "newer_version");
-  return notExists(
-    tx
-      .select({ one: sql`1` })
-      .from(newer)
-      .where(
-        and(
-          eq(newer.orgId, documents.orgId),
-          eq(newer.documentGroupId, documents.documentGroupId),
-          gt(newer.version, documents.version),
-        ),
-      ),
-  );
-}
-
 export async function listDocuments(
   orgId: string,
   params: ListDocumentsParams = {},
@@ -90,16 +83,30 @@ export async function listDocuments(
   const today = todayInSaoPaulo();
   const folderId = params.folderId ?? null;
   const search = params.search?.trim();
+  const relatedEntityType = params.relatedEntityType?.trim();
+  const relatedEntityId = params.relatedEntityId?.trim();
+
+  // Navegar pastas e filtrar por vínculo são leituras diferentes do mesmo acervo: a primeira
+  // é hierárquica (sem `folderId` = raiz), a segunda é transversal — "todos os anexos deste
+  // PGR" não pode depender de onde cada anexo foi arquivado. Sem isto, um laudo movido para
+  // uma pasta sumia da etapa "Documentos e PDF" do PGR. `folderId` explícito ainda vence,
+  // para permitir "anexos deste PGR dentro desta pasta".
+  const isRelatedEntityView = Boolean(relatedEntityType && relatedEntityId);
+  const browsesFolders = params.folderId !== undefined || !isRelatedEntityView;
 
   return withOrg(orgId, async (tx) => {
-    const filters = [
-      eq(documents.orgId, orgId),
-      currentVersionPredicate(tx),
-      folderId === null ? isNull(documents.folderId) : eq(documents.folderId, folderId),
-    ];
+    const filters = [eq(documents.orgId, orgId), currentVersionPredicate(tx)];
+    if (browsesFolders) {
+      filters.push(
+        folderId === null ? isNull(documents.folderId) : eq(documents.folderId, folderId),
+      );
+    }
     if (search) filters.push(ilike(documents.name, `%${search}%`));
     if (params.docType) filters.push(eq(documents.docType, params.docType));
     if (params.validity) filters.push(validityPredicate(params.validity, today)!);
+    if (relatedEntityType)
+      filters.push(eq(documents.relatedEntityType, relatedEntityType));
+    if (relatedEntityId) filters.push(eq(documents.relatedEntityId, relatedEntityId));
     const where = and(...filters);
 
     const rows = await tx
@@ -155,6 +162,50 @@ export async function getAcervoKpis(
     });
   };
   return existingTx ? run(existingTx) : withOrg(orgId, run);
+}
+
+/**
+ * Documentos **vigentes** do PGR cujo `doc_type` é um dos tipos da NR-18 (#48).
+ * Uma linha por documento lógico (`currentVersionPredicate`): criar a v2 de um projeto
+ * mantém o requisito atendido, não conta como anexo novo. A comparação é
+ * case-insensitive porque `doc_type` é texto livre no banco — "projeto de spiq" tem de
+ * satisfazer o mesmo requisito que "Projeto de SPIQ". Nenhuma escrita, nenhum tipo novo.
+ */
+export async function listPgrNr18Documents(
+  orgId: string,
+  pgrId: string,
+): Promise<Nr18ChecklistDocument[]> {
+  const labels = NR18_DOC_TYPE_LABELS.map((label) => label.toLowerCase());
+  return withOrg(orgId, async (tx) => {
+    const rows = await tx
+      .select({
+        id: documents.id,
+        documentGroupId: documents.documentGroupId,
+        name: documents.name,
+        docType: documents.docType,
+        version: documents.version,
+        createdAt: documents.createdAt,
+      })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.orgId, orgId),
+          eq(documents.relatedEntityType, "pgr"),
+          eq(documents.relatedEntityId, pgrId),
+          inArray(sql`lower(${documents.docType})`, labels),
+          currentVersionPredicate(tx),
+        ),
+      )
+      .orderBy(desc(documents.createdAt));
+    return rows.map((row) => ({
+      id: row.id,
+      documentGroupId: row.documentGroupId,
+      name: row.name,
+      docType: row.docType,
+      version: row.version,
+      createdAt: row.createdAt.toISOString(),
+    }));
+  });
 }
 
 export async function getDocumentById(
@@ -218,7 +269,11 @@ export async function createDocument(
   }
 }
 
-/** Edita metadados da versão identificada (não troca arquivo). 404 → null. */
+/**
+ * Edita metadados da versão identificada (não troca arquivo). 404 → null. Só a versão
+ * vigente é editável: versão antiga é histórico → `DocumentVersionReadOnlyError` (409),
+ * nada gravado (#56). A trava vale para Server Action e REST, que chamam este repositório.
+ */
 export async function updateDocument(
   orgId: string,
   id: string,
@@ -226,6 +281,17 @@ export async function updateDocument(
 ): Promise<DocumentDetail | null> {
   return auditedTenantWrite(orgId, "documents.documents.write_rejected", () =>
     withOrg(orgId, async (tx) => {
+      const [target] = await tx
+        .select({ version: documents.version, groupId: documents.documentGroupId })
+        .from(documents)
+        .where(and(eq(documents.orgId, orgId), eq(documents.id, id)))
+        .limit(1);
+      if (!target) return null;
+      const current = await getCurrentVersionTx(tx, orgId, target.groupId);
+      if (!current || current.version !== target.version) {
+        throw new DocumentVersionReadOnlyError();
+      }
+
       const set: Partial<typeof documents.$inferInsert> = { updatedAt: new Date() };
       if (patch.name !== undefined) set.name = patch.name;
       if (patch.docType !== undefined) set.docType = patch.docType;
@@ -245,8 +311,10 @@ export async function updateDocument(
 }
 
 /**
- * Publica nova versão: `version = MAX+1` no mesmo grupo, herda metadados da versão
- * apontada, grava novo binário. Corrida na mesma versão → 23505 (`DUPLICATE`).
+ * Publica nova versão: `version = vigente + 1` no mesmo grupo, herda metadados da versão
+ * **vigente** (não da linha apontada — um id antigo não pode ressuscitar metadados do
+ * histórico, #56), grava novo binário. Corrida na mesma versão → 23505 (`DUPLICATE`); com o
+ * mesmo nome de arquivo a corrida estoura já no upload → `DuplicateError` (`DUPLICATE`).
  * 404 → null. Compensa órfão se o INSERT falhar.
  */
 export async function addDocumentVersion(
@@ -261,21 +329,26 @@ export async function addDocumentVersion(
       .where(and(eq(documents.orgId, orgId), eq(documents.id, id)))
       .limit(1);
     if (!row) return null;
-    const [{ maxVersion }] = await tx
-      .select({ maxVersion: sql<number>`max(${documents.version})::int` })
-      .from(documents)
-      .where(
-        and(
-          eq(documents.orgId, orgId),
-          eq(documents.documentGroupId, row.documentGroupId),
-        ),
-      );
-    return { row, nextVersion: (maxVersion ?? row.version) + 1 };
+    const current = await getCurrentVersionTx(tx, orgId, row.documentGroupId);
+    if (!current) return null;
+    return { row: current, nextVersion: current.version + 1 };
   });
   if (!target) return null;
 
   const { row, nextVersion } = target;
-  const stored = await putDocumentObject(orgId, row.documentGroupId, nextVersion, file);
+  let stored: Awaited<ReturnType<typeof putDocumentObject>>;
+  try {
+    stored = await putDocumentObject(orgId, row.documentGroupId, nextVersion, file);
+  } catch (error) {
+    // Compara pelo nome (não `instanceof StorageObjectExistsError`): suítes que mockam o
+    // módulo de Storage inteiro não exportam a classe, e o `instanceof` estouraria TypeError.
+    if (error instanceof Error && error.name === "StorageObjectExistsError") {
+      throw new DuplicateError(
+        "Outra versão deste documento foi enviada ao mesmo tempo. Atualize a página e tente novamente.",
+      );
+    }
+    throw error;
+  }
 
   try {
     return await auditedTenantWrite(orgId, "documents.documents.write_rejected", () =>

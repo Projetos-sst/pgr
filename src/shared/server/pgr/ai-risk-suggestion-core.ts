@@ -14,7 +14,7 @@ import {
   type AcceptSuggestedRisksInput,
   type SuggestedRisk,
 } from "@/shared/domains/pgr/ai-risk-suggestion";
-import { requestRiskSuggestions } from "@/shared/integrations/ai/anthropic";
+import { requestRiskSuggestions } from "@/shared/integrations/agents";
 import * as aiRepo from "@/shared/db/repositories/ai-risk-suggestion";
 import { createRisk } from "@/shared/db/repositories/risks";
 
@@ -34,7 +34,7 @@ export async function runSuggestRisks(
 ): Promise<SuggestRisksResult> {
   // Isolamento: GES de outra org é invisível pela RLS → FK_NOT_FOUND antes do LLM.
   const context = await aiRepo.fetchGesRiskContext(ctx.tenantId, gesId);
-  if (!context) throw new ReferenceNotFoundError("ges");
+  if (!context) throw new ReferenceNotFoundError("GES não encontrado.");
 
   // Cota por organização (mês corrente) — checada ANTES da chamada externa.
   const used = await aiRepo.countAiUsageInCurrentMonth(
@@ -48,7 +48,12 @@ export async function runSuggestRisks(
   }
 
   const suggestions = await requestRiskSuggestions(context);
-  await aiRepo.recordAiUsage(ctx.tenantId, AI_RISK_SUGGESTION_KIND);
+  // Lista vazia não entrega valor nenhum ao usuário — cobrar uma das 20 sugestões/mês do
+  // plano free por isso seria punir quem tem o GES pouco descrito. Só consome cota quando
+  // veio ao menos um risco (mesmo critério do 5W2H, que só registra após sucesso).
+  if (suggestions.length > 0) {
+    await aiRepo.recordAiUsage(ctx.tenantId, AI_RISK_SUGGESTION_KIND);
+  }
   return { suggestions };
 }
 

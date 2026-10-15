@@ -8,6 +8,8 @@ const zeroPending: DashboardPending = {
   episPendingReturn: 0,
   trainingsExpired: 0,
   trainingsDueSoon: 0,
+  episCaExpired: 0,
+  episCaDueSoon: 0,
 };
 
 describe("buildNotifications", () => {
@@ -34,5 +36,33 @@ describe("buildNotifications", () => {
       "epis_pending_return",
       "trainings_due_soon",
     ]);
+  });
+
+  it("CA de EPI vencido → alerta 'high' linkando ao filtro caStatus=expired", () => {
+    const out = buildNotifications({ ...zeroPending, episCaExpired: 4 });
+    expect(out).toHaveLength(1);
+    expect(out[0].key).toBe("epis_ca_expired");
+    expect(out[0].severity).toBe("high");
+    expect(out[0].href).toBe("/epi-stock?caStatus=expired");
+    expect(out[0].title).toContain("4");
+  });
+
+  it("CA de EPI a vencer → alerta 'medium' linkando para /epi-stock", () => {
+    const out = buildNotifications({ ...zeroPending, episCaDueSoon: 2 });
+    expect(out).toHaveLength(1);
+    expect(out[0].key).toBe("epis_ca_due_soon");
+    expect(out[0].severity).toBe("medium");
+    expect(out[0].href).toBe("/epi-stock");
+    expect(out[0].title).toContain("2");
+  });
+
+  it("CA de EPI zerado (vencido e a vencer) não gera alerta", () => {
+    const out = buildNotifications({
+      ...zeroPending,
+      episCaExpired: 0,
+      episCaDueSoon: 0,
+    });
+    expect(out.map((n) => n.key)).not.toContain("epis_ca_expired");
+    expect(out.map((n) => n.key)).not.toContain("epis_ca_due_soon");
   });
 });

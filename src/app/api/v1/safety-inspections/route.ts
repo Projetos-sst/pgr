@@ -15,6 +15,8 @@ export function GET(req: NextRequest) {
       ...pageParamsFrom(req),
       status: sp.get("status") ?? undefined,
       category: sp.get("category") ?? undefined,
+      companyId: sp.get("companyId") ?? undefined,
+      search: sp.get("search") ?? undefined,
     });
   });
 }

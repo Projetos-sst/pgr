@@ -27,16 +27,34 @@ export function DownloadDocumentButton({ documentId }: { documentId: string }) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="inline-flex flex-col items-end">
       <button
         type="button"
         onClick={onDownload}
         disabled={pending}
-        className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-50"
+        title="Visualizar / Baixar"
+        aria-label="Visualizar ou baixar documento"
+        className="rounded-lg p-1.5 text-[#5b63f5] transition-colors hover:bg-[#5b63f5]/10 hover:text-[#4f46e5] disabled:opacity-50"
       >
-        {pending ? "Gerando…" : "Baixar"}
+        {pending ? (
+          <span className="text-xs font-semibold">…</span>
+        ) : (
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+          >
+            <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" />
+            <circle cx="12" cy="12" r="2.5" />
+          </svg>
+        )}
       </button>
-      {error ? <span className="text-xs text-red-600">{error}</span> : null}
+      {error ? (
+        <span className="text-[10px] font-medium text-red-600">{error}</span>
+      ) : null}
     </div>
   );
 }

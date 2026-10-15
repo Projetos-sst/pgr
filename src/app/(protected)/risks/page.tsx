@@ -7,6 +7,7 @@ import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies"
 import { riskAgentTypeLabel, exposureTimeLabel } from "@/shared/domains/pgr/risks";
 
 import { EmptyState, PageHeader, Pagination, PrimaryLink, Table } from "../_ui/list";
+import { EditRowAction, RowActions } from "../_ui/row-actions";
 import { RiskFilters } from "./_components/risk-filters";
 import { DeleteRisk } from "./_components/delete-risk";
 
@@ -75,15 +76,10 @@ export default async function RisksPage({
               </td>
               <td className="px-4 py-2">{row.gesName}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/risks/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
+                <RowActions>
+                  <EditRowAction href={`/risks/${row.id}/edit`} />
                   <DeleteRisk id={row.id} />
-                </div>
+                </RowActions>
               </td>
             </tr>
           ))}

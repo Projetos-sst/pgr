@@ -2,7 +2,7 @@
 
 ## O produto
 
-SST Manager é um **SaaS B2B multiempresa de Segurança do Trabalho (SST)**. Cada
+PGR-e é um **SaaS B2B multiempresa de Segurança do Trabalho (SST)**. Cada
 empresa cliente é um _tenant_ isolado. O sistema cobre 9 módulos:
 
 | Módulo                 | Natureza                                            |

@@ -16,6 +16,7 @@ import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 
 import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
+import { companies } from "./companies";
 import { categories, categoryType } from "./categories";
 import { employees } from "./employees";
 import { risks } from "./risks";
@@ -65,21 +66,32 @@ export const epiCatalog = pgTable(
       .references(() => orgs.id, { onDelete: "cascade" }),
     type: categoryType("type").notNull(),
     categoryId: uuid("category_id").notNull(),
+    // Empresa do EPI (#201, decisão R1) — nullable: catálogo pré-existente = escritório.
+    companyId: uuid("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
     name: text("name").notNull(),
     ca: text("ca"),
     caValidUntil: date("ca_valid_until"),
     manufacturer: text("manufacturer"),
     norm: text("norm"),
+    material: text("material"),
     size: text("size"),
     unitOfMeasure: text("unit_of_measure"),
+    // Vida útil em meses (#201) — inteiro positivo, nullable.
+    usefulLifeMonths: integer("useful_life_months"),
     description: text("description"),
     photoPath: text("photo_path"),
+    replacementDate: date("replacement_date"),
+    createdBy: text("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("idx_epi_catalog_org_id").on(table.orgId),
     index("idx_epi_catalog_category_id").on(table.categoryId),
+    index("idx_epi_catalog_company_id").on(table.companyId),
+    check("epi_catalog_useful_life_check", sql`useful_life_months > 0`),
     // FK composta (category_id, type) → categories(id, type): garante no banco que o tipo do
     // item é igual ao tipo da sua categoria (FR-002a). ON DELETE RESTRICT preserva categoria
     // em uso. Substitui a FK simples sobre category_id.
@@ -153,6 +165,8 @@ export const stockMovements = pgTable(
     quantity: integer("quantity").notNull(),
     movementDate: date("movement_date").notNull().defaultNow(),
     invoiceNumber: text("invoice_number"),
+    invoiceDate: date("invoice_date"),
+    batch: text("batch"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -284,6 +298,37 @@ export const epiRisk = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * Log de auditoria (append-only) das alterações do catálogo de EPI (#25).
+ * Cada create/update de `epi_catalog` grava uma linha aqui com um resumo
+ * textual do diff; sem update/delete pela aplicação (histórico imutável).
+ */
+export const epiCatalogAuditLog = pgTable(
+  "epi_catalog_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    epiCatalogId: uuid("epi_catalog_id")
+      .notNull()
+      .references(() => epiCatalog.id, { onDelete: "cascade" }),
+    changedBy: text("changed_by"),
+    changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+    summary: text("summary").notNull(),
+  },
+  (table) => [
+    index("idx_epi_catalog_audit_log_org_id").on(table.orgId),
+    index("idx_epi_catalog_audit_log_epi_catalog_id").on(table.epiCatalogId),
+    pgPolicy("epi_catalog_audit_log_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+  ],
+).enableRLS();
+
 export type EpiCatalog = InferSelectModel<typeof epiCatalog>;
 export type NewEpiCatalog = InferInsertModel<typeof epiCatalog>;
 export type EpiStock = InferSelectModel<typeof epiStock>;
@@ -296,3 +341,5 @@ export type EpiDeliveryItem = InferSelectModel<typeof epiDeliveryItems>;
 export type NewEpiDeliveryItem = InferInsertModel<typeof epiDeliveryItems>;
 export type EpiRisk = InferSelectModel<typeof epiRisk>;
 export type NewEpiRisk = InferInsertModel<typeof epiRisk>;
+export type EpiCatalogAuditLog = InferSelectModel<typeof epiCatalogAuditLog>;
+export type NewEpiCatalogAuditLog = InferInsertModel<typeof epiCatalogAuditLog>;

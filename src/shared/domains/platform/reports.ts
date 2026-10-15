@@ -164,7 +164,7 @@ export function buildOnboardingManualHtml(orgName: string, generatedAt: string):
 <style>${REPORT_STYLE} ol{padding-left:18px} li{margin:8px 0}</style></head><body>
 <h1>Manual de onboarding — ${escapeHtml(orgName)}</h1>
 <p class="meta">Gerado em ${escapeHtml(generatedAt)}</p>
-<h2>Bem-vindo(a) ao SST Manager</h2>
+<h2>Bem-vindo(a) ao PGR-e</h2>
 <p>Este guia apresenta os primeiros passos para colocar o seu escritório em
 operação. Siga a cadeia abaixo, na ordem — cada passo habilita o próximo até a
 emissão do documento PGR.</p>

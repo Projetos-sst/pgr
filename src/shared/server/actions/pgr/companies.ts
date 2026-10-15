@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
 import {
@@ -10,9 +11,14 @@ import {
   type CompanyInput,
   type CompanyListItem,
 } from "@/shared/domains/pgr/companies";
+import { validateLogoFile } from "@/shared/domains/pgr/company-logo";
 import type { Paginated } from "@/shared/pagination";
 import * as repo from "@/shared/db/repositories/companies";
 import type { Company } from "@/shared/db/schema";
+import {
+  getSignedCompanyLogoUrl,
+  putCompanyLogo,
+} from "@/shared/integrations/storage/company-logo-storage";
 
 const BASE_PATH = "/companies";
 
@@ -86,6 +92,30 @@ export async function deleteCompanyAction(
     },
     { audit: true },
   );
+}
+
+export type UploadCompanyLogoResult = { storagePath: string; url: string };
+
+/**
+ * Envia o arquivo de logo ao Storage e devolve o path (persistido em
+ * `logoPath` no create/update do form) + uma URL assinada para preview
+ * imediato no formulário (issue #4). Não toca o registro de `companies` —
+ * quem persiste o path é `createCompanyAction`/`updateCompanyAction`, como
+ * qualquer outro campo do formulário.
+ */
+export async function uploadCompanyLogoAction(
+  formData: FormData,
+): Promise<ActionResult<UploadCompanyLogoResult>> {
+  return officeAction("pgr.companies.upload_logo", async ({ tenantId }) => {
+    const raw = formData.get("file");
+    const file = raw instanceof File ? raw : null;
+    const check = validateLogoFile(file);
+    if (!check.ok) throw new ValidationError(check.message);
+
+    const stored = await putCompanyLogo(tenantId, file!, check.extension);
+    const url = await getSignedCompanyLogoUrl(stored.storagePath);
+    return { storagePath: stored.storagePath, url };
+  });
 }
 
 export async function getCompanyDependentsAction(

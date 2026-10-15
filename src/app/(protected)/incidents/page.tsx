@@ -1,24 +1,59 @@
-import Link from "next/link";
-
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
-import { accidentFiltersSchema } from "@/shared/domains/safety/accident";
-import { INCIDENT_STATUS_LABELS } from "@/shared/domains/safety/incident-lifecycle";
+import {
+  ACCIDENT_SEVERITY_LABELS,
+  accidentFiltersSchema,
+} from "@/shared/domains/safety/accident";
 import { resolvePageParams } from "@/shared/pagination";
 import { listAccidentsAction } from "@/shared/server/actions/safety/accidents";
 
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  PrimaryLink,
-  SearchForm,
-  Table,
-} from "../_ui/list";
+  Cell,
+  DataGrid,
+  EditIconLink,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  MonoCell,
+  RowActions,
+  StatusBadge,
+  ToolbarButton,
+  ToolbarSearch,
+  ToolbarSelect,
+  type StatusTone,
+} from "../_ui/data-list";
+import { EmptyState, PageHeader } from "../_ui/list";
 import { DeleteIncident } from "./_components/delete-incident";
+import { IncidentIcon } from "./_components/incident-icon";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ page?: string; search?: string; status?: string }>;
+// Nº · Data · Tipo · Gravidade · Status · Opções (mockup; Funcionário omitido por
+// privacidade — incidente é dado de saúde P0/P3; Empresa fica no detalhe).
+const TEMPLATE = "0.9fr 1fr 1.8fr 1.1fr 1.2fr 84px";
+
+const SEVERITY_TONE: Record<string, StatusTone> = {
+  no_injury: "green",
+  minor: "amber",
+  moderate: "amber",
+  severe: "red",
+  fatal: "red",
+};
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  registered: "indigo",
+  awaiting_planning: "indigo",
+  awaiting_completion: "indigo",
+  completed: "green",
+  cancelled: "neutral",
+};
+
+const SEVERITY_OPTIONS = Object.entries(ACCIDENT_SEVERITY_LABELS).map(
+  ([value, label]) => ({ value, label }),
+);
+
+type SearchParams = Promise<{ page?: string; search?: string; severity?: string }>;
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR");
@@ -34,105 +69,92 @@ export default async function IncidentsPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const parsedStatus = accidentFiltersSchema.shape.status.safeParse(sp.status);
-  const status = parsedStatus.success ? parsedStatus.data : undefined;
+  const parsedSeverity = accidentFiltersSchema.shape.severity.safeParse(sp.severity);
+  const severity = parsedSeverity.success ? parsedSeverity.data : undefined;
 
-  const result = await listAccidentsAction({ page, q: sp.search, status });
+  const result = await listAccidentsAction({ page, q: sp.search, severity });
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
-  const params = { search: sp.search, status: sp.status };
+  const params = { search: sp.search, severity: sp.severity };
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-[22px] px-5 pt-8 pb-10 sm:px-[30px]">
       <PageHeader
-        title="Incidentes/Acidentes"
-        description="Registro interno de incidentes e acidentes de trabalho, restrito à equipe do escritório."
-        action={<PrimaryLink href="/incidents/new">Novo registro</PrimaryLink>}
+        icon={<IncidentIcon />}
+        title="Incidentes"
+        description="Registro de incidentes, acidentes e quase-acidentes"
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <SearchForm
-          basePath="/incidents"
-          placeholder="Buscar por local, área ou nº CAT"
-          defaultValue={sp.search}
-          hidden={{ status: sp.status }}
-        />
-        <nav className="flex flex-wrap gap-2 text-sm">
-          <Link
-            href="/incidents"
-            className={`glass-panel rounded-card px-3 py-1 font-semibold transition-colors ${
-              !sp.status ? "text-primary-strong" : "text-text-muted hover:text-text"
-            }`}
-          >
-            Todos
-          </Link>
-          {Object.entries(INCIDENT_STATUS_LABELS).map(([value, label]) => (
-            <Link
-              key={value}
-              href={`/incidents?status=${value}`}
-              className={`glass-panel rounded-card px-3 py-1 font-semibold transition-colors ${
-                sp.status === value
-                  ? "text-primary-strong"
-                  : "text-text-muted hover:text-text"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-      </div>
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSearch
+            basePath="/incidents"
+            placeholder="Buscar por nº, local ou nº CAT…"
+            defaultValue={sp.search}
+            hidden={{ severity: sp.severity }}
+          />
+          <ToolbarSelect
+            basePath="/incidents"
+            name="severity"
+            defaultValue={sp.severity}
+            options={SEVERITY_OPTIONS}
+            emptyLabel="Todas as Gravidades"
+            hidden={{ search: sp.search }}
+          />
+          <ToolbarButton href="/incidents/new">Novo Registro</ToolbarButton>
+        </ListToolbar>
 
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhum incidente/acidente encontrado." />
-      ) : (
-        <Table
-          headers={[
-            "Ocorrência",
-            "Empresa",
-            "Tipo",
-            "Categoria",
-            "Severidade",
-            "Status",
-            "",
-          ]}
-        >
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2 tabular-nums">
-                <Link
-                  href={`/incidents/${row.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {formatDate(row.occurredAt)}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.companyName ?? "—"}</td>
-              <td className="px-4 py-2">{row.typeLabel}</td>
-              <td className="px-4 py-2">{row.categoryLabel}</td>
-              <td className="px-4 py-2">{row.severityLabel}</td>
-              <td className="px-4 py-2">{row.statusLabel}</td>
-              <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/incidents/${row.id}`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Abrir
-                  </Link>
-                  <DeleteIncident id={row.id} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
-
-      <Pagination
-        basePath="/incidents"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={params}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState isFlat message="Nenhum incidente/acidente encontrado." />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={880}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Nº" },
+                  { header: "Data" },
+                  { header: "Tipo" },
+                  { header: "Gravidade" },
+                  { header: "Status" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <MonoCell href={`/incidents/${row.id}`}>{row.numberLabel}</MonoCell>
+                  <Cell className="text-text-muted">{formatDate(row.occurredAt)}</Cell>
+                  <Cell className="text-text font-semibold">{row.typeLabel}</Cell>
+                  <Cell>
+                    <StatusBadge tone={SEVERITY_TONE[row.severity] ?? "neutral"}>
+                      {row.severityLabel}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell>
+                    <StatusBadge tone={STATUS_TONE[row.status] ?? "neutral"}>
+                      {row.statusLabel}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell align="right">
+                    <RowActions>
+                      <EditIconLink href={`/incidents/${row.id}/edit`} />
+                      <DeleteIncident id={row.id} />
+                    </RowActions>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/incidents"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={params}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }

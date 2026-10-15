@@ -9,12 +9,24 @@ export const dynamic = "force-dynamic";
 
 function typeFrom(req: NextRequest): CategoryType | undefined {
   const value = req.nextUrl.searchParams.get("type");
-  return value === "epi" || value === "machine" ? value : undefined;
+  return value === "epi" || value === "machine" || value === "supply" ? value : undefined;
+}
+
+function isActiveFrom(req: NextRequest): boolean | undefined {
+  const value = req.nextUrl.searchParams.get("isActive");
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return undefined;
 }
 
 export function GET(req: NextRequest) {
   return restHandler(req, ({ tenantId }) =>
-    repo.listCategories(tenantId, { ...pageParamsFrom(req), type: typeFrom(req) }),
+    repo.listCategories(tenantId, {
+      ...pageParamsFrom(req),
+      search: req.nextUrl.searchParams.get("search") ?? undefined,
+      type: typeFrom(req),
+      isActive: isActiveFrom(req),
+    }),
   );
 }
 

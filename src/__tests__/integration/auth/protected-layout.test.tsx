@@ -19,6 +19,9 @@ jest.mock("next/headers", () => ({
 }));
 
 jest.mock("@clerk/nextjs", () => ({
+  useUser: () => ({ user: { firstName: "Douglas", username: "douglas" } }),
+  // UserProfilePill usa useClerk() para signOut — precisa estar no mock
+  useClerk: () => ({ signOut: jest.fn() }),
   UserButton: () => <div data-testid="user-button" />,
   OrganizationSwitcher: (props: {
     hidePersonal?: boolean;
@@ -45,6 +48,15 @@ jest.mock("@/app/(protected)/_ui/notifications-bell", () => ({
 
 jest.mock("@/shared/auth/require-tenant-context", () => ({
   requireTenantContext: jest.fn(),
+}));
+
+// Badge da Trilha de Sucesso: a Server Action importa a cadeia de DB;
+// mockar evita carregar o driver postgres no jsdom (mesmo motivo do sino acima).
+jest.mock("@/shared/server/actions/platform/onboarding", () => ({
+  getOnboardingProgressAction: jest.fn(async () => ({
+    ok: true,
+    data: { allDone: true },
+  })),
 }));
 
 import { requireTenantContext } from "@/shared/auth/require-tenant-context";
@@ -74,11 +86,14 @@ describe("ProtectedLayout (gate Modelo B via requireTenantContext)", () => {
     expect(mockedRedirect).toHaveBeenCalledWith("/sign-in?redirect_url=%2Fdashboard");
   });
 
-  it("(b) sem tenant ativo (NoTenantContextError) → redirect('/sign-in') (FR-024)", async () => {
+  it("(b) sem tenant ativo (NoTenantContextError) → redirect('/no-organization') (FR-024)", async () => {
     mockedRequire.mockRejectedValue(new NoTenantContextError());
 
-    await expect(renderLayout()).rejects.toThrow(/__redirect:\/sign-in/);
-    expect(mockedRedirect).toHaveBeenCalledWith("/sign-in");
+    await expect(renderLayout()).rejects.toThrow(/__redirect:\/no-organization/);
+    // Nunca `/sign-in`: a sessão existe, e o Clerk devolveria a pessoa para cá
+    // — laço de redirecionamento. O bloqueio da FR-024 continua valendo.
+    expect(mockedRedirect).toHaveBeenCalledWith("/no-organization");
+    expect(mockedRedirect).not.toHaveBeenCalledWith("/sign-in");
   });
 
   it("(c) tenant ativo resolvido → renderiza children, sem onboarding nem switcher duplicado", async () => {

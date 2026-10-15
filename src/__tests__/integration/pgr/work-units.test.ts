@@ -56,6 +56,51 @@ const asOwner = (tenantId: string) =>
     expect(list.ok && list.data.total).toBe(2);
   });
 
+  it("lista resolve o nome da empresa (join) e status default active", async () => {
+    const list = await listWorkUnitsAction({ companyId: PGR_IDS.companyA });
+    expect(list.ok).toBe(true);
+    if (list.ok) {
+      expect(list.data.rows.length).toBeGreaterThanOrEqual(1);
+      expect(list.data.rows[0].companyName).toBe("A Ltda");
+      expect(list.data.rows[0].status).toBe("active");
+    }
+  });
+
+  it("persiste tipo/status/datas e filtra por situação", async () => {
+    const created = await createWorkUnitAction({
+      companyId: PGR_IDS.companyA,
+      name: "Frente Suspensa",
+      description: "Obra",
+      type: "workfront",
+      status: "suspended",
+      startDate: "2026-02-01",
+      expectedEndDate: "2026-12-01",
+    });
+    expect(created.ok).toBe(true);
+    if (created.ok) {
+      expect(created.data.type).toBe("workfront");
+      expect(created.data.status).toBe("suspended");
+      expect(created.data.startDate).toBe("2026-02-01");
+      expect(created.data.expectedEndDate).toBe("2026-12-01");
+    }
+    const suspended = await listWorkUnitsAction({ status: "suspended" });
+    expect(suspended.ok && suspended.data.total).toBe(1);
+    expect(
+      suspended.ok && suspended.data.rows.every((r) => r.status === "suspended"),
+    ).toBe(true);
+  });
+
+  it("data inválida → VALIDATION", async () => {
+    const result = await createWorkUnitAction({
+      companyId: PGR_IDS.companyA,
+      name: "X",
+      description: "Y",
+      startDate: "2026-13-45",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("VALIDATION");
+  });
+
   it("create com empresa de outro tenant → FK_NOT_FOUND", async () => {
     const result = await createWorkUnitAction({
       companyId: PGR_IDS.companyB,

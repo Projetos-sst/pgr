@@ -4,6 +4,7 @@ import {
   text,
   uuid,
   integer,
+  boolean,
   date,
   timestamp,
   index,
@@ -42,10 +43,14 @@ export const trainingCatalog = pgTable(
     orgId: text("org_id")
       .notNull()
       .references(() => orgs.id, { onDelete: "cascade" }),
+    // Código sequencial por tenant (max+1 sob lock de orgs; ver repositório) → "TR-0201".
+    number: integer("number").notNull(),
     name: text("name").notNull(),
     referenceNorm: text("reference_norm"),
     workloadHours: integer("workload_hours").notNull(),
     periodicity: trainingPeriodicity("periodicity").notNull(),
+    // Vigência do item de catálogo (Vigente/Inativo no redesign).
+    isActive: boolean("is_active").notNull().default(true),
     description: text("description"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -53,6 +58,7 @@ export const trainingCatalog = pgTable(
   (table) => [
     index("idx_training_catalog_org_id").on(table.orgId),
     uniqueIndex("uq_training_catalog_org_name").on(table.orgId, table.name),
+    uniqueIndex("uq_training_catalog_org_number").on(table.orgId, table.number),
     check("training_catalog_workload_hours_check", sql`workload_hours > 0`),
     pgPolicy("training_catalog_isolation", {
       for: "all",

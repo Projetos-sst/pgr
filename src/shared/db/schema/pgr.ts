@@ -55,6 +55,10 @@ export const pgr = pgTable(
     registrationNumber: text("registration_number"),
     issuedAt: date("issued_at"),
     validUntil: date("valid_until"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    // Autor do documento (Clerk userId; sem FK — `users` tem RLS própria e é lido
+    // via admin client fora do app_runtime). Nullable: linhas antigas ficam sem autor.
+    createdBy: text("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -118,6 +122,9 @@ export const pgrRevisions = pgTable(
     revisionNumber: integer("revision_number").notNull(),
     revisedAt: date("revised_at").notNull().defaultNow(),
     notes: text("notes"),
+    // Arquivamento (#46): null = revisão ativa; preenchido = quando foi arquivada.
+    // Segue o padrão de `pgr.published_at` (0028) em vez de um boolean `archived`.
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

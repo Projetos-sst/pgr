@@ -21,6 +21,70 @@ describe("gesInputSchema (US4)", () => {
   });
 });
 
+describe("gesInputSchema — ceilingHeight (issue #12)", () => {
+  const base = { companyId: COMPANY_ID, workUnitId: WORK_UNIT_ID, name: "GES Pintura" };
+
+  it("aceita ponto como separador decimal", () => {
+    expect(gesInputSchema.parse({ ...base, ceilingHeight: "2.50" }).ceilingHeight).toBe(
+      "2.50",
+    );
+  });
+
+  it("aceita vírgula e normaliza para ponto", () => {
+    expect(gesInputSchema.parse({ ...base, ceilingHeight: "2,50" }).ceilingHeight).toBe(
+      "2.50",
+    );
+  });
+
+  it("aceita número inteiro sem separador", () => {
+    expect(gesInputSchema.parse({ ...base, ceilingHeight: "3" }).ceilingHeight).toBe("3");
+  });
+
+  it('string vazia ("não aplicável") não gera erro e vira undefined', () => {
+    expect(
+      gesInputSchema.parse({ ...base, ceilingHeight: "" }).ceilingHeight,
+    ).toBeUndefined();
+  });
+
+  it("ausência do campo não gera erro", () => {
+    expect(gesInputSchema.parse(base).ceilingHeight).toBeUndefined();
+  });
+
+  it("rejeita valor não numérico com mensagem específica", () => {
+    const result = gesInputSchema.safeParse({ ...base, ceilingHeight: "abc" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        "Pé-direito deve ser um número válido (ex: 2.50 ou 2,50)",
+      );
+    }
+  });
+
+  it("rejeita zero/negativo com mensagem específica", () => {
+    const result = gesInputSchema.safeParse({ ...base, ceilingHeight: "0" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("Pé-direito deve ser maior que zero");
+    }
+  });
+});
+
+describe("gesInputSchema — roof (issue #13)", () => {
+  const base = { companyId: COMPANY_ID, workUnitId: WORK_UNIT_ID, name: "GES Pintura" };
+
+  it.each(["none", "partial", "total"])("aceita a opção fechada %s", (roof) => {
+    expect(gesInputSchema.parse({ ...base, roof }).roof).toBe(roof);
+  });
+
+  it("string vazia vira undefined (opcional)", () => {
+    expect(gesInputSchema.parse({ ...base, roof: "" }).roof).toBeUndefined();
+  });
+
+  it("rejeita valor fora da lista fechada", () => {
+    expect(() => gesInputSchema.parse({ ...base, roof: "translucent" })).toThrow();
+  });
+});
+
 describe("gesJobRoleInputSchema", () => {
   const base = { gesId: GES_ID, jobRoleId: JOB_ROLE_ID, workerCount: "3" };
 

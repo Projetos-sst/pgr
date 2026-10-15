@@ -1,5 +1,6 @@
 import {
   pgTable,
+  pgEnum,
   text,
   uuid,
   smallint,
@@ -17,6 +18,9 @@ import { addressColumns } from "./address-columns";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
+/** Situação cadastral da empresa (badge da listagem #188). */
+export const companyStatus = pgEnum("company_status", ["active", "pending", "inactive"]);
+
 export const companies = pgTable(
   "companies",
   {
@@ -33,6 +37,11 @@ export const companies = pgTable(
     mainActivity: text("main_activity"),
     riskGrade: smallint("risk_grade"),
     logoPath: text("logo_path"),
+    website: text("website"),
+    status: companyStatus("status").notNull().default("active"),
+    // Classificação tributária do eSocial (S-1000 `classTrib`). Texto livre
+    // (código eSocial) — evita catálogo enum extenso; nullable.
+    taxClassification: text("tax_classification"),
     ...addressColumns(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

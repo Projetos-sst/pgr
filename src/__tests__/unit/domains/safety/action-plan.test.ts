@@ -3,6 +3,7 @@ import {
   actionPlanFiltersSchema,
   actionPlanPriorityLabel,
   actionPlanStatusTransitionSchema,
+  actionPlanTypeLabel,
   actionPlanUpdateSchema,
   canTransitionActionPlan,
   computeActionPlanOverdue,
@@ -24,11 +25,16 @@ const base = {
   how: "Enclausuramento acústico",
 };
 
-describe("action-plan-origin (US6)", () => {
-  it("aceita apenas risk|incident na V1", () => {
-    expect([...ACTION_PLAN_ORIGIN_TYPES]).toEqual(["risk", "incident"]);
+describe("action-plan-origin (US6 + issue #51)", () => {
+  it("aceita risk|incident|control_measure", () => {
+    expect([...ACTION_PLAN_ORIGIN_TYPES]).toEqual([
+      "risk",
+      "incident",
+      "control_measure",
+    ]);
     expect(actionPlanOriginTypeSchema.safeParse("risk").success).toBe(true);
     expect(actionPlanOriginTypeSchema.safeParse("incident").success).toBe(true);
+    expect(actionPlanOriginTypeSchema.safeParse("control_measure").success).toBe(true);
     expect(actionPlanOriginTypeSchema.safeParse("inspection").success).toBe(false);
     expect(actionPlanOriginTypeSchema.safeParse("non_conformity").success).toBe(false);
     expect(actionPlanOriginTypeSchema.safeParse("qualquer").success).toBe(false);
@@ -160,6 +166,18 @@ describe("filtros e prioridade (US6)", () => {
     expect(actionPlanPriorityLabel(2)).toBe("Média");
     expect(actionPlanPriorityLabel(3)).toBe("Alta");
     expect(actionPlanPriorityLabel(null)).toBe("—");
+  });
+
+  it("Tipo (corretiva/preventiva): schema, filtro e rótulo", () => {
+    expect(actionPlanCreateSchema.parse({ ...base, type: "corrective" }).type).toBe(
+      "corrective",
+    );
+    expect(actionPlanCreateSchema.parse(base).type).toBeUndefined();
+    expect(() => actionPlanCreateSchema.parse({ ...base, type: "bogus" })).toThrow();
+    expect(actionPlanFiltersSchema.parse({ type: "preventive" }).type).toBe("preventive");
+    expect(actionPlanTypeLabel("corrective")).toBe("Corretiva");
+    expect(actionPlanTypeLabel("preventive")).toBe("Preventiva");
+    expect(actionPlanTypeLabel(null)).toBe("—");
   });
 
   it("transição de status é strict", () => {

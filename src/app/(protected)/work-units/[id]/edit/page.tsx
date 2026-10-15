@@ -6,6 +6,7 @@ import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies"
 
 import { PageHeader } from "../../../_ui/list";
 import { WorkUnitForm } from "../../_components/work-unit-form";
+import { WorkUnitIcon } from "../../_components/work-unit-icon";
 import { DeleteWorkUnit } from "../../_components/delete-work-unit";
 
 export const dynamic = "force-dynamic";
@@ -25,11 +26,19 @@ export default async function EditWorkUnitPage({
   const companies = companiesResult.ok ? companiesResult.data : [];
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
       <PageHeader
+        backHref="/work-units"
+        icon={<WorkUnitIcon />}
         title={workUnitResult.data.name}
-        description="Detalhe e edição da unidade de obra."
-        action={<DeleteWorkUnit id={workUnitResult.data.id} redirectTo="/work-units" />}
+        description="Detalhe e edição da unidade de obra"
+        action={
+          <DeleteWorkUnit
+            id={workUnitResult.data.id}
+            redirectTo="/work-units"
+            variant="text"
+          />
+        }
       />
       <WorkUnitForm companies={companies} workUnit={workUnitResult.data} />
     </div>

@@ -48,9 +48,84 @@ Reference implementation to copy from: **companies** (`actions/pgr/companies.ts`
 
 <!-- SPECKIT START -->
 
-Branch atual: **`feature/documents-data-model`**. Fatia atual (`023`) — **Modelo de dados de
+Branch atual: **`develop`** (sem feature branch aberta no momento). Última migration aplicada:
+**`0030_health_exams`**. `.specs/` já tem 027 fatias; as mais recentes (024-027) foram entregues
+**sem o ciclo completo de spec-kit** (`spec.md` enxuto, às vezes sem `plan.md`/`tasks.md`) — o time
+concluiu que, para fatias de escopo pequeno/CRUD simples, uma spec curta + plano direto bastam,
+sem a cerimônia completa. As fatias abaixo, da mais recente para a mais antiga, já estão todas
+mergeadas em `develop`:
+
+Fatia (`030` — pgr-docx-templates, branch `feature/pgr-docx-templates`) — **PGR em DOCX por
+template** na identidade PGR-e, réplica estrutural do `PGR 2026.pdf`, com as categorias do PGR 2026.1:
+fixo (texto do template), semi-fixo (tag com default em `domains/pgr/pgr-docx/defaults.ts`, trocável
+por `overrides`) e dinâmico (banco). **Zero migration.** Template **gerado por código**
+(`scripts/pgr-docx`, lib `docx`; nunca editar o `.docx` à mão) em `templates/pgr/` (+ limpo, anotado e
+exemplo fictício; réplica com dado real só em `docs/_local-refs/`). Preenchimento local por
+**docxtemplater** (`integrations/docx`, delimitadores `{{ }}` do Salesbud, loops de linha de tabela);
+PDF via Gotenberg/LibreOffice (padrão) ou Google Docs por Service Account (`integrations/google`:
+config, retry 429/503/408, Drive/Docs, fluxo `replaceAllText` do Salesbud). REST
+`GET`/`POST /api/v1/pgr/{id}/docx` (sem Server Action — binário, precedente do `/pdf`). Mapeador puro
+`from-consolidated.ts` (consolidada + `repositories/pgr-docx-extras.ts`). Detalhes:
+`templates/pgr/README.md` e `.specs/030-pgr-docx-templates/spec.md`.
+
+Fatia anterior (`027` — occupational-health) — **Gestão de Saúde Ocupacional (exames/ASO)**, parte
+do redesign (#181, mockup `gestao-saude.dc.html`). Base empilhada em `feature/medicos` (usa a FK do
+médico responsável). Tabela `health_exams` (`employee_id` CASCADE, `doctor_id → medicos` nullable
+`SET NULL`, `exam_type` enum admissional/periódico/mudança de função/retorno ao trabalho/demissional,
+`performed_at` não-futura, `valid_until` nullable, `aptitude` enum apto/apto-com-restrição/inapto,
+`certificate_path` texto sem GED). Validade **derivada na leitura** (`classifyDocumentValidity`,
+espelho de Treinamentos/Documentos); badge de status combina validade + aptidão. CRUD completo
+(Server Action + REST + docs + Postman). Migration `0030_health_exams`. Sem `/dependents` (nenhuma
+FK de entrada). Testes: unit (`healthExamInputSchema` + badge) + integração Postgres efêmero.
+
+Fatia anterior (`026` — medicos-crud) — **Cadastro de Médicos** (médicos do trabalho responsáveis
+por exames/ASO), parte do redesign (#181, mockup `medicos.dc.html`). Tabela `medicos` (`crm`
+`UNIQUE(org_id, crm)` → `DUPLICATE`, `specialty`/`clinic`/`phone` opcionais, `status`
+`active|inactive`). CRUD completo (Server Action + REST + docs + Postman). Migration
+`0029_medicos`. Sem `/dependents` (vínculo futuro com exames usa `SET NULL`, não bloqueia exclusão).
+
+Fatia anterior (`025` — batch-pdf-worker) — **Worker de geração de PDF em lote** (issue #39),
+consumindo a fila `jobs` da fatia de documentos. **Zero migration.** Worker standalone Node
+(`worker/index.ts`, `node --conditions=react-server`), loop `recoverStale → claim → process →
+mark`; claim via `SELECT … FOR UPDATE SKIP LOCKED` em conexão **owner** (padrão `caepi-upsert`);
+escrita do resultado sempre `withOrg(job.org_id)`. Idempotência: enqueue cria
+`documents{status:'generating'}` + upload determinístico (`upsert:true`) no Storage; reprocessar
+sobrescreve sem duplicar. MVP sem backoff/`next_attempt_at`. `Dockerfile.worker` + serviço `worker`
+no `docker-compose.yml`.
+
+Fatia anterior (`024` — document-crud) — **Camada de aplicação do GED** sobre `documents`+`folders`
+(schema já existente da `023-documents-data-model`, ver abaixo). **Zero migration.** 5 operações de
+documento (list/getById/create-upload/update-nova-versão-move/delete) + gestão de pastas, upload de
+binário ao Supabase Storage (bucket privado `documents`, path particionado por `org_id` da sessão).
+Superfície completa: Server Actions + REST mirror + docs api-design + Postman + testes unit e
+integração. **É esta fatia que substitui a nota antiga "sem UI/CRUD" da 023-documents-data-model**
+— hoje o GED tem CRUD funcional, só não tem o fluxo de workflow de Qualidade (elaboração → revisão
+→ aprovação → publicação, perfis, descarte com flag, auditoria persistida — nada disso existe
+ainda).
+
+Fatia anterior (`023` — phase-06-safety-workflows; numeração paralela e coincidente com a
+`023-documents-data-model` abaixo, são fatias distintas) — **Fase 06: Ordens de Serviço,
+Incidentes/Acidentes, Planos de Ação 5W2H e Auditorias**, consolidando 7 issues (`#41`/`#42`/`#44`/
+`#45`/`#87`/`#91`/`#93`) numa fatia só (decisão do Tech Lead). 5 tabelas novas greenfield:
+`service_orders`+`service_order_items` (OS com assinatura — reusa a infra genérica de
+`signature_requests`/`signature_captures` via novo `target_type='service_order'`, **zero migration
+de assinatura**; número gerado no servidor sob concorrência via `SELECT … FOR UPDATE` + `UNIQUE`
+backstop; itens são **snapshot imutável** pós-emissão, não reescrevem com mudanças futuras em
+`risks`/`epi_risk`/`epi_catalog`); `accidents` (dado de saúde **P0** — só `owner`/`collaborator`,
+nunca em log/IA/fixture; CAT é campo texto interno, sem emissão S-2210 na V1); `action_plans`
+(5W2H **multiorigem**, `origin_type` texto validado na aplicação, V1 = `risk|incident`,
+`inspection`/`non_conformity` plugam depois com zero migration); `risk_audits` (kanban de
+auditorias/análises com sugestão de IA reusando a infra de IA da 016/017, `kind
+'action_plan_suggestion'` zero migration). Migration `0024_phase_06_safety_workflows`, precedida de
+reconciliação de um histórico de migrations corrompido por merge (arquivos órfãos `0018_*`). RLS
+com `USING`+`WITH CHECK` nas 5 tabelas. **É esta fatia que introduziu `action_plans`,
+`control_measures`-adjacent e o módulo de Ordens de Serviço hoje usados por várias correções do
+módulo PGR.**
+
+Fatia anterior (`023` — documents-data-model) — **Modelo de dados de
 Documentos, Pastas e Jobs** (Fase 05, issue #33) — fatia de modelagem pura (schema + migration +
-RLS + testes), análoga às 006/008, sem UI/CRUD. Plan: `.specs/023-documents-data-model/plan.md`
+RLS + testes), análoga às 006/008, sem UI/CRUD **na época** (ver `024`/`025` acima para a camada de
+aplicação construída depois). Plan: `.specs/023-documents-data-model/plan.md`
 (spec/research/data-model/contracts/quickstart no mesmo diretório; brainstorms da fase em
 `claudedocs/fase-05-brainstorms/`). 3 tabelas (`folders`, `documents`, `jobs`) + 3 enums
 (`document_status` `generating|ready`, `job_type` `pdf_batch`, `job_status`
@@ -110,7 +185,7 @@ Fatia anterior (`016` — ai-risk-suggestion, mergeada em `develop`) — **Suges
 por IA** (primeira feature que chama um LLM externo). Plan:
 `.specs/016-ai-risk-suggestion/plan.md` (spec/research/data-model/contracts/quickstart no mesmo
 diretório). 2 user stories: US1 (P1) botão "Sugerir Riscos com IA" no GES → contexto **não-PII** do GES
-(processo/ambiente/**títulos** de função, nunca `employees`) → LLM Anthropic (`@anthropic-ai/sdk`,
+(processo/ambiente/**títulos** de função, nunca `employees`) → LLM via Mastra + OpenRouter (`MastraAiService`,
 saída estruturada por tool use validada por Zod, chave **server-only**) → modal de revisão/aceite →
 aceitos viram **rascunho** em `risks` via `createRisk` (zero migration de risco); US2 (P2) dicas
 estáticas NR-01 nos campos de GES/risco. Rate limiting por org: **migration nova

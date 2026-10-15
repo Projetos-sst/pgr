@@ -12,14 +12,14 @@ jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
 jest.mock("@/shared/auth/require-office-staff", () => ({
   requireOfficeStaff: jest.fn(),
 }));
-jest.mock("@/shared/integrations/ai/anthropic", () => ({
+jest.mock("@/shared/integrations/agents", () => ({
   requestActionPlanSuggestion: jest.fn(),
 }));
 
 import { requireOfficeStaff } from "@/shared/auth/require-office-staff";
 import { ForbiddenError } from "@/shared/auth/errors";
 import { AiUnavailableError } from "@/shared/errors/ai-unavailable-error";
-import { requestActionPlanSuggestion } from "@/shared/integrations/ai/anthropic";
+import { requestActionPlanSuggestion } from "@/shared/integrations/agents";
 import {
   createRiskAuditAction,
   getRiskAuditAction,

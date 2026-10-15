@@ -20,8 +20,22 @@ describe("categoryInputSchema (US1)", () => {
     expect(parsed.note).toBe("uso restrito");
   });
 
-  it("rejeita tipo fora de epi|machine", () => {
+  it("aceita type supply (Insumo, #192)", () => {
+    expect(categoryInputSchema.parse({ type: "supply", name: "Cimento" }).type).toBe(
+      "supply",
+    );
+  });
+
+  it("rejeita tipo fora de epi|machine|supply", () => {
     expect(() => categoryInputSchema.parse({ ...base, type: "ppe" })).toThrow();
+  });
+
+  it("isActive default true; aceita 'false' (form) e boolean (JSON)", () => {
+    expect(categoryInputSchema.parse(base).isActive).toBe(true);
+    expect(categoryInputSchema.parse({ ...base, isActive: "false" }).isActive).toBe(
+      false,
+    );
+    expect(categoryInputSchema.parse({ ...base, isActive: true }).isActive).toBe(true);
   });
 
   it("exige nome não-vazio (após trim)", () => {

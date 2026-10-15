@@ -183,6 +183,18 @@ export function riskClassificationLabel(value: RiskClassification): string {
   return CLASSIFICATION_LABELS[value];
 }
 
+const RISK_CLASSIFICATION_GUIDANCE: Record<RiskClassification, string> = {
+  trivial: "Nenhuma ação obrigatória. Monitorar periodicamente.",
+  tolerable: "Monitorar e reavaliar periodicamente. Plano de ação não obrigatório.",
+  moderate: "Plano de ação obrigatório, com prazo e responsável definidos.",
+  substantial: "Plano de ação prioritário, com prazo curto e responsável definidos.",
+  intolerable: "Ação imediata. Interromper a atividade até a implementação do controle.",
+};
+
+export function riskClassificationGuidance(value: RiskClassification): string {
+  return RISK_CLASSIFICATION_GUIDANCE[value];
+}
+
 const BASE_LABELS: Record<MethodologyBase, string> = {
   aiha: "AIHA",
   as_nzs_4360: "AS/NZS 4360",

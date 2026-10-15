@@ -1,30 +1,34 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-
 import { deleteVehicularInspectionAction } from "@/shared/server/actions/inspections/vehicular-inspections";
+import type { ActionResult } from "@/shared/server/result";
 
-export function DeleteInspection({ id }: { id: string }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
+import { ConfirmDeleteButton } from "../../_ui/confirm-delete-button";
 
-  function onDelete() {
-    if (!window.confirm("Remover esta inspeção?")) return;
-    startTransition(async () => {
-      const result = await deleteVehicularInspectionAction(id);
-      if (result.ok) router.refresh();
-    });
-  }
+// A ação devolve `{ deleted: true }`; o botão de confirmação trabalha com
+// `{ id }` — adaptação local, sem alterar o contrato da Server Action.
+async function deleteInspection(id: string): Promise<ActionResult<{ id: string }>> {
+  const result = await deleteVehicularInspectionAction(id);
+  return result.ok ? { ok: true, data: { id } } : result;
+}
 
+export function DeleteInspection({
+  id,
+  hasLabel,
+  redirectTo,
+}: {
+  id: string;
+  hasLabel?: boolean;
+  redirectTo?: string;
+}) {
   return (
-    <button
-      type="button"
-      onClick={onDelete}
-      disabled={pending}
-      className="rounded-card border border-red-300 px-3 py-1 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
-    >
-      Remover
-    </button>
+    <ConfirmDeleteButton
+      id={id}
+      entityName="inspeção veicular"
+      description="Esta ação é permanente. As respostas do checklist desta inspeção são removidas junto."
+      deleteAction={deleteInspection}
+      hasLabel={hasLabel}
+      redirectTo={redirectTo}
+    />
   );
 }

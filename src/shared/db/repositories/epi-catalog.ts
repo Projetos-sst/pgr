@@ -1,14 +1,30 @@
 import "server-only";
 
-import { and, asc, eq, getTableColumns, ilike, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  getTableColumns,
+  ilike,
+  inArray,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 
-import type { CategoryType, EpiCatalogValues } from "@/shared/domains/pgr/epi-catalog";
+import {
+  EPI_CATALOG_CREATED_SUMMARY,
+  summarizeEpiCatalogChanges,
+  type CategoryType,
+  type EpiCatalogValues,
+} from "@/shared/domains/pgr/epi-catalog";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { withOrg, type TenantTransaction } from "../with-org";
 import { categories } from "../schema/categories";
+import { companies } from "../schema/companies";
 import {
   epiCatalog,
   epiDeliveryItems,
@@ -17,10 +33,12 @@ import {
   type EpiCatalog,
 } from "../schema/epis";
 import { auditedTenantWrite } from "./audited-write";
+import { recordEpiCatalogAudit } from "./epi-catalog-audit";
 
 export type ListEpiCatalogParams = PageParams & {
   search?: string;
   type?: CategoryType;
+  categoryId?: string;
 };
 
 export type EpiCatalogListItem = EpiCatalog & { categoryName: string };
@@ -37,16 +55,35 @@ function toEpiCatalogColumns(input: EpiCatalogValues) {
   return {
     type: input.type,
     categoryId: input.categoryId,
+    companyId: input.companyId ?? null,
+    usefulLifeMonths: input.usefulLifeMonths ?? null,
     name: input.name,
     ca: input.ca ?? null,
     caValidUntil: input.caValidUntil ?? null,
     manufacturer: input.manufacturer ?? null,
     norm: input.norm ?? null,
+    material: input.material ?? null,
     size: input.size ?? null,
     unitOfMeasure: input.unitOfMeasure ?? null,
     description: input.description ?? null,
     photoPath: input.photoPath ?? null,
+    replacementDate: input.replacementDate ?? null,
   };
+}
+
+/** Resolve nomes de categorias (para o resumo de auditoria) num único SELECT. */
+async function categoryNamesByIdTx(
+  tx: TenantTransaction,
+  orgId: string,
+  ids: string[],
+): Promise<Map<string, string>> {
+  const uniqueIds = [...new Set(ids)];
+  if (uniqueIds.length === 0) return new Map();
+  const rows = await tx
+    .select({ id: categories.id, name: categories.name })
+    .from(categories)
+    .where(and(eq(categories.orgId, orgId), inArray(categories.id, uniqueIds)));
+  return new Map(rows.map((row) => [row.id, row.name]));
 }
 
 /**
@@ -90,6 +127,20 @@ async function assertCategoryInTenant(
   if (!row) throw new ReferenceNotFoundError("category");
 }
 
+/** Empresa (opcional) do EPI deve existir no tenant (senão FK_NOT_FOUND). */
+async function assertCompanyInTenant(
+  tx: TenantTransaction,
+  orgId: string,
+  companyId: string,
+): Promise<void> {
+  const [row] = await tx
+    .select({ id: companies.id })
+    .from(companies)
+    .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId)))
+    .limit(1);
+  if (!row) throw new ReferenceNotFoundError("company");
+}
+
 async function countDependentsTx(
   tx: TenantTransaction,
   orgId: string,
@@ -130,11 +181,13 @@ export async function listEpiCatalog(
       or(
         ilike(epiCatalog.name, term),
         ilike(epiCatalog.ca, term),
+        ilike(epiCatalog.manufacturer, term),
         ilike(categories.name, term),
       )!,
     );
   }
   if (params.type) filters.push(eq(epiCatalog.type, params.type));
+  if (params.categoryId) filters.push(eq(epiCatalog.categoryId, params.categoryId));
   const where = and(...filters);
 
   return withOrg(orgId, async (tx) => {
@@ -172,14 +225,27 @@ export async function getEpiCatalogById(
 export async function createEpiCatalog(
   orgId: string,
   input: EpiCatalogValues,
+  opts: { createdBy?: string | null } = {},
 ): Promise<EpiCatalog> {
   return auditedTenantWrite(orgId, AUDIT_OP, () =>
     withOrg(orgId, async (tx) => {
       await assertCategoryInTenant(tx, orgId, input.categoryId, input.type);
+      if (input.companyId) await assertCompanyInTenant(tx, orgId, input.companyId);
       const [row] = await tx
         .insert(epiCatalog)
-        .values({ orgId, ...toEpiCatalogColumns(input) })
+        .values({
+          orgId,
+          ...toEpiCatalogColumns(input),
+          createdBy: opts.createdBy ?? null,
+        })
         .returning();
+      // Grava a auditoria (#25) na MESMA transação do insert — atômico com o write.
+      await recordEpiCatalogAudit(tx, {
+        orgId,
+        epiCatalogId: row.id,
+        changedBy: opts.createdBy ?? null,
+        summary: EPI_CATALOG_CREATED_SUMMARY,
+      });
       return row;
     }),
   );
@@ -189,16 +255,44 @@ export async function updateEpiCatalog(
   orgId: string,
   id: string,
   input: EpiCatalogValues,
+  opts: { changedBy?: string | null } = {},
 ): Promise<EpiCatalog | null> {
   return auditedTenantWrite(orgId, AUDIT_OP, () =>
     withOrg(orgId, async (tx) => {
       await assertCategoryInTenant(tx, orgId, input.categoryId, input.type);
+      if (input.companyId) await assertCompanyInTenant(tx, orgId, input.companyId);
+
+      const [before] = await tx
+        .select()
+        .from(epiCatalog)
+        .where(and(eq(epiCatalog.orgId, orgId), eq(epiCatalog.id, id)))
+        .limit(1);
+      if (!before) return null;
+
       const [row] = await tx
         .update(epiCatalog)
         .set({ ...toEpiCatalogColumns(input), updatedAt: new Date() })
         .where(and(eq(epiCatalog.orgId, orgId), eq(epiCatalog.id, id)))
         .returning();
-      return row ?? null;
+      if (!row) return null;
+
+      // Resumo do diff (#25), gravado na MESMA transação do update. `categoryId`
+      // é resolvido para o nome legível quando muda (senão o resumo compararia UUIDs).
+      const categoryIds =
+        before.categoryId === row.categoryId ? [] : [before.categoryId, row.categoryId];
+      const categoryNamesById = await categoryNamesByIdTx(tx, orgId, categoryIds);
+      const summary = summarizeEpiCatalogChanges(before, row, {
+        old: categoryNamesById.get(before.categoryId),
+        new: categoryNamesById.get(row.categoryId),
+      });
+      await recordEpiCatalogAudit(tx, {
+        orgId,
+        epiCatalogId: id,
+        changedBy: opts.changedBy ?? null,
+        summary,
+      });
+
+      return row;
     }),
   );
 }

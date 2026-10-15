@@ -26,13 +26,35 @@ export type DashboardPending = {
   episPendingReturn: number;
   trainingsExpired: number;
   trainingsDueSoon: number;
+  episCaExpired: number;
+  episCaDueSoon: number;
 };
+
+export type ServiceOrdersSummary = {
+  signed: number;
+  pending: number;
+  refused: number;
+  total: number;
+};
+
+export type AccidentsSummary = {
+  open: number;
+  inAnalysis: number;
+  resolved: number;
+  archived: number;
+  total: number;
+};
+
+export type EmployeesBreakdown = { active: number; inactive: number };
 
 export type DashboardSummary = {
   kpis: DashboardKpis;
+  employeesBreakdown: EmployeesBreakdown;
   risksByAgentType: CountByKey[];
   actionPlansByLevel: CountByKey[];
   pending: DashboardPending;
+  serviceOrdersSummary?: ServiceOrdersSummary;
+  accidentsSummary?: AccidentsSummary;
 };
 
 /**

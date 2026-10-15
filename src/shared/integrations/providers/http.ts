@@ -8,7 +8,7 @@ const DEFAULT_TIMEOUT_MS = 5000;
 
 // Alguns provedores (BrasilAPI atrás de Cloudflare) respondem 403 ao User-Agent
 // padrão do runtime; um UA identificável destrava a resposta.
-const USER_AGENT = "sst-manager/1.0 (+https://github.com/Dougladmo/sst-manager)";
+const USER_AGENT = "pgr-e/1.0 (+https://github.com/Projetos-sst/pgr)";
 
 export type HttpResult =
   | { ok: true; status: number; body: unknown }

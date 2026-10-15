@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
-import { categoryInputSchema, type CategoryInput } from "@/shared/domains/pgr/categories";
+import {
+  categoryInputSchema,
+  type CategoryInput,
+  type CategoryListItem,
+} from "@/shared/domains/pgr/categories";
 import type { Paginated } from "@/shared/pagination";
 import * as repo from "@/shared/db/repositories/categories";
 import type { Category } from "@/shared/db/schema";
@@ -14,7 +18,7 @@ const BASE_PATH = "/categories";
 
 export async function listCategoriesAction(
   params: repo.ListCategoriesParams = {},
-): Promise<ActionResult<Paginated<Category>>> {
+): Promise<ActionResult<Paginated<CategoryListItem>>> {
   return officeAction("pgr.categories.list", ({ tenantId }) =>
     repo.listCategories(tenantId, params),
   );

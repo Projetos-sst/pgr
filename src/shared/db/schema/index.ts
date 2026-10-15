@@ -32,6 +32,7 @@ export {
   epiDeliveries,
   epiDeliveryItems,
   epiRisk,
+  epiCatalogAuditLog,
   stockMovementType,
   epiSignatureStatus,
   epiNeutralization,
@@ -47,6 +48,8 @@ export {
   type NewEpiDeliveryItem,
   type EpiRisk,
   type NewEpiRisk,
+  type EpiCatalogAuditLog,
+  type NewEpiCatalogAuditLog,
 } from "./epis";
 export {
   signatureRequests,
@@ -157,8 +160,11 @@ export {
   psychosocialResponses,
   psychosocialAnswers,
   psychosocialRisks,
+  psychosocialRiskFactors,
   psychosocialCampaignStatus,
   psychosocialQuestionType,
+  psychosocialRiskLevel,
+  psychosocialFactorStatus,
   type PsychosocialCampaign,
   type NewPsychosocialCampaign,
   type PsychosocialCampaignStatus,
@@ -171,6 +177,10 @@ export {
   type NewPsychosocialAnswer,
   type PsychosocialRisk,
   type NewPsychosocialRisk,
+  type PsychosocialRiskFactor,
+  type NewPsychosocialRiskFactor,
+  type PsychosocialRiskLevelValue,
+  type PsychosocialFactorStatusValue,
 } from "./psychosocial";
 export {
   folders,
@@ -185,9 +195,11 @@ export { jobs, jobType, jobStatus, type Job, type NewJob } from "./jobs";
 export {
   esocialEvents,
   esocialBatches,
+  esocialConfig,
   esocialEventType,
   esocialEventStatus,
   esocialBatchStatus,
+  esocialEnvironment,
   type EsocialEvent,
   type NewEsocialEvent,
   type EsocialEventType,
@@ -195,6 +207,9 @@ export {
   type EsocialBatch,
   type NewEsocialBatch,
   type EsocialBatchStatus,
+  type EsocialConfig,
+  type NewEsocialConfig,
+  type EsocialEnvironment,
 } from "./esocial";
 export {
   serviceOrders,
@@ -229,6 +244,30 @@ export {
 export {
   formControls,
   formControlPosition,
+  formControlType,
+  formControlStatus,
   type FormControl,
   type NewFormControl,
 } from "./form-controls";
+export { medicos, medicoStatus, type Medico, type NewMedico } from "./medicos";
+export {
+  healthExams,
+  examType,
+  examAptitude,
+  type HealthExam,
+  type NewHealthExam,
+} from "./health-exams";
+export {
+  ergonomicEvaluations,
+  ergonomicAdequacy,
+  type ErgonomicEvaluation,
+  type NewErgonomicEvaluation,
+  type ErgonomicAdequacyValue,
+} from "./ergonomics";
+export {
+  platformLeads,
+  leadInterest,
+  leadSource,
+  type PlatformLead,
+  type NewPlatformLead,
+} from "./platform-leads";

@@ -43,8 +43,38 @@ export function buildStoragePath(
 export type StoredObject = { storagePath: string; sizeBytes: number };
 
 /**
+ * O path já tem um objeto (upload com `upsert: false`). Acontece quando dois envios
+ * disputam a mesma versão com o mesmo nome de arquivo (#56): o path é determinístico
+ * (`v{N}-{slug}`), então o segundo upload falha antes de chegar ao INSERT.
+ */
+export class StorageObjectExistsError extends Error {
+  constructor(readonly storagePath: string) {
+    super("documents storage object already exists");
+    this.name = "StorageObjectExistsError";
+  }
+}
+
+/**
+ * Reconhece o erro de "objeto já existe" do Supabase Storage. O provedor já variou entre
+ * `status: 409` e `status: 400` + `statusCode: "409"`, com a mensagem "The resource already
+ * exists" — por isso checa os três sinais.
+ */
+export function isStorageObjectExistsError(error: {
+  message?: string;
+  status?: number;
+  statusCode?: string;
+}): boolean {
+  return (
+    error.status === 409 ||
+    error.statusCode === "409" ||
+    /already exists|duplicate/i.test(error.message ?? "")
+  );
+}
+
+/**
  * Grava o binário no path particionado do tenant. `orgId` SEMPRE da sessão. Erro
  * do provedor → lança (o chamador compensa/propaga; nunca vaza detalhe do provedor).
+ * Path ocupado → `StorageObjectExistsError`, para o chamador responder com conflito.
  */
 export async function putDocumentObject(
   orgId: string,
@@ -57,32 +87,45 @@ export async function putDocumentObject(
   const { error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .upload(storagePath, file, { contentType: file.type, upsert: false });
-  if (error) throw new Error(`documents storage upload failed: ${error.message}`);
+  if (error) {
+    if (isStorageObjectExistsError(error)) {
+      throw new StorageObjectExistsError(storagePath);
+    }
+    throw new Error(`documents storage upload failed: ${error.message}`);
+  }
   return { storagePath, sizeBytes: file.size };
 }
 
-/** Path determinístico do PDF gerado por job (idempotência da #39). */
-export function generatedPdfPath(orgId: string, documentId: string): string {
-  return `${orgId}/documentos/generated/${documentId}.pdf`;
+/** Formato do arquivo gerado por job (extensão do path). */
+export type GeneratedDocumentFormat = "docx" | "pdf";
+
+/** Path determinístico do arquivo gerado por job (idempotência da #39 via upsert). */
+export function generatedDocumentPath(
+  orgId: string,
+  documentId: string,
+  format: GeneratedDocumentFormat,
+): string {
+  return `${orgId}/documentos/generated/${documentId}.${format}`;
 }
 
 /**
- * Grava (ou sobrescreve) o PDF gerado por um job em lote (#39) no path
- * determinístico. `upsert:true` torna o reprocessamento idempotente — nunca
- * duplica objeto. `orgId` sempre da linha do job (`job.org_id`).
+ * Grava (ou sobrescreve) o arquivo gerado por um job em lote (#39) no path
+ * determinístico do formato. `upsert:true` torna o reprocessamento idempotente —
+ * nunca duplica objeto. `orgId` sempre da linha do job (`job.org_id`).
  */
-export async function putGeneratedPdf(
+export async function putGeneratedDocument(
   orgId: string,
   documentId: string,
-  pdf: Buffer,
+  file: Buffer,
+  options: { format: GeneratedDocumentFormat; contentType: string },
 ): Promise<StoredObject> {
-  const storagePath = generatedPdfPath(orgId, documentId);
+  const storagePath = generatedDocumentPath(orgId, documentId, options.format);
   const supabase = getRlsBypassingSupabaseClient();
   const { error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
-    .upload(storagePath, pdf, { contentType: "application/pdf", upsert: true });
-  if (error) throw new Error(`generated pdf upload failed: ${error.message}`);
-  return { storagePath, sizeBytes: pdf.byteLength };
+    .upload(storagePath, file, { contentType: options.contentType, upsert: true });
+  if (error) throw new Error(`generated document upload failed: ${error.message}`);
+  return { storagePath, sizeBytes: file.byteLength };
 }
 
 /** Remove um objeto (compensação de órfão / limpeza pós-exclusão). */

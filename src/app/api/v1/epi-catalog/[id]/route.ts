@@ -20,10 +20,10 @@ export function GET(req: NextRequest, { params }: Ctx) {
 }
 
 export function PUT(req: NextRequest, { params }: Ctx) {
-  return restHandler(req, async ({ tenantId }) => {
+  return restHandler(req, async ({ tenantId, userId }) => {
     const { id } = await params;
     const input = epiCatalogInputSchema.parse(await req.json());
-    const row = await repo.updateEpiCatalog(tenantId, id, input);
+    const row = await repo.updateEpiCatalog(tenantId, id, input, { changedBy: userId });
     if (!row) throw new NotFoundError();
     return row;
   });

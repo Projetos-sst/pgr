@@ -18,6 +18,7 @@ export default async function NovaInspecaoEquipamentoPage() {
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <PageHeader
+        backHref="/equipment-inspections"
         title="Nova inspeção de equipamento"
         description="Passo 1 de 2 — cabeçalho (equipamento e plano)."
       />

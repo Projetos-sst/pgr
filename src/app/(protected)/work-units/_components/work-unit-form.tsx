@@ -8,17 +8,34 @@ import {
   updateWorkUnitAction,
 } from "@/shared/server/actions/pgr/work-units";
 import type { WorkUnitInput, WorkUnit } from "@/shared/domains/pgr/work-units";
+import {
+  WORK_UNIT_TYPES,
+  WORK_UNIT_TYPE_LABELS,
+  WORK_UNIT_STATUSES,
+  WORK_UNIT_STATUS_LABELS,
+} from "@/shared/domains/pgr/work-units";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 
 import {
+  CancelLink,
   FieldError,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
 } from "../../_ui/form";
 import { AddressFields, type AddressValue } from "../../_ui/address-fields";
+
+const TYPE_OPTIONS = WORK_UNIT_TYPES.map((t) => ({
+  value: t,
+  label: WORK_UNIT_TYPE_LABELS[t],
+}));
+const STATUS_OPTIONS = WORK_UNIT_STATUSES.map((s) => ({
+  value: s,
+  label: WORK_UNIT_STATUS_LABELS[s],
+}));
 
 function addressFrom(source?: WorkUnit | null): AddressValue {
   return {
@@ -86,6 +103,14 @@ export function WorkUnitForm({
       name: value("name"),
       description: value("description"),
       contractNumber: value("contractNumber"),
+      type: (value("type") || undefined) as WorkUnitInput["type"],
+      status: value("status") as WorkUnitInput["status"],
+      startDate: value("startDate"),
+      expectedEndDate: value("expectedEndDate"),
+      managerName: value("managerName"),
+      managerRole: value("managerRole"),
+      professionalTitle: value("professionalTitle"),
+      professionalRegistration: value("professionalRegistration"),
       ...address,
     };
 
@@ -104,37 +129,104 @@ export function WorkUnitForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <FormError message={formError} />
-      <SelectField
-        label="Empresa"
-        name="companyId"
-        required
-        value={companyId}
-        onChange={setCompanyId}
-        options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
-        error={errors.companyId}
-      />
-      <TextField
-        label="Nome"
-        name="name"
-        required
-        defaultValue={workUnit?.name}
-        error={errors.name}
-      />
-      <TextField
-        label="Objeto/descrição"
-        name="description"
-        required
-        defaultValue={workUnit?.description}
-        error={errors.description}
-      />
-      <TextField
-        label="Nº do contrato"
-        name="contractNumber"
-        defaultValue={workUnit?.contractNumber}
-        error={errors.contractNumber}
-      />
+
+      <FormSection title="Identificação">
+        <SelectField
+          label="Empresa"
+          name="companyId"
+          required
+          value={companyId}
+          onChange={setCompanyId}
+          options={companies.map((c) => ({ value: c.id, label: c.razaoSocial }))}
+          error={errors.companyId}
+        />
+        <TextField
+          label="Nome"
+          name="name"
+          required
+          defaultValue={workUnit?.name}
+          error={errors.name}
+        />
+        <TextField
+          label="Nº do contrato"
+          name="contractNumber"
+          isMono
+          defaultValue={workUnit?.contractNumber}
+          error={errors.contractNumber}
+        />
+        <SelectField
+          label="Tipo"
+          name="type"
+          defaultValue={workUnit?.type ?? ""}
+          options={TYPE_OPTIONS}
+          emptyLabel="— selecione —"
+          error={errors.type}
+        />
+        <SelectField
+          label="Situação"
+          name="status"
+          defaultValue={workUnit?.status ?? "active"}
+          options={STATUS_OPTIONS}
+          error={errors.status}
+        />
+        <TextField
+          label="Escopo do Contrato"
+          name="description"
+          required
+          isFullWidth
+          defaultValue={workUnit?.description}
+          error={errors.description}
+        />
+      </FormSection>
+
+      <FormSection title="Vigência da obra">
+        <TextField
+          label="Início da obra"
+          name="startDate"
+          type="date"
+          defaultValue={workUnit?.startDate ?? ""}
+          error={errors.startDate}
+        />
+        <TextField
+          label="Previsão de término"
+          name="expectedEndDate"
+          type="date"
+          defaultValue={workUnit?.expectedEndDate ?? ""}
+          error={errors.expectedEndDate}
+        />
+      </FormSection>
+
+      <FormSection title="Responsável Técnico">
+        <TextField
+          label="Gestor/Preposto"
+          name="managerName"
+          defaultValue={workUnit?.managerName}
+          error={errors.managerName}
+        />
+        <TextField
+          label="Cargo do gestor/preposto"
+          name="managerRole"
+          defaultValue={workUnit?.managerRole}
+          error={errors.managerRole}
+        />
+        <TextField
+          label="Título profissional"
+          name="professionalTitle"
+          placeholder="Ex.: Engenheiro Civil, Técnico de Segurança do Trabalho"
+          defaultValue={workUnit?.professionalTitle}
+          error={errors.professionalTitle}
+        />
+        <TextField
+          label="Registro no conselho de classe"
+          name="professionalRegistration"
+          placeholder="Ex.: CREA/CAU"
+          isMono
+          defaultValue={workUnit?.professionalRegistration}
+          error={errors.professionalRegistration}
+        />
+      </FormSection>
 
       <AddressFields
         value={address}
@@ -145,7 +237,7 @@ export function WorkUnitForm({
             type="button"
             onClick={copyCompanyAddress}
             disabled={!canCopyAddress}
-            className="glass-panel text-text-muted rounded-card hover:text-text self-start px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-40"
+            className="text-text-muted hover:text-text mb-4 self-start rounded-[11px] border border-white/70 bg-white/50 px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-40"
           >
             Preencher com endereço da empresa
           </button>
@@ -154,6 +246,7 @@ export function WorkUnitForm({
 
       <FieldError message={errors._} />
       <FormActions>
+        <CancelLink href="/work-units" />
         <SubmitButton
           pending={pending}
           label={workUnit ? "Salvar alterações" : "Criar unidade"}

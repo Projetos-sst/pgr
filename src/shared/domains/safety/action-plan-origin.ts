@@ -2,12 +2,13 @@ import { z } from "zod";
 
 /**
  * Origem polimórfica de um Plano de Ação (Fase 06 / US6). `origin_type` é **TEXT validado na
- * aplicação** (não pgEnum) — V1 aceita **apenas** `risk` e `incident`; `inspection`/`non_conformity`
- * plugam depois sem migration. `origin_id` **não** tem FK física: existência/tenant são validados
- * na aplicação (origem inválida/inexistente/cross-tenant → `FK_NOT_FOUND`/422).
+ * aplicação** (não pgEnum) — V1 aceita `risk`, `incident` e `control_measure` (issue #51);
+ * `inspection`/`non_conformity` plugam depois sem migration. `origin_id` **não** tem FK física:
+ * existência/tenant são validados na aplicação (origem inválida/inexistente/cross-tenant →
+ * `FK_NOT_FOUND`/422).
  */
 
-export const ACTION_PLAN_ORIGIN_TYPES = ["risk", "incident"] as const;
+export const ACTION_PLAN_ORIGIN_TYPES = ["risk", "incident", "control_measure"] as const;
 
 export const actionPlanOriginTypeSchema = z.enum(ACTION_PLAN_ORIGIN_TYPES);
 export type ActionPlanOriginType = z.infer<typeof actionPlanOriginTypeSchema>;
@@ -15,6 +16,7 @@ export type ActionPlanOriginType = z.infer<typeof actionPlanOriginTypeSchema>;
 export const ORIGIN_TYPE_LABELS: Record<ActionPlanOriginType, string> = {
   risk: "Risco",
   incident: "Incidente",
+  control_measure: "Medida de Controle",
 };
 
 export function originTypeLabel(value: string): string {
@@ -30,5 +32,6 @@ export type OriginSnapshot = {
   type: ActionPlanOriginType;
   id: string;
   title: string | null;
+  company: string | null; // empresa derivada (risco→GES→empresa / incidente→empresa)
   removed: boolean;
 };

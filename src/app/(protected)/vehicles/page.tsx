@@ -1,22 +1,52 @@
-import Link from "next/link";
-
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
-import { listVehiclesAction } from "@/shared/server/actions/inspections/vehicles";
-
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  PrimaryLink,
-  SearchForm,
-  Table,
-} from "../_ui/list";
+  formatPlate,
+  type VehicleInspectionStatus,
+} from "@/shared/domains/inspections/vehicles";
+import {
+  listVehicleCompanyOptionsAction,
+  listVehiclesAction,
+} from "@/shared/server/actions/inspections/vehicles";
+
+import { EmptyState, PageHeader } from "../_ui/list";
+import {
+  Cell,
+  DataGrid,
+  GridHeader,
+  GridRow,
+  ListCard,
+  ListFooter,
+  ListToolbar,
+  MonoCell,
+  StatusBadge,
+  ToolbarButton,
+  ToolbarSearch,
+  ToolbarSelect,
+  EditIconLink,
+  RowActions,
+  type StatusTone,
+} from "../_ui/data-list";
 import { DeleteVehicle } from "./_components/delete-vehicle";
+import { VehicleIcon } from "./_components/vehicle-icon";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ search?: string; page?: string }>;
+const TEMPLATE = "1fr 1.8fr 1.2fr 1fr 1.2fr 1.1fr 84px";
+
+// Status de inspeção (derivado): Regular verde, A vencer âmbar, Vencida vermelho.
+const STATUS_TONE: Record<VehicleInspectionStatus, StatusTone> = {
+  none: "neutral",
+  regular: "green",
+  due_soon: "amber",
+  expired: "red",
+};
+
+function formatDate(iso: string | null): string {
+  return iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR") : "—";
+}
+
+type SearchParams = Promise<{ search?: string; company?: string; page?: string }>;
 
 export default async function VeiculosPage({
   searchParams,
@@ -28,67 +58,104 @@ export default async function VeiculosPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const result = await listVehiclesAction({ search: sp.search, page });
+  const [result, companyOptions] = await Promise.all([
+    listVehiclesAction({ search: sp.search, companyId: sp.company, page }),
+    listVehicleCompanyOptionsAction(),
+  ]);
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
+  const companies = companyOptions.ok ? companyOptions.data : [];
+  const params = { search: sp.search, company: sp.company };
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-[22px] px-5 pt-8 pb-10 sm:px-[30px]">
       <PageHeader
+        icon={<VehicleIcon />}
         title="Veículos"
-        description="Frota do escritório — base das inspeções veiculares."
-        action={<PrimaryLink href="/vehicles/new">Novo veículo</PrimaryLink>}
-      />
-      <SearchForm
-        basePath="/vehicles"
-        placeholder="Buscar por placa, modelo ou marca"
-        defaultValue={sp.search}
+        description="Frota cadastrada para inspeções veiculares e OS"
       />
 
-      {rows.length === 0 ? (
-        <EmptyState message="Nenhum veículo cadastrado." />
-      ) : (
-        <Table
-          headers={["Placa", "Tipo", "Marca/Modelo", "Proprietário", "KM inicial", ""]}
-        >
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t border-white/50">
-              <td className="px-4 py-2 font-mono">
-                <Link
-                  href={`/vehicles/${row.id}/edit`}
-                  className="font-medium hover:underline"
-                >
-                  {row.plate}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.typeLabel}</td>
-              <td className="px-4 py-2">
-                {[row.brand, row.model].filter(Boolean).join(" ") || "—"}
-              </td>
-              <td className="px-4 py-2">{row.owner ?? "—"}</td>
-              <td className="px-4 py-2 tabular-nums">{row.initialKm}</td>
-              <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/vehicles/${row.id}/edit`}
-                    className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
-                  >
-                    Editar
-                  </Link>
-                  <DeleteVehicle id={row.id} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      )}
+      <ListCard>
+        <ListToolbar>
+          <ToolbarSearch
+            basePath="/vehicles"
+            placeholder="Buscar por placa ou modelo…"
+            defaultValue={sp.search}
+            hidden={{ company: sp.company }}
+          />
+          <ToolbarSelect
+            basePath="/vehicles"
+            name="company"
+            defaultValue={sp.company}
+            options={companies}
+            emptyLabel="Todas as Empresas"
+            hidden={{ search: sp.search }}
+          />
+          <ToolbarButton href="/vehicles/new">Novo Veículo</ToolbarButton>
+        </ListToolbar>
 
-      <Pagination
-        basePath="/vehicles"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        params={{ search: sp.search }}
-      />
+        {rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              isFlat
+              message={
+                sp.search || sp.company
+                  ? "Nenhum veículo encontrado para o filtro."
+                  : "Nenhum veículo cadastrado."
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <DataGrid minWidth={900}>
+              <GridHeader
+                template={TEMPLATE}
+                columns={[
+                  { header: "Placa" },
+                  { header: "Veículo" },
+                  { header: "Tipo" },
+                  { header: "Empresa" },
+                  { header: "Últ. Inspeção" },
+                  { header: "Status" },
+                  { header: "Opções", align: "right" },
+                ]}
+              />
+              {rows.map((row, i) => (
+                <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
+                  <MonoCell href={`/vehicles/${row.id}/edit`}>
+                    {formatPlate(row.plate)}
+                  </MonoCell>
+                  <Cell className="text-text font-semibold">
+                    {[row.brand, row.model].filter(Boolean).join(" ") || "—"}
+                  </Cell>
+                  <Cell>{row.typeLabel}</Cell>
+                  <Cell>{row.companyName ?? "—"}</Cell>
+                  <Cell className="text-text-muted font-mono">
+                    {formatDate(row.lastInspectedAt)}
+                  </Cell>
+                  <Cell>
+                    <StatusBadge tone={STATUS_TONE[row.inspectionStatus]}>
+                      {row.inspectionStatusLabel}
+                    </StatusBadge>
+                  </Cell>
+                  <Cell align="right">
+                    <RowActions>
+                      <EditIconLink href={`/vehicles/${row.id}/edit`} />
+                      <DeleteVehicle id={row.id} />
+                    </RowActions>
+                  </Cell>
+                </GridRow>
+              ))}
+            </DataGrid>
+            <ListFooter
+              basePath="/vehicles"
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              params={params}
+            />
+          </>
+        )}
+      </ListCard>
     </div>
   );
 }

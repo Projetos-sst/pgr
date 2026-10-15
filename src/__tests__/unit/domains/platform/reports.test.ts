@@ -10,6 +10,7 @@ import type { EventListItem } from "@/shared/domains/esocial/events";
 
 const summary: DashboardSummary = {
   kpis: { companies: 3, employees: 12, workUnits: 2, ges: 4, risks: 7, pgrs: 1 },
+  employeesBreakdown: { active: 10, inactive: 2 },
   risksByAgentType: [],
   actionPlansByLevel: [],
   pending: {
@@ -19,6 +20,8 @@ const summary: DashboardSummary = {
     episPendingReturn: 0,
     trainingsExpired: 0,
     trainingsDueSoon: 5,
+    episCaExpired: 0,
+    episCaDueSoon: 0,
   },
 };
 
@@ -40,20 +43,28 @@ const esocialEvents: EventListItem[] = [
     id: "e1",
     eventType: "S-2210",
     eventTypeLabel: "S-2210 (CAT)",
+    description: "CAT — Comunicação de Acidente de Trabalho",
     status: "sent",
     statusLabel: "Enviado",
     referenceId: "ref-1",
+    employeeName: "João Silva",
     batchId: "batch-1",
+    sentAt: "2026-07-10T13:00:00.000Z",
+    protocolNumber: "PROT-1",
     createdAt: "2026-07-10T12:00:00.000Z",
   },
   {
     id: "e2",
     eventType: "S-2240",
     eventTypeLabel: "S-2240 (Insalubridade)",
+    description: "Condições Ambientais do Trabalho",
     status: "pending",
     statusLabel: "Pendente",
     referenceId: null,
+    employeeName: null,
     batchId: null,
+    sentAt: null,
+    protocolNumber: null,
     createdAt: "2026-07-11T12:00:00.000Z",
   },
 ];

@@ -18,6 +18,7 @@ export type ListEmployeesParams = PageParams & {
   companyId?: string;
   status?: string;
   search?: string;
+  gesId?: string;
 };
 
 function toEmployeeColumns(input: EmployeeValues) {
@@ -101,6 +102,7 @@ export async function listEmployees(
   const { limit, offset } = resolvePageParams(params);
   const filters: SQL[] = [eq(employees.orgId, orgId)];
   if (params.companyId) filters.push(eq(employees.companyId, params.companyId));
+  if (params.gesId) filters.push(eq(employees.gesId, params.gesId));
   if (params.status)
     filters.push(eq(employees.status, params.status as Employee["status"]));
   const search = params.search?.trim();
@@ -124,6 +126,14 @@ export async function listEmployees(
         status: employees.status,
         companyName: companies.razaoSocial,
         gesName: ges.name,
+        jobRoleTitle: jobRoles.title,
+        // Nº de OS do funcionário — subquery correlacionada QUALIFICADA (nomes com
+        // prefixo de tabela; ver lição do #188) escopada ao tenant.
+        serviceOrderCount: sql<number>`(
+          select count(*)::int from "service_orders"
+          where "service_orders"."assigned_employee_id" = "employees"."id"
+            and "service_orders"."org_id" = ${orgId}
+        )`,
       })
       .from(employees)
       .innerJoin(companies, eq(companies.id, employees.companyId))

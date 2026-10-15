@@ -1,4 +1,4 @@
-# Roadmap de Arquitetura — SST Manager
+# Roadmap de Arquitetura — PGR-e
 
 Este diretório é o **norte técnico** do projeto. Ele descreve _como_ a aplicação
 deve ser construída: estrutura de pastas, modelagem de dados, design de API,
@@ -34,6 +34,7 @@ formal da constituição).
 | 04  | [`04-integracoes-e-servicos.md`](./04-integracoes-e-servicos.md)       | Clerk, Supabase Storage, serviço de PDF (Gotenberg), jobs assíncronos, Cloudflare                 |
 | 05  | [`05-roadmap-de-fases.md`](./05-roadmap-de-fases.md)                   | Plano de entrega faseado (45 dias), riscos, melhorias futuras                                     |
 | 06  | [`06-inventario-de-entregaveis.md`](./06-inventario-de-entregaveis.md) | Inventário de entregáveis (telas/fluxos) → milestones e issues do GitHub                          |
+| 07  | [`07-pgr-ged-e-pdf.md`](./07-pgr-ged-e-pdf.md)                         | Etapa "Documentos e PDF" do PGR: download síncrono vs. arquivamento no GED, worker, diagnóstico   |
 
 ## Como usar
 

@@ -1,6 +1,8 @@
-# Worker de geração de PDF em lote (#39). Processo Node standalone que consome a
-# fila `jobs`. Roda o TS direto com tsx + `--conditions=react-server` (resolve
-# `server-only` para noop — mecanismo oficial do pacote). Local via docker-compose;
+# Worker de geração em lote (#39) do documento do PGR por template DOCX (fatia 030):
+# preenche `templates/pgr/pgr-template.docx` e guarda PDF por padrão (ou DOCX
+# explícito) no GED. Processo Node standalone que consome a fila `jobs`. Roda o TS
+# direto com tsx + `--conditions=react-server` (resolve `server-only` para noop —
+# mecanismo oficial do pacote). Local via docker-compose;
 # a MESMA imagem é deployável em prod (Railway/Render/Fly) atrás de rede privada.
 FROM node:22-slim
 
@@ -12,6 +14,9 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src
 COPY worker ./worker
+# Template do PGR lido de `process.cwd()/templates/pgr/` (WORKDIR /app); sem ele
+# todo job falha com REPORT_UNAVAILABLE.
+COPY templates/pgr/pgr-template.docx ./templates/pgr/pgr-template.docx
 
 # Segredos e URLs vêm do ambiente (DATABASE_URL app_runtime, DATABASE_URL_UNPOOLED
 # owner, GOTENBERG_URL, SUPABASE_*) — nunca no build.

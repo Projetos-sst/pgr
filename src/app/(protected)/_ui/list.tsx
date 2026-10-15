@@ -5,18 +5,54 @@ export function PageHeader({
   title,
   description,
   action,
+  icon,
+  backHref,
+  backLabel = "Voltar",
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  icon?: ReactNode;
+  backHref?: string;
+  backLabel?: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <h1 className="text-text text-2xl font-extrabold tracking-tight">{title}</h1>
-        {description ? (
-          <p className="text-text-muted mt-1 text-sm">{description}</p>
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="flex items-center gap-3.5">
+        {backHref ? (
+          <Link
+            href={backHref}
+            aria-label={backLabel}
+            className="glass-input rounded-field text-text-muted hover:text-text flex h-10 w-10 shrink-0 items-center justify-center transition-colors"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden
+            >
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+          </Link>
         ) : null}
+        {icon ? (
+          <div className="bg-primary shadow-primary flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[15px] text-white">
+            {icon}
+          </div>
+        ) : null}
+        <div>
+          <h1 className="text-text text-xl font-extrabold tracking-[-0.02em] sm:text-2xl">
+            {title}
+          </h1>
+          {description ? (
+            <p className="text-text-subtle mt-0.5 text-xs sm:text-[13px]">
+              {description}
+            </p>
+          ) : null}
+        </div>
       </div>
       {action}
     </div>
@@ -27,17 +63,45 @@ export function PrimaryLink({ href, children }: { href: string; children: ReactN
   return (
     <Link
       href={href}
-      className="btn-primary rounded-pill px-4 py-2 text-sm font-semibold transition-colors"
+      className="btn-primary hover-lift rounded-card shadow-primary flex items-center gap-2 px-4 py-2.5 text-xs font-bold transition-all sm:text-sm"
     >
       {children}
     </Link>
   );
 }
 
-export function EmptyState({ message }: { message: string }) {
+export function EmptyState({
+  title = "Nenhum registro encontrado",
+  message,
+  isFlat,
+}: {
+  title?: string;
+  message: string;
+  /** Sem a moldura glass — para uso dentro de um `ListCard`. */
+  isFlat?: boolean;
+}) {
   return (
-    <div className="glass-card text-text-subtle px-6 py-12 text-center text-sm">
-      {message}
+    <div
+      className={`animate-fade-slide-up flex flex-col items-center justify-center p-8 text-center sm:p-12 ${
+        isFlat ? "" : "glass-card rounded-[20px]"
+      }`}
+    >
+      <div className="bg-primary/10 text-primary mb-3.5 flex h-12 w-12 items-center justify-center rounded-2xl shadow-xs">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="9" y1="15" x2="15" y2="15" />
+        </svg>
+      </div>
+      <h3 className="text-text text-sm font-bold sm:text-base">{title}</h3>
+      <p className="text-text-subtle mt-1 max-w-md text-xs sm:text-sm">{message}</p>
     </div>
   );
 }
@@ -72,12 +136,14 @@ export function SearchForm({
             .filter(([, v]) => v !== undefined && v !== "")
             .map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)
         : null}
-      <input
-        name="search"
-        defaultValue={defaultValue ?? ""}
-        placeholder={placeholder}
-        className="glass-input text-text placeholder:text-text-subtle rounded-card w-full max-w-xs px-3 py-2 text-sm"
-      />
+      <div className="relative max-w-xs flex-1">
+        <input
+          name="search"
+          defaultValue={defaultValue ?? ""}
+          placeholder={placeholder}
+          className="glass-input text-text placeholder:text-text-subtle rounded-card w-full px-3.5 py-2 text-sm outline-none"
+        />
+      </div>
       <button
         type="submit"
         className="glass-panel text-text-muted rounded-card hover:text-text px-4 py-2 text-sm font-semibold transition-colors"
@@ -102,51 +168,159 @@ export function Pagination({
   params: Record<string, string | undefined>;
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if (totalPages <= 1) return null;
-  const hasPrev = page > 1;
-  const hasNext = page < totalPages;
+  if (total === 0) return null;
+
+  const clampedPage = Math.min(Math.max(page, 1), totalPages);
+
+  const startItem = (clampedPage - 1) * pageSize + 1;
+  const endItem = Math.min(total, clampedPage * pageSize);
+
+  const pages: number[] = [];
+  const maxDisplayed = 5;
+  let startPage = Math.max(1, clampedPage - Math.floor(maxDisplayed / 2));
+  const endPage = Math.min(totalPages, startPage + maxDisplayed - 1);
+  if (endPage - startPage + 1 < maxDisplayed) {
+    startPage = Math.max(1, endPage - maxDisplayed + 1);
+  }
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+
   return (
-    <nav className="flex items-center justify-between gap-4 text-sm">
-      <span className="text-text-subtle">
-        Página {page} de {totalPages} · {total} registro(s)
+    <nav className="text-text-subtle flex flex-wrap items-center justify-between gap-4 border-t border-black/5 px-6 py-4 text-xs">
+      <span>
+        Mostrando <strong className="text-text font-semibold">{startItem}</strong> a{" "}
+        <strong className="text-text font-semibold">{endItem}</strong> de{" "}
+        <strong className="text-text font-semibold">{total}</strong> registros
       </span>
-      <div className="flex gap-2">
-        {hasPrev ? (
-          <Link
-            href={`${basePath}${buildQuery(params, { page: String(page - 1) })}`}
-            className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 transition-colors"
-          >
-            Anterior
-          </Link>
-        ) : null}
-        {hasNext ? (
-          <Link
-            href={`${basePath}${buildQuery(params, { page: String(page + 1) })}`}
-            className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 transition-colors"
-          >
-            Próxima
-          </Link>
-        ) : null}
+
+      {totalPages > 1 ? (
+        <div className="flex items-center gap-1.5">
+          {clampedPage > 1 ? (
+            <Link
+              href={`${basePath}${buildQuery(params, { page: String(clampedPage - 1) })}`}
+              className="text-text-muted hover:text-text flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-white/50"
+              aria-label="Página anterior"
+            >
+              ‹
+            </Link>
+          ) : (
+            <span className="text-text-subtle/50 flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-[9px]">
+              ‹
+            </span>
+          )}
+
+          {pages.map((p) =>
+            p === clampedPage ? (
+              <span
+                key={p}
+                className="bg-primary shadow-primary flex h-8 w-8 items-center justify-center rounded-[9px] text-[13px] font-bold text-white"
+              >
+                {p}
+              </span>
+            ) : (
+              <Link
+                key={p}
+                href={`${basePath}${buildQuery(params, { page: String(p) })}`}
+                className="text-text-muted hover:text-text flex h-8 w-8 items-center justify-center rounded-[9px] text-[13px] font-medium transition-colors hover:bg-white/50"
+              >
+                {p}
+              </Link>
+            ),
+          )}
+
+          {clampedPage < totalPages ? (
+            <Link
+              href={`${basePath}${buildQuery(params, { page: String(clampedPage + 1) })}`}
+              className="text-text-muted hover:text-text flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-white/50"
+              aria-label="Próxima página"
+            >
+              ›
+            </Link>
+          ) : (
+            <span className="text-text-subtle/50 flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-[9px]">
+              ›
+            </span>
+          )}
+        </div>
+      ) : null}
+
+      <div className="text-text-subtle flex items-center gap-2 text-xs">
+        Itens por página:
+        <span className="rounded-card glass-panel text-text flex h-8 items-center justify-center px-3 font-semibold">
+          {pageSize}
+        </span>
       </div>
     </nav>
   );
 }
 
-export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
+/**
+ * Cartão glass que agrupa barra de filtros + tabela + paginação numa única
+ * superfície (forma padrão de listagem do redesign). Opt-in: as telas que ainda
+ * usam blocos soltos seguem funcionando sem mudança.
+ */
+export function ListCard({ children }: { children: ReactNode }) {
   return (
-    <div className="glass-card overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
-        <thead className="text-text-muted border-b border-white/50 text-left">
-          <tr>
-            {headers.map((h) => (
-              <th key={h} className="px-4 py-3 font-semibold">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
+    <div className="glass-card animate-fade-in overflow-hidden rounded-[20px]">
+      {children}
+    </div>
+  );
+}
+
+/** Faixa superior do `ListCard`: busca, filtros e ação primária. */
+export function ListToolbar({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3.5 border-b border-black/5 px-5 py-[18px]">
+      {children}
+    </div>
+  );
+}
+
+export function Table({
+  headers,
+  children,
+  isBare,
+  isZebra,
+}: {
+  headers: string[];
+  children: ReactNode;
+  /** Sem a moldura glass — para uso dentro de um `ListCard`. */
+  isBare?: boolean;
+  /** Linhas alternadas em branco translúcido (padrão do mockup). */
+  isZebra?: boolean;
+}) {
+  const table = (
+    <table className="w-full border-collapse text-xs sm:text-[13px]">
+      <thead className="text-text-subtle border-b border-black/5 bg-transparent font-mono text-[10px] tracking-widest uppercase">
+        <tr>
+          {headers.map((h, idx) => (
+            <th
+              key={h}
+              className={`px-4 py-3.5 font-medium sm:px-6 ${
+                idx === headers.length - 1 ? "text-right" : "text-left"
+              }`}
+            >
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody
+        className={`divide-y divide-black/5 [&_tr]:transition-colors [&_tr]:duration-200 [&_tr:hover]:bg-white/40 ${
+          isZebra ? "[&_tr:nth-child(even)]:bg-white/20" : ""
+        }`}
+      >
+        {children}
+      </tbody>
+    </table>
+  );
+
+  if (isBare) return <div className="overflow-x-auto">{table}</div>;
+
+  return (
+    <div className="glass-card animate-fade-in overflow-x-auto rounded-[20px]">
+      {table}
     </div>
   );
 }

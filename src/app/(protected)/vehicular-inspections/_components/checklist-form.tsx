@@ -11,10 +11,30 @@ import { FormActions, FormError, SubmitButton } from "../../_ui/form";
 type RowState = { planItemId: string; value: boolean | null; observation: string };
 
 // tri-state: null (N/A) → true (conforme) → false (não conforme)
-const VALUE_OPTIONS: { key: string; label: string; value: boolean | null }[] = [
-  { key: "ok", label: "Conforme", value: true },
-  { key: "nok", label: "Não conforme", value: false },
-  { key: "na", label: "N/A", value: null },
+const VALUE_OPTIONS: {
+  key: string;
+  label: string;
+  value: boolean | null;
+  selectedClass: string;
+}[] = [
+  {
+    key: "ok",
+    label: "Conforme",
+    value: true,
+    selectedClass: "bg-accent-green/15 text-accent-green border-accent-green/40",
+  },
+  {
+    key: "nok",
+    label: "Não conforme",
+    value: false,
+    selectedClass: "bg-danger/15 text-danger border-danger/40",
+  },
+  {
+    key: "na",
+    label: "N/A",
+    value: null,
+    selectedClass: "bg-text-subtle/15 text-text-muted border-text-subtle/40",
+  },
 ];
 
 export function ChecklistForm({
@@ -61,41 +81,79 @@ export function ChecklistForm({
 
   if (items.length === 0) {
     return (
-      <p className="text-text-subtle text-sm">
-        O plano desta inspeção não possui itens de checklist.
-      </p>
+      <section className="glass-card rounded-[20px] p-8 text-center">
+        <p className="text-text-subtle text-[13px]">
+          O plano desta inspeção não possui itens de checklist.
+        </p>
+      </section>
     );
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <FormError message={formError} />
-      <ul className="flex flex-col divide-y divide-white/50">
-        {items.map((item, index) => (
-          <li key={item.planItemId} className="flex flex-col gap-2 py-3">
-            <span className="text-text text-sm font-semibold">{item.description}</span>
-            <div className="flex flex-wrap gap-3">
-              {VALUE_OPTIONS.map((opt) => (
-                <label key={opt.key} className="flex items-center gap-1 text-sm">
-                  <input
-                    type="radio"
-                    name={`value-${index}`}
-                    checked={rows[index].value === opt.value}
-                    onChange={() => setRow(index, { value: opt.value })}
-                  />
-                  {opt.label}
-                </label>
-              ))}
-            </div>
-            <input
-              value={rows[index].observation}
-              onChange={(e) => setRow(index, { observation: e.target.value })}
-              placeholder="Observação (opcional)"
-              className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
-            />
-          </li>
-        ))}
-      </ul>
+
+      <section className="glass-card overflow-hidden rounded-[20px]">
+        <h2 className="text-primary border-b border-black/5 px-5 py-4 font-mono text-[11px] tracking-[0.14em] uppercase sm:px-6">
+          Itens do checklist ({items.length})
+        </h2>
+        <ul className="divide-y divide-black/5">
+          {items.map((item, index) => (
+            <li
+              key={item.planItemId}
+              className="flex flex-col gap-3 px-5 py-4 transition-colors duration-200 odd:bg-white/20 hover:bg-white/40 sm:px-6"
+            >
+              <fieldset className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+                <legend className="contents">
+                  <span className="text-text flex items-start gap-2.5 text-[13px] font-semibold">
+                    <span
+                      aria-hidden
+                      className="text-text-subtle mt-px font-mono text-[11px]"
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    {item.description}
+                  </span>
+                </legend>
+                <div className="flex shrink-0 flex-wrap gap-1.5">
+                  {VALUE_OPTIONS.map((opt) => {
+                    const isSelected = rows[index].value === opt.value;
+                    return (
+                      <label
+                        key={opt.key}
+                        className={`rounded-pill cursor-pointer border px-3 py-1.5 text-[11px] font-bold transition-all has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-[var(--color-primary-ring)] ${
+                          isSelected
+                            ? opt.selectedClass
+                            : "text-text-subtle hover:text-text border-transparent bg-white/40 hover:bg-white/70"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          name={`value-${index}`}
+                          checked={isSelected}
+                          onChange={() => setRow(index, { value: opt.value })}
+                        />
+                        {opt.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+              <label className="block">
+                <span className="sr-only">Observação do item {index + 1}</span>
+                <input
+                  value={rows[index].observation}
+                  onChange={(e) => setRow(index, { observation: e.target.value })}
+                  placeholder="Observação (opcional)"
+                  className="glass-input text-text placeholder:text-text-subtle rounded-field h-10 w-full px-3.5 text-[13px] outline-none"
+                />
+              </label>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <FormActions>
         <SubmitButton pending={pending} label="Concluir inspeção" />
       </FormActions>

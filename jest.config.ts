@@ -15,6 +15,12 @@ import type { Config } from "jest";
  *    que o Postgres vanilla do CI aproxima mas não replica 1:1. O backstop de RLS
  *    cross-tenant já é coberto por `runIsolationSuite` (roda p/ toda tabela tenant).
  *
+ * `rest-ergonomic-evaluations` (Lote 3 / #40) entra na mesma lista pelo MESMO motivo,
+ * confirmado na execução direta: o `NextRequest` montado dentro do Jest quebra em
+ * `resolveContext` ("Cannot read properties of undefined (reading 'has')") ANTES de
+ * chegar ao handler — falha de harness, não das rotas. A mesma lógica é coberta pelos
+ * testes de Server Action e pela verificação HTTP real no QA (Postman/navegador).
+ *
  * As 99 suítes restantes — incluindo TODAS as de isolamento — rodam e gateiam o CI.
  */
 const KNOWN_LIMITATION_INTEGRATION_SUITES = [
@@ -23,6 +29,7 @@ const KNOWN_LIMITATION_INTEGRATION_SUITES = [
   "integration/pgr-editor/rest-pgr-editor\\.test\\.ts$",
   "integration/risks/rest-risks\\.test\\.ts$",
   "integration/risk-assessments/rest-risk-assessments\\.test\\.ts$",
+  "integration/risks/rest-ergonomic-evaluations\\.test\\.ts$",
   "integration/control-measures/rest-control-measures\\.test\\.ts$",
   "integration/shared/db/least-privilege\\.test\\.ts$",
   "integration/shared/db/companies-scope-model\\.test\\.ts$",
@@ -52,20 +59,34 @@ const config: Config = {
         "<rootDir>/src/__tests__/unit/**/*.test.ts?(x)",
       ],
       testPathIgnorePatterns: ["/node_modules/", "/.next/", "/__tests__/integration/"],
-      moduleNameMapper: { "^@/(.*)$": "<rootDir>/src/$1" },
+      moduleNameMapper: {
+        "^@/(.*)$": "<rootDir>/src/$1",
+        // CSS importado por componente: o Jest nao transforma folhas de estilo.
+        "\\.(css|scss|sass)$": "<rootDir>/jest.style-stub.js",
+      },
       transform: { "^.+\\.(t|j)sx?$": swcTransform },
       setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
     },
     {
       displayName: "integration",
       testEnvironment: "node",
+      // O default do Jest (5s) é calibrado para teste unitário. Aqui cada `beforeEach`
+      // trunca e resemeia a cadeia inteira de fixtures no Postgres; sob carga isso passa
+      // de 5s, o hook estoura no meio do seed e o teste SEGUINTE quebra com `orgs_pkey`
+      // duplicado — falha que se manifesta só no run completo e some quando a suíte roda
+      // isolada. O limite maior não mascara bug: só reconhece o custo real de I/O.
+      testTimeout: 30_000,
       testMatch: ["<rootDir>/src/__tests__/integration/**/*.test.ts?(x)"],
       testPathIgnorePatterns: [
         "/node_modules/",
         "/.next/",
         ...KNOWN_LIMITATION_INTEGRATION_SUITES,
       ],
-      moduleNameMapper: { "^@/(.*)$": "<rootDir>/src/$1" },
+      moduleNameMapper: {
+        "^@/(.*)$": "<rootDir>/src/$1",
+        // CSS importado por componente: o Jest nao transforma folhas de estilo.
+        "\\.(css|scss|sass)$": "<rootDir>/jest.style-stub.js",
+      },
       transform: { "^.+\\.(t|j)sx?$": swcTransform },
       setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
     },

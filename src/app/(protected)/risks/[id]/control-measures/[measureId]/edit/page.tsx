@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getRiskAction } from "@/shared/server/actions/pgr/risks";
+import { riskClassificationSchema } from "@/shared/domains/pgr/methodology";
 import { getCurrentRiskAssessmentAction } from "@/shared/server/actions/pgr/risk-assessments";
 import { getControlMeasureAction } from "@/shared/server/actions/pgr/control-measures";
 import { listEmployeesAction } from "@/shared/server/actions/pgr/employees";
@@ -29,6 +30,9 @@ export default async function EditControlMeasurePage({
 
   const assessmentResult = await getCurrentRiskAssessmentAction(riskId);
   const currentAssessment = assessmentResult.ok ? assessmentResult.data : null;
+  // `result` é texto no banco: só vale como classificação se for um valor conhecido.
+  const riskClassification =
+    riskClassificationSchema.safeParse(currentAssessment?.result).data ?? null;
 
   const employeesResult = await listEmployeesAction({ pageSize: 100 });
   const employees = employeesResult.ok
@@ -36,8 +40,9 @@ export default async function EditControlMeasurePage({
     : [];
 
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
       <PageHeader
+        backHref={`/risks/${riskId}`}
         title="Editar medida de controle"
         description={riskResult.data.description}
       />
@@ -47,17 +52,21 @@ export default async function EditControlMeasurePage({
         measureId={measure.id}
         lockLevel
         employees={employees}
+        riskClassification={riskClassification}
         initial={{
           controlLevel: measure.controlLevel,
           applicable: measure.applicable,
+          status: measure.status,
           justification: measure.justification,
           monitoring: measure.monitoring,
           actionWhat: measure.actionWhat,
+          actionWhy: measure.actionWhy,
           actionHow: measure.actionHow,
           actionTracking: measure.actionTracking,
           actionMeasurement: measure.actionMeasurement,
           actionResponsible: measure.actionResponsible,
           actionDeadline: measure.actionDeadline,
+          actionCost: measure.actionCost,
         }}
       />
     </div>

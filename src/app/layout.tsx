@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Manrope, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
-import { ptBR } from "@clerk/localizations";
 
+import { getSiteUrl } from "@/shared/site-url";
+
+import { clerkLocalization } from "./_components/clerk-localization";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -15,9 +17,18 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = getSiteUrl();
+
 export const metadata: Metadata = {
-  title: "SST Manager",
-  description: "Plataforma multiempresa de Segurança do Trabalho",
+  // `%s` deixa cada pagina publica definir o proprio titulo sem repetir a marca;
+  // `default` atende as telas autenticadas, que nao exportam metadata propria.
+  title: { default: "PGR-e", template: "%s" },
+  description:
+    "Plataforma multiempresa de Seguranca e Medicina do Trabalho: riscos, medidas de controle, plano de acao, EPI, treinamentos, ASO e elaboracao do PGR.",
+  applicationName: "PGR-e",
+  // Sem NEXT_PUBLIC_APP_URL definido, `metadataBase` fica ausente e o Next
+  // emite as URLs relativas — melhor do que fixar um dominio inventado.
+  ...(siteUrl ? { metadataBase: siteUrl } : {}),
 };
 
 export default function RootLayout({
@@ -32,7 +43,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <ClerkProvider
-          localization={ptBR}
+          localization={clerkLocalization}
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
           signInFallbackRedirectUrl="/welcome"

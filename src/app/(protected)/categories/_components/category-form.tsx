@@ -10,9 +10,11 @@ import {
 import type { Category, CategoryInput } from "@/shared/domains/pgr/categories";
 
 import {
+  CancelLink,
   FieldError,
   FormActions,
   FormError,
+  FormSection,
   SelectField,
   SubmitButton,
   TextField,
@@ -21,9 +23,21 @@ import {
 const TYPE_OPTIONS = [
   { value: "epi", label: "EPI" },
   { value: "machine", label: "Máquina" },
+  { value: "supply", label: "Insumo" },
 ];
 
-export function CategoryForm({ category }: { category?: Category }) {
+const STATUS_OPTIONS = [
+  { value: "true", label: "Ativa" },
+  { value: "false", label: "Inativa" },
+];
+
+export function CategoryForm({
+  category,
+  initialType,
+}: {
+  category?: Category;
+  initialType?: CategoryInput["type"];
+}) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -37,6 +51,7 @@ export function CategoryForm({ category }: { category?: Category }) {
       type: value("type") as CategoryInput["type"],
       name: value("name"),
       note: value("note"),
+      isActive: value("isActive"),
     };
 
     startTransition(async () => {
@@ -54,31 +69,45 @@ export function CategoryForm({ category }: { category?: Category }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <FormError message={formError} />
-      <SelectField
-        label="Tipo"
-        name="type"
-        required
-        defaultValue={category?.type}
-        options={TYPE_OPTIONS}
-        error={errors.type}
-      />
-      <TextField
-        label="Nome"
-        name="name"
-        required
-        defaultValue={category?.name}
-        error={errors.name}
-      />
-      <TextField
-        label="Observação"
-        name="note"
-        defaultValue={category?.note}
-        error={errors.note}
-      />
+
+      <FormSection title="Categoria">
+        <SelectField
+          label="Tipo"
+          name="type"
+          required
+          defaultValue={category?.type ?? initialType}
+          options={TYPE_OPTIONS}
+          error={errors.type}
+        />
+        <TextField
+          label="Nome"
+          name="name"
+          required
+          defaultValue={category?.name}
+          error={errors.name}
+        />
+        <SelectField
+          label="Situação"
+          name="isActive"
+          defaultValue={category ? String(category.isActive) : "true"}
+          options={STATUS_OPTIONS}
+          error={errors.isActive}
+        />
+        <TextField
+          label="Observação"
+          name="note"
+          isFullWidth
+          placeholder="Descrição opcional da categoria"
+          defaultValue={category?.note}
+          error={errors.note}
+        />
+      </FormSection>
+
       <FieldError message={errors._} />
       <FormActions>
+        <CancelLink href="/categories" />
         <SubmitButton
           pending={pending}
           label={category ? "Salvar alterações" : "Criar categoria"}

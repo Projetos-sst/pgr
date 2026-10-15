@@ -1,0 +1,110 @@
+import { z } from "zod";
+
+import type { HealthExam } from "@/shared/db/schema/health-exams";
+import { classifyDocumentValidity } from "@/shared/domains/documents/validity";
+import { todayInSaoPaulo } from "@/shared/dates";
+
+import {
+  optionalIsoDate,
+  optionalString,
+  optionalUuid,
+  requiredUuid,
+} from "./form-fields";
+
+export type { HealthExam };
+
+// ── Tipo de exame ────────────────────────────────────────────────────────────
+
+export const EXAM_TYPES = [
+  "admissional",
+  "periodic",
+  "change_of_function",
+  "return_to_work",
+  "dismissal",
+] as const;
+
+export const examTypeSchema = z.enum(EXAM_TYPES, { error: "Tipo de exame inválido" });
+
+export type ExamType = (typeof EXAM_TYPES)[number];
+
+export const EXAM_TYPE_LABELS: Record<ExamType, string> = {
+  admissional: "Admissional",
+  periodic: "Periódico",
+  change_of_function: "Mudança de Função",
+  return_to_work: "Retorno ao Trabalho",
+  dismissal: "Demissional",
+};
+
+// ── Aptidão (resultado do ASO) ───────────────────────────────────────────────
+
+export const EXAM_APTITUDES = ["fit", "fit_with_restrictions", "unfit"] as const;
+
+export const examAptitudeSchema = z.enum(EXAM_APTITUDES, { error: "Aptidão inválida" });
+
+export type ExamAptitude = (typeof EXAM_APTITUDES)[number];
+
+export const EXAM_APTITUDE_LABELS: Record<ExamAptitude, string> = {
+  fit: "Apto",
+  fit_with_restrictions: "Apto c/ restrição",
+  unfit: "Inapto",
+};
+
+// ── Badge de status (validade derivada + aptidão) ────────────────────────────
+
+export type ExamBadge = { tone: "green" | "amber" | "red"; label: string };
+
+/**
+ * Badge da coluna "Status" (espelho do mockup): a validade derivada tem
+ * prioridade — `vencido` → vermelho, `a vencer` → âmbar; quando vigente (ou sem
+ * validade), mostra a APTIDÃO (apto/apto c/ restrição/inapto). Validade derivada
+ * na leitura por `classifyDocumentValidity` (nunca coluna).
+ */
+export function examBadge(
+  validUntil: string | null,
+  aptitude: ExamAptitude,
+  { today, dueWindowDays }: { today: string; dueWindowDays: number },
+): ExamBadge {
+  const validity = classifyDocumentValidity(validUntil, { today, dueWindowDays });
+  if (validity === "expired") return { tone: "red", label: "Vencido" };
+  if (validity === "due_soon") return { tone: "amber", label: "A vencer" };
+  if (aptitude === "fit") return { tone: "green", label: "Apto" };
+  if (aptitude === "fit_with_restrictions")
+    return { tone: "amber", label: "Apto c/ restrição" };
+  return { tone: "red", label: "Inapto" };
+}
+
+// ── Input (create/update) ────────────────────────────────────────────────────
+
+// Data de realização: calendário válido e não-futura (fuso America/Sao_Paulo).
+const performedAtSchema = z.iso
+  .date("Data inválida (use AAAA-MM-DD)")
+  .refine((value) => value <= todayInSaoPaulo(), {
+    message: "Data de realização não pode ser no futuro",
+  });
+
+export const healthExamInputSchema = z.object({
+  employeeId: requiredUuid("Funcionário é obrigatório"),
+  doctorId: optionalUuid,
+  examType: examTypeSchema,
+  performedAt: performedAtSchema,
+  validUntil: optionalIsoDate,
+  aptitude: examAptitudeSchema,
+  notes: optionalString,
+  certificatePath: optionalString,
+});
+
+export type HealthExamInput = z.input<typeof healthExamInputSchema>;
+export type HealthExamValues = z.output<typeof healthExamInputSchema>;
+
+/** Linha de listagem: exame + nomes resolvidos por join (funcionário/médico). */
+export type HealthExamListItem = {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  doctorId: string | null;
+  doctorName: string | null;
+  examType: ExamType;
+  performedAt: string;
+  validUntil: string | null;
+  aptitude: ExamAptitude;
+};

@@ -1,0 +1,110 @@
+# Adaptado do CD do Postify: CI -> configuração real -> build -> deploy prebuilt.
+# Configure os secrets do repositório conforme docs/deploy/vercel.md.
+name: CD
+
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-vercel-${{ github.ref }}
+  # Um deploy iniciado termina antes de o próximo começar.
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI antes do deploy
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Build e publicação na Vercel
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Escolhe a CHAVE antes de ler o secret: main sem configuração não cai
+      # nas credenciais de homologação. Repo privado no Free não usa Environments.
+      VERCEL_TOKEN: ${{ secrets[github.ref_name == 'main' && 'VERCEL_TOKEN' || 'VERCEL_DEVELOP_TOKEN'] }}
+      VERCEL_ORG_ID: ${{ secrets[github.ref_name == 'main' && 'VERCEL_ORG_ID' || 'VERCEL_DEVELOP_ORG_ID'] }}
+      VERCEL_PROJECT_ID: ${{ secrets[github.ref_name == 'main' && 'VERCEL_PROJECT_ID' || 'VERCEL_DEVELOP_PROJECT_ID'] }}
+      # Dois projetos separados: ambos usam Production internamente na Vercel.
+      VERCEL_TARGET: production
+      VERCEL_CLI_VERSION: 64.0.2
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - name: Confere a configuração do ambiente
+        shell: bash
+        run: |
+          for key in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_TARGET; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error::Configure $key para esta branch com npm run deploy:setup. Consulte docs/deploy/vercel.md."
+              exit 1
+            fi
+          done
+
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # Mesmo workaround do CI para dependências opcionais nativas no Linux.
+      - run: npm install --no-audit --no-fund
+      - name: Instala a CLI da Vercel
+        run: npm install --global "vercel@$VERCEL_CLI_VERSION"
+
+      # Credenciais reais só são acessadas após o CI do commit integrado.
+      # PRs continuam com a validação isolada e o Postgres efêmero do ci.yml.
+      - name: Puxa as configurações e variáveis do projeto
+        run: vercel pull --yes --environment="$VERCEL_TARGET" --token="$VERCEL_TOKEN"
+
+      - name: Aplica as migrations no banco do ambiente
+        shell: bash
+        run: |
+          env_file=".vercel/.env.$VERCEL_TARGET.local"
+          if ! grep -q '^DATABASE_URL_UNPOOLED=' "$env_file"; then
+            echo "::error::Cadastre DATABASE_URL_UNPOOLED no projeto Vercel desta branch."
+            exit 1
+          fi
+          node --env-file="$env_file" node_modules/drizzle-kit/bin.cjs migrate
+
+      - name: Build com a configuração publicada
+        run: vercel build --target="$VERCEL_TARGET" --standalone --token="$VERCEL_TOKEN"
+
+      # No mesmo job: mantém arquivos ocultos e links do output do Next.js.
+      # Não envia variáveis/configurações privadas como artefatos do Actions.
+      - name: Publica o build validado
+        id: publish
+        shell: bash
+        run: |
+          deploy_dir="$RUNNER_TEMP/vercel-prebuilt"
+          mkdir -p "$deploy_dir/.vercel"
+          cp -a .vercel/output .vercel/project.json "$deploy_dir/.vercel/"
+          deployment_url=$(vercel deploy --cwd "$deploy_dir" --prebuilt --yes --target="$VERCEL_TARGET" --token="$VERCEL_TOKEN" \
+            --meta "githubDeployment=1" \
+            --meta "githubCommitSha=$GITHUB_SHA" \
+            --meta "githubCommitRef=$GITHUB_REF_NAME" \
+            --meta "githubCommitOrg=${GITHUB_REPOSITORY_OWNER}" \
+            --meta "githubCommitRepo=${GITHUB_REPOSITORY#*/}")
+          if [[ ! "$deployment_url" =~ ^https://[a-zA-Z0-9.-]+\.vercel\.app$ ]]; then
+            echo "::error::A Vercel não retornou uma URL de deploy válida."
+            exit 1
+          fi
+          echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Deploy do PGR-e"
+            echo "- Branch: $GITHUB_REF_NAME"
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Ambiente Vercel: $VERCEL_TARGET"
+            echo "- URL: $deployment_url"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove as variáveis baixadas
+        if: always()
+        run: rm -rf .vercel/.env.*.local "$RUNNER_TEMP/vercel-prebuilt"

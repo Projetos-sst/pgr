@@ -5,7 +5,15 @@ import { useState, useTransition } from "react";
 
 import { deleteAccidentAction } from "@/shared/server/actions/safety/accidents";
 
-export function DeleteIncident({ id, redirectTo }: { id: string; redirectTo?: string }) {
+export function DeleteIncident({
+  id,
+  redirectTo,
+  hasLabel = false,
+}: {
+  id: string;
+  redirectTo?: string;
+  hasLabel?: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +29,31 @@ export function DeleteIncident({ id, redirectTo }: { id: string; redirectTo?: st
         setError(result.error.message);
       }
     });
+  }
+
+  if (!hasLabel) {
+    return (
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={pending}
+        aria-label="Remover incidente/acidente"
+        title="Remover"
+        className="text-text-subtle flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-red-50 hover:text-[#d33a3f] disabled:opacity-50"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          aria-hidden="true"
+        >
+          <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+        </svg>
+      </button>
+    );
   }
 
   return (

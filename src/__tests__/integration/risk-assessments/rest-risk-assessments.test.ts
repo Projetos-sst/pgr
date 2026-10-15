@@ -93,6 +93,52 @@ const validCreate = JSON.stringify({
     expect(body.result).toBe("moderate");
   });
 
+  it("POST com bloco NR-09 (201) devolve método, medição e conclusão", async () => {
+    const res = await CREATE(
+      req({
+        method: "POST",
+        body: JSON.stringify({
+          criterion: "quantitative",
+          probability: 3,
+          severity: 3,
+          uncertaintyDegree: 0,
+          assessedAt: "2026-09-27",
+          evaluationMethod: "NHO-01 (ruído)",
+          measuredValue: "87.5",
+          measuredUnit: "db_a",
+          toleranceLimitValue: "85",
+          nr09Conclusion: "above_limit",
+        }),
+      }),
+      ctx(PGR_IDS.riskA),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.evaluationMethod).toBe("NHO-01 (ruído)");
+    expect(body.measuredUnit).toBe("db_a");
+    expect(body.nr09Conclusion).toBe("above_limit");
+  });
+
+  it("POST com bloco NR-09 em critério qualitativo → 422", async () => {
+    const res = await CREATE(
+      req({
+        method: "POST",
+        body: JSON.stringify({
+          criterion: "qualitative",
+          probability: 3,
+          severity: 3,
+          uncertaintyDegree: 0,
+          assessedAt: "2026-09-27",
+          measuredValue: "87.5",
+          measuredUnit: "db_a",
+        }),
+      }),
+      ctx(PGR_IDS.riskA),
+    );
+    expect(res.status).toBe(422);
+    expect((await res.json()).error.code).toBe("VALIDATION");
+  });
+
   it("POST validação inválida → 422", async () => {
     const res = await CREATE(
       req({ method: "POST", body: JSON.stringify({ criterion: "x" }) }),

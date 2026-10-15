@@ -29,6 +29,13 @@ export async function listGesAction(
   );
 }
 
+/** Opções (id + nome) de GES — usado no select de GES-inline da função (#194). */
+export async function listGesOptionsAction(): Promise<ActionResult<gesRepo.GesOption[]>> {
+  return officeAction("pgr.ges.options", ({ tenantId }) =>
+    gesRepo.listGesOptions(tenantId),
+  );
+}
+
 export async function getGesAction(
   id: string,
 ): Promise<ActionResult<{ ges: Ges; exposedWorkers: number }>> {

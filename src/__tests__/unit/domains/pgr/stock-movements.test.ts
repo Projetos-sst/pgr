@@ -35,6 +35,24 @@ describe("stockEntrySchema", () => {
     expect(parsed.invoiceNumber).toBeUndefined();
   });
 
+  it("aceita lote opcional (issue #23); vazio vira undefined", () => {
+    const withBatch = stockEntrySchema.parse({
+      stockId: UUID,
+      quantity: "1",
+      movementDate: DATE,
+      batch: "  LOTE-42  ",
+    });
+    expect(withBatch.batch).toBe("LOTE-42");
+
+    const withoutBatch = stockEntrySchema.parse({
+      stockId: UUID,
+      quantity: "1",
+      movementDate: DATE,
+      batch: "",
+    });
+    expect(withoutBatch.batch).toBeUndefined();
+  });
+
   it.each(["0", "-1", "2.5"])("rejeita quantidade inválida %p", (qty) => {
     expect(() =>
       stockEntrySchema.parse({ stockId: UUID, quantity: qty, movementDate: DATE }),
