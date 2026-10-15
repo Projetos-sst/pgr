@@ -37,7 +37,10 @@ import {
   returnJobToPending,
 } from "@/shared/db/repositories/jobs-admin";
 import { enqueuePgrPdf } from "@/shared/db/repositories/pdf-batch";
-import { processPdfBatchJob } from "@/shared/server/platform/pdf-batch-core";
+import {
+  discardPdfBatchDocument,
+  processPdfBatchJob,
+} from "@/shared/server/platform/pdf-batch-core";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 
 import { adminClient, applyMigrations } from "../_helpers/db";
@@ -237,5 +240,21 @@ d("jobs queue + pdf-batch worker", () => {
     >`select status, storage_path from public.documents where id = ${documentId}`;
     expect(doc.status).toBe("ready");
     expect(doc.storage_path).toBe(`org_a/documentos/generated/${documentId}.pdf`);
+  });
+
+  it("falha final descarta a versão em generating e a pronta volta a ser a vigente", async () => {
+    const first = await enqueuePgrPdf("org_a", PGR_IDS.pgrA);
+    const firstJob = await claimNextJob(ownerDb, "pdf_batch");
+    await processPdfBatchJob(firstJob!);
+
+    const second = await enqueuePgrPdf("org_a", PGR_IDS.pgrA);
+    const secondJob = await claimNextJob(ownerDb, "pdf_batch");
+    expect(secondJob!.id).toBe(second.jobId);
+    await discardPdfBatchDocument(secondJob!);
+
+    const rows = await ownerSql<
+      { id: string; status: string; version: number }[]
+    >`select id, status, version from public.documents where related_entity_id = ${PGR_IDS.pgrA}`;
+    expect(rows).toEqual([{ id: first.documentId, status: "ready", version: 1 }]);
   });
 });

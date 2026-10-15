@@ -4,6 +4,10 @@
  * template DOCX (`generatePgrDocx`, fatia 030): o job repassa `job.orgId` + `pgrId`
  * + `format` do payload, grava no path do formato e marca a linha `ready`.
  */
+import type { SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
+
+import { documents } from "@/shared/db/schema/documents";
 import type { Job } from "@/shared/db/schema/jobs";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 
@@ -14,6 +18,7 @@ const generatePgrDocx = jest.fn();
 const putGeneratedDocument = jest.fn();
 const capturedUpdates: Record<string, unknown>[] = [];
 const withOrgCalls: string[] = [];
+const deleteCalls: { table: unknown; condition: unknown }[] = [];
 
 jest.mock("@/shared/server/platform/pgr-docx-core", () => ({
   generatePgrDocx: (...a: unknown[]) => generatePgrDocx(...a),
@@ -31,15 +36,25 @@ jest.mock("@/shared/db/with-org", () => ({
           return { where: async () => undefined };
         },
       }),
+      delete: (table: unknown) => ({
+        where: async (condition: unknown) => {
+          deleteCalls.push({ table, condition });
+        },
+      }),
     });
   },
 }));
 
-import { processPdfBatchJob } from "@/shared/server/platform/pdf-batch-core";
+import {
+  discardPdfBatchDocument,
+  processPdfBatchJob,
+} from "@/shared/server/platform/pdf-batch-core";
 
 const DOC_ID = "11111111-1111-1111-1111-1111111111a0";
 const PGR_ID = "11111111-1111-1111-1111-1111111111d4";
 const FILE = Buffer.from("PK fake docx");
+const nameSql = (value: unknown) => new PgDialect().sqlToQuery(value as SQL);
+const NAME_SQL_PATTERN = /case when .*"name" = \$1 then \$2 else .*"name" end/;
 
 function makeJob(payload: Record<string, unknown> = {}): Job {
   return {
@@ -87,6 +102,7 @@ beforeEach(() => {
     );
   capturedUpdates.length = 0;
   withOrgCalls.length = 0;
+  deleteCalls.length = 0;
 });
 
 describe("processPdfBatchJob (documento do PGR pelo template DOCX)", () => {
@@ -104,9 +120,12 @@ describe("processPdfBatchJob (documento do PGR pelo template DOCX)", () => {
         status: "ready",
         sizeBytes: FILE.byteLength,
         storagePath: `org_a/documentos/generated/${DOC_ID}.docx`,
-        name: "PGR — Acme",
+        name: expect.anything(),
       },
     ]);
+    const query = nameSql(capturedUpdates[0].name);
+    expect(query.sql).toMatch(NAME_SQL_PATTERN);
+    expect(query.params).toEqual(["Documento PGR", "PGR — Acme"]);
     expect(result).toEqual({
       documentId: DOC_ID,
       sizeBytes: FILE.byteLength,
@@ -130,8 +149,10 @@ describe("processPdfBatchJob (documento do PGR pelo template DOCX)", () => {
     expect(capturedUpdates[0]).toMatchObject({
       status: "ready",
       storagePath: `org_a/documentos/generated/${DOC_ID}.pdf`,
-      name: "PGR — Acme",
     });
+    const query = nameSql(capturedUpdates[0].name);
+    expect(query.sql).toMatch(NAME_SQL_PATTERN);
+    expect(query.params).toEqual(["Documento PGR", "PGR — Acme"]);
     expect(result.format).toBe("pdf");
   });
 
@@ -158,5 +179,26 @@ describe("processPdfBatchJob (documento do PGR pelo template DOCX)", () => {
   it("payload inválido (format desconhecido) falha antes de gerar", async () => {
     await expect(processPdfBatchJob(makeJob({ format: "odt" }))).rejects.toThrow();
     expect(generatePgrDocx).not.toHaveBeenCalled();
+  });
+});
+
+describe("discardPdfBatchDocument (falha final do job)", () => {
+  it("apaga só a linha pré-criada em generating do documento do job", async () => {
+    await discardPdfBatchDocument(makeJob());
+
+    expect(withOrgCalls).toEqual(["org_a"]);
+    expect(deleteCalls).toHaveLength(1);
+    expect(deleteCalls[0].table).toBe(documents);
+    const where = new PgDialect().sqlToQuery(deleteCalls[0].condition as SQL);
+    expect(where.params).toEqual(["org_a", DOC_ID, "generating"]);
+    expect(generatePgrDocx).not.toHaveBeenCalled();
+    expect(putGeneratedDocument).not.toHaveBeenCalled();
+  });
+
+  it("payload inválido não apaga nada", async () => {
+    await discardPdfBatchDocument({ ...makeJob(), payload: {} } as Job);
+
+    expect(withOrgCalls).toEqual([]);
+    expect(deleteCalls).toEqual([]);
   });
 });

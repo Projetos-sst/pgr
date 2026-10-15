@@ -1,20 +1,22 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import {
   DEFAULT_PDF_BATCH_FORMAT,
+  PROVISIONAL_PGR_DOCUMENT_NAME,
   type PdfBatchFormat,
   type PdfBatchPayload,
 } from "@/shared/domains/documents/pdf-batch";
 import { generatedDocumentPath } from "@/shared/integrations/storage/documents-storage";
 
-import { withOrg } from "../with-org";
+import { withOrg, type TenantTransaction } from "../with-org";
 import { documents } from "../schema/documents";
 import { jobs } from "../schema/jobs";
 import { pgr } from "../schema/pgr";
 import { auditedTenantWrite } from "./audited-write";
+import { getCurrentVersionTx } from "./document-versions";
 
 export type EnqueuedPgrPdf = {
   documentId: string;
@@ -22,6 +24,24 @@ export type EnqueuedPgrPdf = {
   pgrId: string;
   format: PdfBatchFormat;
 };
+
+async function currentPgrDocumentTx(tx: TenantTransaction, orgId: string, pgrId: string) {
+  const [latest] = await tx
+    .select({ documentGroupId: documents.documentGroupId })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.orgId, orgId),
+        eq(documents.relatedEntityType, "pgr"),
+        eq(documents.relatedEntityId, pgrId),
+        eq(documents.docType, "PGR"),
+      ),
+    )
+    .orderBy(desc(documents.createdAt))
+    .limit(1);
+  if (!latest) return null;
+  return getCurrentVersionTx(tx, orgId, latest.documentGroupId);
+}
 
 /**
  * Enfileira a geração do documento de um PGR (#39) pelo template DOCX (fatia 030).
@@ -44,26 +64,29 @@ export async function enqueuePgrPdf(
         .select({ id: pgr.id })
         .from(pgr)
         .where(and(eq(pgr.orgId, orgId), eq(pgr.id, pgrId)))
-        .limit(1);
+        .limit(1)
+        .for("update");
       if (!exists) throw new ReferenceNotFoundError("pgr");
 
+      const current = await currentPgrDocumentTx(tx, orgId, pgrId);
       const documentId = crypto.randomUUID();
-      const documentGroupId = crypto.randomUUID();
+      const documentGroupId = current?.documentGroupId ?? crypto.randomUUID();
+      const version = (current?.version ?? 0) + 1;
       const storagePath = generatedDocumentPath(orgId, documentId, format);
       const payload: PdfBatchPayload = { documentId, kind: "pgr", pgrId, format };
 
       await tx.insert(documents).values({
         id: documentId,
         orgId,
-        folderId: null,
+        folderId: current?.folderId ?? null,
         documentGroupId,
-        name: "Documento PGR",
+        name: current?.name ?? PROVISIONAL_PGR_DOCUMENT_NAME,
         docType: "PGR",
-        version: 1,
+        version,
         status: "generating",
         storagePath,
         sizeBytes: 0,
-        validUntil: null,
+        validUntil: current?.validUntil ?? null,
         relatedEntityType: "pgr",
         relatedEntityId: pgrId,
       });

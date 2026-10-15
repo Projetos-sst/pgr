@@ -147,12 +147,22 @@ export async function getSignedDownloadUrl(
   options: { ttlSeconds?: number; downloadName?: string } = {},
 ): Promise<string> {
   const ttlSeconds = options.ttlSeconds ?? SIGNED_DOWNLOAD_URL_TTL_SECONDS;
+  const { downloadName } = options;
   const supabase = getRlsBypassingSupabaseClient();
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
-    .createSignedUrl(storagePath, ttlSeconds, {
-      download: options.downloadName ?? true,
-    });
+    .createSignedUrl(
+      storagePath,
+      ttlSeconds,
+      downloadName === undefined ? { download: true } : undefined,
+    );
   if (error) throw new Error(`documents storage sign url failed: ${error.message}`);
-  return data.signedUrl;
+  return downloadName === undefined
+    ? data.signedUrl
+    : withDownloadName(data.signedUrl, downloadName);
+}
+
+export function withDownloadName(signedUrl: string, downloadName: string): string {
+  const separator = signedUrl.includes("?") ? "&" : "?";
+  return `${signedUrl}${separator}download=${encodeURIComponent(downloadName)}`;
 }

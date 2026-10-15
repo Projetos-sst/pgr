@@ -20,6 +20,7 @@ export type PdfBatchFormat = z.infer<typeof pdfBatchFormatSchema>;
 export const DEFAULT_PDF_BATCH_FORMAT: PdfBatchFormat = "pdf";
 /** Payload legado sem `format` → "pdf" (a linha `documents` dele já tem path `.pdf`). */
 export const LEGACY_PDF_BATCH_FORMAT: PdfBatchFormat = "pdf";
+export const PROVISIONAL_PGR_DOCUMENT_NAME = "Documento PGR";
 
 /**
  * Payload de um job `pdf_batch` — **1 job por documento** (decisão de gate #39).

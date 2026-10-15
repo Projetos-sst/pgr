@@ -15,6 +15,7 @@ import {
   removeDocumentObject,
   SIGNED_DOWNLOAD_URL_TTL_SECONDS,
   slugifyFileName,
+  withDownloadName,
 } from "@/shared/integrations/storage/documents-storage";
 
 const mockedClient = getRlsBypassingSupabaseClient as jest.MockedFunction<
@@ -242,12 +243,14 @@ describe("getSignedDownloadUrl (issue #35 — download por URL assinada)", () =>
   });
 
   it("aceita TTL customizado e nome de download", async () => {
-    const client = storageClient();
+    const client = storageClient(null, null, {
+      url: "https://signed.example/laudo.pdf?token=t1",
+    });
     mockedClient.mockReturnValue({
       storage: { from: client.from },
     } as unknown as ReturnType<typeof getRlsBypassingSupabaseClient>);
 
-    await getSignedDownloadUrl("org_a/documentos/g1/v1-laudo.pdf", {
+    const url = await getSignedDownloadUrl("org_a/documentos/g1/v1-laudo.pdf", {
       ttlSeconds: 120,
       downloadName: "Laudo Ergonômico.pdf",
     });
@@ -255,8 +258,73 @@ describe("getSignedDownloadUrl (issue #35 — download por URL assinada)", () =>
     expect(client.createSignedUrl).toHaveBeenCalledWith(
       "org_a/documentos/g1/v1-laudo.pdf",
       120,
-      { download: "Laudo Ergonômico.pdf" },
+      undefined,
     );
+    expect(new URL(url).searchParams.get("download")).toBe("Laudo Ergonômico.pdf");
+    expect(new URL(url).searchParams.get("token")).toBe("t1");
+  });
+
+  it("nome com travessão e acento chega ao Storage codificado uma única vez", async () => {
+    const client = storageClient(null, null, {
+      url: "https://signed.example/laudo.pdf?token=t1",
+    });
+    mockedClient.mockReturnValue({
+      storage: { from: client.from },
+    } as unknown as ReturnType<typeof getRlsBypassingSupabaseClient>);
+
+    const url = await getSignedDownloadUrl("org_a/documentos/g1/v1-laudo.pdf", {
+      downloadName: "PGR — Acme Ltda Ergonômico.pdf",
+    });
+
+    expect(client.createSignedUrl).toHaveBeenCalledWith(
+      "org_a/documentos/g1/v1-laudo.pdf",
+      SIGNED_DOWNLOAD_URL_TTL_SECONDS,
+      undefined,
+    );
+    expect(url).not.toContain("%25");
+    expect(url).toContain("download=PGR%20%E2%80%94%20Acme%20Ltda%20Ergon%C3%B4mico.pdf");
+    expect(new URL(url).searchParams.get("download")).toBe(
+      "PGR — Acme Ltda Ergonômico.pdf",
+    );
+  });
+
+  it("sem nome de download, mantém download=true no createSignedUrl", async () => {
+    const client = storageClient(null, null, {
+      url: "https://signed.example/foto.png?token=t1",
+    });
+    mockedClient.mockReturnValue({
+      storage: { from: client.from },
+    } as unknown as ReturnType<typeof getRlsBypassingSupabaseClient>);
+
+    const url = await getSignedDownloadUrl("org_a/fotos/foto.png");
+
+    expect(client.createSignedUrl).toHaveBeenCalledWith(
+      "org_a/fotos/foto.png",
+      SIGNED_DOWNLOAD_URL_TTL_SECONDS,
+      { download: true },
+    );
+    expect(url).toBe("https://signed.example/foto.png?token=t1");
+  });
+
+  describe("withDownloadName", () => {
+    it("usa ? quando a URL assinada não tem query", () => {
+      expect(withDownloadName("https://signed.example/x", "Laudo Final.pdf")).toBe(
+        "https://signed.example/x?download=Laudo%20Final.pdf",
+      );
+    });
+
+    it("usa & quando a URL assinada já tem o token", () => {
+      expect(withDownloadName("https://signed.example/x?token=t1", "Laudo.pdf")).toBe(
+        "https://signed.example/x?token=t1&download=Laudo.pdf",
+      );
+    });
+
+    it("codifica barras, & e # do nome sem quebrar a query", () => {
+      const url = withDownloadName("https://signed.example/x?token=t1", "A&B #1/2.pdf");
+      const params = new URL(url).searchParams;
+      expect(params.get("download")).toBe("A&B #1/2.pdf");
+      expect(params.get("token")).toBe("t1");
+    });
   });
 
   it("erro do provedor ao assinar → lança (nunca devolve URL parcial/inválida)", async () => {
