@@ -1,120 +1,133 @@
-# Deploy automático do PGR-e na Vercel
+# Deploy automático do PGR-e: develop e produção
 
-Adaptado do CD do Postify e do template Next.js `launchpad-frontend`.
-O PGR é Next.js com rotas de servidor no mesmo projeto; não usa o proxy de SPA
-do Postify nem o deploy Koyeb do backend.
+O repositório principal é `Projetos-sst/pgr`. Os dois projetos Vercel recebem
+código exclusivamente desse repositório pelo GitHub Actions:
 
-## Fluxo
+| Branch    | Projeto Vercel     | Target Vercel | Serviços                              |
+| --------- | ------------------ | ------------- | ------------------------------------- |
+| `develop` | `develop-pgr-e`    | `production`  | Supabase e Clerk de testes            |
+| `main`    | `pgr-e-production` | `production`  | Supabase e Clerk próprios de produção |
 
-- PR para `develop` ou `main`: mantém lint, formatação, typecheck, unitários,
-  integrações com Postgres efêmero e build, sem carregar as variáveis reais da Vercel.
-- Merge/push integrado em `develop` ou `main`: o CD chama o mesmo CI por
-  `workflow_call`. Após todos os jobs passarem, baixa as configurações do projeto,
-  faz `vercel build --standalone` e publica esse output com `vercel deploy --prebuilt`.
-- Execução manual: Actions → CD → Run workflow, selecionando `develop` ou `main`.
-  Outras branches não publicam. Não precisa fazer deploy pela máquina local.
-- Deploys da mesma branch são sequenciais. CI/build com falha impede publicação.
-  A CLI espera a conclusão da publicação; o resumo registra URL, target e SHA.
+São dois projetos separados, sem usar Preview ou ambientes personalizados.
+O target interno chama-se Production nos dois; isso não mistura os projetos,
+as URLs, as variáveis ou os bancos. A organização Vercel atual usa Hobby.
 
-Build e publicação ficam no mesmo job, preservando arquivos ocultos e links das
-funções Next.js. Não há upload das variáveis reais para artefatos do Actions.
+## Pipeline
 
-## Preencher e cadastrar as credenciais
+PRs para `develop` e `main` mantêm o CI existente: formato, lint, typecheck,
+build, unitários e integrações com Postgres efêmero. Não carregam credenciais reais.
+
+Após um merge, o CD chama novamente esse CI sobre o commit integrado. Só publica
+quando ele passa. A branch escolhe os secrets do projeto correspondente; não há
+fallback entre testes e produção. A CLI baixa a configuração real, constrói o
+Next.js com `--standalone` e publica o mesmo output com `--prebuilt`.
+Build e deploy ficam no mesmo job, preservando arquivos ocultos e links sem
+exportar variáveis privadas em artefatos do Actions. O resumo registra URL e SHA.
+
+Deploys de uma branch são sequenciais. Actions → CD → Run workflow permite
+republicar `develop` ou `main`; outras branches não publicam. `main` recebe
+releases por PR `develop → main`, conforme o fluxo do repositório.
+
+## Validar antes de cadastrar
+
+Preencha `.env.deploy` com as credenciais do projeto de testes. O arquivo
+`.env.deploy.production` contém as credenciais do projeto de produção criado
+no mesmo time. Ambos são ignorados pelo Git e têm permissão `600`.
 
 ```bash
-cp .env.deploy.example .env.deploy
-# Preencha .env.deploy no editor, sem colar os valores no terminal.
-npm run deploy:setup -- --check
-npm run deploy:setup
+npm run deploy:validate
+npm run deploy:validate -- --env-file .env.deploy.production
 ```
 
-Requer Node.js 24 e GitHub CLI (`gh`) autenticado com acesso aos secrets de
-`Projetos-sst/pgr`. O `.env.deploy` é ignorado pelo Git; o script ajusta sua
-permissão para `600`. Ele não lê nem envia o `.env.local` da aplicação.
+A validação faz apenas GET na API da Vercel: confirma autenticação, acesso,
+ID do projeto e ID do time. Se `VERCEL_PROJECT_NAME` estiver preenchido,
+confere também o nome esperado, para detectar um ID copiado de outro projeto.
+Mostra o nome do projeto e o vínculo Git atual, sem imprimir token ou valores
+secretos. Erros de token expirado, permissão, projeto errado e rede bloqueiam o
+setup. Essa consulta não comprova que o build ou o deploy funcionarão: isso é
+validado pela execução real do CD.
 
-Preencha `VERCEL_TOKEN`, `VERCEL_ORG_ID` e `VERCEL_PROJECT_ID` com os valores do
-**PGR**, como no Postify. Não copie os IDs do Postify. O token deve ter acesso ao
-time proprietário do projeto PGR. Não é preciso autenticar a CLI da Vercel na
-máquina para executar o setup; a publicação usa o token no GitHub Actions.
+## Cadastrar no GitHub
 
-Use `DEPLOY_ENVIRONMENT=develop` para homologação. Para produção, troque os
-valores pelos do projeto de produção, mude para `DEPLOY_ENVIRONMENT=production`
-e rode o script novamente. O script cadastra no **nível do repositório**:
+Requer Node.js 24 e GitHub CLI autenticado com acesso aos secrets do PGR.
+O setup sempre executa a validação online antes de gravar qualquer secret.
+Não lê nem envia o `.env.local` da aplicação.
 
-| Configuração local  | GitHub: develop                    | GitHub: main               |
+```bash
+npm run deploy:setup
+npm run deploy:setup -- --env-file .env.deploy.production
+```
+
+| Campo local         | GitHub: develop                    | GitHub: main               |
 | ------------------- | ---------------------------------- | -------------------------- |
 | `VERCEL_TOKEN`      | Secret `VERCEL_DEVELOP_TOKEN`      | Secret `VERCEL_TOKEN`      |
 | `VERCEL_ORG_ID`     | Secret `VERCEL_DEVELOP_ORG_ID`     | Secret `VERCEL_ORG_ID`     |
 | `VERCEL_PROJECT_ID` | Secret `VERCEL_DEVELOP_PROJECT_ID` | Secret `VERCEL_PROJECT_ID` |
-| `VERCEL_TARGET`     | Variable `VERCEL_DEVELOP_TARGET`   | Variable `VERCEL_TARGET`   |
 
-O repositório privado está em uma organização GitHub Free. Secrets de
-GitHub Environments exigem plano pago nesse caso, por isso usamos secrets de
-repositório como no Postify. Os nomes distintos separam homologação e produção;
-a seleção de chave no workflow não faz fallback para o outro ambiente quando
-um secret está ausente. Veja a [disponibilidade de environments no GitHub](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments).
+`DEPLOY_ENVIRONMENT` escolhe `develop` ou `production`. `VERCEL_TARGET` deve
+ser `production` em ambos; Preview é recusado. As variáveis antigas
+`VERCEL_DEVELOP_TARGET`/`VERCEL_TARGET` não controlam o CD: o target está fixado
+no workflow. O script mantém essas variáveis como metadados de cadastro.
 
-Os secrets são enviados por stdin e criptografados pelo `gh`, sem valores em
-argumentos ou logs. O script confirma os nomes cadastrados, sem ler os valores
-secretos de volta. Reexecutar atualiza somente as quatro configurações do
-ambiente selecionado; não altera branch protection, revisores ou outros secrets.
+Secrets ficam no nível do repositório, como no Postify, para não depender de
+GitHub Environments pago em um repositório privado da organização Free.
+São enviados por stdin e criptografados pelo `gh`, sem valores em argumentos
+ou logs. Reexecutar altera somente os campos do ambiente selecionado.
+`SUPABASE_ACCESS_TOKEN`, quando preenchido, não é enviado por esse script.
 
-Após a pipeline ser integrada, para cadastrar e disparar o CD de uma vez:
+Após a integração da pipeline, `--deploy` cadastra e solicita o CD:
 
 ```bash
 npm run deploy:setup -- --deploy
+npm run deploy:setup -- --env-file .env.deploy.production --deploy
 ```
 
-Essa opção dispara `cd.yml` na `develop` ou `main`, conforme o ambiente;
-não faz merge de PR nem publica uma branch de trabalho. Sem `--deploy`, só
-cadastra a configuração; os próximos merges disparam o CD normalmente.
-`--check` valida apenas o formato local, sem testar o token na Vercel.
+## Variáveis da aplicação e isolamento
 
-## Projetos e targets
+As três credenciais Vercel permitem publicar; não substituem as credenciais da
+aplicação. Configure no target Production de **cada projeto** seu banco, Supabase,
+Clerk e conversor. Não copie as credenciais de homologação para produção.
 
-`develop` pode usar `preview` no mesmo projeto da produção, ou `production` em
-um projeto separado de homologação. Confirme a configuração existente antes de
-preencher os IDs. A URL informada para homologação é
-`https://develop-pgr-e-tan.vercel.app`; ela sozinha não comprova propriedade ou
-target. Para `main`, o script e o workflow exigem `VERCEL_TARGET=production`.
+O projeto de testes e o `.env.local` atual usam o Supabase
+`bhsppikrcjarbvmhzpna`. As chaves da aplicação e as conexões Postgres não permitem
+criar outro projeto Supabase. Para isso, é necessário um token de gerenciamento
+(`SUPABASE_ACCESS_TOKEN`) com permissão para criar projetos na organização.
+O campo foi acrescentado ao `.env.deploy` local.
 
-Os IDs estão em `.vercel/project.json` de um projeto previamente vinculado
-ou nas configurações do projeto na Vercel. Nunca versione tokens ou `.vercel`.
-Mantenha as variáveis de runtime na Vercel, incluindo Clerk, Supabase, banco e
-`GOTENBERG_URL`/`GOTENBERG_TOKEN`. Se develop usar Preview, configure as variáveis
-por branch e um domínio/alias de branch para manter o endereço estável.
+O Supabase de produção precisa de schema/migrations, role `app_runtime` sem
+bypass de RLS, conexão administrativa, chaves API e bucket privado próprios.
+Clerk de produção também precisa de chaves e webhook próprios. As chaves atuais
+são de teste e o projeto atual usa `APP_ENV=sandbox`; essas configurações não
+são promovidas automaticamente ao novo projeto.
 
-## Ativação sem interromper o deploy existente
+## Fonte e ativação
 
-1. Preencha `.env.deploy` e rode `npm run deploy:setup` para cada ambiente.
-2. Integre a pipeline e confira o CD da `develop` até a publicação ficar pronta.
-3. Só após o primeiro CD aprovado, desligue o auto-deploy da integração Git no
-   projeto Vercel (ou configure `git.deploymentEnabled: false`). Isso evita dois
-   publicadores disputando a mesma branch.
-4. Confira domínio estável, login e exportação PDF com um usuário autorizado.
+O vínculo antigo de `develop-pgr-e` apontava para `ProjectSstManager/pgr-e`,
+repositório usado como solução temporária de deploy. A fonte autorizada agora é
+`Projetos-sst/pgr`; o CD desse repositório publica nos dois projetos via token.
+Remova o vínculo Git antigo após confirmar a primeira publicação pelo Actions,
+para evitar que um push no repositório temporário sobrescreva o deploy correto.
+Não mantenha dois publicadores automáticos disputando a mesma URL.
 
-O repositório não desliga o Git deploy antes de os acessos estarem configurados.
-O CI da PR não substitui o CI do commit integrado executado pelo CD.
+O novo projeto de produção permanece sem variáveis de sandbox: sua ativação
+aguarda os serviços separados, sem apontar para dados de testes por conveniência.
+Confira o domínio, login e exportação PDF após o CD real ficar pronto.
 
 ## Worker e conversor
 
-Este CD publica a aplicação web e suas rotas Next.js. O processo contínuo
-`worker/index.ts` e Gotenberg são serviços separados; este workflow não os
-publica nem aplica migrations automaticamente. As imagens `Dockerfile.worker`
-e `Dockerfile.gotenberg` devem usar a mesma versão de código, com o worker
-apontando para o banco/Storage corretos e o conversor em `GOTENBERG_URL`.
-Valide o job do GED até o download do PDF antes de considerar a integração
-publicada completa.
+O CD publica a aplicação Next.js. O worker contínuo e Gotenberg são processos
+separados no VPS, com imagens contendo o template e suas fontes. Cada worker
+precisa apontar para o banco/Storage do ambiente correto. Valide a fila do GED
+até o download do PDF antes de considerar o fluxo publicado completo.
 
 ## Falhas e retomada
 
-- Configuração ausente: o CD falha indicando o nome faltante, sem imprimir valores.
-- Vercel 403/404: confira escopo do token, time e ID do projeto.
-- CI/build falhou: corrija por PR; o deploy anterior permanece ativo.
-- Publicação falhou: consulte o job e a Vercel; reexecute o CD do mesmo commit.
-- Rollback: use o deployment anterior no projeto correto da Vercel. Não reverta
+- Credencial ausente/inválida: setup falha antes de alterar o GitHub.
+- CI ou build falhou: o deployment anterior permanece; corrija por PR.
+- Publicação falhou: confira o job e reexecute o CD do mesmo commit.
+- Rollback: selecione o deployment anterior no projeto correto. Não reverta o
   banco nem altere dados de clientes como parte do rollback da aplicação.
 
-Referências: [CLI build](https://vercel.com/docs/cli/build),
-[CLI pull](https://vercel.com/docs/cli/pull),
-[CLI deploy](https://vercel.com/docs/cli/deploy).
+Referências: [Vercel CLI build](https://vercel.com/docs/cli/build),
+[deploy](https://vercel.com/docs/cli/deploy),
+[Supabase Management API](https://supabase.com/docs/reference/api/introduction).

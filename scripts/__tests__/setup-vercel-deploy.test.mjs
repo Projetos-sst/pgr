@@ -50,7 +50,7 @@ test("main não pode apontar para Preview", () => {
           .replace("DEPLOY_ENVIRONMENT=develop", "DEPLOY_ENVIRONMENT=production")
           .replace("VERCEL_TARGET=production", "VERCEL_TARGET=preview"),
       ),
-    /main deve usar/,
+    /dois projetos devem usar/,
   );
 });
 

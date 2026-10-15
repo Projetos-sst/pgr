@@ -3,7 +3,8 @@ import { spawnSync } from "node:child_process";
 import { chmodSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { parseEnv } from "node:util";
+import { parseArgs, parseEnv } from "node:util";
+import { validateVercelCredentials } from "./validate-vercel-credentials.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repository = "Projetos-sst/pgr";
@@ -18,14 +19,10 @@ export function readConfiguration(contents) {
   if (!["develop", "production"].includes(values.DEPLOY_ENVIRONMENT)) {
     throw new Error("DEPLOY_ENVIRONMENT deve ser develop ou production.");
   }
-  if (!["preview", "production"].includes(values.VERCEL_TARGET)) {
-    throw new Error("VERCEL_TARGET deve ser preview ou production.");
-  }
-  if (
-    values.DEPLOY_ENVIRONMENT === "production" &&
-    values.VERCEL_TARGET !== "production"
-  ) {
-    throw new Error("A main deve usar VERCEL_TARGET=production.");
+  if (values.VERCEL_TARGET !== "production") {
+    throw new Error(
+      "Os dois projetos devem usar VERCEL_TARGET=production; Preview não é utilizado.",
+    );
   }
   for (const name of secretNames) {
     if (/\s/.test(values[name]) || /[<>]/.test(values[name])) {
@@ -105,15 +102,18 @@ export function configureDeployment(values, run = gh, deploy = false) {
   return { environment, branch, deployed: deploy };
 }
 
-function main() {
-  const args = process.argv.slice(2);
-  if (
-    args.some((arg) => !["--check", "--deploy"].includes(arg)) ||
-    (args.includes("--check") && args.includes("--deploy"))
-  ) {
-    throw new Error("Uso: npm run deploy:setup [-- --check | -- --deploy]");
+async function main() {
+  const { values: args } = parseArgs({
+    options: {
+      check: { type: "boolean", default: false },
+      deploy: { type: "boolean", default: false },
+      "env-file": { type: "string", default: ".env.deploy" },
+    },
+  });
+  if (args.check && args.deploy) {
+    throw new Error("Use --check ou --deploy, separadamente.");
   }
-  const envFile = resolve(repoRoot, ".env.deploy");
+  const envFile = resolve(repoRoot, args["env-file"]);
   let contents;
   try {
     contents = readFileSync(envFile, "utf8");
@@ -124,13 +124,17 @@ function main() {
   }
   chmodSync(envFile, 0o600);
   const values = readConfiguration(contents);
-  if (args.includes("--check")) {
+  const verified = await validateVercelCredentials(values);
+  console.log(`Credenciais verificadas na Vercel. Projeto: ${verified.projectName}.`);
+  if (verified.linkedRepository)
+    console.log(`Vínculo Git atual: ${verified.linkedRepository}.`);
+  if (args.check) {
     console.log(
-      "Formato do .env.deploy válido. Nenhuma chamada ao GitHub ou à Vercel foi feita.",
+      "Token, time e projeto acessíveis. Nenhum secret ou deploy foi alterado.",
     );
     return;
   }
-  const result = configureDeployment(values, gh, args.includes("--deploy"));
+  const result = configureDeployment(values, gh, args.deploy);
   console.log(`Configuração confirmada em ${repository} / ${result.environment}.`);
   console.log(
     result.deployed
@@ -140,10 +144,8 @@ function main() {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  try {
-    main();
-  } catch (error) {
+  main().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;
-  }
+  });
 }
