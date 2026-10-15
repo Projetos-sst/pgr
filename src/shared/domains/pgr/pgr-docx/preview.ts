@@ -38,7 +38,6 @@ const RISK_FIELDS = [
   "controlNeed",
   "result",
   "toleranceLimit",
-  "assessmentDetails",
 ] as const satisfies readonly (keyof PgrDocxRisk)[];
 
 export function buildPgrDocxPreviewContent(): PgrDocxContent {
@@ -190,6 +189,10 @@ export function previewDerivedTags(data: PgrDocxTemplateData): PgrDocxTemplateDa
       dashboard: Object.fromEntries(
         Object.keys(ges.dashboard).map((key) => [key, tag(key)]),
       ) as typeof ges.dashboard,
+    })),
+    annexActions: data.annexActions.map((action) => ({
+      ...action,
+      gesTitle: tag("gesTitle"),
     })),
   };
 }

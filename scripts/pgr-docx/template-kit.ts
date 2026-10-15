@@ -1,6 +1,7 @@
 import {
   AlignmentType,
   BorderStyle,
+  LineRuleType,
   Paragraph,
   ShadingType,
   Table,
@@ -88,10 +89,11 @@ export type Kit = ReturnType<typeof createKit>;
 
 export function body(
   children: ParagraphChild[],
-  options: { align?: "left" | "right" | "center" } = {},
+  options: { align?: "left" | "right" | "center"; keepNext?: boolean } = {},
 ) {
   return new Paragraph({
     style: PGR_DOCX_STYLE_IDS.body,
+    keepNext: options.keepNext,
     alignment:
       options.align === "right"
         ? AlignmentType.RIGHT
@@ -122,6 +124,7 @@ export function heading(
     style: "PgrHeading1",
     pageBreakBefore: options.pageBreakBefore,
     keepNext: true,
+    keepLines: true,
     shading: shading(C.primarySoft),
     border: {
       bottom: { style: BorderStyle.SINGLE, size: 12, color: C.primary, space: 4 },
@@ -135,6 +138,7 @@ export function subheading(children: ParagraphChild[]) {
   return new Paragraph({
     style: "PgrHeading2",
     keepNext: true,
+    keepLines: true,
     shading: shading(C.surfaceAlt),
     border: {
       bottom: { style: BorderStyle.SINGLE, size: 6, color: C.borderStrong, space: 3 },
@@ -144,7 +148,10 @@ export function subheading(children: ParagraphChild[]) {
 }
 
 export function spacer(after = 120) {
-  return new Paragraph({ spacing: { after, before: 0 }, children: [] });
+  return new Paragraph({
+    spacing: { before: 0, after: 0, line: after, lineRule: LineRuleType.EXACT },
+    children: [],
+  });
 }
 
 // ---------------------------------------------------------------- tabelas
@@ -155,6 +162,7 @@ const line = (color: string, size = 4): IBorderOptions => ({
   color,
 });
 const none: IBorderOptions = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+const NIL_BORDER = { style: BorderStyle.NIL, size: 0, color: "auto" } as const;
 
 export const BORDERS = {
   grid: {
@@ -180,6 +188,14 @@ export const BORDERS = {
     left: none,
     right: none,
     insideHorizontal: line(C.border),
+    insideVertical: none,
+  },
+  rowsOpen: {
+    top: none,
+    bottom: line(C.border),
+    left: none,
+    right: none,
+    insideHorizontal: none,
     insideVertical: none,
   },
   none: {
@@ -223,6 +239,13 @@ export type CellOptions = {
   vMerge?: "restart" | "continue";
   vAlign?: "top" | "center" | "bottom";
   margins?: number;
+  marginTop?: number;
+  marginBottom?: number;
+  openLeft?: boolean;
+  openRight?: boolean;
+  openTop?: boolean;
+  openBottom?: boolean;
+  bottomBorder?: boolean;
 };
 
 export function tc(children: (Paragraph | Table)[], options: CellOptions) {
@@ -243,7 +266,26 @@ export function tc(children: (Paragraph | Table)[], options: CellOptions) {
           ? VerticalAlign.BOTTOM
           : VerticalAlign.CENTER,
     shading: shading(options.fill),
-    margins: { top: margin - 20, bottom: margin - 20, left: margin, right: margin },
+    borders:
+      options.openLeft ||
+      options.openRight ||
+      options.openTop ||
+      options.openBottom ||
+      options.bottomBorder
+        ? {
+            ...(options.openLeft ? { left: NIL_BORDER } : {}),
+            ...(options.openRight ? { right: NIL_BORDER } : {}),
+            ...(options.openTop ? { top: NIL_BORDER } : {}),
+            ...(options.bottomBorder ? { bottom: line(C.border) } : {}),
+            ...(options.openBottom ? { bottom: NIL_BORDER } : {}),
+          }
+        : undefined,
+    margins: {
+      top: options.marginTop ?? margin - 20,
+      bottom: options.marginBottom ?? margin - 20,
+      left: margin,
+      right: margin,
+    },
     children: children.length > 0 ? children : [new Paragraph({ children: [] })],
   });
 }

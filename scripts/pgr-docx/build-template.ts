@@ -9,13 +9,14 @@
  *
  * O `.docx` é artefato gerado: altere o template pelo código e rode o script de novo.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { Packer } from "docx";
 
 import { PGR_DOCX_TEMPLATE_FILE } from "@/shared/domains/pgr/pgr-docx/template-file";
 
+import { embedFonts } from "./embed-fonts";
 import { buildTemplateDocument } from "./template-document";
 
 export const TEMPLATE_DIR = path.join(process.cwd(), "templates/pgr");
@@ -25,12 +26,28 @@ export const ANNOTATED_SOURCE_PATH = path.join(
   "build/pgr-template-annotated.docx",
 );
 
+const FONTS_DIR = path.join(TEMPLATE_DIR, "fonts");
+
+function templateFonts() {
+  return [
+    {
+      name: "Manrope",
+      regular: readFileSync(path.join(FONTS_DIR, "Manrope-Regular.ttf")),
+      bold: readFileSync(path.join(FONTS_DIR, "Manrope-Bold.ttf")),
+    },
+  ];
+}
+
 export async function buildTemplates() {
   mkdirSync(path.dirname(ANNOTATED_SOURCE_PATH), { recursive: true });
-  writeFileSync(TEMPLATE_PATH, await Packer.toBuffer(buildTemplateDocument("template")));
+  const fonts = templateFonts();
+  writeFileSync(
+    TEMPLATE_PATH,
+    await embedFonts(await Packer.toBuffer(buildTemplateDocument("template")), fonts),
+  );
   writeFileSync(
     ANNOTATED_SOURCE_PATH,
-    await Packer.toBuffer(buildTemplateDocument("annotated")),
+    await embedFonts(await Packer.toBuffer(buildTemplateDocument("annotated")), fonts),
   );
   return { template: TEMPLATE_PATH, annotated: ANNOTATED_SOURCE_PATH };
 }

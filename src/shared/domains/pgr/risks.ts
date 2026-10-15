@@ -123,6 +123,19 @@ const MEASUREMENT_UNIT_LABELS: Record<MeasurementUnit, string> = {
   lux: "lux",
 };
 
+const MEASUREMENT_UNIT_ESOCIAL_LABELS: Record<MeasurementUnit, string> = {
+  qualitative_na: "0 - Não aplicável",
+  db_c: "3 - decibel (C) (dB(C))",
+  db_a: "4 - decibel (A) (dB(A))",
+  m_s2: "5 - metro por segundo ao quadrado (m/s²)",
+  ppm: "7 - parte de vapor ou gás por milhão de partes de ar contaminado (ppm)",
+  mg_m3: "8 - miligrama por metro cúbico de ar (mg/m³)",
+  f_cm3: "9 - fibra por centímetro cúbico (f/cm³)",
+  celsius: "10 - grau Celsius (°C)",
+  percent: "12 - porcentual",
+  lux: "13 - lux (lx)",
+};
+
 const CONTROL_LEVEL_LABELS: Record<ControlLevel, string> = {
   elimination: "I — Eliminação",
   collective_protection: "II — Proteção Coletiva",
@@ -156,6 +169,9 @@ export function exposureTimeLabel(value: ExposureTime): string {
 }
 export function measurementUnitLabel(value: MeasurementUnit): string {
   return MEASUREMENT_UNIT_LABELS[value];
+}
+export function measurementUnitEsocialLabel(value: MeasurementUnit): string {
+  return MEASUREMENT_UNIT_ESOCIAL_LABELS[value];
 }
 export function controlLevelLabel(value: ControlLevel): string {
   return CONTROL_LEVEL_LABELS[value];
