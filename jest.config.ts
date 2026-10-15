@@ -75,7 +75,6 @@ const config: Config = {
       // de 5s, o hook estoura no meio do seed e o teste SEGUINTE quebra com `orgs_pkey`
       // duplicado — falha que se manifesta só no run completo e some quando a suíte roda
       // isolada. O limite maior não mascara bug: só reconhece o custo real de I/O.
-      testTimeout: 30_000,
       testMatch: ["<rootDir>/src/__tests__/integration/**/*.test.ts?(x)"],
       testPathIgnorePatterns: [
         "/node_modules/",
@@ -88,7 +87,10 @@ const config: Config = {
         "\\.(css|scss|sass)$": "<rootDir>/jest.style-stub.js",
       },
       transform: { "^.+\\.(t|j)sx?$": swcTransform },
-      setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
+      setupFilesAfterEnv: [
+        "<rootDir>/jest.setup.ts",
+        "<rootDir>/jest.integration-setup.ts",
+      ],
     },
   ],
 };
