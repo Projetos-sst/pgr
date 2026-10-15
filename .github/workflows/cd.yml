@@ -73,7 +73,10 @@ jobs:
         id: publish
         shell: bash
         run: |
-          deployment_url=$(vercel deploy --prebuilt --yes --target="$VERCEL_TARGET" --token="$VERCEL_TOKEN" \
+          deploy_dir="$RUNNER_TEMP/vercel-prebuilt"
+          mkdir -p "$deploy_dir/.vercel"
+          cp -a .vercel/output .vercel/project.json "$deploy_dir/.vercel/"
+          deployment_url=$(vercel deploy --cwd "$deploy_dir" --prebuilt --yes --target="$VERCEL_TARGET" --token="$VERCEL_TOKEN" \
             --meta "githubDeployment=1" \
             --meta "githubCommitSha=$GITHUB_SHA" \
             --meta "githubCommitRef=$GITHUB_REF_NAME" \
@@ -94,4 +97,4 @@ jobs:
 
       - name: Remove as variáveis baixadas
         if: always()
-        run: rm -f .vercel/.env.*.local
+        run: rm -rf .vercel/.env.*.local "$RUNNER_TEMP/vercel-prebuilt"
