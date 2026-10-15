@@ -62,7 +62,7 @@ jobs:
       # Credenciais reais só são acessadas após o CI do commit integrado.
       # PRs continuam com a validação isolada e o Postgres efêmero do ci.yml.
       - name: Puxa as configurações e variáveis do projeto
-        run: vercel pull --yes --environment="$VERCEL_TARGET" --git-branch="$GITHUB_REF_NAME" --token="$VERCEL_TOKEN"
+        run: vercel pull --yes --environment="$VERCEL_TARGET" --token="$VERCEL_TOKEN"
 
       - name: Build com a configuração publicada
         run: vercel build --target="$VERCEL_TARGET" --standalone --token="$VERCEL_TOKEN"
