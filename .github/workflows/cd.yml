@@ -64,6 +64,16 @@ jobs:
       - name: Puxa as configurações e variáveis do projeto
         run: vercel pull --yes --environment="$VERCEL_TARGET" --token="$VERCEL_TOKEN"
 
+      - name: Aplica as migrations no banco do ambiente
+        shell: bash
+        run: |
+          env_file=".vercel/.env.$VERCEL_TARGET.local"
+          if ! grep -q '^DATABASE_URL_UNPOOLED=' "$env_file"; then
+            echo "::error::Cadastre DATABASE_URL_UNPOOLED no projeto Vercel desta branch."
+            exit 1
+          fi
+          node --env-file="$env_file" node_modules/drizzle-kit/bin.cjs migrate
+
       - name: Build com a configuração publicada
         run: vercel build --target="$VERCEL_TARGET" --standalone --token="$VERCEL_TOKEN"
 

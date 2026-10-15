@@ -3,10 +3,10 @@
 O repositório principal é `Projetos-sst/pgr`. Os dois projetos Vercel recebem
 código exclusivamente desse repositório pelo GitHub Actions:
 
-| Branch    | Projeto Vercel     | Target Vercel | Serviços                              |
-| --------- | ------------------ | ------------- | ------------------------------------- |
-| `develop` | `develop-pgr-e`    | `production`  | Supabase e Clerk de testes            |
-| `main`    | `pgr-e-production` | `production`  | Supabase e Clerk próprios de produção |
+| Branch    | Projeto Vercel     | Target Vercel | Serviços                                  |
+| --------- | ------------------ | ------------- | ----------------------------------------- |
+| `develop` | `develop-pgr-e`    | `production`  | Supabase e Clerk de testes                |
+| `main`    | `pgr-e-production` | `production`  | Supabase próprio; Clerk de testes por ora |
 
 São dois projetos separados, sem usar Preview ou ambientes personalizados.
 O target interno chama-se Production nos dois; isso não mistura os projetos,
@@ -19,8 +19,11 @@ build, unitários e integrações com Postgres efêmero. Não carregam credencia
 
 Após um merge, o CD chama novamente esse CI sobre o commit integrado. Só publica
 quando ele passa. A branch escolhe os secrets do projeto correspondente; não há
-fallback entre testes e produção. A CLI baixa a configuração real, constrói o
-Next.js com `--standalone` e publica o mesmo output com `--prebuilt`.
+fallback entre testes e produção. A CLI baixa a configuração real, aplica as
+migrations pendentes no banco do ambiente com `drizzle-kit migrate` (conexão
+`DATABASE_URL_UNPOOLED` do próprio projeto Vercel), constrói o Next.js com
+`--standalone` e publica o mesmo output com `--prebuilt`. Migration que falha
+interrompe o CD antes do deploy; o drizzle aplica as pendentes numa transação.
 Build e deploy ficam no mesmo job, preservando arquivos ocultos e links sem
 exportar variáveis privadas em artefatos do Actions. O resumo registra URL e SHA.
 O deploy roda numa cópia do output fora do checkout: sem `.git`, a CLI não envia
@@ -88,33 +91,29 @@ npm run deploy:setup -- --env-file .env.deploy.production --deploy
 ## Variáveis da aplicação e isolamento
 
 As três credenciais Vercel permitem publicar; não substituem as credenciais da
-aplicação. Configure no target Production de **cada projeto** seu banco, Supabase,
-Clerk e conversor. Não copie as credenciais de homologação para produção.
+aplicação. Cada projeto tem, no target Production, as variáveis do seu ambiente:
 
-O projeto de testes e o `.env.local` atual usam o Supabase
-`bhsppikrcjarbvmhzpna`. As chaves da aplicação e as conexões Postgres não permitem
-criar outro projeto Supabase. Para isso, é necessário um token de gerenciamento
-(`SUPABASE_ACCESS_TOKEN`) com permissão para criar projetos na organização.
-O campo foi acrescentado ao `.env.deploy` local.
+| Supabase | Projeto                | Usado por                                 |
+| -------- | ---------------------- | ----------------------------------------- |
+| testes   | `bhsppikrcjarbvmhzpna` | `develop-pgr-e` (`APP_ENV=sandbox`)       |
+| produção | `fbuebpkqwhwvdkoakwje` | `pgr-e-production` (`APP_ENV=production`) |
 
-O Supabase de produção precisa de schema/migrations, role `app_runtime` sem
-bypass de RLS, conexão administrativa, chaves API e bucket privado próprios.
-Clerk de produção também precisa de chaves e webhook próprios. As chaves atuais
-são de teste e o projeto atual usa `APP_ENV=sandbox`; essas configurações não
-são promovidas automaticamente ao novo projeto.
+Cada banco tem role `app_runtime` sem bypass de RLS (`DATABASE_URL`, pooler
+6543), conexão owner para migrations (`DATABASE_URL_UNPOOLED`), chaves API e
+buckets privados próprios. Produção usa, por decisão temporária, as chaves do
+Clerk e do OpenRouter de testes.
 
-## Fonte e ativação
+Banco novo: crie a role `app_runtime` (`LOGIN NOBYPASSRLS`, membro de
+`authenticated`/`anon`) antes do primeiro CD, porque a migration `0002` concede
+permissões a ela. Depois disso, o CD aplica todas as migrations.
 
-O vínculo antigo de `develop-pgr-e` apontava para `ProjectSstManager/pgr-e`,
-repositório usado como solução temporária de deploy. A fonte autorizada agora é
-`Projetos-sst/pgr`; o CD desse repositório publica nos dois projetos via token.
-Remova o vínculo Git antigo após confirmar a primeira publicação pelo Actions,
-para evitar que um push no repositório temporário sobrescreva o deploy correto.
-Não mantenha dois publicadores automáticos disputando a mesma URL.
+## Fonte e autor do commit
 
-O novo projeto de produção permanece sem variáveis de sandbox: sua ativação
-aguarda os serviços separados, sem apontar para dados de testes por conveniência.
-Confira o domínio, login e exportação PDF após o CD real ficar pronto.
+O CD de `Projetos-sst/pgr` é o único publicador; os projetos Vercel não têm
+vínculo Git nativo. O deploy roda numa cópia do output fora do checkout: sem
+`.git`, a CLI não envia o autor do commit. Assim qualquer pessoa do repositório
+pode integrar e publicar, mesmo sem ser membro do time Vercel, que no plano
+Hobby bloquearia o deploy. SHA e branch seguem nos metadados `githubCommit*`.
 
 ## Worker e conversor
 
