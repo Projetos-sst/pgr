@@ -60,6 +60,11 @@ export async function seedPgrBase(admin: ReturnType<typeof postgres>): Promise<v
       ('${I.companyA}','org_a','11222333000181','A Ltda'),
       ('${I.companyB}','org_b','22222222000122','B Ltda');
 
+    -- These fixtures represent pre-existing companies with both services.
+    insert into public.company_modules (org_id, company_id, module, enabled)
+      select org_id, id, m.module, true from public.companies
+      cross join (values ('pgr'), ('medicine')) as m(module);
+
     insert into public.work_units (id, org_id, company_id, name, description) values
       ('${I.workUnitA}','org_a','${I.companyA}','WU A','desc'),
       ('${I.workUnitB}','org_b','${I.companyB}','WU B','desc');

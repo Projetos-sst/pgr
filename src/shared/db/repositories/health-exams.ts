@@ -18,6 +18,7 @@ import { healthExams, type HealthExam } from "../schema/health-exams";
 import { employees } from "../schema/employees";
 import { medicos } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
+import { assertCompanyModuleTx } from "./company-modules";
 
 // A FK (employee/medico) é por PK global e o check de FK do Postgres ignora RLS —
 // então validamos na aplicação que o funcionário e o médico pertencem AO TENANT.
@@ -28,11 +29,12 @@ async function assertRefsInTenant(
   input: HealthExamValues,
 ): Promise<void> {
   const [emp] = await tx
-    .select({ id: employees.id })
+    .select({ id: employees.id, companyId: employees.companyId })
     .from(employees)
     .where(and(eq(employees.orgId, orgId), eq(employees.id, input.employeeId)))
     .limit(1);
   if (!emp) throw new ReferenceNotFoundError("employee");
+  await assertCompanyModuleTx(tx, orgId, emp.companyId, "medicine");
 
   if (input.doctorId) {
     const [doc] = await tx

@@ -14,6 +14,7 @@ import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { employees } from "./employees";
 import { medicos } from "./medicos";
+import { companyModuleScope } from "./module-policy";
 
 export const examType = pgEnum("exam_type", [
   "admissional",
@@ -59,6 +60,13 @@ export const healthExams = pgTable(
   },
   (table) => [
     index("idx_health_exams_org_id").on(table.orgId),
+    pgPolicy("health_exams_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: sql`exists (select 1 from public.employees e where e.id = ${table.employeeId} and e.org_id = ${table.orgId} and ${companyModuleScope(table.orgId, sql`e.company_id`, "medicine")})`,
+      withCheck: sql`exists (select 1 from public.employees e where e.id = ${table.employeeId} and e.org_id = ${table.orgId} and ${companyModuleScope(table.orgId, sql`e.company_id`, "medicine")})`,
+    }),
     index("idx_health_exams_employee_id").on(table.employeeId),
     index("idx_health_exams_doctor_id").on(table.doctorId),
     pgPolicy("health_exams_isolation", {
