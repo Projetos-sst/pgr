@@ -13,17 +13,19 @@ sem módulos. Nenhuma mudança em preços, checkout, trial, cobrança ou Stripe.
 
 ## Entregas e ordem de revisão
 
-| Issue   | Entrega                                                                                                                                                                  | PR e dependência                                                                  |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| NOB-97  | Catálogo de módulos, habilitações, histórico, migração de preservação e RLS para PGR/revisões/vínculos/exames; navegação de Medicina separada                            | [#109](https://github.com/Projetos-sst/pgr/pull/109), base develop                |
-| NOB-99  | Mesmos cadastros e IDs de empresa/funcionário; filtros de serviço nos formulários, Action e REST                                                                         | [#110](https://github.com/Projetos-sst/pgr/pull/110), depende de #109             |
-| NOB-100 | Gestão de serviços pelo owner, consulta pela equipe, motivo e histórico transacional, interface e GET/PUT                                                                | [#111](https://github.com/Projetos-sst/pgr/pull/111), depende de #110             |
-| NOB-98  | Captura interna, registro/importação externa, consulta em Medicina sem PCMSO, origem/versão/fingerprint, avisos de alteração/ausência e bloqueio de aprovação automática | PR própria em preparação, depende de #111; validação técnica operacional pendente |
+| Issue   | Entrega                                                                                                                                                                  | PR e dependência                                                                                              |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| NOB-97  | Catálogo de módulos, habilitações, histórico, migração de preservação e RLS para PGR/revisões/vínculos/exames; navegação de Medicina separada                            | [#109](https://github.com/Projetos-sst/pgr/pull/109), base develop                                            |
+| NOB-99  | Mesmos cadastros e IDs de empresa/funcionário; filtros de serviço nos formulários, Action e REST                                                                         | [#110](https://github.com/Projetos-sst/pgr/pull/110), depende de #109                                         |
+| NOB-100 | Gestão de serviços pelo owner, consulta pela equipe, motivo e histórico transacional, interface e GET/PUT                                                                | [#111](https://github.com/Projetos-sst/pgr/pull/111), depende de #110                                         |
+| NOB-98  | Captura interna, registro/importação externa, consulta em Medicina sem PCMSO, origem/versão/fingerprint, avisos de alteração/ausência e bloqueio de aprovação automática | [#112](https://github.com/Projetos-sst/pgr/pull/112), depende de #111; validação técnica operacional pendente |
 
 As PRs permanecem em rascunho para revisão da equipe. Não foram mescladas nem
 implantadas. O CI atual só dispara para destino develop/main. Depois de integrar
 a base, alterar a base da PR seguinte para develop e conferir seus checks antes
 de aprovar. Não interpretar o CI da PR base como execução do CI das demais.
+Homologar o conjunto antes da liberação em produção: a #112 contém também o
+fechamento das APIs diretas do inventário de riscos pela migration 0055.
 
 ## Arquivos e tabelas principais
 

@@ -1,3 +1,4 @@
+import { resolvePageParams } from "@/shared/pagination";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
@@ -19,7 +20,7 @@ export default async function MedicalRisksPage({
 }) {
   await requireOfficeStaffPage();
   const { id } = await params;
-  const page = Math.max(1, Number((await searchParams).page) || 1);
+  const { page } = resolvePageParams({ page: Number((await searchParams).page) });
   const company = await getCompanyAction(id);
   if (!company.ok) notFound();
   const inventory = await getMedicalRiskInventoryAction(id, { page });

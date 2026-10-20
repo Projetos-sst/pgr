@@ -1,3 +1,4 @@
+import { resolvePageParams } from "@/shared/pagination";
 import Link from "next/link";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { listCompaniesAction } from "@/shared/server/actions/pgr/companies";
@@ -10,7 +11,7 @@ export default async function MedicalRiskCompaniesPage({
   searchParams: Promise<{ page?: string }>;
 }) {
   await requireOfficeStaffPage();
-  const page = Math.max(1, Number((await searchParams).page) || 1);
+  const { page } = resolvePageParams({ page: Number((await searchParams).page) });
   const result = await listCompaniesAction({ module: "medicine", page });
   if (!result.ok)
     return (

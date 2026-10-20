@@ -11,6 +11,8 @@
 - Suíte unitária completa: 168 suítes / 1.685 testes aprovados, sem ignorados.
 - Tipagem, formatação e build finais aprovados. Lint sem erros e com cinco
   avisos preexistentes; arquivos do reforço final conferidos novamente.
+- As telas novas reutilizam o resolvedor de paginação existente. Seus 11 testes
+  unitários e o build foram repetidos após esse ajuste e passaram.
 - Migrations 0053–0055 aplicadas somente em PostgreSQL 16.14 temporário, UTF-8,
   loopback. Nunca aplicadas em produção.
 
