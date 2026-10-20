@@ -6,8 +6,8 @@ export function companyModuleScope(
   orgId: SQLWrapper,
   companyId: SQLWrapper,
   module: CompanyModule,
-): SQL {
+): SQL<boolean> {
   // DDL policies cannot contain query parameters. These are code-owned literals.
   const moduleLiteral = module === "pgr" ? sql`'pgr'` : sql`'medicine'`;
-  return sql`exists (select 1 from public.company_modules cm where cm.org_id = ${orgId} and cm.company_id = ${companyId} and cm.module = ${moduleLiteral} and cm.enabled = true)`;
+  return sql<boolean>`exists (select 1 from public.company_modules cm where cm.org_id = ${orgId} and cm.company_id = ${companyId} and cm.module = ${moduleLiteral} and cm.enabled = true)`;
 }

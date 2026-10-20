@@ -98,6 +98,8 @@ no-store`): a resposta depende de "hoje" (um CA que vence hoje muda de estado am
 
 ## REST API (`/api/v1`) — CRUD por HTTP
 
+**Serviços por empresa (NOB-100):** `GET /api/v1/companies/{id}/modules` consulta habilitações e histórico paginado; `PUT` altera um serviço, exclusivamente para owner. Ver seção Serviços por empresa abaixo.
+
 Camada **RESTful** sobre Route Handlers (`src/app/api/v1/...`), com **verbos de verdade**
 (GET/POST/PUT/DELETE) — esta é a superfície testável por Postman/cURL. Reusa os mesmos
 repositórios, schemas zod e mapeamento de erro das Server Actions (sem duplicar regra).
@@ -1168,3 +1170,9 @@ curl -s -A 'sst-manager/1.0' "https://brasilapi.com.br/api/cnpj/v1/0000000000019
 - [ ] 422 / 409 / 404 cross-tenant / 403 (papel client) reproduzidos por cURL.
 - [ ] Recurso documentado neste arquivo (tabelas "Recursos" + "Sumário").
 - [ ] Requests adicionados ao `sst-manager.postman_collection.json` (pasta do recurso).
+
+## Serviços por empresa — NOB-100
+
+GET `/api/v1/companies/{id}/modules?page=1&pageSize=20` retorna `{modules,history:{rows,total}}`. A consulta exige equipe interna. PUT usa `{module:"pgr"|"medicine",enabled:boolean,reason:string}` (motivo obrigatório, até 500 caracteres), exige owner e retorna as habilitações. Ambas as superfícies usam o mesmo core das Actions `getCompanyModuleOverviewAction` e `changeCompanyModuleAction`. Empresa fora do tenant → NOT_FOUND; colaborador tentando alterar → FORBIDDEN; entrada inválida → VALIDATION.
+
+A mudança de estado e o evento são transacionais. Repetir o estado atual não duplica histórico. Desabilitar preserva registros; RLS bloqueia uso de PGR/exames para a empresa. Não altera Pro, trial, preços ou Stripe. UI: `/companies/{id}/services`, acessível na lista de empresas. Medicina sem PGR e o registro externo são integrados na NOB-98.

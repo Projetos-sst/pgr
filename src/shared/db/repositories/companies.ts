@@ -96,6 +96,8 @@ export async function listCompanies(
       .select({
         id: companies.id,
         razaoSocial: companies.razaoSocial,
+        pgrEnabled: companyModuleScope(companies.orgId, companies.id, "pgr"),
+        medicineEnabled: companyModuleScope(companies.orgId, companies.id, "medicine"),
         cnpj: companies.cnpj,
         city: companies.city,
         state: companies.state,

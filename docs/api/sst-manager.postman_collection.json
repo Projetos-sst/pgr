@@ -8630,6 +8630,57 @@
           }
         }
       ]
+    },
+    {
+      "name": "Servicos por empresa (NOB-100)",
+      "item": [
+        {
+          "name": "Consultar modulos e historico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/modules"
+          }
+        },
+        {
+          "name": "Alterar modulo (owner)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/modules",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"module\": \"medicine\",\n  \"enabled\": true,\n  \"reason\": \"Servico autorizado em teste\"\n}"
+            }
+          }
+        }
+      ]
     }
   ]
 }
