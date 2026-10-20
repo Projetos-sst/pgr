@@ -9,6 +9,7 @@ jest.mock("@/shared/db/env", () => ({
   getDatabaseUrl: () => process.env.INTEGRATION_APP_RUNTIME_URL,
 }));
 jest.mock("@/shared/auth/require-office-staff", () => ({
+  OFFICE_STAFF_ROLES: new Set(["owner", "collaborator"]),
   requireOfficeStaff: jest.fn(),
 }));
 
@@ -84,6 +85,27 @@ const validCreate = JSON.stringify({
   it("POST cria risco (201)", async () => {
     const res = await POST(req({ method: "POST", body: validCreate }));
     expect(res.status).toBe(201);
+  });
+
+  it("POST and PUT reject mismatched exposure context (422)", async () => {
+    const body = JSON.stringify({
+      ...JSON.parse(validCreate),
+      companyId: PGR_IDS.companyB,
+      workUnitId: PGR_IDS.workUnitA,
+    });
+    expect((await POST(req({ method: "POST", body }))).status).toBe(422);
+    expect(
+      (
+        await PUT_ID(req({ method: "PUT", body }), {
+          params: Promise.resolve({ id: PGR_IDS.riskA }),
+        })
+      ).status,
+    ).toBe(422);
+  });
+
+  it("POST rejects disabled PGR even for a valid GES (403)", async () => {
+    await admin`update company_modules set enabled = false where company_id = ${PGR_IDS.companyA} and module = 'pgr'`;
+    expect((await POST(req({ method: "POST", body: validCreate }))).status).toBe(403);
   });
 
   it("POST sem description/agentType → 422 VALIDATION", async () => {

@@ -21,7 +21,7 @@ export default async function EditRiskPage({
   const { id } = await params;
   const [riskResult, companyOptions] = await Promise.all([
     getRiskAction(id),
-    listCompanyOptionsAction(),
+    listCompanyOptionsAction("pgr"),
   ]);
   if (!riskResult.ok) notFound();
   const risk = riskResult.data;
