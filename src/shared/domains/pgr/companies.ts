@@ -64,6 +64,8 @@ export type CompanyInput = z.input<typeof companyInputSchema>;
 export type CompanyValues = z.output<typeof companyInputSchema>;
 
 export type CompanyListItem = {
+  pgrEnabled: boolean;
+  medicineEnabled: boolean;
   id: string;
   razaoSocial: string;
   cnpj: string | null;

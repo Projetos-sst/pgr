@@ -5,6 +5,7 @@ import {
   COMPANY_STATUS_TONE,
 } from "@/shared/domains/pgr/companies";
 import { resolvePageParams } from "@/shared/pagination";
+import Link from "next/link";
 import { listCompaniesAction } from "@/shared/server/actions/pgr/companies";
 
 import {
@@ -138,7 +139,20 @@ export default async function CompaniesPage({
                   <Cell>
                     <span className="flex items-center gap-3">
                       <AvatarBadge name={row.razaoSocial} />
-                      <span className="text-text font-semibold">{row.razaoSocial}</span>
+                      <span className="flex flex-col">
+                        <span className="text-text font-semibold">{row.razaoSocial}</span>
+                        <Link
+                          href={`/companies/${row.id}/services`}
+                          className="text-primary text-xs"
+                        >
+                          {[
+                            row.pgrEnabled ? "PGR" : "",
+                            row.medicineEnabled ? "Medicina" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "Sem módulos — gerenciar serviços"}
+                        </Link>
+                      </span>
                     </span>
                   </Cell>
                   <Cell className="text-text-muted">{formatCnpj(row.cnpj)}</Cell>
