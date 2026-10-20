@@ -20,7 +20,7 @@ export default async function EditPgrPage({
 
   const [pgrResult, companyOptions, signatureResult] = await Promise.all([
     getPgrAction(id),
-    listCompanyOptionsAction(),
+    listCompanyOptionsAction("pgr"),
     getPgrSignatureViewAction({ pgrId: id }),
   ]);
   if (!pgrResult.ok) notFound();

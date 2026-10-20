@@ -16,8 +16,14 @@ import { ges } from "../schema/ges";
 import { jobRoles } from "../schema/job-roles";
 import { employees } from "../schema/employees";
 import { auditedTenantWrite } from "./audited-write";
+import {
+  companyModuleSchema,
+  type CompanyModule,
+} from "@/shared/domains/platform/company-modules";
+import { companyModuleScope } from "../schema/module-policy";
 
 export type ListCompaniesParams = PageParams & {
+  module?: CompanyModule;
   search?: string;
   state?: string;
   status?: CompanyStatus;
@@ -61,6 +67,9 @@ export async function listCompanies(
   const { limit, offset } = resolvePageParams(params);
   const search = params.search?.trim();
   const filters: SQL[] = [eq(companies.orgId, orgId)];
+  const selectedModule = companyModuleSchema.optional().parse(params.module);
+  if (selectedModule)
+    filters.push(companyModuleScope(companies.orgId, companies.id, selectedModule));
   if (search) {
     const term = `%${search}%`;
     filters.push(or(ilike(companies.razaoSocial, term), ilike(companies.cnpj, term))!);
@@ -119,7 +128,11 @@ export type CompanyOption = {
   state: string | null;
 };
 
-export async function listCompanyOptions(orgId: string): Promise<CompanyOption[]> {
+export async function listCompanyOptions(
+  orgId: string,
+  requestedModule?: CompanyModule,
+): Promise<CompanyOption[]> {
+  const selectedModule = companyModuleSchema.optional().parse(requestedModule);
   return withOrg(orgId, (tx) =>
     tx
       .select({
@@ -134,7 +147,14 @@ export async function listCompanyOptions(orgId: string): Promise<CompanyOption[]
         state: companies.state,
       })
       .from(companies)
-      .where(eq(companies.orgId, orgId))
+      .where(
+        and(
+          eq(companies.orgId, orgId),
+          selectedModule
+            ? companyModuleScope(companies.orgId, companies.id, selectedModule)
+            : undefined,
+        ),
+      )
       .orderBy(companies.razaoSocial),
   );
 }

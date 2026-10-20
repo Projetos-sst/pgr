@@ -8571,6 +8571,65 @@
           }
         }
       ]
+    },
+    {
+      "name": "Cadastros compartilhados (NOB-99)",
+      "item": [
+        {
+          "name": "Empresas de Medicina",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies?module=medicine",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"],
+              "query": [
+                {
+                  "key": "module",
+                  "value": "medicine"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Funcionarios de Medicina",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees?module=medicine",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees"],
+              "query": [
+                {
+                  "key": "module",
+                  "value": "medicine"
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }
