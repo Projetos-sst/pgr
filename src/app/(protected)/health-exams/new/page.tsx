@@ -11,11 +11,14 @@ export const dynamic = "force-dynamic";
 export default async function NewHealthExamPage() {
   await requireOfficeStaffPage();
   const [employeesResult, doctorsResult] = await Promise.all([
-    listEmployeesAction({ pageSize: 200 }),
+    listEmployeesAction({ pageSize: 200, module: "medicine" }),
     listMedicoOptionsAction(),
   ]);
   const employees = employeesResult.ok
-    ? employeesResult.data.rows.map((e) => ({ id: e.id, fullName: e.fullName }))
+    ? employeesResult.data.rows.map((e) => ({
+        id: e.id,
+        fullName: `${e.fullName} — ${e.companyName}`,
+      }))
     : [];
   const doctors = doctorsResult.ok ? doctorsResult.data : [];
 

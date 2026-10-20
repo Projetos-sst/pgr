@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { restHandler, pageParamsFrom } from "@/shared/api/rest";
 import { companyInputSchema, companyStatusSchema } from "@/shared/domains/pgr/companies";
 import * as repo from "@/shared/db/repositories/companies";
+import { companyModuleSchema } from "@/shared/domains/platform/company-modules";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,9 @@ export function GET(req: NextRequest) {
   const status = companyStatusSchema.safeParse(req.nextUrl.searchParams.get("status"));
   return restHandler(req, ({ tenantId }) =>
     repo.listCompanies(tenantId, {
+      module: companyModuleSchema
+        .optional()
+        .parse(req.nextUrl.searchParams.get("module") ?? undefined),
       ...pageParamsFrom(req),
       search: req.nextUrl.searchParams.get("search") ?? undefined,
       state: req.nextUrl.searchParams.get("state") ?? undefined,

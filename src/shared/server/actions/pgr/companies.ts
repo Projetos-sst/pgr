@@ -30,11 +30,11 @@ export async function listCompaniesAction(
   );
 }
 
-export async function listCompanyOptionsAction(): Promise<
-  ActionResult<repo.CompanyOption[]>
-> {
+export async function listCompanyOptionsAction(
+  module?: import("@/shared/domains/platform/company-modules").CompanyModule,
+): Promise<ActionResult<repo.CompanyOption[]>> {
   return officeAction("pgr.companies.options", ({ tenantId }) =>
-    repo.listCompanyOptions(tenantId),
+    repo.listCompanyOptions(tenantId, module),
   );
 }
 

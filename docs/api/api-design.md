@@ -491,6 +491,14 @@ Resolve o usuário autenticado e a org ativa da sessão (Clerk). Envelope própr
 
 ## Empresa — `actions/pgr/companies.ts`
 
+**Cadastros comuns (NOB-99):** PGR e Medicina reutilizam a mesma empresa e os
+mesmos funcionários do tenant. `GET /api/v1/companies?module=pgr|medicine` e
+`GET /api/v1/employees?module=pgr|medicine` filtram por serviço habilitado sem
+duplicar registros. O parâmetro opcional é validado (valor desconhecido → 422).
+Sem `module`, as consultas comuns mantêm o comportamento existente. O filtro
+não substitui o gate de papel, a validação de referências nem as policies de RLS.
+`listCompanyOptionsAction(module?)` oferece o mesmo contrato aos formulários.
+
 | Action                       | Entrada                                          | Retorno (`data`)                              |
 | ---------------------------- | ------------------------------------------------ | --------------------------------------------- |
 | `listCompaniesAction`        | `{ search?, state?, status?, page?, pageSize? }` | `{ rows: CompanyListItem[]; total }`          |

@@ -13,8 +13,14 @@ import { ges } from "../schema/ges";
 import { jobRoles } from "../schema/job-roles";
 import { gesJobRoles } from "../schema/ges-job-roles";
 import { auditedTenantWrite } from "./audited-write";
+import {
+  companyModuleSchema,
+  type CompanyModule,
+} from "@/shared/domains/platform/company-modules";
+import { companyModuleScope } from "../schema/module-policy";
 
 export type ListEmployeesParams = PageParams & {
+  module?: CompanyModule;
   companyId?: string;
   status?: string;
   search?: string;
@@ -101,6 +107,11 @@ export async function listEmployees(
 ): Promise<Paginated<EmployeeListItem>> {
   const { limit, offset } = resolvePageParams(params);
   const filters: SQL[] = [eq(employees.orgId, orgId)];
+  const selectedModule = companyModuleSchema.optional().parse(params.module);
+  if (selectedModule)
+    filters.push(
+      companyModuleScope(employees.orgId, employees.companyId, selectedModule),
+    );
   if (params.companyId) filters.push(eq(employees.companyId, params.companyId));
   if (params.gesId) filters.push(eq(employees.gesId, params.gesId));
   if (params.status)

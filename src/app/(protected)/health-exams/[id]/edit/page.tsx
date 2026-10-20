@@ -20,13 +20,16 @@ export default async function EditHealthExamPage({
   const { id } = await params;
   const [examResult, employeesResult, doctorsResult] = await Promise.all([
     getHealthExamAction(id),
-    listEmployeesAction({ pageSize: 200 }),
+    listEmployeesAction({ pageSize: 200, module: "medicine" }),
     listMedicoOptionsAction(),
   ]);
   if (!examResult.ok) notFound();
   const exam = examResult.data;
   const employees = employeesResult.ok
-    ? employeesResult.data.rows.map((e) => ({ id: e.id, fullName: e.fullName }))
+    ? employeesResult.data.rows.map((e) => ({
+        id: e.id,
+        fullName: `${e.fullName} — ${e.companyName}`,
+      }))
     : [];
   const doctors = doctorsResult.ok ? doctorsResult.data : [];
 

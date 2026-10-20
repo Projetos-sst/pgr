@@ -15,7 +15,7 @@ export default async function NewPgrPage({
   searchParams: SearchParams;
 }) {
   await requireOfficeStaffPage();
-  const [result, sp] = await Promise.all([listCompanyOptionsAction(), searchParams]);
+  const [result, sp] = await Promise.all([listCompanyOptionsAction("pgr"), searchParams]);
   const companies = result.ok ? result.data : [];
 
   return (
