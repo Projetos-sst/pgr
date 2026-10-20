@@ -8681,6 +8681,82 @@
           }
         }
       ]
+    },
+    {
+      "name": "Riscos para Medicina (NOB-98)",
+      "item": [
+        {
+          "name": "Consultar fontes e riscos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risk-sources"
+          }
+        },
+        {
+          "name": "Registrar PGR externo pendente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risk-sources",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"external\",\n  \"title\": \"PGR externo de exemplo\",\n  \"reference\": \"GED:identificacao-do-documento\",\n  \"version\": \"1\",\n  \"risks\": [\n    {\n      \"agentType\": \"physical\",\n      \"description\": \"Risco informado na origem\",\n      \"exposureGroup\": \"Grupo de exemplo\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Capturar riscos do PGR interno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risk-sources",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"internal\",\n  \"pgrId\": \"{{pgrId}}\"\n}"
+            }
+          }
+        }
+      ]
     }
   ]
 }

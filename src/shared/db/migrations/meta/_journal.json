@@ -379,6 +379,20 @@
       "when": 1792509152595,
       "tag": "0053_company_module_access",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1792513283573,
+      "tag": "0054_medical_risk_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1792515723005,
+      "tag": "0055_pgr_inventory_module_access",
+      "breakpoints": true
     }
   ]
 }

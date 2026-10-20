@@ -12,6 +12,7 @@ import { companies } from "../schema/companies";
 import { companyModules, companyModuleEvents } from "../schema/company-modules";
 import { resolvePageParams, type PageParams } from "@/shared/pagination";
 import type { CompanyModuleChange } from "@/shared/domains/platform/company-modules";
+import { auditedTenantWrite } from "./audited-write";
 
 export async function assertCompanyModuleTx(
   tx: TenantTransaction,
@@ -65,39 +66,41 @@ export async function setCompanyModule(
   actor: string,
   input: CompanyModuleChange,
 ): Promise<void> {
-  return withOrg(orgId, async (tx) => {
-    const [company] = await tx
-      .select({ id: companies.id })
-      .from(companies)
-      .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId)))
-      .for("update")
-      .limit(1);
-    if (!company) throw new NotFoundError();
-    const scope = and(
-      eq(companyModules.orgId, orgId),
-      eq(companyModules.companyId, companyId),
-      eq(companyModules.module, input.module),
-    );
-    const [current] = await tx.select().from(companyModules).where(scope).limit(1);
-    const previousEnabled = current?.enabled ?? false;
-    if (previousEnabled === input.enabled) return;
-    await tx
-      .insert(companyModules)
-      .values({ orgId, companyId, module: input.module, enabled: input.enabled })
-      .onConflictDoUpdate({
-        target: [companyModules.orgId, companyModules.companyId, companyModules.module],
-        set: { enabled: input.enabled, updatedAt: new Date() },
+  return auditedTenantWrite(orgId, "platform.company_modules.write_rejected", () =>
+    withOrg(orgId, async (tx) => {
+      const [company] = await tx
+        .select({ id: companies.id })
+        .from(companies)
+        .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId)))
+        .for("update")
+        .limit(1);
+      if (!company) throw new NotFoundError();
+      const scope = and(
+        eq(companyModules.orgId, orgId),
+        eq(companyModules.companyId, companyId),
+        eq(companyModules.module, input.module),
+      );
+      const [current] = await tx.select().from(companyModules).where(scope).limit(1);
+      const previousEnabled = current?.enabled ?? false;
+      if (previousEnabled === input.enabled) return;
+      await tx
+        .insert(companyModules)
+        .values({ orgId, companyId, module: input.module, enabled: input.enabled })
+        .onConflictDoUpdate({
+          target: [companyModules.orgId, companyModules.companyId, companyModules.module],
+          set: { enabled: input.enabled, updatedAt: new Date() },
+        });
+      await tx.insert(companyModuleEvents).values({
+        orgId,
+        companyId,
+        module: input.module,
+        previousEnabled,
+        enabled: input.enabled,
+        changedBy: actor,
+        reason: input.reason,
       });
-    await tx.insert(companyModuleEvents).values({
-      orgId,
-      companyId,
-      module: input.module,
-      previousEnabled,
-      enabled: input.enabled,
-      changedBy: actor,
-      reason: input.reason,
-    });
-  });
+    }),
+  );
 }
 
 export async function listCompanyModuleEvents(

@@ -19,6 +19,7 @@ import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { ges } from "./ges";
+import { companyModuleScope } from "./module-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -142,6 +143,13 @@ export const risks = pgTable(
   (table) => [
     index("idx_risks_org_id").on(table.orgId),
     index("idx_risks_ges_id").on(table.gesId),
+    pgPolicy("risks_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: sql`exists (select 1 from public.ges g where g.id = ${table.gesId} and g.org_id = ${table.orgId} and ${companyModuleScope(table.orgId, sql`g.company_id`, "pgr")})`,
+      withCheck: sql`exists (select 1 from public.ges g where g.id = ${table.gesId} and g.org_id = ${table.orgId} and ${companyModuleScope(table.orgId, sql`g.company_id`, "pgr")})`,
+    }),
     pgPolicy("risks_isolation", {
       for: "all",
       to: appRuntimeRole,
@@ -214,6 +222,13 @@ export const riskAssessments = pgTable(
       "risk_assessments_quantitative_criterion_check",
       sql`criterion = 'quantitative' or (measured_value is null and measured_unit is null and tolerance_limit_value is null and nr09_conclusion is null and evaluation_method is null)`,
     ),
+    pgPolicy("risk_assessments_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: sql`exists (select 1 from public.risks r where r.id = ${table.riskId} and r.org_id = ${table.orgId})`,
+      withCheck: sql`exists (select 1 from public.risks r where r.id = ${table.riskId} and r.org_id = ${table.orgId})`,
+    }),
     pgPolicy("risk_assessments_isolation", {
       for: "all",
       to: appRuntimeRole,
@@ -268,6 +283,13 @@ export const controlMeasures = pgTable(
       table.riskId,
       table.controlLevel,
     ),
+    pgPolicy("control_measures_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: sql`exists (select 1 from public.risks r where r.id = ${table.riskId} and r.org_id = ${table.orgId})`,
+      withCheck: sql`exists (select 1 from public.risks r where r.id = ${table.riskId} and r.org_id = ${table.orgId})`,
+    }),
     pgPolicy("control_measures_isolation", {
       for: "all",
       to: appRuntimeRole,

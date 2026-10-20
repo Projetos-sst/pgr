@@ -104,6 +104,7 @@ const NAV: NavEntry[] = [
     label: "Medicina do Trabalho",
     iconName: "activity",
     items: [
+      { href: "/medical-risks", label: "Riscos para PCMSO", iconName: "alert-triangle" },
       { href: "/health-exams", label: "Exames e ASO", iconName: "activity" },
       { href: "/medicos", label: "Médicos", iconName: "stethoscope" },
     ],
