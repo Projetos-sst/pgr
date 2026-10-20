@@ -30,13 +30,13 @@ antes de implementar regras definitivas. Permite registrar regras explicitamente
 
 ### Estados existentes (não são uma máquina de aprovação técnica)
 
-| Objeto | Estados/indicadores | Observação |
-| --- | --- | --- |
-| PGR | `published_at` vazio ou preenchido | Não possui enum de aprovação/emissão técnica. |
-| Revisão | Número sequencial; `archived_at` vazio/preenchido | Não congela conteúdo do inventário. |
-| Pedido de assinatura | `pending`, `signed`, `cancelled` | `cancelled` existe no schema; não pressupõe fluxo operacional de cancelamento. |
-| Estado exibido | `none` e estados do pedido; `expired` derivado | Expiração é derivada, não estado persistido do enum. |
-| Captura | Nome, imagem, método e data, ligada ao pedido | Não contém validação de conselho profissional. |
+| Objeto               | Estados/indicadores                               | Observação                                                                     |
+| -------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------ |
+| PGR                  | `published_at` vazio ou preenchido                | Não possui enum de aprovação/emissão técnica.                                  |
+| Revisão              | Número sequencial; `archived_at` vazio/preenchido | Não congela conteúdo do inventário.                                            |
+| Pedido de assinatura | `pending`, `signed`, `cancelled`                  | `cancelled` existe no schema; não pressupõe fluxo operacional de cancelamento. |
+| Estado exibido       | `none` e estados do pedido; `expired` derivado    | Expiração é derivada, não estado persistido do enum.                           |
+| Captura              | Nome, imagem, método e data, ligada ao pedido     | Não contém validação de conselho profissional.                                 |
 
 Evidências: `src/shared/db/schema/pgr.ts`,
 `src/shared/db/repositories/{pgr,pgr-revisions,pgr-consolidated}.ts`,
@@ -75,14 +75,14 @@ Evidências: `src/shared/db/schema/health-exams.ts`,
 
 ## 4. Rastreabilidade: disponível e faltante
 
-| Dimensão | Disponível | Limitação a resolver após validação |
-| --- | --- | --- |
-| Escopo | Sessão/tenant, `withOrg`, RLS; gate interno por papel | Não substitui autoridade técnica ou contratação por módulo. |
-| PGR | ID, empresa, responsável textual, autor opcional, datas e revisões | Sem aprovação do revisor e sem conteúdo integral por revisão. |
-| Assinatura PGR | Pedido, alvo, payload mínimo congelado, captura e timestamps | Sem vínculo criptográfico com arquivo/conteúdo integral emitido. |
-| ASO/exame | ID, funcionário, médico opcional, datas e certificado | Médico pode ser removido (`SET NULL`); não há histórico imutável do responsável. |
-| Auditoria | Eventos de aplicação com operação, tenant, usuário e resultado | `logTenantEvent` escreve em console; não é trilha persistida de todas as transições documentais. |
-| PCMSO | Requisitos cadastrados no Linear | Sem modelo/fluxo persistido no código atual. |
+| Dimensão       | Disponível                                                         | Limitação a resolver após validação                                                              |
+| -------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Escopo         | Sessão/tenant, `withOrg`, RLS; gate interno por papel              | Não substitui autoridade técnica ou contratação por módulo.                                      |
+| PGR            | ID, empresa, responsável textual, autor opcional, datas e revisões | Sem aprovação do revisor e sem conteúdo integral por revisão.                                    |
+| Assinatura PGR | Pedido, alvo, payload mínimo congelado, captura e timestamps       | Sem vínculo criptográfico com arquivo/conteúdo integral emitido.                                 |
+| ASO/exame      | ID, funcionário, médico opcional, datas e certificado              | Médico pode ser removido (`SET NULL`); não há histórico imutável do responsável.                 |
+| Auditoria      | Eventos de aplicação com operação, tenant, usuário e resultado     | `logTenantEvent` escreve em console; não é trilha persistida de todas as transições documentais. |
+| PCMSO          | Requisitos cadastrados no Linear                                   | Sem modelo/fluxo persistido no código atual.                                                     |
 
 ## 5. Decisões técnicas/de negócio pendentes
 
