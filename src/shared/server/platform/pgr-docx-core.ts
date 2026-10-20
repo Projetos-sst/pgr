@@ -1,6 +1,7 @@
 import "server-only";
 
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 import { getPgrConsolidated } from "@/shared/db/repositories/pgr-consolidated";
@@ -50,6 +51,14 @@ export type GeneratedPgrDocx = {
   file: Buffer;
   /** Tags do template sem valor no dado (saíram vazias) — diagnóstico, não erro. */
   missingTags: string[];
+  /** Technical identifiers for this export, not a signature or technical approval. */
+  provenance: {
+    pgrId: string;
+    generatedAt: string;
+    templateSha256: string;
+    sourceSha256: string;
+    fileSha256: string;
+  };
 };
 
 export type GeneratePgrDocxOptions = {
@@ -145,7 +154,8 @@ export async function generatePgrDocx(
   ]);
   if (!consolidated || !extras) throw new NotFoundError();
 
-  const emittedAt = emittedAtInSaoPaulo();
+  const generatedAt = new Date();
+  const emittedAt = emittedAtInSaoPaulo(generatedAt);
   const content = buildPgrDocxContent(consolidated, extras, {
     emittedAt,
     classificationBands: methodology.classificationBands,
@@ -168,20 +178,33 @@ export async function generatePgrDocx(
 
   const baseName = pgrDocxBaseName(consolidated.pgr, emittedAt);
   const title = pgrDocxTitle(consolidated.pgr);
-  if (options.format === "pdf") {
-    return {
-      fileName: `${baseName}.pdf`,
-      title,
-      contentType: "application/pdf",
-      file: await toPdf(buffer, `${baseName}.docx`),
-      missingTags,
-    };
-  }
+  const pdf = options.format === "pdf";
+  const file = pdf ? await toPdf(buffer, `${baseName}.docx`) : buffer;
+  const sha256 = (value: Buffer | string) =>
+    createHash("sha256").update(value).digest("hex");
   return {
-    fileName: `${baseName}.docx`,
+    fileName: `${baseName}.${pdf ? "pdf" : "docx"}`,
     title,
-    contentType: DOCX_MIME,
-    file: buffer,
+    contentType: pdf ? "application/pdf" : DOCX_MIME,
+    file,
     missingTags,
+    provenance: {
+      pgrId,
+      generatedAt: generatedAt.toISOString(),
+      templateSha256: sha256(template),
+      // Hash exactly the input snapshot used by this generation, without emitting it.
+      // This does not assert a single DB transaction across the existing readers.
+      sourceSha256: sha256(
+        JSON.stringify({
+          pgrId,
+          consolidated,
+          extras,
+          classificationBands: methodology.classificationBands,
+          overrides: options.overrides ?? null,
+          logoSha256: logo ? sha256(logo) : null,
+        }),
+      ),
+      fileSha256: sha256(file),
+    },
   };
 }

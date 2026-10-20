@@ -6,6 +6,8 @@
  * o motor de preenchimento são os de verdade.
  */
 import type { PgrConsolidated } from "@/shared/domains/pgr/pgr-consolidated";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import type { PgrDocxExtras } from "@/shared/domains/pgr/pgr-docx/from-consolidated";
 
 const getPgrConsolidated = jest.fn();
@@ -126,6 +128,41 @@ describe("helpers", () => {
 });
 
 describe("generatePgrDocx", () => {
+  it("identifies the template, input changes and actual exported bytes without exposing source fields", async () => {
+    const first = await generatePgrDocx("org_a", "pgr-1");
+    const repeated = await generatePgrDocx("org_a", "pgr-1");
+    expect(first.provenance.pgrId).toBe("pgr-1");
+    expect(Number.isNaN(Date.parse(first.provenance.generatedAt))).toBe(false);
+    expect(first.provenance.sourceSha256).toBe(repeated.provenance.sourceSha256);
+    expect(first.provenance.templateSha256).toBe(
+      createHash("sha256")
+        .update(readFileSync("templates/pgr/pgr-template.docx"))
+        .digest("hex"),
+    );
+    expect(first.provenance.fileSha256).toBe(
+      createHash("sha256").update(first.file).digest("hex"),
+    );
+    getPgrConsolidated.mockResolvedValue({
+      ...consolidated,
+      pgr: { ...consolidated.pgr, companyName: "Outra razão social" },
+    });
+    const changed = await generatePgrDocx("org_a", "pgr-1");
+    expect(changed.provenance.sourceSha256).not.toBe(first.provenance.sourceSha256);
+    expect(JSON.stringify(changed.provenance)).not.toContain("Outra razão social");
+  });
+
+  it("fingerprints the converted PDF bytes and includes semi-fixed overrides in the source identifier", async () => {
+    docxToPdf.mockResolvedValue(Buffer.from("%PDF"));
+    const original = await generatePgrDocx("org_a", "pgr-1", { format: "pdf" });
+    const changed = await generatePgrDocx("org_a", "pgr-1", {
+      format: "pdf",
+      overrides: { titles: { introduction: "Apresentação revista" } },
+    });
+    expect(original.provenance.fileSha256).toBe(
+      createHash("sha256").update(Buffer.from("%PDF")).digest("hex"),
+    );
+    expect(original.provenance.sourceSha256).not.toBe(changed.provenance.sourceSha256);
+  });
   it("gera o DOCX do tenant e busca o logo da empresa", async () => {
     const result = await generatePgrDocx("org_a", "pgr-1");
     expect(getPgrConsolidated).toHaveBeenCalledWith("org_a", "pgr-1");

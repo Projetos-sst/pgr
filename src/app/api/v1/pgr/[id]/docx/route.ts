@@ -37,11 +37,8 @@ async function respond(
     ctx = await resolveContext(req);
     const { id } = await params;
     const options = await read();
-    const { fileName, contentType, file, missingTags } = await generatePgrDocx(
-      ctx.tenantId,
-      id,
-      options,
-    );
+    const { fileName, contentType, file, missingTags, provenance } =
+      await generatePgrDocx(ctx.tenantId, id, options);
     return new NextResponse(new Uint8Array(file), {
       status: 200,
       headers: {
@@ -49,6 +46,10 @@ async function respond(
         "Content-Disposition": `attachment; filename="${fileName}"`,
         "Cache-Control": "no-store",
         "X-Pgr-Docx-Missing-Tags": String(missingTags.length),
+        "X-Pgr-Generated-At": provenance.generatedAt,
+        "X-Pgr-Template-Sha256": provenance.templateSha256,
+        "X-Pgr-Source-Sha256": provenance.sourceSha256,
+        "X-Pgr-File-Sha256": provenance.fileSha256,
       },
     });
   } catch (error) {

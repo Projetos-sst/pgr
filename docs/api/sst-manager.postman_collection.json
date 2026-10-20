@@ -1639,7 +1639,7 @@
         },
         {
           "name": "PGR · DOCX (template)",
-          "description": "PGR preenchido pelo template DOCX (templates/pgr/pgr-template.docx). Fixos vêm do template; SEMI-FIXOS (laranja no PGR 2026.1) usam o default de domains/pgr/pgr-docx/defaults.ts ou o override do POST; DINÂMICOS vêm do banco (consolidada + extras). PDF pelo provedor PGR_DOCX_PDF_PROVIDER (gotenberg padrão | google). Use 'Send and Download' no Postman para salvar o arquivo.",
+          "description": "PGR preenchido pelo template DOCX (templates/pgr/pgr-template.docx). Fixos vêm do template; SEMI-FIXOS (laranja no PGR 2026.1) usam o default de domains/pgr/pgr-docx/defaults.ts ou o override do POST; DINÂMICOS vêm do banco (consolidada + extras). PDF pelo provedor PGR_DOCX_PDF_PROVIDER (gotenberg padrão | google). Use 'Send and Download' no Postman para salvar o arquivo. NOB-105: resposta inclui X-Pgr-Generated-At, X-Pgr-Template-Sha256, X-Pgr-Source-Sha256 e X-Pgr-File-Sha256; registre os headers junto do arquivo para revisão. Identificadores técnicos, sem assinatura ou parecer.",
           "item": [
             {
               "name": "GET /pgr/:id/docx (?format=docx|pdf; semi-fixos padrão; 404/422/503)",
