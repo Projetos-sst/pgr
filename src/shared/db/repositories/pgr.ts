@@ -15,6 +15,7 @@ import { pgr, type Pgr } from "../schema/pgr";
 import { companies } from "../schema/companies";
 import { workUnits } from "../schema/work-units";
 import { auditedTenantWrite } from "./audited-write";
+import { assertCompanyModuleTx } from "./company-modules";
 
 export type ListPgrParams = PageParams & {
   companyId?: string;
@@ -47,6 +48,7 @@ async function assertCompanyInTenant(
     .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId)))
     .limit(1);
   if (!row) throw new ReferenceNotFoundError("company");
+  await assertCompanyModuleTx(tx, orgId, companyId, "pgr");
 }
 
 /** Garante que a obra pertence à empresa informada E ao tenant (senão FK_NOT_FOUND). */

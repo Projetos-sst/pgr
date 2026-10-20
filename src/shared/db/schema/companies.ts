@@ -47,6 +47,7 @@ export const companies = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    uniqueIndex("uq_companies_id_org").on(table.id, table.orgId),
     index("idx_companies_org_id").on(table.orgId),
     uniqueIndex("uq_companies_org_id_cnpj").on(table.orgId, table.cnpj),
     check("companies_risk_grade_check", sql`risk_grade between 1 and 4`),

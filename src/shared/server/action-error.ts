@@ -5,6 +5,7 @@ import { AppError } from "@/shared/errors/app-error";
 import type { ActionError } from "./result";
 
 const PG_ERROR_MAP: Record<string, { code: string; message: string }> = {
+  "42501": { code: "FORBIDDEN", message: "Operação não permitida para esta empresa." },
   "23505": { code: "DUPLICATE", message: "Registro já existe neste escritório." },
   "23503": { code: "FK_NOT_FOUND", message: "Referência inexistente neste escritório." },
   "23514": { code: "VALIDATION", message: "Valor fora do permitido." },

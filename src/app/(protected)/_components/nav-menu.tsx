@@ -59,7 +59,6 @@ const NAV: NavEntry[] = [
       { href: "/job-roles", label: "Funções", iconName: "briefcase-user" },
       { href: "/ges", label: "GES", iconName: "layers" },
       { href: "/employees", label: "Funcionários", iconName: "users" },
-      { href: "/medicos", label: "Médicos", iconName: "stethoscope" },
       { href: "/categories", label: "Categorias", iconName: "tag" },
       { href: "/training-catalog", label: "Treinamentos", iconName: "book-open" },
       {
@@ -92,13 +91,21 @@ const NAV: NavEntry[] = [
         label: "Fatores de Risco Psicossocial",
         iconName: "heart",
       },
-      { href: "/health-exams", label: "Gestão de Saúde (ASO)", iconName: "activity" },
       { href: "/incidents", label: "Gestão de Incidentes", iconName: "alert-circle" },
       { href: "/action-plans", label: "Gestão de Planos de Ação", iconName: "calendar" },
       { href: "/service-orders", label: "Gestão de OS", iconName: "file-edit" },
       { href: "/risk-methodology", label: "Metodologia de Risco", iconName: "sliders" },
       { href: "/risks", label: "Riscos", iconName: "alert-triangle" },
       { href: "/risk-audits", label: "Auditorias de Risco", iconName: "clipboard-check" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "Medicina do Trabalho",
+    iconName: "activity",
+    items: [
+      { href: "/health-exams", label: "Exames e ASO", iconName: "activity" },
+      { href: "/medicos", label: "Médicos", iconName: "stethoscope" },
     ],
   },
   {

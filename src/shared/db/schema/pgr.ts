@@ -17,6 +17,7 @@ import { orgs } from "./orgs";
 import { companies } from "./companies";
 import { workUnits } from "./work-units";
 import { ges } from "./ges";
+import { companyModuleScope } from "./module-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -64,6 +65,13 @@ export const pgr = pgTable(
   },
   (table) => [
     index("idx_pgr_org_id").on(table.orgId),
+    pgPolicy("pgr_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: companyModuleScope(table.orgId, table.companyId, "pgr"),
+      withCheck: companyModuleScope(table.orgId, table.companyId, "pgr"),
+    }),
     index("idx_pgr_company_id").on(table.companyId),
     pgPolicy("pgr_isolation", {
       for: "all",
@@ -93,6 +101,13 @@ export const pgrGes = pgTable(
   },
   (table) => [
     index("idx_pgr_ges_org_id").on(table.orgId),
+    pgPolicy("pgr_ges_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: sql`exists (select 1 from public.pgr parent where parent.id = ${table.pgrId} and parent.org_id = ${table.orgId})`,
+      withCheck: sql`exists (select 1 from public.pgr parent where parent.id = ${table.pgrId} and parent.org_id = ${table.orgId})`,
+    }),
     index("idx_pgr_ges_pgr_id").on(table.pgrId),
     index("idx_pgr_ges_ges_id").on(table.gesId),
     unique("uq_pgr_ges_org_pgr_ges").on(table.orgId, table.pgrId, table.gesId),
@@ -130,6 +145,13 @@ export const pgrRevisions = pgTable(
   },
   (table) => [
     index("idx_pgr_revisions_org_id").on(table.orgId),
+    pgPolicy("pgr_revisions_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: sql`exists (select 1 from public.pgr parent where parent.id = ${table.pgrId} and parent.org_id = ${table.orgId})`,
+      withCheck: sql`exists (select 1 from public.pgr parent where parent.id = ${table.pgrId} and parent.org_id = ${table.orgId})`,
+    }),
     index("idx_pgr_revisions_pgr_id").on(table.pgrId),
     unique("uq_pgr_revisions_org_pgr_number").on(
       table.orgId,
