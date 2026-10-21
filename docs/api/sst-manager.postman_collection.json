@@ -1891,8 +1891,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"physical\",\n  \"hazard\": \"Ruído\",\n  \"description\": \"Ruído contínuo acima de 85 dB(A)\",\n  \"sources\": \"Compressores e britadeiras\",\n  \"propagation\": \"Ar\",\n  \"exposureTime\": \"gt_7h\",\n  \"possibleInjuries\": \"PAIR\",\n  \"noxiousAgentCode\": \"01.01.001\",\n  \"measurementUnit\": \"db_a\",\n  \"concentrationIntensity\": \"87.5\"\n}"
-            }
+              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"physical\",\n  \"hazard\": \"Ruído\",\n  \"description\": \"Ruído contínuo acima de 85 dB(A)\",\n  \"sources\": \"Compressores e britadeiras\",\n  \"propagation\": \"Ar\",\n  \"exposureTime\": \"gt_7h\",\n  \"possibleInjuries\": \"PAIR\",\n  \"noxiousAgentCode\": \"01.01.001\",\n  \"measurementUnit\": \"db_a\",\n  \"concentrationIntensity\": \"87.5\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\"\n}"
+            },
+            "description": "companyId e workUnitId opcionais devem corresponder ao GES. Contexto divergente retorna 422; PGR desabilitado na empresa retorna 403."
           }
         },
         {
@@ -1970,8 +1971,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"chemical\",\n  \"description\": \"Poeira de sílica (atualizado)\",\n  \"exposureTime\": \"4_7h\",\n  \"measurementUnit\": \"mg_m3\",\n  \"concentrationIntensity\": \"0.5\"\n}"
-            }
+              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"chemical\",\n  \"description\": \"Poeira de sílica (atualizado)\",\n  \"exposureTime\": \"4_7h\",\n  \"measurementUnit\": \"mg_m3\",\n  \"concentrationIntensity\": \"0.5\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\"\n}"
+            },
+            "description": "companyId e workUnitId opcionais devem corresponder ao GES. Contexto divergente retorna 422; PGR desabilitado na empresa retorna 403."
           }
         },
         {
