@@ -1,5 +1,10 @@
 # NOB-107 — protocolo e registro de revisão técnica
 
+Atualização: o fluxo operacional de amostras imutáveis e pareceres recebidos foi
+implementado na continuação da PR #117. Consulte
+`../../.specs/20261021-conclusao-pgr/nob-107.md`. O protocolo abaixo descreve a
+preparação inicial; não substitui a revisão humana, que permanece pendente.
+
 Status: preparação de casos; **nenhuma aprovação técnica registrada**.
 Não há profissional avaliador nomeado ou parecer fornecido nesta etapa.
 

@@ -1,5 +1,10 @@
 # NOB-107 — revisão de código e cobertura
 
+Registro histórico da etapa inicial. A continuação operacional está descrita em
+`../20261021-conclusao-pgr/nob-107.md`, com amostras no GED, parecer recebido,
+controle de concorrência e histórico imutável. Aprovação técnica real permanece
+dependente do profissional responsável.
+
 ## Escopo
 
 Revisada a PR #117 e seu caminho real: repositório consolidado, extras,

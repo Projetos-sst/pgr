@@ -270,6 +270,11 @@
       "key": "technicalApprovalReference",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "pgrReviewSampleId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -9432,6 +9437,120 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"active\": false,\n  \"expectedActiveVersionId\": \"{{basicOfferVersionId}}\",\n  \"reason\": \"Retirada explícita\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Revisão técnica recebida PGR (NOB-107)",
+      "item": [
+        {
+          "name": "Listar amostras",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/reviews"
+          }
+        },
+        {
+          "name": "Gerar e preservar DOCX no GED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/reviews",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Amostra para revisão humana\",\n  \"supersedesSampleId\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Consultar amostra e histórico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/reviews/{{pgrReviewSampleId}}"
+          }
+        },
+        {
+          "name": "Gerar amostra corrigida ligada à anterior",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/reviews",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Revalidação após correções\",\n  \"supersedesSampleId\": \"{{pgrReviewSampleId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Registrar parecer recebido (dados fictícios de exemplo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/reviews/{{pgrReviewSampleId}}/decisions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expectedLatestDecisionId\": null,\n  \"status\": \"changes_requested\",\n  \"reviewer\": {\n    \"fullName\": \"Avaliador fictício\",\n    \"profession\": \"Profissão declarada\",\n    \"registration\": {\n      \"kind\": \"registered\",\n      \"council\": \"Órgão declarado\",\n      \"number\": \"Número declarado\"\n    }\n  },\n  \"reviewedAt\": \"2026-01-01T10:00:00Z\",\n  \"evidenceReference\": \"Substituir pela referência do parecer real\",\n  \"reason\": \"Substituir pelo parecer recebido\",\n  \"findings\": [\n    {\n      \"key\": \"ACH-1\",\n      \"location\": \"Inventário\",\n      \"description\": \"Descrição fictícia para substituir\",\n      \"severity\": \"blocking\",\n      \"resolution\": \"open\",\n      \"correctionReference\": null\n    }\n  ]\n}"
             }
           }
         }

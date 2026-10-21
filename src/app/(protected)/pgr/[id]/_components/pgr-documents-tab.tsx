@@ -86,6 +86,9 @@ function PgrPdfPanel({ pgrId }: { pgrId: string }) {
   return (
     <section className="glass-card flex flex-col gap-5 p-6 sm:p-8">
       <PgrReadinessPanel pgrId={pgrId} />
+      <Link href={`/pgr/${pgrId}/reviews`} className="text-primary underline">
+        Amostras, pareceres recebidos e revalidação técnica
+      </Link>
       <div className="flex items-start gap-4">
         <div className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
           <svg
