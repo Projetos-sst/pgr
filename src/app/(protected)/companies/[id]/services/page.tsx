@@ -1,3 +1,4 @@
+import { resolvePageParams } from "@/shared/pagination";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
@@ -22,7 +23,7 @@ export default async function CompanyServicesPage({
   const ctx = await requireOfficeStaffPage();
   const { id } = await params;
   const sp = await searchParams;
-  const page = Math.max(1, Number(sp.page) || 1);
+  const { page } = resolvePageParams({ page: Number(sp.page) });
   const [company, overview] = await Promise.all([
     getCompanyAction(id),
     getCompanyModuleOverviewAction(id, { page }),
@@ -37,6 +38,9 @@ export default async function CompanyServicesPage({
         description="PGR e Medicina são habilitados separadamente. O plano Pro e as cobranças permanecem independentes."
       />
       <ModuleControls companyId={id} modules={modules} canManage={ctx.role === "owner"} />
+      <Link href={`/companies/${id}/machines`} className="text-primary underline">
+        Máquinas e equipamentos por obra e ambiente
+      </Link>
       <section className="glass-card rounded-[20px] p-6">
         <h2 className="mb-4 font-semibold">Histórico de serviços</h2>
         <ul className="space-y-3">

@@ -118,8 +118,8 @@ describe("maskCnpjInput", () => {
     expect(maskCnpjInput(maskCnpjInput(masked))).toBe(masked);
   });
 
-  it("ignores letters and special characters mixed with digits", () => {
-    expect(maskCnpjInput("11a2b2c2d333000e1f81")).toBe("11.222.333/0001-81");
+  it("preserves alphanumeric identifiers and removes editing symbols", () => {
+    expect(maskCnpjInput("12abc34501de35")).toBe("12.ABC.345/01DE-35");
     expect(maskCnpjInput("11@222#333$0001%81")).toBe("11.222.333/0001-81");
   });
 

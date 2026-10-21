@@ -289,6 +289,13 @@ export const epiRisk = pgTable(
       table.catalogId,
       table.riskId,
     ),
+    pgPolicy("epi_risk_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: sql`exists (select 1 from public.risks r where r.id = ${table.riskId} and r.org_id = ${table.orgId})`,
+      withCheck: sql`exists (select 1 from public.risks r where r.id = ${table.riskId} and r.org_id = ${table.orgId})`,
+    }),
     pgPolicy("epi_risk_isolation", {
       for: "all",
       to: appRuntimeRole,

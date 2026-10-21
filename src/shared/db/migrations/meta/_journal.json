@@ -379,6 +379,41 @@
       "when": 1792509152595,
       "tag": "0053_company_module_access",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1792513283573,
+      "tag": "0054_medical_risk_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1792515723005,
+      "tag": "0055_pgr_inventory_module_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1792592598948,
+      "tag": "0056_company_risk_authorizations",
+      "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1792604889718,
+      "tag": "0057_machine_installations",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1792607058603,
+      "tag": "0058_pgr_basic_offers",
+      "breakpoints": true
     }
   ]
 }

@@ -30,6 +30,7 @@ const NAV: NavEntry[] = [
     iconName: "folder",
     items: [
       { href: "/pgr", label: "PGR", iconName: "alert-triangle" },
+      { href: "/pgr-basic-offer", label: "Oferta de PGR básico", iconName: "file-text" },
       { href: "/epi-stock", label: "Estoque de EPI", iconName: "briefcase" },
       { href: "/epi-returns", label: "Devoluções de EPI", iconName: "rotate-ccw" },
       { href: "/esocial", label: "eSocial (SST)", iconName: "file-text" },
@@ -104,6 +105,12 @@ const NAV: NavEntry[] = [
     label: "Medicina do Trabalho",
     iconName: "activity",
     items: [
+      {
+        href: "/risk-authorizations",
+        label: "Autorizações de riscos",
+        iconName: "shield",
+      },
+      { href: "/medical-risks", label: "Riscos para PCMSO", iconName: "alert-triangle" },
       { href: "/health-exams", label: "Exames e ASO", iconName: "activity" },
       { href: "/medicos", label: "Médicos", iconName: "stethoscope" },
     ],
