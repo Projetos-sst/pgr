@@ -34,6 +34,18 @@ function postgresErrorCode(error: unknown): string | null {
   return null;
 }
 
+function isCompanyCnpjDuplicate(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth <= MAX_CAUSE_DEPTH && current; depth += 1) {
+    if (typeof current !== "object") return false;
+    const pg = current as { code?: string; constraint_name?: string; cause?: unknown };
+    if (pg.code === "23505" && pg.constraint_name === "uq_companies_org_id_cnpj")
+      return true;
+    current = pg.cause;
+  }
+  return false;
+}
+
 /**
  * Maps a known error to an ActionError. Returns null for unexpected errors so
  * the caller can rethrow them (never silenced — see action-result contract).
@@ -53,6 +65,10 @@ export function toActionError(error: unknown): ActionError | null {
   }
 
   const pgCode = postgresErrorCode(error);
+  if (pgCode === "23505" && isCompanyCnpjDuplicate(error)) {
+    const message = "CNPJ já cadastrado neste escritório.";
+    return { code: "DUPLICATE", message, fields: { cnpj: message } };
+  }
   if (pgCode && PG_ERROR_MAP[pgCode]) {
     return { ...PG_ERROR_MAP[pgCode] };
   }

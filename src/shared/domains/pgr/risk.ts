@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { optionalString, requiredString, requiredUuid } from "./form-fields";
+import {
+  optionalString,
+  optionalUuid,
+  requiredString,
+  requiredUuid,
+} from "./form-fields";
 import {
   riskAgentTypeSchema,
   exposureTimeSchema,
@@ -44,6 +49,9 @@ const optionalDecimal = z
 
 /** Campos persistidos do risco (colunas reais de `risks`). */
 const riskBaseObject = z.object({
+  // Optional for existing API clients. The GES remains the persisted source of context.
+  companyId: optionalUuid,
+  workUnitId: optionalUuid,
   gesId: requiredUuid("GES é obrigatório"),
   agentType: riskAgentTypeSchema,
   hazard: optionalString,

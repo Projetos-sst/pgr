@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { normalizeCnpj, isValidCnpjChecksum } from "./cnpj";
+export { isValidCnpjChecksum } from "./cnpj";
 
 export const categoryTypeSchema = z.enum(["epi", "machine", "supply"]);
 export const employeeSexSchema = z.enum(["male", "female", "not_informed"]);
@@ -38,37 +40,6 @@ function onlyDigits(value: string): string {
   return value.replace(/\D/g, "");
 }
 
-/**
- * Valida o dígito verificador de CNPJ usando o algoritmo oficial (módulo 11).
- * Rejeita CNPJs com todos os dígitos iguais e aqueles com checksum incorreto.
- */
-export function isValidCnpjChecksum(digits: string): boolean {
-  // Deve ter exatamente 14 dígitos
-  if (digits.length !== 14) return false;
-
-  // Rejeita CNPJs com todos os dígitos iguais (ex.: 11111111111111)
-  if (/^(\d)\1{13}$/.test(digits)) return false;
-
-  // Calcula dígito verificador
-  const calcCheckDigit = (base: string): number => {
-    const weights =
-      base.length === 12
-        ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-        : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-    const sum = base
-      .split("")
-      .reduce((acc, digit, i) => acc + Number(digit) * weights[i], 0);
-    const remainder = sum % 11;
-    return remainder < 2 ? 0 : 11 - remainder;
-  };
-
-  const base = digits.slice(0, 12);
-  const d1 = calcCheckDigit(base);
-  const d2 = calcCheckDigit(base + String(d1));
-
-  return digits === base + String(d1) + String(d2);
-}
-
 export const cpfSchema = z
   .string({ error: "CPF é obrigatório" })
   .transform(onlyDigits)
@@ -78,9 +49,9 @@ export const cpfSchema = z
 
 export const cnpjSchema = z
   .string({ error: "CNPJ inválido" })
-  .transform(onlyDigits)
+  .transform(normalizeCnpj)
   .refine((digits) => digits.length === 14, {
-    message: "CNPJ deve ter 14 dígitos",
+    message: "CNPJ deve ter 14 caracteres",
   })
   .refine((digits) => isValidCnpjChecksum(digits), {
     message: "CNPJ inválido (dígito verificador incorreto)",

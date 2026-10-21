@@ -497,6 +497,18 @@ Resolve o usuário autenticado e a org ativa da sessão (Clerk). Envelope própr
 
 ## Empresa — `actions/pgr/companies.ts`
 
+**Validação cadastral (NOB-102):** CNPJ permanece opcional para preservar os
+cadastros atuais. Quando informado, aceita os 14 caracteres numéricos ou
+alfanuméricos (12 posições A–Z/0–9 e dois DVs numéricos), com máscara opcional;
+normaliza letras ASCII para maiúsculas e valida o DV pelo algoritmo da Receita.
+Formato/checksum inválido → `422 VALIDATION`, com erro no campo. Duplicidade no
+mesmo escritório, inclusive após normalização ou envio concorrente, →
+`409 DUPLICATE` e `fields.cnpj`. O mesmo CNPJ pode existir em outro escritório.
+JSON malformado em POST/PUT de empresas ou funcionários → `422 VALIDATION`.
+Funcionários continuam exigindo empresa do tenant e GES/função coerentes; CPF
+mantém a unicidade por escritório já existente. Autofill externo é auxiliar:
+falha de consulta não impede preenchimento manual nem confirma cadastro oficial.
+
 **Cadastros comuns (NOB-99):** PGR e Medicina reutilizam a mesma empresa e os
 mesmos funcionários do tenant. `GET /api/v1/companies?module=pgr|medicine` e
 `GET /api/v1/employees?module=pgr|medicine` filtram por serviço habilitado sem
@@ -838,6 +850,14 @@ da infra). Não descrever como REST público — é a página genérica reutiliz
 ---
 
 ## Riscos (GES) — `actions/pgr/risks.ts`
+
+**Contexto dos riscos (NOB-103):** `POST /risks` e `PUT /risks/{id}` aceitam
+`companyId` e `workUnitId` opcionais. Quando enviados, devem corresponder ao GES
+do mesmo tenant, ou a operação retorna `422 FK_NOT_FOUND`. A empresa é derivada
+do GES no servidor; PGR desabilitado impede criar/editar (`403 FORBIDDEN`). O
+formulário envia os três identificadores. Clientes antigos podem enviar apenas
+`gesId`; nenhum contexto adicional é duplicado na tabela `risks`. As categorias
+e as escalas existentes permanecem iguais, pendentes de revisão técnica.
 
 Inventário de risco por Grupo de Exposição Similar (NR-01/GRO + eSocial S-2240). Fatia 014,
 **zero-migration** (tabela `risks` da migration `0012`; escopo restrito às suas colunas — **não**

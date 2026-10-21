@@ -1891,8 +1891,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"physical\",\n  \"hazard\": \"Ruído\",\n  \"description\": \"Ruído contínuo acima de 85 dB(A)\",\n  \"sources\": \"Compressores e britadeiras\",\n  \"propagation\": \"Ar\",\n  \"exposureTime\": \"gt_7h\",\n  \"possibleInjuries\": \"PAIR\",\n  \"noxiousAgentCode\": \"01.01.001\",\n  \"measurementUnit\": \"db_a\",\n  \"concentrationIntensity\": \"87.5\"\n}"
-            }
+              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"physical\",\n  \"hazard\": \"Ruído\",\n  \"description\": \"Ruído contínuo acima de 85 dB(A)\",\n  \"sources\": \"Compressores e britadeiras\",\n  \"propagation\": \"Ar\",\n  \"exposureTime\": \"gt_7h\",\n  \"possibleInjuries\": \"PAIR\",\n  \"noxiousAgentCode\": \"01.01.001\",\n  \"measurementUnit\": \"db_a\",\n  \"concentrationIntensity\": \"87.5\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\"\n}"
+            },
+            "description": "companyId e workUnitId opcionais devem corresponder ao GES. Contexto divergente retorna 422; PGR desabilitado na empresa retorna 403."
           }
         },
         {
@@ -1970,8 +1971,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"chemical\",\n  \"description\": \"Poeira de sílica (atualizado)\",\n  \"exposureTime\": \"4_7h\",\n  \"measurementUnit\": \"mg_m3\",\n  \"concentrationIntensity\": \"0.5\"\n}"
-            }
+              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"chemical\",\n  \"description\": \"Poeira de sílica (atualizado)\",\n  \"exposureTime\": \"4_7h\",\n  \"measurementUnit\": \"mg_m3\",\n  \"concentrationIntensity\": \"0.5\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\"\n}"
+            },
+            "description": "companyId e workUnitId opcionais devem corresponder ao GES. Contexto divergente retorna 422; PGR desabilitado na empresa retorna 403."
           }
         },
         {
@@ -8677,6 +8679,99 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"module\": \"medicine\",\n  \"enabled\": true,\n  \"reason\": \"Servico autorizado em teste\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validação cadastral (NOB-102)",
+      "description": "Cadastros numéricos e alfanuméricos; enviar os dois primeiros exemplos em sequência para verificar unicidade. Autofill externo não é obrigatório.",
+      "item": [
+        {
+          "name": "Criar empresa com CNPJ alfanumérico (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"12.ABC.345/01DE-35\",\n  \"razaoSocial\": \"Empresa fictícia NOB-102\",\n  \"riskGrade\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
+            }
+          }
+        },
+        {
+          "name": "Repetir CNPJ normalizado (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"12abc34501de35\",\n  \"razaoSocial\": \"Duplicada fictícia\",\n  \"riskGrade\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
+            }
+          }
+        },
+        {
+          "name": "CNPJ com DV incorreto (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"12ABC34501DE34\",\n  \"razaoSocial\": \"Inválida fictícia\",\n  \"riskGrade\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
             }
           }
         }

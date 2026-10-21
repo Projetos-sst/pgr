@@ -9,6 +9,22 @@ const baseValues: RiskInput = {
 };
 
 describe("riskInputSchema — obrigatórios e enums (US1)", () => {
+  it("accepts optional context and validates its identifiers without requiring it for legacy clients", () => {
+    expect(riskInputSchema.safeParse(baseValues).success).toBe(true);
+    expect(
+      riskInputSchema.safeParse({ ...baseValues, companyId: "invalid" }).success,
+    ).toBe(false);
+    expect(
+      riskInputSchema.safeParse({ ...baseValues, workUnitId: "invalid" }).success,
+    ).toBe(false);
+    const parsed = riskInputSchema.parse({
+      ...baseValues,
+      companyId: GES,
+      workUnitId: GES,
+    });
+    expect(parsed.companyId).toBe(GES);
+    expect(parsed.workUnitId).toBe(GES);
+  });
   it("aceita create/update válido e normaliza opcionais vazios", () => {
     const parsed = riskInputSchema.parse({
       ...baseValues,
