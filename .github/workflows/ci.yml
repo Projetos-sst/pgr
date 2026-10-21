@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [develop, main]
+    branches: [develop, main, "codex/**"]
   # O CD chama a mesma validação antes de publicar o commit integrado.
   workflow_call:
 
