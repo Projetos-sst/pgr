@@ -493,6 +493,18 @@ Resolve o usuário autenticado e a org ativa da sessão (Clerk). Envelope própr
 
 ## Empresa — `actions/pgr/companies.ts`
 
+**Validação cadastral (NOB-102):** CNPJ permanece opcional para preservar os
+cadastros atuais. Quando informado, aceita os 14 caracteres numéricos ou
+alfanuméricos (12 posições A–Z/0–9 e dois DVs numéricos), com máscara opcional;
+normaliza letras ASCII para maiúsculas e valida o DV pelo algoritmo da Receita.
+Formato/checksum inválido → `422 VALIDATION`, com erro no campo. Duplicidade no
+mesmo escritório, inclusive após normalização ou envio concorrente, →
+`409 DUPLICATE` e `fields.cnpj`. O mesmo CNPJ pode existir em outro escritório.
+JSON malformado em POST/PUT de empresas ou funcionários → `422 VALIDATION`.
+Funcionários continuam exigindo empresa do tenant e GES/função coerentes; CPF
+mantém a unicidade por escritório já existente. Autofill externo é auxiliar:
+falha de consulta não impede preenchimento manual nem confirma cadastro oficial.
+
 **Cadastros comuns (NOB-99):** PGR e Medicina reutilizam a mesma empresa e os
 mesmos funcionários do tenant. `GET /api/v1/companies?module=pgr|medicine` e
 `GET /api/v1/employees?module=pgr|medicine` filtram por serviço habilitado sem

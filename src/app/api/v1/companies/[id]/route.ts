@@ -1,3 +1,4 @@
+import { readJsonBody } from "@/shared/api/read-json-body";
 import type { NextRequest } from "next/server";
 
 import { restHandler } from "@/shared/api/rest";
@@ -22,7 +23,7 @@ export function GET(req: NextRequest, { params }: Ctx) {
 export function PUT(req: NextRequest, { params }: Ctx) {
   return restHandler(req, async ({ tenantId }) => {
     const { id } = await params;
-    const input = companyInputSchema.parse(await req.json());
+    const input = companyInputSchema.parse(await readJsonBody(req));
     const row = await repo.updateCompany(tenantId, id, input);
     if (!row) throw new NotFoundError();
     return row;

@@ -1,3 +1,4 @@
+import { readJsonBody } from "@/shared/api/read-json-body";
 import type { NextRequest } from "next/server";
 
 import { restHandler, pageParamsFrom } from "@/shared/api/rest";
@@ -27,7 +28,7 @@ export function POST(req: NextRequest) {
   return restHandler(
     req,
     async ({ tenantId }) => {
-      const input = companyInputSchema.parse(await req.json());
+      const input = companyInputSchema.parse(await readJsonBody(req));
       return repo.createCompany(tenantId, input);
     },
     { status: 201 },
