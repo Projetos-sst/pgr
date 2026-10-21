@@ -106,6 +106,7 @@ export const medicalRiskEntries = pgTable(
     reviewNote: text("review_note"),
   },
   (table) => [
+    unique("uq_medical_risk_entry_identity").on(table.id, table.orgId, table.companyId),
     foreignKey({
       columns: [table.sourceId, table.orgId, table.companyId],
       foreignColumns: [
@@ -138,6 +139,13 @@ export const medicalRiskEntries = pgTable(
       for: "insert",
       to: appRuntimeRole,
       withCheck: sql`${table.status} = 'pending' and ${table.reviewedBy} is null and ${table.reviewedAt} is null`,
+    }),
+    pgPolicy("medical_risk_entries_authorized_review", {
+      as: "restrictive",
+      for: "update",
+      to: appRuntimeRole,
+      using: sql`exists (select 1 from public.professional_risk_authorizations a where a.org_id = ${table.orgId} and a.company_id = ${table.companyId} and a.user_id = current_setting('app.current_actor', true) and a.active = true)`,
+      withCheck: sql`${table.reviewedBy} = current_setting('app.current_actor', true) and exists (select 1 from public.professional_risk_authorizations a where a.org_id = ${table.orgId} and a.company_id = ${table.companyId} and a.user_id = current_setting('app.current_actor', true) and a.active = true)`,
     }),
     pgPolicy("medical_risk_entries_module_access", {
       as: "restrictive",

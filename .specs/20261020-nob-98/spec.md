@@ -1,5 +1,7 @@
 # NOB-98 — fontes de riscos para Medicina
 
+> Especificação histórica da primeira entrega. A decisão de autorização foi definida pela empresa-cliente e implementada no complemento de 21/10/2026: `.specs/20261021-nob-98-autorizacao/`. As pendências de autorização abaixo descrevem o estado anterior; a migration 0056 passa a permitir somente a atualização dos campos de revisão pelos profissionais autorizados.
+
 Base: NOB-100 / PR #111. A geração do PCMSO é outra issue (NOB-109).
 
 ## Escopo implementado

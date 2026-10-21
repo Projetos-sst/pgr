@@ -1,5 +1,6 @@
 import "server-only";
-import { createHash } from "node:crypto";
+import { medicalSourceFingerprint } from "@/shared/domains/medicine/source-fingerprint";
+export { medicalSourceFingerprint } from "@/shared/domains/medicine/source-fingerprint";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import {
@@ -11,22 +12,7 @@ import {
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import type { PageParams } from "@/shared/pagination";
 import * as repo from "@/shared/db/repositories/medical-risk-sources";
-
-function canonical(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === "object")
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-        .map(([key, item]) => [key, canonical(item)]),
-    );
-  return value;
-}
-export function medicalSourceFingerprint(value: unknown): string {
-  return createHash("sha256")
-    .update(JSON.stringify(canonical(value)))
-    .digest("hex");
-}
+import { canReviewCompanyRisks } from "@/shared/db/repositories/risk-authorizations";
 
 export async function registerMedicalRiskSource(
   ctx: TenantContext,
@@ -128,8 +114,8 @@ export async function getMedicalRiskInventory(
   return {
     rows,
     total: result.total,
-    validationAvailable: false as const,
+    validationAvailable: await canReviewCompanyRisks(ctx, id),
     validationNotice:
-      "A autorização de profissionais para validação técnica ainda precisa ser definida. Nenhum risco é aprovado automaticamente.",
+      "A empresa-cliente indica o autorizador; somente profissionais com autorização ativa nesta empresa podem validar ou rejeitar riscos. Nenhum risco é aprovado automaticamente.",
   };
 }

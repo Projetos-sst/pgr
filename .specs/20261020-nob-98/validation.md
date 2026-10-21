@@ -1,5 +1,7 @@
 # NOB-98 — validação
 
+> Registro histórico da primeira entrega. O complemento de autorização de 21/10/2026 e suas validações estão em `.specs/20261021-nob-98-autorizacao/`.
+
 - Nove testes de integração específicos de fontes aprovados, incluindo HTTP,
   empresa apenas Medicina, importação sempre pendente, mudanças de risco e
   avaliação sem nova revisão, origem removida, histórico/substituição e RLS.

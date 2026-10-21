@@ -8,6 +8,12 @@ export {
 export { companies, type Company, type NewCompany } from "./companies";
 export { companyModules, companyModuleEvents } from "./company-modules";
 export {
+  companyRiskAuthorizers,
+  professionalRiskAuthorizations,
+  riskAuthorizationEvents,
+  medicalRiskDecisions,
+} from "./medical-risk-authorizations";
+export {
   medicalRiskSources,
   medicalRiskEntries,
   medicalRiskEvents,

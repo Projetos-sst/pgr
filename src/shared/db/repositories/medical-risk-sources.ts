@@ -4,7 +4,7 @@ import type { MedicalRiskSnapshot } from "@/shared/domains/medicine/risk-sources
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { resolvePageParams, type PageParams } from "@/shared/pagination";
-import { withOrg } from "../with-org";
+import { withOrg, type TenantTransaction } from "../with-org";
 import { companies } from "../schema/companies";
 import {
   medicalRiskSources,
@@ -35,9 +35,10 @@ export async function getInternalMedicalSources(
   orgId: string,
   companyId: string,
   pgrIds: string[],
+  transaction?: TenantTransaction,
 ): Promise<InternalMedicalSource[]> {
   if (pgrIds.length === 0) return [];
-  return withOrg(orgId, async (tx) => {
+  const read = async (tx: TenantTransaction) => {
     const rows = await tx.execute(sql`
       select p.id as "pgrId", p.updated_at::text as "updatedAt",
         (select max(revision_number) from public.pgr_revisions rev where rev.pgr_id=p.id and rev.org_id=${orgId}) as "revisionNumber",
@@ -59,7 +60,8 @@ export async function getInternalMedicalSources(
       )}) and p.company_id=${companyId} and p.org_id=${orgId}
     `);
     return rows as unknown as InternalMedicalSource[];
-  });
+  };
+  return transaction ? read(transaction) : withOrg(orgId, read);
 }
 
 type SourceInsert = typeof medicalRiskSources.$inferInsert;

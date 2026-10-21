@@ -18,11 +18,15 @@ const BLOCKED_CODES = new Set(["FORBIDDEN", "NO_TENANT_CONTEXT", "UNAUTHORIZED"]
 export async function officeAction<T>(
   operation: string,
   fn: (ctx: TenantContext) => Promise<T>,
-  opts: { audit?: boolean } = {},
+  opts: { audit?: boolean; tenantAccess?: boolean } = {},
 ): Promise<ActionResult<T>> {
   let ctx: TenantContext | null = null;
   try {
-    ctx = await requireOfficeStaff();
+    ctx = opts.tenantAccess
+      ? await (
+          await import("@/shared/auth/require-tenant-context")
+        ).requireTenantContext()
+      : await requireOfficeStaff();
     const data = await fn(ctx);
     if (opts.audit) {
       logTenantEvent("info", {

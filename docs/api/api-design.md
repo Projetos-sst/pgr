@@ -1209,6 +1209,30 @@ GET `/api/v1/companies/{id}/medical-risk-sources?page=1&pageSize=20` retorna `{r
 
 POST externo: `{kind:"external",title,reference,version,risks:[{agentType,description,exposureGroup,jobRole?,possibleInjuries?,exposureDescription?}],supersedesSourceId?}`. POST interno: `{kind:"internal",pgrId,supersedesSourceId?}`. Retorno 201 com os metadados da fonte. Ambos validam empresa/tenant e Medicina habilitada. A origem interna também respeita acesso ao PGR. Apenas funcionários internos owner/collaborator; cliente → 403.
 
-Importação nunca aceita status, aprovador ou dados clínicos não previstos. Os riscos começam pendentes, não são liberados automaticamente para PCMSO e não há aprovação técnica disponível enquanto a autorização profissional não for definida. Os campos reviewedBy/reviewedAt/reviewNote e rótulos validated/rejected são preparação do modelo, não um fluxo de aprovação já entregue.
+Importação nunca aceita status, aprovador ou dados clínicos não previstos. Os riscos começam pendentes e não são liberados automaticamente para PCMSO. A revisão exige autorização profissional ativa por empresa, conforme o fluxo abaixo.
+
+## Autorização profissional e revisão de riscos — NOB-98
+
+Área `/risk-authorizations` e `/risk-authorizations/{companyId}`. Reutiliza contas e vínculos existentes na organização. O owner registra a indicação **da empresa-cliente**, com referência à evidência e motivo; o indicado utiliza login próprio para autorizar ou revogar profissionais naquela empresa. Owner/colaborador não recebem esses poderes automaticamente. Os demais endpoints continuam restritos à equipe do escritório.
+
+| Recurso                                                  | Métodos                                                                                                            |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `/companies/{id}/risk-authorizations?page=1&pageSize=20` | GET: capacidades, candidatos permitidos, autorizações, histórico e inventário; PUT: indicação/revogação pelo owner |
+| `/companies/{id}/risk-authorizations/professionals`      | PUT: concessão/revogação somente pelo autorizador atual                                                            |
+| `/companies/{id}/medical-risks/{entryId}/review`         | POST: decisão pelo profissional com autorização ativa e Medicina habilitada; retorna 201                           |
+
+Essas rotas usam tenant/usuário da sessão e verificam vínculo e escopo da empresa no core/repositório. Atores e datas são definidos no servidor. GET permite owner, autorizador e profissional ativo. Profissional vê apenas suas próprias autorizações/eventos/decisões, além dos riscos da empresa. Candidatos pertencem à organização e têm vínculo compatível, disponíveis somente a owner/autorizador. A lista visual limita-se a 1.000 contas com aviso de truncamento; histórico/fontes paginados.
+
+PUT indicação: `{userId: "conta-existente" | null, evidence: "referência à indicação da empresa", reason: "motivo"}`. `null` revoga a indicação. Substituir o autorizador remove seu poder imediatamente; concessões profissionais vigentes persistem até revogação explícita. Remover o vínculo com a organização encerra as concessões atuais por FK; histórico permanece. Evidência é referência textual, sem upload novo ou verificação externa de autenticidade.
+
+PUT profissional ativo: `{userId, active:true, identity:{fullName, profession, registration:{kind:"registered",council,number,region?}}, reason}`. Registro não aplicável: `registration:{kind:"not_applicable",reason}`. Declaração pelo cliente/responsável, sem inferir profissão ou conselho obrigatório. Revogação: `{userId,active:false,reason}`. Não se criam contas/convites ou regras comerciais neste fluxo.
+
+POST revisão: `{status:"validated"|"rejected",reason,expectedStatus:"pending"|"validated"|"rejected",expectedReviewedAt:ISO8601|null}`. Utilizar status/data da leitura. Concorrência ou origem interna alterada, indisponível ou substituída na validação → `422 VALIDATION`; conta sem poder → `403 FORBIDDEN`; recurso fora do tenant → `404 NOT_FOUND`. Rejeição pode registrar problema em fonte antiga. Importação sempre inicia pendente; uma nova versão exige nova revisão. Sem aprovação em lote ou inferência técnica automática. Nova decisão registra histórico adicional.
+
+Estado e histórico são transacionais. A decisão guarda usuário, instante, motivo, identificação profissional vigente e fingerprint da fonte. Conteúdo importado é imutável; `app_runtime` atualiza somente os quatro campos de revisão. Eventos/decisões não permitem UPDATE/DELETE pelo runtime. Migration aditiva `0056_company_risk_authorizations`, sem backfill de autorizações técnicas, a aplicar pelo processo normal após revisão.
+
+Actions em `actions/medicine/risk-authorizations.ts`: listRiskAuthorizationCompaniesAction, getRiskAuthorizationWorkspaceAction, appointCompanyAuthorizerAction, authorizeCompanyProfessionalAction e decideCompanyRiskAction. Action e REST compartilham core.
+
+Esse registro não verifica conselho profissional nem substitui assinatura do documento, parecer técnico humano ou homologação autenticada.
 
 As fontes são imutáveis; novo registro pode substituir uma fonte anterior da mesma empresa. Fonte repetida → DUPLICATE/409; fonte anterior fora da empresa → FK_NOT_FOUND/422; PGR ausente/de outro tenant → NOT_FOUND/404; Medicina não habilitada → FORBIDDEN/403; JSON/entrada inválidos → VALIDATION/422. Até 500 riscos por fonte. Fonte sem riscos gera aviso explícito e não equivale a ausência de exposição. O fingerprint inclui inventário e avaliação vigente, sem depender apenas do número da revisão. Fonte externa exige referência manual a sua origem; não há extração de PDF, prescrição médica ou geração de PCMSO nesta entrega.

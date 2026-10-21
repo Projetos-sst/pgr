@@ -393,6 +393,13 @@
       "when": 1792515723005,
       "tag": "0055_pgr_inventory_module_access",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1792592598948,
+      "tag": "0056_company_risk_authorizations",
+      "breakpoints": true
     }
   ]
 }

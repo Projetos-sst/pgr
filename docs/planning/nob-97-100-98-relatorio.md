@@ -80,17 +80,18 @@ Os 14 testes ignorados cobrem PDF/GED com serviços reais, Gotenberg, equipe,
 webhook de membros e smoke de conexão. Não houve configuração desses serviços
 externos; esses casos não foram declarados aprovados.
 
-## Pendência obrigatória da NOB-98
+## Atualização da autorização NOB-98 — 21/10/2026
 
-Falta definir quem concede autorização de validação e como identificar o
-profissional no usuário autenticado (o cadastro atual de médicos não tem esse
-vínculo). A pergunta foi enviada ao usuário. Owner ou colaborador **não** foi
-considerado automaticamente responsável técnico.
+A empresa-cliente indica quem autoriza profissionais. O owner registra essa
+indicação com evidência; o indicado utiliza login próprio. Concessão/revogação
+por empresa e validação/rejeição com identificação profissional e histórico foram
+implementadas na PR #112. Detalhes e evidências atuais:
+`.specs/20261021-nob-98-autorizacao/`. Os números anteriores deste relatório
+representam a entrega inicial, antes desse complemento.
 
-Registro/importação sempre produz estado pendente. O banco impede inserir risco
-aprovado pelo runtime e impede alterar/deletar os snapshots. Há estados e campos
-preparados para revisão, mas **não há fluxo operacional de aprovar/rejeitar** até
-a definição da autorização. Não considerar a NOB-98 integralmente concluída.
+Registro/importação sempre produz estado pendente. O runtime atualiza somente
+campos de revisão, sem reescrever a fonte. Owner/colaborador não são considerados
+automaticamente autorizadores ou profissionais habilitados.
 
 ## Homologação e riscos restantes
 
@@ -101,8 +102,8 @@ a definição da autorização. Não considerar a NOB-98 integralmente concluíd
 3. Validar edição dos cadastros comuns nos dois módulos e referências por tenant.
 4. Em empresa apenas Medicina, registrar fonte externa e conferir todos os riscos
    pendentes; alterar PGR interno e conferir aviso de conteúdo desatualizado.
-5. Definir autorização técnica, implementar/testar revisão e só então liberar
-   aprovação/rejeição e uso dos riscos validados no fluxo PCMSO.
+5. Revisar a migration 0056 e homologar com owner, autorizador da empresa e
+   profissional, incluindo revogação e consulta pelo PCMSO.
 6. Realizar QA autenticado e integrar as PRs na ordem, após os checks aplicáveis.
 
 Sem migration em banco real, merge, deploy ou alteração de regras financeiras.

@@ -124,9 +124,14 @@ const gate = (tenantId = "org_a") =>
         runtime,
         "org_a",
         (tx) =>
-          tx`update medical_risk_entries set status='validated',reviewed_by='forged',reviewed_at=now()`,
+          tx`update medical_risk_entries set status='validated',reviewed_by='forged',reviewed_at=now() returning id`,
       ),
-    ).rejects.toThrow();
+    ).resolves.toHaveLength(0);
+    expect(
+      (
+        await admin`select status from medical_risk_entries where source_id=${created.data.id}`
+      )[0].status,
+    ).toBe("pending");
   });
   it("captures internal provenance and detects edits even without a new revision", async () => {
     const created = await registerMedicalRiskSourceAction(I.companyA, {

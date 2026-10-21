@@ -74,6 +74,16 @@ export async function resolveContext(req: NextRequest): Promise<TenantContext> {
   return requireOfficeStaff();
 }
 
+/** Only explicit delegated endpoints use this; their core must check company access. */
+export async function resolveTenantContext(req: NextRequest): Promise<TenantContext> {
+  if (isDevAuthBypassEnabled()) {
+    const dev = devContextFrom(req);
+    if (!dev) throw new NoTenantContextError();
+    return dev;
+  }
+  return (await import("@/shared/auth/require-tenant-context")).requireTenantContext();
+}
+
 function auditWrite(
   req: NextRequest,
   outcome: "ok" | "blocked" | "rejected",
@@ -97,11 +107,11 @@ function auditWrite(
 export async function restHandler<T>(
   req: NextRequest,
   fn: (ctx: TenantContext) => Promise<T>,
-  opts: { status?: number } = {},
+  opts: { status?: number; tenantAccess?: boolean } = {},
 ): Promise<NextResponse> {
   let ctx: TenantContext | null = null;
   try {
-    ctx = await resolveContext(req);
+    ctx = opts.tenantAccess ? await resolveTenantContext(req) : await resolveContext(req);
     const data = await fn(ctx);
     auditWrite(req, "ok", ctx);
     const status = opts.status ?? 200;
