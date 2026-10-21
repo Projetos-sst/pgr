@@ -10,6 +10,7 @@ import { withOrg, type TenantTransaction } from "../with-org";
 import { risks, type Risk } from "../schema/risks";
 import { ges } from "../schema/ges";
 import { auditedTenantWrite } from "./audited-write";
+import { assertCompanyModuleTx } from "./company-modules";
 
 export type ListRisksParams = PageParams & {
   companyId?: string;
@@ -38,14 +39,22 @@ function toRiskColumns(input: RiskValues) {
 async function assertGesInTenant(
   tx: TenantTransaction,
   orgId: string,
-  gesId: string,
+  input: RiskValues,
 ): Promise<void> {
   const [row] = await tx
-    .select({ id: ges.id })
+    .select({ id: ges.id, companyId: ges.companyId })
     .from(ges)
-    .where(and(eq(ges.orgId, orgId), eq(ges.id, gesId)))
+    .where(
+      and(
+        eq(ges.orgId, orgId),
+        eq(ges.id, input.gesId),
+        input.companyId ? eq(ges.companyId, input.companyId) : undefined,
+        input.workUnitId ? eq(ges.workUnitId, input.workUnitId) : undefined,
+      ),
+    )
     .limit(1);
   if (!row) throw new ReferenceNotFoundError("ges");
+  await assertCompanyModuleTx(tx, orgId, row.companyId, "pgr");
 }
 
 export async function listRisks(
@@ -101,7 +110,7 @@ export async function getRiskById(orgId: string, id: string): Promise<Risk | nul
 export async function createRisk(orgId: string, input: RiskValues): Promise<Risk> {
   return auditedTenantWrite(orgId, "risks.write_rejected", () =>
     withOrg(orgId, async (tx) => {
-      await assertGesInTenant(tx, orgId, input.gesId);
+      await assertGesInTenant(tx, orgId, input);
       const [row] = await tx
         .insert(risks)
         .values({ orgId, ...toRiskColumns(input) })
@@ -118,7 +127,7 @@ export async function updateRisk(
 ): Promise<Risk | null> {
   return auditedTenantWrite(orgId, "risks.write_rejected", () =>
     withOrg(orgId, async (tx) => {
-      await assertGesInTenant(tx, orgId, input.gesId);
+      await assertGesInTenant(tx, orgId, input);
       const [row] = await tx
         .update(risks)
         .set({ ...toRiskColumns(input), updatedAt: new Date() })

@@ -5,6 +5,20 @@ import { ok, fail } from "@/shared/server/result";
 import { ForbiddenError } from "@/shared/auth/errors";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 
+it("maps a wrapped company CNPJ constraint to its field, preserving other duplicate errors", () => {
+  const duplicate = {
+    cause: { code: "23505", constraint_name: "uq_companies_org_id_cnpj" },
+  };
+  expect(toActionError(duplicate)).toEqual({
+    code: "DUPLICATE",
+    message: "CNPJ já cadastrado neste escritório.",
+    fields: { cnpj: "CNPJ já cadastrado neste escritório." },
+  });
+  expect(
+    toActionError({ cause: { code: "23505", constraint_name: "other" } }),
+  ).not.toHaveProperty("fields");
+});
+
 describe("ok/fail (ActionResult)", () => {
   it("ok envelopa os dados", () => {
     expect(ok({ id: "1" })).toEqual({ ok: true, data: { id: "1" } });

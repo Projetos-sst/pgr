@@ -688,6 +688,8 @@ export function buildPgrDocxData(
       { shading: semiShading },
     ),
     ges: content.ges.map(buildGes),
+    machines: content.machines ?? [],
+    hasMachines: (content.machines?.length ?? 0) > 0,
     annexActions: content.ges.flatMap((ges) =>
       ges.actions.map((action) => ({
         gesTitle: balanceTableText(

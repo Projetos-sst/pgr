@@ -130,6 +130,8 @@ export function RiskForm({
     const fd = new FormData(formEl);
     const value = (key: string) => String(fd.get(key) ?? "");
     return {
+      companyId,
+      workUnitId,
       gesId,
       agentType: value("agentType") as RiskInput["agentType"],
       hazard: value("hazard"),

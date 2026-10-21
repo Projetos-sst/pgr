@@ -13,6 +13,7 @@ import { authenticatedRole } from "drizzle-orm/supabase";
 import { orgs } from "./orgs";
 import { users } from "./users";
 import { companies } from "./companies";
+import { appRuntimeRole } from "../roles";
 
 export const orgMemberships = pgTable(
   "org_memberships",
@@ -37,6 +38,11 @@ export const orgMemberships = pgTable(
       for: "select",
       to: authenticatedRole,
       using: sql`${table.orgId} = (auth.jwt() ->> 'org_id')`,
+    }),
+    pgPolicy("org_memberships_risk_actor_read", {
+      for: "select",
+      to: appRuntimeRole,
+      using: sql`${table.orgId} = current_setting('app.current_org', true) and nullif(current_setting('app.current_actor', true), '') is not null`,
     }),
   ],
 ).enableRLS();
