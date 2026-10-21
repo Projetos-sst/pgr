@@ -1,5 +1,7 @@
 # NOB-106 — proposta de PGR básico para aprovação
 
+> Atualização de 21/10/2026: o catálogo administrativo versionado, UI/REST e publicação com referências explícitas de aprovação foram implementados. Detalhes em `.specs/20261021-conclusao-pgr/nob-106.md`. A proposta abaixo é histórica: nenhum preço foi escolhido ou oferta ativada, e cobrança/contratação continuam fora desta etapa.
+
 Status: **rascunho comercial/técnico, sem oferta ativa**.
 Responsável pela aprovação comercial: a definir. Responsável técnico: a definir.
 Nenhum valor, desconto, limite de funcionários ou dispensa foi aprovado.

@@ -255,6 +255,21 @@
       "key": "pgrSnapshotSha256",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "basicOfferVersionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "commercialApprovalReference",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "technicalApprovalReference",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -9303,6 +9318,120 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"format\": \"docx\",\n  \"purpose\": \"issue\",\n  \"expectedSourceSha256\": \"{{pgrSnapshotSha256}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Oferta de PGR básico (NOB-106)",
+      "item": [
+        {
+          "name": "Listar versões e publicação",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr-basic-offers"
+          }
+        },
+        {
+          "name": "Criar rascunho sem preço definido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr-basic-offers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PGR básico\",\n  \"eligibility\": \"\",\n  \"technicalScope\": \"\",\n  \"servicesIncluded\": \"\",\n  \"limitations\": \"\",\n  \"priceCents\": null,\n  \"currency\": \"BRL\",\n  \"billingPeriod\": null,\n  \"maxEmployees\": null,\n  \"maxWorkUnits\": null,\n  \"maxRevisions\": null,\n  \"reason\": \"Proposta para aprovação\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Consultar versão",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr-basic-offers/{{basicOfferVersionId}}"
+          }
+        },
+        {
+          "name": "Publicar versão completa e aprovada",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr-basic-offers/{{basicOfferVersionId}}/publication",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": true,\n  \"expectedActiveVersionId\": null,\n  \"commercialApprovalReference\": \"{{commercialApprovalReference}}\",\n  \"technicalApprovalReference\": \"{{technicalApprovalReference}}\",\n  \"reason\": \"Publicação aprovada\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Retirar publicação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr-basic-offers/{{basicOfferVersionId}}/publication",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false,\n  \"expectedActiveVersionId\": \"{{basicOfferVersionId}}\",\n  \"reason\": \"Retirada explícita\"\n}"
             }
           }
         }
