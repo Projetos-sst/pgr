@@ -117,7 +117,7 @@ describe("pgr domain validation (FR-024)", () => {
     });
 
     it("rejects CNPJ with wrong digit count before check digit validation", () => {
-      expect(() => cnpjSchema.parse("11222333")).toThrow(/deve ter 14 dígitos/);
+      expect(() => cnpjSchema.parse("11222333")).toThrow(/deve ter 14 caracteres/);
     });
   });
 });

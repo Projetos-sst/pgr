@@ -8683,6 +8683,99 @@
           }
         }
       ]
+    },
+    {
+      "name": "Validação cadastral (NOB-102)",
+      "description": "Cadastros numéricos e alfanuméricos; enviar os dois primeiros exemplos em sequência para verificar unicidade. Autofill externo não é obrigatório.",
+      "item": [
+        {
+          "name": "Criar empresa com CNPJ alfanumérico (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"12.ABC.345/01DE-35\",\n  \"razaoSocial\": \"Empresa fictícia NOB-102\",\n  \"riskGrade\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
+            }
+          }
+        },
+        {
+          "name": "Repetir CNPJ normalizado (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"12abc34501de35\",\n  \"razaoSocial\": \"Duplicada fictícia\",\n  \"riskGrade\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
+            }
+          }
+        },
+        {
+          "name": "CNPJ com DV incorreto (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"12ABC34501DE34\",\n  \"razaoSocial\": \"Inválida fictícia\",\n  \"riskGrade\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
+            }
+          }
+        }
+      ]
     }
   ]
 }

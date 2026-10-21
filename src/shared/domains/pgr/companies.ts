@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { Company } from "@/shared/db/schema";
+import { normalizeCnpj } from "./cnpj";
 
 import { cnpjSchema, riskGradeSchema } from "./validation";
 import { optionalString, optionalUrl, requiredString } from "./form-fields";
@@ -77,23 +77,23 @@ export type CompanyListItem = {
   gesCount: number;
 };
 
-/** Formata CNPJ (14 dígitos) para exibição: 00.000.000/0000-00. */
+/** Formata CNPJ (14 caracteres) para exibição: 00.000.000/0000-00. */
 export function formatCnpj(cnpj: string | null): string {
   if (!cnpj) return "—";
-  const d = cnpj.replace(/\D/g, "");
+  const d = normalizeCnpj(cnpj);
   if (d.length !== 14) return cnpj;
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
 
 /**
  * Aplica máscara de digitação progressiva ao CNPJ.
- * Remove tudo que não for dígito, trunca para 14 dígitos máximo,
+ * Preserva letras e números, trunca para 14 caracteres máximo,
  * e aplica a máscara 00.000.000/0000-00 conforme a quantidade de dígitos.
  * Funciona com qualquer quantidade de dígitos de 0 a 14 (idempotente).
  */
 export function maskCnpjInput(value: string): string {
-  // Remove tudo que não for dígito
-  const digits = value.replace(/\D/g, "");
+  // Preserva letras do CNPJ alfanumérico e remove caracteres de edição.
+  const digits = normalizeCnpj(value).replace(/[^A-Z0-9]/g, "");
 
   // Trunca para máximo 14 dígitos
   if (digits.length === 0) return "";
