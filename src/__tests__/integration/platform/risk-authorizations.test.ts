@@ -312,6 +312,29 @@ const request = (ctx: TenantContext, method: string, body?: unknown) =>
       await admin`grant insert on medical_risk_decisions to app_runtime`;
     }
   });
+  it("blocks changed company scope while allowing the authorizer to revoke the old grant", async () => {
+    await authorize();
+    const entryId = await risk();
+    const [other] =
+      await admin`insert into companies (org_id,razao_social) values ('org_a','Outra empresa para escopo') returning id`;
+    await admin`update org_memberships set scoped_company_id=${other.id} where org_id='org_a' and user_id='professional'`;
+    await expect(
+      decideCompanyRisk(professional, I.companyA, entryId, decision),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      authorizeCompanyProfessional(authority, I.companyA, grant),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await authorizeCompanyProfessional(authority, I.companyA, {
+      userId: "professional",
+      active: false,
+      reason: "Revogação do vínculo antigo",
+    });
+    expect(
+      (
+        await admin`select active from professional_risk_authorizations where company_id=${I.companyA} and user_id='professional'`
+      )[0].active,
+    ).toBe(false);
+  });
   it("preserves decisions after professional profile changes and membership removal", async () => {
     await authorize();
     const entryId = await risk();

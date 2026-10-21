@@ -158,7 +158,7 @@ export async function setProfessionalRiskAuthorization(
         throw new ForbiddenError(
           "Somente o autorizador indicado por esta empresa pode autorizar profissionais.",
         );
-      await membership(tx, ctx.tenantId, input.userId, companyId);
+      if (input.active) await membership(tx, ctx.tenantId, input.userId, companyId);
       const where = and(
         eq(grants.orgId, ctx.tenantId),
         eq(grants.companyId, companyId),

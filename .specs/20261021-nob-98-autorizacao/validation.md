@@ -3,7 +3,7 @@
 ## Evidências locais
 
 - PostgreSQL 16.14 temporário, exclusivo, em loopback; migrations até 0056 aplicadas somente nesse cluster.
-- Integração dirigida: duas suítes / 21 testes aprovados (fontes e autorização).
+- Integração dirigida final: duas suítes / 22 testes aprovados (fontes e autorização), incluindo bloqueio após mudança de escopo e revogação da concessão antiga.
 - Autorização: owner sem poderes automáticos, indicação com evidência, login client delegado, outra empresa/tenant, substituição, revogação, snapshot profissional, remoção de vínculo, decisões concorrentes, origem alterada/substituída, Medicina desabilitada, rollback de evento/decisão, HTTP e Server Actions.
 - RLS/GRANT: inserção sempre pendente, conteúdo importado imutável, atualização dos quatro campos de revisão apenas por profissional autorizado, histórico sem UPDATE/DELETE pelo runtime.
 - Suíte unitária completa inicial: 170 suítes / 1.706 testes aprovados. Três testes adicionais dos formulários aprovados após essa execução; verificam payload da indicação, revogação sem nova identidade e conflito de revisão.
@@ -12,7 +12,7 @@
 
 ## Conferência antes da publicação
 
-Suíte completa de integração, formatação final e CI: resultados registrados após conclusão.
+Formatação final aprovada. O CI da PR #112 é a fonte dos resultados gerais para cada commit: <https://github.com/Projetos-sst/pgr/pull/112/checks>. A primeira execução do complemento aprovou lint/formatação/tipos, build e unitários; integração ainda estava em execução no momento deste registro. O reteste dirigido e typecheck do ajuste de revogação passaram antes da publicação. Conferir os checks do último commit antes de integrar.
 
 ## Limites e homologação
 
