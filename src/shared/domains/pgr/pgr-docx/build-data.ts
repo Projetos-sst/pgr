@@ -612,6 +612,7 @@ export function buildPgrDocxData(
     texts,
     summary: SUMMARY_ORDER.map((key) => ({ title: titles[key] })),
     emittedAt: content.emittedAt,
+    emissionNotice: content.emissionNotice ?? "",
     validity: content.validity,
     company,
     workUnit,

@@ -1,5 +1,7 @@
 # NOB-105 — mapeamento da emissão e pendências
 
+> Atualização de 21/10/2026: implementados snapshot transacional, conferência de preenchimento, token contra alteração posterior, modo de prévia/geração conferida, UI/Action/REST e máquinas da NOB-104. Detalhes em `.specs/20261021-conclusao-pgr/nob-105.md`. Os itens abaixo documentam o levantamento anterior. Aprovação profissional e modelo integral não foram presumidos.
+
 Status: etapa parcial. Não é declaração de conformidade técnica do PGR.
 
 ## Caminho atual

@@ -27,6 +27,14 @@ jest.mock("@/shared/db/repositories/pgr-docx-extras", () => ({
 jest.mock("@/shared/db/repositories/risk-methodology", () => ({
   getRiskMethodologyView: (...a: unknown[]) => getRiskMethodologyView(...a),
 }));
+jest.mock("@/shared/db/repositories/pgr-generation-snapshot", () => ({
+  getPgrGenerationSnapshot: async (orgId: string, pgrId: string) => {
+    const consolidated = await getPgrConsolidated(orgId, pgrId);
+    const extras = await getPgrDocxExtras(orgId, pgrId);
+    const methodology = await getRiskMethodologyView(orgId);
+    return consolidated && extras ? { consolidated, extras, methodology } : null;
+  },
+}));
 jest.mock("@/shared/integrations/storage/company-logo-storage", () => ({
   downloadCompanyLogo: (...a: unknown[]) => downloadCompanyLogo(...a),
 }));

@@ -250,6 +250,11 @@
       "key": "machineInstallationId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "pgrSnapshotSha256",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -9253,6 +9258,53 @@
             }
           },
           "response": []
+        }
+      ]
+    },
+    {
+      "name": "Conferência de emissão PGR (NOB-105)",
+      "item": [
+        {
+          "name": "Conferir preenchimento",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/readiness"
+          }
+        },
+        {
+          "name": "Gerar após conferência atual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"docx\",\n  \"purpose\": \"issue\",\n  \"expectedSourceSha256\": \"{{pgrSnapshotSha256}}\"\n}"
+            }
+          }
         }
       ]
     }

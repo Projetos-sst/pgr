@@ -6,6 +6,9 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mockEnqueue = jest.fn();
+jest.mock("@/shared/server/actions/pgr/pgr-readiness", () => ({
+  getPgrReadinessAction: jest.fn(),
+}));
 jest.mock("@/shared/server/actions/documents/pdf-batch", () => ({
   enqueuePgrPdfBatchAction: (pgrIds: string[]) => mockEnqueue(pgrIds),
 }));

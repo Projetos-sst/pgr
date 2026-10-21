@@ -46,9 +46,13 @@ async function respond(
         "Content-Disposition": `attachment; filename="${fileName}"`,
         "Cache-Control": "no-store",
         "X-Pgr-Docx-Missing-Tags": String(missingTags.length),
+        "X-Pgr-Purpose": options.purpose ?? "preview",
         "X-Pgr-Generated-At": provenance.generatedAt,
         "X-Pgr-Template-Sha256": provenance.templateSha256,
         "X-Pgr-Source-Sha256": provenance.sourceSha256,
+        ...(provenance.snapshotSha256
+          ? { "X-Pgr-Snapshot-Sha256": provenance.snapshotSha256 }
+          : {}),
         "X-Pgr-File-Sha256": provenance.fileSha256,
       },
     });

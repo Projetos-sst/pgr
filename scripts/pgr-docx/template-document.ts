@@ -1767,7 +1767,14 @@ export function buildTemplateDocument(mode: TemplateMode): Document {
         properties: { page },
         headers: { default: pageHeader(kit, headerTitle("headerTitle")) },
         footers: { default: pageFooter(kit) },
-        children: [...identification(kit), ...summary(kit), ...sections(kit)],
+        children: [
+          control(kit, "#emissionNotice"),
+          body([kit.dy("emissionNotice", { bold: true })]),
+          control(kit, "/emissionNotice"),
+          ...identification(kit),
+          ...summary(kit),
+          ...sections(kit),
+        ],
       },
       {
         properties: { page },
