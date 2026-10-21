@@ -46,7 +46,7 @@ export default async function NewRiskPage({
   await requireOfficeStaffPage();
   const sp = await searchParams;
   const [companyOptions, initial] = await Promise.all([
-    listCompanyOptionsAction(),
+    listCompanyOptionsAction("pgr"),
     sp.from ? buildPrefill(sp.from) : Promise.resolve(undefined),
   ]);
   const companies = companyOptions.ok ? companyOptions.data : [];

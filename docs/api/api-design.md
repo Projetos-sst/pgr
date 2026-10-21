@@ -835,6 +835,14 @@ da infra). Não descrever como REST público — é a página genérica reutiliz
 
 ## Riscos (GES) — `actions/pgr/risks.ts`
 
+**Contexto dos riscos (NOB-103):** `POST /risks` e `PUT /risks/{id}` aceitam
+`companyId` e `workUnitId` opcionais. Quando enviados, devem corresponder ao GES
+do mesmo tenant, ou a operação retorna `422 FK_NOT_FOUND`. A empresa é derivada
+do GES no servidor; PGR desabilitado impede criar/editar (`403 FORBIDDEN`). O
+formulário envia os três identificadores. Clientes antigos podem enviar apenas
+`gesId`; nenhum contexto adicional é duplicado na tabela `risks`. As categorias
+e as escalas existentes permanecem iguais, pendentes de revisão técnica.
+
 Inventário de risco por Grupo de Exposição Similar (NR-01/GRO + eSocial S-2240). Fatia 014,
 **zero-migration** (tabela `risks` da migration `0012`; escopo restrito às suas colunas — **não**
 toca `risk_assessments`/`control_measures`). REST espelho em `/api/v1/risks` (GET, POST) ·
