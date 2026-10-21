@@ -26,6 +26,15 @@ As amostras em `templates/pgr/exemplo/` são referências fictícias já existen
 não foram revalidadas por profissional nesta execução. Novos cenários não são
 arquivados automaticamente: os testes geram o DOCX em memória.
 
+### Cobertura adicional da revisão de código
+
+- Outra empresa do mesmo escritório e GES não vinculado: os inventários não
+  entram no documento selecionado.
+- Avaliação quantitativa vigente: a avaliação mais recente fornece os valores e
+  unidades em vez da referência antiga do risco; probabilidade/severidade são
+  as persistidas. Isso não aprova limites nem metodologia.
+- Histórico: as notas de duas revisões aparecem na ordem correta.
+
 ## Dossiê por amostra para o responsável
 
 Preencher antes de apresentar uma amostra, guardando o arquivo efetivamente
