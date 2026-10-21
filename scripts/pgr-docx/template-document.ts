@@ -1637,6 +1637,33 @@ function inventory(kit: Kit) {
 
 // ---------------------------------------------------------------- documento
 
+function machineInventory(kit: Kit) {
+  const field = (label: string, key: string) =>
+    body([kit.fx(`${label}: `, { bold: true }), kit.dy(key)]);
+  return [
+    control(kit, "#hasMachines"),
+    heading([kit.fx("MÁQUINAS E EQUIPAMENTOS NO CONTEXTO DO PGR")]),
+    body([
+      kit.fx(
+        "Informações cadastradas para a obra e os ambientes deste PGR. A relação não certifica conformidade técnica dos equipamentos.",
+      ),
+    ]),
+    control(kit, "#machines"),
+    field("Máquina ou equipamento", "name"),
+    field("Identificação", "identifier"),
+    field("Quantidade", "quantity"),
+    field("Fabricante", "manufacturer"),
+    field("Ambiente", "context"),
+    field("Descrição e finalidade", "description"),
+    field("Condições de operação e exposição", "operatingConditions"),
+    field("Medidas de segurança informadas", "safetyMeasures"),
+    field("Manutenção e acompanhamento", "maintenanceNotes"),
+    field("Responsável informado", "responsible"),
+    spacer(),
+    control(kit, "/machines"),
+    control(kit, "/hasMachines"),
+  ];
+}
 export function buildTemplateDocument(mode: TemplateMode): Document {
   const kit = createKit(mode);
   const page = { size: A4, margin: MARGINS };
@@ -1740,13 +1767,20 @@ export function buildTemplateDocument(mode: TemplateMode): Document {
         properties: { page },
         headers: { default: pageHeader(kit, headerTitle("headerTitle")) },
         footers: { default: pageFooter(kit) },
-        children: [...identification(kit), ...summary(kit), ...sections(kit)],
+        children: [
+          control(kit, "#emissionNotice"),
+          body([kit.dy("emissionNotice", { bold: true })]),
+          control(kit, "/emissionNotice"),
+          ...identification(kit),
+          ...summary(kit),
+          ...sections(kit),
+        ],
       },
       {
         properties: { page },
         headers: { default: pageHeader(kit, headerTitle("inventoryHeaderTitle")) },
         footers: { default: pageFooter(kit) },
-        children: inventory(kit) as (Paragraph | Table)[],
+        children: [...inventory(kit), ...machineInventory(kit)] as (Paragraph | Table)[],
       },
     ],
   });

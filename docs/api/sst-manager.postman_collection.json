@@ -225,6 +225,36 @@
     {
       "key": "riskFactorId",
       "value": ""
+    },
+    {
+      "key": "authorizerUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "professionalUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "medicalRiskEntryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "machineCatalogId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "machineInstallationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pgrSnapshotSha256",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -1639,7 +1669,7 @@
         },
         {
           "name": "PGR · DOCX (template)",
-          "description": "PGR preenchido pelo template DOCX (templates/pgr/pgr-template.docx). Fixos vêm do template; SEMI-FIXOS (laranja no PGR 2026.1) usam o default de domains/pgr/pgr-docx/defaults.ts ou o override do POST; DINÂMICOS vêm do banco (consolidada + extras). PDF pelo provedor PGR_DOCX_PDF_PROVIDER (gotenberg padrão | google). Use 'Send and Download' no Postman para salvar o arquivo.",
+          "description": "PGR preenchido pelo template DOCX (templates/pgr/pgr-template.docx). Fixos vêm do template; SEMI-FIXOS (laranja no PGR 2026.1) usam o default de domains/pgr/pgr-docx/defaults.ts ou o override do POST; DINÂMICOS vêm do banco (consolidada + extras). PDF pelo provedor PGR_DOCX_PDF_PROVIDER (gotenberg padrão | google). Use 'Send and Download' no Postman para salvar o arquivo. NOB-105: resposta inclui X-Pgr-Generated-At, X-Pgr-Template-Sha256, X-Pgr-Source-Sha256 e X-Pgr-File-Sha256; registre os headers junto do arquivo para revisão. Identificadores técnicos, sem assinatura ou parecer.",
           "item": [
             {
               "name": "GET /pgr/:id/docx (?format=docx|pdf; semi-fixos padrão; 404/422/503)",
@@ -1891,8 +1921,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"physical\",\n  \"hazard\": \"Ruído\",\n  \"description\": \"Ruído contínuo acima de 85 dB(A)\",\n  \"sources\": \"Compressores e britadeiras\",\n  \"propagation\": \"Ar\",\n  \"exposureTime\": \"gt_7h\",\n  \"possibleInjuries\": \"PAIR\",\n  \"noxiousAgentCode\": \"01.01.001\",\n  \"measurementUnit\": \"db_a\",\n  \"concentrationIntensity\": \"87.5\"\n}"
-            }
+              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"physical\",\n  \"hazard\": \"Ruído\",\n  \"description\": \"Ruído contínuo acima de 85 dB(A)\",\n  \"sources\": \"Compressores e britadeiras\",\n  \"propagation\": \"Ar\",\n  \"exposureTime\": \"gt_7h\",\n  \"possibleInjuries\": \"PAIR\",\n  \"noxiousAgentCode\": \"01.01.001\",\n  \"measurementUnit\": \"db_a\",\n  \"concentrationIntensity\": \"87.5\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\"\n}"
+            },
+            "description": "companyId e workUnitId opcionais devem corresponder ao GES. Contexto divergente retorna 422; PGR desabilitado na empresa retorna 403."
           }
         },
         {
@@ -1970,8 +2001,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"chemical\",\n  \"description\": \"Poeira de sílica (atualizado)\",\n  \"exposureTime\": \"4_7h\",\n  \"measurementUnit\": \"mg_m3\",\n  \"concentrationIntensity\": \"0.5\"\n}"
-            }
+              "raw": "{\n  \"gesId\": \"{{gesId}}\",\n  \"agentType\": \"chemical\",\n  \"description\": \"Poeira de sílica (atualizado)\",\n  \"exposureTime\": \"4_7h\",\n  \"measurementUnit\": \"mg_m3\",\n  \"concentrationIntensity\": \"0.5\",\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\"\n}"
+            },
+            "description": "companyId e workUnitId opcionais devem corresponder ao GES. Contexto divergente retorna 422; PGR desabilitado na empresa retorna 403."
           }
         },
         {
@@ -8677,6 +8709,600 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"module\": \"medicine\",\n  \"enabled\": true,\n  \"reason\": \"Servico autorizado em teste\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validação cadastral (NOB-102)",
+      "description": "Cadastros numéricos e alfanuméricos; enviar os dois primeiros exemplos em sequência para verificar unicidade. Autofill externo não é obrigatório.",
+      "item": [
+        {
+          "name": "Criar empresa com CNPJ alfanumérico (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"12.ABC.345/01DE-35\",\n  \"razaoSocial\": \"Empresa fictícia NOB-102\",\n  \"riskGrade\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
+            }
+          }
+        },
+        {
+          "name": "Repetir CNPJ normalizado (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"12abc34501de35\",\n  \"razaoSocial\": \"Duplicada fictícia\",\n  \"riskGrade\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
+            }
+          }
+        },
+        {
+          "name": "CNPJ com DV incorreto (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"12ABC34501DE34\",\n  \"razaoSocial\": \"Inválida fictícia\",\n  \"riskGrade\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Riscos para Medicina (NOB-98)",
+      "item": [
+        {
+          "name": "Consultar fontes e riscos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risk-sources"
+          }
+        },
+        {
+          "name": "Registrar PGR externo pendente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risk-sources",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"external\",\n  \"title\": \"PGR externo de exemplo\",\n  \"reference\": \"GED:identificacao-do-documento\",\n  \"version\": \"1\",\n  \"risks\": [\n    {\n      \"agentType\": \"physical\",\n      \"description\": \"Risco informado na origem\",\n      \"exposureGroup\": \"Grupo de exemplo\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Capturar riscos do PGR interno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risk-sources",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"internal\",\n  \"pgrId\": \"{{pgrId}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Autorizações profissionais de riscos (NOB-98)",
+      "item": [
+        {
+          "name": "Consultar área delegada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Registrar indicação da empresa (owner)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{authorizerUserId}}\",\n  \"evidence\": \"GED:indicação da empresa-cliente\",\n  \"reason\": \"Indicação aprovada pela empresa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Revogar indicação (owner)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": null,\n  \"evidence\": \"GED:revogação da empresa-cliente\",\n  \"reason\": \"Revogação solicitada pela empresa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Autorizar profissional (autorizador atual)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{professionalUserId}}\",\n  \"active\": true,\n  \"identity\": {\n    \"fullName\": \"Profissional fictício\",\n    \"profession\": \"Profissão declarada\",\n    \"registration\": {\n      \"kind\": \"registered\",\n      \"council\": \"Conselho declarado\",\n      \"number\": \"Número declarado\",\n      \"region\": \"UF\"\n    }\n  },\n  \"reason\": \"Autorização pela empresa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations/professionals",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "risk-authorizations",
+                "professionals"
+              ]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Revogar profissional (autorizador atual)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{professionalUserId}}\",\n  \"active\": false,\n  \"reason\": \"Revogação pela empresa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations/professionals",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "risk-authorizations",
+                "professionals"
+              ]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Decidir risco (profissional autorizado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"validated\",\n  \"reason\": \"Parecer técnico fictício; substituir pela decisão real\",\n  \"expectedStatus\": \"pending\",\n  \"expectedReviewedAt\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risks/{{medicalRiskEntryId}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "medical-risks",
+                "{{medicalRiskEntryId}}",
+                "review"
+              ]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Máquinas por ambiente (NOB-104)",
+      "item": [
+        {
+          "name": "Listar vínculos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "machines"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Opções compatíveis",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines/options",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "machines", "options"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vincular máquina",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "machines"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"gesId\": null,\n  \"catalogId\": \"{{machineCatalogId}}\",\n  \"mode\": \"individual\",\n  \"quantity\": 1,\n  \"identifier\": \"PAT-fictício\",\n  \"description\": \"Uso observado na obra\",\n  \"safetyMeasures\": \"Informação declarada\",\n  \"reason\": \"Cadastro operacional\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar vínculo e histórico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines/{{machineInstallationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "machines",
+                "{{machineInstallationId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Alterar vínculo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines/{{machineInstallationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "machines",
+                "{{machineInstallationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expectedVersion\": 1,\n  \"data\": {\n    \"workUnitId\": \"{{workUnitId}}\",\n    \"gesId\": null,\n    \"catalogId\": \"{{machineCatalogId}}\",\n    \"mode\": \"individual\",\n    \"quantity\": 1,\n    \"identifier\": \"PAT-fictício\",\n    \"description\": \"Uso observado na obra\",\n    \"safetyMeasures\": \"Informação declarada\",\n    \"reason\": \"Cadastro operacional\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Retirar vínculo preservando histórico",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines/{{machineInstallationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "machines",
+                "{{machineInstallationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expectedVersion\": 1,\n  \"reason\": \"Retirada da obra\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Conferência de emissão PGR (NOB-105)",
+      "item": [
+        {
+          "name": "Conferir preenchimento",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/readiness"
+          }
+        },
+        {
+          "name": "Gerar após conferência atual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"docx\",\n  \"purpose\": \"issue\",\n  \"expectedSourceSha256\": \"{{pgrSnapshotSha256}}\"\n}"
             }
           }
         }

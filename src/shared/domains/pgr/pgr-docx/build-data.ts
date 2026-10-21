@@ -612,6 +612,7 @@ export function buildPgrDocxData(
     texts,
     summary: SUMMARY_ORDER.map((key) => ({ title: titles[key] })),
     emittedAt: content.emittedAt,
+    emissionNotice: content.emissionNotice ?? "",
     validity: content.validity,
     company,
     workUnit,
@@ -688,6 +689,8 @@ export function buildPgrDocxData(
       { shading: semiShading },
     ),
     ges: content.ges.map(buildGes),
+    machines: content.machines ?? [],
+    hasMachines: (content.machines?.length ?? 0) > 0,
     annexActions: content.ges.flatMap((ges) =>
       ges.actions.map((action) => ({
         gesTitle: balanceTableText(

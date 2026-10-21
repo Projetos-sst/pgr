@@ -27,7 +27,6 @@ const KNOWN_LIMITATION_INTEGRATION_SUITES = [
   "integration/pgr/rest-companies\\.test\\.ts$",
   "integration/pgr/rest-pgr\\.test\\.ts$",
   "integration/pgr-editor/rest-pgr-editor\\.test\\.ts$",
-  "integration/risks/rest-risks\\.test\\.ts$",
   "integration/risk-assessments/rest-risk-assessments\\.test\\.ts$",
   "integration/risks/rest-ergonomic-evaluations\\.test\\.ts$",
   "integration/control-measures/rest-control-measures\\.test\\.ts$",

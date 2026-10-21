@@ -95,6 +95,52 @@ function createInput(overrides: Partial<RiskInput> = {}): RiskInput {
     expect(created.ok).toBe(true);
   });
 
+  it.each(["physical", "chemical", "ergonomic"] as const)(
+    "creates and edits %s in the selected exposure context",
+    async (agentType) => {
+      const input = createInput({
+        agentType,
+        companyId: PGR_IDS.companyA,
+        workUnitId: PGR_IDS.workUnitA,
+      });
+      const result = await createRiskAction(input);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const edited = await updateRiskAction(result.data.id, {
+        ...input,
+        description: "Revisado pelo usuário",
+      });
+      expect(edited.ok && edited.data.description).toBe("Revisado pelo usuário");
+      expect(edited.ok && edited.data.gesId).toBe(PGR_IDS.gesA);
+    },
+  );
+
+  it("rejects a GES inconsistent with the selected company or work unit without changing the risk", async () => {
+    for (const context of [
+      { companyId: PGR_IDS.companyB },
+      { workUnitId: PGR_IDS.workUnitB },
+    ]) {
+      const input = createInput(context);
+      const created = await createRiskAction(input);
+      expect(!created.ok && created.error.code).toBe("FK_NOT_FOUND");
+      const updated = await updateRiskAction(PGR_IDS.riskA, input);
+      expect(!updated.ok && updated.error.code).toBe("FK_NOT_FOUND");
+    }
+    const unchanged = await getRiskAction(PGR_IDS.riskA);
+    expect(unchanged.ok && unchanged.data.description).not.toBe("Risco de teste");
+  });
+
+  it("does not create or edit risks when PGR is disabled, preserving existing records", async () => {
+    await admin`update company_modules set enabled = false where company_id = ${PGR_IDS.companyA} and module = 'pgr'`;
+    const created = await createRiskAction(createInput());
+    expect(!created.ok && created.error.code).toBe("FORBIDDEN");
+    const updated = await updateRiskAction(PGR_IDS.riskA, createInput());
+    expect(!updated.ok && updated.error.code).toBe("FORBIDDEN");
+    const [{ count }] =
+      await admin`select count(*)::int as count from risks where org_id = 'org_a'`;
+    expect(count).toBe(1);
+  });
+
   it("create qualitative_na + concentração → VALIDATION (concentrationIntensity)", async () => {
     const result = await createRiskAction(
       createInput({ measurementUnit: "qualitative_na", concentrationIntensity: "5" }),
