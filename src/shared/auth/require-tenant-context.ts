@@ -8,6 +8,7 @@ import { logTenantEvent } from "@/shared/tenant/audit-log";
 import { resolveActiveTenant, type Plan } from "@/shared/tenant/active-tenant";
 
 import { NoTenantContextError } from "./errors";
+import { resolveCommercialPlan } from "@/shared/db/repositories/billing-license";
 import { assertAuthenticated } from "./require-auth";
 
 export type TenantContext = {
@@ -52,7 +53,7 @@ export async function requireTenantContext(): Promise<TenantContext> {
   return {
     userId,
     tenantId: active.tenantId,
-    plan: active.plan,
+    plan: await resolveCommercialPlan(active.tenantId, active.plan),
     role: active.role,
   };
 }
