@@ -30,6 +30,7 @@ const NAV: NavEntry[] = [
     iconName: "folder",
     items: [
       { href: "/pgr", label: "PGR", iconName: "alert-triangle" },
+      { href: "/pgr-basic-offer", label: "Oferta de PGR básico", iconName: "file-text" },
       { href: "/epi-stock", label: "Estoque de EPI", iconName: "briefcase" },
       { href: "/epi-returns", label: "Devoluções de EPI", iconName: "rotate-ccw" },
       { href: "/esocial", label: "eSocial (SST)", iconName: "file-text" },

@@ -407,6 +407,13 @@
       "when": 1792604889718,
       "tag": "0057_machine_installations",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1792607058603,
+      "tag": "0058_pgr_basic_offers",
+      "breakpoints": true
     }
   ]
 }
