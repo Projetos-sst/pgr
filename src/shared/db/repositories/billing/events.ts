@@ -1,7 +1,7 @@
 import "server-only";
 import { isDeepStrictEqual } from "node:util";
 import { ValidationError } from "@/shared/errors/validation-error";
-import { and, eq, desc, isNotNull, lte } from "drizzle-orm";
+import { and, eq, desc, isNotNull, isNull, lte } from "drizzle-orm";
 import * as s from "../../schema/billing";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import {
@@ -137,6 +137,7 @@ export function applyBillingEvent(ctx: TenantContext, raw: NormalizedBillingEven
           and(
             scope(s.billingTrials, ctx.tenantId),
             eq(s.billingTrials.companyId, customer.companyId),
+            isNull(s.billingTrials.convertedAt),
           ),
         );
     }

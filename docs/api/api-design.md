@@ -79,6 +79,7 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
 | `/api/billing/subscription` · `/subscription/reconcile` · `/simulation-events` · `/webhooks/provider` | GET · POST · POST · POST | Assinaturas, reconciliação auditada, cenários e eventos assinados do simulador |
 | `/api/billing/charges`                                                                                | GET                      | Faturas e valores por item, empresa e período                                  |
 | `/api/billing/orders` · `/orders/{id}` · `/orders/{id}/access`                                        | GET/POST · GET · POST    | Pedidos avulsos e autorização comercial por pedido/produto                     |
+| `/api/billing/trials`                                                                                 | GET/POST                 | Teste de 15 dias e restrições de emissão por empresa                           |
 
 Detalhes, políticas e limites em “Catálogo comercial simulado — NOB-114” ao final deste documento.
 
@@ -1428,3 +1429,17 @@ Pendente/recusado/cancelado/expirado não liberam o serviço. Evento repetido n�
 0062_commercial_one_off_access é uma migration candidata com helper booleano de autorização (tenant, empresa, produto, membership atual e fonte paga). Também limita UPDATE do app_runtime às colunas mutáveis: status da fatura, conversão do teste, nome/vínculo do cliente, vigência/ativação da licença e confirmações. Valores, itens, identidade da fatura e início/término do teste não podem ser reescritos pelo runtime. Migrations candidatas 0060–0062 precisam ser conciliadas com a NOB-112 antes de integrar develop.
 
 O bloqueio do simulador também considera VERCEL_ENV/VERCEL_TARGET_ENV=production, mesmo se APP_ENV estiver incorreto. Referência das variáveis automáticas: [documentação oficial da Vercel](https://vercel.com/docs/environment-variables/system-environment-variables).
+
+## Teste comercial de 15 dias — NOB-118
+
+| Recurso                      | Actions equivalentes                                  | Contrato                                                                                                                                                                                                    |
+| ---------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET/POST /api/billing/trials | getCommercialTrialAction / startCommercialTrialAction | GET companyId; POST {companyId}. Owner, tenant e flags do simulador. Início e término persistidos uma única vez; status not_started/active/expired, primeira compra confirmada e exportAllowed por produto. |
+
+Uma empresa inicia explicitamente o teste por 15 dias, sem cartão ou cobrança automática. Repetir não reinicia nem prolonga o período. O runtime não tem UPDATE no relógio do teste. Uma conversão parcial não encurta a janela original dos módulos não contratados. convertedAt registra a primeira compra confirmada; não é regravado nas renovações.
+
+No PGR, o bloqueio está no servidor: PDF, DOCX/PDF por template, fila de geração, Action/REST de download do GED. A interface do editor oculta os controles de geração e explica a restrição. A verificação de GED usa lookup booleano seguro mesmo se a expiração já tiver ocultado o PGR via RLS. Pagar somente Medicina não libera PGR. Permissões de clientes anteriores e o Stripe existente (teste de 7 dias) não mudam fora do modo simulado. Cópias locais ou URLs assinadas emitidas anteriormente não são revogadas retroativamente.
+
+Para os emissores futuros de PCMSO/ASO: chamar assertCompanyBillingExportAllowed(orgId,companyId,'medicine') antes de geração/armazenamento/download, após a autorização técnica habitual. O helper está preparado e testado; tais emissores ainda não existem nesta develop e não são declarados integrados/homologados por esta entrega. O gate não substitui permissão profissional nem validação de conteúdo.
+
+0063_commercial_trial_exports é candidata, sem mudança do schema de tabelas: preserva a janela em conversões parciais e oferece o helper de emissão por empresa/produto. SQL, journal e snapshot acompanham a PR. Conciliar a cadeia comercial 0060–0063 com NOB-112 antes de integrar.

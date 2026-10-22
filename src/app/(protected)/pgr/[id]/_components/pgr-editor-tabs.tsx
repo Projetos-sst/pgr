@@ -51,8 +51,10 @@ export function PgrEditorTabs({
   technicianDocumentsTotal,
   nr18Checklist,
   epiRelation,
+  billingExportBlocked = false,
 }: {
   pgrId: string;
+  billingExportBlocked?: boolean;
   pgr: Pgr;
   isPublished: boolean;
   companyName: string;
@@ -558,6 +560,7 @@ export function PgrEditorTabs({
           ) : null}
           {active === "documents" ? (
             <PgrDocumentsTab
+              billingExportBlocked={billingExportBlocked}
               pgrId={pgrId}
               pgrLabel={`PGR — ${companyName}`}
               linkedDocuments={linkedDocuments}

@@ -10002,6 +10002,54 @@
           }
         }
       ]
+    },
+    {
+      "name": "Teste de 15 dias — NOB-118",
+      "item": [
+        {
+          "name": "Consultar teste por empresa",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/trials?companyId={{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "trials"],
+              "query": [
+                {
+                  "key": "companyId",
+                  "value": "{{companyId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Iniciar teste explícito (repetir não reinicia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/trials",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "trials"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   ]
 }
