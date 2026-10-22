@@ -7,6 +7,17 @@ export {
 } from "./org-memberships";
 export { companies, type Company, type NewCompany } from "./companies";
 export { companyModules, companyModuleEvents } from "./company-modules";
+export {
+  companyRiskAuthorizers,
+  professionalRiskAuthorizations,
+  riskAuthorizationEvents,
+  medicalRiskDecisions,
+} from "./medical-risk-authorizations";
+export {
+  medicalRiskSources,
+  medicalRiskEntries,
+  medicalRiskEvents,
+} from "./medical-risk-sources";
 export { tenantProbe, type TenantProbe, type NewTenantProbe } from "./tenant-probe";
 export { workUnits, type WorkUnit, type NewWorkUnit } from "./work-units";
 export { ges, type Ges, type NewGes } from "./ges";

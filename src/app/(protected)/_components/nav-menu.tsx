@@ -105,6 +105,12 @@ const NAV: NavEntry[] = [
     iconName: "activity",
     items: [
       { href: "/medicine", label: "Painel", iconName: "clipboard-list" },
+      {
+        href: "/risk-authorizations",
+        label: "Autorizações de riscos",
+        iconName: "shield",
+      },
+      { href: "/medical-risks", label: "Riscos para PCMSO", iconName: "alert-triangle" },
       { href: "/health-exams", label: "Exames e ASO", iconName: "activity" },
       { href: "/medicos", label: "Médicos", iconName: "stethoscope" },
     ],

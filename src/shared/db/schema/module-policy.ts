@@ -1,6 +1,11 @@
 import { sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import type { CompanyModule } from "@/shared/domains/platform/company-modules";
 
+const MODULE_LITERALS: Record<CompanyModule, SQL> = {
+  pgr: sql`'pgr'`,
+  medicine: sql`'medicine'`,
+};
+
 /** Correlated predicate, also used as a restrictive DB policy (not just hidden UI). */
 export function companyModuleScope(
   orgId: SQLWrapper,
@@ -8,6 +13,6 @@ export function companyModuleScope(
   module: CompanyModule,
 ): SQL<boolean> {
   // DDL policies cannot contain query parameters. These are code-owned literals.
-  const moduleLiteral = module === "pgr" ? sql`'pgr'` : sql`'medicine'`;
+  const moduleLiteral = MODULE_LITERALS[module];
   return sql<boolean>`exists (select 1 from public.company_modules cm where cm.org_id = ${orgId} and cm.company_id = ${companyId} and cm.module = ${moduleLiteral} and cm.enabled = true)`;
 }

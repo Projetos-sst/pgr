@@ -1,3 +1,4 @@
+import { resolvePageParams } from "@/shared/pagination";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
@@ -22,7 +23,7 @@ export default async function CompanyServicesPage({
   const ctx = await requireOfficeStaffPage();
   const { id } = await params;
   const sp = await searchParams;
-  const page = Math.max(1, Number(sp.page) || 1);
+  const { page } = resolvePageParams({ page: Number(sp.page) });
   const [company, overview] = await Promise.all([
     getCompanyAction(id),
     getCompanyModuleOverviewAction(id, { page }),
