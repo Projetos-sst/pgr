@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, desc } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { withOrg, type TenantTransaction } from "../../with-org";
 import * as s from "../../schema/billing";
@@ -67,6 +67,24 @@ export async function offer(tx: TenantTransaction, ctx: TenantContext, id: strin
     .where(and(scope(s.billingOffers, ctx.tenantId), eq(s.billingOffers.id, id)));
   if (!row) throw new NotFoundError();
   return row;
+}
+export async function currentOffer(
+  tx: TenantTransaction,
+  ctx: TenantContext,
+  id: string,
+) {
+  const selected = await offer(tx, ctx, id);
+  const [latest] = await tx
+    .select({ id: s.billingOffers.id })
+    .from(s.billingOffers)
+    .where(
+      and(scope(s.billingOffers, ctx.tenantId), eq(s.billingOffers.code, selected.code)),
+    )
+    .orderBy(desc(s.billingOffers.version))
+    .limit(1);
+  if (latest.id !== selected.id)
+    conflict("O preço foi atualizado. Consulte a oferta atual antes de contratar.");
+  return selected;
 }
 export async function company(tx: TenantTransaction, ctx: TenantContext, id: string) {
   const [row] = await tx

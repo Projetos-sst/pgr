@@ -94,6 +94,41 @@ export function createCheckout(
             eq(s.billingContracts.customerId, customer.id),
           ),
         );
+      for (const previous of existing) {
+        if (
+          previous.snapshot.interval !== "one_time" &&
+          (previous.status === "unpaid" ||
+            (previous.cancelAtPeriodEnd &&
+              previous.periodEnd &&
+              previous.periodEnd <= new Date()))
+        ) {
+          await tx
+            .update(s.billingContracts)
+            .set({
+              status: "canceled",
+              cancelAtPeriodEnd: false,
+              revision: previous.revision + 1,
+            })
+            .where(eq(s.billingContracts.id, previous.id));
+          await tx
+            .update(s.billingEntitlements)
+            .set({ active: false })
+            .where(
+              and(
+                scope(s.billingEntitlements, ctx.tenantId),
+                eq(s.billingEntitlements.contractId, previous.id),
+              ),
+            );
+          await audit(
+            tx,
+            ctx,
+            previous.id,
+            "checkout.superseded",
+            "Tentativa encerrada antes de iniciar nova contratação simulada.",
+          );
+          previous.status = "canceled";
+        }
+      }
       if (
         existing.some(
           (c) =>

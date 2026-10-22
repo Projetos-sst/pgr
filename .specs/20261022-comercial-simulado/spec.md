@@ -20,12 +20,15 @@ reserva de numeração nem integrar migrations antes de conferir novamente a bas
 | 117   | Pedidos avulsos independentes da assinatura                                 |
 | 118   | Trial explícito de 15 dias; proteção de emissão no servidor                 |
 | 119   | Interesse e alertas internos deduplicados; nenhum envio externo             |
-| 134   | Planos, comparação e retorno do checkout                                    |
 | 135   | Assinatura, cotação com validade, mudança, cancelamento e retomada          |
 | 136   | Faturas e portal temporário de pagamento simulado                           |
 | 137   | Administração com permissão específica e histórico                          |
+| 134   | Integração das páginas, comparação e retorno do checkout                    |
 | 115   | Integração das licenças e aceitação do fluxo completo                       |
 | 138   | Matriz de cenários, isolamento, UI e handoff ao Douglas                     |
+
+Controles e APIs das telas (135–137) precedem a integração das páginas (134),
+para que cada PR compile com suas dependências disponíveis.
 
 PRs por issue, com dependências explícitas. Não repetir o erro anterior de
 confundir merge entre branches com integração na develop. Nenhum merge/deploy

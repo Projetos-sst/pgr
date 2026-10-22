@@ -81,6 +81,7 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
 | `/api/billing/orders` · `/orders/{id}` · `/orders/{id}/access`                                        | GET/POST · GET · POST    | Pedidos avulsos e autorização comercial por pedido/produto                     |
 | `/api/billing/trials`                                                                                 | GET/POST                 | Teste de 15 dias e restrições de emissão por empresa                           |
 | `/api/billing/interests` · `/interests/{id}/acknowledge`                                              | GET/POST · POST          | Interesses e alertas internos deduplicados                                     |
+| `/api/billing/subscription/change-preview` · `/change` · `/cancel` · `/resume`                        | POST                     | Cotação, confirmação, cancelamento e retomada                                  |
 
 Detalhes, políticas e limites em “Catálogo comercial simulado — NOB-114” ao final deste documento.
 
@@ -1455,3 +1456,18 @@ Para os emissores futuros de PCMSO/ASO: chamar assertCompanyBillingExportAllowed
 Exige owner e flags do simulador; RLS também verifica membership. O interesse é ligado ao teste e à empresa por FK com org_id. Deduplicação por teste/interesse: repetições não geram outro alerta nem sobrescrevem a mensagem original. Consulta paginada retorna {rows,page,hasMore,channel:inbox,simulated}; o contato permanece no cadastro da empresa, sem duplicar dados pessoais ou clínicos na fila.
 
 Gatilho desta versão: solicitação explícita de interesse. Canal: caixa interna. A implementação não envia WhatsApp, e-mail ou SMS nem aceita canal externo no payload. Gatilhos automáticos/canais reais dependem de definição comercial posterior. Inclui componente de caixa interna, conectado à tela geral na NOB-134. Sem migration nova.
+
+## Mudanças, cancelamento e retomada — NOB-135
+
+| Recurso                                       | Action                             | Contrato                                                                                                                    |
+| --------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| POST /api/billing/subscription/change-preview | previewCommercialChangeAction      | {contractId,priceId}; retorna BillingChangePreview: id,contractId,amountMinor,items,policy,effectiveAt,expiresAt,simulated. |
+| POST /api/billing/subscription/change         | confirmCommercialChangeAction      | {quoteId,reason}; exige cotação não expirada e revisão esperada, confirma sem ativar licença por conta própria.             |
+| POST /api/billing/subscription/cancel         | cancelCommercialSubscriptionAction | {contractId,reason}; segue política contratada, preserva período pago quando agendado e é idempotente.                      |
+| POST /api/billing/subscription/resume         | resumeCommercialSubscriptionAction | {contractId,reason}; desfaz cancelamento agendado sem reativar contrato encerrado ou período expirado.                      |
+
+Owner e flags obrigatórios. Nunca aceita valor, tenant ou ator do navegador. A nova oferta precisa ser a versão atual do código; uma cotação válida preserva sua versão durante a janela de confirmação. Aprovar uma cotação invalida outras confirmações concorrentes. O evento financeiro e a vigência continuam necessários para mudar preço/itens e liberar direitos. Um evento futuro não antecipa a mudança agendada. Nesta simulação, a prévia cobra o valor integral do novo período, sem rateio ou ajuste de preço real.
+
+Cancelamento/retomada são idempotentes e auditados. Contratos cancelados/expirados não são reativados por recuperação tardia. Ao abrir outra tentativa, uma assinatura recusada antiga é encerrada, evitando dois vínculos ativos por recuperação posterior. Uma assinatura avulsa não usa estas ações. Permissões manuais anteriores não são apagadas.
+
+Inclui componentes acessíveis de mudança/cancelamento, integrados à página geral na NOB-134. A interface elimina a cotação ao trocar a seleção, desabilita confirmação expirada, exige confirmação de cancelamento e informa que ativação ainda aguarda pagamento/vigência. Sem migration nova.

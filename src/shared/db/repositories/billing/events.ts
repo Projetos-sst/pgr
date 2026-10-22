@@ -42,6 +42,21 @@ export function applyBillingEvent(ctx: TenantContext, raw: NormalizedBillingEven
       periodEnd = new Date(event.periodEnd);
     let snapshot = row.snapshot,
       offerId = row.offerId;
+    const now = new Date();
+    if (
+      event.status === "active" &&
+      periodStart > now &&
+      !hasContractAccess(
+        {
+          status: row.status,
+          periodEnd: row.periodEnd,
+          trialEndsAt: null,
+          policy: row.snapshot.policy,
+        },
+        now,
+      )
+    )
+      throw new ValidationError("O período pago ainda não começou.");
     const [scheduled] = await tx
       .select()
       .from(s.billingQuotes)
@@ -53,17 +68,25 @@ export function applyBillingEvent(ctx: TenantContext, raw: NormalizedBillingEven
           lte(s.billingQuotes.effectiveAt, periodStart),
         ),
       )
-      .orderBy(desc(s.billingQuotes.createdAt))
+      .orderBy(desc(s.billingQuotes.expectedRevision), desc(s.billingQuotes.confirmedAt))
       .limit(1);
-    if (scheduled?.confirmedAt && scheduled.effectiveAt <= periodStart) {
+    if (
+      scheduled?.confirmedAt &&
+      scheduled.effectiveAt <= periodStart &&
+      !["canceled", "expired"].includes(row.status)
+    ) {
+      if (scheduled.effectiveAt > now)
+        throw new ValidationError("A mudança agendada ainda não entrou em vigor.");
       const next = await offer(tx, ctx, scheduled.offerId);
       snapshot = next.data;
       offerId = next.id;
     }
     const status =
-      row.cancelAtPeriodEnd && row.periodEnd && periodStart >= row.periodEnd
-        ? "canceled"
-        : event.status;
+      row.status === "canceled" || row.status === "expired"
+        ? row.status
+        : row.cancelAtPeriodEnd && row.periodEnd && periodStart >= row.periodEnd
+          ? "canceled"
+          : event.status;
     if (event.invoice && event.invoice.amountMinor !== totalMinor(snapshot.items))
       throw new ValidationError("Valor da fatura não corresponde aos itens contratados.");
     await tx

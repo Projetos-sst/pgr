@@ -117,9 +117,9 @@ export function billingActions(
       ? ["resume", "portal", "invoices"]
       : ["change", "cancel", "portal", "invoices"];
   if (status === "pending_payment" || status === "requires_action")
-    return ["checkout", "invoices"];
+    return ["checkout", cancelAtPeriodEnd ? "resume" : "cancel", "invoices"];
   if (status === "past_due" || status === "unpaid")
-    return ["portal", "invoices", "reconcile"];
+    return ["portal", cancelAtPeriodEnd ? "resume" : "cancel", "invoices", "reconcile"];
   return ["checkout", "invoices"];
 }
 
@@ -224,6 +224,16 @@ export type PaymentChangeQuote = {
   amountMinor: number;
   effectiveAt: string;
   expiresAt: string;
+};
+export type BillingChangePreview = {
+  id: string;
+  contractId: string;
+  amountMinor: number;
+  items: BillingPriceItem[];
+  policy: BillingPolicy;
+  effectiveAt: string;
+  expiresAt: string;
+  simulated: boolean;
 };
 /** Provider inputs are resolved by the server; no raw card data or arbitrary URLs. */
 export interface BillingGateway {

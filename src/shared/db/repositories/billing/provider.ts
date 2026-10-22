@@ -68,7 +68,7 @@ export function simulateProviderEvent(ctx: TenantContext, id: string, scenario: 
           lte(s.billingQuotes.effectiveAt, scenario === "renewal" ? start : now),
         ),
       )
-      .orderBy(desc(s.billingQuotes.createdAt))
+      .orderBy(desc(s.billingQuotes.expectedRevision), desc(s.billingQuotes.confirmedAt))
       .limit(1);
     if (quote && quote.id !== row.offerId) {
       snapshot = quote.data;

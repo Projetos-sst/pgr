@@ -295,6 +295,10 @@
     {
       "key": "billingInterestId",
       "value": ""
+    },
+    {
+      "key": "billingQuoteId",
+      "value": ""
     }
   ],
   "item": [
@@ -10106,6 +10110,99 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"reason\": \"Alerta consultado pelo administrador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gestão da assinatura — NOB-135",
+      "item": [
+        {
+          "name": "Calcular prévia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/subscription/change-preview",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": \"{{billingContractId}}\",\n  \"priceId\": \"{{billingPriceId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Confirmar prévia vigente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/subscription/change",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quoteId\": \"{{billingQuoteId}}\",\n  \"reason\": \"Prévia confirmada pelo administrador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cancelar conforme política contratada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/subscription/cancel",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": \"{{billingContractId}}\",\n  \"reason\": \"Cancelamento explícito do administrador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Retomar cancelamento agendado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/subscription/resume",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": \"{{billingContractId}}\",\n  \"reason\": \"Retomada explícita do administrador\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
