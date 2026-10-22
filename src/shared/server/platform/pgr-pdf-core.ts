@@ -1,4 +1,5 @@
 import "server-only";
+import { assertPgrBillingExportAllowed } from "@/shared/db/repositories/billing-export";
 
 import { getPgrConsolidated } from "@/shared/db/repositories/pgr-consolidated";
 import { buildPgrHtml, type PgrPdfOptions } from "@/shared/domains/pgr/pgr-pdf-template";
@@ -38,6 +39,7 @@ export async function generatePgrPdf(
 ): Promise<GeneratedReport> {
   const data = await getPgrConsolidated(orgId, pgrId);
   if (!data) throw new NotFoundError();
+  await assertPgrBillingExportAllowed(orgId, pgrId);
 
   const generatedAt = todayInSaoPaulo();
   const html = buildPgrHtml(data, { ...options, generatedAt });
