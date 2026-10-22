@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, or, isNull } from "drizzle-orm";
 
 import type { PgrDocxExtras } from "@/shared/domains/pgr/pgr-docx/from-consolidated";
 
@@ -11,6 +11,7 @@ import { gesJobRoles } from "../schema/ges-job-roles";
 import { jobRoles } from "../schema/job-roles";
 import { pgr, pgrGes, pgrRevisions } from "../schema/pgr";
 import { jobRoleRequiredTrainings, trainingCatalog } from "../schema/trainings";
+import { machineInstallations } from "../schema/machine-installations";
 
 /**
  * O que o PGR em DOCX precisa ALÉM da visão consolidada (`getPgrConsolidated`): a
@@ -25,7 +26,12 @@ export async function getPgrDocxExtras(
 ): Promise<PgrDocxExtras | null> {
   return withOrg(orgId, async (tx) => {
     const [head] = await tx
-      .select({ phone: companies.phone, logoPath: companies.logoPath })
+      .select({
+        phone: companies.phone,
+        logoPath: companies.logoPath,
+        companyId: pgr.companyId,
+        workUnitId: pgr.workUnitId,
+      })
       .from(pgr)
       .innerJoin(
         companies,
@@ -112,7 +118,28 @@ export async function getPgrDocxExtras(
       .where(and(eq(pgrRevisions.orgId, orgId), eq(pgrRevisions.pgrId, pgrId)))
       .orderBy(asc(pgrRevisions.revisionNumber));
 
+    const machineRows = await tx
+      .select()
+      .from(machineInstallations)
+      .where(
+        and(
+          eq(machineInstallations.orgId, orgId),
+          eq(machineInstallations.companyId, head.companyId),
+          eq(machineInstallations.active, true),
+          or(
+            head.workUnitId
+              ? and(
+                  eq(machineInstallations.workUnitId, head.workUnitId),
+                  isNull(machineInstallations.gesId),
+                )
+              : undefined,
+            gesIds.length ? inArray(machineInstallations.gesId, gesIds) : undefined,
+          ),
+        ),
+      )
+      .orderBy(asc(machineInstallations.catalogName), asc(machineInstallations.id));
     return {
+      machines: head.workUnitId || gesIds.length ? machineRows : [],
       company: { phone: head.phone, logoPath: head.logoPath },
       revisions,
       ges: Object.fromEntries(

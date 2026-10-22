@@ -16,6 +16,18 @@ import type { PgrDocxAgentKey, PgrDocxRiskClass } from "./theme";
 export type PgrDocxContent = {
   /** Data/hora de emissão impressa no rodapé ("10/09/2026 11:19"). */
   emittedAt: string;
+  machines?: {
+    name: string;
+    manufacturer: string;
+    identifier: string;
+    quantity: string;
+    description: string;
+    operatingConditions: string;
+    safetyMeasures: string;
+    maintenanceNotes: string;
+    responsible: string;
+    context: string;
+  }[];
   /** Vigência da capa ("08/2026 a 05/2028"). */
   validity: string;
   /** Anos da vigência no título do Anexo I ("2026–2028"). Ausente = derivado de `validity`. */

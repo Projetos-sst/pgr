@@ -38,6 +38,9 @@ export default async function CompanyServicesPage({
         description="PGR e Medicina são habilitados separadamente. O plano Pro e as cobranças permanecem independentes."
       />
       <ModuleControls companyId={id} modules={modules} canManage={ctx.role === "owner"} />
+      <Link href={`/companies/${id}/machines`} className="text-primary underline">
+        Máquinas e equipamentos por obra e ambiente
+      </Link>
       <section className="glass-card rounded-[20px] p-6">
         <h2 className="mb-4 font-semibold">Histórico de serviços</h2>
         <ul className="space-y-3">
