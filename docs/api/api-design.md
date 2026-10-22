@@ -71,13 +71,13 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
 
 ### Financeiro simulado (`/api/billing`) — owner, opt-in e fora de produção
 
-| Recurso                          | Métodos   | Contrato                                                               |
-| -------------------------------- | --------- | ---------------------------------------------------------------------- |
-| `/api/billing/plans`             | GET, POST | Catálogo atual paginado; criar versão imutável de oferta               |
-| `/api/billing/customers`         | GET, POST | Clientes comerciais paginados; cadastrar/sincronizar empresa do tenant |
-| `/api/billing/checkout-sessions` | POST      | Checkout simulado, Idempotency-Key obrigatório                         |
-
+| Recurso                                                                                               | Métodos                  | Contrato                                                                       |
+| ----------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------ |
+| `/api/billing/plans`                                                                                  | GET, POST                | Catálogo atual paginado; criar versão imutável de oferta                       |
+| `/api/billing/customers`                                                                              | GET, POST                | Clientes comerciais paginados; cadastrar/sincronizar empresa do tenant         |
+| `/api/billing/checkout-sessions`                                                                      | POST                     | Checkout simulado, Idempotency-Key obrigatório                                 |
 | `/api/billing/subscription` · `/subscription/reconcile` · `/simulation-events` · `/webhooks/provider` | GET · POST · POST · POST | Assinaturas, reconciliação auditada, cenários e eventos assinados do simulador |
+| `/api/billing/charges`                                                                                | GET                      | Faturas e valores por item, empresa e período                                  |
 
 Detalhes, políticas e limites em “Catálogo comercial simulado — NOB-114” ao final deste documento.
 
@@ -1403,3 +1403,11 @@ A transação registra inbox, estado, fatura, licença e auditoria. Duplicatas c
 A migration candidata 0061 adiciona snapshot/identidade/período da fatura e policies que consideram licenças somente quando app.billing_simulation é ativado pelo servidor em withOrg. Pro não concede PGR/Medicina automaticamente. Licenças recorrentes são por empresa e produto; avulsos ficam em scope order:{contractId} e não abrem todo o módulo. Permissões manuais anteriores permanecem. Uma desativação explícita do owner prevalece sobre pagamento/renovação; a tela de serviços consulta o estado efetivo. Helpers SECURITY DEFINER retornam apenas booleanos, exigem tenant atual e têm search_path fixo e EXECUTE revogado do público.
 
 0060/0061 são candidatas em rascunhos; não foram aplicadas em banco real nem liberam a numeração da Medicina. Atualizar e reconciliar a develop antes de integrar.
+
+## Cobranças discriminadas — NOB-116
+
+| Recurso                  | Action                     | Contrato                                                                                                                                                    |
+| ------------------------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET /api/billing/charges | getCommercialChargesAction | page (1..10000), companyId opcional; retorna {rows,page,hasMore,simulated}. Até 20 faturas, itens originais e total em centavos, empresa, período e status. |
+
+Owner, tenant ativo e flags do simulador obrigatórios. Cada item traz product (pro/pgr/medicine), label e amountMinor. O total corresponde aos itens comprados; PGR e Medicina podem existir sozinhos ou combinados. A listagem usa o snapshot da fatura, sem reconstruir os valores a partir do preço atual. Não expõe payload bruto, snapshot completo de contrato ou identificadores de cliente/fatura do gateway. As telas de planos/faturas compõem NOB-134/136.

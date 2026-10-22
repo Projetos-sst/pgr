@@ -9899,6 +9899,32 @@
           }
         }
       ]
+    },
+    {
+      "name": "Cobranças por serviço — NOB-116",
+      "item": [
+        {
+          "name": "Consultar valores separados de PGR e Medicina",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/charges?page=1&companyId={{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "charges"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "companyId",
+                  "value": "{{companyId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }
