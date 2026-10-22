@@ -110,9 +110,9 @@ Comandos e saídas literais no [QA](QA.md) §3–§5; parecer no [REVIEW](REVIEW
 
 ## Pendente
 
-| Item   | Registro                               |
-| ------ | -------------------------------------- |
-| T01-17 | CI verde após o commit de documentação |
-| T01-18 | Aceite: quem, quando, canal            |
-| T01-19 | Autorização do merge e SHA             |
-| T01-20 | Validação em homologação: quem, quando |
+| Item   | Registro                                              |
+| ------ | ----------------------------------------------------- |
+| T01-17 | **Verde** em `59bf798` (quality ✔, build ✔, testes ✔) |
+| T01-18 | Aceite: quem, quando, canal                           |
+| T01-19 | Autorização do merge e SHA                            |
+| T01-20 | Validação em homologação: quem, quando                |

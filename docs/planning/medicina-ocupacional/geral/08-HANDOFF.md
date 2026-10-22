@@ -25,14 +25,14 @@ TESTES EXECUTADOS:         npm run check → exit 0 (179 suítes / 1768 testes u
                            efêmero local) → 169 passed, 0 failed, 5 skipped (externos, nenhum da Medicina); Medicina 53/53.
                            REST com bypass dev (13 casos). Navegador: 25 passos (QA §5), Lighthouse a11y 100.
 TESTES PENDENTES:          spec Playwright automatizado (exige usuário de teste do Clerk); tela de client e de collaborator
-                           no navegador (sem contas); CI da #120 após o commit de docs.
+                           no navegador (sem contas).
 ARQUIVOS ALTERADOS:        ver git diff --stat origin/develop..HEAD (52 arquivos de src/docs/api + docs de planejamento)
 MIGRATIONS:                nenhuma
 DECISÕES TOMADAS:          MED-DEC-25 → RESPONDIDA (Douglas aprovou direcionamento e início do Lote 01, informado pelo Carlos);
                            T01-02 (PLAN §12 itens 1–4) decididos pelo Carlos.
 DECISÕES PENDENTES:        MED-DEC-31 (fonte do fluxo de autorização da #112); MED-DEC-02…07, 08, 09, 26 (Lote 02/03).
 DEPENDÊNCIAS:              #112 (arquivos comuns: nav-menu.tsx, api-design.md, Postman); ordem de merge a combinar.
-PRÓXIMA AÇÃO EXATA:        gh pr checks 120 — se verde, Carlos pede revisão ao Douglas e combina com o Rikelvin a ordem
+PRÓXIMA AÇÃO EXATA:        CI da #120 verde em 59bf798. Carlos pede revisão ao Douglas e combina com o Rikelvin a ordem
                            #112 × #120; a PR sai de draft com o aceite do Carlos.
 ```
 

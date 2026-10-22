@@ -13,7 +13,7 @@
 | Migrations         | **nenhuma** (regra do lote: zero migration)                                                                                                                                              |
 | Base obrigatória   | [`../../FIRST-MVP.md`](../../FIRST-MVP.md). Este lote **expande** o FIRST-MVP com o detalhe de implementação; não o contradiz. Toda divergência está marcada como tal no [PLAN](PLAN.md) |
 | Bloqueios          | **Nenhum.** MED-DEC-25 `RESPONDIDA` (direcionamento aprovado pelo Douglas, informado pelo Carlos). Spec Playwright automatizado depende de usuário de teste do Clerk                     |
-| Próxima ação       | Conferir o CI da #120 após o commit de docs; revisão do Douglas; combinar com o Rikelvin a ordem #112 × #120 (arquivos comuns)                                                           |
+| Próxima ação       | CI verde (`59bf798`); revisão do Douglas; combinar com o Rikelvin a ordem #112 × #120 (arquivos comuns)                                                                                  |
 
 ## Objetivo
 

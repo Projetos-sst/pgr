@@ -2,7 +2,7 @@
 
 > **Status real (2026-10-21): `PR_ABERTA` em draft ([#120](https://github.com/Projetos-sst/pgr/pull/120)).** Código, testes
 > automatizados, QA no navegador (1440/768/375/320) e revisão de segurança concluídos. **Pendentes:** spec Playwright automatizado
-> (exige usuário de teste do Clerk), CI verde após o commit de docs, revisão do Douglas, aceite. Base: [`../../FIRST-MVP.md`](../../FIRST-MVP.md) + [PLAN](PLAN.md).
+> (exige usuário de teste do Clerk), revisão do Douglas, aceite. CI verde em `59bf798`. Base: [`../../FIRST-MVP.md`](../../FIRST-MVP.md) + [PLAN](PLAN.md).
 > Um item só é marcado com evidência registrada no [WALKTHROUGH](WALKTHROUGH.md) ou no [QA](QA.md). Responsável padrão:
 > **Carlos** (execução assistida pelo coordenador Claude). [README](README.md)
 
@@ -126,8 +126,8 @@
 
 ## 17. CI
 
-- [ ] **T01-17** CI da PR verde. 1ª execução (`8372ec3`): build ✔, testes ✔, `quality` ✘ só por Prettier nos docs de planejamento —
-      corrigido no commit de docs; aguardando nova execução.
+- [x] **T01-17** CI da PR verde no head `59bf798` (2026-10-21): Lint, format & typecheck ✔ · Production build ✔ · Unit & integration
+      tests ✔. A 1ª execução (`8372ec3`) falhou só no Prettier dos docs de planejamento, corrigido.
 
 ## 18. Aceite
 
