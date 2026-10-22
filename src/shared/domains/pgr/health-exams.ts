@@ -8,6 +8,7 @@ import {
   optionalIsoDate,
   optionalString,
   optionalUuid,
+  optionalUuidWith,
   requiredUuid,
 } from "./form-fields";
 
@@ -48,6 +49,15 @@ export const EXAM_APTITUDE_LABELS: Record<ExamAptitude, string> = {
   fit_with_restrictions: "Apto c/ restrição",
   unfit: "Inapto",
 };
+
+// ── Janela de vencimento ─────────────────────────────────────────────────────
+
+/**
+ * Janela (dias) do "a vencer" dos exames — única para `/health-exams`, painel da
+ * Medicina e ficha do funcionário. Só a validade INFORMADA (`valid_until`); nenhuma
+ * periodicidade é calculada.
+ */
+export const EXAM_DUE_WINDOW_DAYS = 30;
 
 // ── Badge de status (validade derivada + aptidão) ────────────────────────────
 
@@ -108,3 +118,16 @@ export type HealthExamListItem = {
   validUntil: string | null;
   aptitude: ExamAptitude;
 };
+
+// ── Filtros da listagem ──────────────────────────────────────────────────────
+
+/**
+ * Filtros por funcionário/empresa da listagem de exames. São só filtros SOMADOS a
+ * `org_id` (tenant da sessão): ID de outro tenant → lista vazia; ID malformado →
+ * `VALIDATION` (nunca lista vazia nem 500). `companyId` = empresa ATUAL do
+ * funcionário (`employees.company_id`).
+ */
+export const healthExamListFiltersSchema = z.object({
+  employeeId: optionalUuidWith("Funcionário inválido"),
+  companyId: optionalUuidWith("Empresa inválida"),
+});

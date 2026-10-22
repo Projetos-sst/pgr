@@ -9,6 +9,7 @@ import {
   type HealthExamListItem,
   type HealthExamValues,
 } from "@/shared/domains/pgr/health-exams";
+import type { LatestExam } from "@/shared/domains/medicine/employees";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
@@ -49,6 +50,9 @@ async function assertRefsInTenant(
 export type ListHealthExamsParams = PageParams & {
   search?: string;
   examType?: ExamType;
+  employeeId?: string;
+  /** Empresa ATUAL do funcionário (`employees.company_id`) — exame não tem empresa própria. */
+  companyId?: string;
 };
 
 export async function listHealthExams(
@@ -76,6 +80,10 @@ export async function listHealthExams(
     );
   }
   if (params.examType) filters.push(eq(healthExams.examType, params.examType));
+  // Filtros SOMADOS a org_id: ID de outro tenant → lista vazia, nunca vazamento.
+  // O innerJoin(employees) da lista e da contagem serve ao filtro por empresa.
+  if (params.employeeId) filters.push(eq(healthExams.employeeId, params.employeeId));
+  if (params.companyId) filters.push(eq(employees.companyId, params.companyId));
   const where = and(...filters);
 
   return withOrg(orgId, async (tx) => {
@@ -105,6 +113,37 @@ export async function listHealthExams(
       .where(where);
     return { rows, total };
   });
+}
+
+/**
+ * Exame mais recente de cada funcionário (`DISTINCT ON`, sem N+1), com desempate
+ * determinístico por `created_at`. Só os campos de `LatestExam` — sem `notes` nem
+ * `certificatePath`. A RLS RESTRICTIVE `health_exams_module_access` já esconde
+ * exames de empresas sem Medicina.
+ */
+export async function listLatestHealthExamsByEmployee(
+  orgId: string,
+  employeeIds: readonly string[],
+): Promise<Array<{ employeeId: string } & LatestExam>> {
+  const ids = [...new Set(employeeIds)];
+  if (ids.length === 0) return [];
+  return withOrg(orgId, (tx) =>
+    tx
+      .selectDistinctOn([healthExams.employeeId], {
+        employeeId: healthExams.employeeId,
+        examType: healthExams.examType,
+        performedAt: healthExams.performedAt,
+        validUntil: healthExams.validUntil,
+        aptitude: healthExams.aptitude,
+      })
+      .from(healthExams)
+      .where(and(eq(healthExams.orgId, orgId), inArray(healthExams.employeeId, ids)))
+      .orderBy(
+        healthExams.employeeId,
+        desc(healthExams.performedAt),
+        desc(healthExams.createdAt),
+      ),
+  );
 }
 
 export async function getHealthExamById(

@@ -7,6 +7,7 @@ import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
 import {
   healthExamInputSchema,
+  healthExamListFiltersSchema,
   type HealthExamInput,
   type HealthExamListItem,
 } from "@/shared/domains/pgr/health-exams";
@@ -16,12 +17,26 @@ import type { HealthExam } from "@/shared/db/schema/health-exams";
 
 const BASE_PATH = "/health-exams";
 
+// Telas que exibem exames além de /health-exams: painel da Medicina e ficha do
+// funcionário (ambas force-dynamic; isso só mantém o cache de navegação coerente).
+function revalidateExamViews(employeeId: string): void {
+  revalidatePath(BASE_PATH);
+  revalidatePath("/medicine");
+  revalidatePath(`/employees/${employeeId}`);
+}
+
 export async function listHealthExamsAction(
   params: repo.ListHealthExamsParams = {},
 ): Promise<ActionResult<Paginated<HealthExamListItem>>> {
-  return officeAction("pgr.health-exams.list", ({ tenantId }) =>
-    repo.listHealthExams(tenantId, params),
-  );
+  return officeAction("pgr.health-exams.list", async ({ tenantId }) => {
+    // ID malformado → ZodError → VALIDATION (nunca lista vazia). Os filtros são
+    // somados a org_id no repositório: ID de outro tenant → lista vazia.
+    const filters = healthExamListFiltersSchema.parse({
+      employeeId: params.employeeId,
+      companyId: params.companyId,
+    });
+    return repo.listHealthExams(tenantId, { ...params, ...filters });
+  });
 }
 
 export async function getHealthExamAction(id: string): Promise<ActionResult<HealthExam>> {
@@ -40,7 +55,7 @@ export async function createHealthExamAction(
     async ({ tenantId }) => {
       const data = healthExamInputSchema.parse(input);
       const exam = await repo.createHealthExam(tenantId, data);
-      revalidatePath(BASE_PATH);
+      revalidateExamViews(data.employeeId);
       return exam;
     },
     { audit: true },
@@ -57,7 +72,7 @@ export async function updateHealthExamAction(
       const data = healthExamInputSchema.parse(input);
       const exam = await repo.updateHealthExam(tenantId, id, data);
       if (!exam) throw new NotFoundError();
-      revalidatePath(BASE_PATH);
+      revalidateExamViews(data.employeeId);
       revalidatePath(`${BASE_PATH}/${id}/edit`);
       return exam;
     },

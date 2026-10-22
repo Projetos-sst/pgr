@@ -53,12 +53,19 @@ export function HealthExamForm({
   initial,
   employees,
   doctors,
+  defaultEmployeeId,
+  returnTo,
 }: {
   id?: string;
   initial?: HealthExamFormInitial;
   employees: EmployeeOption[];
   doctors: DoctorOption[];
+  /** Funcionário pré-selecionado (ex.: vindo da ficha). */
+  defaultEmployeeId?: string;
+  /** Destino após salvar/cancelar — montado pela página no servidor, nunca lido da URL. */
+  returnTo?: string;
 }) {
+  const backHref = returnTo ?? "/health-exams";
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -84,7 +91,7 @@ export function HealthExamForm({
       if (result.ok) {
         setErrors({});
         setFormError(null);
-        router.push("/health-exams");
+        router.push(backHref);
         router.refresh();
       } else {
         setErrors(result.error.fields ?? {});
@@ -103,7 +110,7 @@ export function HealthExamForm({
           name="employeeId"
           required
           isFullWidth
-          defaultValue={initial?.employeeId ?? ""}
+          defaultValue={initial?.employeeId ?? defaultEmployeeId ?? ""}
           options={employees.map((e) => ({ value: e.id, label: e.fullName }))}
           error={errors.employeeId}
           emptyLabel="— selecione o funcionário —"
@@ -166,7 +173,7 @@ export function HealthExamForm({
       </FormSection>
 
       <FormActions>
-        <CancelLink href="/health-exams" />
+        <CancelLink href={backHref} />
         <SubmitButton pending={pending} label={id ? "Salvar exame" : "Criar exame"} />
       </FormActions>
     </form>
