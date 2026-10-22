@@ -1,4 +1,9 @@
-import { examBadge, healthExamInputSchema } from "@/shared/domains/pgr/health-exams";
+import {
+  EXAM_DUE_WINDOW_DAYS,
+  examBadge,
+  healthExamInputSchema,
+  healthExamListFiltersSchema,
+} from "@/shared/domains/pgr/health-exams";
 
 const EMP = "11111111-1111-1111-1111-1111111111a4";
 const DOC = "11111111-1111-1111-1111-1111111111c1";
@@ -77,5 +82,46 @@ describe("examBadge (validade derivada + aptidão)", () => {
 
   it("sem validade (null) → trata como vigente e mostra aptidão", () => {
     expect(examBadge(null, "fit", ctx)).toEqual({ tone: "green", label: "Apto" });
+  });
+});
+
+describe("healthExamListFiltersSchema (filtros por funcionário/empresa)", () => {
+  const COMPANY = "11111111-1111-1111-1111-111111111111";
+
+  it("sem filtros → ambos undefined", () => {
+    expect(healthExamListFiltersSchema.parse({})).toEqual({
+      employeeId: undefined,
+      companyId: undefined,
+    });
+  });
+
+  it("string vazia/espaços → undefined (não é filtro)", () => {
+    const parsed = healthExamListFiltersSchema.parse({ employeeId: "", companyId: "  " });
+    expect(parsed.employeeId).toBeUndefined();
+    expect(parsed.companyId).toBeUndefined();
+  });
+
+  it("UUIDs válidos passam", () => {
+    expect(
+      healthExamListFiltersSchema.parse({ employeeId: EMP, companyId: COMPANY }),
+    ).toEqual({ employeeId: EMP, companyId: COMPANY });
+  });
+
+  it("ID malformado → erro (vira VALIDATION, nunca lista vazia)", () => {
+    expect(healthExamListFiltersSchema.safeParse({ employeeId: "abc" }).success).toBe(
+      false,
+    );
+    expect(healthExamListFiltersSchema.safeParse({ companyId: "invalido" }).success).toBe(
+      false,
+    );
+    expect(healthExamListFiltersSchema.safeParse({ employeeId: `${EMP}0` }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe("EXAM_DUE_WINDOW_DAYS", () => {
+  it("janela única de 30 dias", () => {
+    expect(EXAM_DUE_WINDOW_DAYS).toBe(30);
   });
 });
