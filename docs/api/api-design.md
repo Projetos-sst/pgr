@@ -69,6 +69,15 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
   complementar na **borda** (Cloudflare/WAF — infra, fora do app). `Cache-Control: no-store`.
 - O painel interno da entrega reflete a assinatura por **polling** do `signature_status`.
 
+### Financeiro simulado (`/api/billing`) — owner, opt-in e fora de produção
+
+| Recurso                  | Métodos   | Contrato                                                               |
+| ------------------------ | --------- | ---------------------------------------------------------------------- |
+| `/api/billing/plans`     | GET, POST | Catálogo atual paginado; criar versão imutável de oferta               |
+| `/api/billing/customers` | GET, POST | Clientes comerciais paginados; cadastrar/sincronizar empresa do tenant |
+
+Detalhes, políticas e limites em “Catálogo comercial simulado — NOB-114” ao final deste documento.
+
 ### Integrações externas (`/api/integrations`) — Route Handlers de consulta
 
 Camada de plataforma reutilizável (autofill de formulários). **Só sessão** (`requireAuth()`) — CEP e
@@ -1351,3 +1360,16 @@ POST parecer `{expectedLatestDecisionId:null|uuid,status:"accepted"|"changes_req
 Parecer favorável registrado não aceita achado impeditivo aberto. Correção exige referência. Revalidação mantém códigos dos achados anteriores e não pode omitir impeditivos nem escondê-los reduzindo severidade. Cada parecer é append-only; token esperado e lock por amostra protegem concorrência. Mudanças atuais do PGR não invalidam ou reescrevem o parecer histórico: a UI sinaliza dados diferentes e oferece nova amostra. Decisões referem-se sempre ao arquivo preservado, inclusive quando o cadastro já mudou.
 
 Migration 0059 aditiva. RLS tenant/módulo e referências, FK composta para amostra anterior do mesmo PGR, restrição owner na inserção de parecer. Runtime não atualiza/exclui amostras/decisões. Histórico e snapshots protegidos no banco; nenhuma evidência de cliente real foi criada por esta execução.
+
+## Catálogo comercial simulado — NOB-114
+
+| Recurso                         | Actions equivalentes                                    | Campos e retorno                                                                                                                               |
+| ------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET/POST /api/billing/plans     | getBillingCatalogAction / createBillingOfferAction      | GET page (1..10000), até 50 códigos com a versão mais recente. POST BillingOfferInput, retorna versão imutável (201).                          |
+| GET/POST /api/billing/customers | getBillingCustomersAction / createBillingCustomerAction | GET page, até 50 clientes. POST {companyId}; nome vem do cadastro da empresa, retornando {id,companyId,name}. Repetição reaproveita o cliente. |
+
+Exige sessão Clerk de owner e APP_ENV local/sandbox/test, BILLING_MODE=mock e BILLING_MOCK_ENABLED=true. Produção sempre recusa. Corpo estrito: não recebe dados de cartão, tenant, ator ou identidade financeira de outra empresa. A API usa envelope ActionResult. Erros: FORBIDDEN (403), NOT_FOUND (404), VALIDATION (422), DUPLICATE (409).
+
+Oferta: code, name, description, interval (month/year/one_time), currency=BRL, items [{product:pro/pgr/medicine,label,amountMinor}], benefits, limits {companies,employees}, policy e reason. Valores inteiros em centavos; produtos não se repetem. Policy: trialDays=15, trialRequiresCard=false, trialAllowsExport=false, changeTiming e cancellationTiming (period_end/immediate), pastDueAccess (preserve_until_period_end/suspend), quoteMinutes (1..60). São configurações de simulação, sem aprovação comercial implícita.
+
+Reutilizar code cria outra versão. Preços antigos não são editados e contratos preservam snapshot. Escritas são serializadas por tenant, protegidas por owner no servidor e RLS, com histórico append-only. Clientes comerciais referenciam empresas pelo par company_id/org_id; respostas de listagem omitem identificadores do provedor. Nenhuma alteração de Stripe, preço real, assinatura existente ou company_modules é feita pelo catálogo.

@@ -9705,6 +9705,88 @@
           }
         }
       ]
+    },
+    {
+      "name": "Comercial simulado — NOB-114",
+      "description": "Owner autenticado, opt-in local/sandbox/test; não usa bypass público nem cobrança real.",
+      "item": [
+        {
+          "name": "Catálogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "plans"]
+            }
+          }
+        },
+        {
+          "name": "Clientes comerciais",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "customers"]
+            }
+          }
+        },
+        {
+          "name": "Cadastrar cliente comercial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "customers"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Criar versão fictícia de oferta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"exemplo-ficticio\",\n  \"name\": \"Oferta fictícia de simulação\",\n  \"interval\": \"month\",\n  \"items\": [\n    {\n      \"product\": \"pgr\",\n      \"label\": \"PGR fictício\",\n      \"amountMinor\": 10000\n    }\n  ],\n  \"limits\": {\n    \"companies\": null,\n    \"employees\": null\n  },\n  \"policy\": {},\n  \"reason\": \"Cadastro fictício explícito para simulação\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   ]
 }
