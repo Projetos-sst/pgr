@@ -10332,6 +10332,27 @@
           }
         }
       ]
+    },
+    {
+      "name": "Comercial — NOB-134 telas e retorno",
+      "item": [
+        {
+          "name": "Visão comercial autenticada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/billing?page=1"
+          }
+        },
+        {
+          "name": "Consultar retorno do checkout",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/billing/checkout-sessions/{{billingCheckoutSessionId}}"
+          }
+        }
+      ]
     }
   ]
 }

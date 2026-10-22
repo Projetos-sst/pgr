@@ -16,6 +16,7 @@ import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS as I } from "../_helpers/pgr-seed";
 import { createBillingOffer } from "@/shared/server/platform/billing-catalog-core";
 import { startCommercialCheckout } from "@/shared/server/platform/billing-checkout-core";
+import { getCommercialCheckoutSession } from "@/shared/server/platform/billing-checkout-session-core";
 import { POST } from "@/app/api/billing/checkout-sessions/route";
 const owner = {
   tenantId: "org_a",
@@ -66,6 +67,14 @@ const offer = {
         startCommercialCheckout(owner, input),
       ]);
       expect(two).toEqual(one);
+      expect((await getCommercialCheckoutSession(owner, one.sessionId)).contractId).toBe(
+        one.contractId,
+      );
+      await expect(
+        getCommercialCheckoutSession({ ...owner, tenantId: "org_b" }, one.sessionId),
+      ).rejects.toThrow();
+      await admin`update billing_operations set expires_at=now()-interval '1 second' where id=${one.sessionId}`;
+      await expect(getCommercialCheckoutSession(owner, one.sessionId)).rejects.toThrow();
       expect(one.checkoutUrl.startsWith("/configuracoes/assinatura/simulacao?")).toBe(
         true,
       );

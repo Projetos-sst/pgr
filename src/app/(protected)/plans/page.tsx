@@ -8,6 +8,8 @@ import {
   type PlanKey,
 } from "@/shared/domains/platform/billing";
 import { isBillingEnabled } from "@/shared/integrations/stripe/config";
+import { isBillingSimulationEnabled } from "@/shared/domains/billing/contracts";
+import { commercialEnvironment } from "@/shared/server/platform/commercial-config";
 
 import { ManageBillingButton } from "./_components/manage-billing-button";
 import { UpgradeButton } from "./_components/upgrade-button";
@@ -22,6 +24,14 @@ export default async function PlanosPage() {
 
   return (
     <div className="flex flex-col gap-8 px-6 py-8">
+      {ctx.role === "owner" && isBillingSimulationEnabled(commercialEnvironment()) && (
+        <Link
+          href="/configuracoes/planos"
+          className="rounded-lg border border-indigo-300 bg-indigo-50 p-4 font-bold text-indigo-800"
+        >
+          Abrir planos e serviços no simulador comercial
+        </Link>
+      )}
       <div className="glass-panel flex flex-col items-center gap-3 rounded-3xl border border-white/60 p-8 text-center shadow-xl">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#5b63f5]/15 px-3.5 py-1 text-xs font-extrabold text-[#5b63f5]">
           ✦ Planos de Assinatura PGR-e
