@@ -76,6 +76,8 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
 | `/api/billing/plans`     | GET, POST | Catálogo atual paginado; criar versão imutável de oferta               |
 | `/api/billing/customers` | GET, POST | Clientes comerciais paginados; cadastrar/sincronizar empresa do tenant |
 
+| `/api/billing/checkout-sessions` | POST | Checkout simulado, Idempotency-Key obrigatório |
+
 Detalhes, políticas e limites em “Catálogo comercial simulado — NOB-114” ao final deste documento.
 
 ### Integrações externas (`/api/integrations`) — Route Handlers de consulta
@@ -1373,3 +1375,13 @@ Exige sessão Clerk de owner e APP_ENV local/sandbox/test, BILLING_MODE=mock e B
 Oferta: code, name, description, interval (month/year/one_time), currency=BRL, items [{product:pro/pgr/medicine,label,amountMinor}], benefits, limits {companies,employees}, policy e reason. Valores inteiros em centavos; produtos não se repetem. Policy: trialDays=15, trialRequiresCard=false, trialAllowsExport=false, changeTiming e cancellationTiming (period_end/immediate), pastDueAccess (preserve_until_period_end/suspend), quoteMinutes (1..60). São configurações de simulação, sem aprovação comercial implícita.
 
 Reutilizar code cria outra versão. Preços antigos não são editados e contratos preservam snapshot. Escritas são serializadas por tenant, protegidas por owner no servidor e RLS, com histórico append-only. Clientes comerciais referenciam empresas pelo par company_id/org_id; respostas de listagem omitem identificadores do provedor. Nenhuma alteração de Stripe, preço real, assinatura existente ou company_modules é feita pelo catálogo.
+
+## Checkout simulado — NOB-132
+
+| Recurso                             | Action                        | Contrato                                                                                                                                                        |
+| ----------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST /api/billing/checkout-sessions | startCommercialCheckoutAction | JSON {companyId,priceId}; header Idempotency-Key (8..160 caracteres). Action recebe também key. Retorna {simulated,sessionId,contractId,checkoutUrl,expiresAt}. |
+
+Preço e itens são resolvidos no catálogo do servidor. Não aceita amountMinor, tenant, ator, cartão ou URLs de retorno. Customer, contrato e operação são persistidos por tenant; requisições concorrentes com a mesma chave e conteúdo retornam a mesma sessão. Reutilizar a chave com outro conteúdo retorna DUPLICATE. Redirecionamento não cria licença. Uma assinatura já em andamento deve usar a prévia de mudança, não outro checkout.
+
+Além das flags do catálogo, exige BILLING_MOCK_WEBHOOK_SECRET com pelo menos 32 caracteres (somente servidor). BILLING_MOCK_FAIL_REQUESTS=true demonstra indisponibilidade antes da criação do pedido, retornando BILLING_UNAVAILABLE (503). Após recuperar, repetir a mesma chave cria uma só operação. O checkout simulado retorna um caminho interno; a página do simulador integra a entrega de telas. Nenhuma conexão com adquirente ou cobrança real é feita.

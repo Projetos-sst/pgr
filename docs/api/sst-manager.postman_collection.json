@@ -275,6 +275,10 @@
       "key": "pgrReviewSampleId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "billingPriceId",
+      "value": ""
     }
   ],
   "item": [
@@ -9778,6 +9782,41 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"code\": \"exemplo-ficticio\",\n  \"name\": \"Oferta fictícia de simulação\",\n  \"interval\": \"month\",\n  \"items\": [\n    {\n      \"product\": \"pgr\",\n      \"label\": \"PGR fictício\",\n      \"amountMinor\": 10000\n    }\n  ],\n  \"limits\": {\n    \"companies\": null,\n    \"employees\": null\n  },\n  \"policy\": {},\n  \"reason\": \"Cadastro fictício explícito para simulação\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Checkout simulado — NOB-132",
+      "item": [
+        {
+          "name": "Criar checkout simulado (repetir a mesma chave)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "checkout-simulacao-0001"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/checkout-sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "checkout-sessions"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"priceId\": \"{{billingPriceId}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
