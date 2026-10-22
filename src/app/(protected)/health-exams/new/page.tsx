@@ -8,6 +8,7 @@ import {
   listEmployeesAction,
 } from "@/shared/server/actions/pgr/employees";
 import { listMedicoOptionsAction } from "@/shared/server/actions/pgr/medicos";
+import { medicineErrorLabel } from "@/shared/domains/medicine/error-messages";
 
 import { PageHeader } from "../../_ui/list";
 import { ListErrorState, hrefWithParams } from "../../_ui/list-error-state";
@@ -70,7 +71,7 @@ export default async function NewHealthExamPage({
     if (moduleResult && !moduleResult.ok) {
       return (
         <ListErrorState
-          code={moduleResult.error.code}
+          code={medicineErrorLabel(moduleResult.error.code)}
           title="Não foi possível verificar se a Medicina está habilitada"
           description="Sem essa verificação o exame não pode ser registrado. Tente novamente."
           retryHref={retryHref}
@@ -80,7 +81,6 @@ export default async function NewHealthExamPage({
     if (moduleResult && !moduleIsEnabled(moduleResult.data.modules, "medicine")) {
       return (
         <ListErrorState
-          code="FORBIDDEN"
           title="Medicina não habilitada para a empresa deste funcionário"
           description="Exames só podem ser registrados para funcionários de empresas com a Medicina do Trabalho habilitada (Empresas → Serviços)."
         />
@@ -89,7 +89,7 @@ export default async function NewHealthExamPage({
     if (!employeesResult.ok) {
       return (
         <ListErrorState
-          code={employeesResult.error.code}
+          code={medicineErrorLabel(employeesResult.error.code)}
           title="Não foi possível carregar os funcionários"
           description="O formulário precisa da lista de funcionários. Tente novamente."
           retryHref={retryHref}
@@ -99,7 +99,7 @@ export default async function NewHealthExamPage({
     if (!doctorsResult.ok) {
       return (
         <ListErrorState
-          code={doctorsResult.error.code}
+          code={medicineErrorLabel(doctorsResult.error.code)}
           title="Não foi possível carregar os médicos"
           description="O formulário precisa da lista de médicos. Tente novamente."
           retryHref={retryHref}

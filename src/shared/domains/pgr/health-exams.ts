@@ -6,7 +6,6 @@ import { todayInSaoPaulo } from "@/shared/dates";
 
 import {
   optionalIsoDate,
-  optionalString,
   optionalUuid,
   optionalUuidWith,
   requiredUuid,
@@ -92,16 +91,69 @@ const performedAtSchema = z.iso
     message: "Data de realização não pode ser no futuro",
   });
 
-export const healthExamInputSchema = z.object({
-  employeeId: requiredUuid("Funcionário é obrigatório"),
-  doctorId: optionalUuid,
-  examType: examTypeSchema,
-  performedAt: performedAtSchema,
-  validUntil: optionalIsoDate,
-  aptitude: examAptitudeSchema,
-  notes: optionalString,
-  certificatePath: optionalString,
-});
+// Limites de entrada dos campos administrativos (só aplicação; as colunas seguem
+// `text`, e dados antigos maiores não são alterados).
+export const HEALTH_EXAM_NOTES_MAX = 2000;
+export const HEALTH_EXAM_CERTIFICATE_PATH_MAX = 500;
+
+export const VALID_UNTIL_BEFORE_PERFORMED_MESSAGE = "Vencimento anterior à realização.";
+export const EMPLOYEE_CHANGE_MESSAGE =
+  "O funcionário de um exame já registrado não pode ser alterado.";
+
+function boundedOptionalString(max: number, message: string) {
+  return z
+    .string()
+    .trim()
+    .max(max, message)
+    .transform((value) => (value === "" ? undefined : value))
+    .optional();
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Vencimento anterior à realização? Compara as datas de calendário AAAA-MM-DD
+ * como texto (ordem lexical = ordem cronológica), sem `Date` nem fuso. Vencimento
+ * igual à realização é permitido; vencimento ausente não é comparado.
+ */
+export function isValidUntilBeforePerformedAt(
+  performedAt: string | null | undefined,
+  validUntil: string | null | undefined,
+): boolean {
+  if (!performedAt || !validUntil) return false;
+  if (!ISO_DATE.test(performedAt) || !ISO_DATE.test(validUntil)) return false;
+  return validUntil < performedAt;
+}
+
+export const healthExamInputSchema = z
+  .object({
+    employeeId: requiredUuid("Funcionário é obrigatório"),
+    doctorId: optionalUuid,
+    examType: examTypeSchema,
+    performedAt: performedAtSchema,
+    validUntil: optionalIsoDate,
+    aptitude: examAptitudeSchema,
+    notes: boundedOptionalString(
+      HEALTH_EXAM_NOTES_MAX,
+      `Observações: máximo de ${HEALTH_EXAM_NOTES_MAX.toLocaleString("pt-BR")} caracteres.`,
+    ),
+    certificatePath: boundedOptionalString(
+      HEALTH_EXAM_CERTIFICATE_PATH_MAX,
+      `Caminho do ASO: máximo de ${HEALTH_EXAM_CERTIFICATE_PATH_MAX} caracteres.`,
+    ),
+  })
+  .refine((v) => !isValidUntilBeforePerformedAt(v.performedAt, v.validUntil), {
+    path: ["validUntil"],
+    message: VALID_UNTIL_BEFORE_PERFORMED_MESSAGE,
+    // Roda mesmo com erro em outro campo (ex.: aptidão vazia), para a mensagem
+    // das datas aparecer junto; a função ignora datas ausentes ou malformadas.
+    when: (payload) => {
+      const value = payload.value as { performedAt?: unknown; validUntil?: unknown };
+      return (
+        typeof value?.performedAt === "string" && typeof value?.validUntil === "string"
+      );
+    },
+  });
 
 export type HealthExamInput = z.input<typeof healthExamInputSchema>;
 export type HealthExamValues = z.output<typeof healthExamInputSchema>;
@@ -130,4 +182,9 @@ export type HealthExamListItem = {
 export const healthExamListFiltersSchema = z.object({
   employeeId: optionalUuidWith("Funcionário inválido"),
   companyId: optionalUuidWith("Empresa inválida"),
+  // Tipo fora do enum → VALIDATION (antes era ignorado em silêncio).
+  examType: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    examTypeSchema.optional(),
+  ),
 });

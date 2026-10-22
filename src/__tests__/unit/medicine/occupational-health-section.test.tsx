@@ -115,12 +115,13 @@ describe("OccupationalHealthSection", () => {
     expect(container.textContent).not.toMatch(/nenhum/i);
   });
 
-  it("erro ao ler os exames → alerta com o código, nunca o vazio", () => {
+  it("erro ao ler os exames → alerta com rótulo amigável (sem código cru), nunca o vazio", () => {
     const { container } = renderSection({
       exams: { ok: false, error: { code: "FORBIDDEN", message: "x" } },
     });
     const alert = screen.getByRole("alert");
-    expect(within(alert).getByText(/FORBIDDEN/)).toBeInTheDocument();
+    expect(within(alert).getByText(/Acesso não permitido/)).toBeInTheDocument();
+    expect(alert.textContent).not.toMatch(/FORBIDDEN/);
     expect(
       within(alert).getByRole("heading", { name: "Não foi possível carregar os exames" }),
     ).toBeInTheDocument();

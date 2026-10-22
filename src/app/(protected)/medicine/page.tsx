@@ -4,6 +4,7 @@ import {
   getMedicineOverviewAction,
   listMedicineEmployeesAction,
 } from "@/shared/server/actions/medicine/overview";
+import { medicineErrorLabel } from "@/shared/domains/medicine/error-messages";
 
 import { EmptyState, PageHeader } from "../_ui/list";
 import { ListCard, ListToolbar, ToolbarButton } from "../_ui/data-list";
@@ -73,7 +74,7 @@ export default async function MedicinePage({
       <div className="flex flex-col gap-[22px] px-4 pt-8 pb-10 sm:px-[30px]">
         {header}
         <ListErrorState
-          code={overview.error.code}
+          code={medicineErrorLabel(overview.error.code)}
           title="Não foi possível carregar o painel da Medicina"
           description="Isso não significa que não haja dados. Tente novamente em instantes."
           retryHref={retryHref}
@@ -163,7 +164,7 @@ export default async function MedicinePage({
           ) : !employees.ok ? (
             <ListErrorState
               isFlat
-              code={employees.error.code}
+              code={medicineErrorLabel(employees.error.code)}
               title={
                 EMPLOYEE_LIST_ERROR[employees.error.code]?.title ??
                 "Não foi possível carregar os funcionários"
