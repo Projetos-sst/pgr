@@ -421,6 +421,27 @@
       "when": 1792608470913,
       "tag": "0059_pgr_document_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792675195470,
+      "tag": "0060_commercial_simulation",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1792675557850,
+      "tag": "0061_commercial_module_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1792681615229,
+      "tag": "0062_commercial_one_off_access",
+      "breakpoints": true
     }
   ]
 }

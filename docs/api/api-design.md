@@ -69,6 +69,19 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
   complementar na **borda** (Cloudflare/WAF — infra, fora do app). `Cache-Control: no-store`.
 - O painel interno da entrega reflete a assinatura por **polling** do `signature_status`.
 
+### Financeiro simulado (`/api/billing`) — owner, opt-in e fora de produção
+
+| Recurso                                                                                               | Métodos                  | Contrato                                                                       |
+| ----------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------ |
+| `/api/billing/plans`                                                                                  | GET, POST                | Catálogo atual paginado; criar versão imutável de oferta                       |
+| `/api/billing/customers`                                                                              | GET, POST                | Clientes comerciais paginados; cadastrar/sincronizar empresa do tenant         |
+| `/api/billing/checkout-sessions`                                                                      | POST                     | Checkout simulado, Idempotency-Key obrigatório                                 |
+| `/api/billing/subscription` · `/subscription/reconcile` · `/simulation-events` · `/webhooks/provider` | GET · POST · POST · POST | Assinaturas, reconciliação auditada, cenários e eventos assinados do simulador |
+| `/api/billing/charges`                                                                                | GET                      | Faturas e valores por item, empresa e período                                  |
+| `/api/billing/orders` · `/orders/{id}` · `/orders/{id}/access`                                        | GET/POST · GET · POST    | Pedidos avulsos e autorização comercial por pedido/produto                     |
+
+Detalhes, políticas e limites em “Catálogo comercial simulado — NOB-114” ao final deste documento.
+
 ### Integrações externas (`/api/integrations`) — Route Handlers de consulta
 
 Camada de plataforma reutilizável (autofill de formulários). **Só sessão** (`requireAuth()`) — CEP e
@@ -1351,3 +1364,67 @@ POST parecer `{expectedLatestDecisionId:null|uuid,status:"accepted"|"changes_req
 Parecer favorável registrado não aceita achado impeditivo aberto. Correção exige referência. Revalidação mantém códigos dos achados anteriores e não pode omitir impeditivos nem escondê-los reduzindo severidade. Cada parecer é append-only; token esperado e lock por amostra protegem concorrência. Mudanças atuais do PGR não invalidam ou reescrevem o parecer histórico: a UI sinaliza dados diferentes e oferece nova amostra. Decisões referem-se sempre ao arquivo preservado, inclusive quando o cadastro já mudou.
 
 Migration 0059 aditiva. RLS tenant/módulo e referências, FK composta para amostra anterior do mesmo PGR, restrição owner na inserção de parecer. Runtime não atualiza/exclui amostras/decisões. Histórico e snapshots protegidos no banco; nenhuma evidência de cliente real foi criada por esta execução.
+
+## Catálogo comercial simulado — NOB-114
+
+| Recurso                         | Actions equivalentes                                    | Campos e retorno                                                                                                                               |
+| ------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET/POST /api/billing/plans     | getBillingCatalogAction / createBillingOfferAction      | GET page (1..10000), até 50 códigos com a versão mais recente. POST BillingOfferInput, retorna versão imutável (201).                          |
+| GET/POST /api/billing/customers | getBillingCustomersAction / createBillingCustomerAction | GET page, até 50 clientes. POST {companyId}; nome vem do cadastro da empresa, retornando {id,companyId,name}. Repetição reaproveita o cliente. |
+
+Exige sessão Clerk de owner e APP_ENV local/sandbox/test, BILLING_MODE=mock e BILLING_MOCK_ENABLED=true. Produção sempre recusa. Corpo estrito: não recebe dados de cartão, tenant, ator ou identidade financeira de outra empresa. A API usa envelope ActionResult. Erros: FORBIDDEN (403), NOT_FOUND (404), VALIDATION (422), DUPLICATE (409).
+
+Oferta: code, name, description, interval (month/year/one_time), currency=BRL, items [{product:pro/pgr/medicine,label,amountMinor}], benefits, limits {companies,employees}, policy e reason. Valores inteiros em centavos; produtos não se repetem. Policy: trialDays=15, trialRequiresCard=false, trialAllowsExport=false, changeTiming e cancellationTiming (period_end/immediate), pastDueAccess (preserve_until_period_end/suspend), quoteMinutes (1..60). São configurações de simulação, sem aprovação comercial implícita.
+
+Reutilizar code cria outra versão. Preços antigos não são editados e contratos preservam snapshot. Escritas são serializadas por tenant, protegidas por owner no servidor e RLS, com histórico append-only. Clientes comerciais referenciam empresas pelo par company_id/org_id; respostas de listagem omitem identificadores do provedor. Nenhuma alteração de Stripe, preço real, assinatura existente ou company_modules é feita pelo catálogo.
+
+## Checkout simulado — NOB-132
+
+| Recurso                             | Action                        | Contrato                                                                                                                                                        |
+| ----------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST /api/billing/checkout-sessions | startCommercialCheckoutAction | JSON {companyId,priceId}; header Idempotency-Key (8..160 caracteres). Action recebe também key. Retorna {simulated,sessionId,contractId,checkoutUrl,expiresAt}. |
+
+Preço e itens são resolvidos no catálogo do servidor. Não aceita amountMinor, tenant, ator, cartão ou URLs de retorno. Customer, contrato e operação são persistidos por tenant; requisições concorrentes com a mesma chave e conteúdo retornam a mesma sessão. Reutilizar a chave com outro conteúdo retorna DUPLICATE. Redirecionamento não cria licença. Uma assinatura já em andamento deve usar a prévia de mudança, não outro checkout.
+
+Além das flags do catálogo, exige BILLING_MOCK_WEBHOOK_SECRET com pelo menos 32 caracteres (somente servidor). BILLING_MOCK_FAIL_REQUESTS=true demonstra indisponibilidade antes da criação do pedido, retornando BILLING_UNAVAILABLE (503). Após recuperar, repetir a mesma chave cria uma só operação. O checkout simulado retorna um caminho interno; a página do simulador integra a entrega de telas. Nenhuma conexão com adquirente ou cobrança real é feita.
+
+## Estados, eventos e licenças simuladas — NOB-133
+
+| Recurso                                  | Actions equivalentes                  | Contrato                                                                                                                                                                                                                       |
+| ---------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET /api/billing/subscription            | getCommercialSubscriptionsAction      | Contratos e clientes comerciais da organização, availableActions e estado do acesso derivado do período/política.                                                                                                              |
+| POST /api/billing/subscription/reconcile | reconcileCommercialSubscriptionAction | {contractId,reason}; consulta estado durável do provedor, registra auditoria e aplica evento perdido, sem duplicar fatura.                                                                                                     |
+| POST /api/billing/simulation-events      | simulateCommercialPaymentAction       | {contractId,scenario}; success/requires_action/refused/renewal/late/recovery/cancel/duplicate/out_of_order. Exclusivo ao simulador autenticado.                                                                                |
+| POST /api/billing/webhooks/provider      | Não é CRUD; assinatura do provedor    | Corpo bruto NormalizedBillingEvent e billing-signature: t=UNIX,v1=HMAC_SHA256(t.corpo). Limite 16 KiB, tolerância de 5 minutos. Exige também owner autenticado e flags do simulador. Não é um webhook público de gateway real. |
+
+NormalizedBillingEvent: eventId, contractId, revision inteira positiva e monotônica, status, kind, periodStart/periodEnd/occurredAt ISO; invoice opcional {id,amountMinor,currency:BRL,status:open/paid/void}. Estado active exige invoice paid. O valor da fatura precisa corresponder aos itens contratados. Um ID de fatura não pode ser reutilizado para outro contrato, valor ou período. Faturas guardam os itens e o período originais; recuperar uma fatura aberta não cria outra cobrança. O adaptador real precisará produzir revisões monotônicas a partir da fonte autoritativa, não aceitar revisão do navegador.
+
+A transação registra inbox, estado, fatura, licença e auditoria. Duplicatas com conteúdo igual não reaplicam; reutilização do ID com conteúdo diferente é recusada; revisões antigas são preservadas como não aplicadas. O simulador mantém estado do provedor separado para recuperar eventos perdidos. Recusa, pendência e expiração não concedem licença. Inadimplência segue a política versionada da oferta.
+
+A migration candidata 0061 adiciona snapshot/identidade/período da fatura e policies que consideram licenças somente quando app.billing_simulation é ativado pelo servidor em withOrg. Pro não concede PGR/Medicina automaticamente. Licenças recorrentes são por empresa e produto; avulsos ficam em scope order:{contractId} e não abrem todo o módulo. Permissões manuais anteriores permanecem. Uma desativação explícita do owner prevalece sobre pagamento/renovação; a tela de serviços consulta o estado efetivo. Helpers SECURITY DEFINER retornam apenas booleanos, exigem tenant atual e têm search_path fixo e EXECUTE revogado do público.
+
+0060/0061 são candidatas em rascunhos; não foram aplicadas em banco real nem liberam a numeração da Medicina. Atualizar e reconciliar a develop antes de integrar.
+
+## Cobranças discriminadas — NOB-116
+
+| Recurso                  | Action                     | Contrato                                                                                                                                                    |
+| ------------------------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET /api/billing/charges | getCommercialChargesAction | page (1..10000), companyId opcional; retorna {rows,page,hasMore,simulated}. Até 20 faturas, itens originais e total em centavos, empresa, período e status. |
+
+Owner, tenant ativo e flags do simulador obrigatórios. Cada item traz product (pro/pgr/medicine), label e amountMinor. O total corresponde aos itens comprados; PGR e Medicina podem existir sozinhos ou combinados. A listagem usa o snapshot da fatura, sem reconstruir os valores a partir do preço atual. Não expõe payload bruto, snapshot completo de contrato ou identificadores de cliente/fatura do gateway. As telas de planos/faturas compõem NOB-134/136.
+
+## Serviços avulsos — NOB-117
+
+| Recurso                              | Actions equivalentes                                    | Contrato                                                                                                                                                      |
+| ------------------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET/POST /api/billing/orders         | getCommercialOrdersAction / createCommercialOrderAction | Lista paginada; POST {companyId,priceId} e header Idempotency-Key. Aceita somente oferta one_time de PGR/Medicina. Não exige plano Pro nem assinatura prévia. |
+| GET /api/billing/orders/{id}         | getCommercialOrderAction                                | Ficha com empresa, itens, status, availableProducts e validUntil. Financeiro exclusivo do owner.                                                              |
+| POST /api/billing/orders/{id}/access | requirePurchasedServiceAction                           | {companyId,product:pgr/medicine}; owner/colaborador com membership vigente. Retorna {financiallyAuthorized,scope:order:{id},companyId,product,simulated}.     |
+
+O servidor consumidor deve chamar requirePurchasedService com o contexto autenticado e a empresa do recurso, não confiar em uma resposta reenviada pelo navegador. A autorização é comercial, vinculada ao pedido e ao produto; não substitui permissão técnica/profissional, validação de riscos ou conferência dos documentos. Não habilita todo o módulo nem outro produto. A entrega técnica continua nas rotinas existentes de PGR/Medicina.
+
+Pendente/recusado/cancelado/expirado não liberam o serviço. Evento repetido não duplica pedido ou fatura. O prazo exibido vem do período confirmado pelo simulador; não representa uma regra comercial de prestação aprovada para um gateway real. O modo simulado deve continuar desabilitado em produção.
+
+0062_commercial_one_off_access é uma migration candidata com helper booleano de autorização (tenant, empresa, produto, membership atual e fonte paga). Também limita UPDATE do app_runtime às colunas mutáveis: status da fatura, conversão do teste, nome/vínculo do cliente, vigência/ativação da licença e confirmações. Valores, itens, identidade da fatura e início/término do teste não podem ser reescritos pelo runtime. Migrations candidatas 0060–0062 precisam ser conciliadas com a NOB-112 antes de integrar develop.
+
+O bloqueio do simulador também considera VERCEL_ENV/VERCEL_TARGET_ENV=production, mesmo se APP_ENV estiver incorreto. Referência das variáveis automáticas: [documentação oficial da Vercel](https://vercel.com/docs/environment-variables/system-environment-variables).
