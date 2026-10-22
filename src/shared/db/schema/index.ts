@@ -1,6 +1,7 @@
 export { users, type User, type NewUser } from "./users";
 export { orgs, type Org, type NewOrg } from "./orgs";
 export { machineInstallations, machineInstallationEvents } from "./machine-installations";
+export { pgrReviewSamples, pgrReviewDecisions } from "./pgr-document-reviews";
 export {
   pgrBasicOfferVersions,
   pgrBasicOfferPublication,

@@ -45,6 +45,8 @@ import { slugifyFileName } from "@/shared/integrations/storage/documents-storage
 export type PgrDocxPdfProvider = "gotenberg" | "google";
 
 export type GeneratedPgrDocx = {
+  /** Internal audit data; binary routes never serialize this snapshot to headers. */
+  reviewSnapshot?: NonNullable<Awaited<ReturnType<typeof getPgrGenerationSnapshot>>>;
   fileName: string;
   /** Nome legível do documento ("PGR — Empresa — Obra"), p/ o GED. */
   title: string;
@@ -210,6 +212,7 @@ export async function generatePgrDocx(
   const sha256 = (value: Buffer | string) =>
     createHash("sha256").update(value).digest("hex");
   return {
+    reviewSnapshot: snapshot,
     fileName: `${baseName}.${pdf ? "pdf" : "docx"}`,
     title,
     contentType: pdf ? "application/pdf" : DOCX_MIME,
