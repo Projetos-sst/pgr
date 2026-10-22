@@ -1,4 +1,5 @@
 import "server-only";
+import { assertPgrBillingExportAllowed } from "@/shared/db/repositories/billing-export";
 
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -155,6 +156,7 @@ export async function generatePgrDocx(
 ): Promise<GeneratedPgrDocx> {
   const snapshot = await getPgrGenerationSnapshot(orgId, pgrId);
   if (!snapshot) throw new NotFoundError();
+  await assertPgrBillingExportAllowed(orgId, pgrId);
   const { consolidated, extras, methodology } = snapshot;
   const readiness = checkPgrReadiness(
     consolidated,

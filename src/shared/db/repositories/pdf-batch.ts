@@ -1,4 +1,5 @@
 import "server-only";
+import { assertPgrBillingExportAllowed } from "./billing-export";
 
 import { and, desc, eq } from "drizzle-orm";
 
@@ -58,6 +59,7 @@ export async function enqueuePgrPdf(
   options: { format?: PdfBatchFormat } = {},
 ): Promise<EnqueuedPgrPdf> {
   const format = options.format ?? DEFAULT_PDF_BATCH_FORMAT;
+  await assertPgrBillingExportAllowed(orgId, pgrId);
   return auditedTenantWrite(orgId, "documents.pdf_batch.write_rejected", () =>
     withOrg(orgId, async (tx) => {
       const [exists] = await tx
