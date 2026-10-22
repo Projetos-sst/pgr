@@ -10212,6 +10212,83 @@
           }
         }
       ]
+    },
+    {
+      "name": "Comercial — NOB-136 faturas e portal simulado",
+      "item": [
+        {
+          "name": "Faturas paginadas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/billing/invoices?page=1"
+          }
+        },
+        {
+          "name": "Perfil mascarado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/billing/payment-profile?customerId={{billingCustomerId}}"
+          }
+        },
+        {
+          "name": "Abrir portal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "portal-demo-001"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/portal-sessions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{billingCustomerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Validar sessão",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/billing/portal-sessions/{{billingPortalSessionId}}"
+          }
+        },
+        {
+          "name": "Sincronizar método fictício",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/portal-sessions/{{billingPortalSessionId}}/payment-method",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"method\": \"visa_test_4242\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   ]
 }

@@ -1,5 +1,7 @@
 # API Design — SST Manager (estado atual)
 
+Comercial NOB-136: GET /api/billing/invoices (página/empresa), GET /api/billing/payment-profile (customerId), POST /api/billing/portal-sessions (customerId; Idempotency-Key), GET /api/billing/portal-sessions/{id} e POST /api/billing/portal-sessions/{id}/payment-method ({method:visa_test_4242}). Actions: getCommercialChargesAction, getCommercialPaymentProfileAction, openCommercialPortalAction e synchronizeMockPaymentProfileAction. Todas exigem owner, tenant e flags do simulador; sessão privada vinculada ao solicitante por dez minutos. Perfil retorna somente marca e últimos quatro dígitos predefinidos de teste, jamais PAN/CVV. A atualização é persistida/idempotente e auditada, voltando na leitura seguinte. Nenhum método real é coletado. Faturas são registros comerciais simulados, não notas fiscais; vencimento não é inventado quando a fonte não o fornece. Componentes de interface são conectados na NOB-134. Sem migration nova.
+
 > **Natureza da "API".** Há **duas** superfícies:
 >
 > 1. **Server Actions** (App Router) — a interface usada pela UI do app. São funções `"use server"`
