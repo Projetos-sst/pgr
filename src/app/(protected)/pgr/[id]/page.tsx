@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { pgrBillingExportAllowed } from "@/shared/db/repositories/billing-export";
+import { pgrBillingExportAllowed } from "@/shared/server/platform/billing-export-core";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getPgrAction } from "@/shared/server/actions/pgr/pgr";
