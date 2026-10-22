@@ -140,7 +140,8 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/risks/{id}/control-measures` · `/control-measures/{id}`                                                                                                      | GET, POST (plano de ação 5W2H por nível NR-01; 201) · GET, PUT, DELETE (nível imutável; **DUPLICATE/409** se nível repetido; sem `/dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/categories` · `/categories/{id}`                                                                                                                             | GET, POST · GET, PUT, DELETE                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/medicos` · `/medicos/{id}`                                                                                                                                   | GET (`?search=` nome/CRM, `?clinic=` empresa/clínica, `?status=active\|inactive`), POST (`201`) · GET, PUT, DELETE (`204`) — CRM único por org (`DUPLICATE`); sem `/dependents`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `/health-exams` · `/health-exams/{id}`                                                                                                                         | GET (`?search=` funcionário ou tipo de exame, `?examType=`), POST (`201`) · GET, PUT, DELETE (`204`) — exames ocupacionais/ASO; validade **derivada** na leitura; funcionário/médico cross-tenant → `422 FK_NOT_FOUND`; sem `/dependents`                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `/health-exams` · `/health-exams/{id}`                                                                                                                         | GET (`?search=` funcionário ou tipo de exame, `?examType=`, `?employeeId=`, `?companyId=` = empresa **atual** do funcionário; ID malformado → `422 VALIDATION`), POST (`201`) · GET, PUT, DELETE (`204`) — exames ocupacionais/ASO; validade **derivada** na leitura; funcionário/médico cross-tenant → `422 FK_NOT_FOUND`; sem `/dependents`                                                                                                                                                                                                                                                                                                   |
+| `/medicine/overview` · `/medicine/employees`                                                                                                                   | GET (read-model do painel da Medicina: empresas com Medicina habilitada + contagem pela validade **informada** do último exame de cada funcionário) · GET (`?companyId=` **obrigatório**, `?search=`, `?page=`/`?pageSize=` ≤ 100; funcionários da empresa + último exame; `422` sem/má `companyId`, `404` empresa de outro tenant, `403` empresa sem Medicina); só GET, sem `/dependents` — não são entidades                                                                                                                                                                                                                                  |
 | `/risk-methodology`                                                                                                                                            | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `/epi-catalog` · `/epi-catalog/{id}` · `/epi-catalog/{id}/dependents`                                                                                          | GET (`?search=` nome/CA/**fabricante**/categoria, `?type=epi\|machine\|supply`, `?categoryId=`), POST · GET, PUT, DELETE (em uso → `409 IN_USE`) · GET (`{stock, risk, deliveryItems}`). Body aceita `companyId?` (Empresa do EPI, #201/R1 — nullable, cross-tenant → `422 FK_NOT_FOUND`) e `usefulLifeMonths?` (inteiro > 0). Migration `0038_epi_company_useful_life`.                                                                                                                                                                                                                                                                        |
 | `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return`                                                       | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -397,7 +398,8 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Medidas de controle (5W2H)   | `actions/pgr/control-measures.ts`            | list, get, create, update, delete + REST `/api/v1/risks/{id}/control-measures` · `/control-measures/{id}` (1 por nível NR-01; estados derivados; **409** por UNIQUE)                                                                                                                                                                                                                   |
 | Categoria                    | `actions/pgr/categories.ts`                  | list, get, create, update, delete (catálogo `epi`/`machine`)                                                                                                                                                                                                                                                                                                                           |
 | Médico                       | `actions/pgr/medicos.ts`                     | list (busca nome/CRM, filtro empresa/clínica e status), options, clinics, get, create, update, delete + REST `/api/v1/medicos/**` (cadastro de médicos do trabalho; CRM único por org → `DUPLICATE`; sem `/dependents`)                                                                                                                                                                |
-| Exame ocupacional (ASO)      | `actions/pgr/health-exams.ts`                | list (busca funcionário ou tipo de exame, filtro tipo), get, create, update, delete + REST `/api/v1/health-exams/**` (validade derivada na leitura; funcionário/médico cross-tenant → `FK_NOT_FOUND`; sem `/dependents`)                                                                                                                                                               |
+| Exame ocupacional (ASO)      | `actions/pgr/health-exams.ts`                | list (busca funcionário ou tipo de exame, filtros tipo/funcionário/empresa), get, create, update, delete + REST `/api/v1/health-exams/**` (validade derivada na leitura; funcionário/médico cross-tenant → `FK_NOT_FOUND`; sem `/dependents`)                                                                                                                                          |
+| Medicina — painel            | `actions/medicine/overview.ts`               | getMedicineOverviewAction, listMedicineEmployeesAction + REST `GET /api/v1/medicine/overview` · `GET /api/v1/medicine/employees` (read-models; core `server/medicine/overview-core.ts`; validade informada, sem periodicidade; sem `notes`/CPF)                                                                                                                                        |
 | Controle de formulário (ISO) | `actions/documents/form-controls.ts`         | list, get, create, update, delete + REST `/api/v1/form-controls/**` (código FRM único por org → `DUPLICATE`; empresa/GES opcionais)                                                                                                                                                                                                                                                    |
 | Documentos (GED)             | `actions/documents/documents.ts`             | list (versão corrente + KPIs + árvore + breadcrumb), get, create (multipart), update (só a vigente; antiga → `DOCUMENT_VERSION_READ_ONLY`), addVersion (vigente+1, herda da vigente; corrida → `DUPLICATE`), versions (histórico, #56), move, delete (grupo inteiro) + REST `/api/v1/documents/**`                                                                                     |
 | Documento · Download         | `actions/documents/download.ts`              | download (URL assinada, TTL 60s; tenant via `getDocumentById` antes de assinar) + REST `GET /api/v1/documents/{id}/download`                                                                                                                                                                                                                                                           |
@@ -667,20 +669,59 @@ Exames ocupacionais/ASO por funcionário (fatia 027). Cada exame liga-se a um **
 (vigente/a vencer/vencido) é **derivado na leitura** de `valid_until` (nullable), via
 `classifyDocumentValidity`; o badge da tela combina validade + **aptidão** (apto / apto c/ restrição /
 inapto — `examBadge`). Sem `/dependents`. **`GET`** aceita `?search=` (nome do funcionário **ou**
-rótulo do tipo de exame — ex.: "periód" casa exames `periodic`) e `?examType=`. REST espelho em
+rótulo do tipo de exame — ex.: "periód" casa exames `periodic`), `?examType=`, `?employeeId=` e
+`?companyId=` (empresa **atual** do funcionário — `employees.company_id`; o exame não guarda empresa
+própria, então transferir o funcionário move o histórico). Os filtros são **somados** ao tenant da
+sessão: ID de outro tenant → lista vazia; ID malformado → `VALIDATION` (`422`), nunca lista vazia.
+Janela de "a vencer": `EXAM_DUE_WINDOW_DAYS = 30` (`domains/pgr/health-exams.ts`). REST espelho em
 `/api/v1/health-exams` (GET, POST) · `/api/v1/health-exams/{id}` (GET, PUT, DELETE).
 
-| Action                   | Entrada                                    | Retorno (`data`)                            |
-| ------------------------ | ------------------------------------------ | ------------------------------------------- |
-| `listHealthExamsAction`  | `{ search?, examType?, page?, pageSize? }` | `{ rows: HealthExamListItem[]; total }`     |
-| `getHealthExamAction`    | `id`                                       | `HealthExam` (null → `NOT_FOUND`)           |
-| `createHealthExamAction` | `HealthExamInput`                          | `HealthExam` (FK inválida → `FK_NOT_FOUND`) |
-| `updateHealthExamAction` | `id, HealthExamInput`                      | `HealthExam`                                |
-| `deleteHealthExamAction` | `id`                                       | `{ id }`                                    |
+| Action                   | Entrada                                                             | Retorno (`data`)                                                       |
+| ------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `listHealthExamsAction`  | `{ search?, examType?, employeeId?, companyId?, page?, pageSize? }` | `{ rows: HealthExamListItem[]; total }` (ID malformado → `VALIDATION`) |
+| `getHealthExamAction`    | `id`                                                                | `HealthExam` (null → `NOT_FOUND`)                                      |
+| `createHealthExamAction` | `HealthExamInput`                                                   | `HealthExam` (FK inválida → `FK_NOT_FOUND`)                            |
+| `updateHealthExamAction` | `id, HealthExamInput`                                               | `HealthExam`                                                           |
+| `deleteHealthExamAction` | `id`                                                                | `{ id }`                                                               |
 
 **`HealthExamInput`**: `{ employeeId*, doctorId?, examType*, performedAt* (não-futura), validUntil?,
 aptitude*, notes?, certificatePath? }`. `examType` = `admissional|periodic|change_of_function|
 return_to_work|dismissal`; `aptitude` = `fit|fit_with_restrictions|unfit`.
+
+## Medicina — painel — `actions/medicine/overview.ts`
+
+Painel da Medicina do Trabalho (NOB-108, Lote 01). Dois **read-models** (só `GET`, sem tabela nova,
+sem migration), servidos pelo core `server/medicine/overview-core.ts` compartilhado entre Server
+Actions (`officeAction`) e REST (`restHandler`). Acesso: owner/collaborator (`client` → `FORBIDDEN`).
+Tenant sempre da sessão; `companyId` é só filtro.
+
+| Action                        | Entrada                                           | Retorno (`data`)                          |
+| ----------------------------- | ------------------------------------------------- | ----------------------------------------- |
+| `getMedicineOverviewAction`   | —                                                 | `MedicineOverview`                        |
+| `listMedicineEmployeesAction` | `{ companyId*, search?, page?, pageSize? ≤ 100 }` | `{ rows: MedicineEmployeeItem[]; total }` |
+
+REST: `GET /api/v1/medicine/overview` · `GET /api/v1/medicine/employees?companyId=&search=&page=&pageSize=`.
+
+**`MedicineOverview`** (`domains/medicine/overview.ts`): `{ today, dueWindowDays, companies:
+MedicineCompanySummary[], totals: { companies, employees, ok, dueSoon, expired, noExpiry, withoutExam } }`;
+`MedicineCompanySummary` = `{ companyId, companyName, employeeCount, validity: { ok, dueSoon, expired,
+noExpiry, withoutExam } }`. Só empresas com Medicina habilitada (`companyModuleScope(…, "medicine")`
+em `companies` **e** em `employees`), ordenadas por razão social. Conta a situação do **último exame
+de cada funcionário** (não todos os exames), classificada por `classifyDocumentValidity` com janela de
+30 dias; `withoutExam` = funcionários sem exame. Funcionários contados em todos os status.
+
+**`MedicineEmployeeItem`** (`domains/medicine/employees.ts`): `{ id, fullName, status, jobRoleTitle,
+gesName, latestExam: { examType, performedAt, validUntil, aptitude } | null }` — sem CPF, sem `notes`,
+sem `certificatePath`, sem nome da empresa. Busca (`?search=`) em nome, GES e função; paginação no
+servidor.
+
+Erros de `listMedicineEmployees*`: `companyId` ausente/malformado ou `pageSize` > 100 → `VALIDATION`
+(`422`); empresa inexistente ou de outro tenant → `NOT_FOUND` (`404`); empresa sem Medicina habilitada
+→ `FORBIDDEN` (`403`, explícito — nunca lista vazia).
+
+Regras: status = validade **informada** (`valid_until`), **sem periodicidade calculada**; nenhum dado
+clínico livre (`notes`/`certificatePath`) nem CPF nos contratos; leituras não emitem auditoria
+(`officeAction` só registra operação/resultado em caso de erro, sem payload).
 
 ---
 
@@ -1098,7 +1139,8 @@ inexistente ou de outro escritório → `notFound()`.
 | `/risks/[id]/control-measures` · `.../new` · `.../[measureId]/edit`          | Medidas de controle 5W2H por nível NR-01 (lista + estado derivado/vencida + contexto/avaliação vigente / criar / editar) — atalho no detalhe do risco |
 | `/categories` · `/categories/new` · `/categories/[id]/edit`                  | Categoria (catálogo `epi`/`machine`; detalhe=edição)                                                                                                  |
 | `/medicos` · `/medicos/new` · `/medicos/[id]/edit`                           | Médicos do trabalho (lista + busca nome/CRM + filtro status / criar / detalhe=edição)                                                                 |
-| `/health-exams` · `/health-exams/new` · `/health-exams/[id]/edit`            | Gestão de Saúde/ASO (lista exames + busca funcionário + filtro tipo + status derivado / criar / editar)                                               |
+| `/medicine`                                                                  | Painel da Medicina (empresas com Medicina, contagem pela validade informada do último exame, funcionários por empresa)                                |
+| `/health-exams` · `/health-exams/new` · `/health-exams/[id]/edit`            | Gestão de Saúde/ASO (lista + busca + filtros tipo/empresa/funcionário; erro ≠ vazio / criar, `?employeeId=` pré-seleciona / editar)                   |
 | `/form-controls` · `/form-controls/new` · `/form-controls/[id]/edit`         | Controle de formulário (ISO); form com preview em tempo real do cabeçalho                                                                             |
 
 ## Invariantes de isolamento (multi-tenant)
