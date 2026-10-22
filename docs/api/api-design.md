@@ -80,6 +80,7 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
 | `/api/billing/charges`                                                                                | GET                      | Faturas e valores por item, empresa e período                                  |
 | `/api/billing/orders` · `/orders/{id}` · `/orders/{id}/access`                                        | GET/POST · GET · POST    | Pedidos avulsos e autorização comercial por pedido/produto                     |
 | `/api/billing/trials`                                                                                 | GET/POST                 | Teste de 15 dias e restrições de emissão por empresa                           |
+| `/api/billing/interests` · `/interests/{id}/acknowledge`                                              | GET/POST · POST          | Interesses e alertas internos deduplicados                                     |
 
 Detalhes, políticas e limites em “Catálogo comercial simulado — NOB-114” ao final deste documento.
 
@@ -1443,3 +1444,14 @@ No PGR, o bloqueio está no servidor: PDF, DOCX/PDF por template, fila de geraç
 Para os emissores futuros de PCMSO/ASO: chamar assertCompanyBillingExportAllowed(orgId,companyId,'medicine') antes de geração/armazenamento/download, após a autorização técnica habitual. O helper está preparado e testado; tais emissores ainda não existem nesta develop e não são declarados integrados/homologados por esta entrega. O gate não substitui permissão profissional nem validação de conteúdo.
 
 0063_commercial_trial_exports é candidata, sem mudança do schema de tabelas: preserva a janela em conversões parciais e oferece o helper de emissão por empresa/produto. SQL, journal e snapshot acompanham a PR. Conciliar a cadeia comercial 0060–0063 com NOB-112 antes de integrar.
+
+## Interesse comercial e alertas internos — NOB-119
+
+| Recurso                                      | Actions equivalentes                                            | Contrato                                                                                                             |
+| -------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| GET/POST /api/billing/interests              | getCommercialInterestsAction / registerCommercialInterestAction | GET page, status pending/acknowledged e companyId opcionais; POST {trialId,interest:pro/pgr/medicine/both,message?}. |
+| POST /api/billing/interests/{id}/acknowledge | acknowledgeCommercialInterestAction                             | {reason}; confirma consulta do alerta de forma idempotente, com auditoria.                                           |
+
+Exige owner e flags do simulador; RLS também verifica membership. O interesse é ligado ao teste e à empresa por FK com org_id. Deduplicação por teste/interesse: repetições não geram outro alerta nem sobrescrevem a mensagem original. Consulta paginada retorna {rows,page,hasMore,channel:inbox,simulated}; o contato permanece no cadastro da empresa, sem duplicar dados pessoais ou clínicos na fila.
+
+Gatilho desta versão: solicitação explícita de interesse. Canal: caixa interna. A implementação não envia WhatsApp, e-mail ou SMS nem aceita canal externo no payload. Gatilhos automáticos/canais reais dependem de definição comercial posterior. Inclui componente de caixa interna, conectado à tela geral na NOB-134. Sem migration nova.

@@ -287,6 +287,14 @@
     {
       "key": "billingOrderId",
       "value": ""
+    },
+    {
+      "key": "billingTrialId",
+      "value": ""
+    },
+    {
+      "key": "billingInterestId",
+      "value": ""
     }
   ],
   "item": [
@@ -10041,6 +10049,63 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"companyId\": \"{{companyId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Interesses e alertas internos — NOB-119",
+      "item": [
+        {
+          "name": "Consultar interesses não vistos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/billing/interests?status=pending&page=1"
+          }
+        },
+        {
+          "name": "Registrar interesse explícito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/interests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trialId\": \"{{billingTrialId}}\",\n  \"interest\": \"both\",\n  \"message\": \"Interesse explícito no modo simulado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Marcar alerta como visto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/interests/{{billingInterestId}}/acknowledge",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Alerta consultado pelo administrador\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
