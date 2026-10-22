@@ -43,8 +43,9 @@ export async function getCompanyModules(
     const [company] = await tx
       .select({
         id: companies.id,
-        pgr: companyModuleScope(companies.orgId, companies.id, "pgr"),
-        medicine: companyModuleScope(companies.orgId, companies.id, "medicine"),
+        // Selected SQL expressions need explicit outer qualification inside correlated subqueries.
+        pgr: sql<boolean>`coalesce(${companyModuleScope(sql`"companies"."org_id"`, sql`"companies"."id"`, "pgr")},false)`,
+        medicine: sql<boolean>`coalesce(${companyModuleScope(sql`"companies"."org_id"`, sql`"companies"."id"`, "medicine")},false)`,
       })
       .from(companies)
       .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId)))
@@ -69,7 +70,7 @@ export async function setCompanyModule(
       const [company] = await tx
         .select({
           id: companies.id,
-          effective: companyModuleScope(companies.orgId, companies.id, input.module),
+          effective: sql<boolean>`coalesce(${companyModuleScope(sql`"companies"."org_id"`, sql`"companies"."id"`, input.module)},false)`,
         })
         .from(companies)
         .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId)))
