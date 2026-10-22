@@ -68,6 +68,7 @@ export function CommercialInvoices({
         key.current ??= crypto.randomUUID();
         const result = await openCommercialPortalAction({ customerId, key: key.current });
         if (!result.ok) {
+          key.current = null;
           setMessage(result.error.message);
           return;
         }

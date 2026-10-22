@@ -74,6 +74,7 @@ const offer = {
         getCommercialCheckoutSession({ ...owner, tenantId: "org_b" }, one.sessionId),
       ).rejects.toThrow();
       await admin`update billing_operations set expires_at=now()-interval '1 second' where id=${one.sessionId}`;
+      await expect(startCommercialCheckout(owner, input)).rejects.toThrow("expirou");
       await expect(getCommercialCheckoutSession(owner, one.sessionId)).rejects.toThrow();
       expect(one.checkoutUrl.startsWith("/configuracoes/assinatura/simulacao?")).toBe(
         true,

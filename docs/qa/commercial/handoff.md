@@ -19,7 +19,7 @@ Escopo: milestone 5 do Linear, 14 issues. Implementação opt-in com dados fict�
 | NOB-137 | [132](https://github.com/Projetos-sst/pgr/pull/132) | Administração e reconciliação auditada   |
 | NOB-134 | [133](https://github.com/Projetos-sst/pgr/pull/133) | Páginas e retorno seguro do checkout     |
 | NOB-115 | [134](https://github.com/Projetos-sst/pgr/pull/134) | Pro aditivo no contexto autenticado      |
-| NOB-138 | PR de validação que contém este documento           | Matriz de cenários e evidências          |
+| NOB-138 | [135](https://github.com/Projetos-sst/pgr/pull/135) | Matriz de cenários e evidências          |
 
 Os controles de tela 135–137 precedem a montagem 134 para cada branch compilar com suas dependências. Commits corretivos equivalentes de lint existem em algumas branches; ao integrar, manter o mesmo conteúdo e conferir o diferencial contra develop, sem duplicar alterações.
 
@@ -64,6 +64,8 @@ A numeração 0060–0063 é candidata, sem reserva garantida. Antes de integrar
 Validação offline: node scripts/validate-commercial-migrations.mjs; drizzle-kit check; drizzle-kit generate com URL sintética somente para carregar a configuração, sem migrate. Resultado da geração: nenhum diferencial de schema. Aplicação SQL e verificações de FKs, GRANTs, RLS e helpers foram exercitadas somente em PostgreSQL temporário. Nenhum banco produtivo foi acessado.
 
 ## Matriz e evidências
+
+Resultado consolidado: npm run check aprovado com 192 suítes/1.821 testes unitários; integração completa em PostgreSQL temporário com 189 suítes/1.450 testes aprovados; regressão de recuperação de sessão com cinco suítes/28 testes aprovada. Detalhes, skips e limites em [.specs/20261022-comercial-simulado/validation.md](../../../.specs/20261022-comercial-simulado/validation.md). O CI do HEAD atual deve ser conferido na PR #135.
 
 | Cobertura                                                                                                                           | Suítes                                        |
 | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |

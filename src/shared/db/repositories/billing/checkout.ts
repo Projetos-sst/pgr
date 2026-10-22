@@ -37,6 +37,10 @@ export function createCheckout(
     if (previous) {
       if (previous.kind !== "checkout" || previous.requestHash !== requestHash)
         conflict("Chave já utilizada com outra operação ou conteúdo.");
+      if (previous.expiresAt <= new Date())
+        conflict(
+          "A sessão do checkout expirou. Consulte a assinatura antes de iniciar uma nova tentativa.",
+        );
       const row = await contract(tx, ctx, previous.resultId);
       return {
         sessionId: previous.id,

@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { CommercialPanel } from "@/app/(protected)/configuracoes/_components/commercial-panel";
 import { CommercialOfferForm } from "@/app/(protected)/configuracoes/_components/commercial-offer-form";
 import { CommercialInvoices } from "@/app/(protected)/configuracoes/_components/commercial-invoices";
-import { getCommercialPaymentProfileAction } from "@/shared/server/actions/platform/billing-portal";
+import {
+  getCommercialPaymentProfileAction,
+  openCommercialPortalAction,
+} from "@/shared/server/actions/platform/billing-portal";
 import type { getCommercialOverview } from "@/shared/server/platform/commercial-core";
 import { getCommercialOverviewAction } from "@/shared/server/actions/platform/commercial";
 import { startCommercialCheckoutAction } from "@/shared/server/actions/platform/billing-checkout";
@@ -103,6 +106,66 @@ beforeEach(() => {
     .mockReturnValue("11111111-1111-4111-8111-111111111111");
 });
 afterEach(() => jest.restoreAllMocks());
+it("uses a new key only after checkout expiry is confirmed by the server", async () => {
+  const user = userEvent.setup();
+  jest
+    .mocked(crypto.randomUUID)
+    .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")
+    .mockReturnValueOnce("22222222-2222-4222-8222-222222222222");
+  jest.mocked(startCommercialCheckoutAction).mockResolvedValue({
+    ok: false,
+    error: {
+      code: "DUPLICATE",
+      message: "A sessão do checkout expirou. Consulte a assinatura.",
+    },
+  });
+  render(<CommercialPanel initial={fixture()} section="plans" />);
+  await user.click(screen.getByRole("button", { name: "Contratar no simulador" }));
+  await screen.findByText(/A sessão do checkout expirou/);
+  await user.click(screen.getByRole("button", { name: "Contratar no simulador" }));
+  await waitFor(() => expect(startCommercialCheckoutAction).toHaveBeenCalledTimes(2));
+  expect(jest.mocked(startCommercialCheckoutAction).mock.calls[0][0]).not.toEqual(
+    jest.mocked(startCommercialCheckoutAction).mock.calls[1][0],
+  );
+});
+it("can request a fresh portal after its previous session has expired", async () => {
+  const user = userEvent.setup();
+  jest
+    .mocked(crypto.randomUUID)
+    .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")
+    .mockReturnValueOnce("22222222-2222-4222-8222-222222222222");
+  jest.mocked(getCommercialPaymentProfileAction).mockResolvedValue({
+    ok: true,
+    data: {
+      customerId: "customer-a",
+      provider: "mock",
+      simulated: true,
+      paymentMethod: null,
+      portalAvailable: true,
+    },
+  });
+  jest.mocked(openCommercialPortalAction).mockResolvedValue({
+    ok: false,
+    error: { code: "DUPLICATE", message: "A sessão expirou. Solicite um novo portal." },
+  });
+  render(
+    <CommercialInvoices
+      initial={fixture().invoiceList}
+      customers={fixture().customers}
+    />,
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Gerar sessão de portal simulado" }),
+  );
+  await screen.findByText(/A sessão expirou/);
+  await user.click(
+    screen.getByRole("button", { name: "Gerar sessão de portal simulado" }),
+  );
+  await waitFor(() => expect(openCommercialPortalAction).toHaveBeenCalledTimes(2));
+  expect(jest.mocked(openCommercialPortalAction).mock.calls[0][0]).not.toEqual(
+    jest.mocked(openCommercialPortalAction).mock.calls[1][0],
+  );
+});
 it("shows a synchronized test method and clears it when changing the selected customer", async () => {
   const user = userEvent.setup();
   jest

@@ -113,6 +113,12 @@ export function CommercialPanel({
     }
     run(async () => {
       const r = await startCommercialCheckoutAction({ companyId, priceId, key });
+      if (!r.ok && r.error.code === "DUPLICATE" && r.error.message.includes("expirou")) {
+        delete keys.current[target];
+        try {
+          sessionStorage.removeItem(storage);
+        } catch {}
+      }
       if (r.ok) {
         setCheckoutUrl(r.data.checkoutUrl);
         delete keys.current[target];
