@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [develop, main]
+    branches: [develop, main, "codex/**"]
   # O CD chama a mesma validação antes de publicar o commit integrado.
   workflow_call:
 
@@ -85,6 +85,34 @@ jobs:
         run: npm run test:deploy
       - name: Integration tests (server actions + route handlers)
         run: npm run test:integration
+
+  document-preview:
+    name: Synthetic DOCX and real PDF preview
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - name: Start isolated document converter with project fonts
+        run: docker compose up -d --wait gotenberg
+      - name: Generate synthetic document with equipment appendix
+        env:
+          GOTENBERG_URL: http://localhost:3001
+        run: node --conditions=react-server --import tsx scripts/pgr-docx/render-review-preview.ts
+      - name: Preserve preview for visual review
+        uses: actions/upload-artifact@v4
+        with:
+          name: pgr-review-preview
+          path: node_modules/.pgr-review-output
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: error
+      - name: Stop isolated converter
+        if: always()
+        run: docker compose down
 
   build:
     name: Production build

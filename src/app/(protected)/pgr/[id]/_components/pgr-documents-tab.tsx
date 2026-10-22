@@ -19,6 +19,7 @@ import {
   type PgrEpiRelationItem,
 } from "@/shared/domains/pgr/epi-relation";
 import { enqueuePgrPdfBatchAction } from "@/shared/server/actions/documents/pdf-batch";
+import { PgrReadinessPanel } from "./pgr-readiness-panel";
 
 import { Cell, DataGrid, GridHeader, GridRow, StatusBadge } from "../../../_ui/data-list";
 import { formatBytes, formatIsoDateBr } from "../../../documents/_components/format";
@@ -84,6 +85,10 @@ function PgrPdfPanel({ pgrId }: { pgrId: string }) {
 
   return (
     <section className="glass-card flex flex-col gap-5 p-6 sm:p-8">
+      <PgrReadinessPanel pgrId={pgrId} />
+      <Link href={`/pgr/${pgrId}/reviews`} className="text-primary underline">
+        Amostras, pareceres recebidos e revalidação técnica
+      </Link>
       <div className="flex items-start gap-4">
         <div className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
           <svg

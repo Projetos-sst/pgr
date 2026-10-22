@@ -26,7 +26,7 @@ import { listErgonomicDimensions } from "@/shared/domains/pgr/ergonomics";
 import type { EpiNeutralization } from "@/shared/domains/pgr/epi-risk";
 import type { PgrRegistrationType } from "@/shared/domains/pgr/pgr";
 
-import { withOrg } from "../with-org";
+import { withOrg, type TenantTransaction } from "../with-org";
 import {
   getCurrentErgonomicEvaluationsByRiskTx,
   getPsychosocialAggregatesTx,
@@ -75,8 +75,9 @@ type CurrentAssessmentRow = {
 export async function getPgrConsolidated(
   orgId: string,
   pgrId: string,
+  transaction?: TenantTransaction,
 ): Promise<PgrConsolidated | null> {
-  return withOrg(orgId, async (tx) => {
+  const read = async (tx: TenantTransaction) => {
     // 1) PGR + empresa + obra
     const [head] = await tx
       .select({
@@ -426,5 +427,6 @@ export async function getPgrConsolidated(
     }));
 
     return { pgr: pgrHead, ges: consolidatedGes };
-  });
+  };
+  return transaction ? read(transaction) : withOrg(orgId, read);
 }

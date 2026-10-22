@@ -240,6 +240,41 @@
       "key": "medicalRiskEntryId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "machineCatalogId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "machineInstallationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pgrSnapshotSha256",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "basicOfferVersionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "commercialApprovalReference",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "technicalApprovalReference",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pgrReviewSampleId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -1654,7 +1689,7 @@
         },
         {
           "name": "PGR · DOCX (template)",
-          "description": "PGR preenchido pelo template DOCX (templates/pgr/pgr-template.docx). Fixos vêm do template; SEMI-FIXOS (laranja no PGR 2026.1) usam o default de domains/pgr/pgr-docx/defaults.ts ou o override do POST; DINÂMICOS vêm do banco (consolidada + extras). PDF pelo provedor PGR_DOCX_PDF_PROVIDER (gotenberg padrão | google). Use 'Send and Download' no Postman para salvar o arquivo.",
+          "description": "PGR preenchido pelo template DOCX (templates/pgr/pgr-template.docx). Fixos vêm do template; SEMI-FIXOS (laranja no PGR 2026.1) usam o default de domains/pgr/pgr-docx/defaults.ts ou o override do POST; DINÂMICOS vêm do banco (consolidada + extras). PDF pelo provedor PGR_DOCX_PDF_PROVIDER (gotenberg padrão | google). Use 'Send and Download' no Postman para salvar o arquivo. NOB-105: resposta inclui X-Pgr-Generated-At, X-Pgr-Template-Sha256, X-Pgr-Source-Sha256 e X-Pgr-File-Sha256; registre os headers junto do arquivo para revisão. Identificadores técnicos, sem assinatura ou parecer.",
           "item": [
             {
               "name": "GET /pgr/:id/docx (?format=docx|pdf; semi-fixos padrão; 404/422/503)",
@@ -9196,6 +9231,478 @@
             "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
           },
           "response": []
+        }
+      ]
+    },
+    {
+      "name": "Máquinas por ambiente (NOB-104)",
+      "item": [
+        {
+          "name": "Listar vínculos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "machines"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Opções compatíveis",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines/options",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "machines", "options"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vincular máquina",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "machines"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"gesId\": null,\n  \"catalogId\": \"{{machineCatalogId}}\",\n  \"mode\": \"individual\",\n  \"quantity\": 1,\n  \"identifier\": \"PAT-fictício\",\n  \"description\": \"Uso observado na obra\",\n  \"safetyMeasures\": \"Informação declarada\",\n  \"reason\": \"Cadastro operacional\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar vínculo e histórico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines/{{machineInstallationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "machines",
+                "{{machineInstallationId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Alterar vínculo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines/{{machineInstallationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "machines",
+                "{{machineInstallationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expectedVersion\": 1,\n  \"data\": {\n    \"workUnitId\": \"{{workUnitId}}\",\n    \"gesId\": null,\n    \"catalogId\": \"{{machineCatalogId}}\",\n    \"mode\": \"individual\",\n    \"quantity\": 1,\n    \"identifier\": \"PAT-fictício\",\n    \"description\": \"Uso observado na obra\",\n    \"safetyMeasures\": \"Informação declarada\",\n    \"reason\": \"Cadastro operacional\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Retirar vínculo preservando histórico",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/machines/{{machineInstallationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "machines",
+                "{{machineInstallationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expectedVersion\": 1,\n  \"reason\": \"Retirada da obra\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Conferência de emissão PGR (NOB-105)",
+      "item": [
+        {
+          "name": "Conferir preenchimento",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/readiness"
+          }
+        },
+        {
+          "name": "Gerar após conferência atual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"docx\",\n  \"purpose\": \"issue\",\n  \"expectedSourceSha256\": \"{{pgrSnapshotSha256}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Oferta de PGR básico (NOB-106)",
+      "item": [
+        {
+          "name": "Listar versões e publicação",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr-basic-offers"
+          }
+        },
+        {
+          "name": "Criar rascunho sem preço definido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr-basic-offers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PGR básico\",\n  \"eligibility\": \"\",\n  \"technicalScope\": \"\",\n  \"servicesIncluded\": \"\",\n  \"limitations\": \"\",\n  \"priceCents\": null,\n  \"currency\": \"BRL\",\n  \"billingPeriod\": null,\n  \"maxEmployees\": null,\n  \"maxWorkUnits\": null,\n  \"maxRevisions\": null,\n  \"reason\": \"Proposta para aprovação\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Consultar versão",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr-basic-offers/{{basicOfferVersionId}}"
+          }
+        },
+        {
+          "name": "Publicar versão completa e aprovada",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr-basic-offers/{{basicOfferVersionId}}/publication",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": true,\n  \"expectedActiveVersionId\": null,\n  \"commercialApprovalReference\": \"{{commercialApprovalReference}}\",\n  \"technicalApprovalReference\": \"{{technicalApprovalReference}}\",\n  \"reason\": \"Publicação aprovada\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Retirar publicação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr-basic-offers/{{basicOfferVersionId}}/publication",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false,\n  \"expectedActiveVersionId\": \"{{basicOfferVersionId}}\",\n  \"reason\": \"Retirada explícita\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Revisão técnica recebida PGR (NOB-107)",
+      "item": [
+        {
+          "name": "Listar amostras",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/reviews"
+          }
+        },
+        {
+          "name": "Gerar e preservar DOCX no GED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/reviews",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Amostra para revisão humana\",\n  \"supersedesSampleId\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Consultar amostra e histórico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/reviews/{{pgrReviewSampleId}}"
+          }
+        },
+        {
+          "name": "Gerar amostra corrigida ligada à anterior",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/reviews",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Revalidação após correções\",\n  \"supersedesSampleId\": \"{{pgrReviewSampleId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Registrar parecer recebido (dados fictícios de exemplo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/reviews/{{pgrReviewSampleId}}/decisions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expectedLatestDecisionId\": null,\n  \"status\": \"changes_requested\",\n  \"reviewer\": {\n    \"fullName\": \"Avaliador fictício\",\n    \"profession\": \"Profissão declarada\",\n    \"registration\": {\n      \"kind\": \"registered\",\n      \"council\": \"Órgão declarado\",\n      \"number\": \"Número declarado\"\n    }\n  },\n  \"reviewedAt\": \"2026-01-01T10:00:00Z\",\n  \"evidenceReference\": \"Substituir pela referência do parecer real\",\n  \"reason\": \"Substituir pelo parecer recebido\",\n  \"findings\": [\n    {\n      \"key\": \"ACH-1\",\n      \"location\": \"Inventário\",\n      \"description\": \"Descrição fictícia para substituir\",\n      \"severity\": \"blocking\",\n      \"resolution\": \"open\",\n      \"correctionReference\": null\n    }\n  ]\n}"
+            }
+          }
         }
       ]
     }

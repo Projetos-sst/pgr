@@ -1,5 +1,7 @@
 # NOB-104 — revisão do cadastro de máquinas e equipamentos
 
+> Levantamento histórico. A implementação de continuidade de 21/10/2026 está descrita em `.specs/20261021-conclusao-pgr/nob-104.md`: vínculo configurável por obra/GES, registro individual/grupo, histórico, UI/REST e anexo documental. As pendências de implementação abaixo descrevem o estado anterior. Não há aprovação profissional presumida.
+
 Status: levantamento preparado; implementação do contexto de exposição pendente.
 O usuário autorizou preservar as regras atuais enquanto o modelo é revisado.
 

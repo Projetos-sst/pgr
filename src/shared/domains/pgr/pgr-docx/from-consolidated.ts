@@ -64,6 +64,18 @@ export type PgrDocxGesExtras = {
 };
 
 export type PgrDocxExtras = {
+  machines?: {
+    catalogName: string;
+    manufacturer: string | null;
+    identifier: string | null;
+    quantity: number;
+    description: string;
+    operatingConditions: string | null;
+    safetyMeasures: string | null;
+    maintenanceNotes: string | null;
+    responsible: string | null;
+    gesId: string | null;
+  }[];
   company: { phone: string | null; logoPath: string | null };
   revisions: { revisionNumber: number; revisedAt: string; notes: string | null }[];
   /** Por id de GES. */
@@ -436,6 +448,20 @@ export function buildPgrDocxContent(
 
   return {
     emittedAt: options.emittedAt,
+    machines: (extras.machines ?? []).map((m) => ({
+      name: m.catalogName,
+      manufacturer: orNotInformed(m.manufacturer),
+      identifier: m.identifier ?? "Grupo de equipamentos",
+      quantity: String(m.quantity),
+      description: m.description,
+      operatingConditions: orNotInformed(m.operatingConditions),
+      safetyMeasures: orNotInformed(m.safetyMeasures),
+      maintenanceNotes: orNotInformed(m.maintenanceNotes),
+      responsible: orNotInformed(m.responsible),
+      context: m.gesId
+        ? (data.ges.find((g) => g.id === m.gesId)?.name ?? "GES vinculado")
+        : "Uso geral na obra",
+    })),
     validity: formatValidity(pgr.issuedAt, pgr.validUntil),
     company: {
       razaoSocial: company?.razaoSocial ?? pgr.companyName,
