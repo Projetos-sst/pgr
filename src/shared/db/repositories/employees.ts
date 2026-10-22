@@ -151,7 +151,8 @@ export async function listEmployees(
       .leftJoin(ges, eq(ges.id, employees.gesId))
       .leftJoin(jobRoles, eq(jobRoles.id, employees.jobRoleId))
       .where(where)
-      .orderBy(desc(employees.createdAt))
+      // Desempate por id: paginação estável quando created_at coincide.
+      .orderBy(desc(employees.createdAt), desc(employees.id))
       .limit(limit)
       .offset(offset);
 

@@ -17,10 +17,16 @@ export function requiredUuid(message: string) {
   return z.string({ error: message }).regex(UUID_FORMAT, message);
 }
 
-export const optionalUuid = z.preprocess(
-  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-  z.string().regex(UUID_FORMAT).optional(),
-);
+// UUID opcional (string vazia → undefined). `message` só muda o texto do erro;
+// sem ele, a mensagem padrão do zod (comportamento histórico de `optionalUuid`).
+export function optionalUuidWith(message?: string) {
+  return z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().regex(UUID_FORMAT, message).optional(),
+  );
+}
+
+export const optionalUuid = optionalUuidWith();
 
 // Data ISO (AAAA-MM-DD) opcional: string vazia → undefined; senão valida calendário
 // (z.iso.date rejeita datas impossíveis como 2026-13-45). Para colunas `date` nullable.

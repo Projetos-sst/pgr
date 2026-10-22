@@ -104,6 +104,7 @@ const NAV: NavEntry[] = [
     label: "Medicina do Trabalho",
     iconName: "activity",
     items: [
+      { href: "/medicine", label: "Painel", iconName: "clipboard-list" },
       {
         href: "/risk-authorizations",
         label: "Autorizações de riscos",

@@ -1,7 +1,11 @@
 import type { NextRequest } from "next/server";
 
 import { restHandler, pageParamsFrom } from "@/shared/api/rest";
-import { healthExamInputSchema, EXAM_TYPES } from "@/shared/domains/pgr/health-exams";
+import {
+  healthExamInputSchema,
+  healthExamListFiltersSchema,
+  EXAM_TYPES,
+} from "@/shared/domains/pgr/health-exams";
 import type { ExamType } from "@/shared/domains/pgr/health-exams";
 import * as repo from "@/shared/db/repositories/health-exams";
 
@@ -16,13 +20,21 @@ function examTypeFrom(req: NextRequest): ExamType | undefined {
 }
 
 export function GET(req: NextRequest) {
-  return restHandler(req, ({ tenantId }) =>
-    repo.listHealthExams(tenantId, {
+  return restHandler(req, async ({ tenantId }) => {
+    const sp = req.nextUrl.searchParams;
+    // ID malformado → 422 VALIDATION (nunca lista vazia); ID de outro tenant → lista
+    // vazia (filtro somado a org_id). companyId = empresa ATUAL do funcionário.
+    const filters = healthExamListFiltersSchema.parse({
+      employeeId: sp.get("employeeId") ?? undefined,
+      companyId: sp.get("companyId") ?? undefined,
+    });
+    return repo.listHealthExams(tenantId, {
       ...pageParamsFrom(req),
-      search: req.nextUrl.searchParams.get("search") ?? undefined,
+      search: sp.get("search") ?? undefined,
       examType: examTypeFrom(req),
-    }),
-  );
+      ...filters,
+    });
+  });
 }
 
 export function POST(req: NextRequest) {

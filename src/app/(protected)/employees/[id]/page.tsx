@@ -26,6 +26,14 @@ import { getEmployeeComplianceAction } from "@/shared/server/actions/pgr/job-rol
 import { RegisterTraining } from "./_components/register-training";
 import { DeleteTrainingRecord } from "./_components/delete-training-record";
 import { TrainingStatusBadge } from "../../_ui/training-status-badge";
+import { todayInSaoPaulo } from "@/shared/dates";
+import { moduleIsEnabled } from "@/shared/domains/platform/company-modules";
+import { getCompanyModuleOverviewAction } from "@/shared/server/actions/platform/company-modules";
+import { listHealthExamsAction } from "@/shared/server/actions/pgr/health-exams";
+import {
+  OccupationalHealthSection,
+  type MedicineModuleState,
+} from "./_components/occupational-health-section";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +84,8 @@ export default async function EmployeeDetailPage({
     trainingRecordsResult,
     trainingOptionsResult,
     complianceResult,
+    moduleResult,
+    healthExamsResult,
   ] = await Promise.all([
     getCompanyAction(employee.companyId),
     employee.gesId ? getGesAction(employee.gesId) : Promise.resolve(null),
@@ -85,7 +95,16 @@ export default async function EmployeeDetailPage({
     listTrainingRecordsAction({ employeeId: employee.id, pageSize: 20 }),
     listTrainingCatalogOptionsAction(),
     getEmployeeComplianceAction({ employeeId: employee.id }),
+    getCompanyModuleOverviewAction(employee.companyId, { pageSize: 1 }),
+    listHealthExamsAction({ employeeId: employee.id, pageSize: 20 }),
   ]);
+
+  // Estado do módulo para a seção de Saúde ocupacional: erro ≠ desabilitada.
+  const medicineState: MedicineModuleState = !moduleResult.ok
+    ? "error"
+    : moduleIsEnabled(moduleResult.data.modules, "medicine")
+      ? "enabled"
+      : "disabled";
 
   const trainingRows = trainingRecordsResult.ok ? trainingRecordsResult.data.rows : [];
   const trainingOptions = trainingOptionsResult.ok ? trainingOptionsResult.data : [];
@@ -310,6 +329,13 @@ export default async function EmployeeDetailPage({
           </div>
         )}
       </section>
+
+      <OccupationalHealthSection
+        employeeId={employee.id}
+        moduleState={medicineState}
+        exams={healthExamsResult}
+        today={todayInSaoPaulo()}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Placeholder title="Histórico" />

@@ -74,11 +74,14 @@ export function EmptyState({
   title = "Nenhum registro encontrado",
   message,
   isFlat,
+  action,
 }: {
   title?: string;
   message: string;
   /** Sem a moldura glass — para uso dentro de um `ListCard`. */
   isFlat?: boolean;
+  /** CTA opcional abaixo da mensagem (ex.: link "Registrar exame"). */
+  action?: ReactNode;
 }) {
   return (
     <div
@@ -102,6 +105,7 @@ export function EmptyState({
       </div>
       <h3 className="text-text text-sm font-bold sm:text-base">{title}</h3>
       <p className="text-text-subtle mt-1 max-w-md text-xs sm:text-sm">{message}</p>
+      {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
 }

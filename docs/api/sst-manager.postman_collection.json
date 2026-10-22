@@ -3384,6 +3384,71 @@
           }
         },
         {
+          "name": "GET /health-exams?employeeId= (filtro por funcionário)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams?employeeId={{employeeId}}&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams"],
+              "query": [
+                {
+                  "key": "employeeId",
+                  "value": "{{employeeId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Exames de um funcionário. ID de outro tenant → lista vazia; ID malformado → 422 VALIDATION."
+          }
+        },
+        {
+          "name": "GET /health-exams?companyId= (filtro por empresa)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams?companyId={{companyId}}&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams"],
+              "query": [
+                {
+                  "key": "companyId",
+                  "value": "{{companyId}}",
+                  "description": "Empresa ATUAL do funcionário"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Exames dos funcionários da empresa (empresa atual do funcionário). ID malformado → 422 VALIDATION."
+          }
+        },
+        {
           "name": "POST /health-exams (create)",
           "request": {
             "method": "POST",
@@ -3481,6 +3546,91 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "health-exams", "{{healthExamId}}"]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Medicina (painel)",
+      "item": [
+        {
+          "name": "GET /medicine/overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicine/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicine", "overview"]
+            },
+            "description": "Read-model do painel: empresas com Medicina habilitada + contagem pela validade informada do último exame de cada funcionário. 403 para client."
+          }
+        },
+        {
+          "name": "GET /medicine/employees?companyId= (lista por empresa)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicine/employees?companyId={{companyId}}&search=&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicine", "employees"],
+              "query": [
+                {
+                  "key": "companyId",
+                  "value": "{{companyId}}"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Funcionários da empresa + último exame (sem CPF/notes). 404 empresa de outro tenant; 403 empresa sem Medicina."
+          }
+        },
+        {
+          "name": "GET /medicine/employees (sem companyId → 422)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicine/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicine", "employees"]
+            },
+            "description": "Exemplo de erro: companyId obrigatório → 422 VALIDATION."
           }
         }
       ]
