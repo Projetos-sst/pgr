@@ -5,14 +5,12 @@ jest.mock("@/shared/db/env", () => ({
 }));
 jest.mock("@/shared/auth/require-office-staff", () => ({
   OFFICE_STAFF_ROLES: new Set(["owner", "collaborator"]),
-  requireOfficeStaff: jest
-    .fn()
-    .mockResolvedValue({
-      tenantId: "org_a",
-      userId: "owner",
-      role: "owner",
-      plan: "free",
-    }),
+  requireOfficeStaff: jest.fn().mockResolvedValue({
+    tenantId: "org_a",
+    userId: "owner",
+    role: "owner",
+    plan: "free",
+  }),
 }));
 import { adminClient, applyMigrations, withOrgTx } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS as I } from "../_helpers/pgr-seed";
