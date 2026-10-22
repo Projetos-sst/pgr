@@ -23,6 +23,8 @@ export async function withOrg<T>(
         APP_ENV: process.env.APP_ENV,
         BILLING_MODE: process.env.BILLING_MODE,
         BILLING_MOCK_ENABLED: process.env.BILLING_MOCK_ENABLED,
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        VERCEL_TARGET_ENV: process.env.VERCEL_TARGET_ENV,
       })
     )
       await tx.execute(sql`select set_config('app.billing_simulation','true',true)`);

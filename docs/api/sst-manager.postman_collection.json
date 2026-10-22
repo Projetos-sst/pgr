@@ -283,6 +283,10 @@
     {
       "key": "billingContractId",
       "value": ""
+    },
+    {
+      "key": "billingOrderId",
+      "value": ""
     }
   ],
   "item": [
@@ -9921,6 +9925,79 @@
                   "value": "{{companyId}}"
                 }
               ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Serviços avulsos — NOB-117",
+      "item": [
+        {
+          "name": "Criar pedido avulso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "one-off-order-0001"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"priceId\": \"{{billingPriceId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Consultar pedido avulso",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/orders/{{billingOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "orders", "{{billingOrderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Verificar autorização comercial do PGR avulso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/orders/{{billingOrderId}}/access",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "orders", "{{billingOrderId}}", "access"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"product\": \"pgr\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         }

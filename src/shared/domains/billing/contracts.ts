@@ -95,9 +95,13 @@ export type SimulationEnvironment = {
   APP_ENV?: string;
   BILLING_MODE?: string;
   BILLING_MOCK_ENABLED?: string;
+  VERCEL_ENV?: string;
+  VERCEL_TARGET_ENV?: string;
 };
 export function isBillingSimulationEnabled(env: SimulationEnvironment): boolean {
   return (
+    env.VERCEL_ENV !== "production" &&
+    env.VERCEL_TARGET_ENV !== "production" &&
     ["local", "sandbox", "test"].includes(env.APP_ENV ?? "") &&
     env.BILLING_MODE === "mock" &&
     env.BILLING_MOCK_ENABLED === "true"

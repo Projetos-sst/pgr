@@ -11,6 +11,15 @@ import {
 describe("commercial simulation contracts", () => {
   const policy = billingPolicySchema.parse({});
   it("requires an explicit non-production simulation environment", () => {
+    for (const key of ["VERCEL_ENV", "VERCEL_TARGET_ENV"])
+      expect(
+        isBillingSimulationEnabled({
+          APP_ENV: "sandbox",
+          BILLING_MODE: "mock",
+          BILLING_MOCK_ENABLED: "true",
+          [key]: "production",
+        }),
+      ).toBe(false);
     for (const APP_ENV of [undefined, "production", "preview", "unknown"])
       expect(
         isBillingSimulationEnabled({

@@ -435,6 +435,13 @@
       "when": 1792675557850,
       "tag": "0061_commercial_module_access",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1792681615229,
+      "tag": "0062_commercial_one_off_access",
+      "breakpoints": true
     }
   ]
 }

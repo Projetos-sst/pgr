@@ -78,6 +78,7 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
 | `/api/billing/checkout-sessions`                                                                      | POST                     | Checkout simulado, Idempotency-Key obrigatório                                 |
 | `/api/billing/subscription` · `/subscription/reconcile` · `/simulation-events` · `/webhooks/provider` | GET · POST · POST · POST | Assinaturas, reconciliação auditada, cenários e eventos assinados do simulador |
 | `/api/billing/charges`                                                                                | GET                      | Faturas e valores por item, empresa e período                                  |
+| `/api/billing/orders` · `/orders/{id}` · `/orders/{id}/access`                                        | GET/POST · GET · POST    | Pedidos avulsos e autorização comercial por pedido/produto                     |
 
 Detalhes, políticas e limites em “Catálogo comercial simulado — NOB-114” ao final deste documento.
 
@@ -1411,3 +1412,19 @@ A migration candidata 0061 adiciona snapshot/identidade/período da fatura e pol
 | GET /api/billing/charges | getCommercialChargesAction | page (1..10000), companyId opcional; retorna {rows,page,hasMore,simulated}. Até 20 faturas, itens originais e total em centavos, empresa, período e status. |
 
 Owner, tenant ativo e flags do simulador obrigatórios. Cada item traz product (pro/pgr/medicine), label e amountMinor. O total corresponde aos itens comprados; PGR e Medicina podem existir sozinhos ou combinados. A listagem usa o snapshot da fatura, sem reconstruir os valores a partir do preço atual. Não expõe payload bruto, snapshot completo de contrato ou identificadores de cliente/fatura do gateway. As telas de planos/faturas compõem NOB-134/136.
+
+## Serviços avulsos — NOB-117
+
+| Recurso                              | Actions equivalentes                                    | Contrato                                                                                                                                                      |
+| ------------------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET/POST /api/billing/orders         | getCommercialOrdersAction / createCommercialOrderAction | Lista paginada; POST {companyId,priceId} e header Idempotency-Key. Aceita somente oferta one_time de PGR/Medicina. Não exige plano Pro nem assinatura prévia. |
+| GET /api/billing/orders/{id}         | getCommercialOrderAction                                | Ficha com empresa, itens, status, availableProducts e validUntil. Financeiro exclusivo do owner.                                                              |
+| POST /api/billing/orders/{id}/access | requirePurchasedServiceAction                           | {companyId,product:pgr/medicine}; owner/colaborador com membership vigente. Retorna {financiallyAuthorized,scope:order:{id},companyId,product,simulated}.     |
+
+O servidor consumidor deve chamar requirePurchasedService com o contexto autenticado e a empresa do recurso, não confiar em uma resposta reenviada pelo navegador. A autorização é comercial, vinculada ao pedido e ao produto; não substitui permissão técnica/profissional, validação de riscos ou conferência dos documentos. Não habilita todo o módulo nem outro produto. A entrega técnica continua nas rotinas existentes de PGR/Medicina.
+
+Pendente/recusado/cancelado/expirado não liberam o serviço. Evento repetido não duplica pedido ou fatura. O prazo exibido vem do período confirmado pelo simulador; não representa uma regra comercial de prestação aprovada para um gateway real. O modo simulado deve continuar desabilitado em produção.
+
+0062_commercial_one_off_access é uma migration candidata com helper booleano de autorização (tenant, empresa, produto, membership atual e fonte paga). Também limita UPDATE do app_runtime às colunas mutáveis: status da fatura, conversão do teste, nome/vínculo do cliente, vigência/ativação da licença e confirmações. Valores, itens, identidade da fatura e início/término do teste não podem ser reescritos pelo runtime. Migrations candidatas 0060–0062 precisam ser conciliadas com a NOB-112 antes de integrar develop.
+
+O bloqueio do simulador também considera VERCEL_ENV/VERCEL_TARGET_ENV=production, mesmo se APP_ENV estiver incorreto. Referência das variáveis automáticas: [documentação oficial da Vercel](https://vercel.com/docs/environment-variables/system-environment-variables).
