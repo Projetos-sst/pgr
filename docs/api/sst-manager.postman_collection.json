@@ -275,6 +275,10 @@
       "key": "pgrReviewSampleId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "billingPriceId",
+      "value": ""
     }
   ],
   "item": [
@@ -9701,6 +9705,123 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"expectedLatestDecisionId\": null,\n  \"status\": \"changes_requested\",\n  \"reviewer\": {\n    \"fullName\": \"Avaliador fictício\",\n    \"profession\": \"Profissão declarada\",\n    \"registration\": {\n      \"kind\": \"registered\",\n      \"council\": \"Órgão declarado\",\n      \"number\": \"Número declarado\"\n    }\n  },\n  \"reviewedAt\": \"2026-01-01T10:00:00Z\",\n  \"evidenceReference\": \"Substituir pela referência do parecer real\",\n  \"reason\": \"Substituir pelo parecer recebido\",\n  \"findings\": [\n    {\n      \"key\": \"ACH-1\",\n      \"location\": \"Inventário\",\n      \"description\": \"Descrição fictícia para substituir\",\n      \"severity\": \"blocking\",\n      \"resolution\": \"open\",\n      \"correctionReference\": null\n    }\n  ]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial simulado — NOB-114",
+      "description": "Owner autenticado, opt-in local/sandbox/test; não usa bypass público nem cobrança real.",
+      "item": [
+        {
+          "name": "Catálogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "plans"]
+            }
+          }
+        },
+        {
+          "name": "Clientes comerciais",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "customers"]
+            }
+          }
+        },
+        {
+          "name": "Cadastrar cliente comercial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "customers"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Criar versão fictícia de oferta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"exemplo-ficticio\",\n  \"name\": \"Oferta fictícia de simulação\",\n  \"interval\": \"month\",\n  \"items\": [\n    {\n      \"product\": \"pgr\",\n      \"label\": \"PGR fictício\",\n      \"amountMinor\": 10000\n    }\n  ],\n  \"limits\": {\n    \"companies\": null,\n    \"employees\": null\n  },\n  \"policy\": {},\n  \"reason\": \"Cadastro fictício explícito para simulação\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Checkout simulado — NOB-132",
+      "item": [
+        {
+          "name": "Criar checkout simulado (repetir a mesma chave)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "checkout-simulacao-0001"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/checkout-sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "checkout-sessions"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"priceId\": \"{{billingPriceId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         }
