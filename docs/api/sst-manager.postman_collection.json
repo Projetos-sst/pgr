@@ -225,6 +225,21 @@
     {
       "key": "riskFactorId",
       "value": ""
+    },
+    {
+      "key": "authorizerUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "professionalUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "medicalRiskEntryId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -8774,6 +8789,263 @@
               "path": ["api", "v1", "companies"]
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "Riscos para Medicina (NOB-98)",
+      "item": [
+        {
+          "name": "Consultar fontes e riscos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risk-sources"
+          }
+        },
+        {
+          "name": "Registrar PGR externo pendente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risk-sources",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"external\",\n  \"title\": \"PGR externo de exemplo\",\n  \"reference\": \"GED:identificacao-do-documento\",\n  \"version\": \"1\",\n  \"risks\": [\n    {\n      \"agentType\": \"physical\",\n      \"description\": \"Risco informado na origem\",\n      \"exposureGroup\": \"Grupo de exemplo\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Capturar riscos do PGR interno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risk-sources",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"internal\",\n  \"pgrId\": \"{{pgrId}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Autorizações profissionais de riscos (NOB-98)",
+      "item": [
+        {
+          "name": "Consultar área delegada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Registrar indicação da empresa (owner)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{authorizerUserId}}\",\n  \"evidence\": \"GED:indicação da empresa-cliente\",\n  \"reason\": \"Indicação aprovada pela empresa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Revogar indicação (owner)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": null,\n  \"evidence\": \"GED:revogação da empresa-cliente\",\n  \"reason\": \"Revogação solicitada pela empresa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Autorizar profissional (autorizador atual)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{professionalUserId}}\",\n  \"active\": true,\n  \"identity\": {\n    \"fullName\": \"Profissional fictício\",\n    \"profession\": \"Profissão declarada\",\n    \"registration\": {\n      \"kind\": \"registered\",\n      \"council\": \"Conselho declarado\",\n      \"number\": \"Número declarado\",\n      \"region\": \"UF\"\n    }\n  },\n  \"reason\": \"Autorização pela empresa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations/professionals",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "risk-authorizations",
+                "professionals"
+              ]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Revogar profissional (autorizador atual)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{professionalUserId}}\",\n  \"active\": false,\n  \"reason\": \"Revogação pela empresa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations/professionals",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "risk-authorizations",
+                "professionals"
+              ]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Decidir risco (profissional autorizado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"validated\",\n  \"reason\": \"Parecer técnico fictício; substituir pela decisão real\",\n  \"expectedStatus\": \"pending\",\n  \"expectedReviewedAt\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risks/{{medicalRiskEntryId}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "medical-risks",
+                "{{medicalRiskEntryId}}",
+                "review"
+              ]
+            },
+            "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
         }
       ]
     }

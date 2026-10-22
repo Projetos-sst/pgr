@@ -106,6 +106,13 @@ export const ergonomicEvaluations = pgTable(
       table.assessedAt,
     ),
     index("idx_ergonomic_evaluations_campaign").on(table.psychosocialCampaignId),
+    pgPolicy("ergonomic_evaluations_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: sql`exists (select 1 from public.risks r where r.id = ${table.riskId} and r.org_id = ${table.orgId})`,
+      withCheck: sql`exists (select 1 from public.risks r where r.id = ${table.riskId} and r.org_id = ${table.orgId})`,
+    }),
     pgPolicy("ergonomic_evaluations_isolation", {
       for: "all",
       to: appRuntimeRole,
