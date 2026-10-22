@@ -4,7 +4,7 @@ import { and, asc, eq, inArray, or, isNull } from "drizzle-orm";
 
 import type { PgrDocxExtras } from "@/shared/domains/pgr/pgr-docx/from-consolidated";
 
-import { withOrg } from "../with-org";
+import { withOrg, type TenantTransaction } from "../with-org";
 import { companies } from "../schema/companies";
 import { ges } from "../schema/ges";
 import { gesJobRoles } from "../schema/ges-job-roles";
@@ -23,8 +23,9 @@ import { machineInstallations } from "../schema/machine-installations";
 export async function getPgrDocxExtras(
   orgId: string,
   pgrId: string,
+  transaction?: TenantTransaction,
 ): Promise<PgrDocxExtras | null> {
-  return withOrg(orgId, async (tx) => {
+  const read = async (tx: TenantTransaction) => {
     const [head] = await tx
       .select({
         phone: companies.phone,
@@ -165,5 +166,6 @@ export async function getPgrDocxExtras(
         label: row.referenceNorm?.trim() || row.name,
       })),
     };
-  });
+  };
+  return transaction ? read(transaction) : withOrg(orgId, read);
 }

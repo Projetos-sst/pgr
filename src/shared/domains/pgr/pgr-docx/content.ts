@@ -16,6 +16,7 @@ import type { PgrDocxAgentKey, PgrDocxRiskClass } from "./theme";
 export type PgrDocxContent = {
   /** Data/hora de emissão impressa no rodapé ("10/09/2026 11:19"). */
   emittedAt: string;
+  emissionNotice?: string;
   machines?: {
     name: string;
     manufacturer: string;

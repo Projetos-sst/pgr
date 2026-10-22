@@ -30,6 +30,24 @@ A classificação usa as faixas da metodologia da organização (`getRiskMethodo
 
 ## Fluxo de geração
 
+### Identificação da geração (NOB-105, etapa parcial)
+
+O resultado de `generatePgrDocx` inclui `provenance`: ID do PGR, instante UTC,
+SHA-256 do template, dos dados de entrada serializados (incluindo overrides,
+faixas e conteúdo do logo) e dos bytes do arquivo entregue. A rota DOCX/PDF
+retorna `X-Pgr-Generated-At`, `X-Pgr-Template-Sha256`, `X-Pgr-Source-Sha256` e
+`X-Pgr-File-Sha256`. No Postman, salve esses valores junto da amostra para revisão.
+
+São identificadores técnicos; não constituem assinatura ou aprovação. O hash dos
+dados não permite reconstruí-los, não é uma revisão persistida nem garante uma
+transação única entre os leitores atuais. Os headers não ficam embutidos no
+arquivo baixado nem no histórico do GED. O histórico durável da emissão e os
+campos técnicos obrigatórios continuam pendentes de definição e implementação.
+
+Os hashes são calculados no servidor, depois da leitura escopada ao tenant.
+O hash do PDF identifica os bytes convertidos; o do DOCX identifica os bytes do
+DOCX. O horário usa o mesmo instante da data de emissão impressa.
+
 ```
 banco (withOrg)                         puro / testável                          binário
 ──────────────────────────────          ─────────────────────────────            ───────────────────────────

@@ -8,7 +8,7 @@ import type {
 } from "@/shared/domains/pgr/methodology";
 import { defaultRiskMethodology } from "@/shared/domains/pgr/methodology-presets";
 
-import { withOrg } from "../with-org";
+import { withOrg, type TenantTransaction } from "../with-org";
 import { riskMethodology, type RiskMethodology } from "../schema";
 import { auditedTenantWrite } from "./audited-write";
 
@@ -21,15 +21,19 @@ function toColumns(input: RiskMethodologyValues) {
   };
 }
 
-export async function getRiskMethodology(orgId: string): Promise<RiskMethodology | null> {
-  return withOrg(orgId, async (tx) => {
+export async function getRiskMethodology(
+  orgId: string,
+  transaction?: TenantTransaction,
+): Promise<RiskMethodology | null> {
+  const read = async (tx: TenantTransaction) => {
     const [row] = await tx
       .select()
       .from(riskMethodology)
       .where(eq(riskMethodology.orgId, orgId))
       .limit(1);
     return row ?? null;
-  });
+  };
+  return transaction ? read(transaction) : withOrg(orgId, read);
 }
 
 /**
@@ -39,8 +43,9 @@ export async function getRiskMethodology(orgId: string): Promise<RiskMethodology
  */
 export async function getRiskMethodologyView(
   orgId: string,
+  transaction?: TenantTransaction,
 ): Promise<RiskMethodologyView> {
-  const row = await getRiskMethodology(orgId);
+  const row = await getRiskMethodology(orgId, transaction);
   if (!row) return { configured: false, ...defaultRiskMethodology() };
   return {
     configured: true,
