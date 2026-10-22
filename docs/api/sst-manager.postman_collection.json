@@ -10289,6 +10289,49 @@
           }
         }
       ]
+    },
+    {
+      "name": "Comercial — NOB-137 administração",
+      "item": [
+        {
+          "name": "Listar com filtros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/billing/subscriptions?page=1&product=pgr"
+          }
+        },
+        {
+          "name": "Ficha e sincronização",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/billing/subscriptions/{{billingContractId}}"
+          }
+        },
+        {
+          "name": "Reconciliar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/billing/subscriptions/{{billingContractId}}/reconcile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Conferência administrativa explícita\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   ]
 }
