@@ -4,7 +4,7 @@
 
 ## Estado
 
-**`PR_ABERTA` (draft): [PR #120](https://github.com/Projetos-sst/pgr/pull/120)**, de `feature/NOB-108-ficha-saude-ocupacional` para
+**`MERGED` em 2026-10-22 (`15015fa`). Abaixo, o registro até a PR; o fechamento está em "Merge".** [PR #120](https://github.com/Projetos-sst/pgr/pull/120), de `feature/NOB-108-ficha-saude-ocupacional` para
 `develop`. Implementação, testes automatizados, QA no navegador e revisão de segurança feitos em 2026-10-21. Faltam:
 
 - CI verde depois do commit de documentação;
@@ -123,11 +123,20 @@ Comandos e saídas literais no [QA](QA.md) §3–§5; parecer no [REVIEW](REVIEW
 - As novas policies (0054–0056) não tocam `health_exams`, `employees`, `companies`, `company_modules` nem `medicos`.
 - **Nenhuma correção de código foi necessária.** Testes e revisão no [QA](QA.md) §7 e no [REVIEW](REVIEW.md) §6.
 
+## Merge (2026-10-22)
+
+- Aprovação: o Douglas validou a entrega e autorizou o merge, informado pelo Carlos. O Carlos autorizou tirar de draft e mergear.
+- Pré-check: head `dbb9b62` (o testado), checks verdes, `CLEAN`, 0 arquivos de migration ou schema, nenhum segredo nem arquivo
+  acidental no diff. CD anterior (merge da #112, run `39704493258`): sucesso, com `migrations applied successfully!`.
+- `gh pr ready 120` e `gh pr merge 120 --merge --match-head-commit dbb9b62…` → merge commit `15015fa`, em `origin/develop`.
+- CD da develop (run `39713265589`): CI, migrations (sem pendência nova), build e publicação na homologação com sucesso.
+- O workflow `Changelog` falha nos dois merges (#112 e #120) por falta do input `app-id` do GitHub App: configuração, fora do lote.
+
 ## Pendente
 
-| Item   | Registro                                              |
-| ------ | ----------------------------------------------------- |
-| T01-17 | **Verde** em `59bf798` (quality ✔, build ✔, testes ✔) |
-| T01-18 | Aceite: quem, quando, canal                           |
-| T01-19 | Autorização do merge e SHA                            |
-| T01-20 | Validação em homologação: quem, quando                |
+| Item   | Registro                                   |
+| ------ | ------------------------------------------ |
+| T01-17 | **Verde** em `59bf798` e em `dbb9b62`      |
+| T01-18 | Douglas, informado pelo Carlos, 2026-10-22 |
+| T01-19 | Autorizado; merge `15015fa`                |
+| T01-20 | Validação em homologação: quem, quando     |

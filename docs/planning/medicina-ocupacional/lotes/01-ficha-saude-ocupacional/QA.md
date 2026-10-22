@@ -177,3 +177,9 @@ Cobertura dos pontos pedidos na revalidação, pelas suítes acima:
 - a jornada no navegador da §5, incluindo o F5 após registrar exame. A porta 3001 estava ocupada por outro `next dev` que não é
   do agente, e a jornada exige o login do Carlos. O código do lote não mudou na integração; a regressão ficou com os testes acima;
 - o spec Playwright `protected`: continua bloqueado, sem `E2E_CLERK_*` em `.env`, `.env.local` ou no ambiente.
+
+## 8. Após o merge (2026-10-22)
+
+CD da develop no merge `15015fa` (run `39713265589`): CI ✔, migrations ✔ (sem pendência nova), build ✔, publicação na
+homologação ✔. **Nenhuma validação em homologação foi feita.** Seguem pendentes: jornada no navegador sobre a develop atual,
+Playwright `protected` (sem `E2E_CLERK_*`), telas de `client` e collaborator.

@@ -131,13 +131,16 @@
 
 ## 18. Aceite
 
-- [ ] **T01-18** Demonstração do FIRST-MVP §9 para Carlos e Douglas. Status: não iniciado.
+- [x] **T01-18** Aceite: o Douglas validou a entrega e autorizou o merge, informado pelo Carlos em 2026-10-22. A demonstração
+      formal do FIRST-MVP §9 não tem registro próprio.
 
 ## 19. Merge com autorização
 
-- [ ] **T01-19** Merge em `develop` **somente com autorização explícita**. Status: não iniciado. Zero migration: o CD não altera o
-      banco de homologação neste lote.
+- [x] **T01-19** Merge em `develop` com autorização do Douglas e do Carlos: PR #120, merge commit `15015fa` (2026-10-22 02:46 UTC).
+      CD da develop verde (run `39713265589`): migrations sem pendência nova (`migrations applied successfully!`), build e
+      publicação na homologação ok. Zero migration do lote.
 
 ## 20. Homologação
 
-- [ ] **T01-20** Validar em homologação com dados fictícios, só com autorização. Status: não iniciado.
+- [ ] **T01-20** Validar em homologação com dados fictícios, só com autorização. Status: não iniciado (deploy publicado, sem
+      validação registrada).
