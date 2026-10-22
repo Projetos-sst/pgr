@@ -47,7 +47,7 @@ export function CommercialAdmin({ initial }: { initial: List }) {
     });
   }
   return (
-    <section className="flex flex-col gap-5">
+    <section className="flex min-w-0 flex-col gap-5 break-words">
       <h2 className="text-xl font-bold">Administração de assinaturas</h2>
       <p>Visão restrita ao escritório ativo e a operadores autorizados.</p>
       <form

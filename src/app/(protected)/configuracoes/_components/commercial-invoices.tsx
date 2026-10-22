@@ -1,9 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, useEffect } from "react";
 import type { getCommercialCharges } from "@/shared/server/platform/billing-charges-core";
 import { getCommercialChargesAction } from "@/shared/server/actions/platform/billing-charges";
-import { openCommercialPortalAction } from "@/shared/server/actions/platform/billing-portal";
+import {
+  openCommercialPortalAction,
+  getCommercialPaymentProfileAction,
+} from "@/shared/server/actions/platform/billing-portal";
 type Invoices = Awaited<ReturnType<typeof getCommercialCharges>>;
 const money = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n / 100);
@@ -27,6 +30,24 @@ export function CommercialInvoices({
       null,
     ),
     key = useRef<string | null>(null);
+  const [method, setMethod] = useState<{ brand: string; last4: string } | null>(null);
+  useEffect(() => {
+    if (!customerId) return;
+    let current = true;
+    getCommercialPaymentProfileAction(customerId)
+      .then((r) => {
+        if (current) {
+          if (r.ok) setMethod(r.data.paymentMethod);
+          else setMessage(r.error.message);
+        }
+      })
+      .catch(() => {
+        if (current) setMessage("Não foi possível consultar o método de teste.");
+      });
+    return () => {
+      current = false;
+    };
+  }, [customerId]);
   function page(value: number) {
     start(async () => {
       try {
@@ -83,6 +104,16 @@ export function CommercialInvoices({
                   {new Date(i.createdAt).toLocaleString("pt-BR")}
                   <br />
                   {i.companyName}
+                  <p className="text-sm">
+                    Competência:{" "}
+                    {i.periodStart
+                      ? new Date(i.periodStart).toLocaleDateString("pt-BR")
+                      : "indisponível"}{" "}
+                    até{" "}
+                    {i.periodEnd
+                      ? new Date(i.periodEnd).toLocaleDateString("pt-BR")
+                      : "indisponível"}
+                  </p>
                 </td>
                 <td className="p-2">
                   <ul>
@@ -130,17 +161,23 @@ export function CommercialInvoices({
       <section className="flex flex-col gap-3 rounded-xl border bg-white p-5">
         <h3 className="font-bold">Método de pagamento e portal</h3>
         <p>
-          Nenhum cartão cadastrado no simulador. A sessão abaixo é temporária e exige seu
-          acesso de administrador.
+          Nenhum cartão real é coletado. A sessão abaixo é temporária e exige seu acesso
+          de administrador.
+        </p>
+        <p>
+          {method
+            ? `${method.brand} •••• ${method.last4}`
+            : "Nenhum método de teste vinculado ao cliente selecionado."}
         </p>
         <label className="flex flex-col gap-1">
           Cliente comercial
           <select
-            className="rounded-lg border p-2"
+            className="w-full min-w-0 rounded-lg border p-2"
             disabled={pending}
             value={customerId}
             onChange={(e) => {
               setCustomer(e.target.value);
+              setMethod(null);
               setPortal(null);
               key.current = null;
             }}

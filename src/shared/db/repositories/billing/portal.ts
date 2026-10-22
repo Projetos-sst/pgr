@@ -131,11 +131,13 @@ export function getBillingPaymentProfile(ctx: TenantContext, customerId: string)
             )
             .orderBy(desc(s.billingOperations.createdAt), desc(s.billingOperations.id))
             .limit(1)
-        ).map((method) => ({
-          brand: "Visa (teste)",
-          last4: "4242",
-          synchronizedAt: method.at.toISOString(),
-        }))[0] ?? null,
+        )
+          .map((method) => ({
+            brand: "Visa (teste)",
+            last4: "4242",
+            synchronizedAt: method.at.toISOString(),
+          }))
+          .at(0) ?? null,
       portalAvailable: true,
     };
   });

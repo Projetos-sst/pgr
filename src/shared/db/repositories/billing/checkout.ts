@@ -48,6 +48,11 @@ export function createCheckout(
     }
     const target = await company(tx, ctx, input.companyId);
     const selected = await offer(tx, ctx, input.priceId);
+    if (
+      selected.data.interval === "one_time" &&
+      selected.data.items.some((i) => i.product === "pro")
+    )
+      conflict("Selecione uma oferta avulsa somente de PGR ou Medicina.");
     const [latest] = await tx
       .select({ id: s.billingOffers.id })
       .from(s.billingOffers)

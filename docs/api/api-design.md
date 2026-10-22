@@ -79,6 +79,8 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
 
 ### Financeiro simulado (`/api/billing`) — owner, opt-in e fora de produção
 
+Resumo de superfícies novas: billing-portal (faturas, sessão privada e método fictício), billing-admin (permissão específica, filtros e reconciliação) e commercial (composição somente de leitura). As Actions correspondentes ficam em shared/server/actions/platform e reutilizam os cores descritos nas seções NOB-134/136/137.
+
 | Recurso                                                                                               | Métodos                  | Contrato                                                                       |
 | ----------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------ |
 | `/api/billing/plans`                                                                                  | GET, POST                | Catálogo atual paginado; criar versão imutável de oferta                       |
@@ -92,6 +94,14 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
 | `/api/billing/subscription/change-preview` · `/change` · `/cancel` · `/resume`                        | POST                     | Cotação, confirmação, cancelamento e retomada                                  |
 
 Detalhes, políticas e limites em “Catálogo comercial simulado — NOB-114” ao final deste documento.
+
+| Recurso                                                                                     | Métodos           | Contrato                                             |
+| ------------------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------- |
+| /api/billing                                                                                | GET               | Composição autenticada de leitura                    |
+| /api/billing/checkout-sessions/{id}                                                         | GET               | Retorno autenticado e não expirado                   |
+| /api/billing/invoices · /payment-profile                                                    | GET               | Faturas paginadas e método fictício mascarado        |
+| /api/billing/portal-sessions · /portal-sessions/{id} · /portal-sessions/{id}/payment-method | POST · GET · POST | Sessão privada, validação e sincronização fictícia   |
+| /api/admin/billing/subscriptions · /{id} · /{id}/reconcile                                  | GET · GET · POST  | Lista/ficha e reconciliação com permissão específica |
 
 ### Integrações externas (`/api/integrations`) — Route Handlers de consulta
 
@@ -396,6 +406,13 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
   para `/api/me`, enquanto `/api/v1` usa o **tenant interno** (Modelo B) via `requireOfficeStaff`.
 
 ## Sumário das actions/endpoints existentes
+
+| Comercial simulado     | Actions e REST                                                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Catálogo e checkout    | billing-catalog, billing-checkout e commercial; /api/billing/plans, /customers, /checkout-sessions, /api/billing                    |
+| Licenciamento e gestão | billing-subscriptions, billing-management, billing-orders, billing-trials, billing-interests; recursos /api/billing correspondentes |
+| Faturas e portal       | billing-charges e billing-portal; /api/billing/invoices, /payment-profile, /portal-sessions                                         |
+| Administração          | billing-admin; /api/admin/billing/subscriptions, /{id}, /{id}/reconcile                                                             |
 
 | Domínio                      | Arquivo                                      | Superfície                                                                                                                                                                                                                                                                                                                                                                             |
 | ---------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

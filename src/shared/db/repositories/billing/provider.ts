@@ -8,6 +8,7 @@ import {
   type NormalizedBillingEvent,
 } from "@/shared/domains/billing/contracts";
 import { scope, billingTransaction, audit, contract } from "./shared";
+import { nextMockPeriod } from "@/shared/domains/billing/mock-period";
 export function getProviderSnapshot(ctx: TenantContext, id: string) {
   return billingTransaction(ctx, async (tx) => {
     await contract(tx, ctx, id);
@@ -74,9 +75,7 @@ export function simulateProviderEvent(ctx: TenantContext, id: string, scenario: 
       snapshot = quote.data;
       if (quote.effectiveAt > start) start = quote.effectiveAt;
     }
-    const end = new Date(start);
-    if (snapshot.interval === "year") end.setUTCFullYear(end.getUTCFullYear() + 1);
-    else end.setUTCMonth(end.getUTCMonth() + 1);
+    const end = nextMockPeriod(start, snapshot.interval);
     const states: Record<
       string,
       {

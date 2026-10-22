@@ -2,6 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CommercialPanel } from "@/app/(protected)/configuracoes/_components/commercial-panel";
 import { CommercialOfferForm } from "@/app/(protected)/configuracoes/_components/commercial-offer-form";
+import { CommercialInvoices } from "@/app/(protected)/configuracoes/_components/commercial-invoices";
+import { getCommercialPaymentProfileAction } from "@/shared/server/actions/platform/billing-portal";
 import type { getCommercialOverview } from "@/shared/server/platform/commercial-core";
 import { getCommercialOverviewAction } from "@/shared/server/actions/platform/commercial";
 import { startCommercialCheckoutAction } from "@/shared/server/actions/platform/billing-checkout";
@@ -37,6 +39,7 @@ jest.mock("@/shared/server/actions/platform/billing-charges", () => ({
 }));
 jest.mock("@/shared/server/actions/platform/billing-portal", () => ({
   openCommercialPortalAction: jest.fn(),
+  getCommercialPaymentProfileAction: jest.fn(),
 }));
 type Data = Awaited<ReturnType<typeof getCommercialOverview>>;
 function fixture(pending = false): Data {
@@ -100,6 +103,48 @@ beforeEach(() => {
     .mockReturnValue("11111111-1111-4111-8111-111111111111");
 });
 afterEach(() => jest.restoreAllMocks());
+it("shows a synchronized test method and clears it when changing the selected customer", async () => {
+  const user = userEvent.setup();
+  jest
+    .mocked(getCommercialPaymentProfileAction)
+    .mockResolvedValueOnce({
+      ok: true,
+      data: {
+        customerId: "customer-a",
+        provider: "mock",
+        simulated: true,
+        paymentMethod: {
+          brand: "Visa (teste)",
+          last4: "4242",
+          synchronizedAt: new Date().toISOString(),
+        },
+        portalAvailable: true,
+      },
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      data: {
+        customerId: "customer-b",
+        provider: "mock",
+        simulated: true,
+        paymentMethod: null,
+        portalAvailable: true,
+      },
+    });
+  render(
+    <CommercialInvoices
+      initial={fixture().invoiceList}
+      customers={[
+        ...fixture().customers,
+        { id: "customer-b", companyId: "company-b", name: "Empresa B" },
+      ]}
+    />,
+  );
+  await screen.findByText("Visa (teste) •••• 4242");
+  await user.selectOptions(screen.getByLabelText("Cliente comercial"), "customer-b");
+  await screen.findByText("Nenhum método de teste vinculado ao cliente selecionado.");
+  expect(screen.queryByText("Visa (teste) •••• 4242")).not.toBeInTheDocument();
+});
 it("retains checkout retry identity after an unknown failure and does not send browser prices", async () => {
   const user = userEvent.setup();
   jest
