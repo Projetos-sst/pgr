@@ -2,6 +2,7 @@
 
 import { downloadFileName } from "@/shared/domains/documents/documents";
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { assertPgrBillingExportAllowed } from "@/shared/db/repositories/billing-export";
 import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
 import * as repo from "@/shared/db/repositories/documents";
@@ -25,6 +26,8 @@ export async function downloadDocumentAction(
   return officeAction("documents.documents.download", async ({ tenantId }) => {
     const doc = await repo.getDocumentById(tenantId, id);
     if (!doc) throw new NotFoundError();
+    if (doc.relatedEntityType === "pgr" && doc.relatedEntityId)
+      await assertPgrBillingExportAllowed(tenantId, doc.relatedEntityId);
 
     const url = await getSignedDownloadUrl(doc.storagePath, {
       downloadName: downloadFileName(doc.name, doc.storagePath),
