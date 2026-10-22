@@ -1,0 +1,160 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { seedPgrBase } from "../_helpers/pgr-seed";
+import { seedMedicine } from "../_helpers/medicine-seed";
+
+const enabled = !!process.env.INTEGRATION_DATABASE_URL_ADMIN;
+const folder = path.resolve("src/shared/db/migrations");
+const journal = JSON.parse(
+  fs.readFileSync(path.join(folder, "meta/_journal.json"), "utf8"),
+) as {
+  entries: { idx: number; tag: string; when: number }[];
+};
+const newTables = [
+  "machine_installations",
+  "machine_installation_events",
+  "pgr_basic_offer_versions",
+  "pgr_basic_offer_publication",
+  "pgr_basic_offer_events",
+  "pgr_review_samples",
+  "pgr_review_decisions",
+];
+
+(enabled ? describe : describe.skip)(
+  "PGR integration official Drizzle migration chain",
+  () => {
+    async function isolated(run: (db: ReturnType<typeof postgres>) => Promise<void>) {
+      const url = new URL(process.env.INTEGRATION_DATABASE_URL_ADMIN!);
+      // This test must never create or seed a database on an application server.
+      if (
+        !["localhost", "127.0.0.1"].includes(url.hostname) ||
+        url.pathname !== "/sst_test"
+      )
+        throw new Error(
+          "Migration rehearsal requires an isolated local /sst_test cluster.",
+        );
+      const name = `pgr_migration_${randomUUID().replaceAll("-", "")}`;
+      const control = postgres(url.toString(), {
+        max: 1,
+        prepare: false,
+        onnotice: () => {},
+      });
+      let db: ReturnType<typeof postgres> | undefined;
+      let created = false;
+      try {
+        await control.unsafe(`create database "${name}"`);
+        created = true;
+        url.pathname = `/${name}`;
+        db = postgres(url.toString(), { max: 1, prepare: false, onnotice: () => {} });
+        await db.unsafe(fs.readFileSync("scripts/ci-integration-bootstrap.sql", "utf8"));
+        await run(db);
+      } finally {
+        await db?.end({ timeout: 5 });
+        try {
+          if (created) await control.unsafe(`drop database "${name}"`);
+        } finally {
+          await control.end({ timeout: 5 });
+        }
+      }
+    }
+
+    async function assertFinal(db: ReturnType<typeof postgres>) {
+      const rows =
+        await db`select hash, created_at from drizzle.__drizzle_migrations order by id`;
+      expect(rows).toHaveLength(journal.entries.length);
+      expect(Number(rows.at(-1)!.created_at)).toBe(journal.entries.at(-1)!.when);
+      const tables = await db<{ relname: string; relrowsecurity: boolean }[]>`
+      select relname, relrowsecurity from pg_class
+      where relnamespace='public'::regnamespace and relname in ${db(newTables)}`;
+      expect(tables.map((t) => t.relname).sort()).toEqual([...newTables].sort());
+      expect(tables.every((t) => t.relrowsecurity)).toBe(true);
+      for (const table of newTables) {
+        const [privileges] = await db`
+        select has_table_privilege('app_runtime',${`public.${table}`},'SELECT') as readable,
+          has_table_privilege('app_runtime',${`public.${table}`},'INSERT') as insertable,
+          has_table_privilege('app_runtime',${`public.${table}`},'DELETE') as deletable`;
+        expect(privileges).toEqual({
+          readable: true,
+          insertable: true,
+          deletable: false,
+        });
+        const [{ count }] =
+          await db`select count(*)::int as count from pg_policies where schemaname='public' and tablename=${table}`;
+        expect(count).toBeGreaterThan(0);
+      }
+      const [{ invalid }] = await db`select count(*)::int as invalid from pg_constraint
+      where contype='f' and conrelid in (select oid from pg_class where relname in ${db(newTables)}) and not convalidated`;
+      expect(invalid).toBe(0);
+    }
+
+    it("applies the official journal from an empty database and is idempotent", async () => {
+      await isolated(async (db) => {
+        await migrate(drizzle(db), { migrationsFolder: folder });
+        await assertFinal(db);
+        await migrate(drizzle(db), { migrationsFolder: folder });
+        await assertFinal(db);
+      });
+    }, 120_000);
+
+    it("upgrades 0056 to 0059 preserving NOB-98 and Medicine Lote 01 records", async () => {
+      const baseline = fs.mkdtempSync(path.join(os.tmpdir(), "pgr-0056-"));
+      try {
+        fs.mkdirSync(path.join(baseline, "meta"));
+        const entries = journal.entries.filter((e) => e.idx <= 56);
+        fs.writeFileSync(
+          path.join(baseline, "meta/_journal.json"),
+          JSON.stringify({ ...journal, entries }),
+        );
+        for (const entry of entries)
+          fs.copyFileSync(
+            path.join(folder, `${entry.tag}.sql`),
+            path.join(baseline, `${entry.tag}.sql`),
+          );
+        await isolated(async (db) => {
+          await migrate(drizzle(db), { migrationsFolder: baseline });
+          await seedPgrBase(db);
+          await seedMedicine(db);
+          await db`insert into medical_risk_sources (org_id,company_id,kind,title,version,reference,fingerprint,registered_by)
+          select org_id,id,'external','Migration fixture','1','Fictitious reference','migration-fixture','fixture'
+          from companies where org_id='org_a' limit 1`;
+          const oldTables = [
+            "companies",
+            "employees",
+            "company_modules",
+            "pgr",
+            "risks",
+            "risk_assessments",
+            "health_exams",
+            "medical_risk_sources",
+          ];
+          const read = async () => {
+            const records: Record<string, unknown> = {};
+            for (const table of oldTables)
+              records[table] = await db.unsafe(
+                `select to_jsonb(t) as data from public."${table}" t order by to_jsonb(t)::text`,
+              );
+            return records;
+          };
+          const before = await read();
+          await migrate(drizzle(db), { migrationsFolder: folder });
+          await assertFinal(db);
+          expect(await read()).toEqual(before);
+        });
+      } finally {
+        // Only remove the exact temporary folder created by this test.
+        const resolved = path.resolve(baseline);
+        if (
+          !resolved.startsWith(path.resolve(os.tmpdir()) + path.sep) ||
+          !path.basename(resolved).startsWith("pgr-0056-")
+        )
+          throw new Error("Invalid migration rehearsal cleanup path.");
+        fs.rmSync(resolved, { recursive: true, force: true });
+      }
+    }, 120_000);
+  },
+);

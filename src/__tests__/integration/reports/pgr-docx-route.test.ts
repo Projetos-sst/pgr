@@ -34,6 +34,13 @@ beforeEach(() => {
     file: Buffer.from("%PDF-1.4"),
     title: "PGR",
     missingTags: [],
+    provenance: {
+      pgrId: "pgr-1",
+      generatedAt: "2026-10-20T12:00:00.000Z",
+      templateSha256: "a".repeat(64),
+      sourceSha256: "b".repeat(64),
+      fileSha256: "c".repeat(64),
+    },
   });
 });
 afterAll(() => {
@@ -50,6 +57,10 @@ describe("exportação pelo template DOCX", () => {
       'attachment; filename="pgr-1.pdf"',
     );
     expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("x-pgr-generated-at")).toBe("2026-10-20T12:00:00.000Z");
+    expect(response.headers.get("x-pgr-template-sha256")).toBe("a".repeat(64));
+    expect(response.headers.get("x-pgr-source-sha256")).toBe("b".repeat(64));
+    expect(response.headers.get("x-pgr-file-sha256")).toBe("c".repeat(64));
   });
 
   it("mantém download DOCX quando formato não é informado", async () => {

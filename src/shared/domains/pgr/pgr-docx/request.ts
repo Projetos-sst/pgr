@@ -65,6 +65,11 @@ export type PgrDocxOverridesInput = z.input<typeof pgrDocxOverridesSchema>;
 export const pgrDocxRequestSchema = z
   .object({
     format: pgrDocxFormatSchema.default("docx"),
+    purpose: z.enum(["preview", "issue"]).optional(),
+    expectedSourceSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
     overrides: pgrDocxOverridesSchema.optional(),
   })
   .strict();
