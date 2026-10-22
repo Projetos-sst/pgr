@@ -13,6 +13,7 @@ import { companyModules, companyModuleEvents } from "../schema/company-modules";
 import { resolvePageParams, type PageParams } from "@/shared/pagination";
 import type { CompanyModuleChange } from "@/shared/domains/platform/company-modules";
 import { auditedTenantWrite } from "./audited-write";
+import { companyModuleScope } from "../schema/module-policy";
 
 export async function assertCompanyModuleTx(
   tx: TenantTransaction,
@@ -21,14 +22,13 @@ export async function assertCompanyModuleTx(
   module: CompanyModule,
 ): Promise<void> {
   const [enabled] = await tx
-    .select({ id: companyModules.id })
-    .from(companyModules)
+    .select({ id: companies.id })
+    .from(companies)
     .where(
       and(
-        eq(companyModules.orgId, orgId),
-        eq(companyModules.companyId, companyId),
-        eq(companyModules.module, module),
-        eq(companyModules.enabled, true),
+        eq(companies.orgId, orgId),
+        eq(companies.id, companyId),
+        companyModuleScope(companies.orgId, companies.id, module),
       ),
     )
     .limit(1);
@@ -41,20 +41,19 @@ export async function getCompanyModules(
 ): Promise<CompanyModuleView[]> {
   return withOrg(orgId, async (tx) => {
     const [company] = await tx
-      .select({ id: companies.id })
+      .select({
+        id: companies.id,
+        // Selected SQL expressions need explicit outer qualification inside correlated subqueries.
+        pgr: sql<boolean>`coalesce(${companyModuleScope(sql`"companies"."org_id"`, sql`"companies"."id"`, "pgr")},false)`,
+        medicine: sql<boolean>`coalesce(${companyModuleScope(sql`"companies"."org_id"`, sql`"companies"."id"`, "medicine")},false)`,
+      })
       .from(companies)
       .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId)))
       .limit(1);
     if (!company) throw new NotFoundError();
-    const rows = await tx
-      .select()
-      .from(companyModules)
-      .where(
-        and(eq(companyModules.orgId, orgId), eq(companyModules.companyId, companyId)),
-      );
     return COMPANY_MODULES.map((module) => ({
       module,
-      enabled: rows.some((row) => row.module === module && row.enabled),
+      enabled: company[module],
     }));
   });
 }
@@ -69,19 +68,16 @@ export async function setCompanyModule(
   return auditedTenantWrite(orgId, "platform.company_modules.write_rejected", () =>
     withOrg(orgId, async (tx) => {
       const [company] = await tx
-        .select({ id: companies.id })
+        .select({
+          id: companies.id,
+          effective: sql<boolean>`coalesce(${companyModuleScope(sql`"companies"."org_id"`, sql`"companies"."id"`, input.module)},false)`,
+        })
         .from(companies)
         .where(and(eq(companies.orgId, orgId), eq(companies.id, companyId)))
         .for("update")
         .limit(1);
       if (!company) throw new NotFoundError();
-      const scope = and(
-        eq(companyModules.orgId, orgId),
-        eq(companyModules.companyId, companyId),
-        eq(companyModules.module, input.module),
-      );
-      const [current] = await tx.select().from(companyModules).where(scope).limit(1);
-      const previousEnabled = current?.enabled ?? false;
+      const previousEnabled = company.effective;
       if (previousEnabled === input.enabled) return;
       await tx
         .insert(companyModules)

@@ -7,6 +7,7 @@ import {
   type EnqueuePgrPdfBatchInput,
 } from "@/shared/domains/documents/pdf-batch";
 import { officeAction } from "@/shared/server/office-action";
+import { assertPgrBillingExportAllowed } from "@/shared/db/repositories/billing-export";
 import type { ActionResult } from "@/shared/server/result";
 import { enqueuePgrPdf, type EnqueuedPgrPdf } from "@/shared/db/repositories/pdf-batch";
 
@@ -24,6 +25,7 @@ export async function enqueuePgrPdfBatchAction(
     "documents.pdf_batch.enqueue",
     async ({ tenantId }) => {
       const ids = enqueuePgrPdfBatchSchema.parse(pgrIds);
+      for (const pgrId of ids) await assertPgrBillingExportAllowed(tenantId, pgrId);
       const enqueued: EnqueuedPgrPdf[] = [];
       for (const pgrId of ids) {
         enqueued.push(await enqueuePgrPdf(tenantId, pgrId));

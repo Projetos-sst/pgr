@@ -433,6 +433,7 @@ function PgrEpiRelationPanel({ items }: { items: PgrEpiRelationItem[] }) {
 
 /** Etapa "Documentos e PDF" do editor de PGR — compõe os painéis. */
 export function PgrDocumentsTab({
+  billingExportBlocked = false,
   pgrId,
   pgrLabel,
   linkedDocuments,
@@ -441,6 +442,7 @@ export function PgrDocumentsTab({
   epiRelation,
 }: {
   pgrId: string;
+  billingExportBlocked?: boolean;
   pgrLabel: string;
   linkedDocuments: DocumentListItem[];
   linkedTotal: number;
@@ -450,7 +452,23 @@ export function PgrDocumentsTab({
 }) {
   return (
     <div className="flex flex-col gap-6">
-      <PgrPdfPanel pgrId={pgrId} />
+      {billingExportBlocked ? (
+        <section
+          role="status"
+          className="rounded-xl border border-amber-400 bg-amber-50 p-5 text-slate-900"
+        >
+          <h2 className="font-bold">Impressão e exportação indisponíveis no teste</h2>
+          <p>
+            Você pode preparar os dados. A emissão de documentos exige a contratação do
+            PGR.
+          </p>
+          <Link href="/configuracoes/planos" className="underline">
+            Consultar contratação
+          </Link>
+        </section>
+      ) : (
+        <PgrPdfPanel pgrId={pgrId} />
+      )}
       {nr18Checklist ? (
         <PgrNr18Panel pgrId={pgrId} pgrLabel={pgrLabel} checklist={nr18Checklist} />
       ) : null}

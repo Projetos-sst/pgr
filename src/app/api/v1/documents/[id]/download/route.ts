@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { restHandler } from "@/shared/api/rest";
 import { downloadFileName } from "@/shared/domains/documents/documents";
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { assertPgrBillingExportAllowed } from "@/shared/db/repositories/billing-export";
 import * as repo from "@/shared/db/repositories/documents";
 import {
   getSignedDownloadUrl,
@@ -27,6 +28,8 @@ export function GET(req: NextRequest, { params }: Ctx) {
     const { id } = await params;
     const doc = await repo.getDocumentById(tenantId, id);
     if (!doc) throw new NotFoundError();
+    if (doc.relatedEntityType === "pgr" && doc.relatedEntityId)
+      await assertPgrBillingExportAllowed(tenantId, doc.relatedEntityId);
 
     const url = await getSignedDownloadUrl(doc.storagePath, {
       downloadName: downloadFileName(doc.name, doc.storagePath),

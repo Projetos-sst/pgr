@@ -275,6 +275,30 @@
       "key": "pgrReviewSampleId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "billingPriceId",
+      "value": ""
+    },
+    {
+      "key": "billingContractId",
+      "value": ""
+    },
+    {
+      "key": "billingOrderId",
+      "value": ""
+    },
+    {
+      "key": "billingTrialId",
+      "value": ""
+    },
+    {
+      "key": "billingInterestId",
+      "value": ""
+    },
+    {
+      "key": "billingQuoteId",
+      "value": ""
     }
   ],
   "item": [
@@ -9701,6 +9725,489 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"expectedLatestDecisionId\": null,\n  \"status\": \"changes_requested\",\n  \"reviewer\": {\n    \"fullName\": \"Avaliador fictício\",\n    \"profession\": \"Profissão declarada\",\n    \"registration\": {\n      \"kind\": \"registered\",\n      \"council\": \"Órgão declarado\",\n      \"number\": \"Número declarado\"\n    }\n  },\n  \"reviewedAt\": \"2026-01-01T10:00:00Z\",\n  \"evidenceReference\": \"Substituir pela referência do parecer real\",\n  \"reason\": \"Substituir pelo parecer recebido\",\n  \"findings\": [\n    {\n      \"key\": \"ACH-1\",\n      \"location\": \"Inventário\",\n      \"description\": \"Descrição fictícia para substituir\",\n      \"severity\": \"blocking\",\n      \"resolution\": \"open\",\n      \"correctionReference\": null\n    }\n  ]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial simulado — NOB-114",
+      "description": "Owner autenticado, opt-in local/sandbox/test; não usa bypass público nem cobrança real.",
+      "item": [
+        {
+          "name": "Catálogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "plans"]
+            }
+          }
+        },
+        {
+          "name": "Clientes comerciais",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "customers"]
+            }
+          }
+        },
+        {
+          "name": "Cadastrar cliente comercial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "customers"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Criar versão fictícia de oferta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "plans"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"exemplo-ficticio\",\n  \"name\": \"Oferta fictícia de simulação\",\n  \"interval\": \"month\",\n  \"items\": [\n    {\n      \"product\": \"pgr\",\n      \"label\": \"PGR fictício\",\n      \"amountMinor\": 10000\n    }\n  ],\n  \"limits\": {\n    \"companies\": null,\n    \"employees\": null\n  },\n  \"policy\": {},\n  \"reason\": \"Cadastro fictício explícito para simulação\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Checkout simulado — NOB-132",
+      "item": [
+        {
+          "name": "Criar checkout simulado (repetir a mesma chave)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "checkout-simulacao-0001"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/checkout-sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "checkout-sessions"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"priceId\": \"{{billingPriceId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assinaturas e eventos simulados — NOB-133",
+      "item": [
+        {
+          "name": "Consultar assinaturas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "subscription"]
+            }
+          }
+        },
+        {
+          "name": "Simular pagamento aprovado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/simulation-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "simulation-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": \"{{billingContractId}}\",\n  \"scenario\": \"success\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reconciliar assinatura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription/reconcile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "subscription", "reconcile"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": \"{{billingContractId}}\",\n  \"reason\": \"Conferência explícita em ambiente simulado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cobranças por serviço — NOB-116",
+      "item": [
+        {
+          "name": "Consultar valores separados de PGR e Medicina",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/charges?page=1&companyId={{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "charges"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "companyId",
+                  "value": "{{companyId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Serviços avulsos — NOB-117",
+      "item": [
+        {
+          "name": "Criar pedido avulso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "one-off-order-0001"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"priceId\": \"{{billingPriceId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Consultar pedido avulso",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/orders/{{billingOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "orders", "{{billingOrderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Verificar autorização comercial do PGR avulso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/orders/{{billingOrderId}}/access",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "orders", "{{billingOrderId}}", "access"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"product\": \"pgr\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teste de 15 dias — NOB-118",
+      "item": [
+        {
+          "name": "Consultar teste por empresa",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/trials?companyId={{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "trials"],
+              "query": [
+                {
+                  "key": "companyId",
+                  "value": "{{companyId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Iniciar teste explícito (repetir não reinicia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/trials",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "trials"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Interesses e alertas internos — NOB-119",
+      "item": [
+        {
+          "name": "Consultar interesses não vistos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/billing/interests?status=pending&page=1"
+          }
+        },
+        {
+          "name": "Registrar interesse explícito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/interests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trialId\": \"{{billingTrialId}}\",\n  \"interest\": \"both\",\n  \"message\": \"Interesse explícito no modo simulado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Marcar alerta como visto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/interests/{{billingInterestId}}/acknowledge",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Alerta consultado pelo administrador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gestão da assinatura — NOB-135",
+      "item": [
+        {
+          "name": "Calcular prévia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/subscription/change-preview",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": \"{{billingContractId}}\",\n  \"priceId\": \"{{billingPriceId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Confirmar prévia vigente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/subscription/change",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quoteId\": \"{{billingQuoteId}}\",\n  \"reason\": \"Prévia confirmada pelo administrador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cancelar conforme política contratada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/subscription/cancel",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": \"{{billingContractId}}\",\n  \"reason\": \"Cancelamento explícito do administrador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Retomar cancelamento agendado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/billing/subscription/resume",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": \"{{billingContractId}}\",\n  \"reason\": \"Retomada explícita do administrador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         }
