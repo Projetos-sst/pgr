@@ -4,25 +4,25 @@
 
 ## 1. Identidade profissional — situação
 
-| Fato | Evidência |
-|---|---|
-| `medicos` tem `name`, `crm` (texto, sem UF), `specialty`, `clinic` (texto livre), `phone`, `status` | `src/shared/db/schema/medicos.ts:25-40` |
-| Sem `user_id`, sem UF do CRM, sem RQE; `UNIQUE(org_id, crm)` colide entre UFs | idem; [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.2 |
-| Único vínculo usuário ↔ escritório: `org_memberships`; `scoped_company_id` existe e não é aplicado | `src/shared/db/schema/org-memberships.ts:27`; [`../../AUDIT-SECURITY.md`](../../AUDIT-SECURITY.md) §4.1 |
-| Papéis de domínio: `owner`, `collaborator`, `client` (bloqueado); nenhum papel técnico/clínico | `src/shared/tenant/active-tenant.ts`; CLAUDE.md |
-| Psicólogos não cabem em `medicos` | GAP-MATRIX MED-27 |
-| `health_exams.doctor_id` com `SET NULL`: apagar o médico apaga a autoria | `src/shared/db/schema/health-exams.ts:51` |
+| Fato                                                                                                | Evidência                                                                                               |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `medicos` tem `name`, `crm` (texto, sem UF), `specialty`, `clinic` (texto livre), `phone`, `status` | `src/shared/db/schema/medicos.ts:25-40`                                                                 |
+| Sem `user_id`, sem UF do CRM, sem RQE; `UNIQUE(org_id, crm)` colide entre UFs                       | idem; [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.2                                         |
+| Único vínculo usuário ↔ escritório: `org_memberships`; `scoped_company_id` existe e não é aplicado  | `src/shared/db/schema/org-memberships.ts:27`; [`../../AUDIT-SECURITY.md`](../../AUDIT-SECURITY.md) §4.1 |
+| Papéis de domínio: `owner`, `collaborator`, `client` (bloqueado); nenhum papel técnico/clínico      | `src/shared/tenant/active-tenant.ts`; CLAUDE.md                                                         |
+| Psicólogos não cabem em `medicos`                                                                   | GAP-MATRIX MED-27                                                                                       |
+| `health_exams.doctor_id` com `SET NULL`: apagar o médico apaga a autoria                            | `src/shared/db/schema/health-exams.ts:51`                                                               |
 
 Consequência: **ninguém** pode hoje validar risco, assinar ASO ou coordenar PCMSO de forma rastreável.
 
 ## 2. Contrato de riscos — situação
 
-| Estado | Conteúdo | Fonte |
-|---|---|---|
-| IMPLEMENTADO (develop) | Empresa → GES → risco; avaliação; medidas; `ges_job_roles`; escrita de risco exige módulo PGR (#113); leitura não restrita por módulo | [`../../geral/03-ARQUITETURA-E-CONTRATOS.md`](../../geral/03-ARQUITETURA-E-CONTRATOS.md) §5.1 |
-| EM DESENVOLVIMENTO (#112) | `medical_risk_sources/entries/events`; `kind` interno/externo; fingerprint; frescor; INSERT só `pending`; runtime sem UPDATE/DELETE; `canUseMedicalRisk` = `validated` ∧ fresco | idem §5.2; [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.4–4.5 |
-| Não cobre (#112) | fluxo de validação; função/CBO/expostos na captura interna; classificação na externa; medidas/EPI; FK do documento externo; fingerprint inclui `pgr.updated_at` | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.5, §10.1 |
-| BLOQUEADO (decisão) | quem valida, como se identifica, escopo, revogação, riscos não validados no ASO | MED-DEC-02…07, 14 |
+| Estado                    | Conteúdo                                                                                                                                                                        | Fonte                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| IMPLEMENTADO (develop)    | Empresa → GES → risco; avaliação; medidas; `ges_job_roles`; escrita de risco exige módulo PGR (#113); leitura não restrita por módulo                                           | [`../../geral/03-ARQUITETURA-E-CONTRATOS.md`](../../geral/03-ARQUITETURA-E-CONTRATOS.md) §5.1 |
+| EM DESENVOLVIMENTO (#112) | `medical_risk_sources/entries/events`; `kind` interno/externo; fingerprint; frescor; INSERT só `pending`; runtime sem UPDATE/DELETE; `canUseMedicalRisk` = `validated` ∧ fresco | idem §5.2; [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.4–4.5                      |
+| Não cobre (#112)          | fluxo de validação; função/CBO/expostos na captura interna; classificação na externa; medidas/EPI; FK do documento externo; fingerprint inclui `pgr.updated_at`                 | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.5, §10.1                              |
+| BLOQUEADO (decisão)       | quem valida, como se identifica, escopo, revogação, riscos não validados no ASO                                                                                                 | MED-DEC-02…07, 14                                                                             |
 
 `reviewed_by` em `medical_risk_entries` é texto sem FK; aprovar exige migration nova porque a `0054` faz `REVOKE UPDATE, DELETE`
 e a policy `medical_risk_entries_pending_insert` só aceita `pending` ([`../../AUDIT-LINEAR-QA.md`](../../AUDIT-LINEAR-QA.md) §4.7).
@@ -57,14 +57,14 @@ e a policy `medical_risk_entries_pending_insert` só aceita `pending` ([`../../A
 
 ## 6. Riscos
 
-| Risco | Impacto | Mitigação |
-|---|---|---|
-| Implementar autorização a partir da resposta parcial | Regra errada em produção; aprovação em nome de terceiros | Lote BLOQUEADO até MED-DEC-02…07 |
-| Dois contratos de riscos ou de PGR externo | Retrabalho; dados divergentes | Regras de convivência ([`../../DEPENDENCIES.md`](../../DEPENDENCIES.md) §3) |
-| "Owner atesta" como atalho (opção D da Fase 0) | Contraria a spec da NOB-98; risco regulatório | Fora de questão sem decisão explícita |
-| Importar a Lista C parcial como oficial | Erro normativo propagado ao PCMSO | Só fonte oficial; base do protótipo só como fixture de teste do importador |
-| Coletar CPF do profissional sem necessidade | LGPD (minimização) | Dados mínimos decididos em MED-DEC-04 |
-| Migration de identidade antes da #112 | Regerar `0054`/`0055` | MED-DEC-08 |
+| Risco                                                | Impacto                                                  | Mitigação                                                                   |
+| ---------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Implementar autorização a partir da resposta parcial | Regra errada em produção; aprovação em nome de terceiros | Lote BLOQUEADO até MED-DEC-02…07                                            |
+| Dois contratos de riscos ou de PGR externo           | Retrabalho; dados divergentes                            | Regras de convivência ([`../../DEPENDENCIES.md`](../../DEPENDENCIES.md) §3) |
+| "Owner atesta" como atalho (opção D da Fase 0)       | Contraria a spec da NOB-98; risco regulatório            | Fora de questão sem decisão explícita                                       |
+| Importar a Lista C parcial como oficial              | Erro normativo propagado ao PCMSO                        | Só fonte oficial; base do protótipo só como fixture de teste do importador  |
+| Coletar CPF do profissional sem necessidade          | LGPD (minimização)                                       | Dados mínimos decididos em MED-DEC-04                                       |
+| Migration de identidade antes da #112                | Regerar `0054`/`0055`                                    | MED-DEC-08                                                                  |
 
 ## 7. Dependências
 

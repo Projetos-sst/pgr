@@ -5,12 +5,12 @@
 
 **NÃO INICIADO — nenhuma revisão realizada** <!-- remover quando houver a primeira revisão -->
 
-| Campo | Valor |
-|---|---|
-| Revisor | <preencher: nome ou "subagente independente"> |
-| Data | <preencher: AAAA-MM-DD> |
-| Escopo revisado | <preencher: branch/SHA ou PR> |
-| Parecer | <preencher: aprovado / aprovado com ressalvas / mudanças necessárias> |
+| Campo           | Valor                                                                 |
+| --------------- | --------------------------------------------------------------------- |
+| Revisor         | <preencher: nome ou "subagente independente">                         |
+| Data            | <preencher: AAAA-MM-DD>                                               |
+| Escopo revisado | <preencher: branch/SHA ou PR>                                         |
+| Parecer         | <preencher: aprovado / aprovado com ressalvas / mudanças necessárias> |
 
 ## Checklist do que revisar
 
@@ -30,9 +30,9 @@
 
 ## Achados
 
-| # | Severidade | Achado | Arquivo:linha | Resolução |
-|---|---|---|---|---|
-| R1 | <preencher: bloqueante / importante / menor> | <preencher> | <preencher> | <preencher: corrigido em SHA real / aceito / pendente> |
+| #   | Severidade                                   | Achado      | Arquivo:linha | Resolução                                              |
+| --- | -------------------------------------------- | ----------- | ------------- | ------------------------------------------------------ |
+| R1  | <preencher: bloqueante / importante / menor> | <preencher> | <preencher>   | <preencher: corrigido em SHA real / aceito / pendente> |
 
 ## Conclusão
 

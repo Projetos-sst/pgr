@@ -13,16 +13,16 @@
 
 ## 1. Evidência no `cd.yml`
 
-| Linhas | O que faz |
-|---|---|
-| `cd.yml:5-8` | `on: push: branches: [develop, main]` (+ `workflow_dispatch` manual) |
-| `cd.yml:19-22` | job `ci` reusa `ci.yml` sobre o commit integrado |
-| `cd.yml:24-26` | job `deploy` com `needs: ci` |
-| `cd.yml:30-34` | escolhe os secrets pela branch: `main` → produção; `develop` → `VERCEL_DEVELOP_*` (homologação); sem fallback entre eles |
-| `cd.yml:64-65` | `vercel pull` baixa as variáveis reais do projeto da branch |
+| Linhas             | O que faz                                                                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cd.yml:5-8`       | `on: push: branches: [develop, main]` (+ `workflow_dispatch` manual)                                                                               |
+| `cd.yml:19-22`     | job `ci` reusa `ci.yml` sobre o commit integrado                                                                                                   |
+| `cd.yml:24-26`     | job `deploy` com `needs: ci`                                                                                                                       |
+| `cd.yml:30-34`     | escolhe os secrets pela branch: `main` → produção; `develop` → `VERCEL_DEVELOP_*` (homologação); sem fallback entre eles                           |
+| `cd.yml:64-65`     | `vercel pull` baixa as variáveis reais do projeto da branch                                                                                        |
 | **`cd.yml:67-75`** | **"Aplica as migrations no banco do ambiente"**: exige `DATABASE_URL_UNPOOLED` e roda `node --env-file=… node_modules/drizzle-kit/bin.cjs migrate` |
-| `cd.yml:77-78` | `vercel build` (só depois das migrations) |
-| `cd.yml:82-106` | `vercel deploy --prebuilt` |
+| `cd.yml:77-78`     | `vercel build` (só depois das migrations)                                                                                                          |
+| `cd.yml:82-106`    | `vercel deploy --prebuilt`                                                                                                                         |
 
 Mapeamento de ambientes (`docs/deploy/vercel.md`, tabela inicial e §"Pipeline"): `develop` → projeto `develop-pgr-e`,
 Supabase e Clerk de testes, `APP_ENV=sandbox`; `main` → `pgr-e-production`, Supabase próprio, `APP_ENV=production`.
@@ -34,18 +34,18 @@ Estado em 21/10/2026: develop em `0053_company_module_access`; `origin/main` em 
 
 ## 2. Branches, PR e CI
 
-| Item | Regra |
-|---|---|
-| `develop` | integração; cada merge = deploy + migration em homologação |
-| `main` | produção; recebe release por PR `develop → main` |
-| Branch de lote | `feature/NOB-XXX-<slug>`, criada a partir de **`origin/develop` atualizado** (`git fetch` antes). Um lote = uma branch = uma PR |
-| Branch já criada | Lote 1: `feature/NOB-108-ficha-saude-ocupacional` (sem código em 21/10) |
-| PR | base **`develop`** sempre. PR empilhada (base = outra branch) **não roda CI**, porque `ci.yml:3-5` só dispara em `pull_request` para `develop`/`main` (foi o que aconteceu com a #112) |
-| CI (`ci.yml`) | `quality` (Prettier, ESLint, typecheck), `test` (Postgres 16 efêmero, `npm run test`, `test:deploy`, `test:integration`), `build`. Envs de Clerk/Supabase são placeholders |
-| Playwright | **não roda no CI**; E2E é local (projeto `protected` com `E2E_PROTECTED=1`) |
-| Proteção de branch / checks obrigatórios | NÃO_VERIFICADO (API de rulesets indisponível no plano) |
-| `changelog.yml` | reescreve o CHANGELOG em push na develop via GitHub App |
-| Merge | só com aprovação e autorização explícita; MERGED ≠ HOMOLOGADO ≠ PUBLICADO ([07](07-CRITERIOS-DE-ENTREGA.md)) |
+| Item                                     | Regra                                                                                                                                                                                  |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `develop`                                | integração; cada merge = deploy + migration em homologação                                                                                                                             |
+| `main`                                   | produção; recebe release por PR `develop → main`                                                                                                                                       |
+| Branch de lote                           | `feature/NOB-XXX-<slug>`, criada a partir de **`origin/develop` atualizado** (`git fetch` antes). Um lote = uma branch = uma PR                                                        |
+| Branch já criada                         | Lote 1: `feature/NOB-108-ficha-saude-ocupacional` (sem código em 21/10)                                                                                                                |
+| PR                                       | base **`develop`** sempre. PR empilhada (base = outra branch) **não roda CI**, porque `ci.yml:3-5` só dispara em `pull_request` para `develop`/`main` (foi o que aconteceu com a #112) |
+| CI (`ci.yml`)                            | `quality` (Prettier, ESLint, typecheck), `test` (Postgres 16 efêmero, `npm run test`, `test:deploy`, `test:integration`), `build`. Envs de Clerk/Supabase são placeholders             |
+| Playwright                               | **não roda no CI**; E2E é local (projeto `protected` com `E2E_PROTECTED=1`)                                                                                                            |
+| Proteção de branch / checks obrigatórios | NÃO_VERIFICADO (API de rulesets indisponível no plano)                                                                                                                                 |
+| `changelog.yml`                          | reescreve o CHANGELOG em push na develop via GitHub App                                                                                                                                |
+| Merge                                    | só com aprovação e autorização explícita; MERGED ≠ HOMOLOGADO ≠ PUBLICADO ([07](07-CRITERIOS-DE-ENTREGA.md))                                                                           |
 
 ### 2.1 Atualizar a base da branch
 
@@ -65,17 +65,17 @@ Estado em 21/10/2026: develop em `0053_company_module_access`; `origin/main` em 
 > está pendente em [04](04-DECISOES-E-BLOQUEIOS.md). As linhas sobre `when`, journal, snapshots, transação e ausência de
 > rollback descrevem o **comportamento verificado** da ferramenta, não proposta.
 
-| Regra | Motivo |
-|---|---|
-| **Uma migration por PR** | revisão e recuperação simples |
-| Gerada com `npm run db:generate` (drizzle-kit) a partir do schema; GRANTs, triggers `set_updated_at` e policies especiais como SQL custom dentro do arquivo gerado | Drizzle é dono code-first (CLAUDE.md) |
-| **Aditiva**: sem DROP, sem rename destrutivo, sem `NOT NULL` em coluna existente no mesmo passo | é aplicada em homologação no merge e em produção no release |
-| Estados novos em **`text` + CHECK**, não `ALTER TYPE … ADD VALUE` | o lote de pendentes roda numa transação; usar o valor novo do enum no mesmo lote falha (AUDIT-DATABASE R3) |
-| Backfill idempotente e rápido (lock) | roda no banco real |
-| `when` do journal **maior que o maior `when` existente** | o migrator do drizzle-orm 0.45 pula sem erro migration com `when` menor que o último aplicado (AUDIT-DATABASE §4.1, `dialect.js`). Precedente: `0026_user_is_master` tem `when` 1784600000000, maior que o da `0027` (1784448304145) |
-| Nunca editar `meta/_journal.json` nem snapshots à mão | snapshots encadeiam a partir do anterior |
-| Ensaio em Postgres efêmero antes do merge | o helper de integração aplica os `.sql` em **ordem alfabética** e não lê o journal (`_helpers/db.ts`); conferir que nome, ordem e journal concordam |
-| Sem rollback: correção = migration nova para frente | não existe "down" no drizzle-kit |
+| Regra                                                                                                                                                              | Motivo                                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Uma migration por PR**                                                                                                                                           | revisão e recuperação simples                                                                                                                                                                                                        |
+| Gerada com `npm run db:generate` (drizzle-kit) a partir do schema; GRANTs, triggers `set_updated_at` e policies especiais como SQL custom dentro do arquivo gerado | Drizzle é dono code-first (CLAUDE.md)                                                                                                                                                                                                |
+| **Aditiva**: sem DROP, sem rename destrutivo, sem `NOT NULL` em coluna existente no mesmo passo                                                                    | é aplicada em homologação no merge e em produção no release                                                                                                                                                                          |
+| Estados novos em **`text` + CHECK**, não `ALTER TYPE … ADD VALUE`                                                                                                  | o lote de pendentes roda numa transação; usar o valor novo do enum no mesmo lote falha (AUDIT-DATABASE R3)                                                                                                                           |
+| Backfill idempotente e rápido (lock)                                                                                                                               | roda no banco real                                                                                                                                                                                                                   |
+| `when` do journal **maior que o maior `when` existente**                                                                                                           | o migrator do drizzle-orm 0.45 pula sem erro migration com `when` menor que o último aplicado (AUDIT-DATABASE §4.1, `dialect.js`). Precedente: `0026_user_is_master` tem `when` 1784600000000, maior que o da `0027` (1784448304145) |
+| Nunca editar `meta/_journal.json` nem snapshots à mão                                                                                                              | snapshots encadeiam a partir do anterior                                                                                                                                                                                             |
+| Ensaio em Postgres efêmero antes do merge                                                                                                                          | o helper de integração aplica os `.sql` em **ordem alfabética** e não lê o journal (`_helpers/db.ts`); conferir que nome, ordem e journal concordam                                                                                  |
+| Sem rollback: correção = migration nova para frente                                                                                                                | não existe "down" no drizzle-kit                                                                                                                                                                                                     |
 
 Referências de `when` em 21/10: maior da develop = `1792509152595` (0053); se a #112 entrar, `1792515723005` (0055).
 

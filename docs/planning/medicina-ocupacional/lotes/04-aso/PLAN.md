@@ -12,13 +12,13 @@ append-only. Retificar gera nova emissão; a anterior continua consultável.
 
 Entregas internas sugeridas:
 
-| Fase | Entrega | Condição |
-|---|---|---|
-| 4a | Formulário definitivo + prévia/rascunho identificada | A-03, P1 (Lote 03), P4 (Lote 02) |
-| 4b | Emissão com snapshot imutável no GED, estado "emitido, sem assinatura técnica" | D-06 + desenho P7 aprovado pelo Douglas + A-05/A-09 |
-| 4c | Ciência do trabalhador (registry `aso`) | 4b |
-| 4d | Assinatura técnica ICP-Brasil | E-07 (provedor) + P8 |
-| — | Seção de riscos no ASO | NOB-98 com revisão (P5) **ou** resposta A-04 |
+| Fase | Entrega                                                                        | Condição                                            |
+| ---- | ------------------------------------------------------------------------------ | --------------------------------------------------- |
+| 4a   | Formulário definitivo + prévia/rascunho identificada                           | A-03, P1 (Lote 03), P4 (Lote 02)                    |
+| 4b   | Emissão com snapshot imutável no GED, estado "emitido, sem assinatura técnica" | D-06 + desenho P7 aprovado pelo Douglas + A-05/A-09 |
+| 4c   | Ciência do trabalhador (registry `aso`)                                        | 4b                                                  |
+| 4d   | Assinatura técnica ICP-Brasil                                                  | E-07 (provedor) + P8                                |
+| —    | Seção de riscos no ASO                                                         | NOB-98 com revisão (P5) **ou** resposta A-04        |
 
 **Entrega independente do PCMSO:** 4a–4c não exigem versão de PCMSO. Só a seção de riscos depende da cadeia NOB-98.
 Quando o PCMSO existir (Lote 05), o snapshot do ASO poderá referenciar a versão vigente.
@@ -49,27 +49,27 @@ Rotas indicativas (HIPÓTESE): `POST /api/v1/health-exams/[id]/aso-issuances` (e
 
 ## 3. Arquivos (indicativos)
 
-| Camada | Arquivo provável |
-|---|---|
-| Domínio | `src/shared/domains/medicine/aso.ts` (schema do formulário, campos obrigatórios, máquina de estados) |
-| Repositório | `src/shared/db/repositories/aso-issuances.ts` (ou o repositório genérico de emissões, se D-06 escolher a camada genérica) |
-| Action | `src/shared/server/actions/medicine/aso.ts` |
-| REST | `src/app/api/v1/health-exams/[id]/aso-issuances/**` |
-| Worker | novo `kind: 'aso'` em `src/shared/domains/documents/pdf-batch.ts:9` e ramo em `pdf-batch-core.ts` — **somente com o aceite do Douglas** |
-| Template | `scripts/aso-docx/*` + `templates/aso/` no padrão de `scripts/pgr-docx` (HIPÓTESE de nome) |
-| Registry | `src/shared/domains/signatures/targets/aso.ts` + entrada em `contract.ts` |
-| UI | `/health-exams/[id]` (visualizar/emitir), prévia com faixa "PRÉVIA — sem validade legal"; primitives `_ui`, Manrope/JetBrains Mono, indigo `#5B63F5` |
+| Camada      | Arquivo provável                                                                                                                                     |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domínio     | `src/shared/domains/medicine/aso.ts` (schema do formulário, campos obrigatórios, máquina de estados)                                                 |
+| Repositório | `src/shared/db/repositories/aso-issuances.ts` (ou o repositório genérico de emissões, se D-06 escolher a camada genérica)                            |
+| Action      | `src/shared/server/actions/medicine/aso.ts`                                                                                                          |
+| REST        | `src/app/api/v1/health-exams/[id]/aso-issuances/**`                                                                                                  |
+| Worker      | novo `kind: 'aso'` em `src/shared/domains/documents/pdf-batch.ts:9` e ramo em `pdf-batch-core.ts` — **somente com o aceite do Douglas**              |
+| Template    | `scripts/aso-docx/*` + `templates/aso/` no padrão de `scripts/pgr-docx` (HIPÓTESE de nome)                                                           |
+| Registry    | `src/shared/domains/signatures/targets/aso.ts` + entrada em `contract.ts`                                                                            |
+| UI          | `/health-exams/[id]` (visualizar/emitir), prévia com faixa "PRÉVIA — sem validade legal"; primitives `_ui`, Manrope/JetBrains Mono, indigo `#5B63F5` |
 
 ## 4. Tabelas e migrations (propostas de [AUDIT-DATABASE §10.4](../../AUDIT-DATABASE.md))
 
-| Proposta | Uso no ASO | Lote dono | Depende de |
-|---|---|---|---|
-| P1 identidade + designação | emissor/assinante identificado | [Lote 03](../03-identidade-e-riscos/README.md) | decisão NOB-98 |
-| P3 `employee_job_assignments` | função na data do exame | este lote (ou antes, é independente) | — |
-| P4 procedimentos | procedimentos do ASO, **sem valores de resultado** | [Lote 02](../02-formularios-e-auditoria/README.md) | — |
-| P7 `document_issuances` + eventos + ALTER `documents` (`company_id`, `sha256`, `created_by`) | emissão com snapshot | este lote | **D-06 (Douglas)** |
-| P8 `technical_signatures` (+ `signature_requests.document_sha256` opcional) | assinatura técnica | este lote (4d) | E-07 |
-| P9 auditoria clínica | eventos de leitura/escrita | Lote 02 | — |
+| Proposta                                                                                     | Uso no ASO                                         | Lote dono                                          | Depende de         |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------- | ------------------ |
+| P1 identidade + designação                                                                   | emissor/assinante identificado                     | [Lote 03](../03-identidade-e-riscos/README.md)     | decisão NOB-98     |
+| P3 `employee_job_assignments`                                                                | função na data do exame                            | este lote (ou antes, é independente)               | —                  |
+| P4 procedimentos                                                                             | procedimentos do ASO, **sem valores de resultado** | [Lote 02](../02-formularios-e-auditoria/README.md) | —                  |
+| P7 `document_issuances` + eventos + ALTER `documents` (`company_id`, `sha256`, `created_by`) | emissão com snapshot                               | este lote                                          | **D-06 (Douglas)** |
+| P8 `technical_signatures` (+ `signature_requests.document_sha256` opcional)                  | assinatura técnica                                 | este lote (4d)                                     | E-07               |
+| P9 auditoria clínica                                                                         | eventos de leitura/escrita                         | Lote 02                                            | —                  |
 
 Numeração (0056+) é **indicativa**: depende de D-01 (ordem da #112) e D-07. Regra para cada migration: uma por PR,
 `drizzle-kit generate` após rebase, `when` maior que o último, aditiva, estados em `text` + CHECK, ensaio em Postgres
@@ -77,27 +77,27 @@ efêmero. **Merge em develop aplica em homologação; merge em main aplica em pr
 
 ## 5. Segurança
 
-| Item | Rotulagem |
-|---|---|
-| RLS isolation + RESTRICTIVE por módulo conforme `kind` (`aso` → `medicine`) em toda tabela nova | PROPOSTO |
-| Policy nova em `documents`: linhas `related_entity_type = 'aso'` exigem `medicine` (muda o GED; regressão do PGR obrigatória) | PROPOSTO |
-| Runtime sem DELETE em emissões; UPDATE só por coluna; trigger impede alterar `snapshot` após `issued` | PROPOSTO |
-| Emissor/assinante com designação vigente verificada no servidor **e** no banco (P1) | BLOQUEADO (decisão NOB-98) |
-| Download do ASO só por action autorizada, URL curta, auditada | PROPOSTO ([AUDIT-SECURITY R11](../../AUDIT-SECURITY.md)) |
-| Conclusão (aptidão) × dado clínico sigiloso (restrições detalhadas, observações) | BLOQUEADO (A-03) |
-| Nenhum dado de saúde em IA; nada em `localStorage`; erro de leitura ≠ lista vazia | regra permanente |
-| Assinatura QR/rabisco só para ciência do trabalhador | regra permanente |
+| Item                                                                                                                          | Rotulagem                                                |
+| ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| RLS isolation + RESTRICTIVE por módulo conforme `kind` (`aso` → `medicine`) em toda tabela nova                               | PROPOSTO                                                 |
+| Policy nova em `documents`: linhas `related_entity_type = 'aso'` exigem `medicine` (muda o GED; regressão do PGR obrigatória) | PROPOSTO                                                 |
+| Runtime sem DELETE em emissões; UPDATE só por coluna; trigger impede alterar `snapshot` após `issued`                         | PROPOSTO                                                 |
+| Emissor/assinante com designação vigente verificada no servidor **e** no banco (P1)                                           | BLOQUEADO (decisão NOB-98)                               |
+| Download do ASO só por action autorizada, URL curta, auditada                                                                 | PROPOSTO ([AUDIT-SECURITY R11](../../AUDIT-SECURITY.md)) |
+| Conclusão (aptidão) × dado clínico sigiloso (restrições detalhadas, observações)                                              | BLOQUEADO (A-03)                                         |
+| Nenhum dado de saúde em IA; nada em `localStorage`; erro de leitura ≠ lista vazia                                             | regra permanente                                         |
+| Assinatura QR/rabisco só para ciência do trabalhador                                                                          | regra permanente                                         |
 
 ## 6. Validações
 
-| Validação | Estado |
-|---|---|
-| Funcionário e médico examinador obrigatórios; data não-futura (já existe no registro) | existente/estender |
-| Lista de campos obrigatórios do documento | **PENDENTE** (A-03). Candidatos do protótipo, como HIPÓTESE: empresa (razão, CNPJ, CNAE/GR), trabalhador (nome, CPF, nascimento), função/setor, tipo de exame, data, procedimentos com data, conclusão, médico examinador com CRM/UF, coordenador do PCMSO |
-| Emissor autorizado | **PENDENTE** (A-05 + P1) |
-| Riscos listados | **PENDENTE** (A-04); se permitido, apenas via `medical_risk_*`, nunca leitura direta de `risks` |
-| Transições de estado | **PENDENTE** (A-09) |
-| Snapshot igual ao documento; retry do job não altera snapshot; `output_sha256` confere com o objeto | PROPOSTO |
+| Validação                                                                                           | Estado                                                                                                                                                                                                                                                     |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Funcionário e médico examinador obrigatórios; data não-futura (já existe no registro)               | existente/estender                                                                                                                                                                                                                                         |
+| Lista de campos obrigatórios do documento                                                           | **PENDENTE** (A-03). Candidatos do protótipo, como HIPÓTESE: empresa (razão, CNPJ, CNAE/GR), trabalhador (nome, CPF, nascimento), função/setor, tipo de exame, data, procedimentos com data, conclusão, médico examinador com CRM/UF, coordenador do PCMSO |
+| Emissor autorizado                                                                                  | **PENDENTE** (A-05 + P1)                                                                                                                                                                                                                                   |
+| Riscos listados                                                                                     | **PENDENTE** (A-04); se permitido, apenas via `medical_risk_*`, nunca leitura direta de `risks`                                                                                                                                                            |
+| Transições de estado                                                                                | **PENDENTE** (A-09)                                                                                                                                                                                                                                        |
+| Snapshot igual ao documento; retry do job não altera snapshot; `output_sha256` confere com o objeto | PROPOSTO                                                                                                                                                                                                                                                   |
 
 ## 7. Sequência
 
@@ -112,14 +112,14 @@ efêmero. **Merge em develop aplica em homologação; merge em main aplica em pr
 
 ## 8. O que depende de decisão (resumo)
 
-| Bloco | Decisão | Quem |
-|---|---|---|
-| Campos obrigatórios e sigilo | A-03 | Dr. Alcides |
-| Riscos no ASO | A-04 | Dr. Alcides |
-| Quem emite | A-05 | Dr. Alcides + Expedito |
-| Estados e conteúdo do snapshot | A-09 | Dr. Alcides |
-| Camada de emissão | D-06 | Douglas |
-| Ordem e estratégia de migrations | D-01, D-07 | Douglas |
-| Provedor de assinatura | E-07 | Expedito + Douglas |
-| Identidade profissional | NOB-98 / D-03 (resposta do Expedito PARCIALMENTE_RESPONDIDA) | Expedito, Dr. Alcides, Douglas |
-| Dependência NOB-110 → NOB-113 | A-02 + D-10 | Dr. Alcides + Douglas |
+| Bloco                            | Decisão                                                      | Quem                           |
+| -------------------------------- | ------------------------------------------------------------ | ------------------------------ |
+| Campos obrigatórios e sigilo     | A-03                                                         | Dr. Alcides                    |
+| Riscos no ASO                    | A-04                                                         | Dr. Alcides                    |
+| Quem emite                       | A-05                                                         | Dr. Alcides + Expedito         |
+| Estados e conteúdo do snapshot   | A-09                                                         | Dr. Alcides                    |
+| Camada de emissão                | D-06                                                         | Douglas                        |
+| Ordem e estratégia de migrations | D-01, D-07                                                   | Douglas                        |
+| Provedor de assinatura           | E-07                                                         | Expedito + Douglas             |
+| Identidade profissional          | NOB-98 / D-03 (resposta do Expedito PARCIALMENTE_RESPONDIDA) | Expedito, Dr. Alcides, Douglas |
+| Dependência NOB-110 → NOB-113    | A-02 + D-10                                                  | Dr. Alcides + Douglas          |

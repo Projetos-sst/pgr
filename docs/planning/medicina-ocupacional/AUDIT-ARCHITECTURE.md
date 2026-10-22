@@ -24,18 +24,19 @@ Fora do escopo: protótipo `Projeto-SST-Ocupacional` (outros agentes), UX visual
 
 ## 2. Fontes consultadas
 
-| Fonte | Como |
-|---|---|
-| Código em `origin/develop` `d6b787c` | leitura direta na worktree `scratchpad/develop-ro` |
-| Branch `origin/codex/NOB-98-feat/riscos-para-medicina` (`ebfbac3`) | `git show` / `git diff origin/develop...` / `git merge-tree` |
-| PRs #99–#118 | `gh pr view` (corpo, arquivos, base, merge SHA) e `gh pr checks 112` |
-| Execuções do workflow CD | `gh run list --workflow cd.yml` e `gh run view 39467946613` (jobs + log) |
-| Linear | `get_issue` NOB-109, NOB-130 (somente leitura). NOB-98 conforme o BRIEF |
-| Docs no repo | `.specs/20261020-nob-97/spec.md`, `docs/produto/08-fluxos-emissao-assinatura.md` (NOB-101), `docs/deploy/vercel.md`, `docs/api/api-design.md` |
+| Fonte                                                              | Como                                                                                                                                          |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Código em `origin/develop` `d6b787c`                               | leitura direta na worktree `scratchpad/develop-ro`                                                                                            |
+| Branch `origin/codex/NOB-98-feat/riscos-para-medicina` (`ebfbac3`) | `git show` / `git diff origin/develop...` / `git merge-tree`                                                                                  |
+| PRs #99–#118                                                       | `gh pr view` (corpo, arquivos, base, merge SHA) e `gh pr checks 112`                                                                          |
+| Execuções do workflow CD                                           | `gh run list --workflow cd.yml` e `gh run view 39467946613` (jobs + log)                                                                      |
+| Linear                                                             | `get_issue` NOB-109, NOB-130 (somente leitura). NOB-98 conforme o BRIEF                                                                       |
+| Docs no repo                                                       | `.specs/20261020-nob-97/spec.md`, `docs/produto/08-fluxos-emissao-assinatura.md` (NOB-101), `docs/deploy/vercel.md`, `docs/api/api-design.md` |
 
 ## 3. Arquivos reais (os principais pontos para a Medicina)
 
 **Plataforma / tenancy**
+
 - `src/proxy.ts` — `clerkMiddleware`, rotas públicas, Basic Auth de sandbox.
 - `src/shared/auth/require-tenant-context.ts`, `require-office-staff.ts`, `page-guards.ts`, `require-master.ts`
 - `src/shared/tenant/roles.ts`, `plan.ts`, `active-tenant.ts`, `audit-log.ts`
@@ -44,6 +45,7 @@ Fora do escopo: protótipo `Projeto-SST-Ocupacional` (outros agentes), UX visual
 - `src/shared/db/with-org.ts`, `src/shared/db/index.ts` (`prepare:false, max:1`)
 
 **Módulo por empresa (NOB-97/99/100)**
+
 - `src/shared/domains/platform/company-modules.ts` — catálogo `["pgr","medicine"]`, Zod, `moduleIsEnabled`
 - `src/shared/db/schema/company-modules.ts` — `company_modules`, `company_module_events`
 - `src/shared/db/schema/module-policy.ts` — `companyModuleScope(orgId, companyId, module)`
@@ -53,12 +55,14 @@ Fora do escopo: protótipo `Projeto-SST-Ocupacional` (outros agentes), UX visual
 - `src/shared/db/migrations/0053_company_module_access.sql`
 
 **Medicina existente**
+
 - `src/shared/db/schema/{medicos,health-exams}.ts`, `src/shared/domains/pgr/{medicos,health-exams}.ts`
 - `src/shared/db/repositories/{medicos,health-exams}.ts`, `src/shared/server/actions/pgr/{medicos,health-exams}.ts`
 - `src/app/api/v1/{medicos,health-exams}/**`, `src/app/(protected)/{medicos,health-exams}/**`
 - `src/shared/domains/esocial/{builders,events}.ts`, `src/shared/db/schema/esocial.ts`
 
 **Geração documental (Douglas)**
+
 - `src/shared/server/platform/pgr-docx-core.ts`, `pgr-pdf-core.ts`, `pdf-batch-core.ts`
 - `src/shared/integrations/docx/template-engine.ts`, `integrations/pdf/gotenberg.ts`, `integrations/google/*`
 - `src/shared/domains/pgr/pgr-docx/*` (17 arquivos), `scripts/pgr-docx/*`, `templates/pgr/*`
@@ -70,22 +74,22 @@ Fora do escopo: protótipo `Projeto-SST-Ocupacional` (outros agentes), UX visual
 
 ### 4.1 Versões reais (`package.json`)
 
-| Pacote | Versão |
-|---|---|
-| next | **16.2.6** (exata) |
-| react / react-dom | **19.2.4** (exata) |
-| @clerk/nextjs | ^7.4.1 (+ @clerk/localizations ^4.6.8) |
-| drizzle-orm / drizzle-kit | ^0.45.2 / ^0.31.10 |
-| postgres (postgres-js) | ^3.4.9 |
-| zod | ^4.4.3 |
-| @supabase/supabase-js | ^2.106.1 |
-| docxtemplater / pizzip / docx (dev) | ^3.71.0 / ^3.3.0 / ^9.8.1 |
-| @googleapis/docs / drive | ^14.0.1 / ^26.0.1 |
-| @mastra/core | ^1.63.2 |
-| stripe | ^22.3.1 |
-| qrcode / signature_pad | ^1.5.4 / ^5.1.3 |
-| jest / playwright | ^30.4.2 / ^1.61.1 |
-| tailwindcss | ^4 · typescript ^5 · node no CI/CD = 24 |
+| Pacote                              | Versão                                  |
+| ----------------------------------- | --------------------------------------- |
+| next                                | **16.2.6** (exata)                      |
+| react / react-dom                   | **19.2.4** (exata)                      |
+| @clerk/nextjs                       | ^7.4.1 (+ @clerk/localizations ^4.6.8)  |
+| drizzle-orm / drizzle-kit           | ^0.45.2 / ^0.31.10                      |
+| postgres (postgres-js)              | ^3.4.9                                  |
+| zod                                 | ^4.4.3                                  |
+| @supabase/supabase-js               | ^2.106.1                                |
+| docxtemplater / pizzip / docx (dev) | ^3.71.0 / ^3.3.0 / ^9.8.1               |
+| @googleapis/docs / drive            | ^14.0.1 / ^26.0.1                       |
+| @mastra/core                        | ^1.63.2                                 |
+| stripe                              | ^22.3.1                                 |
+| qrcode / signature_pad              | ^1.5.4 / ^5.1.3                         |
+| jest / playwright                   | ^30.4.2 / ^1.61.1                       |
+| tailwindcss                         | ^4 · typescript ^5 · node no CI/CD = 24 |
 
 Scripts novos que não estão no CLAUDE.md: `worker`, `deploy:setup`, `deploy:validate`, `test:deploy`,
 `pgr-docx:template`, `pgr-docx:samples`.
@@ -127,20 +131,20 @@ Em `origin/main` a última é `0052_platform_leads` (`git ls-tree origin/main`).
 
 ### 4.5 Tenancy e autorização atuais
 
-| Conceito | Implementação | Evidência |
-|---|---|---|
-| Tenant = escritório | `orgs.id` (text). `plan in ('free','pro')`, campos Stripe/trial | `schema/orgs.ts:12-39` |
-| Empresa-cliente | `companies` (dado do tenant). `uq_companies_id_org (id, org_id)` foi criado na 0053 para FKs compostas | `0053:1` |
-| Papéis | `org:admin→owner`, `org:member→collaborator`, `org:client→client`. Papel desconhecido vira `client` | `tenant/roles.ts:5-22` |
-| Contexto | `TenantContext = {userId, tenantId, plan, role}`, com tenant vindo do cookie `ACTIVE_ORG_COOKIE` + `org_memberships` | `require-tenant-context.ts:13-57` |
-| Gate equipe | `requireOfficeStaff()` admite só `owner`/`collaborator`. `client` é negado em tudo | `require-office-staff.ts:6-13` |
-| Server Action | `officeAction(op, fn, {audit})` → `ActionResult<T>`. "Auditoria" = `logTenantEvent` em **console**, não persistida | `office-action.ts:18-55`, `audit-log.ts` |
-| REST | `restHandler` → `resolveContext` (bypass dev só se `APP_ENV!=production` e `DEV_API_AUTH_BYPASS=true`. **O contexto dev é fixo em `plan:"free"`**) | `api/rest.ts:53-75` |
-| Erros → HTTP | VALIDATION 422, DUPLICATE 409, FK_NOT_FOUND 422, IN_USE 409, FORBIDDEN 403, NOT_FOUND 404, QUOTA_EXCEEDED 402, AI_UNAVAILABLE 502, REPORT_UNAVAILABLE 503 etc. A NOB-97 acrescentou SQLSTATE `42501`→FORBIDDEN (violação de RLS) | `rest.ts:14-33`, `action-error.ts` |
-| Plano | free/pro só controla equipe, cota de assinatura (10/mês) e cota de IA (20/mês). **Não controla módulos** | `tenant/plan.ts` |
-| Master | `users.is_master`, `requireMaster()` (cross-tenant, `/admin-global`) | `require-master.ts` |
-| Escopo por empresa do usuário | `org_memberships.scoped_company_id` (FK companies) existe e é lido no repo, mas **não entra no `TenantContext`** e não há portal do cliente | `schema/org-memberships.ts:27`, grep |
-| Isolamento | `withOrg(orgId, tx => …)` faz `set_config('app.current_org', …, true)`, com RLS `app_runtime` por tabela | `db/with-org.ts` |
+| Conceito                      | Implementação                                                                                                                                                                                                                    | Evidência                                |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Tenant = escritório           | `orgs.id` (text). `plan in ('free','pro')`, campos Stripe/trial                                                                                                                                                                  | `schema/orgs.ts:12-39`                   |
+| Empresa-cliente               | `companies` (dado do tenant). `uq_companies_id_org (id, org_id)` foi criado na 0053 para FKs compostas                                                                                                                           | `0053:1`                                 |
+| Papéis                        | `org:admin→owner`, `org:member→collaborator`, `org:client→client`. Papel desconhecido vira `client`                                                                                                                              | `tenant/roles.ts:5-22`                   |
+| Contexto                      | `TenantContext = {userId, tenantId, plan, role}`, com tenant vindo do cookie `ACTIVE_ORG_COOKIE` + `org_memberships`                                                                                                             | `require-tenant-context.ts:13-57`        |
+| Gate equipe                   | `requireOfficeStaff()` admite só `owner`/`collaborator`. `client` é negado em tudo                                                                                                                                               | `require-office-staff.ts:6-13`           |
+| Server Action                 | `officeAction(op, fn, {audit})` → `ActionResult<T>`. "Auditoria" = `logTenantEvent` em **console**, não persistida                                                                                                               | `office-action.ts:18-55`, `audit-log.ts` |
+| REST                          | `restHandler` → `resolveContext` (bypass dev só se `APP_ENV!=production` e `DEV_API_AUTH_BYPASS=true`. **O contexto dev é fixo em `plan:"free"`**)                                                                               | `api/rest.ts:53-75`                      |
+| Erros → HTTP                  | VALIDATION 422, DUPLICATE 409, FK_NOT_FOUND 422, IN_USE 409, FORBIDDEN 403, NOT_FOUND 404, QUOTA_EXCEEDED 402, AI_UNAVAILABLE 502, REPORT_UNAVAILABLE 503 etc. A NOB-97 acrescentou SQLSTATE `42501`→FORBIDDEN (violação de RLS) | `rest.ts:14-33`, `action-error.ts`       |
+| Plano                         | free/pro só controla equipe, cota de assinatura (10/mês) e cota de IA (20/mês). **Não controla módulos**                                                                                                                         | `tenant/plan.ts`                         |
+| Master                        | `users.is_master`, `requireMaster()` (cross-tenant, `/admin-global`)                                                                                                                                                             | `require-master.ts`                      |
+| Escopo por empresa do usuário | `org_memberships.scoped_company_id` (FK companies) existe e é lido no repo, mas **não entra no `TenantContext`** e não há portal do cliente                                                                                      | `schema/org-memberships.ts:27`, grep     |
+| Isolamento                    | `withOrg(orgId, tx => …)` faz `set_config('app.current_org', …, true)`, com RLS `app_runtime` por tabela                                                                                                                         | `db/with-org.ts`                         |
 
 ### 4.6 Modelo "módulo/serviço habilitado por empresa" (em develop, NOB-97 + NOB-100)
 
@@ -193,7 +197,7 @@ Em `origin/main` a última é `0052_platform_leads` (`git ls-tree origin/main`).
   migrations aplicadas; que a 0053 está entre elas é inferência forte, já que era a única pendente). Produção (`main`) está em 0052, e o
   próximo PR `develop → main` aplicará a 0053 (e o que vier depois) em produção sem passo manual.
   A frase "Nenhuma migration aplicada em produção" da #109 é verdadeira, mas **não houve revisão manual em staging antes da aplicação**:
-  o merge em develop *é* a aplicação.
+  o merge em develop _é_ a aplicação.
 - O CI (`ci.yml:3-5`) roda só em `pull_request` para `develop`/`main`. PRs empilhadas (base ≠ develop) **não rodam CI**.
 - `jest.config.ts` exclui 8 suítes de integração (`rest-companies`, `rest-pgr`, `rest-pgr-editor`, `rest-risk-assessments`,
   `rest-ergonomic-evaluations`, `rest-control-measures`, `least-privilege`, `companies-scope-model`) por limitação do harness. A #113 reabilitou `rest-risks`.
@@ -202,33 +206,33 @@ Em `origin/main` a última é `0052_platform_leads` (`git ls-tree origin/main`).
 
 ### 5.1 Medicina no develop
 
-| Item | Status | O que faz de fato | Caminho |
-|---|---|---|---|
-| Médicos (`medicos`) | **em develop** | CRUD completo (Action + REST + UI). `crm` único por org, `specialty/clinic/phone` texto livre, `status active/inactive`. **Não vincula a usuário autenticado** nem tem UF do CRM/RQE/assinatura | `schema/medicos.ts` (mig. 0029) |
-| Exames/ASO (`health_exams`) | **em develop** | CRUD por funcionário. `exam_type` enum (admissional, periodic, change_of_function, return_to_work, dismissal), `performed_at` não futura, `valid_until` opcional, `aptitude` (fit, fit_with_restrictions, unfit), `notes`, `certificate_path` (texto, sem upload/GED). Validade derivada (`classifyDocumentValidity`). `doctor_id SET NULL`. RLS de módulo `medicine` | `schema/health-exams.ts` (0030 + policy 0053) |
-| Enum `exam_type` reaproveitado em OS | **em develop** | `service_orders.os_type` usa o enum `exam_type`, então **alterar o enum afeta Ordens de Serviço** | `schema/service-orders.ts:20-46` |
-| Menu "Medicina do Trabalho" | **em develop** | Grupo com "Exames e ASO" e "Médicos" (NOB-97). Menu estático, sem esconder itens por módulo | `nav-menu.tsx:102-110` |
-| Psicossocial | **em develop** | Campanhas por `company_id` + questionário público por token + fatores por GES. Está no grupo "Gestão de Segurança" e **não é restrito por módulo** | `schema/psychosocial.ts`, mig. 0021/0046 |
-| Ergonomia | **em develop** | `ergonomic_evaluations` por risco (0051) | `schema/ergonomics.ts` |
-| eSocial S-2220 / S-2221 | **em develop (stub)** | Builders XML simplificados (`cpf, dataAso, tipoExame default "0", resultado`). **Não lê `health_exams`**, sem layout oficial completo, sem transmissão | `domains/esocial/builders.ts:61-91` |
-| PCMSO | **não implementado** | Só aparece como sugestão de `docType` no GED, em textos fixos do DOCX do PGR e no marketing. Confirmado por NOB-101 §2 | `domains/documents/documents.ts:73` |
-| CID-10 | **não implementado** | Nenhuma ocorrência em `src` | grep |
-| Lista C | **não implementado** | Nenhuma ocorrência. Linear NOB-113 trata de completar a tabela. **Correção da revisão cruzada:** no protótipo, a "Lista C" é a do Anexo II do Decreto 3.048/99 (NTEP: intervalos de CID × classes CNAE), não um catálogo de exames por agente (ver AUDIT-PROTOTYPE §5.12). O catálogo de exames é outra lacuna, sem tabela própria (AUDIT-DATABASE P4) | grep, Linear NOB-109 |
-| CNAE / CBO | parcial em develop | `companies.cnae` e `job_roles.cbo` são texto livre, sem tabela de referência. Plano em `origin/feature/lot-04-cnae-cbo` (só docs) | `schema/companies.ts:36`, `job-roles.ts:30` |
-| Assinatura de ASO | **não implementado** | O registry de assinatura tem `demo`, `inspection`, `pgr` e `service-order`, e **nenhum** alvo `aso`/`health_exam` | `domains/signatures/targets/` |
-| Fontes de risco para PCMSO | **só em PR aberta (#112)** | ver 5.3 | branch NOB-98 |
+| Item                                 | Status                     | O que faz de fato                                                                                                                                                                                                                                                                                                                                                     | Caminho                                       |
+| ------------------------------------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Médicos (`medicos`)                  | **em develop**             | CRUD completo (Action + REST + UI). `crm` único por org, `specialty/clinic/phone` texto livre, `status active/inactive`. **Não vincula a usuário autenticado** nem tem UF do CRM/RQE/assinatura                                                                                                                                                                       | `schema/medicos.ts` (mig. 0029)               |
+| Exames/ASO (`health_exams`)          | **em develop**             | CRUD por funcionário. `exam_type` enum (admissional, periodic, change_of_function, return_to_work, dismissal), `performed_at` não futura, `valid_until` opcional, `aptitude` (fit, fit_with_restrictions, unfit), `notes`, `certificate_path` (texto, sem upload/GED). Validade derivada (`classifyDocumentValidity`). `doctor_id SET NULL`. RLS de módulo `medicine` | `schema/health-exams.ts` (0030 + policy 0053) |
+| Enum `exam_type` reaproveitado em OS | **em develop**             | `service_orders.os_type` usa o enum `exam_type`, então **alterar o enum afeta Ordens de Serviço**                                                                                                                                                                                                                                                                     | `schema/service-orders.ts:20-46`              |
+| Menu "Medicina do Trabalho"          | **em develop**             | Grupo com "Exames e ASO" e "Médicos" (NOB-97). Menu estático, sem esconder itens por módulo                                                                                                                                                                                                                                                                           | `nav-menu.tsx:102-110`                        |
+| Psicossocial                         | **em develop**             | Campanhas por `company_id` + questionário público por token + fatores por GES. Está no grupo "Gestão de Segurança" e **não é restrito por módulo**                                                                                                                                                                                                                    | `schema/psychosocial.ts`, mig. 0021/0046      |
+| Ergonomia                            | **em develop**             | `ergonomic_evaluations` por risco (0051)                                                                                                                                                                                                                                                                                                                              | `schema/ergonomics.ts`                        |
+| eSocial S-2220 / S-2221              | **em develop (stub)**      | Builders XML simplificados (`cpf, dataAso, tipoExame default "0", resultado`). **Não lê `health_exams`**, sem layout oficial completo, sem transmissão                                                                                                                                                                                                                | `domains/esocial/builders.ts:61-91`           |
+| PCMSO                                | **não implementado**       | Só aparece como sugestão de `docType` no GED, em textos fixos do DOCX do PGR e no marketing. Confirmado por NOB-101 §2                                                                                                                                                                                                                                                | `domains/documents/documents.ts:73`           |
+| CID-10                               | **não implementado**       | Nenhuma ocorrência em `src`                                                                                                                                                                                                                                                                                                                                           | grep                                          |
+| Lista C                              | **não implementado**       | Nenhuma ocorrência. Linear NOB-113 trata de completar a tabela. **Correção da revisão cruzada:** no protótipo, a "Lista C" é a do Anexo II do Decreto 3.048/99 (NTEP: intervalos de CID × classes CNAE), não um catálogo de exames por agente (ver AUDIT-PROTOTYPE §5.12). O catálogo de exames é outra lacuna, sem tabela própria (AUDIT-DATABASE P4)                | grep, Linear NOB-109                          |
+| CNAE / CBO                           | parcial em develop         | `companies.cnae` e `job_roles.cbo` são texto livre, sem tabela de referência. Plano em `origin/feature/lot-04-cnae-cbo` (só docs)                                                                                                                                                                                                                                     | `schema/companies.ts:36`, `job-roles.ts:30`   |
+| Assinatura de ASO                    | **não implementado**       | O registry de assinatura tem `demo`, `inspection`, `pgr` e `service-order`, e **nenhum** alvo `aso`/`health_exam`                                                                                                                                                                                                                                                     | `domains/signatures/targets/`                 |
+| Fontes de risco para PCMSO           | **só em PR aberta (#112)** | ver 5.3                                                                                                                                                                                                                                                                                                                                                               | branch NOB-98                                 |
 
 ### 5.2 Contribuições do Rikelvin mergeadas
 
-| PR (Linear) | Merge | Conteúdo efetivo em develop | Pontos de integração para a Medicina |
-|---|---|---|---|
-| #108 (NOB-101) docs | `cd09031` | `docs/produto/08-fluxos-emissao-assinatura.md`: levantamento de emissão/assinatura. PCMSO inexistente, ASO sem assinatura, auditoria só em console e decisões pendentes | Fonte das decisões de fluxo (quem elabora/revisa/emite/assina) |
-| #109 (NOB-97) | `ca364d8` | Migration 0053, `company_modules` + eventos, RLS restritiva em `pgr`/`pgr_ges`/`pgr_revisions`/`health_exams`, `assertCompanyModuleTx` em PGR/exames, SQLSTATE 42501→FORBIDDEN, menu Medicina separado. 11.869 das 12.383 linhas são o snapshot | **Toda tabela nova de Medicina com `company_id` deve ter a policy RESTRICTIVE `companyModuleScope(..., "medicine")` + `assertCompanyModuleTx(...,"medicine")` na escrita** |
-| #110 (NOB-99) | `954e53f` | Filtro `module=` em empresas/funcionários (repo + REST + Postman). Formulários de PGR/exames filtrados | Usar `listEmployees({module:"medicine"})` e `listCompanyOptions(orgId,"medicine")` e não criar cadastro paralelo |
-| #111 (NOB-100) | `88a131b` | Gestão de habilitação (owner + motivo + histórico), tela `companies/[id]/services`, `GET/PUT /companies/{id}/modules`, `read-json-body.ts` | Habilitar Medicina por empresa antes de operar. `readJsonBody` para REST |
-| #113 (NOB-103) | `51eac8f` | Escrita de risco valida `companyId`/`workUnitId` opcionais contra o GES e exige o módulo PGR. Reabilita `rest-risks` no CI | Riscos (`risks`) são escritos só com PGR habilitado. A leitura ainda não é restrita (a #112 muda isso) |
-| #114 (NOB-104) docs | `da2c68a` | `docs/planning/nob-104-revisao-maquinas.md` (máquinas) | Irrelevante para Medicina |
-| #118 (NOB-102) | `d6b787c` | `domains/pgr/cnpj.ts`: CNPJ alfanumérico (algoritmo oficial), DUPLICATE/409 com `fields.cnpj`, JSON malformado → 422 em empresas/funcionários | Validação única de CNPJ para qualquer cadastro de clínica/laboratório futuro |
+| PR (Linear)         | Merge     | Conteúdo efetivo em develop                                                                                                                                                                                                                     | Pontos de integração para a Medicina                                                                                                                                       |
+| ------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #108 (NOB-101) docs | `cd09031` | `docs/produto/08-fluxos-emissao-assinatura.md`: levantamento de emissão/assinatura. PCMSO inexistente, ASO sem assinatura, auditoria só em console e decisões pendentes                                                                         | Fonte das decisões de fluxo (quem elabora/revisa/emite/assina)                                                                                                             |
+| #109 (NOB-97)       | `ca364d8` | Migration 0053, `company_modules` + eventos, RLS restritiva em `pgr`/`pgr_ges`/`pgr_revisions`/`health_exams`, `assertCompanyModuleTx` em PGR/exames, SQLSTATE 42501→FORBIDDEN, menu Medicina separado. 11.869 das 12.383 linhas são o snapshot | **Toda tabela nova de Medicina com `company_id` deve ter a policy RESTRICTIVE `companyModuleScope(..., "medicine")` + `assertCompanyModuleTx(...,"medicine")` na escrita** |
+| #110 (NOB-99)       | `954e53f` | Filtro `module=` em empresas/funcionários (repo + REST + Postman). Formulários de PGR/exames filtrados                                                                                                                                          | Usar `listEmployees({module:"medicine"})` e `listCompanyOptions(orgId,"medicine")` e não criar cadastro paralelo                                                           |
+| #111 (NOB-100)      | `88a131b` | Gestão de habilitação (owner + motivo + histórico), tela `companies/[id]/services`, `GET/PUT /companies/{id}/modules`, `read-json-body.ts`                                                                                                      | Habilitar Medicina por empresa antes de operar. `readJsonBody` para REST                                                                                                   |
+| #113 (NOB-103)      | `51eac8f` | Escrita de risco valida `companyId`/`workUnitId` opcionais contra o GES e exige o módulo PGR. Reabilita `rest-risks` no CI                                                                                                                      | Riscos (`risks`) são escritos só com PGR habilitado. A leitura ainda não é restrita (a #112 muda isso)                                                                     |
+| #114 (NOB-104) docs | `da2c68a` | `docs/planning/nob-104-revisao-maquinas.md` (máquinas)                                                                                                                                                                                          | Irrelevante para Medicina                                                                                                                                                  |
+| #118 (NOB-102)      | `d6b787c` | `domains/pgr/cnpj.ts`: CNPJ alfanumérico (algoritmo oficial), DUPLICATE/409 com `fields.cnpj`, JSON malformado → 422 em empresas/funcionários                                                                                                   | Validação única de CNPJ para qualquer cadastro de clínica/laboratório futuro                                                                                               |
 
 Nenhuma das PRs mergeadas cria tabela clínica, coluna nova em `health_exams` ou guard de papel técnico (médico).
 
@@ -259,30 +263,30 @@ Nenhuma das PRs mergeadas cria tabela clínica, coluna nova em `health_exams` ou
 
 ### 5.4 Trabalho do Douglas (#99–#106) — reaproveitável, não reconstruir
 
-| Peça | Status | Reuso para PCMSO/ASO |
-|---|---|---|
-| Template DOCX gerado por código (`scripts/pgr-docx`, lib `docx`, Manrope embutida, `font-metrics`/`text-fit`) + `templates/pgr/*` | em develop (#100, #106) | Copiar o **padrão** (template-kit) para um `templates/pcmso/`. Nunca editar `.docx` à mão |
-| Motor `integrations/docx/template-engine.ts` (docxtemplater, delimitadores `{{ }}`, `listTemplateTags`, `findLeftoverMarkers`) | em develop | Genérico: reutilizar direto |
-| PDF: `integrations/pdf/gotenberg.ts` (`docxToPdf`, `htmlToPdf`) + `Dockerfile.gotenberg` com as fontes + proxy Caddy com Bearer; alternativa Google Docs (`integrations/google/*`, `PGR_DOCX_PDF_PROVIDER`) | em develop | Genérico: reutilizar |
-| `pgr-docx-core.ts` (consolidado → content → data → DOCX → PDF; erros NOT_FOUND / REPORT_UNAVAILABLE 503) | em develop | Modelo de orquestração. Hoje é **específico do PGR** |
-| REST binário `GET/POST /api/v1/pgr/{id}/docx` (sem `restHandler`, reusa `resolveContext` + `restStatusForCode`) | em develop | Precedente para `/pcmso/{id}/docx` |
-| GED: `documents` (versão por `document_group_id`, `UNIQUE(org,group,version)`, vínculo polimórfico `related_entity_type/id`), `folders`, Storage privado particionado por org | em develop (023/024, #106) | Arquivar PCMSO/ASO como documento versionado. **`documentRelatedEntityTypeSchema` é enum fechado em código** (`pgr`, `responsible_technician`, `ges`, `risk`, …), então incluir `pcmso`/`health_exam` é mudança só de Zod |
-| Fila `jobs` (`job_type` enum só `pdf_batch`) + worker standalone (`worker/index.ts`, claim `FOR UPDATE SKIP LOCKED`, owner-db) | em develop (025, #106) | Gerar PCMSO em lote exige **valor novo no enum `job_type` (migration)** ou payload `kind` (`pdfBatchKindSchema = ["pgr"]`) |
-| CI/CD Vercel com migrations automáticas | em develop/main (#101–#104) | Ver riscos (seção 7) |
-| PR #115 (NOB-105, draft): SHA-256 do template/dados/arquivo em headers da geração do PGR | só em PR aberta | Bom padrão de rastreabilidade para documento médico |
+| Peça                                                                                                                                                                                                        | Status                      | Reuso para PCMSO/ASO                                                                                                                                                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Template DOCX gerado por código (`scripts/pgr-docx`, lib `docx`, Manrope embutida, `font-metrics`/`text-fit`) + `templates/pgr/*`                                                                           | em develop (#100, #106)     | Copiar o **padrão** (template-kit) para um `templates/pcmso/`. Nunca editar `.docx` à mão                                                                                                                                 |
+| Motor `integrations/docx/template-engine.ts` (docxtemplater, delimitadores `{{ }}`, `listTemplateTags`, `findLeftoverMarkers`)                                                                              | em develop                  | Genérico: reutilizar direto                                                                                                                                                                                               |
+| PDF: `integrations/pdf/gotenberg.ts` (`docxToPdf`, `htmlToPdf`) + `Dockerfile.gotenberg` com as fontes + proxy Caddy com Bearer; alternativa Google Docs (`integrations/google/*`, `PGR_DOCX_PDF_PROVIDER`) | em develop                  | Genérico: reutilizar                                                                                                                                                                                                      |
+| `pgr-docx-core.ts` (consolidado → content → data → DOCX → PDF; erros NOT_FOUND / REPORT_UNAVAILABLE 503)                                                                                                    | em develop                  | Modelo de orquestração. Hoje é **específico do PGR**                                                                                                                                                                      |
+| REST binário `GET/POST /api/v1/pgr/{id}/docx` (sem `restHandler`, reusa `resolveContext` + `restStatusForCode`)                                                                                             | em develop                  | Precedente para `/pcmso/{id}/docx`                                                                                                                                                                                        |
+| GED: `documents` (versão por `document_group_id`, `UNIQUE(org,group,version)`, vínculo polimórfico `related_entity_type/id`), `folders`, Storage privado particionado por org                               | em develop (023/024, #106)  | Arquivar PCMSO/ASO como documento versionado. **`documentRelatedEntityTypeSchema` é enum fechado em código** (`pgr`, `responsible_technician`, `ges`, `risk`, …), então incluir `pcmso`/`health_exam` é mudança só de Zod |
+| Fila `jobs` (`job_type` enum só `pdf_batch`) + worker standalone (`worker/index.ts`, claim `FOR UPDATE SKIP LOCKED`, owner-db)                                                                              | em develop (025, #106)      | Gerar PCMSO em lote exige **valor novo no enum `job_type` (migration)** ou payload `kind` (`pdfBatchKindSchema = ["pgr"]`)                                                                                                |
+| CI/CD Vercel com migrations automáticas                                                                                                                                                                     | em develop/main (#101–#104) | Ver riscos (seção 7)                                                                                                                                                                                                      |
+| PR #115 (NOB-105, draft): SHA-256 do template/dados/arquivo em headers da geração do PGR                                                                                                                    | só em PR aberta             | Bom padrão de rastreabilidade para documento médico                                                                                                                                                                       |
 
 ### 5.5 Branches remotas não mergeadas
 
-| Branch | À frente / atrás | Conteúdo |
-|---|---|---|
-| `codex/NOB-98-feat/riscos-para-medicina` | +2 | = PR #112 (5.3) |
-| `codex/NOB-105-feat/rastreabilidade-geracao` | +1 | = PR #115 draft (hash/identificação da geração do PGR + doc de lacunas) |
-| `codex/NOB-106-docs/proposta-pgr-basico` | +1 | = PR #116 draft (doc de oferta de PGR básico, sem cobrança) |
-| `codex/NOB-107-test/amostras-revisao` | +3 | = PR #117 draft (protocolo de revisão + teste de amostras do PDF) |
-| `codex/NOB-97/99/100/101/102/103/104` | 0 | já mergeadas |
-| `feature/gestao-saude` | +1 / −194 | Commit antigo (2026-08-02) do módulo ASO. Parece substituído pelo que entrou na 0030 (não comparado linha a linha) |
-| `feature/lot-04-cnae-cbo` | +1 / −49 | Só docs de planejamento de autocomplete CNAE/CBO |
-| `feature/pgr-docx-templates` | +4 / −49 | Commits originais da fatia 030. O conteúdo parece ter entrado via #100 (não verificado arquivo a arquivo) |
+| Branch                                       | À frente / atrás | Conteúdo                                                                                                           |
+| -------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `codex/NOB-98-feat/riscos-para-medicina`     | +2               | = PR #112 (5.3)                                                                                                    |
+| `codex/NOB-105-feat/rastreabilidade-geracao` | +1               | = PR #115 draft (hash/identificação da geração do PGR + doc de lacunas)                                            |
+| `codex/NOB-106-docs/proposta-pgr-basico`     | +1               | = PR #116 draft (doc de oferta de PGR básico, sem cobrança)                                                        |
+| `codex/NOB-107-test/amostras-revisao`        | +3               | = PR #117 draft (protocolo de revisão + teste de amostras do PDF)                                                  |
+| `codex/NOB-97/99/100/101/102/103/104`        | 0                | já mergeadas                                                                                                       |
+| `feature/gestao-saude`                       | +1 / −194        | Commit antigo (2026-08-02) do módulo ASO. Parece substituído pelo que entrou na 0030 (não comparado linha a linha) |
+| `feature/lot-04-cnae-cbo`                    | +1 / −49         | Só docs de planejamento de autocomplete CNAE/CBO                                                                   |
+| `feature/pgr-docx-templates`                 | +4 / −49         | Commits originais da fatia 030. O conteúdo parece ter entrado via #100 (não verificado arquivo a arquivo)          |
 
 ## 6. Lacunas (relevantes para a Medicina)
 
@@ -305,17 +309,17 @@ Nenhuma das PRs mergeadas cria tabela clínica, coluna nova em `health_exams` ou
 
 ## 7. Riscos
 
-| # | Risco | Severidade | Evidência |
-|---|---|---|---|
-| R1 | **Merge em develop = migration aplicada no Supabase de testes. Merge develop→main = aplicada em produção, sem passo manual.** Qualquer migration de Medicina (incl. 0054/0055 da #112) precisa estar pronta para produção no momento do merge, e rollback de schema não é automático | Alta | `cd.yml:5-7,67-75`, run 39467946613 |
-| R2 | 0055 (#112) passa a esconder `risks`/avaliações/medidas/EPI-risco de empresas sem PGR. Empresas criadas depois da 0053 não têm PGR por padrão, e telas/relatórios que leem riscos sem filtrar empresa podem "perder" linhas silenciosamente | Média | `0055` (branch) |
-| R3 | Empresas novas nascem sem Medicina: o cadastro de exame falha com FORBIDDEN e o funcionário some do seletor até um owner habilitar. Colaborador não consegue habilitar | Média (UX/suporte) | `companies.ts:175`, `company-module-core.ts:19-23` |
-| R4 | RLS de `health_exams` depende de `employees.company_id` mutável: transferir o funcionário pode ocultar/expor histórico clínico entre empresas com módulos diferentes | Média | `schema/health-exams.ts:117-123` |
-| R5 | A #112 nunca passou por CI, está desatualizada em relação a develop (sem #113/#118) e tem conflito em Postman. A numeração 0054/0055 colide com qualquer migration de Medicina criada em paralelo | Média | `gh pr checks 112`, merge-tree |
-| R6 | Alterar o enum `exam_type` impacta `service_orders.os_type` | Baixa/Média | `schema/service-orders.ts:23-46` |
-| R7 | Dado de saúde (P0) sem trilha persistida de acesso/alteração. `logTenantEvent` vai para console | Média (LGPD) | `audit-log.ts`, NOB-101 §4 |
-| R8 | 8 suítes REST/privilégio excluídas do CI, então rotas REST novas de Medicina podem não ser exercidas por teste automatizado se seguirem o harness atual | Média | `jest.config.ts:27-36` |
-| R9 | Bypass dev REST sempre com `plan:"free"`: testes de Postman de recursos com cota (assinatura/IA) se comportam como free | Baixa | `rest.ts:64` |
+| #   | Risco                                                                                                                                                                                                                                                                                | Severidade         | Evidência                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ | -------------------------------------------------- |
+| R1  | **Merge em develop = migration aplicada no Supabase de testes. Merge develop→main = aplicada em produção, sem passo manual.** Qualquer migration de Medicina (incl. 0054/0055 da #112) precisa estar pronta para produção no momento do merge, e rollback de schema não é automático | Alta               | `cd.yml:5-7,67-75`, run 39467946613                |
+| R2  | 0055 (#112) passa a esconder `risks`/avaliações/medidas/EPI-risco de empresas sem PGR. Empresas criadas depois da 0053 não têm PGR por padrão, e telas/relatórios que leem riscos sem filtrar empresa podem "perder" linhas silenciosamente                                          | Média              | `0055` (branch)                                    |
+| R3  | Empresas novas nascem sem Medicina: o cadastro de exame falha com FORBIDDEN e o funcionário some do seletor até um owner habilitar. Colaborador não consegue habilitar                                                                                                               | Média (UX/suporte) | `companies.ts:175`, `company-module-core.ts:19-23` |
+| R4  | RLS de `health_exams` depende de `employees.company_id` mutável: transferir o funcionário pode ocultar/expor histórico clínico entre empresas com módulos diferentes                                                                                                                 | Média              | `schema/health-exams.ts:117-123`                   |
+| R5  | A #112 nunca passou por CI, está desatualizada em relação a develop (sem #113/#118) e tem conflito em Postman. A numeração 0054/0055 colide com qualquer migration de Medicina criada em paralelo                                                                                    | Média              | `gh pr checks 112`, merge-tree                     |
+| R6  | Alterar o enum `exam_type` impacta `service_orders.os_type`                                                                                                                                                                                                                          | Baixa/Média        | `schema/service-orders.ts:23-46`                   |
+| R7  | Dado de saúde (P0) sem trilha persistida de acesso/alteração. `logTenantEvent` vai para console                                                                                                                                                                                      | Média (LGPD)       | `audit-log.ts`, NOB-101 §4                         |
+| R8  | 8 suítes REST/privilégio excluídas do CI, então rotas REST novas de Medicina podem não ser exercidas por teste automatizado se seguirem o harness atual                                                                                                                              | Média              | `jest.config.ts:27-36`                             |
+| R9  | Bypass dev REST sempre com `plan:"free"`: testes de Postman de recursos com cota (assinatura/IA) se comportam como free                                                                                                                                                              | Baixa              | `rest.ts:64`                                       |
 
 ## 8. Dependências
 
@@ -327,18 +331,18 @@ Nenhuma das PRs mergeadas cria tabela clínica, coluna nova em `health_exams` ou
 
 ## 9. Decisões pendentes
 
-| Decisão | Para quem |
-|---|---|
-| Quem valida riscos/PCMSO e como o médico é identificado (vincular `medicos` a `users`? papel técnico novo? CRM+UF?). Destrava a #112 | **Dr. Alcides + Expedito** (regra), **Rikelvin** (modelo de autorização) |
-| Integrar a #112 como está (imutável, sem validação) ou esperar a definição acima. Ordem de merge e numeração 0054/0055 versus migrations de Medicina do Carlos | **Rikelvin + Douglas + Carlos** |
-| Aceitar a 0055 (riscos escondidos sem PGR) antes de ir para `main` | **Douglas (TL) + Rikelvin** |
-| `health_exams` ganha `company_id` (snapshot) e vínculo a PCMSO? Evoluir a tabela ou criar `aso` novo? | **Carlos** (proposta) → **Douglas** |
-| Habilitação de Medicina na criação da empresa (default, wizard, ou continua manual por owner) | **Expedito** |
-| Estratégia de migrations com CD automático: staging intermediário, feature flag, migrations só aditivas, janela develop→main | **Douglas** |
-| Medicina reusa o enum `exam_type` (compartilhado com OS) ou cria o seu? | **Carlos + Douglas** |
-| Escopo eSocial S-2220 real (layout S-1.3, transmissão) nesta frente ou depois | **Expedito + Douglas** |
-| Trilha de auditoria persistida para dado de saúde | **Rikelvin** (segurança) |
-| Remover a coleção Postman obsoleta `postman/` e atualizar o CLAUDE.md | **Douglas** |
+| Decisão                                                                                                                                                        | Para quem                                                                |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Quem valida riscos/PCMSO e como o médico é identificado (vincular `medicos` a `users`? papel técnico novo? CRM+UF?). Destrava a #112                           | **Dr. Alcides + Expedito** (regra), **Rikelvin** (modelo de autorização) |
+| Integrar a #112 como está (imutável, sem validação) ou esperar a definição acima. Ordem de merge e numeração 0054/0055 versus migrations de Medicina do Carlos | **Rikelvin + Douglas + Carlos**                                          |
+| Aceitar a 0055 (riscos escondidos sem PGR) antes de ir para `main`                                                                                             | **Douglas (TL) + Rikelvin**                                              |
+| `health_exams` ganha `company_id` (snapshot) e vínculo a PCMSO? Evoluir a tabela ou criar `aso` novo?                                                          | **Carlos** (proposta) → **Douglas**                                      |
+| Habilitação de Medicina na criação da empresa (default, wizard, ou continua manual por owner)                                                                  | **Expedito**                                                             |
+| Estratégia de migrations com CD automático: staging intermediário, feature flag, migrations só aditivas, janela develop→main                                   | **Douglas**                                                              |
+| Medicina reusa o enum `exam_type` (compartilhado com OS) ou cria o seu?                                                                                        | **Carlos + Douglas**                                                     |
+| Escopo eSocial S-2220 real (layout S-1.3, transmissão) nesta frente ou depois                                                                                  | **Expedito + Douglas**                                                   |
+| Trilha de auditoria persistida para dado de saúde                                                                                                              | **Rikelvin** (segurança)                                                 |
+| Remover a coleção Postman obsoleta `postman/` e atualizar o CLAUDE.md                                                                                          | **Douglas**                                                              |
 
 ## 10. Recomendações
 

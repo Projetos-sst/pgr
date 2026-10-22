@@ -3,16 +3,16 @@
 > Navegação: [Índice da frente](../../README.md) · [Roadmap e status](../../geral/02-ROADMAP-E-STATUS.md) ·
 > [Decisões e bloqueios](../../geral/04-DECISOES-E-BLOQUEIOS.md) · [Arquitetura e contratos](../../geral/03-ARQUITETURA-E-CONTRATOS.md)
 
-| Campo | Valor |
-|---|---|
-| **Status do lote** | **BLOQUEADO** — escopo de portais e perfis da V1 depende do Expedito (E-02) |
-| Issues | [NOB-121 — Cadastro de médicos/psicólogos internos e externos](https://linear.app/nobuggy/issue/NOB-121) · [NOB-122 — Portal empresa ↔ clínica](https://linear.app/nobuggy/issue/NOB-122) · [NOB-123 — Conectar protótipo ao front-end](https://linear.app/nobuggy/issue/NOB-123) |
-| Status no Linear (21/10) | as três em Backlog, milestone "6. Teleconsultas e portal de clínicas" |
-| Responsável no Linear | Carlos (as três) |
-| Branch | nenhuma criada |
-| PR | nenhuma |
-| Migrations | nenhuma criada; nenhuma proposta detalhada (entidades a definir após E-02) |
-| Próxima ação | **Nenhuma implementação.** Obter E-02 (perfis/portais da V1) e D-05 (arquitetura de segregação clínica) |
+| Campo                    | Valor                                                                                                                                                                                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status do lote**       | **BLOQUEADO** — escopo de portais e perfis da V1 depende do Expedito (E-02)                                                                                                                                                                                                       |
+| Issues                   | [NOB-121 — Cadastro de médicos/psicólogos internos e externos](https://linear.app/nobuggy/issue/NOB-121) · [NOB-122 — Portal empresa ↔ clínica](https://linear.app/nobuggy/issue/NOB-122) · [NOB-123 — Conectar protótipo ao front-end](https://linear.app/nobuggy/issue/NOB-123) |
+| Status no Linear (21/10) | as três em Backlog, milestone "6. Teleconsultas e portal de clínicas"                                                                                                                                                                                                             |
+| Responsável no Linear    | Carlos (as três)                                                                                                                                                                                                                                                                  |
+| Branch                   | nenhuma criada                                                                                                                                                                                                                                                                    |
+| PR                       | nenhuma                                                                                                                                                                                                                                                                           |
+| Migrations               | nenhuma criada; nenhuma proposta detalhada (entidades a definir após E-02)                                                                                                                                                                                                        |
+| Próxima ação             | **Nenhuma implementação.** Obter E-02 (perfis/portais da V1) e D-05 (arquitetura de segregação clínica)                                                                                                                                                                           |
 
 ## Divisão com o Lote 03
 
@@ -40,38 +40,38 @@ empresa ↔ clínica, encaminhamentos com guia e agendamento, e — **somente se
 
 ## Responsáveis por frente
 
-| Frente | Quem |
-|---|---|
-| Implementação | Carlos |
-| Perfis da V1, portais, profissional externo | Expedito (E-02, E-01) |
+| Frente                                                             | Quem                               |
+| ------------------------------------------------------------------ | ---------------------------------- |
+| Implementação                                                      | Carlos                             |
+| Perfis da V1, portais, profissional externo                        | Expedito (E-02, E-01)              |
 | Arquitetura de segregação clínica (A/B/C), escopo por empresa, MFA | Douglas (D-05, D-12), com Rikelvin |
-| O que a empresa/RH pode ver; o que é dado clínico | Dr. Alcides (A-03) |
-| Modelo de papéis × serviços (estender `company_modules`) | Rikelvin (revisão) |
+| O que a empresa/RH pode ver; o que é dado clínico                  | Dr. Alcides (A-03)                 |
+| Modelo de papéis × serviços (estender `company_modules`)           | Rikelvin (revisão)                 |
 
 ## Dependências
 
-| Depende de | Situação |
-|---|---|
-| E-02 perfis/portais da V1 | pendente |
-| D-05 arquitetura A/B/C | pendente (recomendação da Fase 0: A agora, evoluindo para B na camada clínica) |
-| P1 identidade profissional ([Lote 03](../03-identidade-e-riscos/README.md)) | bloqueada por decisão |
-| Escopo por empresa (`org_memberships.scoped_company_id` existe e não é aplicado) | não implementado |
-| Papel clínico + auditoria de leitura (P9, [Lote 02](../02-formularios-e-auditoria/README.md)) | planejado |
-| ASO emitido ([Lote 04](../04-aso/README.md)) | planejado — a guia termina em ASO |
+| Depende de                                                                                    | Situação                                                                       |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| E-02 perfis/portais da V1                                                                     | pendente                                                                       |
+| D-05 arquitetura A/B/C                                                                        | pendente (recomendação da Fase 0: A agora, evoluindo para B na camada clínica) |
+| P1 identidade profissional ([Lote 03](../03-identidade-e-riscos/README.md))                   | bloqueada por decisão                                                          |
+| Escopo por empresa (`org_memberships.scoped_company_id` existe e não é aplicado)              | não implementado                                                               |
+| Papel clínico + auditoria de leitura (P9, [Lote 02](../02-formularios-e-auditoria/README.md)) | planejado                                                                      |
+| ASO emitido ([Lote 04](../04-aso/README.md))                                                  | planejado — a guia termina em ASO                                              |
 
 Linear: NOB-121 ← NOB-97, bloqueia NOB-120 e NOB-122; NOB-122 ← NOB-99, NOB-108, NOB-121, bloqueia NOB-123 e NOB-130;
 NOB-123 ← NOB-108, NOB-112, NOB-122, bloqueia NOB-128 ([AUDIT-LINEAR-QA §4.3](../../AUDIT-LINEAR-QA.md)).
 
 ## Documentos do lote
 
-| Arquivo | Conteúdo |
-|---|---|
-| [AUDIT.md](AUDIT.md) | Existente, protótipo, lacunas, riscos |
-| [PLAN.md](PLAN.md) | Escopo condicionado a E-02, segurança, sequência |
-| [TASK.md](TASK.md) | Tarefas (não iniciadas) |
-| [WALKTHROUGH.md](WALKTHROUGH.md) | NÃO INICIADO |
-| [QA.md](QA.md) | NÃO INICIADO — cenários planejados |
-| [REVIEW.md](REVIEW.md) | NÃO INICIADO — checklist |
+| Arquivo                          | Conteúdo                                         |
+| -------------------------------- | ------------------------------------------------ |
+| [AUDIT.md](AUDIT.md)             | Existente, protótipo, lacunas, riscos            |
+| [PLAN.md](PLAN.md)               | Escopo condicionado a E-02, segurança, sequência |
+| [TASK.md](TASK.md)               | Tarefas (não iniciadas)                          |
+| [WALKTHROUGH.md](WALKTHROUGH.md) | NÃO INICIADO                                     |
+| [QA.md](QA.md)                   | NÃO INICIADO — cenários planejados               |
+| [REVIEW.md](REVIEW.md)           | NÃO INICIADO — checklist                         |
 
 ## Fontes da Fase 0
 

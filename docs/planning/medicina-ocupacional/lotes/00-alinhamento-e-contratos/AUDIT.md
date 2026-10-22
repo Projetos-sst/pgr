@@ -5,24 +5,23 @@
 
 ## 1. Situação existente
 
-| Item | Estado | Evidência |
-|---|---|---|
-| Registro de decisões | Existe: Fase 0 em [`../../DECISIONS.md`](../../DECISIONS.md) (histórico, não editar) e registro vivo em [`../../geral/04-DECISOES-E-BLOQUEIOS.md`](../../geral/04-DECISOES-E-BLOQUEIOS.md) (MED-DEC-01…22) | arquivos desta pasta |
-| Comentários no Linear | **Zero** em todas as 25 issues de Medicina e no projeto | [`../../AUDIT-LINEAR-QA.md`](../../AUDIT-LINEAR-QA.md) §4.2 |
-| Pergunta de autorização da NOB-98 | Feita pelo Rikelvin ao grupo em 20/10; **respondida parcialmente** pelo Expedito em 21/10 | MED-DEC-01 |
-| PR #112 | Aberta, sem CI, base errada, conflito no Postman | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.4 |
-| Linear × GitHub | NOB-102/103/104 com PR mergeada e status atrasado; NOB-94 em Backlog bloqueando issues Done | [`../../AUDIT-LINEAR-QA.md`](../../AUDIT-LINEAR-QA.md) §4.6 |
+| Item                              | Estado                                                                                                                                                                                                     | Evidência                                                   |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Registro de decisões              | Existe: Fase 0 em [`../../DECISIONS.md`](../../DECISIONS.md) (histórico, não editar) e registro vivo em [`../../geral/04-DECISOES-E-BLOQUEIOS.md`](../../geral/04-DECISOES-E-BLOQUEIOS.md) (MED-DEC-01…22) | arquivos desta pasta                                        |
+| Comentários no Linear             | **Zero** em todas as 25 issues de Medicina e no projeto                                                                                                                                                    | [`../../AUDIT-LINEAR-QA.md`](../../AUDIT-LINEAR-QA.md) §4.2 |
+| Pergunta de autorização da NOB-98 | Feita pelo Rikelvin ao grupo em 20/10; **respondida parcialmente** pelo Expedito em 21/10                                                                                                                  | MED-DEC-01                                                  |
+| PR #112                           | Aberta, sem CI, base errada, conflito no Postman                                                                                                                                                           | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.4   |
+| Linear × GitHub                   | NOB-102/103/104 com PR mergeada e status atrasado; NOB-94 em Backlog bloqueando issues Done                                                                                                                | [`../../AUDIT-LINEAR-QA.md`](../../AUDIT-LINEAR-QA.md) §4.6 |
 
 ## 2. NOB-98 e a pergunta de autorização
 
 - **Antes de 20/10** a pendência existia só no corpo da PR #112 e na spec da branch (`.specs/20261020-nob-98/spec.md:55-59`,
   arquivo da branch do Rikelvin, ausente em develop): "quem concede autorização de validação e como identificar o
   profissional" ([`../../AUDIT-LINEAR-QA.md`](../../AUDIT-LINEAR-QA.md) §4.7).
-- **20/10/2026:** Rikelvin perguntou no grupo quem concede a autorização (1. administrador do sistema/escritório;
-  2. responsável técnico da empresa; 3. outro profissional ou setor definido pela empresa) e se os dados de identificação de
+- **20/10/2026:** Rikelvin perguntou no grupo quem concede a autorização (1. administrador do sistema/escritório; 2. responsável técnico da empresa; 3. outro profissional ou setor definido pela empresa) e se os dados de identificação de
   quem valida devem ser registrados.
-- **21/10/2026:** Expedito respondeu: *"Opção 03. A empresa mesmo define quem vai autorizar. E sim; é importante registrar os
-  dados desse profissional."* Fonte: resposta de Expedito no grupo, 21/10/2026. Status: **PARCIALMENTE_RESPONDIDA**.
+- **21/10/2026:** Expedito respondeu: _"Opção 03. A empresa mesmo define quem vai autorizar. E sim; é importante registrar os
+  dados desse profissional."_ Fonte: resposta de Expedito no grupo, 21/10/2026. Status: **PARCIALMENTE_RESPONDIDA**.
 - **O que a resposta não cobre** (cada item é uma entrada própria no [04](../../geral/04-DECISOES-E-BLOQUEIOS.md)): qual usuário
   da empresa indica o autorizador (MED-DEC-02); se o autorizador também valida e quais categorias validam (MED-DEC-03);
   comprovação de identidade e modelo Clerk/banco (MED-DEC-04); externos (MED-DEC-05); escopo, revogação e validações
@@ -37,16 +36,16 @@
 
 ## 3. PR #112
 
-| Aspecto | Fato | Fonte |
-|---|---|---|
-| Base | `codex/NOB-100-feat/servicos-por-empresa` (merge-base `044334e` já está em develop) → precisa de retarget para `develop` | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.4 |
-| CI | "no checks reported": `ci.yml` só dispara para PR com base `develop`/`main` | [`../../AUDIT-LINEAR-QA.md`](../../AUDIT-LINEAR-QA.md) §4.7 |
-| Conflito | Único conflito textual: `docs/api/sst-manager.postman_collection.json` | idem |
-| Migrations | `0054_medical_risk_sources` (`when` 1792513283573) e `0055_pgr_inventory_module_access` (`when` 1792515723005) | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.4 |
-| Efeito da `0055` | Empresas **sem PGR** deixam de ver risco, avaliação, medida, AEP e vínculo EPI em todo o app | idem; MED-DEC-09 |
-| Contrato | `medical_risk_sources/entries/events`, imutáveis no runtime; `kind` `internal`/`external`; fingerprint SHA-256 | [`../../geral/03-ARQUITETURA-E-CONTRATOS.md`](../../geral/03-ARQUITETURA-E-CONTRATOS.md) §5.2 |
-| Não cobre | Fluxo de validação; função na captura interna; classificação na externa; medidas/EPI | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §10.1 |
-| Interface | Acrescenta "Riscos para PCMSO" → `/medical-risks` no grupo Medicina do `NAV` (`nav-menu.tsx` l.102-110) — **mesmo trecho que o Lote 01 altera** | [`../../AUDIT-UX.md`](../../AUDIT-UX.md) §4.3 |
+| Aspecto          | Fato                                                                                                                                            | Fonte                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Base             | `codex/NOB-100-feat/servicos-por-empresa` (merge-base `044334e` já está em develop) → precisa de retarget para `develop`                        | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.4                                     |
+| CI               | "no checks reported": `ci.yml` só dispara para PR com base `develop`/`main`                                                                     | [`../../AUDIT-LINEAR-QA.md`](../../AUDIT-LINEAR-QA.md) §4.7                                   |
+| Conflito         | Único conflito textual: `docs/api/sst-manager.postman_collection.json`                                                                          | idem                                                                                          |
+| Migrations       | `0054_medical_risk_sources` (`when` 1792513283573) e `0055_pgr_inventory_module_access` (`when` 1792515723005)                                  | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §4.4                                     |
+| Efeito da `0055` | Empresas **sem PGR** deixam de ver risco, avaliação, medida, AEP e vínculo EPI em todo o app                                                    | idem; MED-DEC-09                                                                              |
+| Contrato         | `medical_risk_sources/entries/events`, imutáveis no runtime; `kind` `internal`/`external`; fingerprint SHA-256                                  | [`../../geral/03-ARQUITETURA-E-CONTRATOS.md`](../../geral/03-ARQUITETURA-E-CONTRATOS.md) §5.2 |
+| Não cobre        | Fluxo de validação; função na captura interna; classificação na externa; medidas/EPI                                                            | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §10.1                                    |
+| Interface        | Acrescenta "Riscos para PCMSO" → `/medical-risks` no grupo Medicina do `NAV` (`nav-menu.tsx` l.102-110) — **mesmo trecho que o Lote 01 altera** | [`../../AUDIT-UX.md`](../../AUDIT-UX.md) §4.3                                                 |
 
 ## 4. Arquitetura multi-tenant
 
@@ -103,13 +102,13 @@ respondida. Não há registro de que tenham chegado ao Dr. Alcides por canal for
 
 ## 10. Riscos
 
-| Risco | Impacto | Mitigação neste lote |
-|---|---|---|
-| Interpretar a resposta parcial como regra completa | Implementar concessão sem decisão clínica; aprovação em nome de terceiros | Manter MED-DEC-01 `PARCIALMENTE_RESPONDIDA`; nada é implementado |
-| Migration da Medicina mergeada antes da #112 | Rikelvin precisa regerar `0054`/`0055` e snapshots | Nenhuma migration até MED-DEC-08 |
-| Mergear a #112 sem aceite da `0055` | Empresas sem PGR perdem visão de riscos sem aviso | Levar MED-DEC-09 ao Douglas e Expedito antes do merge |
-| Conflito no `nav-menu.tsx`, `api-design.md` e Postman entre #112 e Lote 01 | Retrabalho de merge | Combinar ordem com o Rikelvin ([PLAN §3](PLAN.md#3-convivência-com-o-trabalho-do-rikelvin)) |
-| Linear desatualizado | Planejamento sobre estado errado | Ação de coerência com Rikelvin/Douglas ([TASK](TASK.md)) |
+| Risco                                                                      | Impacto                                                                   | Mitigação neste lote                                                                        |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Interpretar a resposta parcial como regra completa                         | Implementar concessão sem decisão clínica; aprovação em nome de terceiros | Manter MED-DEC-01 `PARCIALMENTE_RESPONDIDA`; nada é implementado                            |
+| Migration da Medicina mergeada antes da #112                               | Rikelvin precisa regerar `0054`/`0055` e snapshots                        | Nenhuma migration até MED-DEC-08                                                            |
+| Mergear a #112 sem aceite da `0055`                                        | Empresas sem PGR perdem visão de riscos sem aviso                         | Levar MED-DEC-09 ao Douglas e Expedito antes do merge                                       |
+| Conflito no `nav-menu.tsx`, `api-design.md` e Postman entre #112 e Lote 01 | Retrabalho de merge                                                       | Combinar ordem com o Rikelvin ([PLAN §3](PLAN.md#3-convivência-com-o-trabalho-do-rikelvin)) |
+| Linear desatualizado                                                       | Planejamento sobre estado errado                                          | Ação de coerência com Rikelvin/Douglas ([TASK](TASK.md))                                    |
 
 ## 11. Decisões técnicas já respeitadas
 

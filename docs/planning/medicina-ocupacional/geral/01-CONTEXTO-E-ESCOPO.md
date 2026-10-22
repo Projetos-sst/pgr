@@ -16,38 +16,38 @@ do sistema (`withOrg` + RLS; ver [03](03-ARQUITETURA-E-CONTRATOS.md) e o `CLAUDE
 O produto tem duas áreas, contratadas **por empresa-cliente** (módulos `pgr` e `medicine`, NOB-97/NOB-100,
 independentes do plano free/pro):
 
-| Área | O que cobre hoje (develop) | Dono no time |
-|---|---|---|
+| Área                            | O que cobre hoje (develop)                                                                                                                                    | Dono no time                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | **Segurança do Trabalho (PGR)** | cadastros da cadeia do PGR, inventário de riscos por GES, avaliação, medidas, EPI, OS, acidentes, inspeções, psicossocial NR-01, geração DOCX/PDF do PGR, GED | Rikelvin (módulos, cadastros, integração); Douglas (documentos, infra) |
-| **Medicina do Trabalho** | catálogo de médicos (`medicos`) e **registro** de exames/ASO (`health_exams`); nada de emissão, PCMSO ou assinatura técnica | Carlos |
+| **Medicina do Trabalho**        | catálogo de médicos (`medicos`) e **registro** de exames/ASO (`health_exams`); nada de emissão, PCMSO ou assinatura técnica                                   | Carlos                                                                 |
 
 O objetivo da frente de Medicina é levar a área de **registro** a **emissão rastreável** (ASO e PCMSO), sem criar
 um segundo sistema ao lado do PGR e sem expor dado clínico além do necessário.
 
 ## 2. Equipe e partes interessadas
 
-| Pessoa | Papel nesta frente | Decide sobre |
-|---|---|---|
-| **Douglas** | Tech Lead; dono do pipeline documental (DOCX/PDF, GED, worker, `jobs`) e da infra (CI/CD Vercel, migrations automáticas) | ordem de merge e numeração de migrations, camada de emissão, arquitetura de isolamento clínico, IA × saúde, design system |
-| **Carlos** | implementa a Medicina (11 issues no Linear) | escopo e execução dos lotes 1 a 6; propostas de modelagem |
-| **Rikelvin** | módulos por empresa (`company_modules`), cadastros comuns, integração Segurança → Medicina (**NOB-98**, PR #112) | contrato de riscos, revisão de riscos, revisão da trilha de auditoria |
-| **Expedito** | produto | perfis, portais, habilitação de módulos, escopo comercial, quem concede autorização |
-| **Dr. Alcides** | validação técnica (clínica) | o que é validar risco, campos do ASO, Lista C, prazo de guarda, regras clínicas do protótipo |
+| Pessoa          | Papel nesta frente                                                                                                       | Decide sobre                                                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| **Douglas**     | Tech Lead; dono do pipeline documental (DOCX/PDF, GED, worker, `jobs`) e da infra (CI/CD Vercel, migrations automáticas) | ordem de merge e numeração de migrations, camada de emissão, arquitetura de isolamento clínico, IA × saúde, design system |
+| **Carlos**      | implementa a Medicina (11 issues no Linear)                                                                              | escopo e execução dos lotes 1 a 6; propostas de modelagem                                                                 |
+| **Rikelvin**    | módulos por empresa (`company_modules`), cadastros comuns, integração Segurança → Medicina (**NOB-98**, PR #112)         | contrato de riscos, revisão de riscos, revisão da trilha de auditoria                                                     |
+| **Expedito**    | produto                                                                                                                  | perfis, portais, habilitação de módulos, escopo comercial, quem concede autorização                                       |
+| **Dr. Alcides** | validação técnica (clínica)                                                                                              | o que é validar risco, campos do ASO, Lista C, prazo de guarda, regras clínicas do protótipo                              |
 
 Decisões pendentes por pessoa: [DECISIONS.md](../DECISIONS.md) e o registro vivo em
 [04-DECISOES-E-BLOQUEIOS.md](04-DECISOES-E-BLOQUEIOS.md). Responsáveis por issue: [09](09-LINEAR-E-RESPONSAVEIS.md).
 
 ## 3. Limites da Medicina
 
-| Dentro da frente de Medicina | Fora (pertence a outra frente ou depende de decisão) |
-|---|---|
-| Painel da Medicina e ficha de saúde ocupacional do funcionário (Lote 1) | Cadastro de empresa, funcionário, função, GES (cadastros comuns, NOB-99, Rikelvin) |
-| Procedimentos por exame, auditoria clínica, arquivamento de exames (Lote 2) | Inventário de riscos e o contrato `medical_risk_*` (NOB-98, Rikelvin) |
-| Identidade profissional e designação por empresa, PGR externo (UX), dataset da Lista C (Lote 3) | Pipeline documental genérico (Douglas): a Medicina **consome**, não reconstrói |
-| Emissão de ASO com snapshot, ciência do trabalhador (Lote 4) | Psicossocial NR-01: hoje em "Gestão de Segurança"; dono a decidir (E-04, MED-28) |
-| PCMSO (Lote 5) | Comercial (teste grátis, preços, serviços avulsos: MED-34) |
-| Profissionais, clínicas, portais (Lote 6, sob decisão de produto) | Afastamentos/NTEP, PPP, FAP/RAT, fadiga, crônicos, prontuário, teleconsulta, IA de Medicina (backlog; GAP-MATRIX MED-29…37) |
-| Homologação ponta a ponta (Lote 7) | Correções transversais de segurança fora da Medicina (bypass dev R1, texto de acidente no LLM R5) |
+| Dentro da frente de Medicina                                                                    | Fora (pertence a outra frente ou depende de decisão)                                                                        |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Painel da Medicina e ficha de saúde ocupacional do funcionário (Lote 1)                         | Cadastro de empresa, funcionário, função, GES (cadastros comuns, NOB-99, Rikelvin)                                          |
+| Procedimentos por exame, auditoria clínica, arquivamento de exames (Lote 2)                     | Inventário de riscos e o contrato `medical_risk_*` (NOB-98, Rikelvin)                                                       |
+| Identidade profissional e designação por empresa, PGR externo (UX), dataset da Lista C (Lote 3) | Pipeline documental genérico (Douglas): a Medicina **consome**, não reconstrói                                              |
+| Emissão de ASO com snapshot, ciência do trabalhador (Lote 4)                                    | Psicossocial NR-01: hoje em "Gestão de Segurança"; dono a decidir (E-04, MED-28)                                            |
+| PCMSO (Lote 5)                                                                                  | Comercial (teste grátis, preços, serviços avulsos: MED-34)                                                                  |
+| Profissionais, clínicas, portais (Lote 6, sob decisão de produto)                               | Afastamentos/NTEP, PPP, FAP/RAT, fadiga, crônicos, prontuário, teleconsulta, IA de Medicina (backlog; GAP-MATRIX MED-29…37) |
+| Homologação ponta a ponta (Lote 7)                                                              | Correções transversais de segurança fora da Medicina (bypass dev R1, texto de acidente no LLM R5)                           |
 
 Lotes e dependências: [IMPLEMENTATION-PLAN.md](../IMPLEMENTATION-PLAN.md) e [02-ROADMAP-E-STATUS.md](02-ROADMAP-E-STATUS.md).
 
@@ -69,36 +69,36 @@ Playwright em Python. Inventário completo em [AUDIT-PROTOTYPE.md](../AUDIT-PROT
 
 ### 4.1 O que NÃO pode ser copiado do protótipo
 
-| Comportamento do protótipo | Por que não | Fazer em vez disso | Fonte |
-|---|---|---|---|
-| Perfis "Ver como" provedor/empresa/clínica, filtro só na tela | Não é controle de segurança: todas as coleções chegam ao navegador | Autorização no servidor + RLS | AUDIT-SECURITY E53–E55; PROTO R-01 |
-| Dados em `localStorage` / banco compartilhado do artifact | Dado médico no cliente, sem isolamento | Server Components + Postgres com RLS; nada clínico em armazenamento do navegador | AUDIT-PROTOTYPE §4.2 |
-| "Aprovar como \<médico\>" clicado pelo editor | Aprovação em nome de terceiro | Validação só pelo próprio profissional identificado | AUDIT-PROTOTYPE R-04; DB §4.7 |
-| Carimbo textual / linha manuscrita como "assinatura" | Não é assinatura técnica | ASO sai "emitido, sem assinatura técnica" até existir provedor ICP-Brasil | DB §4.6; IMPLEMENTATION-PLAN Lote 4 |
-| Empresa emitindo e editando ASO próprio | Emissor indefinido (A-05) | Emissão restrita conforme decisão | PROTO R-05 |
-| Portal da empresa recebendo sinais vitais, audiometria, CID | Excede "empresa não vê resultados" | Empresa/RH vê só conclusão (se houver portal) | PROTO R-02, V-16 |
-| Clínica recebendo dados financeiros e folha da empresa | Excede a necessidade | Mínimo necessário por encaminhamento | PROTO R-03 |
-| IA lendo laudos com nome/CPF, no cliente | Dado de saúde em prompt | Nenhum dado médico em IA (D-08) | PROTO R-06; SEC R5 |
-| Funções, riscos e exames embutidos no cadastro da empresa | Duplica `job_roles`/`ges`/`risks` | Cadastros comuns + contrato `medical_risk_*` | AUDIT-UX §4.5; DEPENDENCIES §3 |
-| Lista C embutida (18 grupos, A15–K46, sem M e S/T) como dado oficial | Base parcial | Dataset com procedência, a partir da fonte oficial; o protótipo só como teste de regressão | AUDIT-PROTOTYPE §5.12 |
-| Periodicidade 12/24, dispensa 90/135, retorno ≥ 30 d etc. como regra pronta | Regras clínicas não validadas | Mostrar só validade **informada**; regras após A-06 | FIRST-MVP §2 passo 8 |
-| PCMSO e PPP recalculados ao vivo | Documento emitido não pode mudar | Snapshot imutável na emissão | DB §10.3 |
-| Exclusão em cascata pelo provedor | Perde histórico dentro do prazo de guarda | Arquivamento após decisão de prazo (A-07) | PROTO R-10; SEC R4 |
-| Navegação em 14 abas, re-render por `innerHTML`, sem `aria-live`, inputs sem rótulo | Acessibilidade e manutenção | Rotas Next com `<Link>`, primitives `_ui`, `role="status"`/`"alert"` | AUDIT-UX §10.3 |
-| Bricolage Grotesque / Atkinson Hyperlegible, violeta `--psi` | Identidade de outro produto | Manrope + JetBrains Mono + indigo (ver §8) | AUDIT-UX §10.1 |
-| Coleção `assinaturas` lida como assinatura de documento | É contrato/cobrança | Não confundir com `signature_*` | DB §4.7 |
+| Comportamento do protótipo                                                          | Por que não                                                        | Fazer em vez disso                                                                         | Fonte                               |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------- |
+| Perfis "Ver como" provedor/empresa/clínica, filtro só na tela                       | Não é controle de segurança: todas as coleções chegam ao navegador | Autorização no servidor + RLS                                                              | AUDIT-SECURITY E53–E55; PROTO R-01  |
+| Dados em `localStorage` / banco compartilhado do artifact                           | Dado médico no cliente, sem isolamento                             | Server Components + Postgres com RLS; nada clínico em armazenamento do navegador           | AUDIT-PROTOTYPE §4.2                |
+| "Aprovar como \<médico\>" clicado pelo editor                                       | Aprovação em nome de terceiro                                      | Validação só pelo próprio profissional identificado                                        | AUDIT-PROTOTYPE R-04; DB §4.7       |
+| Carimbo textual / linha manuscrita como "assinatura"                                | Não é assinatura técnica                                           | ASO sai "emitido, sem assinatura técnica" até existir provedor ICP-Brasil                  | DB §4.6; IMPLEMENTATION-PLAN Lote 4 |
+| Empresa emitindo e editando ASO próprio                                             | Emissor indefinido (A-05)                                          | Emissão restrita conforme decisão                                                          | PROTO R-05                          |
+| Portal da empresa recebendo sinais vitais, audiometria, CID                         | Excede "empresa não vê resultados"                                 | Empresa/RH vê só conclusão (se houver portal)                                              | PROTO R-02, V-16                    |
+| Clínica recebendo dados financeiros e folha da empresa                              | Excede a necessidade                                               | Mínimo necessário por encaminhamento                                                       | PROTO R-03                          |
+| IA lendo laudos com nome/CPF, no cliente                                            | Dado de saúde em prompt                                            | Nenhum dado médico em IA (D-08)                                                            | PROTO R-06; SEC R5                  |
+| Funções, riscos e exames embutidos no cadastro da empresa                           | Duplica `job_roles`/`ges`/`risks`                                  | Cadastros comuns + contrato `medical_risk_*`                                               | AUDIT-UX §4.5; DEPENDENCIES §3      |
+| Lista C embutida (18 grupos, A15–K46, sem M e S/T) como dado oficial                | Base parcial                                                       | Dataset com procedência, a partir da fonte oficial; o protótipo só como teste de regressão | AUDIT-PROTOTYPE §5.12               |
+| Periodicidade 12/24, dispensa 90/135, retorno ≥ 30 d etc. como regra pronta         | Regras clínicas não validadas                                      | Mostrar só validade **informada**; regras após A-06                                        | FIRST-MVP §2 passo 8                |
+| PCMSO e PPP recalculados ao vivo                                                    | Documento emitido não pode mudar                                   | Snapshot imutável na emissão                                                               | DB §10.3                            |
+| Exclusão em cascata pelo provedor                                                   | Perde histórico dentro do prazo de guarda                          | Arquivamento após decisão de prazo (A-07)                                                  | PROTO R-10; SEC R4                  |
+| Navegação em 14 abas, re-render por `innerHTML`, sem `aria-live`, inputs sem rótulo | Acessibilidade e manutenção                                        | Rotas Next com `<Link>`, primitives `_ui`, `role="status"`/`"alert"`                       | AUDIT-UX §10.3                      |
+| Bricolage Grotesque / Atkinson Hyperlegible, violeta `--psi`                        | Identidade de outro produto                                        | Manrope + JetBrains Mono + indigo (ver §8)                                                 | AUDIT-UX §10.1                      |
+| Coleção `assinaturas` lida como assinatura de documento                             | É contrato/cobrança                                                | Não confundir com `signature_*`                                                            | DB §4.7                             |
 
 ## 5. O que existe e o que não existe (develop `d6b787c`)
 
-| Existe (com evidência) | Não existe |
-|---|---|
-| `company_modules` + RLS RESTRICTIVE + histórico append-only (NOB-97/100) | Papel clínico (médico, enfermagem, psicólogo) |
-| Cadastros comuns com filtro `module=` (NOB-99) | Vínculo `medicos` ↔ usuário autenticado; UF do CRM; RQE |
-| `medicos` (CRUD) e `health_exams` (CRUD de registro, RLS `medicine`) | Emissão de ASO; PCMSO; assinatura técnica |
-| Validade derivada (`classifyDocumentValidity`) | Trilha de auditoria persistida de dado de saúde |
-| Pipeline DOCX/PDF + GED + worker (PGR, Douglas) | Catálogo de procedimentos; histórico de função |
-| Registry de assinatura simples (`signature_*`) | Lista C, NR-4, tabelas eSocial como dados |
-| — | Fluxo de validação de riscos (a PR #112 traz só fontes imutáveis `pending`, **não mergeada**) |
+| Existe (com evidência)                                                   | Não existe                                                                                    |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `company_modules` + RLS RESTRICTIVE + histórico append-only (NOB-97/100) | Papel clínico (médico, enfermagem, psicólogo)                                                 |
+| Cadastros comuns com filtro `module=` (NOB-99)                           | Vínculo `medicos` ↔ usuário autenticado; UF do CRM; RQE                                       |
+| `medicos` (CRUD) e `health_exams` (CRUD de registro, RLS `medicine`)     | Emissão de ASO; PCMSO; assinatura técnica                                                     |
+| Validade derivada (`classifyDocumentValidity`)                           | Trilha de auditoria persistida de dado de saúde                                               |
+| Pipeline DOCX/PDF + GED + worker (PGR, Douglas)                          | Catálogo de procedimentos; histórico de função                                                |
+| Registry de assinatura simples (`signature_*`)                           | Lista C, NR-4, tabelas eSocial como dados                                                     |
+| —                                                                        | Fluxo de validação de riscos (a PR #112 traz só fontes imutáveis `pending`, **não mergeada**) |
 
 Matriz completa (37 funcionalidades): [GAP-MATRIX.md](../GAP-MATRIX.md).
 
@@ -148,12 +148,12 @@ Valem para todos os lotes. Detalhe e rótulos em [05-SEGURANCA-E-DADOS.md](05-SE
 
 ## 9. Estratégia visual (só documentada; nada aplicado)
 
-| Item | Regra | Fonte |
-|---|---|---|
-| Tipografia | Manrope (texto) + JetBrains Mono (números/códigos), via `next/font` como já está | AUDIT-UX §4.1, §10.1 |
-| Cor primária | indigo `#5B63F5` (token `--color-primary`); nenhuma primária nova na Medicina | AUDIT-UX §4.1 |
-| Teal `#0d6b63` | **Só como acento de módulo**, e **só se o Douglas aprovar** o token (D-09). Sem aprovação, o Lote 1 sai sem teal | FIRST-MVP §3; AUDIT-UX §10.1 |
-| Tokens | Nada de tokens globais automáticos: qualquer token novo entra no `@theme inline` de `globals.css` por decisão explícita | brief da organização |
-| Componentes | Primitives de `src/app/(protected)/_ui/`; promover `StatCard` do dashboard para `_ui`; `ErrorState` existente para erro | FIRST-MVP §3; AUDIT-UX §10.2 |
-| Dívidas conhecidas | `StatusBadge`/`ListCard` duplicados; pílulas abaixo de AA; `text-subtle` abaixo de 4,5:1 | AUDIT-UX §4.2, §4.7 (correção é do Douglas, D-09) |
-| Navegação | Grupo "Medicina do Trabalho" com no máximo 5–6 itens no MVP; nunca as 14 abas do protótipo | AUDIT-UX §10.2 |
+| Item               | Regra                                                                                                                   | Fonte                                             |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Tipografia         | Manrope (texto) + JetBrains Mono (números/códigos), via `next/font` como já está                                        | AUDIT-UX §4.1, §10.1                              |
+| Cor primária       | indigo `#5B63F5` (token `--color-primary`); nenhuma primária nova na Medicina                                           | AUDIT-UX §4.1                                     |
+| Teal `#0d6b63`     | **Só como acento de módulo**, e **só se o Douglas aprovar** o token (D-09). Sem aprovação, o Lote 1 sai sem teal        | FIRST-MVP §3; AUDIT-UX §10.1                      |
+| Tokens             | Nada de tokens globais automáticos: qualquer token novo entra no `@theme inline` de `globals.css` por decisão explícita | brief da organização                              |
+| Componentes        | Primitives de `src/app/(protected)/_ui/`; promover `StatCard` do dashboard para `_ui`; `ErrorState` existente para erro | FIRST-MVP §3; AUDIT-UX §10.2                      |
+| Dívidas conhecidas | `StatusBadge`/`ListCard` duplicados; pílulas abaixo de AA; `text-subtle` abaixo de 4,5:1                                | AUDIT-UX §4.2, §4.7 (correção é do Douglas, D-09) |
+| Navegação          | Grupo "Medicina do Trabalho" com no máximo 5–6 itens no MVP; nunca as 14 abas do protótipo                              | AUDIT-UX §10.2                                    |

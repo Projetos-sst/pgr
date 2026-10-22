@@ -21,13 +21,13 @@ Os scripts Python do protótipo foram apenas lidos.
 
 ## 2. Fontes consultadas
 
-| Fonte | Como |
-| --- | --- |
-| Linear MCP `linear-server` | `get_project` (members/milestones/resources), `list_documents`, `get_document` ("Comece aqui"), `get_status_updates` (0), `list_comments` (projeto + 25 issues), `get_issue` (includeRelations, stateHistory), `list_issues` (projeto completo + 6 buscas) |
-| GitHub | `gh pr view 112 --json ...`, `gh api repos/Projetos-sst/pgr/pulls/112/comments` (0), `gh api .../issues/112/comments` (0), `gh pr checks 112`, `gh pr list --state all`, corpos de #108/#109/#111/#115/#116/#117, `gh run list` (CI e CD), `gh api .../rulesets` (403: recurso indisponível no plano) |
-| Git (worktree) | `git show origin/codex/NOB-98-feat/riscos-para-medicina:<path>`, `git log origin/develop..<branch>`, `git merge-base --is-ancestor`, `git merge-tree --write-tree` (somente objetos, sem tocar working tree) |
-| Código develop `d6b787c` | `package.json`, `jest.config.ts`, `jest.integration-setup.ts`, `playwright.config.ts`, `tests/e2e/*`, `.github/workflows/{ci,cd,changelog}.yml`, `src/__tests__/integration/_helpers/*`, testes de Medicina, `src/shared/db/schema/{medicos,module-policy}.ts`, `docs/produto/08-fluxos-emissao-assinatura.md` |
-| Protótipo | `Projeto-SST-Ocupacional/LEIAME.txt`, `testes/*.py` (10 arquivos, 675 linhas) |
+| Fonte                      | Como                                                                                                                                                                                                                                                                                                           |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Linear MCP `linear-server` | `get_project` (members/milestones/resources), `list_documents`, `get_document` ("Comece aqui"), `get_status_updates` (0), `list_comments` (projeto + 25 issues), `get_issue` (includeRelations, stateHistory), `list_issues` (projeto completo + 6 buscas)                                                     |
+| GitHub                     | `gh pr view 112 --json ...`, `gh api repos/Projetos-sst/pgr/pulls/112/comments` (0), `gh api .../issues/112/comments` (0), `gh pr checks 112`, `gh pr list --state all`, corpos de #108/#109/#111/#115/#116/#117, `gh run list` (CI e CD), `gh api .../rulesets` (403: recurso indisponível no plano)          |
+| Git (worktree)             | `git show origin/codex/NOB-98-feat/riscos-para-medicina:<path>`, `git log origin/develop..<branch>`, `git merge-base --is-ancestor`, `git merge-tree --write-tree` (somente objetos, sem tocar working tree)                                                                                                   |
+| Código develop `d6b787c`   | `package.json`, `jest.config.ts`, `jest.integration-setup.ts`, `playwright.config.ts`, `tests/e2e/*`, `.github/workflows/{ci,cd,changelog}.yml`, `src/__tests__/integration/_helpers/*`, testes de Medicina, `src/shared/db/schema/{medicos,module-policy}.ts`, `docs/produto/08-fluxos-emissao-assinatura.md` |
+| Protótipo                  | `Projeto-SST-Ocupacional/LEIAME.txt`, `testes/*.py` (10 arquivos, 675 linhas)                                                                                                                                                                                                                                  |
 
 ## 3. Arquivos reais (verificados abertos)
 
@@ -75,33 +75,33 @@ em comentários do Linear. As únicas evidências fora das descrições são os 
 
 Legenda prioridade: U=Urgent, H=High, M=Medium. "Med" = milestone 4; "Tele" = milestone 6.
 
-| Issue | Título (resumido) | Responsável | Status | Prio | Milestone | Anexo/PR | Bloqueada por | Bloqueia |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| NOB-93 | Obter modelo completo do Dr. Alcides | **sem** | In Review (desde 17/10) | H | 1 | — | — | 94, 101, 104, 105, 112, 113 |
-| NOB-94 | Comparar modelo × sistema do Douglas | Rikelvin | **Backlog** | U | 1 | — | 93 | 96, 97, 101, 103, 108 |
-| NOB-97 | Separar módulos Medicina/Segurança | Rikelvin | Done (20/10 17:39) | U | 2 | PR #109 | 94 | 98, 99, 100, 108, 121 |
-| NOB-98 | Integração riscos PGR → PCMSO | Rikelvin | In Progress (20/10 17:16) | H | 2 | PR #112 "validação técnica pendente" | 97, 99, 103 | 109, 130 |
-| NOB-99 | Cadastros comuns entre módulos | Rikelvin | Done (20/10 18:53) | H | 2 | PR #110 | 97, 102 | 98, 108, 111, 122 |
-| NOB-100 | Contratação independente PGR/Medicina | Rikelvin | Done (20/10 21:48) | H | 2 | PR #111 | 97, 114 | 111, 115, 116, 133 |
-| NOB-101 | Fluxos de emissão e assinatura | Rikelvin | Done | H | 2 | PR #108 "levantamento… (rascunho)" | 93, 94 | 105, 109, 110 |
-| NOB-102 | Validar CNPJ e funcionários | Rikelvin | In Review | U | 3 | PR #118 | — | 99, 103, 104, 105 |
-| NOB-103 | Riscos ergonômicos/físicos/químicos | Rikelvin | In Progress | H | 3 | PR #113 "revisão técnica pendente" | 94, 102 | 98, 105 |
-| NOB-105 | Concluir geração do PGR (Douglas) | Rikelvin | In Progress | U | 3 | PR #115 "emissão integral pendente" | 93, 101, 102, 103, 104 | 106, 107, 118, 124, 128, 129 |
-| NOB-107 | Avaliação técnica do PGR gerado | Rikelvin | In Progress | H | 3 | PR #117 "parecer técnico pendente" | 105 | 130 |
-| NOB-108 | Módulo de Medicina conforme protótipo | **Carlos** | In Progress (20/10 02:45) | U | Med | — | 94, 97, 99 | 110, 112, 122, 123 |
-| NOB-109 | Geração automática do PCMSO | **Carlos** | Backlog | U | Med | — | **98**, 101, 111, 112, 113 | 118, 125, 128, 129 |
-| NOB-110 | Fluxo de geração do ASO | **Carlos** | Backlog | U | Med | — | 101, 108, 112, 113 | 118, 125, 128, 129 |
-| NOB-111 | PGR fornecido pela empresa (externo) | **Carlos** | Backlog | H | Med | — | 99, 100 | 109 |
-| NOB-112 | Abas/formulários que alimentam documentos | **Carlos** | In Progress (20/10 02:50) | H | Med | — | 93, 108 | 109, 110, 123 |
-| NOB-113 | Completar "Lista C" | **Carlos** | In Progress (20/10 02:48) | H | Med | — | 93 | 109, 110 |
-| NOB-120 | Teleconsulta avulsa | **Carlos** | Backlog | M | Tele | — | 117, 121 | — |
-| NOB-121 | Cadastro de médicos/psicólogos internos e externos | **Carlos** | Backlog | M | Tele | — | 97 | 120, 122 |
-| NOB-122 | Portal empresa ↔ clínica | **Carlos** | Backlog | H | Tele | — | 99, 108, 121 | 123, 130 |
-| NOB-123 | Conectar protótipo ao front-end | **Carlos** | Backlog | H | Tele | — | 108, 112, 122 | 128 |
-| NOB-125 | IA para documentos de Medicina | **Carlos** | Backlog | H | 7 | — | 109, 110, 126 | — |
-| NOB-128 | Teste E2E completo (CNPJ → documentos) | sem | Backlog | U | 8 | — | 105, 109, 110, 123, 127 | 130 |
-| NOB-129 | Testar geração/visualização/download/restrições | sem | Backlog | H | 8 | — | 105, 109, 110, 118, 127 | 130 |
-| NOB-130 | Validar integrações e treinamento | sem | Backlog | H | 8 | — | **98**, 107, 116, 117, 122, 128, 129 | — |
+| Issue   | Título (resumido)                                  | Responsável | Status                    | Prio | Milestone | Anexo/PR                             | Bloqueada por                        | Bloqueia                     |
+| ------- | -------------------------------------------------- | ----------- | ------------------------- | ---- | --------- | ------------------------------------ | ------------------------------------ | ---------------------------- |
+| NOB-93  | Obter modelo completo do Dr. Alcides               | **sem**     | In Review (desde 17/10)   | H    | 1         | —                                    | —                                    | 94, 101, 104, 105, 112, 113  |
+| NOB-94  | Comparar modelo × sistema do Douglas               | Rikelvin    | **Backlog**               | U    | 1         | —                                    | 93                                   | 96, 97, 101, 103, 108        |
+| NOB-97  | Separar módulos Medicina/Segurança                 | Rikelvin    | Done (20/10 17:39)        | U    | 2         | PR #109                              | 94                                   | 98, 99, 100, 108, 121        |
+| NOB-98  | Integração riscos PGR → PCMSO                      | Rikelvin    | In Progress (20/10 17:16) | H    | 2         | PR #112 "validação técnica pendente" | 97, 99, 103                          | 109, 130                     |
+| NOB-99  | Cadastros comuns entre módulos                     | Rikelvin    | Done (20/10 18:53)        | H    | 2         | PR #110                              | 97, 102                              | 98, 108, 111, 122            |
+| NOB-100 | Contratação independente PGR/Medicina              | Rikelvin    | Done (20/10 21:48)        | H    | 2         | PR #111                              | 97, 114                              | 111, 115, 116, 133           |
+| NOB-101 | Fluxos de emissão e assinatura                     | Rikelvin    | Done                      | H    | 2         | PR #108 "levantamento… (rascunho)"   | 93, 94                               | 105, 109, 110                |
+| NOB-102 | Validar CNPJ e funcionários                        | Rikelvin    | In Review                 | U    | 3         | PR #118                              | —                                    | 99, 103, 104, 105            |
+| NOB-103 | Riscos ergonômicos/físicos/químicos                | Rikelvin    | In Progress               | H    | 3         | PR #113 "revisão técnica pendente"   | 94, 102                              | 98, 105                      |
+| NOB-105 | Concluir geração do PGR (Douglas)                  | Rikelvin    | In Progress               | U    | 3         | PR #115 "emissão integral pendente"  | 93, 101, 102, 103, 104               | 106, 107, 118, 124, 128, 129 |
+| NOB-107 | Avaliação técnica do PGR gerado                    | Rikelvin    | In Progress               | H    | 3         | PR #117 "parecer técnico pendente"   | 105                                  | 130                          |
+| NOB-108 | Módulo de Medicina conforme protótipo              | **Carlos**  | In Progress (20/10 02:45) | U    | Med       | —                                    | 94, 97, 99                           | 110, 112, 122, 123           |
+| NOB-109 | Geração automática do PCMSO                        | **Carlos**  | Backlog                   | U    | Med       | —                                    | **98**, 101, 111, 112, 113           | 118, 125, 128, 129           |
+| NOB-110 | Fluxo de geração do ASO                            | **Carlos**  | Backlog                   | U    | Med       | —                                    | 101, 108, 112, 113                   | 118, 125, 128, 129           |
+| NOB-111 | PGR fornecido pela empresa (externo)               | **Carlos**  | Backlog                   | H    | Med       | —                                    | 99, 100                              | 109                          |
+| NOB-112 | Abas/formulários que alimentam documentos          | **Carlos**  | In Progress (20/10 02:50) | H    | Med       | —                                    | 93, 108                              | 109, 110, 123                |
+| NOB-113 | Completar "Lista C"                                | **Carlos**  | In Progress (20/10 02:48) | H    | Med       | —                                    | 93                                   | 109, 110                     |
+| NOB-120 | Teleconsulta avulsa                                | **Carlos**  | Backlog                   | M    | Tele      | —                                    | 117, 121                             | —                            |
+| NOB-121 | Cadastro de médicos/psicólogos internos e externos | **Carlos**  | Backlog                   | M    | Tele      | —                                    | 97                                   | 120, 122                     |
+| NOB-122 | Portal empresa ↔ clínica                           | **Carlos**  | Backlog                   | H    | Tele      | —                                    | 99, 108, 121                         | 123, 130                     |
+| NOB-123 | Conectar protótipo ao front-end                    | **Carlos**  | Backlog                   | H    | Tele      | —                                    | 108, 112, 122                        | 128                          |
+| NOB-125 | IA para documentos de Medicina                     | **Carlos**  | Backlog                   | H    | 7         | —                                    | 109, 110, 126                        | —                            |
+| NOB-128 | Teste E2E completo (CNPJ → documentos)             | sem         | Backlog                   | U    | 8         | —                                    | 105, 109, 110, 123, 127              | 130                          |
+| NOB-129 | Testar geração/visualização/download/restrições    | sem         | Backlog                   | H    | 8         | —                                    | 105, 109, 110, 118, 127              | 130                          |
+| NOB-130 | Validar integrações e treinamento                  | sem         | Backlog                   | H    | 8         | —                                    | **98**, 107, 116, 117, 122, 128, 129 | —                            |
 
 Comentários: **0 em todas**. Labels: as issues de Medicina carregam o label de área "Medicina Ocupacional — PCMSO e ASO" ou
 "Teleconsultas e portal de clínicas" mais labels técnicos com prefixo "PGR •" (ex.: "PGR • API / Backend"); NOB-113, NOB-120 e NOB-125
@@ -161,19 +161,19 @@ prazo definido" — texto desatualizado: hoje há responsáveis).
 
 ### 4.6 Status Linear × estado real no GitHub
 
-| Issue | Linear | PR | Estado GitHub (gh pr list, 21/10) | Consistência |
-| --- | --- | --- | --- | --- |
-| NOB-101 | Done | #108 | MERGED 20/10 15:15, docs | Coerente com merge; issue em si com decisões pendentes |
-| NOB-97 | Done | #109 | MERGED 20/10 17:39 | Coerente |
-| NOB-99 | Done | #110 | MERGED 20/10 18:33 | Coerente |
-| NOB-100 | Done | #111 | MERGED 20/10 21:34 | Merge ok; critério "PGR externo" depende da #112 aberta |
-| NOB-98 | In Progress | #112 | **OPEN, isDraft=false**, base `codex/NOB-100-feat/servicos-por-empresa` (já mergeada), **sem checks**, review 0 | Corpo diz "PR empilhada, em rascunho", mas GitHub não marca draft |
-| NOB-103 | In Progress | #113 | MERGED 21/10 00:15 | **Linear atrasado** (ou mantido aberto por revisão técnica) |
-| NOB-104 | In Progress | #114 | MERGED 21/10 00:23 (docs) | **Linear atrasado** |
-| NOB-102 | In Review | #118 | MERGED 21/10 02:25 (= HEAD develop d6b787c) | **Linear atrasado** |
-| NOB-105 | In Progress | #115 | OPEN draft | Coerente |
-| NOB-106 | In Progress | #116 | OPEN draft | Coerente |
-| NOB-107 | In Progress | #117 | OPEN draft | Coerente |
+| Issue   | Linear      | PR   | Estado GitHub (gh pr list, 21/10)                                                                               | Consistência                                                      |
+| ------- | ----------- | ---- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| NOB-101 | Done        | #108 | MERGED 20/10 15:15, docs                                                                                        | Coerente com merge; issue em si com decisões pendentes            |
+| NOB-97  | Done        | #109 | MERGED 20/10 17:39                                                                                              | Coerente                                                          |
+| NOB-99  | Done        | #110 | MERGED 20/10 18:33                                                                                              | Coerente                                                          |
+| NOB-100 | Done        | #111 | MERGED 20/10 21:34                                                                                              | Merge ok; critério "PGR externo" depende da #112 aberta           |
+| NOB-98  | In Progress | #112 | **OPEN, isDraft=false**, base `codex/NOB-100-feat/servicos-por-empresa` (já mergeada), **sem checks**, review 0 | Corpo diz "PR empilhada, em rascunho", mas GitHub não marca draft |
+| NOB-103 | In Progress | #113 | MERGED 21/10 00:15                                                                                              | **Linear atrasado** (ou mantido aberto por revisão técnica)       |
+| NOB-104 | In Progress | #114 | MERGED 21/10 00:23 (docs)                                                                                       | **Linear atrasado**                                               |
+| NOB-102 | In Review   | #118 | MERGED 21/10 02:25 (= HEAD develop d6b787c)                                                                     | **Linear atrasado**                                               |
+| NOB-105 | In Progress | #115 | OPEN draft                                                                                                      | Coerente                                                          |
+| NOB-106 | In Progress | #116 | OPEN draft                                                                                                      | Coerente                                                          |
+| NOB-107 | In Progress | #117 | OPEN draft                                                                                                      | Coerente                                                          |
 
 **Douglas**: nenhuma issue do projeto está atribuída a ele (`list_issues project=pgr`). Suas PRs #99–#106 (14–15/10) estão MERGED, nenhuma
 anexada a issue do Linear. #101/#102/#104 entregaram CD Vercel com migrations automáticas e release para `main` (#102 base `main`, 15/10);
@@ -190,14 +190,14 @@ responsável; o branch real é `codex/NOB-98-feat/riscos-para-medicina`.
 **A pergunta pendente existe, mas não está no Linear nem na PR como comentário**: está no corpo da PR e nos docs da branch, e foi feita
 **ao operador da sessão do Rikelvin** ("ao usuário"), não a uma parte interessada nomeada:
 
-- Corpo da PR #112, seção "Pendência de negócio obrigatória": *"O cadastro de médicos não vincula profissional ao usuário autenticado.
+- Corpo da PR #112, seção "Pendência de negócio obrigatória": _"O cadastro de médicos não vincula profissional ao usuário autenticado.
   Falta definir quem concede autorização e como identificar o profissional. NÃO há fluxo operacional de aprovar/rejeitar até essa definição;
-  owner/colaborador não são presumidos responsáveis técnicos."*
-- `.specs/20261020-nob-98/spec.md:55-59`: *"O cadastro `medicos` não vincula profissional ao usuário autenticado. Foi perguntado ao usuário
+  owner/colaborador não são presumidos responsáveis técnicos."_
+- `.specs/20261020-nob-98/spec.md:55-59`: _"O cadastro `medicos` não vincula profissional ao usuário autenticado. Foi perguntado ao usuário
   quem pode conceder autorização de validação e como identificar o profissional. Não considerar owner/colaborador automaticamente habilitado
-  para aprovar riscos. Enquanto não houver resposta, não há endpoint/botão de aprovação ou rejeição."*
-- `docs/planning/nob-97-100-98-relatorio.md:85-88`: *"Falta definir quem concede autorização de validação e como identificar o profissional
-  no usuário autenticado (o cadastro atual de médicos não tem esse vínculo). A pergunta foi enviada ao usuário."*
+  para aprovar riscos. Enquanto não houver resposta, não há endpoint/botão de aprovação ou rejeição."_
+- `docs/planning/nob-97-100-98-relatorio.md:85-88`: _"Falta definir quem concede autorização de validação e como identificar o profissional
+  no usuário autenticado (o cadastro atual de médicos não tem esse vínculo). A pergunta foi enviada ao usuário."_
 - `.specs/20261020-nob-98/validation.md:40-42`: critério "Validação técnica e transições de aprovação/rejeição: **pendentes** da decisão sobre
   concessão de autorização e identidade profissional."
 
@@ -221,12 +221,12 @@ de papéis). Rikelvin implementa; Carlos é afetado diretamente (NOB-109/110/121
 **Opções técnicas** (todas exigem migration nova, porque 0054 faz `REVOKE UPDATE, DELETE` do `app_runtime` nas três tabelas e a policy
 RESTRICTIVE `medical_risk_entries_pending_insert` só aceita INSERT `pending` — `0054_medical_risk_sources.sql:59,66-68`):
 
-| Opção | Descrição | Prós | Contras |
-| --- | --- | --- | --- |
-| A | `medicos.user_id` (Clerk) + tabela `professional_grants(org_id, company_id, medico_id, granted_by, revoked_at)` concedida pelo owner | Por empresa; auditável; reusa `medicos` | Exige fluxo de convite/vínculo do usuário Clerk; profissional externo precisa de membership |
-| B | Novo papel de domínio (ex. `medical_coordinator`) em `org_memberships` / role Clerk | Simples no gate (`requireOfficeStaff` → `requireMedicalReviewer`) | Escopo de escritório inteiro, não por empresa; mistura identidade profissional com papel de acesso |
-| C | "Coordenador do PCMSO" designado por empresa (FK `company → medico`) + vínculo usuário | Espelha NR-07 (coordenador por PCMSO), casa com NOB-109 | Mais modelagem; precisa da opção A para identidade |
-| D | Owner atesta validação (provisório) | Desbloqueia já | Contraria explicitamente a spec ("owner não é presumido profissional habilitado"); risco regulatório |
+| Opção | Descrição                                                                                                                            | Prós                                                              | Contras                                                                                              |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| A     | `medicos.user_id` (Clerk) + tabela `professional_grants(org_id, company_id, medico_id, granted_by, revoked_at)` concedida pelo owner | Por empresa; auditável; reusa `medicos`                           | Exige fluxo de convite/vínculo do usuário Clerk; profissional externo precisa de membership          |
+| B     | Novo papel de domínio (ex. `medical_coordinator`) em `org_memberships` / role Clerk                                                  | Simples no gate (`requireOfficeStaff` → `requireMedicalReviewer`) | Escopo de escritório inteiro, não por empresa; mistura identidade profissional com papel de acesso   |
+| C     | "Coordenador do PCMSO" designado por empresa (FK `company → medico`) + vínculo usuário                                               | Espelha NR-07 (coordenador por PCMSO), casa com NOB-109           | Mais modelagem; precisa da opção A para identidade                                                   |
+| D     | Owner atesta validação (provisório)                                                                                                  | Desbloqueia já                                                    | Contraria explicitamente a spec ("owner não é presumido profissional habilitado"); risco regulatório |
 
 Persistência da revisão (independe da opção de autorização): (i) tabela append-only `medical_risk_reviews` com status derivado do último evento
 (consistente com a imutabilidade da 0054); ou (ii) `GRANT UPDATE(status, reviewed_by, reviewed_at, review_note)` + policy de UPDATE restrita
@@ -245,6 +245,7 @@ a spec pede "primeiro em staging" — na prática o merge é a aplicação em st
 quando PGR está desabilitado (spec.md:36-38): mudança de comportamento para empresas novas, que começam **sem módulos** (relatorio:11).
 
 **Como a Medicina avança sem duplicar a integração do Rikelvin**:
+
 1. Tratar `medical_risk_sources` / `medical_risk_entries` (repositório `src/shared/db/repositories/medical-risk-sources.ts` da #112) como o
    **único contrato** PGR → Medicina. PCMSO (NOB-109) referencia `source_id` + ids de entries (snapshot), nunca lê `risks`/`pgr` direto.
 2. **NOB-111 (Carlos) deve ser reescopada sobre a #112**: o registro de PGR externo já existe lá; resta UX, upload/GED do documento e a validação.
@@ -285,7 +286,7 @@ typecheck + test (unit); `test:deploy` = `node --test scripts/__tests__/*vercel*
   unidade, GES, função, funcionário, EPI, PGR — ids fixos em `PGR_IDS`. Não semeia `medicos` nem `health_exams`.
 - `_helpers/isolation-suite.ts`: `runIsolationSuite({table, seededCountA, crossTenantInsertSql, extraSeedSql})` — 6 asserções RLS (A só vê A,
   B só vê B, sem tenant → 0, tenant inválido → 0, insert cross-tenant rejeitado por WITH CHECK, sem vazamento após `withOrg`). Usada em 25
-  arquivos para 20 tabelas: categories, companies, control_measures, employees, epi_* (6), ergonomic_evaluations, ges, ges_job_roles,
+  arquivos para 20 tabelas: categories, companies, control*measures, employees, epi*\* (6), ergonomic_evaluations, ges, ges_job_roles,
   job_roles, pgr, pgr_ges, pgr_revisions, risk_assessments, risks, stock_movements, work_units. **Não cobre `medicos`, `health_exams`,
   `company_modules`, tabelas psicossociais** (o isolamento delas é testado de forma ad hoc nos testes de CRUD).
 - Padrão de gate em teste: `jest.mock("@/shared/auth/require-office-staff")` + `mockResolvedValue({userId, tenantId, plan, role})`
@@ -295,16 +296,16 @@ typecheck + test (unit); `test:deploy` = `node --test scripts/__tests__/*vercel*
 
 ### 5.4 Testes de Medicina existentes
 
-| Arquivo | Casos |
-| --- | --- |
-| `integration/pgr/medicos.test.ts` | CRUD escopado; busca nome/CRM; filtro clínica; clínicas não vazam; `client` → FORBIDDEN; CRM duplicado → DUPLICATE; VALIDATION; cross-tenant → NOT_FOUND |
-| `integration/pgr/health-exams.test.ts` | CRUD com médico; busca/filtro; médico cross-tenant → FK_NOT_FOUND; funcionário cross-tenant → FK_NOT_FOUND; data futura → VALIDATION; cross-tenant → NOT_FOUND |
-| `integration/pgr/rest-health-exams.test.ts` | GET/POST 201/PUT/DELETE 204; 422 VALIDATION/FK_NOT_FOUND; 403 client; 404 cross-tenant |
-| `integration/platform/company-modules.test.ts` | backfill 0053; empresa nova sem módulos; revogar PGR mantém Medicina; revogar Medicina oculta exames sem apagar; isolamento de habilitações |
-| `integration/platform/company-module-management.test.ts` | mudança atômica; ativação explícita; colaborador não altera; outro tenant; **concorrência**; **rollback** se auditoria falha; REST |
-| `integration/platform/shared-company-records.test.ts` | cadastros comuns sem clonagem; disponíveis à Medicina sem PGR; isolamento |
-| `integration/psychosocial/{psychosocial,risk-factors}.test.ts` | campanhas, rota pública anônima, transições, cross-tenant, FORBIDDEN |
-| unit: `domains/pgr/{medicos,health-exams}.test.ts`, `domains/platform/company-modules.test.ts`, `psychosocial-risk-factors.test.ts` | zod/regras |
+| Arquivo                                                                                                                             | Casos                                                                                                                                                          |
+| ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `integration/pgr/medicos.test.ts`                                                                                                   | CRUD escopado; busca nome/CRM; filtro clínica; clínicas não vazam; `client` → FORBIDDEN; CRM duplicado → DUPLICATE; VALIDATION; cross-tenant → NOT_FOUND       |
+| `integration/pgr/health-exams.test.ts`                                                                                              | CRUD com médico; busca/filtro; médico cross-tenant → FK_NOT_FOUND; funcionário cross-tenant → FK_NOT_FOUND; data futura → VALIDATION; cross-tenant → NOT_FOUND |
+| `integration/pgr/rest-health-exams.test.ts`                                                                                         | GET/POST 201/PUT/DELETE 204; 422 VALIDATION/FK_NOT_FOUND; 403 client; 404 cross-tenant                                                                         |
+| `integration/platform/company-modules.test.ts`                                                                                      | backfill 0053; empresa nova sem módulos; revogar PGR mantém Medicina; revogar Medicina oculta exames sem apagar; isolamento de habilitações                    |
+| `integration/platform/company-module-management.test.ts`                                                                            | mudança atômica; ativação explícita; colaborador não altera; outro tenant; **concorrência**; **rollback** se auditoria falha; REST                             |
+| `integration/platform/shared-company-records.test.ts`                                                                               | cadastros comuns sem clonagem; disponíveis à Medicina sem PGR; isolamento                                                                                      |
+| `integration/psychosocial/{psychosocial,risk-factors}.test.ts`                                                                      | campanhas, rota pública anônima, transições, cross-tenant, FORBIDDEN                                                                                           |
+| unit: `domains/pgr/{medicos,health-exams}.test.ts`, `domains/platform/company-modules.test.ts`, `psychosocial-risk-factors.test.ts` | zod/regras                                                                                                                                                     |
 
 Na branch #112 (não em develop): `integration/platform/medical-risk-sources.test.ts` (280 l.) e `unit/domains/platform/medical-risk-sources.test.ts`.
 
@@ -338,14 +339,14 @@ Python + Playwright sync contra `file:///…/app/saude-ocupacional.html`, rede a
 asserções sobre o estado global `S.*` e funções internas (`save`, `trocarPerfil`, `assinRaw`, `exigeRetorno`). `crawl.py` grava `snap.json`
 e `demo.py` grava `demo.png` no diretório corrente (efeito colateral).
 
-| Script | O que testa | Reuso como roteiro de QA |
-| --- | --- | --- |
-| `flow.py` | CNAE curto bloqueado; CPF com aviso; busca; **ASO sem médico bloqueado**; **ASO guarda snapshot de riscos e não muda quando o risco da função muda**; CID inválido; fim antes do início; texto não se perde; kit INSS (S-2230); kiosk psicossocial anônimo, n<5 oculto; clínica + guia de encaminhamento; conclusão sem resultados bloqueada; ASO gerado pela clínica; indicadores; aviso e exclusão em cascata | Alto: validações, snapshot pós-emissão, guia → ASO |
-| `portal.py` | "Ver como" empresa/clínica; empresa não vê funcionário/empresa de outra; clínica vê só ASOs das suas guias; clínica sem excluir; vínculo exigido, pedido de acesso, liberação; aba fora do perfil redireciona; sem rolagem horizontal; empresa não exclui funcionário com ASO; ASO da clínica travado para a empresa | Alto: matriz de autorização empresa/clínica/profissional (NOB-122) |
-| `demo.py` | Documentos em demonstração no teste grátis: sem baixar/copiar, marca d'água, Ctrl+P/Ctrl+S/contextmenu bloqueados, impressão em branco; assinante libera | Médio: NOB-118/129 (restrição é só front-end no protótipo; na plataforma tem de ser no servidor) |
-| `amianto.py` | Prazos de guarda (amianto/raios X 30, não ionizante 20, comum 20), periodicidade por exposição, alertas pós-demissionais | Alto como regras clínicas a validar com Dr. Alcides |
-| `rev3.py` | Aritmética de datas (31/01+1 mês, bissexto), retorno ao trabalho por afastamentos somados, periodicidade por histórico | Alto: casos-limite unitários |
-| `fadiga.py`, `teste.py`, `rev4.py`, `rev5.py` | Fadiga (KSS, interjornada, microssono), preços/contratos, teste grátis 15 dias, conversão, contratos vencidos | Baixo para Medicina core; útil para comercial |
+| Script                                        | O que testa                                                                                                                                                                                                                                                                                                                                                                                                     | Reuso como roteiro de QA                                                                         |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `flow.py`                                     | CNAE curto bloqueado; CPF com aviso; busca; **ASO sem médico bloqueado**; **ASO guarda snapshot de riscos e não muda quando o risco da função muda**; CID inválido; fim antes do início; texto não se perde; kit INSS (S-2230); kiosk psicossocial anônimo, n<5 oculto; clínica + guia de encaminhamento; conclusão sem resultados bloqueada; ASO gerado pela clínica; indicadores; aviso e exclusão em cascata | Alto: validações, snapshot pós-emissão, guia → ASO                                               |
+| `portal.py`                                   | "Ver como" empresa/clínica; empresa não vê funcionário/empresa de outra; clínica vê só ASOs das suas guias; clínica sem excluir; vínculo exigido, pedido de acesso, liberação; aba fora do perfil redireciona; sem rolagem horizontal; empresa não exclui funcionário com ASO; ASO da clínica travado para a empresa                                                                                            | Alto: matriz de autorização empresa/clínica/profissional (NOB-122)                               |
+| `demo.py`                                     | Documentos em demonstração no teste grátis: sem baixar/copiar, marca d'água, Ctrl+P/Ctrl+S/contextmenu bloqueados, impressão em branco; assinante libera                                                                                                                                                                                                                                                        | Médio: NOB-118/129 (restrição é só front-end no protótipo; na plataforma tem de ser no servidor) |
+| `amianto.py`                                  | Prazos de guarda (amianto/raios X 30, não ionizante 20, comum 20), periodicidade por exposição, alertas pós-demissionais                                                                                                                                                                                                                                                                                        | Alto como regras clínicas a validar com Dr. Alcides                                              |
+| `rev3.py`                                     | Aritmética de datas (31/01+1 mês, bissexto), retorno ao trabalho por afastamentos somados, periodicidade por histórico                                                                                                                                                                                                                                                                                          | Alto: casos-limite unitários                                                                     |
+| `fadiga.py`, `teste.py`, `rev4.py`, `rev5.py` | Fadiga (KSS, interjornada, microssono), preços/contratos, teste grátis 15 dias, conversão, contratos vencidos                                                                                                                                                                                                                                                                                                   | Baixo para Medicina core; útil para comercial                                                    |
 
 Como código, **não são reaproveitáveis** (dependem do HTML monolítico e de globais). Como roteiro, ~60 asserções de Medicina servem de casos de
 aceite para NOB-108/110/112/122.
@@ -358,29 +359,29 @@ aceite para NOB-108/110/112/122.
 
 Camadas: U = unit (jsdom); I = integração Postgres efêmero; E = E2E Playwright (projeto protected). "98?" = depende da NOB-98/#112.
 
-| # | Cenário | Camada | Existe hoje? | Helper/teste reaproveitável | 98? |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Sem autenticação | I (gate) + E | Parcial: `auth/protected-layout`, `no-tenant-block`; nada específico de rotas de Medicina | `auth/*.test.ts`, `proxy.ts` (307) | Não |
-| 2 | Sem módulo Medicina habilitado | I | Sim para `health_exams` (RLS restritiva, `company-modules.test.ts`); **não** para `medicos`/psicossocial (sem policy de módulo) | `company-modules.test.ts`, `companyModuleScope` | Não |
-| 3 | Empresa só Medicina | I | Sim para cadastros comuns e exames; fontes de risco só na #112 | `shared-company-records.test.ts`, `medical-risk-sources.test.ts` (#112) | Sim (fontes) |
-| 4 | Só PGR | I | Sim (`revokes Medicine without hiding PGR`) | `company-modules.test.ts` | Não |
-| 5 | Ambos | I | Implícito no seed (`company_modules` com ambos) | `pgr-seed.ts` | Não |
-| 6 | Profissional autorizado | I + E | **Não existe** (não há vínculo usuário ↔ médico) | — | **Sim (decisão pendente)** |
-| 7 | Profissional sem vínculo | I | **Não** | padrão `mockedGate` + role | **Sim** |
-| 8 | Trabalhador de outra empresa (mesmo tenant) | I | Parcial: cross-tenant sim; **outra empresa do mesmo escritório não** em exames | `pgr-review-samples` (#117, "GES não vinculado no mesmo escritório"), FKs compostas da 0054 | Parcial |
-| 9 | Clínica não vinculada | I + E | **Não** (`clinic` é texto livre em `medicos`; sem entidade clínica/vínculo) | `portal.py` como roteiro | Não (NOB-121/122) |
-| 10 | Troca de organização | I + E | Sim para o cookie (`switch-tenant.test.ts`); não para dados de Medicina após troca | `switch-tenant.test.ts`, `runIsolationSuite` | Não |
-| 11 | Acesso por ID (IDOR) | I | Sim para medicos/exames (cross-tenant → NOT_FOUND / 404) | `medicos`, `health-exams`, `rest-health-exams` | Não |
-| 12 | Download não autorizado (ASO/PCMSO) | I | Padrão existe para GED (`documents-download.test.ts`); **não** para ASO (`certificate_path` texto, sem GED) | `documents-download.test.ts` | Não |
-| 13 | Salvar e retomar (rascunho) | I + E | **Não** (não há formulários de PCMSO/ASO em rascunho) | — | Não |
-| 14 | Validação | U + I | Sim para medicos/exames (zod + VALIDATION) | `unit/domains/pgr/*`, padrão `VALIDATION` | Não |
-| 15 | Edição concorrente | I | Padrão existe (`pgr-revisions`, `company-module-management`); nada em Medicina | `pgr-revisions.test.ts` | Não |
-| 16 | Emissão bloqueada (dados obrigatórios/riscos não validados) | U + I | **Não**; `canUseMedicalRisk` unitário só na #112 | `medicalSourceWarnings`/`canUseMedicalRisk` (#112) | **Sim** |
-| 17 | Versionamento (PCMSO/ASO) | I | Não para Medicina; padrão em `pgr-revisions` e `documents-update` | `pgr-revisions.test.ts` | Parcial |
-| 18 | Falha de rede | U (front) + E | **Não** (nenhum teste de erro de rede/loading na UI) | `@testing-library` + mocks de fetch | Não |
-| 19 | Rollback | I | Padrão existe (`company-module-management` "rolls back… audit event"); #112 diz testar rollback | `company-module-management.test.ts` | Parcial |
-| 20 | Dados externos não validados (PGR externo/JSON) | U + I | Só na #112 (import sempre `pending`, status/aprovador rejeitados no JSON) | `medicalRiskContentSchema` `.strict()` | **Sim** |
-| 21 | Alteração de risco após emissão | I | Na #112: fingerprint detecta mudança sem nova revisão (`changed`); **não há emissão de PCMSO/ASO ainda** para provar snapshot | `service-orders.test.ts` (snapshot imutável), `flow.py` como roteiro | **Sim** |
+| #   | Cenário                                                     | Camada        | Existe hoje?                                                                                                                    | Helper/teste reaproveitável                                                                 | 98?                        |
+| --- | ----------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------- |
+| 1   | Sem autenticação                                            | I (gate) + E  | Parcial: `auth/protected-layout`, `no-tenant-block`; nada específico de rotas de Medicina                                       | `auth/*.test.ts`, `proxy.ts` (307)                                                          | Não                        |
+| 2   | Sem módulo Medicina habilitado                              | I             | Sim para `health_exams` (RLS restritiva, `company-modules.test.ts`); **não** para `medicos`/psicossocial (sem policy de módulo) | `company-modules.test.ts`, `companyModuleScope`                                             | Não                        |
+| 3   | Empresa só Medicina                                         | I             | Sim para cadastros comuns e exames; fontes de risco só na #112                                                                  | `shared-company-records.test.ts`, `medical-risk-sources.test.ts` (#112)                     | Sim (fontes)               |
+| 4   | Só PGR                                                      | I             | Sim (`revokes Medicine without hiding PGR`)                                                                                     | `company-modules.test.ts`                                                                   | Não                        |
+| 5   | Ambos                                                       | I             | Implícito no seed (`company_modules` com ambos)                                                                                 | `pgr-seed.ts`                                                                               | Não                        |
+| 6   | Profissional autorizado                                     | I + E         | **Não existe** (não há vínculo usuário ↔ médico)                                                                                | —                                                                                           | **Sim (decisão pendente)** |
+| 7   | Profissional sem vínculo                                    | I             | **Não**                                                                                                                         | padrão `mockedGate` + role                                                                  | **Sim**                    |
+| 8   | Trabalhador de outra empresa (mesmo tenant)                 | I             | Parcial: cross-tenant sim; **outra empresa do mesmo escritório não** em exames                                                  | `pgr-review-samples` (#117, "GES não vinculado no mesmo escritório"), FKs compostas da 0054 | Parcial                    |
+| 9   | Clínica não vinculada                                       | I + E         | **Não** (`clinic` é texto livre em `medicos`; sem entidade clínica/vínculo)                                                     | `portal.py` como roteiro                                                                    | Não (NOB-121/122)          |
+| 10  | Troca de organização                                        | I + E         | Sim para o cookie (`switch-tenant.test.ts`); não para dados de Medicina após troca                                              | `switch-tenant.test.ts`, `runIsolationSuite`                                                | Não                        |
+| 11  | Acesso por ID (IDOR)                                        | I             | Sim para medicos/exames (cross-tenant → NOT_FOUND / 404)                                                                        | `medicos`, `health-exams`, `rest-health-exams`                                              | Não                        |
+| 12  | Download não autorizado (ASO/PCMSO)                         | I             | Padrão existe para GED (`documents-download.test.ts`); **não** para ASO (`certificate_path` texto, sem GED)                     | `documents-download.test.ts`                                                                | Não                        |
+| 13  | Salvar e retomar (rascunho)                                 | I + E         | **Não** (não há formulários de PCMSO/ASO em rascunho)                                                                           | —                                                                                           | Não                        |
+| 14  | Validação                                                   | U + I         | Sim para medicos/exames (zod + VALIDATION)                                                                                      | `unit/domains/pgr/*`, padrão `VALIDATION`                                                   | Não                        |
+| 15  | Edição concorrente                                          | I             | Padrão existe (`pgr-revisions`, `company-module-management`); nada em Medicina                                                  | `pgr-revisions.test.ts`                                                                     | Não                        |
+| 16  | Emissão bloqueada (dados obrigatórios/riscos não validados) | U + I         | **Não**; `canUseMedicalRisk` unitário só na #112                                                                                | `medicalSourceWarnings`/`canUseMedicalRisk` (#112)                                          | **Sim**                    |
+| 17  | Versionamento (PCMSO/ASO)                                   | I             | Não para Medicina; padrão em `pgr-revisions` e `documents-update`                                                               | `pgr-revisions.test.ts`                                                                     | Parcial                    |
+| 18  | Falha de rede                                               | U (front) + E | **Não** (nenhum teste de erro de rede/loading na UI)                                                                            | `@testing-library` + mocks de fetch                                                         | Não                        |
+| 19  | Rollback                                                    | I             | Padrão existe (`company-module-management` "rolls back… audit event"); #112 diz testar rollback                                 | `company-module-management.test.ts`                                                         | Parcial                    |
+| 20  | Dados externos não validados (PGR externo/JSON)             | U + I         | Só na #112 (import sempre `pending`, status/aprovador rejeitados no JSON)                                                       | `medicalRiskContentSchema` `.strict()`                                                      | **Sim**                    |
+| 21  | Alteração de risco após emissão                             | I             | Na #112: fingerprint detecta mudança sem nova revisão (`changed`); **não há emissão de PCMSO/ASO ainda** para provar snapshot   | `service-orders.test.ts` (snapshot imutável), `flow.py` como roteiro                        | **Sim**                    |
 
 ### 6.2 Outras lacunas
 
@@ -392,16 +393,16 @@ Camadas: U = unit (jsdom); I = integração Postgres efêmero; E = E2E Playwrigh
 
 ## 7. Riscos
 
-| Risco | Evidência | Impacto |
-| --- | --- | --- |
-| Decisão de autorização profissional sem dono nem registro | spec.md:55-59; 0 comentários no Linear | Bloqueia NOB-98 → NOB-109 → NOB-128/129/130 |
-| Duplicação NOB-111 × #112 | NOB-111 descrição vs spec.md:12-16 | Retrabalho e dois contratos de PGR externo |
-| Merge = migration em homolog | `cd.yml:67-75`; CD success em todos os merges recentes | 0054/0055 e qualquer migration de Medicina aplicadas automaticamente ao mergear |
-| Colisão de numeração de migration | #112 ocupa 0054/0055 sem merge | Conflito de journal/`applyMigrations` alfabético |
-| #112 sem CI e com conflito | `gh pr checks` vazio; conflito Postman | Integração atrasada; base fantasma |
-| Linear desatualizado | §4.6 (NOB-102/103/104) | Planejamento sobre estado errado; dependência NOB-94 violada |
-| Falso verde local | `describe.skip` sem envs | Dev acredita que integração passou |
-| Testes REST excluídos | `jest.config.ts:26-35` | REST de Medicina novo pode cair no mesmo harness quebrado |
+| Risco                                                     | Evidência                                              | Impacto                                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Decisão de autorização profissional sem dono nem registro | spec.md:55-59; 0 comentários no Linear                 | Bloqueia NOB-98 → NOB-109 → NOB-128/129/130                                     |
+| Duplicação NOB-111 × #112                                 | NOB-111 descrição vs spec.md:12-16                     | Retrabalho e dois contratos de PGR externo                                      |
+| Merge = migration em homolog                              | `cd.yml:67-75`; CD success em todos os merges recentes | 0054/0055 e qualquer migration de Medicina aplicadas automaticamente ao mergear |
+| Colisão de numeração de migration                         | #112 ocupa 0054/0055 sem merge                         | Conflito de journal/`applyMigrations` alfabético                                |
+| #112 sem CI e com conflito                                | `gh pr checks` vazio; conflito Postman                 | Integração atrasada; base fantasma                                              |
+| Linear desatualizado                                      | §4.6 (NOB-102/103/104)                                 | Planejamento sobre estado errado; dependência NOB-94 violada                    |
+| Falso verde local                                         | `describe.skip` sem envs                               | Dev acredita que integração passou                                              |
+| Testes REST excluídos                                     | `jest.config.ts:26-35`                                 | REST de Medicina novo pode cair no mesmo harness quebrado                       |
 
 ## 8. Dependências
 
@@ -414,17 +415,17 @@ Camadas: U = unit (jsdom); I = integração Postgres efêmero; E = E2E Playwrigh
 
 ## 9. Decisões pendentes
 
-| Decisão | Para quem |
-| --- | --- |
-| Quem valida/rejeita riscos para PCMSO e o que a validação significa clinicamente | **Dr. Alcides** |
-| Quem concede/revoga autorização; profissional externo/clínica parceira tem acesso? | **Expedito** |
-| Identidade do profissional (vínculo `medicos` ↔ usuário Clerk) e modelo de papéis/escopo por empresa | **Douglas** (com Rikelvin) |
-| Persistência da revisão (append-only vs UPDATE) e migration correspondente | **Rikelvin** (aprovação Douglas) |
-| NOB-111 reescopada sobre a #112? NOB-121 assume a modelagem de identidade profissional? | **Douglas** + **Carlos** |
-| Retarget da #112 para develop, resolver conflito Postman, rodar CI, decidir merge (implica migration em homolog) | **Rikelvin** / **Douglas** |
-| Atualizar status Linear de NOB-102/103/104 e destino da NOB-94 | **Rikelvin** / **Douglas** |
-| Significado, fonte e versão da Lista C | **Dr. Alcides** (Carlos registra) |
-| Registrar perguntas/decisões como comentários no Linear (NOB-98, NOB-113) | **Coordenador / Carlos** |
+| Decisão                                                                                                          | Para quem                         |
+| ---------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Quem valida/rejeita riscos para PCMSO e o que a validação significa clinicamente                                 | **Dr. Alcides**                   |
+| Quem concede/revoga autorização; profissional externo/clínica parceira tem acesso?                               | **Expedito**                      |
+| Identidade do profissional (vínculo `medicos` ↔ usuário Clerk) e modelo de papéis/escopo por empresa             | **Douglas** (com Rikelvin)        |
+| Persistência da revisão (append-only vs UPDATE) e migration correspondente                                       | **Rikelvin** (aprovação Douglas)  |
+| NOB-111 reescopada sobre a #112? NOB-121 assume a modelagem de identidade profissional?                          | **Douglas** + **Carlos**          |
+| Retarget da #112 para develop, resolver conflito Postman, rodar CI, decidir merge (implica migration em homolog) | **Rikelvin** / **Douglas**        |
+| Atualizar status Linear de NOB-102/103/104 e destino da NOB-94                                                   | **Rikelvin** / **Douglas**        |
+| Significado, fonte e versão da Lista C                                                                           | **Dr. Alcides** (Carlos registra) |
+| Registrar perguntas/decisões como comentários no Linear (NOB-98, NOB-113)                                        | **Coordenador / Carlos**          |
 
 ## 10. Recomendações
 

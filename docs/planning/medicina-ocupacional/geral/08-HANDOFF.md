@@ -5,32 +5,47 @@
 
 ## 1. Estado atual
 
-**Última atualização:** 2026-10-21, ao fim da organização documental pós-Fase 0 (coordenador: Claude, sessão do Carlos).
+**Última atualização:** 2026-10-21, ao fim da sessão de implementação do Lote 01 (coordenador: Claude, sessão do Carlos).
 
-| Pergunta | Resposta |
-|---|---|
-| **Em qual lote estamos?** | **Lote 00** (`EM_EXECUCAO`, frente contínua de decisões) e **Lote 01** (`PLANEJADO`, pronto para começar). Ver [02](02-ROADMAP-E-STATUS.md) |
-| **Qual é a branch?** | `feature/NOB-108-ficha-saude-ocupacional`, criada a partir de `origin/develop` (`d6b787c`) em 2026-10-21, no checkout principal (`pgr/`). Publicada em `origin` como backup |
-| **Qual é o último commit?** | Base de código: `d6b787c` (merge da PR #118). Por cima dela há **um único commit, só de documentação**: o que introduziu este arquivo. Para obter o SHA: `git log -1 --format=%H -- docs/planning/medicina-ocupacional/geral/08-HANDOFF.md`. **Nenhum código funcional foi alterado** |
-| **Existe PR?** | **Não, de propósito.** A PR do Lote 01 só será aberta após implementação + QA (regra da missão de organização) |
-| **Última ação concluída** | Estrutura permanente criada: `geral/` (9 docs), `lotes/00…07/` (7 docs cada), `templates/` (7 modelos), índice no `README.md`. Resposta parcial do Expedito registrada como MED-DEC-01 (`PARCIALMENTE_RESPONDIDA`) |
-| **O que foi verificado** | Ver tabela abaixo |
-| **O que está bloqueado** | Lote 02 (só as migrations, MED-DEC-08); Lote 03 (MED-DEC-02…07, 10, 13); Lote 04 (03 + MED-DEC-12, 14, 19); Lote 05 (NOB-98); Lote 06 (MED-DEC-21). **O Lote 01 não tem bloqueio de produto nem técnico.** Pendência de gestão: o aceite do Douglas ao escopo (MED-DEC-25), recomendado antes do código e obrigatório na revisão da PR. O escopo já foi aceito pelo Carlos |
-| **Próxima tarefa exata** | Lote 01, [TASK](../lotes/01-ficha-saude-ocupacional/TASK.md) item 1: **pré-check Git**. Rodar `git fetch origin --prune` e conferir se `origin/develop` ainda é `d6b787c`. Se avançou: parar o dev server, fazer merge de `origin/develop` na branch (sem rebase/force) e reconferir migrations e PRs concorrentes (sobretudo a #112) |
-| **Quais testes precisam rodar** (no Lote 01) | `npm run check`; `npm run test:integration` com Postgres efêmero, conferindo que **nenhuma suíte saiu como `skipped`**; Playwright protected com dados fictícios; Chrome DevTools (console/network) em 375/768/1440. Detalhe no [QA do Lote 01](../lotes/01-ficha-saude-ocupacional/QA.md) |
-| **Qual decisão externa estamos aguardando** | Para destravar os lotes seguintes: MED-DEC-02…07 (autorização de validação), MED-DEC-08 (ordem da #112), MED-DEC-10 (dono da identidade), MED-DEC-13 (Lista C). Nenhuma bloqueia o Lote 01. Ver [04](04-DECISOES-E-BLOQUEIOS.md) |
+```
+DATA:                      2026-10-21
+LOTE:                      01 — Ficha de saúde ocupacional (PR_ABERTA, draft); Lote 00 segue EM_EXECUCAO
+ISSUE:                     NOB-108
+BRANCH:                    feature/NOB-108-ficha-saude-ocupacional
+HEAD:                      o commit que introduziu esta versão do arquivo (git log -1 --format=%h -- docs/planning/medicina-ocupacional/geral/08-HANDOFF.md)
+PR:                        #120 (draft, base develop) — https://github.com/Projetos-sst/pgr/pull/120
+STATUS:                    PR_ABERTA
 
-**Verificações desta sessão:**
+O QUE FOI CONCLUÍDO:       TASK T01-01…T01-11, T01-13, T01-15, T01-16 (evidências em lotes/01/WALKTHROUGH.md e QA.md).
+                           Commits: 09bc02d (feat), f0e4486 (test), 8372ec3 (docs/api) + commit de documentação.
+O QUE FOI VERIFICADO:      origin/develop = d6b787c (sem merge necessário); #112 OPEN/draft/base develop/CI verde,
+                           reserva 0054–0056; pilha do Rikelvin reserva 0057–0059; NOB-98 In Review desde 21/10 18:58 UTC
+                           (stateHistory via MCP), 0 comentários; jornada completa no navegador em 1440/768/375/320.
+TESTES EXECUTADOS:         npm run check → exit 0 (179 suítes / 1768 testes unit). npm run test:integration (Postgres
+                           efêmero local) → 169 passed, 0 failed, 5 skipped (externos, nenhum da Medicina); Medicina 53/53.
+                           REST com bypass dev (13 casos). Navegador: 25 passos (QA §5), Lighthouse a11y 100.
+TESTES PENDENTES:          spec Playwright automatizado (exige usuário de teste do Clerk); tela de client e de collaborator
+                           no navegador (sem contas); CI da #120 após o commit de docs.
+ARQUIVOS ALTERADOS:        ver git diff --stat origin/develop..HEAD (52 arquivos de src/docs/api + docs de planejamento)
+MIGRATIONS:                nenhuma
+DECISÕES TOMADAS:          MED-DEC-25 → RESPONDIDA (Douglas aprovou direcionamento e início do Lote 01, informado pelo Carlos);
+                           T01-02 (PLAN §12 itens 1–4) decididos pelo Carlos.
+DECISÕES PENDENTES:        MED-DEC-31 (fonte do fluxo de autorização da #112); MED-DEC-02…07, 08, 09, 26 (Lote 02/03).
+DEPENDÊNCIAS:              #112 (arquivos comuns: nav-menu.tsx, api-design.md, Postman); ordem de merge a combinar.
+PRÓXIMA AÇÃO EXATA:        gh pr checks 120 — se verde, Carlos pede revisão ao Douglas e combina com o Rikelvin a ordem
+                           #112 × #120; a PR sai de draft com o aceite do Carlos.
+```
 
-| Verificação | Resultado |
-|---|---|
-| Git (21/10) | `develop` local = `origin/develop` = `d6b787c`; nada novo mergeado desde a Fase 0; última migration `0053_company_module_access` |
-| PRs | Abertas: #112 (NOB-98, sem CI, base = branch do NOB-100), #115/#116/#117 (drafts). Nenhuma PR nova |
-| `cd.yml` | Relido: push em develop/main → `drizzle-kit migrate` antes do deploy ([06](06-GIT-MIGRATIONS-CD.md)) |
-| Linear (MCP) | Estados das issues inalterados; NOB-98 com 0 comentários (a resposta do Expedito ainda **não** está no Linear) |
-| Fase 0 | Os 12 documentos e as 6 capturas foram preservados. Os hashes conferem com a linha de base, exceto o `README.md`, que ganhou de propósito uma seção de navegação no topo e um título novo; o corpo original foi conferido byte a byte. A linha de base foi tirada **depois** da remoção dos e-mails em `AUDIT-LINEAR-QA.md`, a única edição de conteúdo na Fase 0 |
-| Dados sensíveis | E-mails pessoais removidos de `AUDIT-LINEAR-QA.md`; as capturas contêm só dados fictícios do protótipo; nenhum segredo |
-| Testes da aplicação | **Não executados** (nenhum código mudou) |
+**Avisos desta sessão:**
+
+- **Comentário na NOB-98:** versão 2 pronta em [04 §3](04-DECISOES-E-BLOQUEIOS.md#3-comentário-proposto-para-a-nob-98-não-publicado), **não publicada** (aguarda autorização).
+- **Ambiente de QA local:** container `qa-pg16` (porta 5433) com os bancos descartáveis `sst_test` (integração) e `sst_qa_lote01`
+  (navegador, dados fictícios). Dev server de QA em `localhost:3001` ligado a `sst_qa_lote01`. **O tenant vem do Supabase do
+  `.env.local`** (`listTenantMembershipsByUser` usa o cliente Supabase): para QA local, replicar o seed sob o tenant do usuário.
+- **Docker:** ao ligar o Docker Desktop, os containers do projeto site-pmpa subiram sozinhos (restart policy) e ocupam a porta 3000.
+  A tentativa de pará-los foi bloqueada pela política do ambiente; o Carlos decide.
+- **`node_modules`:** `npm install` instalou pacotes do lockfile que faltavam localmente (lockfile inalterado).
+- **Prettier:** os documentos desta pasta agora passam no `format:check` do CI (só espaço em branco mudou).
 
 ## 2. Avisos para quem retomar
 

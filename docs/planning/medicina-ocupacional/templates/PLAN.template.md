@@ -12,8 +12,8 @@
 
 ## 2. Arquitetura
 
-<preencher: camadas tocadas (page → action → domain → repository → schema), reuso (company_modules, cadastros comuns,
-pipeline do Douglas, contrato medical_risk_*)>
+<preencher: camadas tocadas (page → action → domain → repository → schema), reuso (company*modules, cadastros comuns,
+pipeline do Douglas, contrato medical_risk*\*)>
 
 ## 3. Implementação e sequência
 
@@ -21,8 +21,8 @@ pipeline do Douglas, contrato medical_risk_*)>
 
 ## 4. Arquivos
 
-| Arquivo | Mudança |
-|---|---|
+| Arquivo              | Mudança                              |
+| -------------------- | ------------------------------------ |
 | <preencher: caminho> | <preencher: novo / alterado — o quê> |
 
 ## 5. Tabelas e migrations
@@ -43,9 +43,9 @@ pipeline do Douglas, contrato medical_risk_*)>
 
 ## 6. APIs (4 superfícies do CLAUDE.md)
 
-| Recurso | Server Action | REST | api-design.md | Postman |
-|---|---|---|---|---|
-| <preencher> | <preencher> | <preencher: verbo + rota> | [ ] | [ ] |
+| Recurso     | Server Action | REST                      | api-design.md | Postman |
+| ----------- | ------------- | ------------------------- | ------------- | ------- |
+| <preencher> | <preencher>   | <preencher: verbo + rota> | [ ]           | [ ]     |
 
 ## 7. Segurança e permissões
 
@@ -58,8 +58,8 @@ pipeline do Douglas, contrato medical_risk_*)>
 
 ## 9. Testes planejados
 
-| Camada | Casos |
-|---|---|
-| Unit | <preencher> |
-| Integração (Postgres efêmero) | <preencher; incluir runIsolationSuite para tabela nova> |
-| E2E (Playwright protected, local) | <preencher; dados fictícios> |
+| Camada                            | Casos                                                   |
+| --------------------------------- | ------------------------------------------------------- |
+| Unit                              | <preencher>                                             |
+| Integração (Postgres efêmero)     | <preencher; incluir runIsolationSuite para tabela nova> |
+| E2E (Playwright protected, local) | <preencher; dados fictícios>                            |

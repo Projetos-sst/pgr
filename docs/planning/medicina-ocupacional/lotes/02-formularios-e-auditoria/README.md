@@ -3,16 +3,16 @@
 > Navegação: [Índice da frente](../../README.md) · [Roadmap e status](../../geral/02-ROADMAP-E-STATUS.md) ·
 > [Decisões e bloqueios](../../geral/04-DECISOES-E-BLOQUEIOS.md) · [Arquitetura e contratos](../../geral/03-ARQUITETURA-E-CONTRATOS.md)
 
-| Campo | Valor |
-|---|---|
-| **Status do lote** | **PLANEJADO** — aguarda a decisão sobre a ordem e a numeração das migrations (MED-DEC-08, depende da #112) |
-| Issue | [NOB-112 — Abas/formulários que alimentam documentos](https://linear.app/nobuggy/issue/NOB-112) (Carlos, In Progress no Linear desde 20/10, sem artefato além da auditoria) |
-| Relação no Linear | NOB-112 é "bloqueada por" NOB-93 (modelo completo do Dr. Alcides, In Review, **sem responsável**) e NOB-108; bloqueia NOB-109, NOB-110, NOB-123 |
-| Responsável | Carlos (implementação) · Rikelvin revisa a trilha de auditoria (R-05, aceite dele necessário) · Douglas decide ordem de migrations e arquitetura clínica |
-| Branch | nenhuma |
-| PR | nenhuma |
-| Migrations | **nenhuma criada; numeração NÃO definida.** Propostas descritas em [PLAN](PLAN.md) (P4, P9, ALTER de `health_exams`, arquivamento) |
-| Próxima ação | Sem migration: produzir o **mapa campo → entidade → documento** ([TASK](TASK.md) T02-A1). Com migration: aguardar MED-DEC-08 |
+| Campo              | Valor                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status do lote** | **PLANEJADO** — aguarda a decisão sobre a ordem e a numeração das migrations (MED-DEC-08 e MED-DEC-26, depende da #112). **(atualizado em 2026-10-21)** A #112 está aberta, em draft, com base `develop`, CI verde e `MERGEABLE`, mas **não mergeada**                                                                                                                                      |
+| Issue              | [NOB-112 — Abas/formulários que alimentam documentos](https://linear.app/nobuggy/issue/NOB-112) (Carlos, In Progress no Linear desde 20/10, sem artefato além da auditoria)                                                                                                                                                                                                                 |
+| Relação no Linear  | NOB-112 é "bloqueada por" NOB-93 (modelo completo do Dr. Alcides, In Review, **sem responsável**) e NOB-108; bloqueia NOB-109, NOB-110, NOB-123                                                                                                                                                                                                                                             |
+| Responsável        | Carlos (implementação) · Rikelvin revisa a trilha de auditoria (R-05, aceite dele necessário) · Douglas decide ordem de migrations e arquitetura clínica                                                                                                                                                                                                                                    |
+| Branch             | nenhuma                                                                                                                                                                                                                                                                                                                                                                                     |
+| PR                 | nenhuma                                                                                                                                                                                                                                                                                                                                                                                     |
+| Migrations         | **nenhuma criada; numeração NÃO definida.** Propostas descritas em [PLAN](PLAN.md) (P4, P9, ALTER de `health_exams`, arquivamento). **(atualizado em 2026-10-21)** `0054`–`0056` estão reservadas pela #112 e `0057`–`0059` pela pilha #119/#116/#117 (a #115 não tem migration). A próxima livre seria `0060` **se** todas entrarem antes, o que depende da ordem de merge (MED-DEC-08/26) |
+| Próxima ação       | Sem migration: o Carlos revisa o rascunho do **mapa campo → entidade → documento** ([PROPOSTA-EXECUCAO](PROPOSTA-EXECUCAO.md) §a; [TASK](TASK.md) T02-A1, ainda não concluída). Com migration: aguardar MED-DEC-08 e MED-DEC-26 **(atualizado em 2026-10-21)**                                                                                                                              |
 
 ## Objetivo
 
@@ -27,15 +27,16 @@ Dar estrutura e rastreabilidade ao **registro** de exames, sem ainda emitir docu
 
 ## Bloqueios e dependências
 
-| Item | Depende de | Estado |
-|---|---|---|
-| Qualquer migration deste lote | MED-DEC-08 (ordem de merge da #112 e numeração) | `PENDENTE` |
-| Arquivamento de exames | MED-DEC-15 (prazo de guarda: Dr. Alcides + jurídico) | `PENDENTE` |
-| Onde guardar dado clínico além da conclusão (camada/schema) | MED-DEC-11 (A × B × C, Douglas) | `PENDENTE` |
-| Catálogo de procedimentos (por escritório ou referência global; sem resultado) | Dr. Alcides (conteúdo) | não perguntado formalmente |
-| Destino do campo livre `notes` | MED-DEC-14 (A-03) | `PENDENTE` |
-| Enum próprio de tipo de exame (hoje compartilhado com OS) | D-13 (Douglas) | `PENDENTE` |
-| Mapa de campos (sem migration) | nada bloqueante; NOB-93 ajudaria (modelo do Dr. Alcides) | pode começar |
+| Item                                                                           | Depende de                                                                                                                                        | Estado       |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Qualquer migration deste lote                                                  | MED-DEC-08 (ordem de merge da #112 e da pilha 0057–0059, numeração) e MED-DEC-26 (estratégia de migrations com CD) **(atualizado em 2026-10-21)** | `PENDENTE`   |
+| Arquivamento de exames                                                         | MED-DEC-15 (prazo de guarda: Dr. Alcides + jurídico)                                                                                              | `PENDENTE`   |
+| Onde guardar dado clínico além da conclusão (camada/schema)                    | MED-DEC-11 (A × B × C, Douglas)                                                                                                                   | `PENDENTE`   |
+| Catálogo de procedimentos (por escritório ou referência global; sem resultado) | MED-DEC-24 (Dr. Alcides + Carlos) **(atualizado em 2026-10-21)**                                                                                  | `PENDENTE`   |
+| Regra de leitura de `health_exams.company_id` após transferência               | MED-DEC-23 (Dr. Alcides + Expedito) **(atualizado em 2026-10-21)**                                                                                | `PENDENTE`   |
+| Destino do campo livre `notes`                                                 | MED-DEC-14 (A-03)                                                                                                                                 | `PENDENTE`   |
+| Enum próprio de tipo de exame (hoje compartilhado com OS)                      | D-13 (Douglas)                                                                                                                                    | `PENDENTE`   |
+| Mapa de campos (sem migration)                                                 | nada bloqueante; NOB-93 ajudaria (modelo do Dr. Alcides)                                                                                          | pode começar |
 
 ## O que este lote não faz
 
@@ -54,4 +55,4 @@ D-01, D-07, D-13, A-03, A-07, R-05
 
 ## Arquivos do lote
 
-[AUDIT](AUDIT.md) · [PLAN](PLAN.md) · [TASK](TASK.md) · [WALKTHROUGH](WALKTHROUGH.md) · [QA](QA.md) · [REVIEW](REVIEW.md)
+[AUDIT](AUDIT.md) · [PLAN](PLAN.md) · [TASK](TASK.md) · [PROPOSTA-EXECUCAO](PROPOSTA-EXECUCAO.md) (atualizado em 2026-10-21) · [WALKTHROUGH](WALKTHROUGH.md) · [QA](QA.md) · [REVIEW](REVIEW.md)

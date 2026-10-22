@@ -18,7 +18,7 @@
 ## B. Pode ser feito sem desbloquear (documental)
 
 - [ ] **T03-B1** Proposta técnica de P1 (documento) com as opções I/II/III do PLAN §2.2 e o desenho §2.3, para revisão de Douglas e
-  Rikelvin.
+      Rikelvin.
   - Critério de aceite: documento revisado; nenhuma migration criada. Responsável: Carlos. Dependências: A1 e A2 (para fechar a proposta;
     o rascunho pode começar). Status: não iniciado.
 - [ ] **T03-B2** Levar ao Rikelvin as propostas de rastreabilidade do PLAN §5.
@@ -29,15 +29,15 @@
 ## C. Implementação (bloqueada)
 
 - [ ] **T03-C1** P1 identidade + designação (migration + repositório + actions/REST/docs/Postman + testes).
-  Dependências: A1–A5, A7, MED-DEC-08, T03-B1 aprovado. Status: não iniciado.
+      Dependências: A1–A5, A7, MED-DEC-08, T03-B1 aprovado. Status: não iniciado.
 - [ ] **T03-C2** Apoio à P5 (revisão de riscos) do Rikelvin: testes de integração do lado da Medicina.
-  Dependências: T03-C1, #112 mergeada, A6, decisão R-02 do Rikelvin. Responsável: Rikelvin (dono) + Carlos (apoio). Status: não iniciado.
+      Dependências: T03-C1, #112 mergeada, A6, decisão R-02 do Rikelvin. Responsável: Rikelvin (dono) + Carlos (apoio). Status: não iniciado.
 - [ ] **T03-C3** PGR externo sobre a #112 (UX + documento no GED). Dependências: #112 mergeada, A7, T03-B3, regra de acesso do GED com o
-  Douglas. Status: não iniciado.
+      Douglas. Status: não iniciado.
 - [ ] **T03-C4** Lista C: datasets globais + importador idempotente. Dependências: A8, MED-DEC-08. Status: não iniciado.
 - [ ] **T03-C5** Pedir ao Douglas a remoção da dependência NOB-110 → NOB-113 se A8 confirmar NTEP (D-10). Aguardando: A8.
 
 ## D. Fechamento (por PR)
 
 - [ ] **T03-D1** Review, QA, PR, CI, aceite, merge **com autorização** e homologação, no formato do
-  [TASK do Lote 01](../01-ficha-saude-ocupacional/TASK.md) itens 14–20. Status: não iniciado.
+      [TASK do Lote 01](../01-ficha-saude-ocupacional/TASK.md) itens 14–20. Status: não iniciado.

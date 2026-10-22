@@ -7,8 +7,8 @@
 
 ## 1. Situação existente
 
-| Item | Estado | Evidência |
-|---|---|---|
+| Item                          | Estado                                     | Evidência                  |
+| ----------------------------- | ------------------------------------------ | -------------------------- |
 | <preencher: tela/tabela/rota> | <preencher: existe / parcial / não existe> | <preencher: caminho:linha> |
 
 ## 2. Código relacionado
@@ -21,8 +21,8 @@
 
 ## 4. Riscos
 
-| Risco | Impacto | Mitigação |
-|---|---|---|
+| Risco       | Impacto     | Mitigação   |
+| ----------- | ----------- | ----------- |
 | <preencher> | <preencher> | <preencher> |
 
 Conferir as regras S-01…S-13 de [05](../../geral/05-SEGURANCA-E-DADOS.md) §2 que se aplicam (erro ≠ vazio, nada de
@@ -34,8 +34,8 @@ dado médico em IA, nada clínico no navegador...).
 
 ## 6. Decisões técnicas
 
-| Decisão | Status | Quem decide |
-|---|---|---|
+| Decisão     | Status                                                                                                        | Quem decide |
+| ----------- | ------------------------------------------------------------------------------------------------------------- | ----------- |
 | <preencher> | <preencher: PENDENTE · PARCIALMENTE_RESPONDIDA · RESPONDIDA · APROVADA_TECNICAMENTE · REVOGADA · SUBSTITUIDA> | <preencher> |
 
 ## 7. Não verificado

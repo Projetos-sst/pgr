@@ -7,9 +7,9 @@
 
 ## Tarefas
 
-| # | Tarefa | Critério de aceite | Responsável | Depende de | Status real |
-|---|---|---|---|---|---|
-| T1 | <preencher> | <preencher: verificável> | <preencher: nome> | <preencher> | <preencher: não iniciada / em andamento / bloqueada (motivo) / feita (evidência)> |
+| #   | Tarefa      | Critério de aceite       | Responsável       | Depende de  | Status real                                                                       |
+| --- | ----------- | ------------------------ | ----------------- | ----------- | --------------------------------------------------------------------------------- |
+| T1  | <preencher> | <preencher: verificável> | <preencher: nome> | <preencher> | <preencher: não iniciada / em andamento / bloqueada (motivo) / feita (evidência)> |
 
 ## Checklist
 

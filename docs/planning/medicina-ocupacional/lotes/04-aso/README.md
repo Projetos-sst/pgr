@@ -3,15 +3,15 @@
 > Navegação: [Índice da frente](../../README.md) · [Roadmap e status](../../geral/02-ROADMAP-E-STATUS.md) ·
 > [Decisões e bloqueios](../../geral/04-DECISOES-E-BLOQUEIOS.md) · [Arquitetura e contratos](../../geral/03-ARQUITETURA-E-CONTRATOS.md)
 
-| Campo | Valor |
-|---|---|
-| **Status do lote** | **PLANEJADO** — depende do [Lote 03](../03-identidade-e-riscos/README.md) (identidade profissional) e do desenho da camada de emissão aprovado pelo Douglas |
-| Issue | [NOB-110 — Fluxo de geração do ASO](https://linear.app/nobuggy/issue/NOB-110) — Backlog no Linear (21/10), milestone "4. Medicina Ocupacional — PCMSO e ASO" |
-| Responsável no Linear | Carlos |
-| Branch | nenhuma criada |
-| PR | nenhuma |
-| Migrations | nenhuma criada; propostas P3, P7 e P8 (ver [PLAN](PLAN.md)) |
-| Próxima ação | **Nenhuma implementação.** Coletar as decisões A-03, A-04, A-05, A-09 (Dr. Alcides), D-06 (Douglas) e E-07 (Expedito + Douglas) e aguardar o Lote 03 |
+| Campo                 | Valor                                                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Status do lote**    | **PLANEJADO** — depende do [Lote 03](../03-identidade-e-riscos/README.md) (identidade profissional) e do desenho da camada de emissão aprovado pelo Douglas  |
+| Issue                 | [NOB-110 — Fluxo de geração do ASO](https://linear.app/nobuggy/issue/NOB-110) — Backlog no Linear (21/10), milestone "4. Medicina Ocupacional — PCMSO e ASO" |
+| Responsável no Linear | Carlos                                                                                                                                                       |
+| Branch                | nenhuma criada                                                                                                                                               |
+| PR                    | nenhuma                                                                                                                                                      |
+| Migrations            | nenhuma criada; propostas P3, P7 e P8 (ver [PLAN](PLAN.md))                                                                                                  |
+| Próxima ação          | **Nenhuma implementação.** Coletar as decisões A-03, A-04, A-05, A-09 (Dr. Alcides), D-06 (Douglas) e E-07 (Expedito + Douglas) e aguardar o Lote 03         |
 
 ## Objetivo
 
@@ -22,25 +22,25 @@ rascunho claramente identificados** (ver regras abaixo).
 
 ## Responsáveis por frente
 
-| Frente | Quem | Observação |
-|---|---|---|
-| Implementação da parte de Medicina (domínio, telas, testes) | Carlos | issue atribuída |
-| Camada de emissão genérica (snapshot, `documents`, worker, template-engine) | **Douglas decide** (D-06) | dono do pipeline DOCX/PDF/GED; o gerador do PGR **não** é reconstruído |
-| Campos obrigatórios, conclusão × dado sigiloso, quem emite, estados do documento | Dr. Alcides (A-03, A-05, A-09) | regras clínicas; nada é inventado |
-| Riscos que o ASO pode listar | Dr. Alcides (A-04) | ver "Pergunta A-04" |
-| Provedor ICP-Brasil e modalidade | Expedito + Douglas (E-07) | bloqueia só a assinatura técnica |
-| Revisão de autorização e auditoria clínica | Rikelvin (R-05) | revisão, não implementação |
+| Frente                                                                           | Quem                           | Observação                                                             |
+| -------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------- |
+| Implementação da parte de Medicina (domínio, telas, testes)                      | Carlos                         | issue atribuída                                                        |
+| Camada de emissão genérica (snapshot, `documents`, worker, template-engine)      | **Douglas decide** (D-06)      | dono do pipeline DOCX/PDF/GED; o gerador do PGR **não** é reconstruído |
+| Campos obrigatórios, conclusão × dado sigiloso, quem emite, estados do documento | Dr. Alcides (A-03, A-05, A-09) | regras clínicas; nada é inventado                                      |
+| Riscos que o ASO pode listar                                                     | Dr. Alcides (A-04)             | ver "Pergunta A-04"                                                    |
+| Provedor ICP-Brasil e modalidade                                                 | Expedito + Douglas (E-07)      | bloqueia só a assinatura técnica                                       |
+| Revisão de autorização e auditoria clínica                                       | Rikelvin (R-05)                | revisão, não implementação                                             |
 
 ## Dependências (resumo; detalhe em [PLAN](PLAN.md))
 
-| Depende de | Situação em 21/10 |
-|---|---|
-| Identidade profissional + designação por empresa (P1, [Lote 03](../03-identidade-e-riscos/README.md)) | bloqueada por decisão (NOB-98 / resposta parcial do Expedito) |
-| Procedimentos por exame (P4) e auditoria clínica (P9) — [Lote 02](../02-formularios-e-auditoria/README.md) | planejados, aguardam ordem de migrations |
-| Riscos **validados** via `medical_risk_*` (PR #112 + revisão P5) | PR #112 aberta, sem CI; revisão inexistente |
-| Desenho P7 aprovado pelo Douglas | não discutido |
-| Provedor de assinatura técnica (P8) | não escolhido |
-| Lista C (NOB-113) | **não** bloqueia o ASO se o Dr. Alcides confirmar que "Lista C" = NTEP (A-02, D-10) |
+| Depende de                                                                                                 | Situação em 21/10                                                                   |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Identidade profissional + designação por empresa (P1, [Lote 03](../03-identidade-e-riscos/README.md))      | bloqueada por decisão (NOB-98 / resposta parcial do Expedito)                       |
+| Procedimentos por exame (P4) e auditoria clínica (P9) — [Lote 02](../02-formularios-e-auditoria/README.md) | planejados, aguardam ordem de migrations                                            |
+| Riscos **validados** via `medical_risk_*` (PR #112 + revisão P5)                                           | PR #112 aberta, sem CI; revisão inexistente                                         |
+| Desenho P7 aprovado pelo Douglas                                                                           | não discutido                                                                       |
+| Provedor de assinatura técnica (P8)                                                                        | não escolhido                                                                       |
+| Lista C (NOB-113)                                                                                          | **não** bloqueia o ASO se o Dr. Alcides confirmar que "Lista C" = NTEP (A-02, D-10) |
 
 Linear: NOB-110 é bloqueada por NOB-101, NOB-108, NOB-112 e NOB-113 e bloqueia NOB-118, NOB-125, NOB-128 e NOB-129
 ([AUDIT-LINEAR-QA §4.3](../../AUDIT-LINEAR-QA.md)).
@@ -69,14 +69,14 @@ aparece só em prévia, marcada como não validada.
 
 ## Documentos do lote
 
-| Arquivo | Conteúdo |
-|---|---|
-| [AUDIT.md](AUDIT.md) | O que existe hoje, código, lacunas e riscos |
-| [PLAN.md](PLAN.md) | Arquitetura proposta, migrations, segurança, sequência e o que depende de decisão |
-| [TASK.md](TASK.md) | Tarefas implementáveis (todas não iniciadas) |
-| [WALKTHROUGH.md](WALKTHROUGH.md) | NÃO INICIADO |
-| [QA.md](QA.md) | NÃO INICIADO — cenários planejados |
-| [REVIEW.md](REVIEW.md) | NÃO INICIADO — checklist de revisão |
+| Arquivo                          | Conteúdo                                                                          |
+| -------------------------------- | --------------------------------------------------------------------------------- |
+| [AUDIT.md](AUDIT.md)             | O que existe hoje, código, lacunas e riscos                                       |
+| [PLAN.md](PLAN.md)               | Arquitetura proposta, migrations, segurança, sequência e o que depende de decisão |
+| [TASK.md](TASK.md)               | Tarefas implementáveis (todas não iniciadas)                                      |
+| [WALKTHROUGH.md](WALKTHROUGH.md) | NÃO INICIADO                                                                      |
+| [QA.md](QA.md)                   | NÃO INICIADO — cenários planejados                                                |
+| [REVIEW.md](REVIEW.md)           | NÃO INICIADO — checklist de revisão                                               |
 
 ## Fontes da Fase 0
 

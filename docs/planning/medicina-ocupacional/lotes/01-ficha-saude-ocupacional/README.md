@@ -3,17 +3,17 @@
 > Navegação: [Índice da frente](../../README.md) · [Roadmap e status](../../geral/02-ROADMAP-E-STATUS.md) ·
 > [Decisões e bloqueios](../../geral/04-DECISOES-E-BLOQUEIOS.md) · [Arquitetura e contratos](../../geral/03-ARQUITETURA-E-CONTRATOS.md)
 
-| Campo | Valor |
-|---|---|
-| **Status do lote** | **PLANEJADO** — branch criada, **nenhum commit de código** |
-| Issue principal | [NOB-108 — Módulo de Medicina conforme protótipo](https://linear.app/nobuggy/issue/NOB-108) (Carlos, In Progress no Linear desde 20/10, sem PR anexada) |
-| Responsável | Carlos |
-| Branch | `feature/NOB-108-ficha-saude-ocupacional` (criada a partir de `origin/develop` = `d6b787c`; só documentação até agora) |
-| PR | **inexistente** |
-| Migrations | **nenhuma** (regra do lote: zero migration) |
-| Base obrigatória | [`../../FIRST-MVP.md`](../../FIRST-MVP.md). Este lote **expande** o FIRST-MVP com o detalhe de implementação; não o contradiz. Toda divergência está marcada como tal no [PLAN](PLAN.md) |
-| Bloqueios | **Nenhum de produto ou técnico.** Pendência de gestão: aceite do Douglas ao escopo (MED-DEC-25), recomendado antes do código e obrigatório na revisão da PR. Escopo já aceito pelo Carlos. Decisões opcionais de acabamento: MED-DEC-16 (texto do estado vazio), MED-DEC-17 (teal/AA), MED-DEC-18 (aviso em Observações) |
-| Próxima ação | [TASK](TASK.md) item 1 — pré-check Git, depois item 2 — leitura do código atual |
+| Campo              | Valor                                                                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status do lote** | **PR_ABERTA (draft)** — implementado, testado e revisado em 2026-10-21; aguarda CI, revisão do Douglas e aceite                                                                          |
+| Issue principal    | [NOB-108 — Módulo de Medicina conforme protótipo](https://linear.app/nobuggy/issue/NOB-108) (Carlos, In Progress no Linear desde 20/10, sem PR anexada)                                  |
+| Responsável        | Carlos                                                                                                                                                                                   |
+| Branch             | `feature/NOB-108-ficha-saude-ocupacional` (base `origin/develop` = `d6b787c`; commits de código `09bc02d`, `f0e4486`, `8372ec3`)                                                         |
+| PR                 | [#120](https://github.com/Projetos-sst/pgr/pull/120) (draft, base `develop`)                                                                                                             |
+| Migrations         | **nenhuma** (regra do lote: zero migration)                                                                                                                                              |
+| Base obrigatória   | [`../../FIRST-MVP.md`](../../FIRST-MVP.md). Este lote **expande** o FIRST-MVP com o detalhe de implementação; não o contradiz. Toda divergência está marcada como tal no [PLAN](PLAN.md) |
+| Bloqueios          | **Nenhum.** MED-DEC-25 `RESPONDIDA` (direcionamento aprovado pelo Douglas, informado pelo Carlos). Spec Playwright automatizado depende de usuário de teste do Clerk                     |
+| Próxima ação       | Conferir o CI da #120 após o commit de docs; revisão do Douglas; combinar com o Rikelvin a ordem #112 × #120 (arquivos comuns)                                                           |
 
 ## Objetivo
 
@@ -39,14 +39,14 @@ PCMSO**:
 
 ## Responsáveis e dependências
 
-| Frente | Quem | Situação |
-|---|---|---|
-| Implementação, testes, documentação de API | Carlos | a iniciar |
-| Ordem de merge nos arquivos comuns com a #112 (`nav-menu.tsx`, `api-design.md`, Postman) | Carlos + Rikelvin | a combinar ([Lote 00, T00-E3](../00-alinhamento-e-contratos/TASK.md)) |
-| Teal como acento / contraste AA das pílulas | Douglas (MED-DEC-17) | opcional; sem resposta, o lote sai sem teal |
-| Aviso "não registre diagnóstico ou CID" em Observações | Dr. Alcides (MED-DEC-18) | opcional |
-| Aceite do escopo do MVP | Carlos (C-01) e Douglas (aceite do Lote 0, conforme FIRST-MVP) | pendente |
-| Linear: NOB-108 aparece "bloqueada por" NOB-94 (Backlog) | Douglas decide a relação | não bloqueia tecnicamente ([`../../DEPENDENCIES.md`](../../DEPENDENCIES.md) §2) |
+| Frente                                                                                   | Quem                                                           | Situação                                                                        |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Implementação, testes, documentação de API                                               | Carlos                                                         | a iniciar                                                                       |
+| Ordem de merge nos arquivos comuns com a #112 (`nav-menu.tsx`, `api-design.md`, Postman) | Carlos + Rikelvin                                              | a combinar ([Lote 00, T00-E3](../00-alinhamento-e-contratos/TASK.md))           |
+| Teal como acento / contraste AA das pílulas                                              | Douglas (MED-DEC-17)                                           | opcional; sem resposta, o lote sai sem teal                                     |
+| Aviso "não registre diagnóstico ou CID" em Observações                                   | Dr. Alcides (MED-DEC-18)                                       | opcional                                                                        |
+| Aceite do escopo do MVP                                                                  | Carlos (C-01) e Douglas (aceite do Lote 0, conforme FIRST-MVP) | pendente                                                                        |
+| Linear: NOB-108 aparece "bloqueada por" NOB-94 (Backlog)                                 | Douglas decide a relação                                       | não bloqueia tecnicamente ([`../../DEPENDENCIES.md`](../../DEPENDENCIES.md) §2) |
 
 ## Documentos da Fase 0 pertinentes
 

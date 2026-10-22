@@ -7,7 +7,7 @@
 ## A. Decisões (registrar e acompanhar; não decidir por terceiros)
 
 - [ ] **T04-A1** Registrar A-03 (campos obrigatórios; conclusão × dado sigiloso; destino de `notes`).
-  Aceite: pergunta registrada no canal oficial com destinatário Dr. Alcides; resposta (ou ausência) refletida em [04-DECISOES-E-BLOQUEIOS](../../geral/04-DECISOES-E-BLOQUEIOS.md). Resp.: Carlos (registro). Deps.: autorização do Carlos para escrever no Linear (C-02). Status: não iniciado.
+      Aceite: pergunta registrada no canal oficial com destinatário Dr. Alcides; resposta (ou ausência) refletida em [04-DECISOES-E-BLOQUEIOS](../../geral/04-DECISOES-E-BLOQUEIOS.md). Resp.: Carlos (registro). Deps.: autorização do Carlos para escrever no Linear (C-02). Status: não iniciado.
 - [ ] **T04-A2** Registrar A-04 (ASO pode listar riscos não validados?). Aceite: idem. Resp.: Carlos. Status: não iniciado.
 - [ ] **T04-A3** Registrar A-05 (quem emite) e A-09 (estados e snapshot). Aceite: idem. Resp.: Carlos. Status: não iniciado.
 - [ ] **T04-A4** Pedir ao Douglas a decisão D-06 (camada de emissão) e marcar sessão de desenho P7. Aceite: desenho aprovado registrado no [PLAN](PLAN.md) com data e fonte. Resp.: Carlos (pedido) / Douglas (decisão). Status: não iniciado.

@@ -6,13 +6,13 @@
 
 ## 1. Resultado esperado (quando desbloqueado)
 
-| Frente | Resultado | Critério de aceite (proposto) |
-|---|---|---|
-| 3a | Profissional identificado (dados mínimos decididos), opcionalmente ligado a um usuário autenticado, e **designado por empresa** com vigência, concessor registrado e revogação | profissional sem designação vigente é recusado **no servidor e no banco**; revogação preserva o histórico |
-| 3b | Validação/rejeição de entradas de risco append-only, só por profissional designado | sem designação → `FORBIDDEN`; conteúdo da fonte imutável; nova decisão após revogação recusada |
-| 3c | PGR externo com UX no padrão `_ui`, documento no GED vinculado à fonte, sobre o contrato da #112 | externo nunca nasce validado; documento acessível só a quem acessa a fonte |
-| 3d | Ajustes de rastreabilidade **aceitos pelo Rikelvin** e implementados no contrato dele | nenhum contrato paralelo |
-| 3e | Lista C oficial versionada, com procedência e importador idempotente | reimportar o mesmo arquivo não muda nada; versão anterior preservada |
+| Frente | Resultado                                                                                                                                                                      | Critério de aceite (proposto)                                                                             |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| 3a     | Profissional identificado (dados mínimos decididos), opcionalmente ligado a um usuário autenticado, e **designado por empresa** com vigência, concessor registrado e revogação | profissional sem designação vigente é recusado **no servidor e no banco**; revogação preserva o histórico |
+| 3b     | Validação/rejeição de entradas de risco append-only, só por profissional designado                                                                                             | sem designação → `FORBIDDEN`; conteúdo da fonte imutável; nova decisão após revogação recusada            |
+| 3c     | PGR externo com UX no padrão `_ui`, documento no GED vinculado à fonte, sobre o contrato da #112                                                                               | externo nunca nasce validado; documento acessível só a quem acessa a fonte                                |
+| 3d     | Ajustes de rastreabilidade **aceitos pelo Rikelvin** e implementados no contrato dele                                                                                          | nenhum contrato paralelo                                                                                  |
+| 3e     | Lista C oficial versionada, com procedência e importador idempotente                                                                                                           | reimportar o mesmo arquivo não muda nada; versão anterior preservada                                      |
 
 ## 2. Frente 3a — identidade, vínculo e designação (P1, proposta)
 
@@ -25,11 +25,11 @@
 
 ### 2.2 Opções para "a empresa define quem autoriza" (HIPÓTESES, nenhuma escolhida)
 
-| Opção | Como funcionaria | Pré-requisito | Risco |
-|---|---|---|---|
-| I | O escritório **registra** a indicação feita pela empresa-cliente, com evidência (documento de indicação no GED, nome e cargo de quem indicou na empresa) | MED-DEC-02 = empresa-cliente; aceite de Expedito e Dr. Alcides de que registrar indicação ≠ aprovar em nome de terceiros | Prova frágil se a evidência for só declaratória |
-| II | Usuário da empresa-cliente faz a indicação no próprio sistema (perfil/portal de empresa) | MED-DEC-21 (portais); escopo por empresa aplicado (`scoped_company_id`) | Depende do Lote 06; maior superfície de segurança |
-| III | "Empresa" = escritório; um papel do escritório indica | MED-DEC-02 = escritório | Parece contrariar a escolha da opção 3 em vez da 1; precisa de confirmação explícita |
+| Opção | Como funcionaria                                                                                                                                         | Pré-requisito                                                                                                            | Risco                                                                                |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| I     | O escritório **registra** a indicação feita pela empresa-cliente, com evidência (documento de indicação no GED, nome e cargo de quem indicou na empresa) | MED-DEC-02 = empresa-cliente; aceite de Expedito e Dr. Alcides de que registrar indicação ≠ aprovar em nome de terceiros | Prova frágil se a evidência for só declaratória                                      |
+| II    | Usuário da empresa-cliente faz a indicação no próprio sistema (perfil/portal de empresa)                                                                 | MED-DEC-21 (portais); escopo por empresa aplicado (`scoped_company_id`)                                                  | Depende do Lote 06; maior superfície de segurança                                    |
+| III   | "Empresa" = escritório; um papel do escritório indica                                                                                                    | MED-DEC-02 = escritório                                                                                                  | Parece contrariar a escolha da opção 3 em vez da 1; precisa de confirmação explícita |
 
 ### 2.3 Desenho técnico de referência (AUDIT-DATABASE §10.4 P1)
 
@@ -69,13 +69,13 @@ aquela empresa. Owner/colaborador sem designação: **recusado**.
 
 ## 5. Frente 3d — fontes de risco e rastreabilidade (propostas ao Rikelvin)
 
-| Ajuste proposto | Motivo | Fonte |
-|---|---|---|
-| Capturar função, CBO e nº de expostos (`ges_job_roles`) no snapshot interno | PCMSO planeja exames por função; risco é por GES | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §10.1 |
-| Campo opcional de classificação/nível na fonte externa | Externa hoje não tem classificação | idem |
-| Fingerprint sem `pgr.updated_at` | Edição do cabeçalho marca a fonte como `changed` sem mudança de risco | idem §4.5 |
-| `reference_document_id` → GED | Procedência do documento externo | idem §10.1 |
-| Evento "fonte desatualizada" ligado às versões de PCMSO que a usam | Rastreabilidade pós-emissão | idem §10.1 |
+| Ajuste proposto                                                             | Motivo                                                                | Fonte                                                      |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Capturar função, CBO e nº de expostos (`ges_job_roles`) no snapshot interno | PCMSO planeja exames por função; risco é por GES                      | [`../../AUDIT-DATABASE.md`](../../AUDIT-DATABASE.md) §10.1 |
+| Campo opcional de classificação/nível na fonte externa                      | Externa hoje não tem classificação                                    | idem                                                       |
+| Fingerprint sem `pgr.updated_at`                                            | Edição do cabeçalho marca a fonte como `changed` sem mudança de risco | idem §4.5                                                  |
+| `reference_document_id` → GED                                               | Procedência do documento externo                                      | idem §10.1                                                 |
+| Evento "fonte desatualizada" ligado às versões de PCMSO que a usam          | Rastreabilidade pós-emissão                                           | idem §10.1                                                 |
 
 Nenhum é implementado pelo Carlos sem aceite do Rikelvin. A Medicina não lê `risks` diretamente.
 

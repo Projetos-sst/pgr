@@ -6,6 +6,7 @@ PR aberta auditada: #112 (NOB-98), head `ebfbac3`, branch `origin/codex/NOB-98-f
 Nenhum arquivo do repositório foi alterado. Não criei migrations, não conectei em banco nenhum, não executei testes nem scripts do protótipo.
 
 Convenções usadas no texto:
+
 - `S` = schema (`src/shared/db/schema/`)
 - `M` = migrations (`src/shared/db/migrations/`)
 - `PROTO` = `Projeto-SST-Ocupacional/app/saude-ocupacional.html`
@@ -34,6 +35,7 @@ Convenções usadas no texto:
 ## 3. Arquivos reais (lidos)
 
 **Schema (S):**
+
 - `companies.ts`, `company-modules.ts`, `module-policy.ts`
 - `work-units.ts`, `ges.ts`, `ges-job-roles.ts`, `job-roles.ts`, `employees.ts`
 - `risks.ts`, `ergonomics.ts`, `psychosocial.ts`
@@ -42,24 +44,29 @@ Convenções usadas no texto:
 - `pgr.ts`, `esocial.ts`, `caepi-certificates.ts`, `users.ts`
 
 **Migrations (M):**
+
 - `0002`, `0005`, `0009`, `0010`, `0012`, `0021`, `0025`, `0029`, `0030`, `0051`, `0053`
 - `meta/_journal.json`
 
 **Repositórios:**
+
 - `company-modules.ts`, `pdf-batch.ts`
 - `medical-risk-sources.ts` (só existe na PR)
 
 **Núcleos (core):**
+
 - `server/platform/pdf-batch-core.ts`, `server/platform/pgr-docx-core.ts`
 - `server/medicine/risk-source-core.ts` (PR)
 
 **Domínios:**
+
 - `domains/platform/company-modules.ts`
 - `domains/medicine/risk-sources.ts` (PR)
 - `domains/documents/{pdf-batch,documents,validity}.ts`
 - `domains/signatures/{contract,targets/pgr}.ts`
 
 **Outros:**
+
 - Storage: `integrations/storage/documents-storage.ts`
 - Worker: `worker/index.ts`
 - CI/CD: `.github/workflows/{cd,ci}.yml`, `docs/deploy/vercel.md`, `drizzle.config.ts`
@@ -81,31 +88,31 @@ Convenções usadas no texto:
 
 Isolamento padrão: policy PERMISSIVE `<t>_isolation` com `org_id = current_setting('app.current_org', true)` para `app_runtime`. GRANT padrão: SELECT/INSERT/UPDATE/DELETE. Trigger `set_updated_at` como SQL custom. Divergências aparecem marcadas na tabela.
 
-| Tabela | Colunas-chave | FKs / ON DELETE | Constraints / índices | RLS extra | GRANT |
-|---|---|---|---|---|---|
-| `companies` (S/companies.ts) | cnpj (opcional), razao_social NOT NULL, cnae, risk_grade, status enum `company_status`, tax_classification, endereço | org → orgs CASCADE | `uq_companies_id_org (id,org_id)` (0053, base das FKs compostas); `uq_companies_org_id_cnpj`; CHECK risk_grade 1–4 | — | SIUD |
-| `company_modules` (0053) | module text CHECK `pgr\|medicine`, enabled bool default false | (company_id,org_id) → companies CASCADE (FK composta) | UNIQUE(org,company,module) | isolation | **S/I/U, sem DELETE** |
-| `company_module_events` (0053) | previous_enabled, enabled, changed_by text, reason NOT NULL | composta → companies CASCADE | idx (org,company) | isolation | **S/I (append-only)** |
-| `work_units` | name, description NOT NULL, type enum, status enum, datas, profissional (texto) | org CASCADE; company CASCADE (FK simples) | idx org, company | — | SIUD |
-| `ges` | name, process/ambiente | org/company/work_unit CASCADE (FKs simples) | idx | — | SIUD |
-| `ges_job_roles` | worker_count > 0, work_schedule | ges CASCADE, job_role CASCADE | UNIQUE(org,ges,job_role) | — | SIUD |
-| `job_roles` | title, cbo, sector, is_active | company CASCADE | UNIQUE(org,company,title) | — | SIUD |
-| `employees` | full_name, **cpf NOT NULL**, birth_date, sex, blood_type, admission/dismissal, status | company CASCADE; ges/job_role **SET NULL** (FKs simples, sem garantia de mesma empresa no banco; a NOB-102 valida na aplicação) | **UNIQUE(org_id, cpf)** | — | SIUD |
-| `risks` (S/risks.ts:117) | agent_type enum (7), hazard, description NOT NULL, sources, propagation, exposure_time enum, possible_injuries, noxious_agent_code (texto livre), measurement_unit enum, concentration_intensity | **ges CASCADE** (risco por GES, nunca por função ou trabalhador) | idx org, ges | — (a #112 adiciona restritiva) | SIUD |
-| `risk_assessments` | criterion, probability/severity 1–5, risk_level = p×s (CHECK), uncertainty 0–2, campos NR-09 (measured_value/unit, tolerance_limit_value, nr09_conclusion), assessed_at | risk CASCADE | 5 CHECKs de coerência | — | SIUD |
-| `control_measures` | control_level enum (4), applicable, status enum, 5W2H | risk CASCADE | UNIQUE(org,risk,level) | — | SIUD |
-| `ergonomic_evaluations` (0051) | 6 dimensões enum adequate/inadequate/not_applicable, method, **responsible texto digitado**, assessed_at, psychosocial_campaign_id | risk CASCADE; campanha SET NULL | idx (org,risk,assessed_at) | — | SIUD |
-| `psychosocial_*` (0021, 0046) | campanhas (status draft/active/closed/archived, public_token), respostas anônimas por token, `psychosocial_risks` (riskId SET NULL), `psychosocial_risk_factors` (por GES, level low/medium/high, number sequencial) | ges/campanha CASCADE | uq token | `psychosocial_campaigns_token_read` (capability) | SIUD |
-| `pgr` | responsible texto, registration_type enum crm/crea/mte/n.a., issued_at, valid_until, published_at, created_by texto | company CASCADE; work_unit SET NULL | — | **`pgr_module_access` RESTRICTIVE (módulo pgr)**, desde a 0053 | SIUD |
-| `pgr_ges`, `pgr_revisions` | revision_number, revised_at, notes, archived_at | pgr CASCADE | UNIQUE(org,pgr,number) | RESTRICTIVE herda de `pgr` (0053) | SIUD |
-| `medicos` (0029) | name, **crm texto (sem UF)**, specialty, clinic texto, phone, status | org CASCADE | **UNIQUE(org_id, crm)** | — | SIUD |
-| `health_exams` (0030) | exam_type enum (admissional, periodic, change_of_function, return_to_work, dismissal), performed_at, valid_until, aptitude enum (fit, fit_with_restrictions, unfit), **notes texto livre**, certificate_path texto | employee **CASCADE**; doctor **SET NULL** | idx org, employee, doctor | **`health_exams_module_access` RESTRICTIVE** via `employees.company_id` + medicine (0053) | SIUD |
-| `folders` / `documents` (0025) | documents: document_group_id, version ≥ 1, status `generating\|ready`, storage_path, size_bytes, valid_until, related_entity_type/id (polimórfico, CHECK completo-ou-vazio), doc_type texto livre | folders RESTRICT; org CASCADE | UNIQUE(org, group, version); índice parcial do vínculo | **sem company_id, sem policy de módulo** | **SIUD (DELETE permitido)** |
-| `jobs` (0025) | job_type enum `pdf_batch`, status enum, payload jsonb, attempts, locked_at | org CASCADE | idx (status, created_at) | — | SIUD |
-| `signature_requests` / `signature_captures` (0010) | requests: target_type texto, target_id, token_hash UNIQUE, payload jsonb, status pending/signed/cancelled, expires_at, used_at. captures: image_data (PNG base64), signer_name, method qr/link/manual, signed_at | captures → request CASCADE, UNIQUE 1:1 | — | `signature_requests_token_capability` (SELECT por `app.signature_token`) | SIUD |
-| `esocial_events` (0022/0047) | event_type enum inclui **S-2220**, reference_id polimórfico, payload XML texto | batch SET NULL | — | sem policy de módulo | (padrão) |
-| `caepi_certificates` (0009) | tabela GLOBAL, sem org_id; PK `ca`; synced_at | — | — | `global_read USING (true)` (por causa do event trigger `ensure_rls` em produção) | **somente SELECT** para app_runtime; escrita via owner |
-| `users` | id (Clerk), cpf, job_title, is_master | — | — | `users_select_self` (authenticated) | — |
+| Tabela                                             | Colunas-chave                                                                                                                                                                                                        | FKs / ON DELETE                                                                                                                 | Constraints / índices                                                                                              | RLS extra                                                                                 | GRANT                                                  |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `companies` (S/companies.ts)                       | cnpj (opcional), razao_social NOT NULL, cnae, risk_grade, status enum `company_status`, tax_classification, endereço                                                                                                 | org → orgs CASCADE                                                                                                              | `uq_companies_id_org (id,org_id)` (0053, base das FKs compostas); `uq_companies_org_id_cnpj`; CHECK risk_grade 1–4 | —                                                                                         | SIUD                                                   |
+| `company_modules` (0053)                           | module text CHECK `pgr\|medicine`, enabled bool default false                                                                                                                                                        | (company_id,org_id) → companies CASCADE (FK composta)                                                                           | UNIQUE(org,company,module)                                                                                         | isolation                                                                                 | **S/I/U, sem DELETE**                                  |
+| `company_module_events` (0053)                     | previous_enabled, enabled, changed_by text, reason NOT NULL                                                                                                                                                          | composta → companies CASCADE                                                                                                    | idx (org,company)                                                                                                  | isolation                                                                                 | **S/I (append-only)**                                  |
+| `work_units`                                       | name, description NOT NULL, type enum, status enum, datas, profissional (texto)                                                                                                                                      | org CASCADE; company CASCADE (FK simples)                                                                                       | idx org, company                                                                                                   | —                                                                                         | SIUD                                                   |
+| `ges`                                              | name, process/ambiente                                                                                                                                                                                               | org/company/work_unit CASCADE (FKs simples)                                                                                     | idx                                                                                                                | —                                                                                         | SIUD                                                   |
+| `ges_job_roles`                                    | worker_count > 0, work_schedule                                                                                                                                                                                      | ges CASCADE, job_role CASCADE                                                                                                   | UNIQUE(org,ges,job_role)                                                                                           | —                                                                                         | SIUD                                                   |
+| `job_roles`                                        | title, cbo, sector, is_active                                                                                                                                                                                        | company CASCADE                                                                                                                 | UNIQUE(org,company,title)                                                                                          | —                                                                                         | SIUD                                                   |
+| `employees`                                        | full_name, **cpf NOT NULL**, birth_date, sex, blood_type, admission/dismissal, status                                                                                                                                | company CASCADE; ges/job_role **SET NULL** (FKs simples, sem garantia de mesma empresa no banco; a NOB-102 valida na aplicação) | **UNIQUE(org_id, cpf)**                                                                                            | —                                                                                         | SIUD                                                   |
+| `risks` (S/risks.ts:117)                           | agent_type enum (7), hazard, description NOT NULL, sources, propagation, exposure_time enum, possible_injuries, noxious_agent_code (texto livre), measurement_unit enum, concentration_intensity                     | **ges CASCADE** (risco por GES, nunca por função ou trabalhador)                                                                | idx org, ges                                                                                                       | — (a #112 adiciona restritiva)                                                            | SIUD                                                   |
+| `risk_assessments`                                 | criterion, probability/severity 1–5, risk_level = p×s (CHECK), uncertainty 0–2, campos NR-09 (measured_value/unit, tolerance_limit_value, nr09_conclusion), assessed_at                                              | risk CASCADE                                                                                                                    | 5 CHECKs de coerência                                                                                              | —                                                                                         | SIUD                                                   |
+| `control_measures`                                 | control_level enum (4), applicable, status enum, 5W2H                                                                                                                                                                | risk CASCADE                                                                                                                    | UNIQUE(org,risk,level)                                                                                             | —                                                                                         | SIUD                                                   |
+| `ergonomic_evaluations` (0051)                     | 6 dimensões enum adequate/inadequate/not_applicable, method, **responsible texto digitado**, assessed_at, psychosocial_campaign_id                                                                                   | risk CASCADE; campanha SET NULL                                                                                                 | idx (org,risk,assessed_at)                                                                                         | —                                                                                         | SIUD                                                   |
+| `psychosocial_*` (0021, 0046)                      | campanhas (status draft/active/closed/archived, public_token), respostas anônimas por token, `psychosocial_risks` (riskId SET NULL), `psychosocial_risk_factors` (por GES, level low/medium/high, number sequencial) | ges/campanha CASCADE                                                                                                            | uq token                                                                                                           | `psychosocial_campaigns_token_read` (capability)                                          | SIUD                                                   |
+| `pgr`                                              | responsible texto, registration_type enum crm/crea/mte/n.a., issued_at, valid_until, published_at, created_by texto                                                                                                  | company CASCADE; work_unit SET NULL                                                                                             | —                                                                                                                  | **`pgr_module_access` RESTRICTIVE (módulo pgr)**, desde a 0053                            | SIUD                                                   |
+| `pgr_ges`, `pgr_revisions`                         | revision_number, revised_at, notes, archived_at                                                                                                                                                                      | pgr CASCADE                                                                                                                     | UNIQUE(org,pgr,number)                                                                                             | RESTRICTIVE herda de `pgr` (0053)                                                         | SIUD                                                   |
+| `medicos` (0029)                                   | name, **crm texto (sem UF)**, specialty, clinic texto, phone, status                                                                                                                                                 | org CASCADE                                                                                                                     | **UNIQUE(org_id, crm)**                                                                                            | —                                                                                         | SIUD                                                   |
+| `health_exams` (0030)                              | exam_type enum (admissional, periodic, change_of_function, return_to_work, dismissal), performed_at, valid_until, aptitude enum (fit, fit_with_restrictions, unfit), **notes texto livre**, certificate_path texto   | employee **CASCADE**; doctor **SET NULL**                                                                                       | idx org, employee, doctor                                                                                          | **`health_exams_module_access` RESTRICTIVE** via `employees.company_id` + medicine (0053) | SIUD                                                   |
+| `folders` / `documents` (0025)                     | documents: document_group_id, version ≥ 1, status `generating\|ready`, storage_path, size_bytes, valid_until, related_entity_type/id (polimórfico, CHECK completo-ou-vazio), doc_type texto livre                    | folders RESTRICT; org CASCADE                                                                                                   | UNIQUE(org, group, version); índice parcial do vínculo                                                             | **sem company_id, sem policy de módulo**                                                  | **SIUD (DELETE permitido)**                            |
+| `jobs` (0025)                                      | job_type enum `pdf_batch`, status enum, payload jsonb, attempts, locked_at                                                                                                                                           | org CASCADE                                                                                                                     | idx (status, created_at)                                                                                           | —                                                                                         | SIUD                                                   |
+| `signature_requests` / `signature_captures` (0010) | requests: target_type texto, target_id, token_hash UNIQUE, payload jsonb, status pending/signed/cancelled, expires_at, used_at. captures: image_data (PNG base64), signer_name, method qr/link/manual, signed_at     | captures → request CASCADE, UNIQUE 1:1                                                                                          | —                                                                                                                  | `signature_requests_token_capability` (SELECT por `app.signature_token`)                  | SIUD                                                   |
+| `esocial_events` (0022/0047)                       | event_type enum inclui **S-2220**, reference_id polimórfico, payload XML texto                                                                                                                                       | batch SET NULL                                                                                                                  | —                                                                                                                  | sem policy de módulo                                                                      | (padrão)                                               |
+| `caepi_certificates` (0009)                        | tabela GLOBAL, sem org_id; PK `ca`; synced_at                                                                                                                                                                        | —                                                                                                                               | —                                                                                                                  | `global_read USING (true)` (por causa do event trigger `ensure_rls` em produção)          | **somente SELECT** para app_runtime; escrita via owner |
+| `users`                                            | id (Clerk), cpf, job_title, is_master                                                                                                                                                                                | —                                                                                                                               | —                                                                                                                  | `users_select_self` (authenticated)                                                       | —                                                      |
 
 Observações estruturais que pesam para Medicina:
 
@@ -122,22 +129,24 @@ Observações estruturais que pesam para Medicina:
 
 ### 4.3 O que o Rikelvin entregou na develop
 
-| PR / commit | Banco | Aplicação |
-|---|---|---|
-| #109 NOB-97 `0c8f9ff` | **0053**: `uq_companies_id_org`; `company_modules` e `company_module_events`; policies RESTRICTIVE `pgr_module_access`, `pgr_ges_module_access`, `pgr_revisions_module_access` e `health_exams_module_access`; backfill com **as duas habilitações = true para todas as empresas existentes**, mais um evento `migration:0053` (M/0053:43-48) | `assertCompanyModuleTx` (repositórios de PGR e exames); empresas novas começam **sem módulos** (`domains/platform/company-modules.ts:22`) |
-| #110 NOB-99 `f5b8b85` | nenhuma migration | filtro `module` em empresas e funcionários (Action e REST); mesmos IDs nos dois módulos |
-| #111 NOB-100 `044334e` | nenhuma migration | `setCompanyModule` com lock da empresa e evento append-only; UI `/companies/[id]/services`; `GET/PUT /api/v1/companies/[id]/modules` |
-| #113 NOB-103 `5ee2cac` | nenhuma migration | escrita de risco valida empresa/obra contra o GES e exige o módulo **pgr** na aplicação (`repositories/risks.ts`, `assertGesInTenant`). A spec diz: "Esta PR não afirma que todo o inventário já tem restrição SQL por módulo" |
-| #118 NOB-102 `d19ca85` | nenhuma migration | CNPJ alfanumérico (DV), mensagem de duplicidade, validação de referências de funcionário. CPF não foi alterado |
+| PR / commit            | Banco                                                                                                                                                                                                                                                                                                                                         | Aplicação                                                                                                                                                                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| #109 NOB-97 `0c8f9ff`  | **0053**: `uq_companies_id_org`; `company_modules` e `company_module_events`; policies RESTRICTIVE `pgr_module_access`, `pgr_ges_module_access`, `pgr_revisions_module_access` e `health_exams_module_access`; backfill com **as duas habilitações = true para todas as empresas existentes**, mais um evento `migration:0053` (M/0053:43-48) | `assertCompanyModuleTx` (repositórios de PGR e exames); empresas novas começam **sem módulos** (`domains/platform/company-modules.ts:22`)                                                                                      |
+| #110 NOB-99 `f5b8b85`  | nenhuma migration                                                                                                                                                                                                                                                                                                                             | filtro `module` em empresas e funcionários (Action e REST); mesmos IDs nos dois módulos                                                                                                                                        |
+| #111 NOB-100 `044334e` | nenhuma migration                                                                                                                                                                                                                                                                                                                             | `setCompanyModule` com lock da empresa e evento append-only; UI `/companies/[id]/services`; `GET/PUT /api/v1/companies/[id]/modules`                                                                                           |
+| #113 NOB-103 `5ee2cac` | nenhuma migration                                                                                                                                                                                                                                                                                                                             | escrita de risco valida empresa/obra contra o GES e exige o módulo **pgr** na aplicação (`repositories/risks.ts`, `assertGesInTenant`). A spec diz: "Esta PR não afirma que todo o inventário já tem restrição SQL por módulo" |
+| #118 NOB-102 `d19ca85` | nenhuma migration                                                                                                                                                                                                                                                                                                                             | CNPJ alfanumérico (DV), mensagem de duplicidade, validação de referências de funcionário. CPF não foi alterado                                                                                                                 |
 
 ### 4.4 PR #112 (NOB-98): o que propõe no banco
 
 Situação da PR:
+
 - Base: `codex/NOB-100-feat/servicos-por-empresa`, não develop. O merge-base `044334e` já está na develop.
 - Estado: OPEN e não-draft (`isDraft:false`), embora o corpo diga "em rascunho". `reviews: []`, `comments: []`.
 - `git merge-tree` contra a develop: **único conflito textual em `docs/api/sst-manager.postman_collection.json`**. Migrations e schema mesclam sem conflito.
 
 **Numeração:**
+
 - A PR adiciona `0054_medical_risk_sources` (`when` 1792513283573) e `0055_pgr_inventory_module_access` (`when` 1792515723005).
 - A develop termina em 0053 e não há migration em nenhuma outra PR aberta (#115, #116 e #117 conferidas com `git diff --stat`).
 - **Hoje não há colisão.** Colide assim que qualquer outra migration for mergeada antes da #112.
@@ -232,18 +241,18 @@ Fatos que importam para ASO e PCMSO:
 
 ## 5. Funcionalidades existentes (relevantes)
 
-| Capacidade | Estado na develop | Evidência |
-|---|---|---|
-| Habilitação por empresa (pgr/medicine) com histórico append-only e RLS restritiva | implementado | 0053; `company-modules.ts` |
-| Cadastros comuns (empresa, funcionário, GES, função) entre os módulos | implementado | NOB-99 |
-| Inventário de riscos por GES + avaliação 5×5 + NR-09 + medidas + AEP | implementado (escrita exige PGR habilitado na aplicação) | `risks.ts`; NOB-103 |
-| Médicos (catálogo por escritório) | implementado, identidade incompleta | `medicos.ts` |
-| Exames/ASO como **registro** (não emissão) com validade derivada | implementado; RLS de módulo medicine | `health-exams.ts`; 0053 |
-| GED com versão por `document_group_id` + fila `jobs` + worker | implementado para o PGR | 0025; `pdf-batch.ts`; worker |
-| Template DOCX → PDF (Gotenberg/Google) | implementado só para o PGR | `pgr-docx-core.ts` |
-| Assinatura por link/QR/manual (captura simples) | implementado; consumidores demo/inspection/pgr/service_order | 0010; `contract.ts` |
-| Fontes de risco para Medicina (interna/externa, imutáveis, pendentes) | **só na PR #112** | 0054 da PR |
-| PCMSO, emissão de ASO, assinatura técnica, Lista C, histórico de função | **inexistente** | NOB-101 §2-§3; busca no schema |
+| Capacidade                                                                        | Estado na develop                                            | Evidência                      |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------ |
+| Habilitação por empresa (pgr/medicine) com histórico append-only e RLS restritiva | implementado                                                 | 0053; `company-modules.ts`     |
+| Cadastros comuns (empresa, funcionário, GES, função) entre os módulos             | implementado                                                 | NOB-99                         |
+| Inventário de riscos por GES + avaliação 5×5 + NR-09 + medidas + AEP              | implementado (escrita exige PGR habilitado na aplicação)     | `risks.ts`; NOB-103            |
+| Médicos (catálogo por escritório)                                                 | implementado, identidade incompleta                          | `medicos.ts`                   |
+| Exames/ASO como **registro** (não emissão) com validade derivada                  | implementado; RLS de módulo medicine                         | `health-exams.ts`; 0053        |
+| GED com versão por `document_group_id` + fila `jobs` + worker                     | implementado para o PGR                                      | 0025; `pdf-batch.ts`; worker   |
+| Template DOCX → PDF (Gotenberg/Google)                                            | implementado só para o PGR                                   | `pgr-docx-core.ts`             |
+| Assinatura por link/QR/manual (captura simples)                                   | implementado; consumidores demo/inspection/pgr/service_order | 0010; `contract.ts`            |
+| Fontes de risco para Medicina (interna/externa, imutáveis, pendentes)             | **só na PR #112**                                            | 0054 da PR                     |
+| PCMSO, emissão de ASO, assinatura técnica, Lista C, histórico de função           | **inexistente**                                              | NOB-101 §2-§3; busca no schema |
 
 ## 6. Lacunas
 
@@ -266,19 +275,19 @@ Fatos que importam para ASO e PCMSO:
 
 ## 7. Riscos
 
-| # | Risco | Severidade | Evidência |
-|---|---|---|---|
-| R1 | Colisão de numeração: qualquer migration mergeada antes da #112 obriga a regerar 0054/0055 e seus snapshots | Alta | journal; PR #112 |
-| R2 | Merge na develop **aplica a migration automaticamente** no banco de homologação; merge em main, na produção. Não existe "down" no drizzle-kit, então rollback = nova migration para frente | Alta | `cd.yml:67-75`; `vercel.md:20-26` |
-| R3 | O drizzle aplica as pendentes **numa só transação**. Um `ALTER TYPE … ADD VALUE` seguido do uso do valor no mesmo lote falha. Preferir `text` + CHECK em estados novos, como a #112 fez | Média | `vercel.md:26`; comentário em `risks.ts:55-56` |
-| R4 | `when` menor que o último aplicado é pulado silenciosamente | Média | `dialect.js:62`; caso 0026/0027 |
-| R5 | A 0055 esconde todo o inventário de empresas sem PGR. Leituras de Medicina que dependam de `risks` quebram sem erro (retornam vazio) | Média | M 0055 da PR |
-| R6 | ASO/PCMSO gerado pelo pipeline atual refletiria dados vivos, e não os do momento da emissão | Alta | `pdf-batch-core.ts:34` |
-| R7 | ASO no GED fica visível a todo o escritório (sem módulo nem papel) e pode ser apagado/editado pelo runtime | Alta | `documents.ts`; M/0025:70 |
-| R8 | "Assinatura" atual (nome + PNG) apresentada como assinatura técnica de médico | Alta (jurídico) | `signatures.ts`; SPEC:195 |
-| R9 | Exclusão em cascata apaga exames e fontes antes do prazo de guarda | Alta (normativo, HIPÓTESE) | FKs CASCADE; SPEC:51 |
-| R10 | Copiar a Lista C parcial do protótipo como se fosse oficial | Média | PROTO:182 |
-| R11 | A SPEC recomenda **banco por cliente** (SPEC:30-43); o código é **banco compartilhado + RLS**. Divergência arquitetural não resolvida | Média (estratégico) | SPEC; `with-org.ts` |
+| #   | Risco                                                                                                                                                                                      | Severidade                 | Evidência                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- | ---------------------------------------------- |
+| R1  | Colisão de numeração: qualquer migration mergeada antes da #112 obriga a regerar 0054/0055 e seus snapshots                                                                                | Alta                       | journal; PR #112                               |
+| R2  | Merge na develop **aplica a migration automaticamente** no banco de homologação; merge em main, na produção. Não existe "down" no drizzle-kit, então rollback = nova migration para frente | Alta                       | `cd.yml:67-75`; `vercel.md:20-26`              |
+| R3  | O drizzle aplica as pendentes **numa só transação**. Um `ALTER TYPE … ADD VALUE` seguido do uso do valor no mesmo lote falha. Preferir `text` + CHECK em estados novos, como a #112 fez    | Média                      | `vercel.md:26`; comentário em `risks.ts:55-56` |
+| R4  | `when` menor que o último aplicado é pulado silenciosamente                                                                                                                                | Média                      | `dialect.js:62`; caso 0026/0027                |
+| R5  | A 0055 esconde todo o inventário de empresas sem PGR. Leituras de Medicina que dependam de `risks` quebram sem erro (retornam vazio)                                                       | Média                      | M 0055 da PR                                   |
+| R6  | ASO/PCMSO gerado pelo pipeline atual refletiria dados vivos, e não os do momento da emissão                                                                                                | Alta                       | `pdf-batch-core.ts:34`                         |
+| R7  | ASO no GED fica visível a todo o escritório (sem módulo nem papel) e pode ser apagado/editado pelo runtime                                                                                 | Alta                       | `documents.ts`; M/0025:70                      |
+| R8  | "Assinatura" atual (nome + PNG) apresentada como assinatura técnica de médico                                                                                                              | Alta (jurídico)            | `signatures.ts`; SPEC:195                      |
+| R9  | Exclusão em cascata apaga exames e fontes antes do prazo de guarda                                                                                                                         | Alta (normativo, HIPÓTESE) | FKs CASCADE; SPEC:51                           |
+| R10 | Copiar a Lista C parcial do protótipo como se fosse oficial                                                                                                                                | Média                      | PROTO:182                                      |
+| R11 | A SPEC recomenda **banco por cliente** (SPEC:30-43); o código é **banco compartilhado + RLS**. Divergência arquitetural não resolvida                                                      | Média (estratégico)        | SPEC; `with-org.ts`                            |
 
 ## 8. Dependências
 
@@ -290,75 +299,75 @@ Fatos que importam para ASO e PCMSO:
 
 ## 9. Decisões pendentes
 
-| Decisão | Para quem |
-|---|---|
-| Quem autoriza a validação de risco e de PCMSO; como o profissional se vincula ao usuário Clerk; se owner/colaborador podem ou não | **Dr. Alcides + Expedito** (regra); **Rikelvin** (modelo) |
-| Revisão de risco: GRANT UPDATE por coluna nas entries da #112 **ou** tabela append-only de revisões | **Rikelvin** + Carlos |
-| Ordem de merge: #112 antes de qualquer migration de Medicina? Regerar 0054/0055 se não for assim | **Douglas** (TL) + Rikelvin |
-| Aceitar o efeito da 0055 (Medicina sem PGR não lê `risks`) | **Expedito** + Douglas |
-| Camada de emissão genérica (PGR/ASO/PCMSO) vs. tabelas específicas de Medicina; adicionar `company_id` e hash em `documents` | **Douglas** |
-| Estados de documento: rascunho → em revisão → emitido → assinado; retificado/cancelado | **Dr. Alcides** (clínico/normativo) + Expedito |
-| O que entra no snapshot do ASO (CPF? nascimento? riscos com nível? procedimentos com data?) e o que a empresa vê (só a conclusão, SPEC:61) | **Dr. Alcides** |
-| Provedor de assinatura ICP-Brasil e modalidade (nuvem/A3) | **Expedito** + Douglas |
-| Política de retenção vs. CASCADE (soft-delete? bloqueio de exclusão com histórico clínico?) | **Dr. Alcides** (prazo) + Douglas (modelo) |
-| Fonte e versão oficiais da Lista C, NR-4 e eSocial; quem valida códigos ausentes | **Dr. Alcides** + Carlos |
-| `UNIQUE(org, cpf)` em employees vs. trabalhador em várias empresas do mesmo escritório | **Expedito** + Rikelvin |
-| Banco por cliente (SPEC) vs. RLS compartilhado (atual) | **Douglas** + Expedito |
+| Decisão                                                                                                                                    | Para quem                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| Quem autoriza a validação de risco e de PCMSO; como o profissional se vincula ao usuário Clerk; se owner/colaborador podem ou não          | **Dr. Alcides + Expedito** (regra); **Rikelvin** (modelo) |
+| Revisão de risco: GRANT UPDATE por coluna nas entries da #112 **ou** tabela append-only de revisões                                        | **Rikelvin** + Carlos                                     |
+| Ordem de merge: #112 antes de qualquer migration de Medicina? Regerar 0054/0055 se não for assim                                           | **Douglas** (TL) + Rikelvin                               |
+| Aceitar o efeito da 0055 (Medicina sem PGR não lê `risks`)                                                                                 | **Expedito** + Douglas                                    |
+| Camada de emissão genérica (PGR/ASO/PCMSO) vs. tabelas específicas de Medicina; adicionar `company_id` e hash em `documents`               | **Douglas**                                               |
+| Estados de documento: rascunho → em revisão → emitido → assinado; retificado/cancelado                                                     | **Dr. Alcides** (clínico/normativo) + Expedito            |
+| O que entra no snapshot do ASO (CPF? nascimento? riscos com nível? procedimentos com data?) e o que a empresa vê (só a conclusão, SPEC:61) | **Dr. Alcides**                                           |
+| Provedor de assinatura ICP-Brasil e modalidade (nuvem/A3)                                                                                  | **Expedito** + Douglas                                    |
+| Política de retenção vs. CASCADE (soft-delete? bloqueio de exclusão com histórico clínico?)                                                | **Dr. Alcides** (prazo) + Douglas (modelo)                |
+| Fonte e versão oficiais da Lista C, NR-4 e eSocial; quem valida códigos ausentes                                                           | **Dr. Alcides** + Carlos                                  |
+| `UNIQUE(org, cpf)` em employees vs. trabalhador em várias empresas do mesmo escritório                                                     | **Expedito** + Rikelvin                                   |
+| Banco por cliente (SPEC) vs. RLS compartilhado (atual)                                                                                     | **Douglas** + Expedito                                    |
 
 ## 10. Recomendações
 
 ### 10.1 Classificação do contrato de riscos e validação da lista-hipótese
 
-| Campo da hipótese | JÁ IMPLEMENTADO (develop) | EM DESENVOLVIMENTO (PR #112) | PENDENTE DE RESPOSTA | PROPOSTO PARA APROVAÇÃO |
-|---|---|---|---|---|
-| Empresa | via `risks.ges_id → ges.company_id` | `medical_risk_sources.company_id` + FK composta | — | — |
-| Função | só `ges_job_roles` (GES↔função); risco **não** se liga à função | `jobRole?` texto só na fonte externa; interna **não captura** | regra: risco por função ou por GES no PCMSO (Dr. Alcides) | capturar `ges_job_roles` (função, CBO, expostos) no snapshot interno |
-| Trabalhador | `employees.ges_id/job_role_id` (nullable) | excluído de propósito (sem dados pessoais) | — | derivar na emissão do ASO via histórico de função; não guardar na fonte |
-| GES | `risks.ges_id` | `exposureGroup` (nome) + `originGesId` (interna) | — | guardar `originGesId` também na externa quando houver correspondência manual |
-| Risco | `risks` (agente, descrição, fontes, exposição, lesões, código eSocial) | `content` jsonb (subconjunto) + `originalData` (interna) | — | — |
-| Classificação | `risk_assessments` (P×S, nível, NR-09) | só dentro de `originalData.assessment` (interna); **externa sem campo** | escala e obrigatoriedade (NOB-103 "pendente") | campo opcional de classificação/nível na externa |
-| Origem | — | `kind` internal/external + `reference` + `origin_pgr_id` | — | FK opcional `reference_document_id → documents` para o PDF externo arquivado |
-| Versão | `pgr_revisions` (sem congelar) | `version` texto + `fingerprint` + snapshot imutável | — | fingerprint sem `pgr.updated_at` (só dados de risco) |
-| Estado de validação | — | `status` pending/validated/rejected; INSERT só pending; **sem UPDATE** | quem pode validar | tabela append-only `medical_risk_entry_reviews` |
-| Profissional responsável | `pgr.responsible` texto; AEP `responsible` texto | `reviewed_by` texto, sem FK | identidade e autorização (bloqueante) | FK para `medicos` + vínculo `medicos.user_id` |
-| Data de revisão | `risk_assessments.assessed_at`, `pgr_revisions.revised_at` | `reviewed_at` (nunca preenchido) | — | — |
-| Alterações posteriores | só `updated_at` | `freshness` current/changed/unavailable/superseded + `supersedes_source_id` | o que fazer com PCMSO emitido sobre fonte que mudou | evento automático "fonte desatualizada" ligado às versões de PCMSO que a usam |
-| Fonte interna/externa | — | `kind` | — | — |
+| Campo da hipótese        | JÁ IMPLEMENTADO (develop)                                              | EM DESENVOLVIMENTO (PR #112)                                                | PENDENTE DE RESPOSTA                                      | PROPOSTO PARA APROVAÇÃO                                                       |
+| ------------------------ | ---------------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Empresa                  | via `risks.ges_id → ges.company_id`                                    | `medical_risk_sources.company_id` + FK composta                             | —                                                         | —                                                                             |
+| Função                   | só `ges_job_roles` (GES↔função); risco **não** se liga à função        | `jobRole?` texto só na fonte externa; interna **não captura**               | regra: risco por função ou por GES no PCMSO (Dr. Alcides) | capturar `ges_job_roles` (função, CBO, expostos) no snapshot interno          |
+| Trabalhador              | `employees.ges_id/job_role_id` (nullable)                              | excluído de propósito (sem dados pessoais)                                  | —                                                         | derivar na emissão do ASO via histórico de função; não guardar na fonte       |
+| GES                      | `risks.ges_id`                                                         | `exposureGroup` (nome) + `originGesId` (interna)                            | —                                                         | guardar `originGesId` também na externa quando houver correspondência manual  |
+| Risco                    | `risks` (agente, descrição, fontes, exposição, lesões, código eSocial) | `content` jsonb (subconjunto) + `originalData` (interna)                    | —                                                         | —                                                                             |
+| Classificação            | `risk_assessments` (P×S, nível, NR-09)                                 | só dentro de `originalData.assessment` (interna); **externa sem campo**     | escala e obrigatoriedade (NOB-103 "pendente")             | campo opcional de classificação/nível na externa                              |
+| Origem                   | —                                                                      | `kind` internal/external + `reference` + `origin_pgr_id`                    | —                                                         | FK opcional `reference_document_id → documents` para o PDF externo arquivado  |
+| Versão                   | `pgr_revisions` (sem congelar)                                         | `version` texto + `fingerprint` + snapshot imutável                         | —                                                         | fingerprint sem `pgr.updated_at` (só dados de risco)                          |
+| Estado de validação      | —                                                                      | `status` pending/validated/rejected; INSERT só pending; **sem UPDATE**      | quem pode validar                                         | tabela append-only `medical_risk_entry_reviews`                               |
+| Profissional responsável | `pgr.responsible` texto; AEP `responsible` texto                       | `reviewed_by` texto, sem FK                                                 | identidade e autorização (bloqueante)                     | FK para `medicos` + vínculo `medicos.user_id`                                 |
+| Data de revisão          | `risk_assessments.assessed_at`, `pgr_revisions.revised_at`             | `reviewed_at` (nunca preenchido)                                            | —                                                         | —                                                                             |
+| Alterações posteriores   | só `updated_at`                                                        | `freshness` current/changed/unavailable/superseded + `supersedes_source_id` | o que fazer com PCMSO emitido sobre fonte que mudou       | evento automático "fonte desatualizada" ligado às versões de PCMSO que a usam |
+| Fonte interna/externa    | —                                                                      | `kind`                                                                      | —                                                         | —                                                                             |
 
 **Conclusão:** a PR #112 cobre bem origem, versão, imutabilidade e detecção de mudança. **Não cobre** função, classificação na externa nem o fluxo de validação. Sem o fluxo de validação, nada fica utilizável pelo PCMSO (`canUseMedicalRisk`).
 
 ### 10.2 Mapeamento das entidades do protótipo
 
-| Coleção / estrutura do protótipo | Destino | Observação |
-|---|---|---|
-| `empresas` (razao, cnpj, cnae, grau, endereço) | **reaproveitar** `companies` | — |
-| `empresas.medico/crm` | **entidade nova** `company_medical_assignments` | coordenador do PCMSO com vigência |
-| `empresas.vigencia` | **entidade nova** `pcmso_programs` | — |
-| `empresas.respPGR` | `pgr.responsible` (existe) | — |
-| `empresas.rat/fap/rotatividade/raNit/rlNit` | fora do MVP | PPP / FAP |
-| `empresas.psi` | psicossocial existente | — |
-| `empresas.funcoes[]` (nome, setor, cbo, atividades) | **reaproveitar** `job_roles` (title, sector, cbo, description) | — |
-| `funcoes[].periodicidade/exames[]` | **entidade nova** (itens do plano de exames na versão do PCMSO) | — |
-| `funcoes[].grauExp/fadiga` | fora do MVP | — |
-| `funcoes[].riscos[]` (tipo, agente, codigo24, intensidade, tecnica, epc/epi/ca) | **reaproveitar** `risks` + `risk_assessments` + `control_measures`/`epi_risk` | mudança de chave: **função → GES** |
-| `funcionarios` (nome, cpf, sexo, nascimento, admissão/demissão, ativo) | **reaproveitar** `employees` | — |
-| `funcionarios.nit/ctps` | **extensão** de `employees` (NIT para S-2220/PPP) | — |
-| `funcionarios.salario` | fora do MVP | dado sensível sem uso clínico |
-| `funcionarios.historico[]` | **entidade nova** `employee_job_assignments` | — |
-| `asos` (tipo, data, resultado, medico/crm, exames[], obs) | **reaproveitar** `health_exams` (registro) + **entidade nova** `health_exam_procedures` + **emissão nova** (snapshot) | `medico/crm` texto → `doctor_id` |
-| `asos.snap` | **entidade nova** (snapshot de emissão) | fazer completo, não parcial como no protótipo |
-| `asos.encId/clinica` | fora do MVP (fase 2) | — |
-| `afastamentos` (CID, natureza, espécie B31/B91, kit INSS) | fora do MVP de ASO/PCMSO | dispara o exame de retorno; CID é dado sensível; `accidents` (Fase 06) cobre só acidente |
-| `tabelas` (listaC, nr4) | **referência global nova** | ver §10.5 |
-| `campanhas`/`respostas`/`riscospsi` | **reaproveitar** `psychosocial_*` | P×S por GHE no protótipo vs. nível por GES na plataforma |
-| `entrevistas` | fora do MVP | — |
-| `indicadores` | fora do MVP | — |
-| `clinicas` (+ médicos examinadores, preços) | fora do MVP (fase 2, portal da clínica) | examinador → `medicos` (`clinic` texto) |
-| `encaminhamentos` (guia, sinais vitais, audiometria, espirometria) | fora do MVP (fase 2) | resultados clínicos de alta sensibilidade |
-| `assinaturas` | **não é assinatura de documento** | billing/planos; módulos já em `company_modules` |
-| `equipe` (médico/psicólogo, registro, UF, RQE) | **extensão** de `medicos` (crm_uf, rqe, user_id) | psicólogo: decidir se `medicos` vira `health_professionals` |
-| `validacoes` (pcmso/psicossocial; rascunho/revisao/aprovado/ajustes) | **entidade nova**: status na versão do PCMSO + eventos de revisão | identidade real, sem "aprovar como" |
-| `config`, `solicitacoes`, `pedidos`, `programa`, `consultas`, `auditorias`, `prontuario`, `fadiga` | fora do MVP | `prontuario`/`programa`: sensíveis, exigem consentimento (SPEC:182) |
+| Coleção / estrutura do protótipo                                                                   | Destino                                                                                                               | Observação                                                                               |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `empresas` (razao, cnpj, cnae, grau, endereço)                                                     | **reaproveitar** `companies`                                                                                          | —                                                                                        |
+| `empresas.medico/crm`                                                                              | **entidade nova** `company_medical_assignments`                                                                       | coordenador do PCMSO com vigência                                                        |
+| `empresas.vigencia`                                                                                | **entidade nova** `pcmso_programs`                                                                                    | —                                                                                        |
+| `empresas.respPGR`                                                                                 | `pgr.responsible` (existe)                                                                                            | —                                                                                        |
+| `empresas.rat/fap/rotatividade/raNit/rlNit`                                                        | fora do MVP                                                                                                           | PPP / FAP                                                                                |
+| `empresas.psi`                                                                                     | psicossocial existente                                                                                                | —                                                                                        |
+| `empresas.funcoes[]` (nome, setor, cbo, atividades)                                                | **reaproveitar** `job_roles` (title, sector, cbo, description)                                                        | —                                                                                        |
+| `funcoes[].periodicidade/exames[]`                                                                 | **entidade nova** (itens do plano de exames na versão do PCMSO)                                                       | —                                                                                        |
+| `funcoes[].grauExp/fadiga`                                                                         | fora do MVP                                                                                                           | —                                                                                        |
+| `funcoes[].riscos[]` (tipo, agente, codigo24, intensidade, tecnica, epc/epi/ca)                    | **reaproveitar** `risks` + `risk_assessments` + `control_measures`/`epi_risk`                                         | mudança de chave: **função → GES**                                                       |
+| `funcionarios` (nome, cpf, sexo, nascimento, admissão/demissão, ativo)                             | **reaproveitar** `employees`                                                                                          | —                                                                                        |
+| `funcionarios.nit/ctps`                                                                            | **extensão** de `employees` (NIT para S-2220/PPP)                                                                     | —                                                                                        |
+| `funcionarios.salario`                                                                             | fora do MVP                                                                                                           | dado sensível sem uso clínico                                                            |
+| `funcionarios.historico[]`                                                                         | **entidade nova** `employee_job_assignments`                                                                          | —                                                                                        |
+| `asos` (tipo, data, resultado, medico/crm, exames[], obs)                                          | **reaproveitar** `health_exams` (registro) + **entidade nova** `health_exam_procedures` + **emissão nova** (snapshot) | `medico/crm` texto → `doctor_id`                                                         |
+| `asos.snap`                                                                                        | **entidade nova** (snapshot de emissão)                                                                               | fazer completo, não parcial como no protótipo                                            |
+| `asos.encId/clinica`                                                                               | fora do MVP (fase 2)                                                                                                  | —                                                                                        |
+| `afastamentos` (CID, natureza, espécie B31/B91, kit INSS)                                          | fora do MVP de ASO/PCMSO                                                                                              | dispara o exame de retorno; CID é dado sensível; `accidents` (Fase 06) cobre só acidente |
+| `tabelas` (listaC, nr4)                                                                            | **referência global nova**                                                                                            | ver §10.5                                                                                |
+| `campanhas`/`respostas`/`riscospsi`                                                                | **reaproveitar** `psychosocial_*`                                                                                     | P×S por GHE no protótipo vs. nível por GES na plataforma                                 |
+| `entrevistas`                                                                                      | fora do MVP                                                                                                           | —                                                                                        |
+| `indicadores`                                                                                      | fora do MVP                                                                                                           | —                                                                                        |
+| `clinicas` (+ médicos examinadores, preços)                                                        | fora do MVP (fase 2, portal da clínica)                                                                               | examinador → `medicos` (`clinic` texto)                                                  |
+| `encaminhamentos` (guia, sinais vitais, audiometria, espirometria)                                 | fora do MVP (fase 2)                                                                                                  | resultados clínicos de alta sensibilidade                                                |
+| `assinaturas`                                                                                      | **não é assinatura de documento**                                                                                     | billing/planos; módulos já em `company_modules`                                          |
+| `equipe` (médico/psicólogo, registro, UF, RQE)                                                     | **extensão** de `medicos` (crm_uf, rqe, user_id)                                                                      | psicólogo: decidir se `medicos` vira `health_professionals`                              |
+| `validacoes` (pcmso/psicossocial; rascunho/revisao/aprovado/ajustes)                               | **entidade nova**: status na versão do PCMSO + eventos de revisão                                                     | identidade real, sem "aprovar como"                                                      |
+| `config`, `solicitacoes`, `pedidos`, `programa`, `consultas`, `auditorias`, `prontuario`, `fadiga` | fora do MVP                                                                                                           | `prontuario`/`programa`: sensíveis, exigem consentimento (SPEC:182)                      |
 
 ### 10.3 Emissão de ASO e PCMSO reaproveitando a infraestrutura atual (proposta)
 
@@ -378,26 +387,28 @@ assinar: pedido com document_sha256 = output_sha256; evidência técnica (ICP) e
 
 Estados propostos. São PROPOSTA e dependem de aprovação do Dr. Alcides; não são decisões tomadas.
 
-| Estado | Significado | Mutável? |
-|---|---|---|
-| `draft` | rascunho; snapshot pode ser recalculado | sim (substitui o snapshot) |
-| `in_review` | enviado ao responsável técnico | não (pede devolução → volta a draft com evento) |
-| `issued` | emitido; snapshot e PDF congelados; output_sha256 gravado | **não** |
-| `signed` | assinatura técnica válida ligada ao output_sha256 | **não** |
-| `rectified` | substituído por uma nova emissão (`supersedes_id`); continua consultável | não |
-| `cancelled` | anulado com motivo e ator; continua consultável | não |
+| Estado      | Significado                                                              | Mutável?                                        |
+| ----------- | ------------------------------------------------------------------------ | ----------------------------------------------- |
+| `draft`     | rascunho; snapshot pode ser recalculado                                  | sim (substitui o snapshot)                      |
+| `in_review` | enviado ao responsável técnico                                           | não (pede devolução → volta a draft com evento) |
+| `issued`    | emitido; snapshot e PDF congelados; output_sha256 gravado                | **não**                                         |
+| `signed`    | assinatura técnica válida ligada ao output_sha256                        | **não**                                         |
+| `rectified` | substituído por uma nova emissão (`supersedes_id`); continua consultável | não                                             |
+| `cancelled` | anulado com motivo e ator; continua consultável                          | não                                             |
 
 - Transições só por funções de domínio, com evento append-only (ator, data, motivo).
 - O runtime não tem DELETE.
 - UPDATE só por coluna (`status`, `output_sha256`) e protegido por trigger que impede alterar `snapshot` depois de `issued`.
 
 **Reuso:**
+
 - `documents` / `document_group_id` / versão (um grupo por ASO, ou por PCMSO da empresa);
 - `jobs` `pdf_batch` com um `kind` novo no payload jsonb (zero migration de enum, `domains/documents/pdf-batch.ts:9`);
 - worker, Gotenberg e `docxtemplater`;
 - `signature_requests` com novo `target_type` (registry, zero schema) **apenas** para ciência do trabalhador, nunca como assinatura técnica do médico.
 
 **O que falta na assinatura técnica (§4.6):**
+
 - hash do documento no pedido;
 - identidade verificada (usuário vinculado a `medicos` com CRM+UF);
 - evidências (IP, user agent, método de autenticação);
@@ -406,6 +417,7 @@ Estados propostos. São PROPOSTA e dependem de aprovação do Dr. Alcides; não 
 ### 10.4 Propostas de migration (somente descritas, nenhum arquivo criado)
 
 Regras gerais para todas:
+
 - RLS em toda tabela nova (o event trigger `ensure_rls` em produção obriga);
 - `*_isolation` PERMISSIVE mais `*_module_access` RESTRICTIVE (`companyModuleScope(…,'medicine')`);
 - FK composta `(company_id, org_id) → companies(id, org_id)`, como na #112;
@@ -417,20 +429,21 @@ Rollback é sempre uma migration para frente (não existe down). Por isso cada u
 
 **Numeração.** A develop está em 0053 e a #112 ocupa 0054/0055. **Recomendação:** mergear ou decidir a #112 primeiro. As propostas abaixo começam em **0056**, uma migration por PR, geradas com `drizzle-kit generate` depois de rebase na develop. Nunca editar o journal à mão; `when` maior que 1792515723005. Se a #112 for adiada, a primeira proposta independente vira 0054 e a #112 precisa regerar as suas.
 
-| Ordem | Migration (nome indicativo) | Depende da NOB-98? |
-|---|---|---|
-| P1 | `0056_medical_professional_identity` | **Não** (mas desbloqueia a NOB-98) |
-| P2 | `0057_reference_datasets` | Não |
-| P3 | `0058_employee_job_assignments` | Não |
-| P4 | `0059_exam_procedures` | Não |
-| P5 | `0060_medical_risk_reviews` | **Sim** (FK para `medical_risk_entries`; depende de P1) |
-| P6 | `0061_pcmso_programs` | **Sim** (usa fontes e revisões validadas; depende de P1, P4, P5) |
-| P7 | `0062_document_issuances` | Não para o ASO isolado; Sim quando o ASO referenciar uma versão de PCMSO |
-| P8 | `0063_technical_signatures` | Não (depende do provedor) |
-| P9 | `0064_medical_audit_log` | Não |
+| Ordem | Migration (nome indicativo)          | Depende da NOB-98?                                                       |
+| ----- | ------------------------------------ | ------------------------------------------------------------------------ |
+| P1    | `0056_medical_professional_identity` | **Não** (mas desbloqueia a NOB-98)                                       |
+| P2    | `0057_reference_datasets`            | Não                                                                      |
+| P3    | `0058_employee_job_assignments`      | Não                                                                      |
+| P4    | `0059_exam_procedures`               | Não                                                                      |
+| P5    | `0060_medical_risk_reviews`          | **Sim** (FK para `medical_risk_entries`; depende de P1)                  |
+| P6    | `0061_pcmso_programs`                | **Sim** (usa fontes e revisões validadas; depende de P1, P4, P5)         |
+| P7    | `0062_document_issuances`            | Não para o ASO isolado; Sim quando o ASO referenciar uma versão de PCMSO |
+| P8    | `0063_technical_signatures`          | Não (depende do provedor)                                                |
+| P9    | `0064_medical_audit_log`             | Não                                                                      |
 
 **P1: identidade profissional e responsabilidade técnica**
-- **Finalidade:** permitir saber *quem* é o médico (CRM+UF, RQE), ligar o médico a um usuário autenticado e registrar a designação por empresa (coordenador do PCMSO, examinador) com vigência.
+
+- **Finalidade:** permitir saber _quem_ é o médico (CRM+UF, RQE), ligar o médico a um usuário autenticado e registrar a designação por empresa (coordenador do PCMSO, examinador) com vigência.
 - **Tabelas:**
   - ALTER `medicos`: ADD `crm_uf char(2)` nullable, `rqe text` nullable, `user_id text` nullable (Clerk id, sem FK, como `pgr.created_by`);
   - UNIQUE parcial `(org_id, user_id) WHERE user_id IS NOT NULL`;
@@ -450,6 +463,7 @@ Rollback é sempre uma migration para frente (não existe down). Por isso cada u
 **P2: dados de referência globais com procedência** (detalhada em §10.5).
 
 **P3: histórico de função do trabalhador**
+
 - **Finalidade:** registrar períodos de função/GES do trabalhador, para o exame de mudança de risco, para o ASO com a função vigente na data e para o PPP futuro.
 - **Tabela:** `employee_job_assignments` (org_id, company_id, employee_id, job_role_id, ges_id null, started_at date, ended_at date null, source CHECK `manual|migration|import`, created_by).
 - **Integridade:** `ended_at >= started_at`; no máximo um período aberto por funcionário (UNIQUE parcial `WHERE ended_at IS NULL`); FK de employee **RESTRICT** (proteger o histórico) ou CASCADE se a decisão de retenção permitir.
@@ -459,6 +473,7 @@ Rollback é sempre uma migration para frente (não existe down). Por isso cada u
 - **Testes:** período sobreposto, função de outra empresa (FK composta via job_roles exige `uq (id,org_id,company_id)` em job_roles, que hoje não existe; avaliar), backfill idempotente.
 
 **P4: catálogo de procedimentos e procedimentos do exame**
+
 - **Tabelas:**
   - `exam_procedures` (org_id, name, code null, kind CHECK `clinical|complementary`, active), UNIQUE(org, name);
   - `health_exam_procedures` (org_id, company_id, health_exam_id, procedure_id, performed_at date, result_status CHECK `pending|done|not_done`).
@@ -468,6 +483,7 @@ Rollback é sempre uma migration para frente (não existe down). Por isso cada u
 - **Testes:** módulo desligado esconde; cross-tenant.
 
 **P5: revisão de riscos da NOB-98** (depende de #112 + P1)
+
 - **Opção A (recomendada):** `medical_risk_entry_reviews` append-only (org_id, company_id, source_id, entry_id, decision CHECK `validated|rejected`, reviewer_medico_id FK RESTRICT, reviewer_user_id text, note, decided_at). O estado vigente é a última decisão.
   - Aposentar o uso de `medical_risk_entries.status/reviewed_*`: deixar como pending permanentemente, ou derivar.
   - INSERT só se existir assignment vigente: verificação na aplicação mais policy RESTRICTIVE com `exists(company_medical_assignments …)`.
@@ -476,6 +492,7 @@ Rollback é sempre uma migration para frente (não existe down). Por isso cada u
 - **Decisão:** Rikelvin + Carlos.
 
 **P6: PCMSO** (depende de #112, P1, P4, P5)
+
 - **Tabelas:**
   - `pcmso_programs`: org_id, company_id, coordinator_assignment_id, valid_from, valid_to, UNIQUE de vigência por empresa;
   - `pcmso_versions`: program_id, version int, status CHECK `draft|in_review|issued|signed|rectified|cancelled`, snapshot jsonb, snapshot_sha256, source_ids uuid[] (ou tabela de junção `pcmso_version_sources` com FK composta para `medical_risk_sources`), issuance_id → P7, UNIQUE(org, program, version);
@@ -485,6 +502,7 @@ Rollback é sempre uma migration para frente (não existe down). Por isso cada u
 - **Testes:** fonte alterada depois da emissão não altera a versão emitida; nova versão exige nova revisão; empresa sem medicine.
 
 **P7: emissão de documentos (genérica, para Douglas decidir)**
+
 - ALTER `documents` ADD `company_id uuid` null, `sha256 text` null, `created_by text` null. Sem backfill obrigatório; PGR pode preencher depois.
 - Nova `document_issuances`: org_id, company_id, kind CHECK `aso|pcmso|pgr`, target_type, target_id, status (estados de §10.3), snapshot jsonb, snapshot_sha256, template_sha256, output_document_id → documents RESTRICT, output_sha256, supersedes_id (auto-FK), issued_by, issued_at, cancelled_reason.
 - Nova `document_issuance_events` (append-only).
@@ -496,6 +514,7 @@ Rollback é sempre uma migration para frente (não existe down). Por isso cada u
 - **Testes:** retry do job não altera o snapshot; output_sha256 confere com o objeto; retificação mantém a anterior consultável; cancelamento exige motivo; GED do PGR sem regressão.
 
 **P8: assinatura técnica**
+
 - **Tabela:** `technical_signatures` (org_id, company_id, issuance_id, signer_medico_id RESTRICT, signer_user_id, document_sha256, provider, provider_envelope_id, certificate_subject, certificate_serial, signed_document_id → documents, signed_sha256, signed_at, timestamp_token, ip, user_agent, auth_method).
 - Opcional: ALTER `signature_requests` ADD `document_sha256 text` null (para a ciência do trabalhador ficar ligada ao arquivo).
 - **Sensibilidade:** média.
@@ -503,6 +522,7 @@ Rollback é sempre uma migration para frente (não existe down). Por isso cada u
 - **Depende:** escolha do provedor ICP-Brasil (SPEC:195/257). NÃO VERIFICADO quais campos o provedor devolve.
 
 **P9: trilha de auditoria clínica**
+
 - **Tabela:** `medical_audit_events` (org_id, company_id, actor_user_id, action, entity_type, entity_id, at, metadata jsonb sem conteúdo clínico).
 - Append-only, sem UPDATE/DELETE, com retenção definida (SPEC:215 fala em 5 anos).
 - Atende "registro de leituras" exigido pela SPEC. Volume a avaliar.
@@ -549,13 +569,13 @@ Rollback é sempre uma migration para frente (não existe down). Por isso cada u
 
 ## 11. Nível de confiança
 
-| Afirmação | Confiança |
-|---|---|
-| Schema, migrations, journal, policies e GRANTs da develop e da #112 | **Alta** (lidos diretamente) |
-| Pipeline de documentos lê dados vivos; GED sem hash nem módulo | **Alta** |
-| 0053 aplicada em homologação | **Média-alta** (inferida do run de CD com `success`; log não aberto) |
-| Produção em 0052 | **Média** (inferida de `origin/main` e do último CD de main) |
-| Mapeamento do protótipo | **Média-alta** (seed e funções de documento lidos; não percorri todas as 2976 linhas) |
+| Afirmação                                                                          | Confiança                                                                                               |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Schema, migrations, journal, policies e GRANTs da develop e da #112                | **Alta** (lidos diretamente)                                                                            |
+| Pipeline de documentos lê dados vivos; GED sem hash nem módulo                     | **Alta**                                                                                                |
+| 0053 aplicada em homologação                                                       | **Média-alta** (inferida do run de CD com `success`; log não aberto)                                    |
+| Produção em 0052                                                                   | **Média** (inferida de `origin/main` e do último CD de main)                                            |
+| Mapeamento do protótipo                                                            | **Média-alta** (seed e funções de documento lidos; não percorri todas as 2976 linhas)                   |
 | Requisitos normativos (guarda de 20 anos, ICP-Brasil obrigatória, conteúdo do ASO) | **Baixa / HIPÓTESE**. Vêm da SPEC, que admite citações de memória (SPEC:281); validar com o Dr. Alcides |
 
 ## 12. O que não foi possível verificar

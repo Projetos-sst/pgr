@@ -16,8 +16,8 @@ Quando o lote começar, registrar aqui:
 
 ## Registro
 
-| Data | Commit | O que mudou | Arquivos | Observação |
-|---|---|---|---|---|
+| Data                    | Commit                | O que mudou | Arquivos    | Observação  |
+| ----------------------- | --------------------- | ----------- | ----------- | ----------- |
 | <preencher: AAAA-MM-DD> | <preencher: SHA real> | <preencher> | <preencher> | <preencher> |
 
 ## Desvios do plano
