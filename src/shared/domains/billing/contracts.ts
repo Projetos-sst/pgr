@@ -145,6 +145,15 @@ export const normalizedBillingEventSchema = z
     eventId: z.string().trim().min(1).max(200),
     contractId: z.uuid(),
     revision: z.number().int().positive(),
+    invoice: z
+      .object({
+        id: z.string().trim().min(1).max(200),
+        amountMinor: amountMinorSchema,
+        currency: z.literal("BRL"),
+        status: z.enum(["open", "paid", "void"]),
+      })
+      .strict()
+      .optional(),
     status: billingStatusSchema,
     periodStart: z.iso.datetime({ offset: true }),
     periodEnd: z.iso.datetime({ offset: true }),
@@ -164,6 +173,30 @@ export const normalizedBillingEventSchema = z
   .refine((v) => Date.parse(v.periodEnd) > Date.parse(v.periodStart), {
     path: ["periodEnd"],
     message: "Período inválido.",
+  })
+  .superRefine((event, ctx) => {
+    const expected: Partial<Record<typeof event.kind, BillingStatus[]>> = {
+      payment_confirmed: ["active"],
+      renewed: ["active"],
+      recovered: ["active"],
+      action_required: ["requires_action"],
+      payment_refused: ["unpaid"],
+      payment_failed: ["past_due", "unpaid"],
+      canceled: ["canceled"],
+    };
+    const statuses = expected[event.kind];
+    if (statuses && !statuses.includes(event.status))
+      ctx.addIssue({
+        code: "custom",
+        path: ["status"],
+        message: "Estado incompatível com o evento financeiro.",
+      });
+    if (event.status === "active" && event.invoice?.status !== "paid")
+      ctx.addIssue({
+        code: "custom",
+        path: ["invoice"],
+        message: "Pagamento precisa de fatura confirmada com valor e moeda.",
+      });
   });
 export type NormalizedBillingEvent = z.infer<typeof normalizedBillingEventSchema>;
 

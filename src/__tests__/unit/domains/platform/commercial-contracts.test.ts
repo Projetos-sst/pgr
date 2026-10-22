@@ -99,6 +99,7 @@ describe("commercial simulation contracts", () => {
   it("rejects forged provider actors and inconsistent periods", () => {
     const event = {
       eventId: "mock_1",
+      invoice: { id: "invoice-1", amountMinor: 10000, currency: "BRL", status: "paid" },
       contractId: "11111111-1111-4111-8111-111111111111",
       revision: 1,
       status: "active",

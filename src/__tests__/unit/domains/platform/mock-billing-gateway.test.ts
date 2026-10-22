@@ -16,6 +16,7 @@ const store: MockGatewayStore = {
 const env = { APP_ENV: "test", BILLING_MODE: "mock", BILLING_MOCK_ENABLED: "true" };
 const event = {
   eventId: "event-1",
+  invoice: { id: "invoice-1", amountMinor: 10000, currency: "BRL", status: "paid" },
   contractId: "11111111-1111-4111-8111-111111111111",
   revision: 1,
   status: "active",

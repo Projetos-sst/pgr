@@ -279,6 +279,10 @@
     {
       "key": "billingPriceId",
       "value": ""
+    },
+    {
+      "key": "billingContractId",
+      "value": ""
     }
   ],
   "item": [
@@ -9817,6 +9821,75 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"priceId\": \"{{billingPriceId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assinaturas e eventos simulados — NOB-133",
+      "item": [
+        {
+          "name": "Consultar assinaturas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "subscription"]
+            }
+          }
+        },
+        {
+          "name": "Simular pagamento aprovado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/simulation-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "simulation-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": \"{{billingContractId}}\",\n  \"scenario\": \"success\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reconciliar assinatura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription/reconcile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "subscription", "reconcile"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": \"{{billingContractId}}\",\n  \"reason\": \"Conferência explícita em ambiente simulado\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

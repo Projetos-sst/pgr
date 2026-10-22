@@ -71,12 +71,13 @@ assinados; a rota resolve o tenant do payload e roda sob `withOrg(orgId)` (RLS b
 
 ### Financeiro simulado (`/api/billing`) — owner, opt-in e fora de produção
 
-| Recurso                  | Métodos   | Contrato                                                               |
-| ------------------------ | --------- | ---------------------------------------------------------------------- |
-| `/api/billing/plans`     | GET, POST | Catálogo atual paginado; criar versão imutável de oferta               |
-| `/api/billing/customers` | GET, POST | Clientes comerciais paginados; cadastrar/sincronizar empresa do tenant |
+| Recurso                          | Métodos   | Contrato                                                               |
+| -------------------------------- | --------- | ---------------------------------------------------------------------- |
+| `/api/billing/plans`             | GET, POST | Catálogo atual paginado; criar versão imutável de oferta               |
+| `/api/billing/customers`         | GET, POST | Clientes comerciais paginados; cadastrar/sincronizar empresa do tenant |
+| `/api/billing/checkout-sessions` | POST      | Checkout simulado, Idempotency-Key obrigatório                         |
 
-| `/api/billing/checkout-sessions` | POST | Checkout simulado, Idempotency-Key obrigatório |
+| `/api/billing/subscription` · `/subscription/reconcile` · `/simulation-events` · `/webhooks/provider` | GET · POST · POST · POST | Assinaturas, reconciliação auditada, cenários e eventos assinados do simulador |
 
 Detalhes, políticas e limites em “Catálogo comercial simulado — NOB-114” ao final deste documento.
 
@@ -1385,3 +1386,20 @@ Reutilizar code cria outra versão. Preços antigos não são editados e contrat
 Preço e itens são resolvidos no catálogo do servidor. Não aceita amountMinor, tenant, ator, cartão ou URLs de retorno. Customer, contrato e operação são persistidos por tenant; requisições concorrentes com a mesma chave e conteúdo retornam a mesma sessão. Reutilizar a chave com outro conteúdo retorna DUPLICATE. Redirecionamento não cria licença. Uma assinatura já em andamento deve usar a prévia de mudança, não outro checkout.
 
 Além das flags do catálogo, exige BILLING_MOCK_WEBHOOK_SECRET com pelo menos 32 caracteres (somente servidor). BILLING_MOCK_FAIL_REQUESTS=true demonstra indisponibilidade antes da criação do pedido, retornando BILLING_UNAVAILABLE (503). Após recuperar, repetir a mesma chave cria uma só operação. O checkout simulado retorna um caminho interno; a página do simulador integra a entrega de telas. Nenhuma conexão com adquirente ou cobrança real é feita.
+
+## Estados, eventos e licenças simuladas — NOB-133
+
+| Recurso                                  | Actions equivalentes                  | Contrato                                                                                                                                                                                                                       |
+| ---------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET /api/billing/subscription            | getCommercialSubscriptionsAction      | Contratos e clientes comerciais da organização, availableActions e estado do acesso derivado do período/política.                                                                                                              |
+| POST /api/billing/subscription/reconcile | reconcileCommercialSubscriptionAction | {contractId,reason}; consulta estado durável do provedor, registra auditoria e aplica evento perdido, sem duplicar fatura.                                                                                                     |
+| POST /api/billing/simulation-events      | simulateCommercialPaymentAction       | {contractId,scenario}; success/requires_action/refused/renewal/late/recovery/cancel/duplicate/out_of_order. Exclusivo ao simulador autenticado.                                                                                |
+| POST /api/billing/webhooks/provider      | Não é CRUD; assinatura do provedor    | Corpo bruto NormalizedBillingEvent e billing-signature: t=UNIX,v1=HMAC_SHA256(t.corpo). Limite 16 KiB, tolerância de 5 minutos. Exige também owner autenticado e flags do simulador. Não é um webhook público de gateway real. |
+
+NormalizedBillingEvent: eventId, contractId, revision inteira positiva e monotônica, status, kind, periodStart/periodEnd/occurredAt ISO; invoice opcional {id,amountMinor,currency:BRL,status:open/paid/void}. Estado active exige invoice paid. O valor da fatura precisa corresponder aos itens contratados. Um ID de fatura não pode ser reutilizado para outro contrato, valor ou período. Faturas guardam os itens e o período originais; recuperar uma fatura aberta não cria outra cobrança. O adaptador real precisará produzir revisões monotônicas a partir da fonte autoritativa, não aceitar revisão do navegador.
+
+A transação registra inbox, estado, fatura, licença e auditoria. Duplicatas com conteúdo igual não reaplicam; reutilização do ID com conteúdo diferente é recusada; revisões antigas são preservadas como não aplicadas. O simulador mantém estado do provedor separado para recuperar eventos perdidos. Recusa, pendência e expiração não concedem licença. Inadimplência segue a política versionada da oferta.
+
+A migration candidata 0061 adiciona snapshot/identidade/período da fatura e policies que consideram licenças somente quando app.billing_simulation é ativado pelo servidor em withOrg. Pro não concede PGR/Medicina automaticamente. Licenças recorrentes são por empresa e produto; avulsos ficam em scope order:{contractId} e não abrem todo o módulo. Permissões manuais anteriores permanecem. Uma desativação explícita do owner prevalece sobre pagamento/renovação; a tela de serviços consulta o estado efetivo. Helpers SECURITY DEFINER retornam apenas booleanos, exigem tenant atual e têm search_path fixo e EXECUTE revogado do público.
+
+0060/0061 são candidatas em rascunhos; não foram aplicadas em banco real nem liberam a numeração da Medicina. Atualizar e reconciliar a develop antes de integrar.

@@ -17,6 +17,7 @@ import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { companies } from "./companies";
 import type {
+  BillingPriceItem,
   BillingOfferInput,
   BillingStatus,
   NormalizedBillingEvent,
@@ -122,6 +123,10 @@ export const billingInvoices = pgTable(
     ...identity(),
     contractId: uuid("contract_id").notNull(),
     eventId: text("event_id").notNull(),
+    providerInvoiceId: text("provider_invoice_id").notNull(),
+    periodStart: timestamp("period_start", { withTimezone: true }),
+    periodEnd: timestamp("period_end", { withTimezone: true }),
+    items: jsonb("items").$type<BillingPriceItem[]>().notNull().default([]),
     amountMinor: integer("amount_minor").notNull(),
     currency: text("currency").notNull().default("BRL"),
     status: text("status").notNull(),
@@ -129,6 +134,7 @@ export const billingInvoices = pgTable(
   },
   (t) => [
     unique("uq_billing_invoice_event").on(t.orgId, t.eventId),
+    unique("uq_billing_provider_invoice").on(t.orgId, t.providerInvoiceId),
     foreignKey({
       columns: [t.contractId, t.orgId],
       foreignColumns: [billingContracts.id, billingContracts.orgId],
