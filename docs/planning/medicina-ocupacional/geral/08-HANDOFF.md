@@ -5,35 +5,34 @@
 
 ## 1. Estado atual
 
-**Última atualização:** 2026-10-21, ao fim da sessão de implementação do Lote 01 (coordenador: Claude, sessão do Carlos).
+**Última atualização:** 2026-10-21 (noite), após integrar a develop pós-#112 na branch do Lote 01 (coordenador: Claude, sessão do Carlos).
 
 ```
-DATA:                      2026-10-21
+DATA:                      2026-10-21 (noite)
 LOTE:                      01 — Ficha de saúde ocupacional (PR_ABERTA, draft); Lote 00 segue EM_EXECUCAO
-ISSUE:                     NOB-108
+ISSUE:                     NOB-108 (In Progress no Linear, não alterado)
 BRANCH:                    feature/NOB-108-ficha-saude-ocupacional
 HEAD:                      o commit que introduziu esta versão do arquivo (git log -1 --format=%h -- docs/planning/medicina-ocupacional/geral/08-HANDOFF.md)
 PR:                        #120 (draft, base develop) — https://github.com/Projetos-sst/pgr/pull/120
 STATUS:                    PR_ABERTA
 
-O QUE FOI CONCLUÍDO:       TASK T01-01…T01-11, T01-13, T01-15, T01-16 (evidências em lotes/01/WALKTHROUGH.md e QA.md).
-                           Commits: 09bc02d (feat), f0e4486 (test), 8372ec3 (docs/api) + commit de documentação.
-O QUE FOI VERIFICADO:      origin/develop = d6b787c (sem merge necessário); #112 OPEN/draft/base develop/CI verde,
-                           reserva 0054–0056; pilha do Rikelvin reserva 0057–0059; NOB-98 In Review desde 21/10 18:58 UTC
-                           (stateHistory via MCP), 0 comentários; jornada completa no navegador em 1440/768/375/320.
-TESTES EXECUTADOS:         npm run check → exit 0 (179 suítes / 1768 testes unit). npm run test:integration (Postgres
-                           efêmero local) → 169 passed, 0 failed, 5 skipped (externos, nenhum da Medicina); Medicina 53/53.
-                           REST com bypass dev (13 casos). Navegador: 25 passos (QA §5), Lighthouse a11y 100.
-TESTES PENDENTES:          spec Playwright automatizado (exige usuário de teste do Clerk); tela de client e de collaborator
-                           no navegador (sem contas).
-ARQUIVOS ALTERADOS:        ver git diff --stat origin/develop..HEAD (52 arquivos de src/docs/api + docs de planejamento)
-MIGRATIONS:                nenhuma
-DECISÕES TOMADAS:          MED-DEC-25 → RESPONDIDA (Douglas aprovou direcionamento e início do Lote 01, informado pelo Carlos);
-                           T01-02 (PLAN §12 itens 1–4) decididos pelo Carlos.
-DECISÕES PENDENTES:        MED-DEC-31 (fonte do fluxo de autorização da #112); MED-DEC-02…07, 08, 09, 26 (Lote 02/03).
-DEPENDÊNCIAS:              #112 (arquivos comuns: nav-menu.tsx, api-design.md, Postman); ordem de merge a combinar.
-PRÓXIMA AÇÃO EXATA:        CI da #120 verde em 59bf798. Carlos pede revisão ao Douglas e combina com o Rikelvin a ordem
-                           #112 × #120; a PR sai de draft com o aceite do Carlos.
+O QUE FOI CONCLUÍDO:       Merge normal de origin/develop (7793fca, merge da #112) na branch: commit 7ac18cd. Conflito só em
+                           nav-menu.tsx, resolvido mantendo "Painel" + os dois itens da NOB-98. Nenhuma correção de código.
+O QUE FOI VERIFICADO:      #112 MERGED em 2026-10-22 01:14 UTC; NOB-98 Done no Linear (01:18 UTC). develop tem 0054–0056.
+                           #119/#115/#116/#117 MERGED nas branches da pilha, NÃO na develop: 0057–0059 fora da develop.
+                           tenantAccess (novo na #112) não é usado pelo Lote 01; policies 0054–0056 não tocam as tabelas do lote.
+TESTES EXECUTADOS:         npm run check no 7ac18cd → exit 0 (182 suítes / 1779 testes unit; lint 0 erros, 4 avisos antigos).
+                           Integração (Postgres efêmero qa-pg16/sst_test, migrations 0000–0056) → 171 passed, 0 failed,
+                           5 skipped; 1359 testes passed, 14 skipped. Medicina (Lote 01 + NOB-98): 7 suítes / 75 testes, 0 skipped.
+                           Revisão de segurança independente: 0 CRITICAL/HIGH/MEDIUM/LOW.
+TESTES PENDENTES:          spec Playwright automatizado (sem E2E_CLERK_*); jornada no navegador NÃO refeita na base nova
+                           (porta 3001 ocupada por outro next dev; exige login do Carlos); telas de client e collaborator.
+MIGRATIONS:                nenhuma própria (git diff origin/develop..HEAD sem db/schema nem db/migrations)
+DECISÕES PENDENTES:        MED-DEC-31; MED-DEC-02…07; 08 e 26 (ordem das migrations da Medicina, agora com 0057–0059 fora da
+                           develop); 09; 11, 15, 23, 24.
+DEPENDÊNCIAS:              nenhuma de código para a #120. A PR traz 98 arquivos de docs/planning (ver REVIEW §5 item 5).
+PRÓXIMA AÇÃO EXATA:        Conferir o CI no head atual da #120. Carlos pede a revisão ao Douglas; a PR sai de draft com o
+                           aceite do Carlos (T01-18). Avisar o Rikelvin de que 0057–0059 não chegaram à develop.
 ```
 
 **Avisos desta sessão:**

@@ -108,6 +108,21 @@ Comandos e saídas literais no [QA](QA.md) §3–§5; parecer no [REVIEW](REVIEW
 - O commit de documentação aplica o Prettier. A conferência por normalização mostrou que só mudou espaço em branco: alinhamento de
   tabelas e formatação de blocos de código. Nenhum arquivo da Fase 0 teve texto alterado.
 
+## Integração da develop após o merge da #112 (2026-10-21, noite)
+
+- `git fetch origin --prune`: `origin/develop` avançou de `d6b787c` para `7793fca` (merge da #112, NOB-98, em 2026-10-22 01:14 UTC).
+  A develop passou a ter as migrations `0054_medical_risk_sources`, `0055_pgr_inventory_module_access` e
+  `0056_company_risk_authorizations`, com journal e snapshots em sequência.
+- As PRs #119, #115, #116 e #117 aparecem como `MERGED`, mas cada uma entrou na **branch da PR de baixo da pilha**, não na develop.
+  As migrations 0057–0059 estão nas branches `codex/NOB-*` e **não** na develop (`git merge-base --is-ancestor` → não).
+- Merge normal `origin/develop` → branch do lote: commit `7ac18cd`. Conflito só em `nav-menu.tsx`, resolvido mantendo
+  "Painel" (Lote 01), "Autorizações de riscos" e "Riscos para PCMSO" (NOB-98). `api-design.md` e a coleção Postman mesclaram
+  sem conflito, com as seções e pastas das duas frentes. Nenhum nome de arquivo ou export repetido em `*/medicine/`.
+- A #112 criou a opção `tenantAccess` em `officeAction` e `restHandler`, que admite o papel `client`. Nenhum arquivo do Lote 01 a
+  usa; o caminho padrão continua exigindo equipe interna.
+- As novas policies (0054–0056) não tocam `health_exams`, `employees`, `companies`, `company_modules` nem `medicos`.
+- **Nenhuma correção de código foi necessária.** Testes e revisão no [QA](QA.md) §7 e no [REVIEW](REVIEW.md) §6.
+
 ## Pendente
 
 | Item   | Registro                                              |

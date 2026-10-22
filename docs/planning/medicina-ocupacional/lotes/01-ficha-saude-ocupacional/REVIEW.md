@@ -101,11 +101,29 @@ Revisores:
 
 ### Integração com a #112
 
-- [ ] Ordem de merge combinada com o Rikelvin (T00-E3). Conflitos esperados só em `nav-menu.tsx` (dois itens dele + "Painel"), `api-design.md` e Postman.
+- [x] A #112 entrou primeiro na develop (`7793fca`); a develop foi integrada à branch do lote (`7ac18cd`). O único conflito foi em `nav-menu.tsx`, resolvido mantendo os três itens (ver §6).
 
 ## 5. Pendências para o revisor humano (Douglas)
 
 1. Aceitar ou ajustar os desvios do PLAN listados no [WALKTHROUGH](WALKTHROUGH.md).
 2. LOW-1 (`rest.ts`), para ser tratado na #112 ou depois dela.
 3. Usuário de teste do Clerk para o projeto Playwright `protected`. Sem ele, o E2E da Medicina não automatiza.
-4. Ordem de merge #112 × #120 (arquivos comuns).
+4. ~~Ordem de merge #112 × #120 (arquivos comuns).~~ Resolvido: a #112 entrou primeiro e a develop foi integrada (§6).
+5. Volume de documentação na PR: 98 dos 150 arquivos do diff são de `docs/planning/` (cerca de 10 mil linhas). Ver a sugestão de
+   separação no relatório da sessão; nada foi separado sem autorização.
+
+## 6. Revalidação após a integração da #112 (2026-10-21, noite)
+
+Revisão independente, só leitura, do merge `7ac18cd`. **Resultado: 0 CRITICAL, 0 HIGH, 0 MEDIUM, 0 LOW.**
+
+| Ponto                                                                                                                                   | Evidência (arquivo:linha no merge)                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tenantAccess` (novo, admite `client`) não é usado pelo Lote 01                                                                         | só em `actions/medicine/risk-authorizations.ts` e rotas de autorização/revisão da NOB-98; padrão `requireOfficeStaff()` em `office-action.ts:25-29` e `resolveContext` em `rest.ts:114`; páginas com `requireOfficeStaffPage()` |
+| `companyModuleScope` refatorado gera o mesmo SQL para `medicine`                                                                        | `module-policy.ts` (`MODULE_LITERALS`); uso em `medicine-overview.ts:30,37`                                                                                                                                                     |
+| NOT_FOUND / FORBIDDEN preservados                                                                                                       | `getCompanyModules` e `assertCompanyModuleTx` inalterados; só `setCompanyModule` passou a usar `auditedTenantWrite`                                                                                                             |
+| Policies 0054–0056 não alcançam as tabelas lidas pelo lote                                                                              | nenhuma em `health_exams`, `employees`, `companies`, `company_modules`, `medicos`; `org_memberships_risk_actor_read` não é consultada pelo lote                                                                                 |
+| Sem consulta a `risks`, `risk_assessments`, `medical_risk_*`; sem `originalData`, `notes`, `certificatePath` ou CPF nos contratos novos | grep nos arquivos do lote; `domains/medicine/employees.ts:21-29`, `repositories/health-exams.ts:132-138`, `overview-core.ts:66-82`                                                                                              |
+| Menu sem perda de itens                                                                                                                 | `nav-menu.tsx:104-115`; o menu não filtra por papel, igual à develop                                                                                                                                                            |
+| Sem export ou arquivo duplicado em `*/medicine/`                                                                                        | listagem dos diretórios                                                                                                                                                                                                         |
+
+INFO preexistente, fora dos contratos novos: a ficha `/employees/[id]` já mostrava CPF e caminho de certificado antes do lote.

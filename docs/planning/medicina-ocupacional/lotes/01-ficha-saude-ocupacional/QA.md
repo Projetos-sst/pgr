@@ -150,3 +150,30 @@ não provava nada. As medidas acima vêm de emulação real do viewport.
 - a tela de `client` no navegador;
 - o estado vazio de collaborator no navegador;
 - o spec Playwright automatizado.
+
+## 7. Regressão após a integração da #112 (2026-10-21, noite)
+
+Base: merge `7ac18cd` (`origin/develop` = `7793fca`, com as migrations 0000–0056). Ambiente: o mesmo `qa-pg16`, banco
+descartável `sst_test`. Os números da §3 são históricos; os desta seção são novos.
+
+| Comando                                                                          | Resultado literal                                                                                                                                                                                                        |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run check`                                                                  | exit 0 · `All matched files use Prettier code style!` · `✖ 4 problems (0 errors, 4 warnings)` (os mesmos `no-img-element`) · `Test Suites: 182 passed, 182 total` · `Tests: 1779 passed, 1779 total`                     |
+| Integração completa (`--selectProjects integration --runInBand`), duas execuções | `Test Suites: 5 skipped, 171 passed, 171 of 176 total` · `Tests: 14 skipped, 1359 passed, 1373 total` · 0 falhas, nas duas                                                                                               |
+| Suítes skipped (JSON do jest)                                                    | `pdf/pgr-docx-live`, `platform/team`, `webhooks/clerk-membership`, `pdf/gotenberg-e2e`, `shared/db/smoke`: as mesmas da §3, nenhuma da Medicina                                                                          |
+| Suítes de Medicina, Lote 01 + NOB-98 (JSON do jest)                              | `health-exams-filters` 11 · `medicine-employees` 11 · `rest-medicine` 14 · `overview` 11 · `health-exams-isolation` 6 · `platform/medical-risk-sources` 9 · `platform/risk-authorizations` 13 → **75 passed, 0 skipped** |
+
+Cobertura dos pontos pedidos na revalidação, pelas suítes acima:
+
+- filtro por empresa sem vazamento no mesmo escritório: `health-exams-filters`, `medicine-employees`, `rest-medicine`;
+- tenant diferente → vazio ou `NOT_FOUND`: `health-exams-filters`, `medicine-employees`, `overview`, `health-exams-isolation`;
+- Medicina desabilitada → `FORBIDDEN`, empresa fora do painel, exames ocultos sem apagar: `medicine-employees`, `overview`,
+  `health-exams-filters`;
+- gravação: criar exame com Medicina ligada → ok; sem Medicina → `FORBIDDEN` (`health-exams-filters`);
+- payload sem `notes`, `certificatePath` ou CPF: `overview`.
+
+**Não refeito na base nova:**
+
+- a jornada no navegador da §5, incluindo o F5 após registrar exame. A porta 3001 estava ocupada por outro `next dev` que não é
+  do agente, e a jornada exige o login do Carlos. O código do lote não mudou na integração; a regressão ficou com os testes acima;
+- o spec Playwright `protected`: continua bloqueado, sem `E2E_CLERK_*` em `.env`, `.env.local` ou no ambiente.
