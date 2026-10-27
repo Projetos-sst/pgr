@@ -83,6 +83,105 @@ const request = (path: string, body: unknown, tenant = "org_a", role = "owner") 
     const update = await updateCompanyAction(I.companyA, company);
     expect(!update.ok && update.error.code).toBe("DUPLICATE");
   });
+  it("selects independent modules at registration, keeps shared identities and records the authenticated actor", async () => {
+    const result = await createCompanyAction({
+      ...company,
+      initialModules: ["medicine"],
+      moduleReason: "Contrato autorizado pela empresa",
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(
+      await admin`select module, enabled from company_modules where company_id=${result.data.id}`,
+    ).toEqual([expect.objectContaining({ module: "medicine", enabled: true })]);
+    expect(
+      await admin`select changed_by, previous_enabled, enabled, reason from company_module_events where company_id=${result.data.id}`,
+    ).toEqual([
+      expect.objectContaining({
+        changed_by: "owner",
+        previous_enabled: false,
+        enabled: true,
+        reason: "Contrato autorizado pela empresa",
+      }),
+    ]);
+    expect((await admin`select plan from orgs where id='org_a'`)[0].plan).toBe("free");
+    expect(await admin`select id from billing_contracts`).toHaveLength(0);
+  });
+  it("enforces the owner rule through Action and REST before creating a company", async () => {
+    const input = {
+      ...company,
+      initialModules: ["pgr" as const],
+      moduleReason: "Tentativa de habilitação",
+    };
+    (requireOfficeStaff as jest.Mock).mockResolvedValue({
+      userId: "collab",
+      tenantId: "org_a",
+      role: "collaborator",
+      plan: "free",
+    });
+    const result = await createCompanyAction(input);
+    expect(!result.ok && result.error.code).toBe("FORBIDDEN");
+    expect(
+      (await COMPANY_POST(request("companies", input, "org_a", "collaborator"))).status,
+    ).toBe(403);
+    expect(
+      await admin`select id from companies where cnpj='12ABC34501DE35'`,
+    ).toHaveLength(0);
+    expect((await createCompanyAction(company)).ok).toBe(true);
+  });
+  it("rolls back the company and modules if the initial audit event cannot be written", async () => {
+    await admin`revoke insert on company_module_events from app_runtime`;
+    try {
+      expect(
+        (
+          await createCompanyAction({
+            ...company,
+            initialModules: ["pgr", "medicine"],
+            moduleReason: "Atomicidade",
+          })
+        ).ok,
+      ).toBe(false);
+      expect(
+        await admin`select id from companies where cnpj='12ABC34501DE35'`,
+      ).toHaveLength(0);
+    } finally {
+      await admin`grant insert on company_module_events to app_runtime`;
+    }
+  });
+  it("requires a reason, rejects duplicate/unknown modules and preserves the default with none selected", async () => {
+    expect(
+      (await COMPANY_POST(request("companies", { ...company, initialModules: ["pgr"] })))
+        .status,
+    ).toBe(422);
+    expect(
+      (
+        await COMPANY_POST(
+          request("companies", {
+            ...company,
+            initialModules: ["pgr", "pgr"],
+            moduleReason: "Teste",
+          }),
+        )
+      ).status,
+    ).toBe(422);
+    expect(
+      (
+        await COMPANY_POST(
+          request("companies", {
+            ...company,
+            initialModules: ["admin"],
+            moduleReason: "Teste",
+          }),
+        )
+      ).status,
+    ).toBe(422);
+    const result = await createCompanyAction(company);
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect(
+        await admin`select id from company_modules where company_id=${result.data.id}`,
+      ).toHaveLength(0);
+  });
   it("retains the database uniqueness guarantee under concurrent submissions", async () => {
     const results = await Promise.all([
       createCompanyAction(company),

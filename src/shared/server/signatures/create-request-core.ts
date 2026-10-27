@@ -14,6 +14,8 @@ import { buildPublicSignatureUrl } from "@/shared/domains/signatures/public-url"
 import { FREE_SIGNATURE_MONTHLY_QUOTA, isSignatureAvailable } from "@/shared/tenant/plan";
 import { QuotaExceededError } from "@/shared/errors/quota-exceeded-error";
 import * as repo from "@/shared/db/repositories/signature-requests";
+import { assertPgrBillingExportAllowed } from "@/shared/db/repositories/billing-export";
+import { assertPgrDocumentApproval } from "@/shared/server/pgr/document-approval-core";
 
 export type CreateRequestCoreInput = {
   targetType: SignatureTargetType;
@@ -43,6 +45,10 @@ export async function createSignatureRequestCore(
   input: CreateRequestCoreInput,
 ): Promise<CreateRequestCoreResult> {
   const payload = getPayloadSchema(input.targetType).parse(input.payload);
+  if (input.targetType === "pgr" && input.targetId) {
+    await assertPgrBillingExportAllowed(ctx.tenantId, input.targetId);
+    await assertPgrDocumentApproval(ctx.tenantId, input.targetId);
+  }
 
   const monthlyCount = await repo.countRequestsInCurrentMonth(ctx.tenantId);
   if (!isSignatureAvailable(ctx.plan, monthlyCount)) {

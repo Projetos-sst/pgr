@@ -434,6 +434,7 @@ function PgrEpiRelationPanel({ items }: { items: PgrEpiRelationItem[] }) {
 /** Etapa "Documentos e PDF" do editor de PGR — compõe os painéis. */
 export function PgrDocumentsTab({
   billingExportBlocked = false,
+  billingDemonstration = false,
   pgrId,
   pgrLabel,
   linkedDocuments,
@@ -443,6 +444,7 @@ export function PgrDocumentsTab({
 }: {
   pgrId: string;
   billingExportBlocked?: boolean;
+  billingDemonstration?: boolean;
   pgrLabel: string;
   linkedDocuments: DocumentListItem[];
   linkedTotal: number;
@@ -457,11 +459,29 @@ export function PgrDocumentsTab({
           role="status"
           className="rounded-xl border border-amber-400 bg-amber-50 p-5 text-slate-900"
         >
-          <h2 className="font-bold">Impressão e exportação indisponíveis no teste</h2>
+          <h2 className="font-bold">
+            {billingDemonstration ? "Downloads de demonstração" : "Emissão indisponível"}
+          </h2>
           <p>
             Você pode preparar os dados. A emissão de documentos exige a contratação do
             PGR.
           </p>
+          {billingDemonstration ? (
+            <div className="my-3 flex flex-wrap gap-3">
+              <p className="w-full">
+                PDF e DOCX com a marca DEMONSTRAÇÃO — TESTE GRÁTIS, sem limite de
+                downloads nesta etapa. Emissão, assinatura e impressão pelo sistema
+                permanecem bloqueadas. Arquivos baixados podem ser alterados ou impressos
+                fora da plataforma.
+              </p>
+              <a className="underline" href={`/api/v1/pgr/${pgrId}/docx?format=docx`}>
+                Baixar DOCX de demonstração
+              </a>
+              <a className="underline" href={`/api/v1/pgr/${pgrId}/docx?format=pdf`}>
+                Baixar PDF de demonstração
+              </a>
+            </div>
+          ) : null}
           <Link href="/configuracoes/planos" className="underline">
             Consultar contratação
           </Link>

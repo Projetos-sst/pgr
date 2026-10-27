@@ -161,3 +161,37 @@ it("blocks missing assessments and incomplete quantitative readings", () => {
     }).issues.map((i) => i.code),
   ).toContain("measurement_incomplete");
 });
+it("uses the SEG-13 technical warnings with an assigned independent reviewer while retaining identity and measurement blockers", () => {
+  const base = risk();
+  const report = checkPgrReadiness(
+    { ...data, ges: [{ ...data.ges[0], risks: [base] }] },
+    extras,
+    bands,
+    { reviewWorkflow: true },
+  );
+  expect(report.issues).toContainEqual(
+    expect.objectContaining({ code: "classification_changed", severity: "warning" }),
+  );
+  expect(report.issues).toContainEqual(
+    expect.objectContaining({ code: "plan_incomplete", severity: "warning" }),
+  );
+  const quantitative = checkPgrReadiness(
+    {
+      ...data,
+      ges: [
+        {
+          ...data.ges[0],
+          risks: [
+            { ...base, assessment: { ...base.assessment!, criterion: "quantitative" } },
+          ],
+        },
+      ],
+    },
+    extras,
+    bands,
+    { reviewWorkflow: true },
+  );
+  expect(quantitative.issues).toContainEqual(
+    expect.objectContaining({ code: "measurement_incomplete", severity: "blocking" }),
+  );
+});

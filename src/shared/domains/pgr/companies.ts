@@ -4,6 +4,7 @@ import { normalizeCnpj } from "./cnpj";
 
 import { cnpjSchema, riskGradeSchema } from "./validation";
 import { optionalString, optionalUrl, requiredString } from "./form-fields";
+import { companyModuleSchema } from "../platform/company-modules";
 
 export type { Company } from "@/shared/db/schema";
 export type { CompanyOption } from "@/shared/db/repositories/companies";
@@ -62,6 +63,29 @@ export const companyInputSchema = z.object({
 
 export type CompanyInput = z.input<typeof companyInputSchema>;
 export type CompanyValues = z.output<typeof companyInputSchema>;
+
+/** SEG-05: explicit selection; omission preserves the existing API default of no modules. */
+export const companyCreateSchema = companyInputSchema
+  .extend({
+    initialModules: z
+      .array(companyModuleSchema)
+      .max(2)
+      .default([])
+      .refine(
+        (modules) => new Set(modules).size === modules.length,
+        "Selecione cada módulo somente uma vez.",
+      ),
+    moduleReason: z.string().trim().max(500).default(""),
+  })
+  .superRefine((input, context) => {
+    if (input.initialModules.length && !input.moduleReason)
+      context.addIssue({
+        code: "custom",
+        path: ["moduleReason"],
+        message: "Informe a referência da contratação ou o motivo da habilitação.",
+      });
+  });
+export type CompanyCreateInput = z.input<typeof companyCreateSchema>;
 
 export type CompanyListItem = {
   pgrEnabled: boolean;

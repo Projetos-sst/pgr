@@ -32,8 +32,11 @@ import { startCommercialTrialAction } from "@/shared/server/actions/platform/bil
 import {
   assertPgrBillingExportAllowed,
   companyBillingExportAllowed,
+  pgrBillingPreviewMode,
 } from "@/shared/db/repositories/billing-export";
 import { generatePgrPdf } from "@/shared/server/platform/pgr-pdf-core";
+import { generatePgrDocx } from "@/shared/server/platform/pgr-docx-core";
+import { extractDocxText } from "@/shared/integrations/docx/template-engine";
 import { htmlToPdf } from "@/shared/integrations/pdf/gotenberg";
 import { getSignedDownloadUrl } from "@/shared/integrations/storage/documents-storage";
 import { enqueuePgrPdfBatchAction } from "@/shared/server/actions/documents/pdf-batch";
@@ -41,6 +44,8 @@ import { downloadDocumentAction } from "@/shared/server/actions/documents/downlo
 import { GET as download } from "@/app/api/v1/documents/[id]/download/route";
 import { GET as pdf } from "@/app/api/v1/pgr/[id]/pdf/route";
 import { POST as startRestTrial } from "@/app/api/billing/trials/route";
+import { POST as docxPost } from "@/app/api/v1/pgr/[id]/docx/route";
+import { createSignatureRequestCore } from "@/shared/server/signatures/create-request-core";
 import { createBillingOffer } from "@/shared/server/platform/billing-catalog-core";
 import { startCommercialCheckout } from "@/shared/server/platform/billing-checkout-core";
 import { simulateCommercialPayment } from "@/shared/server/platform/billing-subscriptions-core";
@@ -96,19 +101,94 @@ const owner = {
       expect(+again.endsAt).toBeLessThan(Date.now());
       expect((await getCommercialTrial(owner, I.companyA)).status).toBe("expired");
     });
-    it("blocks PDF generation, binary REST and queued emission before calling providers", async () => {
+    it("allows only one trial for the normalized CNPJ across offices without exposing the private registry", async () => {
+      await admin`update companies set cnpj='11.222.333/0001-81' where id=${I.companyB}`;
+      await admin`insert into users (id) values ('owner-b')`;
+      await admin`insert into org_memberships (org_id,user_id,role) values ('org_b','owner-b','owner')`;
+      const results = await Promise.allSettled([
+        startCommercialTrial(owner, { companyId: I.companyA }),
+        startCommercialTrial(
+          { ...owner, tenantId: "org_b", userId: "owner-b" },
+          { companyId: I.companyB },
+        ),
+      ]);
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      expect(await admin`select id from billing_trials`).toHaveLength(1);
+      expect(await admin`select cnpj_hash from billing_trial_claims`).toHaveLength(1);
+      await expect(
+        withOrgTx(runtime, "org_a", (tx) => tx`select * from billing_trial_claims`),
+      ).rejects.toThrow();
+    });
+    it("requires a valid CNPJ before starting a new trial", async () => {
+      await admin`update companies set cnpj=null where id=${I.companyA}`;
+      await expect(
+        startCommercialTrial(owner, { companyId: I.companyA }),
+      ).rejects.toMatchObject({ code: "VALIDATION" });
+      expect(await admin`select id from billing_trials`).toHaveLength(0);
+    });
+    it("does not transfer an active trial to a different CNPJ after editing the company", async () => {
       await startCommercialTrial(owner, { companyId: I.companyA });
-      await expect(generatePgrPdf("org_a", I.pgrA)).rejects.toMatchObject({
-        code: "FORBIDDEN",
-      });
-      expect(htmlToPdf).not.toHaveBeenCalled();
+      await admin`update companies set cnpj='12ABC34501DE35' where id=${I.companyA}`;
+      expect(await pgrBillingPreviewMode("org_a", I.pgrA)).toBe("blocked");
+      await expect(
+        startCommercialTrial(owner, { companyId: I.companyA }),
+      ).rejects.toMatchObject({ code: "VALIDATION" });
+      expect(await admin`select id from billing_trials`).toHaveLength(1);
+      expect(await admin`select cnpj_hash from billing_trial_claims`).toHaveLength(1);
+    });
+    it("allows watermarked preview PDFs but blocks final issuance, generic signatures and queued emission", async () => {
+      await startCommercialTrial(owner, { companyId: I.companyA });
+      await generatePgrPdf("org_a", I.pgrA);
+      expect(htmlToPdf).toHaveBeenCalledWith(
+        expect.stringContaining("DEMONSTRAÇÃO — TESTE GRÁTIS"),
+      );
       const response = await pdf(
         new NextRequest(`http://localhost/api/v1/pgr/${I.pgrA}/pdf`),
         { params: Promise.resolve({ id: I.pgrA }) },
       );
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(200);
+      const issue = await docxPost(
+        new NextRequest(`http://localhost/api/v1/pgr/${I.pgrA}/docx`, {
+          method: "POST",
+          body: JSON.stringify({
+            purpose: "issue",
+            format: "docx",
+            expectedSourceSha256: "a".repeat(64),
+          }),
+        }),
+        { params: Promise.resolve({ id: I.pgrA }) },
+      );
+      expect(issue.status).toBe(403);
+      await expect(
+        createSignatureRequestCore(owner, {
+          targetType: "pgr",
+          targetId: I.pgrA,
+          payload: {
+            documentTitle: "Teste",
+            companyName: "Empresa",
+            workUnitName: null,
+            responsibleName: null,
+            issuedAt: null,
+            validUntil: null,
+            revisionNumber: null,
+          },
+        }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(await admin`select id from signature_requests`).toHaveLength(0);
       expect((await enqueuePgrPdfBatchAction([I.pgrA])).ok).toBe(false);
       expect(await admin`select * from jobs`).toHaveLength(0);
+    });
+    it("marks the actual DOCX template output on the server without granting final document access", async () => {
+      await startCommercialTrial(owner, { companyId: I.companyA });
+      const document = await generatePgrDocx("org_a", I.pgrA, {
+        format: "docx",
+        purpose: "preview",
+      });
+      expect(extractDocxText(document.file)).toContain("DEMONSTRAÇÃO — TESTE GRÁTIS");
+      expect(document.provenance.fileSha256).toMatch(/^[a-f0-9]{64}$/);
+      await expect(assertPgrBillingExportAllowed("org_a", I.pgrA)).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
     });
     it("blocks cached GED downloads even after expiry hides the PGR through RLS", async () => {
       await admin`delete from company_modules where company_id=${I.companyA} and module='pgr'`;

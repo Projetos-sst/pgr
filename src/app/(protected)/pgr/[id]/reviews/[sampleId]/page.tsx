@@ -1,6 +1,6 @@
-import { DownloadDocumentButton } from "../../../../documents/_components/download-document-button";
 import Link from "next/link";
-import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { requireTenantContext } from "@/shared/auth/require-tenant-context";
+import { ReviewSampleDownloadButton } from "../reviewer-access";
 import { getReviewSampleAction } from "@/shared/server/actions/pgr/document-reviews";
 import { resolvePageParams } from "@/shared/pagination";
 import { PageHeader } from "../../../../_ui/list";
@@ -13,7 +13,7 @@ export default async function ReviewSamplePage({
   params: Promise<{ id: string; sampleId: string }>;
   searchParams: Promise<{ page?: string }>;
 }) {
-  await requireOfficeStaffPage();
+  const ctx = await requireTenantContext();
   const { id, sampleId } = await params;
   const { page } = resolvePageParams({ page: Number((await searchParams).page) });
   const result = await getReviewSampleAction(id, sampleId, { page });
@@ -36,14 +36,16 @@ export default async function ReviewSamplePage({
           ? "Os dados atuais mudaram. Gere nova amostra para revalidar o documento corrigido."
           : "Os dados atuais correspondem à amostra."}
       </p>
-      <DownloadDocumentButton documentId={view.sample.documentId} />
+      <ReviewSampleDownloadButton pgrId={id} sampleId={sampleId} />
       <details>
         <summary>Identificação da versão analisada</summary>
         <p className="text-sm break-all">Arquivo: {view.sample.fileSha256}</p>
         <p className="text-sm break-all">Dados: {view.sample.snapshotSha256}</p>
         <p className="text-sm break-all">Modelo: {view.sample.templateSha256}</p>
       </details>
-      <NewSampleForm pgrId={id} supersedesSampleId={sampleId} />
+      {ctx.role !== "client" ? (
+        <NewSampleForm pgrId={id} supersedesSampleId={sampleId} />
+      ) : null}
       {view.canRecordDecision ? (
         <ReviewDecisionForm
           key={view.latestDecision?.id ?? "new"}

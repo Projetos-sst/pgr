@@ -107,6 +107,16 @@ const NAV: NavEntry[] = [
     items: [
       { href: "/medicine", label: "Painel", iconName: "clipboard-list" },
       {
+        href: "/incidents",
+        label: "Incidentes, acidentes e CAT",
+        iconName: "alert-circle",
+      },
+      {
+        href: "/psychosocial/campaigns",
+        label: "Avaliação psicossocial",
+        iconName: "heart",
+      },
+      {
         href: "/risk-authorizations",
         label: "Autorizações de riscos",
         iconName: "shield",

@@ -10,6 +10,7 @@ import { getLatestRequestByTarget } from "@/shared/db/repositories/signature-req
 import { AlreadySignedError } from "@/shared/errors/already-signed-error";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
+import { assertPgrDocumentApproval } from "./document-approval-core";
 
 const TARGET_TYPE = "pgr" as const;
 
@@ -58,4 +59,5 @@ export async function assertPgrPublishable(
 ): Promise<void> {
   const { signatureState } = await loadPgrLockState(tenantId, pgrId);
   if (signatureState !== "signed") throw new ValidationError(NOT_SIGNED_MESSAGE);
+  await assertPgrDocumentApproval(tenantId, pgrId);
 }

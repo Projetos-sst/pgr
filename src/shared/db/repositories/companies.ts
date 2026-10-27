@@ -21,6 +21,7 @@ import {
   type CompanyModule,
 } from "@/shared/domains/platform/company-modules";
 import { companyModuleScope } from "../schema/module-policy";
+import { companyModules, companyModuleEvents } from "../schema/company-modules";
 
 export type ListCompaniesParams = PageParams & {
   module?: CompanyModule;
@@ -175,6 +176,7 @@ export async function getCompanyById(orgId: string, id: string): Promise<Company
 export async function createCompany(
   orgId: string,
   input: CompanyValues,
+  activation?: { actor: string; modules: CompanyModule[]; reason: string },
 ): Promise<Company> {
   return auditedTenantWrite(orgId, "pgr.companies.write_rejected", () =>
     withOrg(orgId, async (tx) => {
@@ -182,6 +184,27 @@ export async function createCompany(
         .insert(companies)
         .values({ orgId, ...toCompanyColumns(input) })
         .returning();
+      if (activation?.modules.length) {
+        await tx.insert(companyModules).values(
+          activation.modules.map((module) => ({
+            orgId,
+            companyId: row.id,
+            module,
+            enabled: true,
+          })),
+        );
+        await tx.insert(companyModuleEvents).values(
+          activation.modules.map((module) => ({
+            orgId,
+            companyId: row.id,
+            module,
+            previousEnabled: false,
+            enabled: true,
+            changedBy: activation.actor,
+            reason: activation.reason,
+          })),
+        );
+      }
       return row;
     }),
   );

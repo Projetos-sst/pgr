@@ -262,8 +262,9 @@ export function CommercialPanel({
           <section className="rounded-xl border bg-white p-5">
             <h2 className="font-bold">Teste por 15 dias</h2>
             <p>
-              Sem cartão e sem cobrança automática. Durante o teste, impressão e
-              exportação de documentos ficam restritas.
+              Sem cartão e sem cobrança automática. Durante o teste, PDF e DOCX são
+              demonstrações com marca e downloads sem limite nesta etapa. Emissão,
+              assinatura e impressão pelo sistema ficam bloqueadas.
             </p>
             {trial ? (
               <p>

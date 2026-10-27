@@ -449,6 +449,41 @@
       "when": 1792685768372,
       "tag": "0063_commercial_trial_exports",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1793112797550,
+      "tag": "0064_questionnaire_document_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1793113080399,
+      "tag": "0065_questionnaire_trial_cnpj",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1793113538076,
+      "tag": "0066_questionnaire_review_rollout",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1793114875620,
+      "tag": "0067_questionnaire_restricted_reviewer",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1793116025722,
+      "tag": "0068_questionnaire_review_read_scope",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,16 @@ const zeroPending: DashboardPending = {
 };
 
 describe("buildNotifications", () => {
+  it("warns about declared PGR validity within 30 days without inferring a legal expiry", () => {
+    expect(buildNotifications({ ...zeroPending, pgrsDueSoon: 2 })).toEqual([
+      expect.objectContaining({
+        key: "pgrs_due_soon",
+        href: "/pgr",
+        severity: "medium",
+        description: expect.stringContaining("30 dias"),
+      }),
+    ]);
+  });
   it("sem pendências → lista vazia", () => {
     expect(buildNotifications(zeroPending)).toEqual([]);
   });

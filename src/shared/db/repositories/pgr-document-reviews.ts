@@ -95,6 +95,7 @@ export async function listPgrReviewSamples(
   page: PageParams = {},
 ) {
   return withOrg(ctx.tenantId, async (tx) => {
+    await tx.execute(sql`select set_config('app.current_actor',${ctx.userId},true)`);
     const [head] = await tx
       .select({ id: pgr.id })
       .from(pgr)
@@ -155,6 +156,7 @@ export async function getPgrReviewSample(
   page: PageParams = {},
 ) {
   return withOrg(ctx.tenantId, async (tx) => {
+    await tx.execute(sql`select set_config('app.current_actor',${ctx.userId},true)`);
     const [sample] = await tx
       .select()
       .from(samples)

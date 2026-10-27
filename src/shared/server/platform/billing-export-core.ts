@@ -1,2 +1,5 @@
 import "server-only";
-export { pgrBillingExportAllowed } from "@/shared/db/repositories/billing-export";
+export {
+  pgrBillingExportAllowed,
+  pgrBillingPreviewMode,
+} from "@/shared/db/repositories/billing-export";

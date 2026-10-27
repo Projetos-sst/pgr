@@ -1,5 +1,12 @@
 import "server-only";
-import { assertPgrBillingExportAllowed } from "@/shared/db/repositories/billing-export";
+import {
+  assertPgrBillingExportAllowed,
+  requirePgrBillingPreview,
+} from "@/shared/db/repositories/billing-export";
+import {
+  markDemonstrationDocx,
+  PGR_DEMONSTRATION_NOTICE,
+} from "@/shared/domains/pgr/pgr-docx/demonstration";
 
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -8,6 +15,7 @@ import path from "node:path";
 import { getPgrGenerationSnapshot } from "@/shared/db/repositories/pgr-generation-snapshot";
 import { checkPgrReadiness } from "@/shared/domains/pgr/pgr-readiness";
 import { pgrSnapshotHash } from "@/shared/server/pgr/pgr-readiness-core";
+import { checkDocumentApproval } from "@/shared/domains/pgr/document-approval";
 import { ValidationError } from "@/shared/errors/validation-error";
 import {
   buildPgrDocxData,
@@ -156,12 +164,16 @@ export async function generatePgrDocx(
 ): Promise<GeneratedPgrDocx> {
   const snapshot = await getPgrGenerationSnapshot(orgId, pgrId);
   if (!snapshot) throw new NotFoundError();
-  await assertPgrBillingExportAllowed(orgId, pgrId);
+  const mode =
+    options.purpose === "issue"
+      ? (await assertPgrBillingExportAllowed(orgId, pgrId), "full" as const)
+      : await requirePgrBillingPreview(orgId, pgrId);
   const { consolidated, extras, methodology } = snapshot;
   const readiness = checkPgrReadiness(
     consolidated,
     extras,
     methodology.classificationBands,
+    { reviewWorkflow: !!snapshot.approval?.assignment },
   );
   if (options.purpose === "issue") {
     if (
@@ -184,9 +196,11 @@ export async function generatePgrDocx(
     classificationBands: methodology.classificationBands,
   });
   content.emissionNotice =
-    options.purpose === "issue"
-      ? "Documento gerado após conferência de preenchimento. A geração não substitui revisão técnica ou assinatura."
-      : "PRÉVIA PARA CONFERÊNCIA — não representa documento revisado ou assinado.";
+    mode === "demonstration"
+      ? `${PGR_DEMONSTRATION_NOTICE} — sem emissão ou assinatura.`
+      : options.purpose === "issue"
+        ? "Documento gerado após conferência de preenchimento. A geração não substitui revisão técnica ou assinatura."
+        : "PRÉVIA PARA CONFERÊNCIA — não representa documento revisado ou assinado.";
   const data = buildPgrDocxData(content, { overrides: options.overrides });
 
   let template: Buffer;
@@ -195,13 +209,30 @@ export async function generatePgrDocx(
   } catch {
     throw new ReportUnavailableError();
   }
+  if (
+    options.purpose === "issue" &&
+    (snapshot.approval?.assignment || snapshot.approval?.required)
+  ) {
+    if (options.overrides && Object.keys(options.overrides).length)
+      throw new ValidationError(
+        "A emissão revisada usa o modelo aprovado sem alterações de texto avulsas. Registre alterações e solicite nova revisão.",
+      );
+    checkDocumentApproval(
+      snapshot.approval,
+      pgrSnapshotHash(snapshot),
+      createHash("sha256").update(template).digest("hex"),
+    );
+  }
   // `logoPath` veio da leitura `withOrg` deste tenant — o objeto é dele.
   const logo = extras.company.logoPath
     ? await downloadCompanyLogo(extras.company.logoPath)
     : null;
-  const { buffer, missingTags } = renderDocxTemplate(template, data, {
+  const rendered = renderDocxTemplate(template, data, {
     images: { [PGR_DOCX_LOGO_PLACEHOLDER]: logo },
   });
+  const { missingTags } = rendered;
+  const buffer =
+    mode === "demonstration" ? markDemonstrationDocx(rendered.buffer) : rendered.buffer;
   if (options.purpose === "issue" && missingTags.length)
     throw new ValidationError(
       "O modelo contém campos sem preenchimento. Revise o mapeamento antes de emitir.",

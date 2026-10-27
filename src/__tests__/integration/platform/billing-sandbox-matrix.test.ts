@@ -174,7 +174,7 @@ const owner = {
     it("applies tenant RLS, append-only grants, composite FKs and hardened helper execution", async () => {
       const tables =
         await admin`select relname,relrowsecurity from pg_class where relname like 'billing_%' and relkind='r'`;
-      expect(tables.length).toBe(12);
+      expect(tables.length).toBe(13);
       expect(tables.every((t) => t.relrowsecurity)).toBe(true);
       const auditPrivileges =
         await admin`select privilege_type from information_schema.role_table_grants where grantee='app_runtime' and table_name='billing_audit'`;

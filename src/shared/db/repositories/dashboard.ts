@@ -153,6 +153,16 @@ export async function getDashboardSummary(orgId: string): Promise<DashboardSumma
       .select({ n: countExpr })
       .from(pgr)
       .where(and(eq(pgr.orgId, orgId), lt(pgr.validUntil, today)));
+    const [{ n: pgrsDueSoon }] = await tx
+      .select({ n: countExpr })
+      .from(pgr)
+      .where(
+        and(
+          eq(pgr.orgId, orgId),
+          gte(pgr.validUntil, today),
+          lte(pgr.validUntil, addDaysIso(today, 30)),
+        ),
+      );
 
     const [{ n: controlsOverdue }] = await tx
       .select({ n: countExpr })
@@ -232,6 +242,7 @@ export async function getDashboardSummary(orgId: string): Promise<DashboardSumma
       actionPlansByLevel: fillActionPlansByLevel(plansByLevel),
       pending: {
         pgrsExpired,
+        pgrsDueSoon,
         controlsOverdue,
         episLowStock,
         episPendingReturn,

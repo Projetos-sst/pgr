@@ -9,12 +9,14 @@ import type { ActionResult } from "@/shared/server/result";
 import {
   companyInputSchema,
   type CompanyInput,
+  type CompanyCreateInput,
   type CompanyListItem,
 } from "@/shared/domains/pgr/companies";
 import { validateLogoFile } from "@/shared/domains/pgr/company-logo";
 import type { Paginated } from "@/shared/pagination";
 import * as repo from "@/shared/db/repositories/companies";
 import type { Company } from "@/shared/db/schema";
+import { registerCompany } from "@/shared/server/platform/company-registration-core";
 import {
   getSignedCompanyLogoUrl,
   putCompanyLogo,
@@ -47,13 +49,12 @@ export async function getCompanyAction(id: string): Promise<ActionResult<Company
 }
 
 export async function createCompanyAction(
-  input: CompanyInput,
+  input: CompanyCreateInput,
 ): Promise<ActionResult<Company>> {
   return officeAction(
     "pgr.companies.create",
-    async ({ tenantId }) => {
-      const data = companyInputSchema.parse(input);
-      const company = await repo.createCompany(tenantId, data);
+    async (ctx) => {
+      const company = await registerCompany(ctx, input);
       revalidatePath(BASE_PATH);
       return company;
     },

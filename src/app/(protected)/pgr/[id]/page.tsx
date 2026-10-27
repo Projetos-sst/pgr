@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { pgrBillingExportAllowed } from "@/shared/server/platform/billing-export-core";
+import { pgrBillingPreviewMode } from "@/shared/server/platform/billing-export-core";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getPgrAction } from "@/shared/server/actions/pgr/pgr";
@@ -31,7 +31,8 @@ export default async function PgrDetailPage({
   const pgrResult = await getPgrAction(id);
   if (!pgrResult.ok) notFound();
   const doc = pgrResult.data;
-  const billingExportBlocked = !(await pgrBillingExportAllowed(ctx.tenantId, doc.id));
+  const previewMode = await pgrBillingPreviewMode(ctx.tenantId, doc.id);
+  const billingExportBlocked = previewMode !== "full";
 
   // Uma rodada de leituras independentes para montar o editor em abas.
   const [
@@ -96,6 +97,7 @@ export default async function PgrDetailPage({
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 p-4 sm:p-8">
       <PgrEditorTabs
         billingExportBlocked={billingExportBlocked}
+        billingDemonstration={previewMode === "demonstration"}
         pgrId={doc.id}
         pgr={doc}
         isPublished={!!doc.publishedAt}

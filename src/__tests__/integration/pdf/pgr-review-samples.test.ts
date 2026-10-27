@@ -38,6 +38,9 @@ const visible = (text: string) => text.replace(/\s/g, "").toLocaleLowerCase("pt-
     ["physical", "Físico", "Agente físico fictício para revisão"],
     ["chemical", "Químico", "Agente químico fictício para revisão"],
     ["ergonomic", "Ergonômico", "Situação ergonômica fictícia para revisão"],
+    ["biological", "Biológico", "Agente biológico fictício para revisão"],
+    ["mechanical", "Mecânico", "Situação mecânica fictícia para revisão"],
+    ["psychosocial", "Psicossocial", "Fator psicossocial fictício para revisão"],
   ])(
     "maps a %s sample without mixing another company's inventory",
     async (agentType, label, description) => {

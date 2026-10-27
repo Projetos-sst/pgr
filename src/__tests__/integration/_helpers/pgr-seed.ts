@@ -49,7 +49,10 @@ const I = PGR_IDS;
  * chain (risk → assessment, control_measure; pgr → pgr_ges, pgr_revision).
  * Inserts run as the admin/owner connection (bypasses RLS).
  */
-export async function seedPgrBase(admin: ReturnType<typeof postgres>): Promise<void> {
+export async function seedPgrBase(
+  admin: ReturnType<typeof postgres>,
+  options: { reviewRollout?: boolean } = {},
+): Promise<void> {
   await admin.unsafe(
     `truncate table public.orgs, public.users restart identity cascade;`,
   );
@@ -129,9 +132,10 @@ export async function seedPgrBase(admin: ReturnType<typeof postgres>): Promise<v
       ('${I.controlMeasureA}','org_a','${I.riskA}','elimination',false),
       ('${I.controlMeasureB}','org_b','${I.riskB}','ppe',true);
 
-    insert into public.pgr (id, org_id, company_id, work_unit_id) values
-      ('${I.pgrA}','org_a','${I.companyA}','${I.workUnitA}'),
-      ('${I.pgrB}','org_b','${I.companyB}','${I.workUnitB}');
+    -- These PGRs, like the module fixtures above, represent pre-rollout documents.
+    insert into public.pgr (id, org_id, company_id, work_unit_id${options.reviewRollout === false ? "" : ", technical_review_required"}) values
+      ('${I.pgrA}','org_a','${I.companyA}','${I.workUnitA}'${options.reviewRollout === false ? "" : ",false"}),
+      ('${I.pgrB}','org_b','${I.companyB}','${I.workUnitB}'${options.reviewRollout === false ? "" : ",false"});
 
     insert into public.pgr_ges (id, org_id, pgr_id, ges_id) values
       ('${I.pgrGesA}','org_a','${I.pgrA}','${I.gesA}'),
