@@ -14,6 +14,10 @@ import {
   findLeftoverMarkers,
 } from "@/shared/integrations/docx/template-engine";
 import { docxToPdf } from "@/shared/integrations/pdf/gotenberg";
+import {
+  markDemonstrationDocx,
+  PGR_DEMONSTRATION_NOTICE,
+} from "@/shared/domains/pgr/pgr-docx/demonstration";
 async function main() {
   if (!process.env.GOTENBERG_URL)
     throw new Error("A preview requires the local test Gotenberg service.");
@@ -54,6 +58,14 @@ async function main() {
   if (pdf.subarray(0, 4).toString() !== "%PDF") throw new Error("Invalid PDF response.");
   await writeFile(path.join(output, "pgr-review-preview.docx"), result.buffer);
   await writeFile(path.join(output, "pgr-review-preview.pdf"), pdf);
+  const demonstration = markDemonstrationDocx(result.buffer);
+  if (!extractDocxText(demonstration).includes(PGR_DEMONSTRATION_NOTICE))
+    throw new Error("Trial demonstration is missing its mark.");
+  const demonstrationPdf = await docxToPdf(demonstration, "pgr-trial-demonstration.docx");
+  if (demonstrationPdf.subarray(0, 4).toString() !== "%PDF")
+    throw new Error("Invalid demonstration PDF response.");
+  await writeFile(path.join(output, "pgr-trial-demonstration.docx"), demonstration);
+  await writeFile(path.join(output, "pgr-trial-demonstration.pdf"), demonstrationPdf);
   const hash = (b: Buffer) => createHash("sha256").update(b).digest("hex");
   await writeFile(
     path.join(output, "manifest.json"),
@@ -63,6 +75,8 @@ async function main() {
         templateSha256: hash(template),
         docxSha256: hash(result.buffer),
         pdfSha256: hash(pdf),
+        demonstrationDocxSha256: hash(demonstration),
+        demonstrationPdfSha256: hash(demonstrationPdf),
       },
       null,
       2,

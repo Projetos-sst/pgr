@@ -26,6 +26,7 @@ export async function getPgrReadiness(orgId: string, pgrId: string) {
       snapshot.consolidated,
       snapshot.extras,
       snapshot.methodology.classificationBands,
+      { reviewWorkflow: !!snapshot.approval?.assignment },
     ),
     sourceSha256: pgrSnapshotHash(snapshot),
   };

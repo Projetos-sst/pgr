@@ -1,0 +1,74 @@
+[
+  {
+    "width": 390,
+    "section": "plans",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 390,
+    "section": "subscription",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 390,
+    "section": "invoices",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 390,
+    "section": "simulation",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 390,
+    "section": "admin",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 390,
+    "section": "portal",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 1440,
+    "section": "plans",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 1440,
+    "section": "subscription",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 1440,
+    "section": "invoices",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 1440,
+    "section": "simulation",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 1440,
+    "section": "admin",
+    "horizontalOverflow": false,
+    "errors": 0
+  },
+  {
+    "width": 1440,
+    "section": "portal",
+    "horizontalOverflow": false,
+    "errors": 0
+  }
+]

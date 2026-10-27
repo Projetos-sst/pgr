@@ -21,6 +21,7 @@ export type DashboardKpis = {
 
 export type DashboardPending = {
   pgrsExpired: number;
+  pgrsDueSoon?: number;
   controlsOverdue: number;
   episLowStock: number;
   episPendingReturn: number;

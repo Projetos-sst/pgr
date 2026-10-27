@@ -14,6 +14,7 @@ export function checkPgrReadiness(
   data: PgrConsolidated,
   extras: PgrDocxExtras,
   bands: ClassificationBand[],
+  options: { reviewWorkflow?: boolean } = {},
 ) {
   const issues: PgrReadinessIssue[] = [];
   const add = (
@@ -24,6 +25,7 @@ export function checkPgrReadiness(
     severity: "blocking" | "warning" = "blocking",
   ) => issues.push({ code, message, context, href, severity });
   const main = `/pgr/${data.pgr.id}`;
+  const technicalSeverity = options.reviewWorkflow ? "warning" : "blocking";
   if (!data.pgr.companyName.trim())
     add("company_name", "Informe a razão social.", "Empresa", main);
   if (!data.pgr.company?.cnpj || !isValidCnpj(data.pgr.company.cnpj))
@@ -83,7 +85,13 @@ export function checkPgrReadiness(
         );
       const assessment = risk.assessment;
       if (!assessment) {
-        add("assessment_missing", "Registre a avaliação do risco.", context, rHref);
+        add(
+          "assessment_missing",
+          "Registre a avaliação do risco.",
+          context,
+          rHref,
+          technicalSeverity,
+        );
         continue;
       }
       if (
@@ -99,6 +107,7 @@ export function checkPgrReadiness(
           "Probabilidade, severidade e nível calculado estão inconsistentes.",
           context,
           rHref,
+          technicalSeverity,
         );
       const expected = classify(assessment.riskLevel, bands);
       if (risk.result !== expected)
@@ -107,6 +116,7 @@ export function checkPgrReadiness(
           "A classificação não corresponde à metodologia atual. Revise a avaliação.",
           context,
           rHref,
+          technicalSeverity,
         );
       if (
         assessment.criterion === "quantitative" &&
@@ -126,6 +136,7 @@ export function checkPgrReadiness(
           "Confira as medidas e os campos pendentes do plano de ação.",
           context,
           rHref,
+          technicalSeverity,
         );
     }
   }

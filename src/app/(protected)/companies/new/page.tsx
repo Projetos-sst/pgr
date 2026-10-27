@@ -14,7 +14,7 @@ export default async function NewCompanyPage({
 }: {
   searchParams: SearchParams;
 }) {
-  await requireOfficeStaffPage();
+  const ctx = await requireOfficeStaffPage();
   const sp = await searchParams;
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-[22px] px-[30px] pt-7 pb-10">
@@ -25,7 +25,7 @@ export default async function NewCompanyPage({
         description="Empresa-cliente do escritório — raiz da cadeia do PGR"
       />
       <OnboardingTip stepKey="companies" show={sp.onboarding === "1"} />
-      <CompanyForm />
+      <CompanyForm canEnableModules={ctx.role === "owner"} />
     </div>
   );
 }

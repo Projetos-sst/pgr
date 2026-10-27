@@ -4,8 +4,10 @@ import { officeAction } from "@/shared/server/office-action";
 import * as core from "@/shared/server/pgr/document-review-core";
 import type { PageParams } from "@/shared/pagination";
 export async function listReviewSamplesAction(pgrId: string, page: PageParams = {}) {
-  return officeAction("pgr.review.list", (ctx) =>
-    core.listReviewSamples(ctx, pgrId, page),
+  return officeAction(
+    "pgr.review.list",
+    (ctx) => core.listReviewSamples(ctx, pgrId, page),
+    { tenantAccess: true },
   );
 }
 export async function getReviewSampleAction(
@@ -13,8 +15,10 @@ export async function getReviewSampleAction(
   sampleId: string,
   page: PageParams = {},
 ) {
-  return officeAction("pgr.review.get", (ctx) =>
-    core.getReviewSample(ctx, pgrId, sampleId, page),
+  return officeAction(
+    "pgr.review.get",
+    (ctx) => core.getReviewSample(ctx, pgrId, sampleId, page),
+    { tenantAccess: true },
   );
 }
 export async function createReviewSampleAction(pgrId: string, input: unknown) {

@@ -40,6 +40,14 @@ export function buildNotifications(pending: DashboardPending): AppNotification[]
     "high",
   );
   add(
+    pending.pgrsDueSoon ?? 0,
+    "pgrs_due_soon",
+    `${pending.pgrsDueSoon ?? 0} PGR(s) a vencer`,
+    "Vigência informada termina em até 30 dias. Confira a necessidade de revisão com o responsável.",
+    "/pgr",
+    "medium",
+  );
+  add(
     pending.controlsOverdue,
     "controls_overdue",
     `${pending.controlsOverdue} plano(s) de ação em atraso`,

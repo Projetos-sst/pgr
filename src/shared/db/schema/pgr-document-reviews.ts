@@ -16,6 +16,7 @@ import { orgs } from "./orgs";
 import { pgr } from "./pgr";
 import { documents } from "./documents";
 import type { PgrReviewDecisionInput } from "@/shared/domains/pgr/document-review";
+import { documentReviewReadScope } from "./document-review-policy";
 const tenant = sql`org_id=current_setting('app.current_org',true)`;
 const owner = sql`exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=current_setting('app.current_actor',true) and m.role in ('owner','org:admin'))`;
 export const pgrReviewSamples = pgTable(
@@ -42,6 +43,12 @@ export const pgrReviewSamples = pgTable(
   },
   (t) => [
     index("idx_pgr_review_samples").on(t.orgId, t.pgrId, t.createdAt),
+    pgPolicy("pgr_review_samples_actor_read", {
+      as: "restrictive",
+      for: "select",
+      to: appRuntimeRole,
+      using: documentReviewReadScope(t.orgId, t.pgrId),
+    }),
     unique("uq_pgr_review_sample_context").on(t.id, t.orgId, t.pgrId),
     foreignKey({
       columns: [t.supersedesSampleId, t.orgId, t.pgrId],
@@ -85,6 +92,12 @@ export const pgrReviewDecisions = pgTable(
   },
   (t) => [
     index("idx_pgr_review_decisions").on(t.orgId, t.sampleId, t.recordedAt),
+    pgPolicy("pgr_review_decisions_actor_read", {
+      as: "restrictive",
+      for: "select",
+      to: appRuntimeRole,
+      using: sql`exists(select 1 from public.pgr_review_samples s where s.id=${t.sampleId} and s.org_id=${t.orgId} and public.pgr_review_actor_allowed(s.org_id,s.pgr_id))`,
+    }),
     check(
       "pgr_review_decisions_status",
       sql`${t.status} in ('accepted','changes_requested')`,

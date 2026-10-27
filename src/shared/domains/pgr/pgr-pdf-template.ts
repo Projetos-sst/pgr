@@ -58,6 +58,7 @@ export type PgrFormHeader = {
 };
 
 export type PgrPdfOptions = {
+  demonstrationNotice?: string;
   /** Cor da capa e dos títulos (default `DEFAULT_COVER_COLOR`). */
   coverColor?: string;
   /** Logo da empresa como data URL (`null`/ausente = sem logo). */
@@ -668,6 +669,7 @@ h5 { font-size: 11px; margin: 10px 0 4px; color: #444; }
 .hierarchy-level h4 { margin: 0 0 4px; color: ${coverColor}; }
 .hierarchy-level ul { margin: 0 0 0 16px; }
 </style></head><body>
+${options.demonstrationNotice ? `<div style="position:fixed;top:0;left:0;right:0;text-align:center;color:#b91c1c;font-weight:bold;z-index:1000">${escapeHtml(options.demonstrationNotice)}</div>` : ""}
 ${coverBlock(data, { coverColor, generatedAt: options.generatedAt, logoDataUrl: options.logoDataUrl })}
 ${header}
 ${summaryBlock(sections)}

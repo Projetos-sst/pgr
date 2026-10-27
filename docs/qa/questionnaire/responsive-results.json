@@ -1,0 +1,62 @@
+[
+  {
+    "width": 390,
+    "state": "company-owner",
+    "horizontalOverflow": false,
+    "pageErrors": 0
+  },
+  {
+    "width": 390,
+    "state": "company-collaborator",
+    "horizontalOverflow": false,
+    "pageErrors": 0
+  },
+  {
+    "width": 390,
+    "state": "owner",
+    "horizontalOverflow": false,
+    "pageErrors": 0
+  },
+  {
+    "width": 390,
+    "state": "reviewer",
+    "horizontalOverflow": false,
+    "pageErrors": 0
+  },
+  {
+    "width": 390,
+    "state": "demo",
+    "horizontalOverflow": false,
+    "pageErrors": 0
+  },
+  {
+    "width": 1440,
+    "state": "company-owner",
+    "horizontalOverflow": false,
+    "pageErrors": 0
+  },
+  {
+    "width": 1440,
+    "state": "company-collaborator",
+    "horizontalOverflow": false,
+    "pageErrors": 0
+  },
+  {
+    "width": 1440,
+    "state": "owner",
+    "horizontalOverflow": false,
+    "pageErrors": 0
+  },
+  {
+    "width": 1440,
+    "state": "reviewer",
+    "horizontalOverflow": false,
+    "pageErrors": 0
+  },
+  {
+    "width": 1440,
+    "state": "demo",
+    "horizontalOverflow": false,
+    "pageErrors": 0
+  }
+]

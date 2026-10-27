@@ -1,4 +1,6 @@
 import "server-only";
+import { requirePgrBillingPreview } from "@/shared/db/repositories/billing-export";
+import { PGR_DEMONSTRATION_NOTICE } from "@/shared/domains/pgr/pgr-docx/demonstration";
 
 import { getPgrConsolidated } from "@/shared/db/repositories/pgr-consolidated";
 import { buildPgrHtml, type PgrPdfOptions } from "@/shared/domains/pgr/pgr-pdf-template";
@@ -38,9 +40,17 @@ export async function generatePgrPdf(
 ): Promise<GeneratedReport> {
   const data = await getPgrConsolidated(orgId, pgrId);
   if (!data) throw new NotFoundError();
+  const mode = await requirePgrBillingPreview(orgId, pgrId);
 
   const generatedAt = todayInSaoPaulo();
-  const html = buildPgrHtml(data, { ...options, generatedAt });
+  const html = buildPgrHtml(data, {
+    ...options,
+    generatedAt,
+    demonstrationNotice:
+      mode === "demonstration"
+        ? PGR_DEMONSTRATION_NOTICE
+        : "PRÉVIA PARA CONFERÊNCIA — documento sem revisão ou assinatura.",
+  });
   const pdf = await htmlToPdf(html);
   return { fileName: buildPgrPdfFileName(data, generatedAt), pdf };
 }

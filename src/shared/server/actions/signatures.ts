@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
 import {
@@ -31,6 +32,10 @@ export async function createSignatureRequest(
     "signatures.create",
     async (ctx) => {
       const data = createSignatureRequestSchema.parse(input);
+      if (data.targetType === "pgr")
+        throw new ValidationError(
+          "Crie a solicitação pela tela do documento para usar os dados e as permissões conferidos no servidor.",
+        );
       // Cota, token, hash, TTL, persistência e URL vivem no núcleo compartilhado (regra única).
       const result = await createSignatureRequestCore(ctx, {
         targetType: data.targetType,

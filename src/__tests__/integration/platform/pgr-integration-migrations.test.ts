@@ -101,7 +101,7 @@ const newTables = [
       });
     }, 120_000);
 
-    it("upgrades 0056 to 0059 preserving NOB-98 and Medicine Lote 01 records", async () => {
+    it("upgrades 0056 through the current journal preserving NOB-98 and Medicine Lote 01 records", async () => {
       const baseline = fs.mkdtempSync(path.join(os.tmpdir(), "pgr-0056-"));
       try {
         fs.mkdirSync(path.join(baseline, "meta"));
@@ -117,7 +117,7 @@ const newTables = [
           );
         await isolated(async (db) => {
           await migrate(drizzle(db), { migrationsFolder: baseline });
-          await seedPgrBase(db);
+          await seedPgrBase(db, { reviewRollout: false });
           await seedMedicine(db);
           await db`insert into medical_risk_sources (org_id,company_id,kind,title,version,reference,fingerprint,registered_by)
           select org_id,id,'external','Migration fixture','1','Fictitious reference','migration-fixture','fixture'
@@ -136,7 +136,7 @@ const newTables = [
             const records: Record<string, unknown> = {};
             for (const table of oldTables)
               records[table] = await db.unsafe(
-                `select to_jsonb(t) as data from public."${table}" t order by to_jsonb(t)::text`,
+                `select ${table === "pgr" ? "to_jsonb(t) - 'technical_review_required'" : "to_jsonb(t)"} as data from public."${table}" t order by to_jsonb(t)::text`,
               );
             return records;
           };
@@ -144,6 +144,11 @@ const newTables = [
           await migrate(drizzle(db), { migrationsFolder: folder });
           await assertFinal(db);
           expect(await read()).toEqual(before);
+          expect(
+            (await db`select technical_review_required from pgr`).every(
+              (row) => row.technical_review_required === false,
+            ),
+          ).toBe(true);
         });
       } finally {
         // Only remove the exact temporary folder created by this test.

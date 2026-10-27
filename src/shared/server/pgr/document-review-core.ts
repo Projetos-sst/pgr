@@ -15,6 +15,7 @@ import {
 import { ReportUnavailableError } from "@/shared/errors/report-unavailable-error";
 import { getPgrReadiness } from "./pgr-readiness-core";
 import type { PageParams } from "@/shared/pagination";
+import { assertDocumentReviewAccess } from "@/shared/db/repositories/pgr-document-approvals";
 const id = (value: string) => requiredUuid("Identificador inválido.").parse(value);
 export async function createReviewSample(
   ctx: TenantContext,
@@ -61,6 +62,7 @@ export async function listReviewSamples(
   page: PageParams = {},
 ) {
   const pgr = id(pgrId);
+  await assertDocumentReviewAccess(ctx, pgr);
   const rows = await repo.listPgrReviewSamples(ctx, pgr, page);
   const current = await getPgrReadiness(ctx.tenantId, pgr);
   return {
@@ -79,6 +81,7 @@ export async function getReviewSample(
   page: PageParams = {},
 ) {
   const pgr = id(pgrId);
+  await assertDocumentReviewAccess(ctx, pgr);
   const view = await repo.getPgrReviewSample(ctx, pgr, id(sampleId), page);
   const current = await getPgrReadiness(ctx.tenantId, pgr);
   return {

@@ -8,7 +8,12 @@ import {
   updateCompanyAction,
   uploadCompanyLogoAction,
 } from "@/shared/server/actions/pgr/companies";
-import type { CompanyInput, Company } from "@/shared/domains/pgr/companies";
+import type { CompanyCreateInput, Company } from "@/shared/domains/pgr/companies";
+import {
+  COMPANY_MODULES,
+  COMPANY_MODULE_LABELS,
+  type CompanyModule,
+} from "@/shared/domains/platform/company-modules";
 import {
   maskCnpjInput,
   COMPANY_STATUSES,
@@ -92,8 +97,10 @@ function addressFrom(company?: Company): AddressValue {
 export function CompanyForm({
   company,
   logoUrl = null,
+  canEnableModules = false,
 }: {
   company?: Company;
+  canEnableModules?: boolean;
   /** URL assinada do logo já persistido (calculada no server, ver edit/page.tsx). */
   logoUrl?: string | null;
 }) {
@@ -107,6 +114,7 @@ export function CompanyForm({
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(logoUrl);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [initialModules, setInitialModules] = useState<CompanyModule[]>([]);
 
   async function handleLogoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
@@ -160,7 +168,7 @@ export function CompanyForm({
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
     const value = (key: string) => String(fd.get(key) ?? "");
-    const input: CompanyInput = {
+    const input: CompanyCreateInput = {
       cnpj: fields.cnpj,
       razaoSocial: fields.razaoSocial,
       nomeFantasia: fields.nomeFantasia,
@@ -169,11 +177,14 @@ export function CompanyForm({
       cnae: fields.cnae,
       mainActivity: fields.mainActivity,
       riskGrade: value("riskGrade"),
-      status: value("status") as CompanyInput["status"],
+      status: value("status") as CompanyCreateInput["status"],
       taxClassification: value("taxClassification"),
       logoPath,
       website: value("website"),
       ...address,
+      ...(!company && canEnableModules
+        ? { initialModules, moduleReason: value("moduleReason") }
+        : {}),
     };
 
     startTransition(async () => {
@@ -328,6 +339,47 @@ export function CompanyForm({
       </FormSection>
 
       <AddressFields value={address} onChange={setAddress} errors={errors} />
+
+      {!company ? (
+        <FormSection title="Serviços contratados">
+          {canEnableModules ? (
+            <>
+              {COMPANY_MODULES.map((module) => (
+                <label key={module} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={initialModules.includes(module)}
+                    onChange={(event) =>
+                      setInitialModules((previous) =>
+                        event.target.checked
+                          ? [...previous, module]
+                          : previous.filter((value) => value !== module),
+                      )
+                    }
+                  />
+                  {COMPANY_MODULE_LABELS[module]}
+                </label>
+              ))}
+              <TextField
+                label="Referência da contratação ou motivo"
+                name="moduleReason"
+                required={initialModules.length > 0}
+                error={errors.moduleReason}
+                isFullWidth
+              />
+              <FieldError message={errors.initialModules} />
+              <p className="text-text-muted text-xs sm:col-span-full">
+                Selecione apenas os serviços autorizados. Sem seleção, a empresa fica sem
+                módulos até habilitação pelo administrador. A seleção não gera cobrança.
+              </p>
+            </>
+          ) : (
+            <p className="text-text-muted text-sm sm:col-span-full">
+              O administrador habilitará os serviços contratados após o cadastro.
+            </p>
+          )}
+        </FormSection>
+      ) : null}
 
       <FieldError message={errors._} />
 
