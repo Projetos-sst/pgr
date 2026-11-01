@@ -1,6 +1,11 @@
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
-import { MEDICO_STATUS_LABELS } from "@/shared/domains/pgr/medicos";
+import {
+  formatProfessionalRegistration,
+  MEDICAL_AFFILIATION_LABELS,
+  MEDICAL_PROFESSION_LABELS,
+  MEDICO_STATUS_LABELS,
+} from "@/shared/domains/pgr/medicos";
 import {
   listMedicosAction,
   listMedicoClinicsAction,
@@ -112,7 +117,7 @@ export default async function MedicosPage({
               <GridHeader
                 template={TEMPLATE}
                 columns={[
-                  { header: "CRM" },
+                  { header: "Registro" },
                   { header: "Nome" },
                   { header: "Especialidade" },
                   { header: "Empresa" },
@@ -123,8 +128,17 @@ export default async function MedicosPage({
               />
               {result.data.rows.map((row, i) => (
                 <GridRow key={row.id} template={TEMPLATE} striped={i % 2 === 1}>
-                  <MonoCell href={`/medicos/${row.id}/edit`}>{row.crm}</MonoCell>
-                  <Cell className="text-text font-semibold">{row.name}</Cell>
+                  <MonoCell href={`/medicos/${row.id}/edit`}>
+                    {formatProfessionalRegistration(row)}
+                  </MonoCell>
+                  <Cell className="text-text font-semibold">
+                    {row.name}
+                    <span className="text-text-subtle block text-xs font-normal">
+                      {MEDICAL_PROFESSION_LABELS[row.profession]} ·{" "}
+                      {MEDICAL_AFFILIATION_LABELS[row.affiliation]}
+                      {row.rqe ? ` · RQE ${row.rqe}` : ""}
+                    </span>
+                  </Cell>
                   <Cell className={row.specialty ? undefined : "text-text-subtle"}>
                     {row.specialty ?? "—"}
                   </Cell>

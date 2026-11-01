@@ -50,6 +50,7 @@ const asOwner = (tenantId: string) =>
     const created = await createMedicoAction({
       name: "Dra. Helena Marques",
       crm: "CRM 12.345/MA",
+      registrationUf: "SP",
       specialty: "Medicina do Trabalho",
       clinic: "Clínica SanaVida",
       phone: "(98) 3232-1010",
@@ -67,6 +68,7 @@ const asOwner = (tenantId: string) =>
     const updated = await updateMedicoAction(created.data.id, {
       name: "Dra. Helena M. Marques",
       crm: "CRM 12.345/MA",
+      registrationUf: "SP",
       status: "inactive",
     });
     expect(updated.ok && updated.data.status).toBe("inactive");
@@ -79,10 +81,15 @@ const asOwner = (tenantId: string) =>
   });
 
   it("busca por nome ou CRM e filtra por status", async () => {
-    await createMedicoAction({ name: "Dr. Ricardo Antunes", crm: "CRM 09.881/MA" });
+    await createMedicoAction({
+      name: "Dr. Ricardo Antunes",
+      crm: "CRM 09.881/MA",
+      registrationUf: "SP",
+    });
     await createMedicoAction({
       name: "Dr. Paulo Nogueira",
       crm: "CRM 07.660/MA",
+      registrationUf: "SP",
       status: "inactive",
     });
 
@@ -100,19 +107,26 @@ const asOwner = (tenantId: string) =>
     await createMedicoAction({
       name: "Dra. Ana",
       crm: "CRM 20.001/MA",
+      registrationUf: "SP",
       clinic: "Clínica SanaVida",
     });
     await createMedicoAction({
       name: "Dr. Bruno",
       crm: "CRM 20.002/MA",
+      registrationUf: "SP",
       clinic: "Clínica SanaVida",
     });
     await createMedicoAction({
       name: "Dr. Caio",
       crm: "CRM 20.003/MA",
+      registrationUf: "SP",
       clinic: "Autônomo",
     });
-    await createMedicoAction({ name: "Dr. Davi", crm: "CRM 20.004/MA" }); // sem clínica
+    await createMedicoAction({
+      name: "Dr. Davi",
+      crm: "CRM 20.004/MA",
+      registrationUf: "SP",
+    }); // sem clínica
 
     const byClinic = await listMedicosAction({ clinic: "Clínica SanaVida" });
     expect(byClinic.ok && byClinic.data.total).toBe(2);
@@ -129,6 +143,7 @@ const asOwner = (tenantId: string) =>
     await createMedicoAction({
       name: "Dra. Ana",
       crm: "CRM 21.001/MA",
+      registrationUf: "SP",
       clinic: "Clínica A",
     });
     asOwner("org_b");
@@ -147,20 +162,32 @@ const asOwner = (tenantId: string) =>
   });
 
   it("CRM duplicado no mesmo tenant → DUPLICATE", async () => {
-    await createMedicoAction({ name: "A", crm: "CRM 01.111/MA" });
-    const dup = await createMedicoAction({ name: "B", crm: "CRM 01.111/MA" });
+    await createMedicoAction({ name: "A", crm: "CRM 01.111/MA", registrationUf: "SP" });
+    const dup = await createMedicoAction({
+      name: "B",
+      crm: "CRM 01.111/MA",
+      registrationUf: "SP",
+    });
     expect(dup.ok).toBe(false);
     if (!dup.ok) expect(dup.error.code).toBe("DUPLICATE");
   });
 
   it("nome/CRM vazio → VALIDATION", async () => {
-    const noName = await createMedicoAction({ name: "  ", crm: "CRM 1" });
+    const noName = await createMedicoAction({
+      name: "  ",
+      crm: "CRM 1",
+      registrationUf: "SP",
+    });
     expect(noName.ok).toBe(false);
     if (!noName.ok) expect(noName.error.code).toBe("VALIDATION");
   });
 
   it("não vaza entre tenants (cross-tenant → NOT_FOUND)", async () => {
-    const created = await createMedicoAction({ name: "Dra. Larissa", crm: "CRM 18/MA" });
+    const created = await createMedicoAction({
+      name: "Dra. Larissa",
+      crm: "CRM 18/MA",
+      registrationUf: "SP",
+    });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
 

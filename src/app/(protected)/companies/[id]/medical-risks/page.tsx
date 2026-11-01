@@ -48,6 +48,12 @@ export default async function MedicalRisksPage({
       <Link href={`/risk-authorizations/${id}`} className="text-primary underline">
         Indicação do autorizador, permissões profissionais e revisão dos riscos
       </Link>
+      <Link
+        href={`/companies/${id}/pcmso-coordinator`}
+        className="text-primary underline"
+      >
+        Coordenador do PCMSO (médico responsável e histórico)
+      </Link>
       <SourceForm
         companyId={id}
         pgrs={

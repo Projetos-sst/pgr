@@ -1,7 +1,11 @@
 import { medicoInputSchema } from "@/shared/domains/pgr/medicos";
 
 describe("medicoInputSchema", () => {
-  const base = { name: "Dra. Helena Marques", crm: "CRM 12.345/MA" };
+  const base = {
+    name: "Dra. Helena Marques",
+    crm: "CRM 12.345/MA",
+    registrationUf: "MA",
+  };
 
   it("aceita entrada mínima válida (status default active, opcionais undefined)", () => {
     const parsed = medicoInputSchema.parse(base);
@@ -51,5 +55,37 @@ describe("medicoInputSchema", () => {
     expect(parsed.specialty).toBeUndefined();
     expect(parsed.clinic).toBeUndefined();
     expect(parsed.phone).toBeUndefined();
+  });
+
+  it("padroniza categoria médico e vínculo interno; normaliza a UF", () => {
+    const parsed = medicoInputSchema.parse({ ...base, registrationUf: " ma " });
+    expect(parsed).toMatchObject({
+      profession: "physician",
+      affiliation: "internal",
+      registrationUf: "MA",
+    });
+    expect(parsed.rqe).toBeUndefined();
+  });
+
+  it("exige UF válida do conselho", () => {
+    expect(() => medicoInputSchema.parse({ name: base.name, crm: base.crm })).toThrow();
+    expect(() => medicoInputSchema.parse({ ...base, registrationUf: "XX" })).toThrow();
+  });
+
+  it("aceita RQE só para médico", () => {
+    expect(medicoInputSchema.parse({ ...base, rqe: "901" }).rqe).toBe("901");
+    const psychologist = medicoInputSchema.safeParse({
+      ...base,
+      profession: "psychologist",
+      rqe: "901",
+    });
+    expect(psychologist.success).toBe(false);
+    expect(
+      medicoInputSchema.parse({
+        ...base,
+        profession: "psychologist",
+        affiliation: "external",
+      }),
+    ).toMatchObject({ profession: "psychologist", affiliation: "external" });
   });
 });

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getMedicoAction } from "@/shared/server/actions/pgr/medicos";
+import { formatProfessionalRegistration } from "@/shared/domains/pgr/medicos";
 
 import { PageHeader } from "../../../_ui/list";
 import { MedicoForm } from "../../_components/medico-form";
@@ -26,13 +27,17 @@ export default async function EditMedicoPage({
         backHref="/medicos"
         icon={<MedicoIcon />}
         title="Editar médico"
-        description={m.crm}
+        description={formatProfessionalRegistration(m)}
       />
       <MedicoForm
         id={m.id}
         initial={{
           name: m.name,
           crm: m.crm,
+          profession: m.profession,
+          registrationUf: m.registrationUf,
+          rqe: m.rqe,
+          affiliation: m.affiliation,
           specialty: m.specialty,
           clinic: m.clinic,
           phone: m.phone,
