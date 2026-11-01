@@ -74,23 +74,24 @@ IDs `MED-EXE-NN`, separados dos `MED-DEC` do documento 04 (que não foi alterado
 
 ## 4. MED-23: funcionalidades complementares por dependência
 
-| Funcionalidade                     | Issue existente | Depende de                                   | Observação                                                                      |
-| ---------------------------------- | --------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| Afastamentos e alertas de retorno  | — (criar)       | Exames + regra 7.5.9                         | Atestado/CID em área clínica separada do ASO (MED-17)                           |
-| NTEP e documentos para INSS        | NOB-113         | Lista C oficial                              | Informativo; não reconhece nexo                                                 |
-| Programa de fadiga                 | — (criar)       | Portal do trabalhador                        | Sem dado clínico no RH                                                          |
-| Programa de doenças crônicas       | — (criar)       | Prontuário segregado                         | NR-7 7.5.8 II "a" (periodicidade para portadores)                               |
-| PPP                                | — (criar)       | Riscos (PGR) + exames + ASO                  | Integração com dados de Segurança                                               |
-| S-2220 (eSocial)                   | — (criar)       | ASO emitido + catálogo (Tabela 27)           | Preparar, validar, exportar; nunca afirmar envio sem protocolo                  |
-| Teleconsulta                       | NOB-120         | Identidade profissional + consentimento      | Requisitos de telemedicina (CFM) a conferir; sem consulta "válida" só por vídeo |
-| Leitura assistiva de laudos com IA | NOB-125         | Prontuário segregado + base legal e contrato | Sempre assistiva; sem envio de dado sensível a terceiro sem base legal          |
-| Portal do trabalhador              | NOB-122         | Perfis e autorização por escopo              | Entrega do ASO (MED-13)                                                         |
+| Funcionalidade                     | Issue existente  | Depende de                                   | Observação                                                                      |
+| ---------------------------------- | ---------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
+| Afastamentos e alertas de retorno  | NOB-139 (criada) | Exames + regra 7.5.9                         | Atestado/CID em área clínica separada do ASO (MED-17)                           |
+| NTEP e documentos para INSS        | NOB-113          | Lista C oficial                              | Informativo; não reconhece nexo                                                 |
+| Programa de fadiga                 | NOB-142 (criada) | Portal do trabalhador                        | Sem dado clínico no RH                                                          |
+| Programa de doenças crônicas       | NOB-143 (criada) | Prontuário segregado                         | NR-7 7.5.8 II "a" (periodicidade para portadores)                               |
+| PPP                                | NOB-141 (criada) | Riscos (PGR) + exames + ASO                  | Integração com dados de Segurança                                               |
+| S-2220 (eSocial)                   | NOB-140 (criada) | ASO emitido + catálogo (Tabela 27)           | Preparar, validar, exportar; nunca afirmar envio sem protocolo                  |
+| Teleconsulta                       | NOB-120          | Identidade profissional + consentimento      | Requisitos de telemedicina (CFM) a conferir; sem consulta "válida" só por vídeo |
+| Leitura assistiva de laudos com IA | NOB-125          | Prontuário segregado + base legal e contrato | Sempre assistiva; sem envio de dado sensível a terceiro sem base legal          |
+| Portal do trabalhador              | NOB-122          | Perfis e autorização por escopo              | Entrega do ASO (MED-13)                                                         |
 
 ## 5. Entregas
 
-| Data       | Entrega                                                                                          | Issue            | Branch / PR                                           | Testes                                   |
-| ---------- | ------------------------------------------------------------------------------------------------ | ---------------- | ----------------------------------------------------- | ---------------------------------------- |
-| 2026-11-01 | Identidade profissional (categoria, vínculo, UF, RQE) e coordenador do PCMSO por empresa/período | NOB-121, NOB-109 | `feature/NOB-121-identidade-profissional-coordenador` | unit + integração (Postgres efêmero), §6 |
+| Data       | Entrega                                                                                          | Issue            | Branch / PR                                                            | Testes                                      |
+| ---------- | ------------------------------------------------------------------------------------------------ | ---------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
+| 2026-11-01 | Identidade profissional (categoria, vínculo, UF, RQE) e coordenador do PCMSO por empresa/período | NOB-121, NOB-109 | `feature/NOB-121-identidade-profissional-coordenador` (PR #138, draft) | unit + integração (Postgres efêmero), §6    |
+| 2026-11-01 | Sugestões de prazo da NR-7 (7.5.11, 7.5.9, 7.5.8) e aviso do demissional na ficha                | NOB-109          | `feature/NOB-109-regras-nr7-sugestoes` (PR #139)                       | unit: fronteiras 134/135, 89/90, 29/30 dias |
 
 ## 6. Casos sintéticos cobertos (lista do pedido de execução)
 
