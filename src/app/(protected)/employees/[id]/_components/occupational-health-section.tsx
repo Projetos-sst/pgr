@@ -1,6 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import {
+  suggestDismissalExam,
+  type RiskGrade,
+} from "@/shared/domains/medicine/nr7-schedule-rules";
 import { toExamTimeline } from "@/shared/domains/medicine/timeline";
 import {
   EXAM_APTITUDE_LABELS,
@@ -38,6 +42,47 @@ function SectionShell({ children, action }: { children: ReactNode; action?: Reac
   );
 }
 
+export type DismissalContext = { contractEndOn: string; riskGrade: RiskGrade | null };
+
+/**
+ * Sugestão do demissional (NR-7 7.5.11, regra 2 da MED-20) para funcionário com
+ * data de desligamento e sem demissional registrado. Só sugere: a decisão de
+ * dispensar é do médico (MED-19). O último exame clínico é o exame registrado
+ * mais recente (cada registro é um exame clínico ocupacional).
+ */
+function DismissalSuggestion({
+  dismissal,
+  rows,
+}: {
+  dismissal: DismissalContext;
+  rows: HealthExamListItem[];
+}) {
+  if (rows.some((exam) => exam.examType === "dismissal")) return null;
+  const lastClinicalExamOn =
+    rows
+      .map((exam) => exam.performedAt)
+      .sort()
+      .at(-1) ?? null;
+  const s = suggestDismissalExam({ ...dismissal, lastClinicalExamOn });
+  return (
+    <div
+      role="note"
+      aria-label="Sugestão para o exame demissional"
+      className="rounded-card border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+    >
+      <p className="font-semibold">Sugestão para o demissional ({s.reference})</p>
+      <p>
+        Desligamento em {formatDate(dismissal.contractEndOn)}: exame clínico até{" "}
+        {formatDate(s.deadline)}. {s.reason}
+      </p>
+      <p className="text-[12px] text-amber-900">
+        Sugestão automática, sem valor de conclusão médica: confirme com o médico
+        responsável.
+      </p>
+    </div>
+  );
+}
+
 /**
  * Exames do funcionário na ficha (linha do tempo, mais recente primeiro). Só
  * existe quando a empresa tem Medicina habilitada — desabilitada, nada é
@@ -50,11 +95,13 @@ export function OccupationalHealthSection({
   moduleState,
   exams,
   today,
+  dismissal = null,
 }: {
   employeeId: string;
   moduleState: MedicineModuleState;
   exams: ActionResult<Paginated<HealthExamListItem>>;
   today: string;
+  dismissal?: DismissalContext | null;
 }) {
   if (moduleState === "disabled") return null;
 
@@ -102,6 +149,7 @@ export function OccupationalHealthSection({
   if (rows.length === 0) {
     return (
       <SectionShell>
+        {dismissal ? <DismissalSuggestion dismissal={dismissal} rows={rows} /> : null}
         <div className="glass-card flex flex-col items-center gap-3 px-4 py-6 text-center">
           <p className="text-text-subtle text-sm">
             Nenhum exame registrado para este funcionário.
@@ -116,6 +164,7 @@ export function OccupationalHealthSection({
 
   return (
     <SectionShell action={registerLink}>
+      {dismissal ? <DismissalSuggestion dismissal={dismissal} rows={rows} /> : null}
       <ol
         className="flex flex-col gap-2"
         aria-label="Exames, do mais recente ao mais antigo"
