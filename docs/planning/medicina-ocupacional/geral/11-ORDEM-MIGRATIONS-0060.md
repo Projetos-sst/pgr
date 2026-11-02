@@ -22,6 +22,13 @@
 | `origin/main` (produção)                     | `0052_platform_leads`                           | 1791521827882                 |
 | PRs comerciais (abertas, cumulativas)        | `0060`–`0063` comerciais; a #137 chega a `0068` | 1792675195470 a 1793116025722 |
 
+**Atualização (02/11/2026, NOB-152):** a Medicina seguiu na frente da pilha comercial. Estado das migrations:
+
+- já na `develop`: `0061_medico_user_links` (NOB-149, #143) e `0062_medical_exam_plans` (NOB-150, #144);
+- em PR: `0063_pcmso_documents` (NOB-151, #145) e `0064_aso_previews` (NOB-152), empilhada na #145.
+
+As comerciais continuam regenerando com `npm run db:generate` depois da última migration da Medicina que estiver na `develop`. A regra do §3 não muda.
+
 **Homologação:** o CD (`.github/workflows/cd.yml`) roda só em `develop` e `main`.
 
 - Nenhuma branch comercial passou pelo CD (`gh run list --workflow CD`: apenas `develop` e `main`). Logo, a homologação recebeu o journal da `develop`: 0000 a 0059.

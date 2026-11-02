@@ -3,6 +3,7 @@ import "server-only";
 import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 
 import type { EmployeeValues, EmployeeListItem } from "@/shared/domains/pgr/employees";
+import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
@@ -12,6 +13,7 @@ import { companies } from "../schema/companies";
 import { ges } from "../schema/ges";
 import { jobRoles } from "../schema/job-roles";
 import { gesJobRoles } from "../schema/ges-job-roles";
+import { hasAsoDocumentsTx } from "./aso";
 import { auditedTenantWrite } from "./audited-write";
 import {
   companyModuleSchema,
@@ -226,6 +228,11 @@ export async function updateEmployee(
 export async function deleteEmployee(orgId: string, id: string): Promise<boolean> {
   return auditedTenantWrite(orgId, "pgr.employees.write_rejected", () =>
     withOrg(orgId, async (tx) => {
+      // Prévias de ASO são histórico médico (NR-7 7.6.1.1): o funcionário não é apagado com elas.
+      if (await hasAsoDocumentsTx(tx, orgId, { employeeId: id }))
+        throw new EntityInUseError(
+          "Funcionário com prévia de ASO arquivada não pode ser excluído; altere a situação para desligado.",
+        );
       const rows = await tx
         .delete(employees)
         .where(and(eq(employees.orgId, orgId), eq(employees.id, id)))

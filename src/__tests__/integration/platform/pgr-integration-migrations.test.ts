@@ -132,18 +132,39 @@ const newTables = [
             "health_exams",
             "medical_risk_sources",
           ];
+          // Colunas acrescentadas depois da 0056 ficam fora da comparação e são conferidas à parte.
+          const addedColumns: Record<string, string[]> = {
+            health_exams: [
+              "company_id",
+              "company_origin",
+              "company_origin_confirmed_by",
+              "company_origin_confirmed_at",
+              "company_origin_note",
+            ],
+          };
           const read = async () => {
             const records: Record<string, unknown> = {};
-            for (const table of oldTables)
-              records[table] = await db.unsafe(
-                `select to_jsonb(t) as data from public."${table}" t order by to_jsonb(t)::text`,
+            for (const table of oldTables) {
+              const row = (addedColumns[table] ?? []).reduce(
+                (expr, column) => `${expr} - '${column}'`,
+                "to_jsonb(t)",
               );
+              records[table] = await db.unsafe(
+                `select ${row} as data from public."${table}" t order by (${row})::text`,
+              );
+            }
             return records;
           };
           const before = await read();
           await migrate(drizzle(db), { migrationsFolder: folder });
           await assertFinal(db);
           expect(await read()).toEqual(before);
+          // NOB-152 (MED-07): exames antigos ficam sem empresa de origem (não comprovada); nada é
+          // presumido a partir do vínculo atual do funcionário.
+          const [{ unverified, total }] =
+            await db`select count(*) filter (where company_id is null and company_origin is null)::int as unverified, count(*)::int as total from health_exams`;
+          expect(total).toBeGreaterThan(0);
+          expect(unverified).toBe(total);
         });
       } finally {
         // Only remove the exact temporary folder created by this test.
