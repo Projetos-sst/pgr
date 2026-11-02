@@ -57,6 +57,9 @@ export default async function MedicalRisksPage({
       >
         Coordenador do PCMSO (médico responsável e histórico)
       </Link>
+      <Link href={`/companies/${id}/pcmso-readiness`} className="text-primary underline">
+        Conferência dos dados do PCMSO
+      </Link>
       <SourceForm
         companyId={id}
         pgrs={

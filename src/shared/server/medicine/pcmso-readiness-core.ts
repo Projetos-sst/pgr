@@ -1,0 +1,64 @@
+import "server-only";
+
+import type { TenantContext } from "@/shared/auth/require-tenant-context";
+import { getCompanyById } from "@/shared/db/repositories/companies";
+import { listEmployees } from "@/shared/db/repositories/employees";
+import { listMedicos } from "@/shared/db/repositories/medicos";
+import { listCoordinatorAssignments } from "@/shared/db/repositories/pcmso-coordinators";
+import { buildExamProposal } from "@/shared/domains/medicine/exam-proposal";
+import { checkPcmsoReadiness } from "@/shared/domains/medicine/pcmso-readiness";
+import { canUseMedicalRisk } from "@/shared/domains/medicine/risk-sources";
+import { requiredUuid } from "@/shared/domains/pgr/form-fields";
+import { NotFoundError } from "@/shared/errors/not-found-error";
+import { PAGE_SIZE_MAX } from "@/shared/pagination";
+
+import { loadProposalSources } from "./exam-proposal-core";
+
+/**
+ * Conferência do PCMSO (NOB-148). As leituras sensíveis passam pelos repositórios de cada
+ * domínio: inventário e coordenador conferem empresa, tenant e módulo Medicina (RLS).
+ */
+export async function getPcmsoReadiness(ctx: TenantContext, companyId: string) {
+  const id = requiredUuid("Empresa inválida.").parse(companyId);
+  const company = await getCompanyById(ctx.tenantId, id);
+  if (!company) throw new NotFoundError();
+  const sources = await loadProposalSources(ctx, id);
+  const [history, active, onLeave, medicos] = await Promise.all([
+    listCoordinatorAssignments(ctx, id),
+    listEmployees(ctx.tenantId, { companyId: id, status: "active", pageSize: 1 }),
+    listEmployees(ctx.tenantId, { companyId: id, status: "on_leave", pageSize: 1 }),
+    listMedicos(ctx.tenantId, { status: "active", pageSize: PAGE_SIZE_MAX }),
+  ]);
+  const open = history.find((row) => row.endsOn === null) ?? null;
+  const usableRisks = sources
+    .filter((source) => !source.superseded)
+    .flatMap((source) =>
+      source.risks
+        .filter((risk) => canUseMedicalRisk(risk.status, source.freshness))
+        .map((risk) => ({
+          description: risk.content.description,
+          possibleInjuries: risk.content.possibleInjuries ?? null,
+        })),
+    );
+  return checkPcmsoReadiness({
+    companyId: id,
+    company: {
+      razaoSocial: company.razaoSocial,
+      cnpj: company.cnpj,
+      cnae: company.cnae,
+      mainActivity: company.mainActivity,
+      riskGrade: company.riskGrade,
+    },
+    activeEmployees: active.total + onLeave.total,
+    coordinator: open
+      ? {
+          medicoName: open.medicoName,
+          rqe: open.medicoRqe,
+          rqeExceptionReason: open.rqeExceptionReason,
+        }
+      : null,
+    proposal: buildExamProposal(sources),
+    usableRisks,
+    activePhysicians: medicos.rows.filter((m) => m.profession === "physician").length,
+  });
+}
