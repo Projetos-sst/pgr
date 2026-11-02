@@ -48,6 +48,9 @@ export default async function MedicalRisksPage({
       <Link href={`/risk-authorizations/${id}`} className="text-primary underline">
         Indicação do autorizador, permissões profissionais e revisão dos riscos
       </Link>
+      <Link href={`/companies/${id}/exam-proposal`} className="text-primary underline">
+        Proposta de exames a partir dos riscos validados
+      </Link>
       <SourceForm
         companyId={id}
         pgrs={
