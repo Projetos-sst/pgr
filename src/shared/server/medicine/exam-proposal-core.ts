@@ -29,11 +29,14 @@ export function getCatalogProcedure(code: string) {
 }
 
 /**
- * Proposta só leitura a partir de TODAS as fontes da empresa (a paginação do inventário
- * não pode esconder uma fonte vigente). Isolamento, empresa e módulo Medicina são
- * conferidos por `getMedicalRiskInventory` (withOrg + assertCompanyModuleTx + RLS).
+ * TODAS as fontes da empresa (a paginação do inventário não pode esconder uma fonte vigente).
+ * Isolamento, empresa e módulo Medicina são conferidos por `getMedicalRiskInventory`
+ * (withOrg + assertCompanyModuleTx + RLS).
  */
-export async function getExamProposal(ctx: TenantContext, companyId: string) {
+export async function loadProposalSources(
+  ctx: TenantContext,
+  companyId: string,
+): Promise<ProposalSource[]> {
   const sources: ProposalSource[] = [];
   for (let page = 1; ; page += 1) {
     const result = await getMedicalRiskInventory(ctx, companyId, {
@@ -58,5 +61,10 @@ export async function getExamProposal(ctx: TenantContext, companyId: string) {
     );
     if (sources.length >= result.total || result.rows.length === 0) break;
   }
-  return buildExamProposal(sources);
+  return sources;
+}
+
+/** Proposta só leitura a partir das fontes da empresa. */
+export async function getExamProposal(ctx: TenantContext, companyId: string) {
+  return buildExamProposal(await loadProposalSources(ctx, companyId));
 }
