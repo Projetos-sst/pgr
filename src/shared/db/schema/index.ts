@@ -281,6 +281,17 @@ export {
   type PcmsoCoordinatorAssignment,
 } from "./medicos";
 export {
+  medicalExamPlans,
+  medicalExamPlanItems,
+  medicalExamPlanEvents,
+  examPlanStatus,
+  examPlanItemOrigin,
+  examPlanItemDecision,
+  type MedicalExamPlan,
+  type MedicalExamPlanItem,
+  type MedicalExamPlanEvent,
+} from "./medical-exam-plans";
+export {
   healthExams,
   examType,
   examAptitude,

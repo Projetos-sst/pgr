@@ -435,6 +435,13 @@
       "when": 1793595575841,
       "tag": "0061_medico_user_links",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1793596845995,
+      "tag": "0062_medical_exam_plans",
+      "breakpoints": true
     }
   ]
 }
