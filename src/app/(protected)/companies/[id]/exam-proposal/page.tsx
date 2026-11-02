@@ -64,6 +64,12 @@ export default async function ExamProposalPage({
         backHref={`/companies/${id}/medical-risks`}
         description="Exames complementares sugeridos a partir dos riscos validados, com a referência da NR-7. O médico coordenador revisa, acrescenta ou retira; nada aqui foi aprovado."
       />
+      <Link
+        href={`/companies/${id}/exam-plan`}
+        className="text-primary text-sm underline"
+      >
+        Plano de exames (rascunho, revisão do coordenador e versões aprovadas)
+      </Link>
 
       <section
         aria-label="Avisos"

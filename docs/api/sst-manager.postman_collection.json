@@ -252,6 +252,16 @@
       "type": "string"
     },
     {
+      "key": "examPlanId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "examPlanItemId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "machineCatalogId",
       "value": "",
       "type": "string"
@@ -3651,6 +3661,210 @@
               "path": ["api", "v1", "me", "professional"]
             },
             "description": "Perfil profissional da conta da sessão (null sem vínculo aberto) e empresas em que é coordenador do PCMSO."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Plano de exames (NOB-150)",
+      "item": [
+        {
+          "name": "GET /companies/{id}/exam-plans (versões)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/exam-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "exam-plans"]
+            },
+            "description": "Versões do plano da empresa. 404 outro tenant; 403 sem Medicina ou client."
+          }
+        },
+        {
+          "name": "POST /companies/{id}/exam-plans (rascunho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/exam-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "exam-plans"]
+            },
+            "description": "Equipe prepara o rascunho a partir da proposta (riscos validados). 201. Um rascunho aberto por empresa (409)."
+          }
+        },
+        {
+          "name": "GET /exam-plans/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/exam-plans/{{examPlanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "exam-plans", "{{examPlanId}}"]
+            },
+            "description": "Plano + itens + trilha de eventos + canDecide (conta da sessão é a coordenadora vinculada)."
+          }
+        },
+        {
+          "name": "PUT /exam-plans/{id}/items/{itemId} (decidir)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"removed\",\n  \"periodicity\": \"Anual\",\n  \"justification\": \"Justificativa clínica (exemplo fictício).\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/exam-plans/{{examPlanId}}/items/{{examPlanItemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "exam-plans",
+                "{{examPlanId}}",
+                "items",
+                "{{examPlanItemId}}"
+              ]
+            },
+            "description": "Só a coordenadora vinculada (403 para os demais, inclusive owner). Retirar exige justificativa (422). Só em rascunho."
+          }
+        },
+        {
+          "name": "POST /exam-plans/{id}/items (acrescentar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exposureGroup\": \"Produção\",\n  \"code\": \"1057\",\n  \"periodicity\": \"Admissional e a cada dois anos\",\n  \"justification\": \"Justificativa clínica (exemplo fictício).\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/exam-plans/{{examPlanId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "exam-plans", "{{examPlanId}}", "items"]
+            },
+            "description": "Só a coordenadora vinculada. Código da Tabela 27 (422 fora dela; 9999 exige otherDescription). 201."
+          }
+        },
+        {
+          "name": "POST /exam-plans/{id}/approval (aprovar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Observação (opcional).\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/exam-plans/{{examPlanId}}/approval",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "exam-plans", "{{examPlanId}}", "approval"]
+            },
+            "description": "Só a coordenadora vinculada. O aprovado anterior vira superseded. Aprovado não muda."
           }
         }
       ]
