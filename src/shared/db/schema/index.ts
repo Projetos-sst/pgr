@@ -291,6 +291,7 @@ export {
   type MedicalExamPlanItem,
   type MedicalExamPlanEvent,
 } from "./medical-exam-plans";
+export { pcmsoDocuments, type PcmsoDocument } from "./pcmso-documents";
 export {
   healthExams,
   examType,
