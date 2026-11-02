@@ -32,6 +32,12 @@ export default async function MedicalRiskCompaniesPage({
             <Link href={`/companies/${company.id}/medical-risks`}>
               {company.razaoSocial}
             </Link>
+            <Link
+              href={`/companies/${company.id}/pcmso-coordinator`}
+              className="text-primary ml-3 text-sm underline"
+            >
+              Coordenador do PCMSO
+            </Link>
           </li>
         ))}
       </ul>

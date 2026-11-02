@@ -280,6 +280,14 @@
       "key": "pgrReviewSampleId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "pcmsoCoordinatorId",
+      "value": ""
+    },
+    {
+      "key": "devUser",
+      "value": ""
     }
   ],
   "item": [
@@ -3303,7 +3311,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Dra. Helena Marques\",\n  \"crm\": \"CRM 12.345/MA\",\n  \"specialty\": \"Medicina do Trabalho\",\n  \"clinic\": \"Clinica SanaVida\",\n  \"phone\": \"(98) 3232-1010\",\n  \"status\": \"active\"\n}"
+              "raw": "{\n  \"name\": \"Dra. Fictícia Exemplo\",\n  \"crm\": \"12345\",\n  \"registrationUf\": \"MA\",\n  \"profession\": \"physician\",\n  \"rqe\": \"6789\",\n  \"affiliation\": \"internal\",\n  \"specialty\": \"Medicina do Trabalho\",\n  \"clinic\": \"Clinica Exemplo\",\n  \"phone\": \"(98) 3232-1010\",\n  \"status\": \"active\"\n}"
             }
           }
         },
@@ -3353,7 +3361,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Dra. Helena M. Marques\",\n  \"crm\": \"CRM 12.345/MA\",\n  \"specialty\": \"Medicina do Trabalho\",\n  \"clinic\": \"Clinica SanaVida\",\n  \"phone\": \"(98) 3232-1010\",\n  \"status\": \"inactive\"\n}"
+              "raw": "{\n  \"name\": \"Dra. Fictícia Exemplo\",\n  \"crm\": \"12345\",\n  \"registrationUf\": \"MA\",\n  \"profession\": \"physician\",\n  \"rqe\": \"6789\",\n  \"affiliation\": \"internal\",\n  \"specialty\": \"Medicina do Trabalho\",\n  \"clinic\": \"Clinica Exemplo\",\n  \"phone\": \"(98) 3232-1010\",\n  \"status\": \"active\"\n}"
             }
           }
         },
@@ -3375,6 +3383,128 @@
               "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "medicos", "{{medicoId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Coordenador do PCMSO (MED-02, NOB-121)",
+      "description": "Designação do médico responsável pelo PCMSO por empresa e período. Escrita só owner (x-dev-role=owner e x-dev-user com membership owner no tenant). Sem DELETE: histórico preservado.",
+      "item": [
+        {
+          "name": "GET /companies/:id/pcmso-coordinators (histórico)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/pcmso-coordinators",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "pcmso-coordinators"]
+            }
+          }
+        },
+        {
+          "name": "POST /companies/:id/pcmso-coordinators (designar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/pcmso-coordinators",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "pcmso-coordinators"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"medicoId\": \"{{medicoId}}\",\n  \"startsOn\": \"2026-11-01\",\n  \"rqeExceptionReason\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /pcmso-coordinators/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pcmso-coordinators/{{pcmsoCoordinatorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pcmso-coordinators", "{{pcmsoCoordinatorId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /pcmso-coordinators/:id (encerrar)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "owner"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pcmso-coordinators/{{pcmsoCoordinatorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pcmso-coordinators", "{{pcmsoCoordinatorId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endsOn\": \"2026-12-31\",\n  \"endReason\": \"Encerramento do contrato de coordenação (exemplo).\"\n}"
             }
           }
         }

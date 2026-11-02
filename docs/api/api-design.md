@@ -150,6 +150,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/medicos` · `/medicos/{id}`                                                                                                                                   | GET (`?search=` nome/CRM, `?clinic=` empresa/clínica, `?status=active\|inactive`), POST (`201`) · GET, PUT, DELETE (`204`) — CRM único por org (`DUPLICATE`); sem `/dependents`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/health-exams` · `/health-exams/{id}`                                                                                                                         | GET (`?search=` funcionário ou tipo de exame, `?examType=`, `?employeeId=`, `?companyId=` = empresa **atual** do funcionário; ID malformado ou tipo inválido → `422 VALIDATION`), POST (`201`) · GET, PUT, DELETE (`204`) — exames ocupacionais/ASO; validade **derivada** na leitura; `validUntil < performedAt` e troca de `employeeId` no PUT → `422 VALIDATION`; funcionário/médico cross-tenant → `422 FK_NOT_FOUND`; sem `/dependents`                                                                                                                                                                                                    |
 | `/medicine/overview` · `/medicine/employees`                                                                                                                   | GET (read-model do painel da Medicina: empresas com Medicina habilitada + contagem pela validade **informada** do último exame de cada funcionário) · GET (`?companyId=` **obrigatório**, `?search=`, `?page=`/`?pageSize=` ≤ 100; funcionários da empresa + último exame; `422` sem/má `companyId`, `404` empresa de outro tenant, `403` empresa sem Medicina); só GET, sem `/dependents` — não são entidades                                                                                                                                                                                                                                  |
+| `/companies/{id}/pcmso-coordinators` · `/pcmso-coordinators/{id}`                                                                                              | GET (histórico, mais recente primeiro), POST (`201`, designa; a designação aberta é encerrada na véspera) · GET, PUT (só encerra: `{ endsOn, endReason }`) — **sem DELETE** (histórico preservado, `405`); escrita só `owner`; empresa com Medicina habilitada                                                                                                                                                                                                                                                                                                                                                                                  |
 | `/risk-methodology`                                                                                                                                            | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `/epi-catalog` · `/epi-catalog/{id}` · `/epi-catalog/{id}/dependents`                                                                                          | GET (`?search=` nome/CA/**fabricante**/categoria, `?type=epi\|machine\|supply`, `?categoryId=`), POST · GET, PUT, DELETE (em uso → `409 IN_USE`) · GET (`{stock, risk, deliveryItems}`). Body aceita `companyId?` (Empresa do EPI, #201/R1 — nullable, cross-tenant → `422 FK_NOT_FOUND`) e `usefulLifeMonths?` (inteiro > 0). Migration `0038_epi_company_useful_life`.                                                                                                                                                                                                                                                                        |
 | `/epi-deliveries` · `/epi-deliveries/{id}` · `/epi-deliveries/{id}/sign` · `/epi-deliveries/{id}/return`                                                       | GET, POST (baixa transacional) · GET, DELETE (só `pending`; **sem PUT** — entrega imutável) · POST (assinatura manual) · POST (devolução de item)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -409,6 +410,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Medidas de controle (5W2H)   | `actions/pgr/control-measures.ts`            | list, get, create, update, delete + REST `/api/v1/risks/{id}/control-measures` · `/control-measures/{id}` (1 por nível NR-01; estados derivados; **409** por UNIQUE)                                                                                                                                                                                                                   |
 | Categoria                    | `actions/pgr/categories.ts`                  | list, get, create, update, delete (catálogo `epi`/`machine`)                                                                                                                                                                                                                                                                                                                           |
 | Médico                       | `actions/pgr/medicos.ts`                     | list (busca nome/CRM, filtro empresa/clínica e status), options, clinics, get, create, update, delete + REST `/api/v1/medicos/**` (cadastro de médicos do trabalho; CRM único por org → `DUPLICATE`; sem `/dependents`)                                                                                                                                                                |
+| Coordenador do PCMSO         | `actions/medicine/pcmso-coordinators.ts`     | list (histórico por empresa), designate, close + REST `/api/v1/companies/{id}/pcmso-coordinators` e `/api/v1/pcmso-coordinators/{id}` (MED-02/NOB-121; escrita só `owner`, policy RLS de ator; sem DELETE)                                                                                                                                                                             |
 | Exame ocupacional (ASO)      | `actions/pgr/health-exams.ts`                | list (busca funcionário ou tipo de exame, filtros tipo/funcionário/empresa), get, create, update, delete + REST `/api/v1/health-exams/**` (validade derivada na leitura; funcionário/médico cross-tenant → `FK_NOT_FOUND`; sem `/dependents`)                                                                                                                                          |
 | Medicina — painel            | `actions/medicine/overview.ts`               | getMedicineOverviewAction, listMedicineEmployeesAction + REST `GET /api/v1/medicine/overview` · `GET /api/v1/medicine/employees` (read-models; core `server/medicine/overview-core.ts`; validade informada, sem periodicidade; sem `notes`/CPF)                                                                                                                                        |
 | Controle de formulário (ISO) | `actions/documents/form-controls.ts`         | list, get, create, update, delete + REST `/api/v1/form-controls/**` (código FRM único por org → `DUPLICATE`; empresa/GES opcionais)                                                                                                                                                                                                                                                    |
@@ -641,10 +643,11 @@ de entrada). REST espelho em `/api/v1/categories` (GET, POST) · `/api/v1/catego
 
 ## Médico — `actions/pgr/medicos.ts`
 
-Cadastro de médicos do trabalho responsáveis por exames/ASO (catálogo do escritório, isolado por
-tenant). `clinic` ("Empresa" na listagem) é a clínica/empregador do médico — **texto livre**, não a
+Cadastro de profissionais de saúde — médicos (CRM) e psicólogos (CRP), da equipe ou externos (NOB-121) —
+responsáveis por exames/ASO e pelo PCMSO (catálogo do escritório, isolado por tenant). `clinic` ("Empresa" na listagem) é a clínica/empregador do médico — **texto livre**, não a
 empresa-cliente do tenant. CRM único por org (`UNIQUE(org_id, crm)` → `DUPLICATE`). Sem `/dependents`
-(o vínculo de exames/ASO usa `ON DELETE SET NULL`, não bloqueia a exclusão). REST espelho em
+(o vínculo de exames/ASO usa `ON DELETE SET NULL`, não bloqueia a exclusão; quem tem histórico de
+coordenação do PCMSO não pode ser excluído → `IN_USE` (409), deve ser inativado). REST espelho em
 `/api/v1/medicos` (GET, POST) · `/api/v1/medicos/{id}` (GET, PUT, DELETE).
 
 | Action                    | Entrada                                           | Retorno (`data`)                            |
@@ -657,8 +660,12 @@ empresa-cliente do tenant. CRM único por org (`UNIQUE(org_id, crm)` → `DUPLIC
 | `updateMedicoAction`      | `id, MedicoInput`                                 | `Medico`                                    |
 | `deleteMedicoAction`      | `id`                                              | `{ id }`                                    |
 
-**`MedicoInput`**: `{ name*, crm*, specialty?, clinic?, phone?, status }` (`status` = `active|inactive`,
-default `active`). Filtro de listagem por **Empresa/clínica** (`?clinic=`, valores de
+**`MedicoInput`**: `{ name*, crm*, registrationUf*, profession, rqe?, affiliation, specialty?, clinic?, phone?, status }`
+(`crm` = número do registro no conselho, CRM ou CRP, até 20 caracteres; `registrationUf*` = UF do conselho, sigla
+válida, normalizada para maiúsculas — **obrigatória desde a migration 0060**; `profession` = `physician|psychologist`,
+default `physician`; `rqe` = RQE em Medicina do Trabalho, só para `physician`; `affiliation` = `internal|external`,
+default `internal`; `status` = `active|inactive`, default `active`). Registros antigos ficam com UF nula até a
+próxima edição, que passa a exigi-la. Filtro de listagem por **Empresa/clínica** (`?clinic=`, valores de
 `listMedicoClinicsAction` = `SELECT DISTINCT clinic` do tenant) — fiel ao mockup "Todas as Empresas";
 `clinic` é texto livre (empregador do médico), não a empresa-cliente do tenant. `?status=` continua
 suportado no backend/REST.
@@ -669,6 +676,29 @@ mesmo nome é aceito entre tipos distintos. **PUT (REST) exige corpo completo** 
 **`CategoryListItem`** = `Category` + `itemCount` (nº de itens `epi_catalog` vinculados, derivado por
 COUNT, sem coluna). Filtros do GET: `?search=`, `?type=`, `?isActive=`. Migration
 `0036_category_supply_status` (enum `ADD VALUE 'supply'` + coluna `is_active`).
+
+## Coordenador do PCMSO — `actions/medicine/pcmso-coordinators.ts`
+
+Designação do médico responsável pelo PCMSO por empresa e período (MED-02; NR-7 item 7.4.1, alínea c).
+Tabela `pcmso_coordinator_assignments` (migration `0060_medical_professional_identity`): FKs compostas
+`(company_id, org_id)` e `(medico_id, org_id)`, no máximo **uma designação aberta por empresa** (índice
+único parcial → `DUPLICATE`), períodos sem sobreposição. **Histórico imutável**: o `app_runtime` não tem
+DELETE e só altera as colunas de encerramento de uma designação **aberta** (policy de UPDATE). Escrita só pelo
+`owner`, conferida no app e por policy RLS com `app.current_actor` (padrão 0056). Exige Medicina habilitada
+na empresa (`FORBIDDEN`).
+
+Regras (`domains/medicine/pcmso-coordinators.ts`): só médico ativo, com UF do CRM; sem RQE em Medicina do
+Trabalho, exige `rqeExceptionReason` (exceção do NR-7 item 7.5.2: inexistência de médico do trabalho na
+localidade). Trocar de coordenador encerra a designação aberta na véspera do início da nova, na mesma transação.
+
+| Action                            | Entrada                                                    | Retorno (`data`)             |
+| --------------------------------- | ---------------------------------------------------------- | ---------------------------- |
+| `listPcmsoCoordinatorsAction`     | `companyId`                                                | `CoordinatorAssignmentRow[]` |
+| `designatePcmsoCoordinatorAction` | `companyId, { medicoId*, startsOn*, rqeExceptionReason? }` | `PcmsoCoordinatorAssignment` |
+| `closePcmsoCoordinatorAction`     | `companyId, assignmentId, { endsOn*, endReason* }`         | `PcmsoCoordinatorAssignment` |
+
+REST: `GET|POST /api/v1/companies/{id}/pcmso-coordinators` · `GET|PUT /api/v1/pcmso-coordinators/{id}`
+(PUT só encerra; sem DELETE). Tela: `/companies/{id}/pcmso-coordinator`.
 
 ---
 

@@ -46,7 +46,11 @@ const asOwner = (tenantId: string) =>
   });
 
   it("cria (com médico), lista, detalha, edita e exclui (escopado ao tenant)", async () => {
-    const doctor = await createMedicoAction({ name: "Dra. Helena", crm: "CRM 12/MA" });
+    const doctor = await createMedicoAction({
+      name: "Dra. Helena",
+      crm: "CRM 12/MA",
+      registrationUf: "SP",
+    });
     expect(doctor.ok).toBe(true);
     if (!doctor.ok) return;
 
@@ -113,7 +117,11 @@ const asOwner = (tenantId: string) =>
 
   it("médico cross-tenant → FK_NOT_FOUND", async () => {
     asOwner("org_b");
-    const docB = await createMedicoAction({ name: "Dr. B", crm: "CRM 99/PA" });
+    const docB = await createMedicoAction({
+      name: "Dr. B",
+      crm: "CRM 99/PA",
+      registrationUf: "SP",
+    });
     expect(docB.ok).toBe(true);
     if (!docB.ok) return;
 

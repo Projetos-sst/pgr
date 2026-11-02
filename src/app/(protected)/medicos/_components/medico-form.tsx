@@ -4,6 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 
 import {
+  BRAZILIAN_UFS,
+  MEDICAL_AFFILIATION_LABELS,
+  MEDICAL_AFFILIATIONS,
+  MEDICAL_PROFESSION_LABELS,
+  MEDICAL_PROFESSIONS,
   MEDICO_STATUS_LABELS,
   MEDICO_STATUSES,
   type MedicoInput,
@@ -28,9 +33,28 @@ const STATUS_OPTIONS = MEDICO_STATUSES.map((value) => ({
   label: MEDICO_STATUS_LABELS[value],
 }));
 
+const PROFESSION_OPTIONS = MEDICAL_PROFESSIONS.map((value) => ({
+  value,
+  label: MEDICAL_PROFESSION_LABELS[value],
+}));
+
+const AFFILIATION_OPTIONS = MEDICAL_AFFILIATIONS.map((value) => ({
+  value,
+  label: MEDICAL_AFFILIATION_LABELS[value],
+}));
+
+const UF_OPTIONS = [
+  { value: "", label: "Selecione" },
+  ...BRAZILIAN_UFS.map((value) => ({ value, label: value })),
+];
+
 export type MedicoFormInitial = {
   name: string;
   crm: string;
+  profession: string;
+  registrationUf: string | null;
+  rqe: string | null;
+  affiliation: string;
   specialty: string | null;
   clinic: string | null;
   phone: string | null;
@@ -55,6 +79,12 @@ export function MedicoForm({
     const input: MedicoInput = {
       name: (fd.get("name") as string) ?? "",
       crm: (fd.get("crm") as string) ?? "",
+      profession: ((fd.get("profession") as string) ||
+        "physician") as MedicoInput["profession"],
+      registrationUf: (fd.get("registrationUf") as string) ?? "",
+      rqe: (fd.get("rqe") as string) ?? "",
+      affiliation: ((fd.get("affiliation") as string) ||
+        "internal") as MedicoInput["affiliation"],
       specialty: (fd.get("specialty") as string) ?? "",
       clinic: (fd.get("clinic") as string) ?? "",
       phone: (fd.get("phone") as string) ?? "",
@@ -80,7 +110,7 @@ export function MedicoForm({
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <FormError message={formError} />
 
-      <FormSection title="Dados do médico">
+      <FormSection title="Dados do profissional">
         <TextField
           label="Nome"
           name="name"
@@ -90,14 +120,44 @@ export function MedicoForm({
           defaultValue={initial?.name}
           error={errors.name}
         />
+        <SelectField
+          label="Categoria"
+          name="profession"
+          defaultValue={initial?.profession ?? "physician"}
+          options={PROFESSION_OPTIONS}
+          error={errors.profession}
+        />
+        <SelectField
+          label="Vínculo"
+          name="affiliation"
+          defaultValue={initial?.affiliation ?? "internal"}
+          options={AFFILIATION_OPTIONS}
+          error={errors.affiliation}
+        />
         <TextField
-          label="CRM"
+          label="Número do registro (CRM ou CRP)"
           name="crm"
           required
           isMono
-          placeholder="Ex.: CRM 12.345/MA"
+          placeholder="Ex.: 12345"
           defaultValue={initial?.crm}
           error={errors.crm}
+        />
+        <SelectField
+          label="UF do conselho"
+          name="registrationUf"
+          required
+          defaultValue={initial?.registrationUf ?? ""}
+          options={UF_OPTIONS}
+          error={errors.registrationUf}
+        />
+        <TextField
+          label="RQE em Medicina do Trabalho (só médico)"
+          name="rqe"
+          isMono
+          placeholder="Ex.: 6789"
+          defaultValue={initial?.rqe}
+          error={errors.rqe}
         />
         <TextField
           label="Especialidade"
@@ -131,7 +191,10 @@ export function MedicoForm({
 
       <FormActions>
         <CancelLink href="/medicos" />
-        <SubmitButton pending={pending} label={id ? "Salvar médico" : "Criar médico"} />
+        <SubmitButton
+          pending={pending}
+          label={id ? "Salvar profissional" : "Cadastrar profissional"}
+        />
       </FormActions>
     </form>
   );

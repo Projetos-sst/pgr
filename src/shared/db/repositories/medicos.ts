@@ -9,6 +9,8 @@ import type {
 } from "@/shared/domains/pgr/medicos";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
+import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
+
 import { withOrg } from "../with-org";
 import { medicos, type Medico } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
@@ -96,6 +98,10 @@ export async function createMedico(orgId: string, input: MedicoValues): Promise<
           orgId,
           name: input.name,
           crm: input.crm,
+          profession: input.profession,
+          registrationUf: input.registrationUf,
+          rqe: input.rqe ?? null,
+          affiliation: input.affiliation,
           specialty: input.specialty ?? null,
           clinic: input.clinic ?? null,
           phone: input.phone ?? null,
@@ -119,6 +125,10 @@ export async function updateMedico(
         .set({
           name: input.name,
           crm: input.crm,
+          profession: input.profession,
+          registrationUf: input.registrationUf,
+          rqe: input.rqe ?? null,
+          affiliation: input.affiliation,
           specialty: input.specialty ?? null,
           clinic: input.clinic ?? null,
           phone: input.phone ?? null,
@@ -132,14 +142,42 @@ export async function updateMedico(
   );
 }
 
+/**
+ * Walks the `cause` chain (postgres-js errors surfaced via Drizzle wrap the real
+ * SQLSTATE on `error.cause.code`) looking for a foreign-key violation (23503).
+ */
+function isForeignKeyViolation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth <= 5 && current; depth += 1) {
+    if (typeof current === "object" && current !== null && "code" in current) {
+      if ((current as { code: unknown }).code === "23503") return true;
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+/**
+ * Exames apontam para o médico com SET NULL e não bloqueiam. A designação de
+ * coordenador do PCMSO (histórico) usa RESTRICT: 23503 → IN_USE, para o
+ * profissional ser inativado em vez de apagado.
+ */
 export async function deleteMedico(orgId: string, id: string): Promise<boolean> {
   return auditedTenantWrite(orgId, "pgr.medicos.write_rejected", () =>
     withOrg(orgId, async (tx) => {
-      const rows = await tx
-        .delete(medicos)
-        .where(and(eq(medicos.orgId, orgId), eq(medicos.id, id)))
-        .returning({ id: medicos.id });
-      return rows.length > 0;
+      try {
+        const rows = await tx
+          .delete(medicos)
+          .where(and(eq(medicos.orgId, orgId), eq(medicos.id, id)))
+          .returning({ id: medicos.id });
+        return rows.length > 0;
+      } catch (error) {
+        if (isForeignKeyViolation(error))
+          throw new EntityInUseError(
+            "Este médico tem histórico de coordenação do PCMSO e não pode ser excluído. Inative o cadastro.",
+          );
+        throw error;
+      }
     }),
   );
 }

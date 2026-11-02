@@ -268,7 +268,16 @@ export {
   type FormControl,
   type NewFormControl,
 } from "./form-controls";
-export { medicos, medicoStatus, type Medico, type NewMedico } from "./medicos";
+export {
+  medicos,
+  medicoStatus,
+  medicalProfession,
+  medicalAffiliation,
+  pcmsoCoordinatorAssignments,
+  type Medico,
+  type NewMedico,
+  type PcmsoCoordinatorAssignment,
+} from "./medicos";
 export {
   healthExams,
   examType,
