@@ -9759,7 +9759,7 @@
       ]
     },
     {
-      "name": "Medicina — procedimentos e proposta de exames (NOB-147)",
+      "name": "Medicina — procedimentos, proposta de exames e conferência do PCMSO (NOB-147/148)",
       "item": [
         {
           "name": "GET /medicine/procedures?search= (Tabela 27)",
@@ -9857,6 +9857,28 @@
               "path": ["api", "v1", "medicine", "procedures", "0000"]
             },
             "description": "Negativo: código fora da Tabela 27 retorna 404 NOT_FOUND."
+          }
+        },
+        {
+          "name": "GET /companies/{id}/pcmso-readiness (NOB-148)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/pcmso-readiness",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "pcmso-readiness"]
+            },
+            "description": "Conferência só leitura dos dados do PCMSO: itens blocking, warning e not_available, com referência e link. ready=false enquanto houver bloqueio ou etapa inexistente. Não gera, aprova nem assina. 404 outro tenant; 403 sem Medicina ou client."
           }
         }
       ]
