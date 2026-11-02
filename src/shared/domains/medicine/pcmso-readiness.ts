@@ -37,6 +37,11 @@ export type PcmsoReadinessInput = {
   /** Riscos utilizáveis no PCMSO (validados, fonte vigente), com o possível agravo do PGR. */
   usableRisks: { description: string; possibleInjuries: string | null }[];
   activePhysicians: number;
+  /** Plano de exames (NOB-150): aprovado vigente e rascunho aberto, com as fontes da aprovação. */
+  examPlan: {
+    approved: { version: number; sourceIds: string[] } | null;
+    draftVersion: number | null;
+  };
 };
 
 export type PcmsoReadiness = {
@@ -174,13 +179,39 @@ export function checkPcmsoReadiness(input: PcmsoReadinessInput): PcmsoReadiness 
       "/medicos",
     );
 
-  add(
-    "exam_plan",
-    "not_available",
-    "Plano de exames aprovado pelo coordenador: o sistema só tem a proposta a partir dos riscos; a revisão e a aprovação médica ainda não existem.",
-    "NR-7 7.5.4 b; MED-15",
-    proposal,
-  );
+  const plan = input.examPlan;
+  const planHref = `/companies/${input.companyId}/exam-plan`;
+  if (!plan.approved)
+    add(
+      "exam_plan",
+      "blocking",
+      plan.draftVersion
+        ? `Plano de exames na versão ${plan.draftVersion} aguardando decisão e aprovação do médico coordenador.`
+        : "Prepare o plano de exames a partir dos riscos validados e submeta à aprovação do médico coordenador.",
+      "NR-7 7.5.4 b; MED-15",
+      planHref,
+    );
+  else {
+    const current = [...p.basis.map((b) => b.id)].sort().join(",");
+    const approvedOn = [...plan.approved.sourceIds].sort().join(",");
+    // Sem fonte vigente, o bloqueio `risk_source` já explica; não duplicar.
+    if (p.basis.length && current !== approvedOn)
+      add(
+        "exam_plan_outdated",
+        "blocking",
+        `O plano aprovado (versão ${plan.approved.version}) foi feito sobre outra fonte de riscos. Prepare nova versão e submeta ao coordenador.`,
+        "NR-7 7.5.1; MED-14; SEG-21",
+        planHref,
+      );
+    if (plan.draftVersion)
+      add(
+        "exam_plan_draft",
+        "warning",
+        `Há uma nova versão (${plan.draftVersion}) do plano em rascunho; o PCMSO usa a versão aprovada ${plan.approved.version}.`,
+        "MED-15",
+        planHref,
+      );
+  }
   add(
     "interpretation_criteria",
     "not_available",

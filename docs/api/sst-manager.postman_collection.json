@@ -262,6 +262,11 @@
       "type": "string"
     },
     {
+      "key": "pcmsoDocumentId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "machineCatalogId",
       "value": "",
       "type": "string"
@@ -3865,6 +3870,105 @@
               "path": ["api", "v1", "exam-plans", "{{examPlanId}}", "approval"]
             },
             "description": "Só a coordenadora vinculada. O aprovado anterior vira superseded. Aprovado não muda."
+          }
+        }
+      ]
+    },
+    {
+      "name": "PCMSO — prévias arquivadas (NOB-151)",
+      "item": [
+        {
+          "name": "GET /companies/{id}/pcmso-documents (versões)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/pcmso-documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "pcmso-documents"]
+            },
+            "description": "Versões arquivadas (sem conteúdo). 404 outro tenant; 403 sem Medicina ou client."
+          }
+        },
+        {
+          "name": "POST /companies/{id}/pcmso-documents (gerar prévia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cycleStart\": \"2026-11-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/pcmso-documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "pcmso-documents"]
+            },
+            "description": "Gera e arquiva uma prévia (ciclo de planejamento de 12 meses, MED-14). 422 enquanto a conferência do PCMSO tiver bloqueios (inclui plano aprovado). 201."
+          }
+        },
+        {
+          "name": "GET /pcmso-documents/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pcmso-documents/{{pcmsoDocumentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pcmso-documents", "{{pcmsoDocumentId}}"]
+            },
+            "description": "Versão arquivada com content e contentSha256. Imutável; status sempre preview."
           }
         }
       ]

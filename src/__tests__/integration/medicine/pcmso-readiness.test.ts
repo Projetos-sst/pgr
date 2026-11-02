@@ -60,19 +60,28 @@ const gate = (tenantId = "org_a") =>
     });
     if (!created.ok) throw new Error(`fixture: ${created.error.code}`);
     await admin`update medical_risk_entries set status='validated', reviewed_by='prof-ficticio', reviewed_at=now() where source_id=${created.data.id}`;
+    return created.data.id;
   }
+
+  /** Plano aprovado por fixture (o fluxo de aprovação é coberto em `exam-plans.test.ts`). */
+  const approvedPlan = (sourceId: string, version = 1) =>
+    admin`insert into medical_exam_plans (org_id, company_id, version, status, based_on, rules_version, catalog_version, prepared_by, approved_by_user, approved_by_medico_id, approved_at)
+      values ('org_a', ${I.companyA}, ${version}, 'approved', ${admin.json({ sources: [{ id: sourceId }] })}, 'regras', 'catalogo', 'registrador', 'medica', ${MEDICO}, now())`;
 
   const codes = (items: { code: string; severity: string }[], severity: string) =>
     items.filter((i) => i.severity === severity).map((i) => i.code);
 
-  it("com os dados completos, sobram só as etapas inexistentes e o PCMSO não fica pronto", async () => {
-    await completeData();
+  it("sem plano de exames aprovado, bloqueia; com plano aprovado sobre a fonte atual, só restam as etapas inexistentes", async () => {
+    const sourceId = await completeData();
+    const noPlan = await getPcmsoReadinessAction(I.companyA);
+    if (!noPlan.ok) throw new Error(noPlan.error.code);
+    expect(codes(noPlan.data.items, "blocking")).toEqual(["exam_plan"]);
+    await approvedPlan(sourceId);
     const result = await getPcmsoReadinessAction(I.companyA);
     if (!result.ok) throw new Error(result.error.code);
     expect(codes(result.data.items, "blocking")).toEqual([]);
     expect(codes(result.data.items, "warning")).toEqual([]);
     expect(codes(result.data.items, "not_available")).toEqual([
-      "exam_plan",
       "interpretation_criteria",
       "clinics",
       "health_campaigns",
@@ -91,7 +100,16 @@ const gate = (tenantId = "org_a") =>
       "coordinator",
       "risk_source",
       "examiners",
+      "exam_plan",
     ]);
+  });
+
+  it("plano aprovado sobre fonte anterior bloqueia (MED-14, SEG-21)", async () => {
+    await completeData();
+    await approvedPlan("00000000-0000-4000-8000-000000000000");
+    const result = await getPcmsoReadinessAction(I.companyA);
+    if (!result.ok) throw new Error(result.error.code);
+    expect(codes(result.data.items, "blocking")).toEqual(["exam_plan_outdated"]);
   });
 
   it("coordenador encerrado não conta; risco pendente avisa e não conta como validado", async () => {
@@ -103,6 +121,7 @@ const gate = (tenantId = "org_a") =>
     expect(codes(result.data.items, "blocking")).toEqual([
       "coordinator",
       "validated_risks",
+      "exam_plan",
     ]);
     expect(codes(result.data.items, "warning")).toEqual(["pending_risks"]);
   });

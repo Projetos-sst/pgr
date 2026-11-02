@@ -13,7 +13,6 @@ import {
 
 const COMPANY = "c1111111-1111-4111-8111-111111111111";
 const NOT_AVAILABLE = [
-  "exam_plan",
   "interpretation_criteria",
   "clinics",
   "health_campaigns",
@@ -61,6 +60,7 @@ function input(overrides: Partial<PcmsoReadinessInput> = {}): PcmsoReadinessInpu
     proposal: buildExamProposal([source()]),
     usableRisks: [{ description: "Ruído fictício", possibleInjuries: "Perda auditiva" }],
     activePhysicians: 2,
+    examPlan: { approved: { version: 1, sourceIds: ["s1"] }, draftVersion: null },
     ...overrides,
   };
 }
@@ -69,13 +69,40 @@ const codes = (r: ReturnType<typeof checkPcmsoReadiness>, severity: string) =>
   r.items.filter((i) => i.severity === severity).map((i) => i.code);
 
 describe("checkPcmsoReadiness", () => {
+  it("plano de exames: sem plano ou só rascunho bloqueia; aprovado sobre outra fonte bloqueia; nova versão avisa", () => {
+    const none = checkPcmsoReadiness(
+      input({ examPlan: { approved: null, draftVersion: null } }),
+    );
+    expect(codes(none, "blocking")).toEqual(["exam_plan"]);
+    expect(none.items.find((i) => i.code === "exam_plan")?.href).toBe(
+      `/companies/${COMPANY}/exam-plan`,
+    );
+    const draft = checkPcmsoReadiness(
+      input({ examPlan: { approved: null, draftVersion: 2 } }),
+    );
+    expect(draft.items.find((i) => i.code === "exam_plan")?.message).toMatch(/versão 2/);
+    const outdated = checkPcmsoReadiness(
+      input({
+        examPlan: { approved: { version: 1, sourceIds: ["antiga"] }, draftVersion: null },
+      }),
+    );
+    expect(codes(outdated, "blocking")).toEqual(["exam_plan_outdated"]);
+    const newer = checkPcmsoReadiness(
+      input({
+        examPlan: { approved: { version: 1, sourceIds: ["s1"] }, draftVersion: 2 },
+      }),
+    );
+    expect(codes(newer, "blocking")).toEqual([]);
+    expect(codes(newer, "warning")).toEqual(["exam_plan_draft"]);
+  });
+
   it("com todos os dados existentes, só restam as etapas inexistentes, e nunca está pronto", () => {
     const result = checkPcmsoReadiness(input());
     expect(codes(result, "blocking")).toEqual([]);
     expect(codes(result, "warning")).toEqual([]);
     expect(codes(result, "not_available")).toEqual(NOT_AVAILABLE);
     expect(result.ready).toBe(false);
-    expect(result.counts).toEqual({ blocking: 0, warning: 0, not_available: 5 });
+    expect(result.counts).toEqual({ blocking: 0, warning: 0, not_available: 4 });
   });
 
   it("dados da empresa ausentes bloqueiam (MED-08)", () => {

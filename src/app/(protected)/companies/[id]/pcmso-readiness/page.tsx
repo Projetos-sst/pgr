@@ -85,6 +85,10 @@ export default async function PcmsoReadinessPage({
           : `O PCMSO ainda não pode ser gerado: ${counts.blocking} pendência(s), ${counts.not_available} etapa(s) ainda inexistente(s) no sistema e ${counts.warning} aviso(s).`}
       </p>
 
+      <Link href={`/companies/${id}/pcmso`} className="text-primary text-sm underline">
+        PCMSO: prévias geradas e versões arquivadas
+      </Link>
+
       {SECTIONS.map(({ severity, title, tone }) => {
         const rows = items.filter((item) => item.severity === severity);
         if (!rows.length) return null;
