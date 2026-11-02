@@ -3984,6 +3984,124 @@
       ]
     },
     {
+      "name": "Critérios de interpretação e condutas (NOB-153)",
+      "item": [
+        {
+          "name": "GET /companies/{id}/interpretation-criteria",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/interpretation-criteria",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "interpretation-criteria"
+              ]
+            },
+            "description": "Exames mantidos no plano aprovado com o critério vigente de cada um (rows) e os que faltam (missing). 404 outro tenant; 403 sem Medicina ou client."
+          }
+        },
+        {
+          "name": "POST /companies/{id}/interpretation-criteria",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"0281\",\n  \"criteria\": \"Texto do médico coordenador.\",\n  \"conduct\": \"Texto do médico coordenador.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/interpretation-criteria",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "interpretation-criteria"
+              ]
+            },
+            "description": "Nova versão do critério e da conduta de um exame. Só a conta vinculada ao coordenador com designação aberta (x-dev-user = usuário vinculado); demais → 403. O sistema não gera texto. 201."
+          }
+        },
+        {
+          "name": "GET /companies/{id}/interpretation-criteria/{code}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/interpretation-criteria/{{procedureCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "interpretation-criteria",
+                "{{procedureCode}}"
+              ]
+            },
+            "description": "Histórico (todas as versões) do procedimento, da mais recente à mais antiga. Código inválido → 422."
+          }
+        }
+      ]
+    },
+    {
       "name": "Saude Ocupacional (ASO)",
       "item": [
         {

@@ -83,6 +83,7 @@ const content = composePcmso({
     ],
   },
   examiners: [{ name: "Dr. Examinador", registration: "CRM 9/MA" }],
+  interpretationCriteria: [],
   pendingSections: [],
 });
 const DOC = {

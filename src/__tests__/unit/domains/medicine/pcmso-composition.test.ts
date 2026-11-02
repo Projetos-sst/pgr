@@ -82,6 +82,7 @@ function input(overrides: Partial<PcmsoCompositionInput> = {}): PcmsoComposition
       ],
     },
     examiners: [{ name: "Dr. Examinador", registration: "CRM 789/MA" }],
+    interpretationCriteria: [],
     pendingSections: [
       {
         code: "clinics",
@@ -150,6 +151,48 @@ describe("ciclo, revisão e relatório analítico", () => {
     expect(content.analyticalReport).toMatchObject({ status: "pending" });
     expect(content.analyticalReport.frequency).toMatch(/7\.6\.2/);
     expect(content).not.toHaveProperty("validity");
+  });
+});
+
+describe("critérios de interpretação (NOB-153)", () => {
+  it("cada exame mantido traz o critério do coordenador ou fica pendente; retirados não entram", () => {
+    const content = composePcmso(
+      input({
+        interpretationCriteria: [
+          {
+            id: "k1",
+            procedureCode: "0281",
+            otherDescription: null,
+            version: 3,
+            criteria: "Critério fictício.",
+            conduct: "Conduta fictícia.",
+            authorName: "Dra. Fictícia",
+            authoredAt: "2026-11-01T10:00:00.000Z",
+          },
+        ],
+      }),
+    );
+    expect(content.schemaVersion).toBe(2);
+    expect(content.interpretation.reference).toBe("NR-7 7.5.4 c");
+    expect(content.interpretation.authorship).toMatch(/não gera nem sugere/);
+    expect(content.interpretation.items).toEqual([
+      expect.objectContaining({
+        procedureCode: "0281",
+        status: "defined",
+        criteria: "Critério fictício.",
+        conduct: "Conduta fictícia.",
+        author: "Dra. Fictícia",
+        version: 3,
+      }),
+      expect.objectContaining({
+        procedureCode: "9999",
+        description: "Exame fictício",
+        status: "pending",
+      }),
+    ]);
+    expect(content.interpretation.items.map((i) => i.procedureCode)).not.toContain(
+      "1057",
+    );
   });
 });
 

@@ -80,9 +80,10 @@ const gate = (tenantId = "org_a") =>
     const result = await getPcmsoReadinessAction(I.companyA);
     if (!result.ok) throw new Error(result.error.code);
     expect(codes(result.data.items, "blocking")).toEqual([]);
+    // O plano desta fixture não tem exames: nada a cobrir com critérios (NOB-153), e o item deixou
+    // de ser etapa inexistente. O aviso com exames sem critério é testado em interpretation-criteria.
     expect(codes(result.data.items, "warning")).toEqual([]);
     expect(codes(result.data.items, "not_available")).toEqual([
-      "interpretation_criteria",
       "clinics",
       "health_campaigns",
       "analytical_report",

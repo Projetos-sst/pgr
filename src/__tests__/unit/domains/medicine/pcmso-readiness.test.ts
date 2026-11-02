@@ -12,12 +12,7 @@ import {
 } from "@/shared/domains/medicine/pcmso-readiness";
 
 const COMPANY = "c1111111-1111-4111-8111-111111111111";
-const NOT_AVAILABLE = [
-  "interpretation_criteria",
-  "clinics",
-  "health_campaigns",
-  "analytical_report",
-];
+const NOT_AVAILABLE = ["clinics", "health_campaigns", "analytical_report"];
 
 function source(overrides: Partial<ProposalSource> = {}): ProposalSource {
   return {
@@ -61,6 +56,7 @@ function input(overrides: Partial<PcmsoReadinessInput> = {}): PcmsoReadinessInpu
     usableRisks: [{ description: "Ruído fictício", possibleInjuries: "Perda auditiva" }],
     activePhysicians: 2,
     examPlan: { approved: { version: 1, sourceIds: ["s1"] }, draftVersion: null },
+    interpretationCriteriaMissing: [],
     ...overrides,
   };
 }
@@ -102,7 +98,31 @@ describe("checkPcmsoReadiness", () => {
     expect(codes(result, "warning")).toEqual([]);
     expect(codes(result, "not_available")).toEqual(NOT_AVAILABLE);
     expect(result.ready).toBe(false);
-    expect(result.counts).toEqual({ blocking: 0, warning: 0, not_available: 4 });
+    expect(result.counts).toEqual({ blocking: 0, warning: 0, not_available: 3 });
+  });
+
+  it("critérios de interpretação (NOB-153): avisa os exames do plano sem critério do coordenador", () => {
+    const missing = checkPcmsoReadiness(
+      input({
+        interpretationCriteriaMissing: [
+          { procedureCode: "0281", description: "Audiometria tonal ocupacional" },
+        ],
+      }),
+    );
+    expect(codes(missing, "warning")).toEqual(["interpretation_criteria"]);
+    const item = missing.items.find((i) => i.code === "interpretation_criteria")!;
+    expect(item.message).toMatch(/1 exame\(s\).*0281 Audiometria/);
+    expect(item.reference).toBe("NR-7 7.5.4 c");
+    expect(item.href).toBe(`/companies/${COMPANY}/interpretation-criteria`);
+    expect(codes(missing, "blocking")).toEqual([]);
+    // Sem plano aprovado, o bloqueio do plano já explica; nada sobre critérios.
+    const noPlan = checkPcmsoReadiness(
+      input({
+        examPlan: { approved: null, draftVersion: null },
+        interpretationCriteriaMissing: null,
+      }),
+    );
+    expect(noPlan.items.map((i) => i.code)).not.toContain("interpretation_criteria");
   });
 
   it("dados da empresa ausentes bloqueiam (MED-08)", () => {
