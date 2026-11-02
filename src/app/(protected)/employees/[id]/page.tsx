@@ -118,6 +118,17 @@ export default async function EmployeeDetailPage({
     .map((result) => (result as { ok: true; data: DeliveryDetail }).data);
 
   const companyName = companyResult.ok ? companyResult.data.razaoSocial : null;
+  // Sugestão do demissional (NR-7 7.5.11) só com desligamento informado.
+  const riskGrade = companyResult.ok ? companyResult.data.riskGrade : null;
+  const dismissal = employee.dismissalDate
+    ? {
+        contractEndOn: employee.dismissalDate,
+        riskGrade:
+          riskGrade !== null && riskGrade >= 1 && riskGrade <= 4
+            ? (riskGrade as 1 | 2 | 3 | 4)
+            : null,
+      }
+    : null;
   const gesName = gesResult?.ok ? gesResult.data.ges.name : null;
   const jobRoleTitle = jobRoleResult?.ok ? jobRoleResult.data.title : null;
 
@@ -335,6 +346,7 @@ export default async function EmployeeDetailPage({
         moduleState={medicineState}
         exams={healthExamsResult}
         today={todayInSaoPaulo()}
+        dismissal={dismissal}
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
