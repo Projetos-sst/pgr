@@ -58,17 +58,18 @@ describe("PcmsoReadinessPage", () => {
         activePhysicians: 1,
         examPlan: { approved: null, draftVersion: null },
         interpretationCriteriaMissing: null,
+        analyticalReport: null,
       }),
     });
     await renderPage();
     expect(screen.getByRole("status")).toHaveTextContent(
-      "O PCMSO ainda não pode ser gerado: 4 pendência(s), 3 etapa(s)",
+      "O PCMSO ainda não pode ser gerado: 4 pendência(s), 2 etapa(s)",
     );
     expect(
       screen.getByRole("heading", { name: "Pendências que impedem a geração (4)" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Etapas que o sistema ainda não tem (3)" }),
+      screen.getByRole("heading", { name: "Etapas que o sistema ainda não tem (2)" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Designe o médico responsável pelo PCMSO da empresa."),

@@ -12,7 +12,7 @@ import {
 } from "@/shared/domains/medicine/pcmso-readiness";
 
 const COMPANY = "c1111111-1111-4111-8111-111111111111";
-const NOT_AVAILABLE = ["clinics", "health_campaigns", "analytical_report"];
+const NOT_AVAILABLE = ["clinics", "health_campaigns"];
 
 function source(overrides: Partial<ProposalSource> = {}): ProposalSource {
   return {
@@ -57,6 +57,7 @@ function input(overrides: Partial<PcmsoReadinessInput> = {}): PcmsoReadinessInpu
     activePhysicians: 2,
     examPlan: { approved: { version: 1, sourceIds: ["s1"] }, draftVersion: null },
     interpretationCriteriaMissing: [],
+    analyticalReport: { version: 1, periodStart: "2025-11-01", periodEnd: "2026-10-31" },
     ...overrides,
   };
 }
@@ -98,7 +99,17 @@ describe("checkPcmsoReadiness", () => {
     expect(codes(result, "warning")).toEqual([]);
     expect(codes(result, "not_available")).toEqual(NOT_AVAILABLE);
     expect(result.ready).toBe(false);
-    expect(result.counts).toEqual({ blocking: 0, warning: 0, not_available: 3 });
+    expect(result.counts).toEqual({ blocking: 0, warning: 0, not_available: 2 });
+  });
+
+  it("relatório analítico (NOB-154): sem relatório arquivado avisa, com link; com relatório, nada", () => {
+    const none = checkPcmsoReadiness(input({ analyticalReport: null }));
+    expect(codes(none, "warning")).toEqual(["analytical_report"]);
+    const item = none.items.find((i) => i.code === "analytical_report")!;
+    expect(item.reference).toBe("NR-7 7.5.4 e; 7.6.2");
+    expect(item.href).toBe(`/companies/${COMPANY}/analytical-report`);
+    expect(codes(none, "blocking")).toEqual([]);
+    expect(codes(none, "not_available")).not.toContain("analytical_report");
   });
 
   it("critérios de interpretação (NOB-153): avisa os exames do plano sem critério do coordenador", () => {

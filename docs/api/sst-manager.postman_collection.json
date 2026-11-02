@@ -318,6 +318,11 @@
       "key": "asoDocumentId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "analyticalReportId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -4097,6 +4102,152 @@
               ]
             },
             "description": "Histórico (todas as versões) do procedimento, da mais recente à mais antiga. Código inválido → 422."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Relatório analítico anual (NOB-154)",
+      "item": [
+        {
+          "name": "GET /companies/{id}/analytical-reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/analytical-reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "analytical-reports"]
+            },
+            "description": "Versões arquivadas (sem conteúdo), da mais recente à mais antiga. 404 outro tenant; 403 sem Medicina ou client."
+          }
+        },
+        {
+          "name": "GET /companies/{id}/analytical-reports/context",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/analytical-reports/context?periodStart=2025-11-01&periodEnd=2026-10-31",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "analytical-reports",
+                "context"
+              ],
+              "query": [
+                {
+                  "key": "periodStart",
+                  "value": "2025-11-01"
+                },
+                {
+                  "key": "periodEnd",
+                  "value": "2026-10-31"
+                }
+              ]
+            },
+            "description": "Período sugerido (dia seguinte ao último relatório), relatório anterior, enquadramento no 7.6.6 e totais consolidados do período informado."
+          }
+        },
+        {
+          "name": "POST /companies/{id}/analytical-reports",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"periodStart\": \"2025-11-01\",\n  \"periodEnd\": \"2026-10-31\",\n  \"insufficiencyNote\": \"Texto do médico coordenador, se houver.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/analytical-reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "analytical-reports"]
+            },
+            "description": "Elaboração pelo médico coordenador vinculado (x-dev-user = usuário vinculado); demais → 403. Período anual a partir do último relatório; com relatório anterior, variationDiscussion é obrigatória (texto do médico); simplified só se enquadrada no 7.6.6. 201."
+          }
+        },
+        {
+          "name": "GET /analytical-reports/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytical-reports/{{analyticalReportId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analytical-reports", "{{analyticalReportId}}"]
+            },
+            "description": "Versão arquivada com content e contentSha256. Imutável; só dados consolidados."
           }
         }
       ]

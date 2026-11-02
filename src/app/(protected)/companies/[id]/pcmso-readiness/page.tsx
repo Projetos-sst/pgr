@@ -94,6 +94,12 @@ export default async function PcmsoReadinessPage({
       >
         Critérios de interpretação e condutas (médico coordenador)
       </Link>
+      <Link
+        href={`/companies/${id}/analytical-report`}
+        className="text-primary text-sm underline"
+      >
+        Relatório analítico anual (médico coordenador)
+      </Link>
 
       {SECTIONS.map(({ severity, title, tone }) => {
         const rows = items.filter((item) => item.severity === severity);

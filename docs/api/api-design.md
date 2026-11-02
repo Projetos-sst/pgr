@@ -153,6 +153,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/companies/{id}/exam-plans` · `/exam-plans/{id}` · `/exam-plans/{id}/items(/{itemId})` · `/exam-plans/{id}/approval`                                          | GET versões, POST rascunho (`201`) · GET detalhe · POST acrescentar (`201`), PUT decidir · POST aprovar — decisões e aprovação só da coordenadora vinculada (RLS); sem DELETE — NOB-150                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `/companies/{id}/pcmso-documents` · `/pcmso-documents/{id}`                                                                                                    | GET versões, POST gerar prévia (`201`, `{ cycleStart }`; só sem bloqueio na conferência) · GET versão arquivada — sem PUT/DELETE; só `preview` (sem assinatura não há emissão) — NOB-151                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `/companies/{id}/interpretation-criteria` · `/companies/{id}/interpretation-criteria/{code}`                                                                   | GET exames do plano aprovado com o critério vigente e os que faltam, POST nova versão (`201`, `{ code*, otherDescription?, criteria*, conduct* }`; só o coordenador vinculado, demais → `403`) · GET histórico do procedimento (código inválido → `422`) — só inclusão; NR-7 7.5.4 c — NOB-153                                                                                                                                                                                                                                                                                                                                                  |
+| `/companies/{id}/analytical-reports` · `/companies/{id}/analytical-reports/context` · `/analytical-reports/{id}`                                               | GET versões, POST elaborar (`201`, `{ periodStart*, periodEnd*, simplified?, variationDiscussion?, insufficiencyNote? }`; só o coordenador vinculado, demais → `403`; período/simplificação/discussão inválidos → `422`) · GET contexto (período sugerido, anterior, 7.6.6, totais; `?periodStart&periodEnd`) · GET versão arquivada — só `preview`, sem UPDATE/DELETE; NR-7 7.6.2–7.6.6 — NOB-154                                                                                                                                                                                                                                              |
 | `/health-exams` · `/health-exams/{id}`                                                                                                                         | GET (`?search=` funcionário ou tipo de exame, `?examType=`, `?employeeId=`, `?companyId=` = empresa **atual** do funcionário; ID malformado ou tipo inválido → `422 VALIDATION`), POST (`201`) · GET, PUT, DELETE (`204`) — exames ocupacionais/ASO; validade **derivada** na leitura; `validUntil < performedAt` e troca de `employeeId` no PUT → `422 VALIDATION`; funcionário/médico cross-tenant → `422 FK_NOT_FOUND`; sem `/dependents`                                                                                                                                                                                                    |
 | `/health-exams/{id}/procedures` · `/health-exams/{id}/procedures/{procedureId}`                                                                                | GET, POST (`201`, `{ code*, otherDescription?, performedAt* }`; Tabela 27; data não futura; duplicado → `409`) · DELETE (`204`) — exames complementares realizados (NR-7 7.5.19.1 d), sem resultado clínico — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `/health-exams/{id}/aso-readiness` · `/health-exams/{id}/aso-documents` · `/aso-documents/{id}`                                                                | GET conferência 7.5.19.1 a–g · GET prévias, POST gerar (`201`, sem corpo; só sem bloqueio) · GET prévia arquivada — sem PUT/DELETE; só `preview` (sem assinatura do examinador não há ASO emitido) — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -424,6 +425,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Plano de exames              | `actions/medicine/exam-plans.ts`             | list, get, draft, decide, add, approve + REST (NOB-150; coordenadora vinculada no app e na RLS; versões; sem DELETE)                                                                                                                                                                                                                                                                   |
 | PCMSO (prévias)              | `actions/medicine/pcmso-documents.ts`        | list, get, generate + REST (NOB-151; prévia composta do plano aprovado, arquivada com SHA-256; imutável)                                                                                                                                                                                                                                                                               |
 | Critérios de interpretação   | actions/medicine/interpretation-criteria.ts  | list, history, define + REST (NOB-153; NR-7 7.5.4 c; texto do coordenador vinculado; versões só inclusão)                                                                                                                                                                                                                                                                              |
+| Relatório analítico          | actions/medicine/analytical-reports.ts       | list, get, context, generate + REST (NOB-154; NR-7 7.6.2–7.6.6; coordenador vinculado; dados consolidados)                                                                                                                                                                                                                                                                             |
 | Exame ocupacional (ASO)      | `actions/pgr/health-exams.ts`                | list (busca funcionário ou tipo de exame, filtros tipo/funcionário/empresa), get, create, update, delete + REST `/api/v1/health-exams/**` (validade derivada na leitura; funcionário/médico cross-tenant → `FK_NOT_FOUND`; sem `/dependents`)                                                                                                                                          |
 | ASO (conferência e prévias)  | `actions/medicine/aso.ts`                    | readiness, procedimentos, prévias, origem do exame e confirmação do examinador + REST (NOB-152; NR-7 7.5.19.1; sem assinatura)                                                                                                                                                                                                                                                         |
 | Medicina — painel            | `actions/medicine/overview.ts`               | getMedicineOverviewAction, listMedicineEmployeesAction + REST `GET /api/v1/medicine/overview` · `GET /api/v1/medicine/employees` (read-models; core `server/medicine/overview-core.ts`; validade informada, sem periodicidade; sem `notes`/CPF)                                                                                                                                        |
@@ -838,6 +840,70 @@ Critérios de interpretação dos achados e planejamento das condutas por exame 
 | `defineInterpretationCriteriaAction`  | `companyId, { code*, otherDescription?, criteria*, conduct* }` | nova versão (só o coordenador vinculado) |
 
 REST: `GET|POST /api/v1/companies/{id}/interpretation-criteria` · `GET /api/v1/companies/{id}/interpretation-criteria/{code}`. Tela: `/companies/{id}/interpretation-criteria`.
+
+## Relatório analítico anual — `actions/medicine/analytical-reports.ts`
+
+Relatório analítico anual do PCMSO (NOB-154, NR-7 7.6.2 a 7.6.6), em `domains/medicine/analytical-report.ts` e `server/medicine/analytical-report-core.ts`. Migration `0066_pcmso_analytical_reports`.
+
+**Elaboração (7.6.2).**
+
+- Só a conta vinculada (NOB-149) ao coordenador com designação aberta elabora, e a versão fica em nome desse médico.
+- Owner, colaborador, cliente e vínculo revogado → `403`. A RLS repete a regra.
+
+**Período.**
+
+- Anual a partir do último relatório: começa no dia seguinte ao fim do anterior, vai até 12 meses e não termina no futuro.
+- O primeiro relatório tem início livre.
+- Período fora da regra → `422`. O contexto sugere o próximo período.
+
+**Conteúdo, só com dados reais e consolidados** (nenhum nome, CPF, número de CAT ou resultado individual):
+
+- a) exames clínicos com data no período, realizados nesta empresa (origem registrada ou confirmada, MED-07):
+  - registros repetidos (funcionário, tipo e data) contam uma vez;
+  - por tipo de exame;
+  - exames sem origem comprovada ficam fora e são informados à parte;
+- b) exames complementares do período por procedimento (código e descrição da Tabela 27);
+- c) resultados anormais e d) doenças relacionadas ao trabalho: o sistema não registra resultados nem diagnósticos, então o item sai como **informação insuficiente** (7.6.4), nunca zero, e nada é inferido;
+- e) CAT com número registrado no módulo de incidentes, não canceladas, com emissão no período, por tipo (típico, trajeto, doença ocupacional):
+  - CAT sem data de emissão são informadas à parte;
+  - a plataforma não emite CAT nem integra com o eSocial, e zero não comprova ausência;
+- f) comparação com o relatório anterior do sistema, só de indicadores equivalentes (CAT só se os dois relatórios a tiverem):
+  - com relatório anterior, a **discussão das variações é obrigatória e escrita pelo coordenador**;
+  - sem anterior, o item registra que não há comparação.
+
+**Demais itens da NR-7.**
+
+- 7.6.3: o sistema não registra transferência de prontuários, e isso fica declarado.
+- 7.6.4: campo de insuficiência preenchido pelo coordenador.
+- 7.6.5: a apresentação a SST e CIPA fica como pendência explícita.
+- 7.6.6: relatório simplificado (só a e b) apenas para GR 1–2 com até 25 empregados ou GR 3–4 com até 10, contados no cadastro na data da geração. Fora disso → `422`.
+- 7.7.4: porte e dispensa de PCMSO não são cadastrados, então a dispensa sai como "não verificável", nunca presumida.
+
+**Arquivo.**
+
+- `pcmso_analytical_reports`: versão imutável com `content_sha256`, `CHECK status = 'preview'` e referência ao relatório anterior (FK composta).
+- `app_runtime` só com SELECT e INSERT.
+
+**PCMSO.**
+
+- A conferência deixou de marcar `analytical_report` como etapa inexistente. Sem relatório elaborado, vira aviso, com link para a tela.
+- A composição (conteúdo v3) referencia o último relatório (versão, período e SHA-256) ou registra a pendência.
+- Documentos já arquivados não mudam.
+
+| Action                             | Entrada                                                                                          | Retorno (`data`)                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| `listAnalyticalReportsAction`      | `companyId`                                                                                      | versões sem conteúdo                                                 |
+| `getAnalyticalReportAction`        | `id`                                                                                             | versão com `content` e `contentSha256`                               |
+| `getAnalyticalReportContextAction` | `companyId, { periodStart, periodEnd }?`                                                         | `{ previous, suggestedPeriod, period, issues, eligibility, totals }` |
+| `generateAnalyticalReportAction`   | `companyId, { periodStart*, periodEnd*, simplified?, variationDiscussion?, insufficiencyNote? }` | versão arquivada (só o coordenador vinculado)                        |
+
+REST:
+
+- `GET|POST /api/v1/companies/{id}/analytical-reports`;
+- `GET /api/v1/companies/{id}/analytical-reports/context`;
+- `GET /api/v1/analytical-reports/{id}`.
+
+Tela: `/companies/{id}/analytical-report`.
 
 ## Gestão de Saúde Ocupacional (ASO) — `actions/pgr/health-exams.ts`
 
@@ -1416,6 +1482,7 @@ inexistente ou de outro escritório → `notFound()`.
 | `/medicine/procedures` · `/companies/[id]/exam-proposal`                     | Catálogo de procedimentos (Tabela 27, consulta) · proposta de exames da empresa (só leitura, sem aprovar) — NOB-147                                   |
 | `/companies/[id]/pcmso-readiness`                                            | Conferência dos dados do PCMSO (pendências, etapas inexistentes e avisos; só leitura) — NOB-148                                                       |
 | `/companies/[id]/interpretation-criteria`                                    | Critérios de interpretação e condutas por exame do plano aprovado (versões; só o coordenador vinculado registra) — NOB-153                            |
+| `/companies/[id]/analytical-report`                                          | Relatório analítico anual do PCMSO (contexto do período, elaboração pelo coordenador, prévia e versões) — NOB-154                                     |
 | `/health-exams` · `/health-exams/new` · `/health-exams/[id]/edit`            | Gestão de Saúde/ASO (lista + busca + filtros tipo/empresa/funcionário; erro ≠ vazio / criar, `?employeeId=` pré-seleciona / editar)                   |
 | `/health-exams/[id]/aso`                                                     | Conferência do ASO (NR-7 7.5.19.1), exames realizados com data e prévias arquivadas — NOB-152                                                         |
 | `/form-controls` · `/form-controls/new` · `/form-controls/[id]/edit`         | Controle de formulário (ISO); form com preview em tempo real do cabeçalho                                                                             |

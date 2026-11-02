@@ -14,6 +14,8 @@ import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { PAGE_SIZE_MAX } from "@/shared/pagination";
 
+import { getLatestAnalyticalReport } from "@/shared/db/repositories/pcmso-analytical-reports";
+
 import { loadProposalSources } from "./exam-proposal-core";
 import {
   approvedPlannedProcedures,
@@ -29,8 +31,8 @@ export async function getPcmsoReadiness(ctx: TenantContext, companyId: string) {
   const company = await getCompanyById(ctx.tenantId, id);
   if (!company) throw new NotFoundError();
   const sources = await loadProposalSources(ctx, id);
-  const [history, active, onLeave, medicos, plans, planned, criteria] = await Promise.all(
-    [
+  const [history, active, onLeave, medicos, plans, planned, criteria, report] =
+    await Promise.all([
       listCoordinatorAssignments(ctx, id),
       listEmployees(ctx.tenantId, { companyId: id, status: "active", pageSize: 1 }),
       listEmployees(ctx.tenantId, { companyId: id, status: "on_leave", pageSize: 1 }),
@@ -38,8 +40,8 @@ export async function getPcmsoReadiness(ctx: TenantContext, companyId: string) {
       listExamPlans(ctx, id),
       approvedPlannedProcedures(ctx, id),
       currentCriteria(ctx, id),
-    ],
-  );
+      getLatestAnalyticalReport(ctx, id),
+    ]);
   const approved = plans.find((plan) => plan.status === "approved") ?? null;
   const draft = plans.find((plan) => plan.status === "draft") ?? null;
   const open = history.find((row) => row.endsOn === null) ?? null;
@@ -79,6 +81,13 @@ export async function getPcmsoReadiness(ctx: TenantContext, companyId: string) {
         : null,
       draftVersion: draft?.version ?? null,
     },
+    analyticalReport: report
+      ? {
+          version: report.version,
+          periodStart: report.periodStart,
+          periodEnd: report.periodEnd,
+        }
+      : null,
     interpretationCriteriaMissing: planned
       ? criteriaCoverage(planned.items, criteria).missing
       : null,

@@ -183,8 +183,9 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     expect(content.pendingSections.map((s) => s.code)).toEqual([
       "clinics",
       "health_campaigns",
-      "analytical_report",
     ]);
+    // Sem relatório analítico elaborado (NOB-154), a prévia registra a pendência própria.
+    expect(content.analyticalReport).toMatchObject({ status: "pending" });
     expect(doc.contentSha256).toBe(pcmsoContentHash(content));
   });
 

@@ -297,6 +297,10 @@ export {
   type PcmsoInterpretationCriterion,
 } from "./pcmso-interpretation-criteria";
 export {
+  pcmsoAnalyticalReports,
+  type PcmsoAnalyticalReport,
+} from "./pcmso-analytical-reports";
+export {
   healthExams,
   healthExamProcedures,
   examType,

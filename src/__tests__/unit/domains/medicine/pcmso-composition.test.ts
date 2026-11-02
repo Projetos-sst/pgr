@@ -83,6 +83,7 @@ function input(overrides: Partial<PcmsoCompositionInput> = {}): PcmsoComposition
     },
     examiners: [{ name: "Dr. Examinador", registration: "CRM 789/MA" }],
     interpretationCriteria: [],
+    analyticalReport: null,
     pendingSections: [
       {
         code: "clinics",
@@ -172,7 +173,7 @@ describe("critérios de interpretação (NOB-153)", () => {
         ],
       }),
     );
-    expect(content.schemaVersion).toBe(2);
+    expect(content.schemaVersion).toBe(3);
     expect(content.interpretation.reference).toBe("NR-7 7.5.4 c");
     expect(content.interpretation.authorship).toMatch(/não gera nem sugere/);
     expect(content.interpretation.items).toEqual([
@@ -193,6 +194,30 @@ describe("critérios de interpretação (NOB-153)", () => {
     expect(content.interpretation.items.map((i) => i.procedureCode)).not.toContain(
       "1057",
     );
+  });
+});
+
+describe("relatório analítico na composição (NOB-154)", () => {
+  it("referencia o último relatório arquivado ou fica pendente", () => {
+    expect(composePcmso(input()).analyticalReport).toMatchObject({ status: "pending" });
+    const withReport = composePcmso(
+      input({
+        analyticalReport: {
+          id: "r1",
+          version: 2,
+          periodStart: "2025-11-01",
+          periodEnd: "2026-10-31",
+          contentSha256: "c".repeat(64),
+        },
+      }),
+    );
+    expect(withReport.analyticalReport).toMatchObject({
+      status: "available",
+      reportId: "r1",
+      version: 2,
+      periodStart: "2025-11-01",
+      periodEnd: "2026-10-31",
+    });
   });
 });
 

@@ -82,11 +82,11 @@ const gate = (tenantId = "org_a") =>
     expect(codes(result.data.items, "blocking")).toEqual([]);
     // O plano desta fixture não tem exames: nada a cobrir com critérios (NOB-153), e o item deixou
     // de ser etapa inexistente. O aviso com exames sem critério é testado em interpretation-criteria.
-    expect(codes(result.data.items, "warning")).toEqual([]);
+    // Sem relatório analítico elaborado (NOB-154): aviso, não etapa inexistente.
+    expect(codes(result.data.items, "warning")).toEqual(["analytical_report"]);
     expect(codes(result.data.items, "not_available")).toEqual([
       "clinics",
       "health_campaigns",
-      "analytical_report",
     ]);
     expect(result.data.ready).toBe(false);
   });
@@ -124,7 +124,10 @@ const gate = (tenantId = "org_a") =>
       "validated_risks",
       "exam_plan",
     ]);
-    expect(codes(result.data.items, "warning")).toEqual(["pending_risks"]);
+    expect(codes(result.data.items, "warning")).toEqual([
+      "pending_risks",
+      "analytical_report",
+    ]);
   });
 
   it("isolamento, módulo e entrada inválida", async () => {
