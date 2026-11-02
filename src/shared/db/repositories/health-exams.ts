@@ -13,6 +13,7 @@ import {
 import type { LatestExam } from "@/shared/domains/medicine/employees";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
+import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
@@ -21,6 +22,7 @@ import { healthExams, type HealthExam } from "../schema/health-exams";
 import { employees } from "../schema/employees";
 import { medicos } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
+import { hasAsoDocumentsTx } from "./aso";
 import { assertCompanyModuleTx } from "./company-modules";
 
 // A FK (employee/medico) é por PK global e o check de FK do Postgres ignora RLS —
@@ -30,7 +32,7 @@ async function assertRefsInTenant(
   tx: Parameters<Parameters<typeof withOrg>[1]>[0],
   orgId: string,
   input: HealthExamValues,
-): Promise<void> {
+): Promise<{ companyId: string }> {
   const [emp] = await tx
     .select({ id: employees.id, companyId: employees.companyId })
     .from(employees)
@@ -48,13 +50,20 @@ async function assertRefsInTenant(
       .limit(1);
     if (!doc) throw new ReferenceNotFoundError("Médico não encontrado neste escritório.");
   }
+  return { companyId: emp.companyId };
 }
+
+export const EXAM_WITH_ASO_MESSAGE =
+  "Exame com prévia de ASO arquivada não pode ser excluído: o histórico do ASO é preservado.";
 
 export type ListHealthExamsParams = PageParams & {
   search?: string;
   examType?: ExamType;
   employeeId?: string;
-  /** Empresa ATUAL do funcionário (`employees.company_id`) — exame não tem empresa própria. */
+  /**
+   * Empresa ATUAL do funcionário (`employees.company_id`). A empresa onde o exame foi realizado
+   * (`health_exams.company_id`, MED-07) é usada pelo ASO.
+   */
   companyId?: string;
 };
 
@@ -169,11 +178,13 @@ export async function createHealthExam(
 ): Promise<HealthExam> {
   return auditedTenantWrite(orgId, "pgr.health-exams.write_rejected", () =>
     withOrg(orgId, async (tx) => {
-      await assertRefsInTenant(tx, orgId, input);
+      // Empresa do exame = vínculo atual do funcionário no servidor (MED-07), nunca do cliente.
+      const { companyId } = await assertRefsInTenant(tx, orgId, input);
       const [row] = await tx
         .insert(healthExams)
         .values({
           orgId,
+          companyId,
           employeeId: input.employeeId,
           doctorId: input.doctorId ?? null,
           examType: input.examType,
@@ -238,6 +249,8 @@ export async function updateHealthExam(
 export async function deleteHealthExam(orgId: string, id: string): Promise<boolean> {
   return auditedTenantWrite(orgId, "pgr.health-exams.write_rejected", () =>
     withOrg(orgId, async (tx) => {
+      if (await hasAsoDocumentsTx(tx, orgId, { examId: id }))
+        throw new EntityInUseError(EXAM_WITH_ASO_MESSAGE);
       const rows = await tx
         .delete(healthExams)
         .where(and(eq(healthExams.orgId, orgId), eq(healthExams.id, id)))

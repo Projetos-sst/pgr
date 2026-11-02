@@ -8,7 +8,7 @@ import {
 import { listMedicoOptionsAction } from "@/shared/server/actions/pgr/medicos";
 import { getHealthExamAction } from "@/shared/server/actions/pgr/health-exams";
 
-import { PageHeader } from "../../../_ui/list";
+import { PageHeader, PrimaryLink } from "../../../_ui/list";
 import { HealthExamForm } from "../../_components/health-exam-form";
 import { HealthExamIcon } from "../../_components/health-exam-icon";
 
@@ -53,6 +53,11 @@ export default async function EditHealthExamPage({
         icon={<HealthExamIcon />}
         title="Editar exame"
         description="Exame ocupacional (ASO)"
+        action={
+          <PrimaryLink href={`/health-exams/${exam.id}/aso`}>
+            Conferência do ASO
+          </PrimaryLink>
+        }
       />
       <HealthExamForm
         id={exam.id}

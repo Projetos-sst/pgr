@@ -7,11 +7,15 @@ import {
   timestamp,
   index,
   pgPolicy,
+  foreignKey,
+  unique,
+  check,
 } from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 
 import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
+import { companies } from "./companies";
 import { employees } from "./employees";
 import { medicos } from "./medicos";
 import { companyModuleScope } from "./module-policy";
@@ -37,6 +41,8 @@ const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
  * validade (vigente/a vencer/vencido) é DERIVADA na leitura a partir de
  * `valid_until` (nullable — ex.: demissional pode não ter validade). `doctor_id`
  * usa ON DELETE SET NULL: excluir um médico não bloqueia nem apaga o exame.
+ * `company_id` (NOB-152, MED-07) é a empresa onde o exame foi realizado, gravada pelo
+ * servidor a partir do vínculo do funcionário na criação; não acompanha transferências.
  */
 export const healthExams = pgTable(
   "health_exams",
@@ -48,6 +54,8 @@ export const healthExams = pgTable(
     employeeId: uuid("employee_id")
       .notNull()
       .references(() => employees.id, { onDelete: "cascade" }),
+    // Preenchida pelo trigger `health_exams_set_company` quando o INSERT não a informa.
+    companyId: uuid("company_id").notNull(),
     doctorId: uuid("doctor_id").references(() => medicos.id, { onDelete: "set null" }),
     examType: examType("exam_type").notNull(),
     performedAt: date("performed_at").notNull(),
@@ -60,6 +68,12 @@ export const healthExams = pgTable(
   },
   (table) => [
     index("idx_health_exams_org_id").on(table.orgId),
+    unique("uq_health_exams_identity").on(table.id, table.orgId, table.companyId),
+    foreignKey({
+      columns: [table.companyId, table.orgId],
+      foreignColumns: [companies.id, companies.orgId],
+    }).onDelete("cascade"),
+    index("idx_health_exams_company_id").on(table.orgId, table.companyId),
     pgPolicy("health_exams_module_access", {
       as: "restrictive",
       for: "all",
@@ -80,3 +94,65 @@ export const healthExams = pgTable(
 
 export type HealthExam = InferSelectModel<typeof healthExams>;
 export type NewHealthExam = InferInsertModel<typeof healthExams>;
+
+/**
+ * Exames complementares realizados no exame ocupacional (NOB-152, NR-7 7.5.19.1 d): código da
+ * Tabela 27 do eSocial e data. Só a indicação e a data, nunca o resultado clínico. Herdam a
+ * empresa do exame (FK composta), então não migram com o funcionário (MED-07).
+ */
+export const healthExamProcedures = pgTable(
+  "health_exam_procedures",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id").notNull(),
+    companyId: uuid("company_id").notNull(),
+    healthExamId: uuid("health_exam_id").notNull(),
+    procedureCode: text("procedure_code").notNull(),
+    otherDescription: text("other_description"),
+    performedAt: date("performed_at").notNull(),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.healthExamId, table.orgId, table.companyId],
+      foreignColumns: [healthExams.id, healthExams.orgId, healthExams.companyId],
+    }).onDelete("cascade"),
+    unique("uq_health_exam_procedures")
+      .on(
+        table.orgId,
+        table.healthExamId,
+        table.procedureCode,
+        table.performedAt,
+        table.otherDescription,
+      )
+      .nullsNotDistinct(),
+    index("idx_health_exam_procedures_exam").on(table.orgId, table.healthExamId),
+    check("ck_health_exam_procedures_code", sql`${table.procedureCode} ~ '^[0-9]{4}$'`),
+    check(
+      "ck_health_exam_procedures_other",
+      sql`(${table.procedureCode} = '9999') = (${table.otherDescription} is not null)`,
+    ),
+    pgPolicy("health_exam_procedures_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+    pgPolicy("health_exam_procedures_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: companyModuleScope(table.orgId, table.companyId, "medicine"),
+      withCheck: companyModuleScope(table.orgId, table.companyId, "medicine"),
+    }),
+    pgPolicy("health_exam_procedures_insert", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${table.createdBy} = current_setting('app.current_actor', true)`,
+    }),
+  ],
+).enableRLS();
+
+export type HealthExamProcedure = InferSelectModel<typeof healthExamProcedures>;

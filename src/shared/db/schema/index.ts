@@ -294,11 +294,14 @@ export {
 export { pcmsoDocuments, type PcmsoDocument } from "./pcmso-documents";
 export {
   healthExams,
+  healthExamProcedures,
   examType,
   examAptitude,
   type HealthExam,
   type NewHealthExam,
+  type HealthExamProcedure,
 } from "./health-exams";
+export { asoDocuments, type AsoDocument } from "./aso-documents";
 export {
   ergonomicEvaluations,
   ergonomicAdequacy,

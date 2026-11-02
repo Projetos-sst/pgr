@@ -308,6 +308,16 @@
     {
       "key": "devUser",
       "value": ""
+    },
+    {
+      "key": "examProcedureId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "asoDocumentId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -4209,6 +4219,232 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "health-exams", "{{healthExamId}}"]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ASO — conferência e prévias (NOB-152)",
+      "item": [
+        {
+          "name": "GET /health-exams/{id}/procedures",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/procedures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "procedures"]
+            },
+            "description": "Exames complementares realizados do exame (código da Tabela 27 e data). 404 outro tenant; 403 client."
+          }
+        },
+        {
+          "name": "POST /health-exams/{id}/procedures",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"0281\",\n  \"performedAt\": \"2026-10-18\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/procedures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "procedures"]
+            },
+            "description": "Registra exame complementar realizado. Data não futura; 9999 exige otherDescription; sem resultado clínico. Duplicado → 409. 201."
+          }
+        },
+        {
+          "name": "DELETE /health-exams/{id}/procedures/{procedureId}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/procedures/{{examProcedureId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "health-exams",
+                "{{healthExamId}}",
+                "procedures",
+                "{{examProcedureId}}"
+              ]
+            },
+            "description": "Remove registro digitado errado. Prévias já arquivadas guardam a própria cópia. 204."
+          }
+        },
+        {
+          "name": "GET /health-exams/{id}/aso-readiness",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/aso-readiness",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "aso-readiness"]
+            },
+            "description": "Conferência do ASO (NR-7 7.5.19.1 a–g): items (blocking/warning) e checklist. Só leitura."
+          }
+        },
+        {
+          "name": "GET /health-exams/{id}/aso-documents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/aso-documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "aso-documents"]
+            },
+            "description": "Prévias arquivadas do ASO (sem conteúdo), da mais recente à mais antiga."
+          }
+        },
+        {
+          "name": "POST /health-exams/{id}/aso-documents (gerar prévia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/aso-documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "aso-documents"]
+            },
+            "description": "Gera e arquiva uma prévia do ASO (sem corpo). 422 enquanto a conferência tiver bloqueios (examinador, riscos validados, função, CNPJ, empresa do exame). Não emite nem assina. 201."
+          }
+        },
+        {
+          "name": "GET /aso-documents/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/aso-documents/{{asoDocumentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "aso-documents", "{{asoDocumentId}}"]
+            },
+            "description": "Prévia arquivada com content e contentSha256. Imutável; nunca contém observações clínicas do exame."
           }
         }
       ]

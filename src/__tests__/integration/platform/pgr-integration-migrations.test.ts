@@ -132,18 +132,31 @@ const newTables = [
             "health_exams",
             "medical_risk_sources",
           ];
+          // Colunas acrescentadas depois da 0056 ficam fora da comparação e são conferidas à parte.
+          const addedColumns: Record<string, string[]> = { health_exams: ["company_id"] };
           const read = async () => {
             const records: Record<string, unknown> = {};
-            for (const table of oldTables)
-              records[table] = await db.unsafe(
-                `select to_jsonb(t) as data from public."${table}" t order by to_jsonb(t)::text`,
+            for (const table of oldTables) {
+              const row = (addedColumns[table] ?? []).reduce(
+                (expr, column) => `${expr} - '${column}'`,
+                "to_jsonb(t)",
               );
+              records[table] = await db.unsafe(
+                `select ${row} as data from public."${table}" t order by (${row})::text`,
+              );
+            }
             return records;
           };
           const before = await read();
           await migrate(drizzle(db), { migrationsFolder: folder });
           await assertFinal(db);
           expect(await read()).toEqual(before);
+          // NOB-152 (MED-07): exames antigos recebem a empresa do vínculo atual do funcionário.
+          const [{ mismatched, total }] =
+            await db`select count(*) filter (where h.company_id is distinct from e.company_id)::int as mismatched, count(*)::int as total
+            from health_exams h join employees e on e.id = h.employee_id`;
+          expect(total).toBeGreaterThan(0);
+          expect(mismatched).toBe(0);
         });
       } finally {
         // Only remove the exact temporary folder created by this test.
