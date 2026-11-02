@@ -47,6 +47,8 @@ export type PcmsoReadinessInput = {
    * `null` sem plano aprovado.
    */
   interpretationCriteriaMissing: { procedureCode: string; description: string }[] | null;
+  /** Último relatório analítico arquivado (NR-7 7.6.2; NOB-154); `null` se não houver. */
+  analyticalReport: { version: number; periodStart: string; periodEnd: string } | null;
 };
 
 export type PcmsoReadiness = {
@@ -242,13 +244,14 @@ export function checkPcmsoReadiness(input: PcmsoReadinessInput): PcmsoReadiness 
     "MED-08",
     null,
   );
-  add(
-    "analytical_report",
-    "not_available",
-    "Relatório analítico do programa: depende dos exames do período e ainda não é gerado.",
-    "NR-7 7.5.4 e; 7.6.2",
-    null,
-  );
+  if (!input.analyticalReport)
+    add(
+      "analytical_report",
+      "warning",
+      "Nenhum relatório analítico elaborado pelo médico coordenador ainda. No primeiro ciclo isso é esperado; depois, o relatório é anual a partir do último.",
+      "NR-7 7.5.4 e; 7.6.2",
+      `/companies/${input.companyId}/analytical-report`,
+    );
 
   const counts = { blocking: 0, warning: 0, not_available: 0 };
   for (const item of items) counts[item.severity] += 1;

@@ -16,8 +16,8 @@ import { getProcedure } from "./procedure-catalog";
  * documento oficial (MED-12). Seções que o sistema ainda não tem entram como pendentes, nunca
  * com texto inventado. O leiaute final depende do modelo do Dr. Alcides (MED-08), não enviado.
  */
-// v2 (NOB-153): critérios de interpretação e condutas por exame.
-export const PCMSO_CONTENT_SCHEMA_VERSION = 2;
+// v2 (NOB-153): critérios de interpretação; v3 (NOB-154): referência ao relatório analítico.
+export const PCMSO_CONTENT_SCHEMA_VERSION = 3;
 export const PCMSO_PREVIEW_NOTICE =
   "PRÉVIA — documento sem assinatura do médico responsável e sem validade legal (MED-12).";
 
@@ -75,6 +75,14 @@ export type PcmsoCompositionInput = {
   examiners: { name: string; registration: string }[];
   /** Critérios vigentes do médico coordenador (NR-7 7.5.4 c; NOB-153). */
   interpretationCriteria: CurrentCriterion[];
+  /** Último relatório analítico arquivado (NOB-154); `null` se não houver. */
+  analyticalReport: {
+    id: string;
+    version: number;
+    periodStart: string;
+    periodEnd: string;
+    contentSha256: string;
+  } | null;
   pendingSections: PcmsoReadinessItem[];
 };
 
@@ -144,11 +152,22 @@ export function composePcmso(input: PcmsoCompositionInput) {
       administrativeUpdate:
         "Troca do médico responsável é atualização administrativa do PCMSO, não revisão do programa (MED-14).",
     },
-    analyticalReport: {
-      frequency: "Anual, considerando a data do último relatório (NR-7 7.6.2).",
-      status: "pending" as const,
-      note: "O relatório analítico ainda não é gerado pelo sistema; depende dos exames do período.",
-    },
+    analyticalReport: input.analyticalReport
+      ? {
+          frequency: "Anual, considerando a data do último relatório (NR-7 7.6.2).",
+          status: "available" as const,
+          reportId: input.analyticalReport.id,
+          version: input.analyticalReport.version,
+          periodStart: input.analyticalReport.periodStart,
+          periodEnd: input.analyticalReport.periodEnd,
+          contentSha256: input.analyticalReport.contentSha256,
+          note: "Último relatório analítico elaborado pelo médico coordenador (prévia arquivada, NR-7 7.5.4 e).",
+        }
+      : {
+          frequency: "Anual, considerando a data do último relatório (NR-7 7.6.2).",
+          status: "pending" as const,
+          note: "Nenhum relatório analítico elaborado pelo médico coordenador ainda.",
+        },
     company: input.company,
     coordinator: { ...input.coordinator, reference: "NR-7 7.4.1 c; 7.5.2" },
     riskBasis: {
