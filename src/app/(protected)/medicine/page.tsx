@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { resolvePageParams } from "@/shared/pagination";
 import {
@@ -60,7 +62,13 @@ export default async function MedicinePage({
       title="Medicina do Trabalho"
       description="Painel das empresas com Medicina habilitada"
       action={
-        <div className="flex">
+        <div className="flex gap-2">
+          <Link
+            href="/medicine/procedures"
+            className="glass-input text-text flex h-11 items-center rounded-xl px-[18px] text-[13px] font-bold"
+          >
+            Procedimentos (Tabela 27)
+          </Link>
           <ToolbarButton href="/health-exams/new">Registrar exame</ToolbarButton>
         </div>
       }

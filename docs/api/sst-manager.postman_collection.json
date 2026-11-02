@@ -242,6 +242,11 @@
       "type": "string"
     },
     {
+      "key": "procedureCode",
+      "value": "0281",
+      "type": "string"
+    },
+    {
       "key": "machineCatalogId",
       "value": "",
       "type": "string"
@@ -9261,6 +9266,109 @@
             "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
           },
           "response": []
+        }
+      ]
+    },
+    {
+      "name": "Medicina — procedimentos e proposta de exames (NOB-147)",
+      "item": [
+        {
+          "name": "GET /medicine/procedures?search= (Tabela 27)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicine/procedures?search=audiometria&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicine", "procedures"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "audiometria"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Catálogo da Tabela 27 do eSocial (só leitura). Busca por código ou descrição, sem acento. Retorna { rows, total, source } com versão e SHA-256 da fonte. 403 para client."
+          }
+        },
+        {
+          "name": "GET /medicine/procedures/{code}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicine/procedures/{{procedureCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicine", "procedures", "{{procedureCode}}"]
+            },
+            "description": "Procedimento pelo código oficial. Código fora da Tabela 27 → 404."
+          }
+        },
+        {
+          "name": "GET /companies/{id}/exam-proposal",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/exam-proposal",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "exam-proposal"]
+            },
+            "description": "Proposta só leitura de exames complementares a partir dos riscos validados de fonte vigente (NR-7, Anexos II e III). requiresMedicalReview: true; nada é aprovado. 404 empresa de outro tenant; 403 sem Medicina ou client."
+          }
+        },
+        {
+          "name": "GET /medicine/procedures/0000 (código inventado → 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicine/procedures/0000",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicine", "procedures", "0000"]
+            },
+            "description": "Negativo: código fora da Tabela 27 retorna 404 NOT_FOUND."
+          }
         }
       ]
     },
