@@ -160,7 +160,7 @@ async function list(params: ListParams) {
     expect(count).toBe(1); // só o exame semeado como admin
   });
 
-  it("mover exame para funcionário de companyA3 via update → FORBIDDEN", async () => {
+  it("mover exame para funcionário de companyA3 via update → recusado (Lote 02A: troca de funcionário → VALIDATION)", async () => {
     const result = await updateHealthExamAction(M.examA2, {
       employeeId: M.employeeA3,
       examType: "admissional",
@@ -168,7 +168,10 @@ async function list(params: ListParams) {
       aptitude: "fit",
     });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.code).toBe("FORBIDDEN");
+    if (!result.ok) expect(result.error.code).toBe("VALIDATION");
+    const [row] =
+      await admin`select employee_id from health_exams where id = ${M.examA2}`;
+    expect(row.employee_id).toBe(M.employeeA2);
   });
 
   it("criar exame em companyA2 (Medicina ligada, PGR desligado) → ok e revalida ficha/painel", async () => {

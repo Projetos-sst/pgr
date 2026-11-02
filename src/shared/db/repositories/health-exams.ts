@@ -3,6 +3,7 @@ import "server-only";
 import { and, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 
 import {
+  EMPLOYEE_CHANGE_MESSAGE,
   EXAM_TYPES,
   EXAM_TYPE_LABELS,
   type ExamType,
@@ -13,6 +14,7 @@ import type { LatestExam } from "@/shared/domains/medicine/employees";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 
 import { withOrg } from "../with-org";
 import { healthExams, type HealthExam } from "../schema/health-exams";
@@ -34,7 +36,8 @@ async function assertRefsInTenant(
     .from(employees)
     .where(and(eq(employees.orgId, orgId), eq(employees.id, input.employeeId)))
     .limit(1);
-  if (!emp) throw new ReferenceNotFoundError("employee");
+  if (!emp)
+    throw new ReferenceNotFoundError("Funcionário não encontrado neste escritório.");
   await assertCompanyModuleTx(tx, orgId, emp.companyId, "medicine");
 
   if (input.doctorId) {
@@ -43,7 +46,7 @@ async function assertRefsInTenant(
       .from(medicos)
       .where(and(eq(medicos.orgId, orgId), eq(medicos.id, input.doctorId)))
       .limit(1);
-    if (!doc) throw new ReferenceNotFoundError("doctor");
+    if (!doc) throw new ReferenceNotFoundError("Médico não encontrado neste escritório.");
   }
 }
 
@@ -193,11 +196,23 @@ export async function updateHealthExam(
 ): Promise<HealthExam | null> {
   return auditedTenantWrite(orgId, "pgr.health-exams.write_rejected", () =>
     withOrg(orgId, async (tx) => {
+      // Identidade do exame: o funcionário não muda na edição. Lê o exame (org +
+      // RLS: empresa sem Medicina → invisível → NOT_FOUND) antes de olhar o
+      // funcionário pedido, para não revelar nada sobre ele.
+      const [current] = await tx
+        .select({ employeeId: healthExams.employeeId })
+        .from(healthExams)
+        .where(and(eq(healthExams.orgId, orgId), eq(healthExams.id, id)))
+        .limit(1)
+        .for("update");
+      if (!current) return null;
+      if (current.employeeId !== input.employeeId) {
+        throw new ValidationError(EMPLOYEE_CHANGE_MESSAGE);
+      }
       await assertRefsInTenant(tx, orgId, input);
       const [row] = await tx
         .update(healthExams)
         .set({
-          employeeId: input.employeeId,
           doctorId: input.doctorId ?? null,
           examType: input.examType,
           performedAt: input.performedAt,
@@ -207,7 +222,13 @@ export async function updateHealthExam(
           certificatePath: input.certificatePath ?? null,
           updatedAt: new Date(),
         })
-        .where(and(eq(healthExams.orgId, orgId), eq(healthExams.id, id)))
+        .where(
+          and(
+            eq(healthExams.orgId, orgId),
+            eq(healthExams.id, id),
+            eq(healthExams.employeeId, current.employeeId),
+          ),
+        )
         .returning();
       return row ?? null;
     }),

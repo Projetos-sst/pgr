@@ -10,6 +10,7 @@ import {
 } from "@/shared/domains/pgr/health-exams";
 import type { Paginated } from "@/shared/pagination";
 import type { ActionResult } from "@/shared/server/result";
+import { medicineErrorLabel } from "@/shared/domains/medicine/error-messages";
 
 import { StatusBadge } from "../../../_ui/data-list";
 import { ListErrorState } from "../../../_ui/list-error-state";
@@ -88,7 +89,7 @@ export function OccupationalHealthSection({
       <SectionShell action={registerLink}>
         <ListErrorState
           isFlat
-          code={exams.error.code}
+          code={medicineErrorLabel(exams.error.code)}
           title="Não foi possível carregar os exames"
           description="Isso não significa que o funcionário não tenha exames registrados. Tente novamente."
           retryHref={retryHref}

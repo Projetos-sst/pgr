@@ -74,6 +74,26 @@ export async function seedMedicine(admin: ReturnType<typeof postgres>): Promise<
   `);
 }
 
+/**
+ * Lote 02A (NOB-112): exame LEGADO de `employeeA2` com vencimento anterior à
+ * realização, inserido como admin (o banco não tem CHECK; a regra é da
+ * aplicação). Prova que a edição exige corrigir as datas e que nada é alterado
+ * automaticamente. Separado de `seedMedicine` para não mudar as contagens do Lote 01.
+ */
+export const LOTE02A_IDS = {
+  examA2LegacyInvalidDates: "11111111-1111-1111-1111-1111111111fb",
+} as const;
+
+export async function seedLegacyInvalidDateExam(
+  admin: ReturnType<typeof postgres>,
+): Promise<void> {
+  await admin.unsafe(`
+    insert into public.health_exams
+      (id, org_id, employee_id, doctor_id, exam_type, performed_at, valid_until, aptitude, notes, certificate_path) values
+      ('${LOTE02A_IDS.examA2LegacyInvalidDates}','org_a','${M.employeeA2}',null,'periodic','2026-03-10','2026-03-01','fit','${N.notes}','${N.certificatePath}');
+  `);
+}
+
 /** Garante que nenhum campo sensível (chave ou valor-marcador) aparece no payload. */
 export function expectNoSensitiveFields(payload: unknown): void {
   const json = JSON.stringify(payload);

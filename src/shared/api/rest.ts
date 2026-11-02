@@ -9,7 +9,7 @@ import {
 import { ForbiddenError, NoTenantContextError } from "@/shared/auth/errors";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { toActionError } from "@/shared/server/action-error";
-import { logTenantEvent } from "@/shared/tenant/audit-log";
+import { logTenantEvent, safeErrorMessage } from "@/shared/tenant/audit-log";
 
 const HTTP_BY_CODE: Record<string, number> = {
   VALIDATION: 422,
@@ -131,7 +131,7 @@ export async function restHandler<T>(
       outcome: "rejected",
       orgId: ctx?.tenantId ?? null,
       userId: ctx?.userId ?? null,
-      error: error instanceof Error ? error.message : String(error),
+      error: safeErrorMessage(error),
     });
     return NextResponse.json(
       { error: { code: "UNKNOWN", message: "Erro inesperado." } },
