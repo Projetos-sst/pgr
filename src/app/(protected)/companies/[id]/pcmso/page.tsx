@@ -85,6 +85,24 @@ function Preview({
           {content.clinicalExam.text} ({content.clinicalExam.reference})
         </p>
       </section>
+      {content.interpretation ? (
+        <section className="flex flex-col gap-1">
+          <h3 className="text-text font-semibold">
+            Critérios de interpretação e condutas ({content.interpretation.reference})
+          </h3>
+          <p className="text-text-subtle">{content.interpretation.authorship}</p>
+          <ul className="text-text-subtle list-disc pl-5">
+            {content.interpretation.items.map((item) => (
+              <li key={`${item.procedureCode}-${item.description}`}>
+                {item.procedureCode} {item.description}:{" "}
+                {item.status === "defined"
+                  ? `${item.criteria} — Condutas: ${item.conduct} (${item.author}, versão ${item.version})`
+                  : item.note}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       {content.groups.map((group) => (
         <section
           key={`${group.exposureGroup}-${group.jobRole}`}

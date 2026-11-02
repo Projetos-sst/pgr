@@ -5,6 +5,7 @@ import { z } from "zod";
 import { CLINICAL_EXAM_NOTE } from "./exam-rules";
 import { addDays, addMonths } from "./nr7-schedule-rules";
 import type { PcmsoReadinessItem } from "./pcmso-readiness";
+import { criteriaCoverage, type CurrentCriterion } from "./interpretation-criteria";
 import { getProcedure } from "./procedure-catalog";
 
 /**
@@ -15,7 +16,8 @@ import { getProcedure } from "./procedure-catalog";
  * documento oficial (MED-12). Seções que o sistema ainda não tem entram como pendentes, nunca
  * com texto inventado. O leiaute final depende do modelo do Dr. Alcides (MED-08), não enviado.
  */
-export const PCMSO_CONTENT_SCHEMA_VERSION = 1;
+// v2 (NOB-153): critérios de interpretação e condutas por exame.
+export const PCMSO_CONTENT_SCHEMA_VERSION = 2;
 export const PCMSO_PREVIEW_NOTICE =
   "PRÉVIA — documento sem assinatura do médico responsável e sem validade legal (MED-12).";
 
@@ -71,6 +73,8 @@ export type PcmsoCompositionInput = {
     }[];
   };
   examiners: { name: string; registration: string }[];
+  /** Critérios vigentes do médico coordenador (NR-7 7.5.4 c; NOB-153). */
+  interpretationCriteria: CurrentCriterion[];
   pendingSections: PcmsoReadinessItem[];
 };
 
@@ -159,6 +163,35 @@ export function composePcmso(input: PcmsoCompositionInput) {
       reference: "NR-7 7.5.4 b; MED-15",
     },
     clinicalExam: CLINICAL_EXAM_NOTE,
+    interpretation: {
+      reference: "NR-7 7.5.4 c",
+      authorship:
+        "Critérios e condutas definidos pelo médico coordenador do PCMSO; o sistema não gera nem sugere texto clínico (DT-23).",
+      items: criteriaCoverage(
+        input.plan.items.filter((item) => item.decision === "kept"),
+        input.interpretationCriteria,
+      )
+        .rows.filter((row) => row.inApprovedPlan)
+        .map((row) =>
+          row.current
+            ? {
+                procedureCode: row.procedureCode,
+                description: row.description,
+                status: "defined" as const,
+                criteria: row.current.criteria,
+                conduct: row.current.conduct,
+                author: row.current.authorName,
+                version: row.current.version,
+                authoredAt: row.current.authoredAt,
+              }
+            : {
+                procedureCode: row.procedureCode,
+                description: row.description,
+                status: "pending" as const,
+                note: "Pendente de definição pelo médico coordenador.",
+              },
+        ),
+    },
     groups: [...groups.values()].sort(
       (a, b) =>
         a.exposureGroup.localeCompare(b.exposureGroup, "pt-BR") ||

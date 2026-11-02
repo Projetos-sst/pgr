@@ -176,8 +176,11 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
         ],
       }),
     ]);
+    // Sem critérios do coordenador (NOB-153), o exame aparece como pendente na seção própria.
+    expect(content.interpretation.items).toEqual([
+      expect.objectContaining({ procedureCode: "0281", status: "pending" }),
+    ]);
     expect(content.pendingSections.map((s) => s.code)).toEqual([
-      "interpretation_criteria",
       "clinics",
       "health_campaigns",
       "analytical_report",

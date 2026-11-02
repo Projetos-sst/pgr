@@ -42,6 +42,11 @@ export type PcmsoReadinessInput = {
     approved: { version: number; sourceIds: string[] } | null;
     draftVersion: number | null;
   };
+  /**
+   * Exames do plano aprovado sem critério de interpretação e conduta (NR-7 7.5.4 c; NOB-153);
+   * `null` sem plano aprovado.
+   */
+  interpretationCriteriaMissing: { procedureCode: string; description: string }[] | null;
 };
 
 export type PcmsoReadiness = {
@@ -212,13 +217,17 @@ export function checkPcmsoReadiness(input: PcmsoReadinessInput): PcmsoReadiness 
         planHref,
       );
   }
-  add(
-    "interpretation_criteria",
-    "not_available",
-    "Critérios de interpretação e condutas para os achados dos exames: definição do médico, ainda sem cadastro no sistema.",
-    "NR-7 7.5.4 c",
-    null,
-  );
+  const missingCriteria = input.interpretationCriteriaMissing;
+  if (missingCriteria?.length)
+    add(
+      "interpretation_criteria",
+      "warning",
+      `${missingCriteria.length} exame(s) do plano aprovado sem critérios de interpretação e condutas do médico coordenador: ${missingCriteria
+        .map((m) => `${m.procedureCode} ${m.description}`)
+        .join("; ")}. Na prévia, aparecem como pendentes.`,
+      "NR-7 7.5.4 c",
+      `/companies/${input.companyId}/interpretation-criteria`,
+    );
   add(
     "clinics",
     "not_available",

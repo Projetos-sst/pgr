@@ -293,6 +293,10 @@ export {
 } from "./medical-exam-plans";
 export { pcmsoDocuments, type PcmsoDocument } from "./pcmso-documents";
 export {
+  pcmsoInterpretationCriteria,
+  type PcmsoInterpretationCriterion,
+} from "./pcmso-interpretation-criteria";
+export {
   healthExams,
   healthExamProcedures,
   examType,

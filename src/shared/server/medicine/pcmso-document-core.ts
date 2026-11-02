@@ -20,6 +20,7 @@ import { ValidationError } from "@/shared/errors/validation-error";
 import { PAGE_SIZE_MAX } from "@/shared/pagination";
 
 import { loadProposalSources } from "./exam-proposal-core";
+import { currentCriteria } from "./interpretation-criteria-core";
 import { getPcmsoReadiness } from "./pcmso-readiness-core";
 
 const companyUuid = (id: string) => requiredUuid("Empresa inválida.").parse(id);
@@ -53,14 +54,17 @@ export async function generateDocument(
 
   const company = await getCompanyById(ctx.tenantId, id);
   if (!company) throw new NotFoundError();
-  const [sources, history, plans, active, onLeave, medicos] = await Promise.all([
-    loadProposalSources(ctx, id),
-    listCoordinatorAssignments(ctx, id),
-    listExamPlans(ctx, id),
-    listEmployees(ctx.tenantId, { companyId: id, status: "active", pageSize: 1 }),
-    listEmployees(ctx.tenantId, { companyId: id, status: "on_leave", pageSize: 1 }),
-    listMedicos(ctx.tenantId, { status: "active", pageSize: PAGE_SIZE_MAX }),
-  ]);
+  const [sources, history, plans, active, onLeave, medicos, criteria] = await Promise.all(
+    [
+      loadProposalSources(ctx, id),
+      listCoordinatorAssignments(ctx, id),
+      listExamPlans(ctx, id),
+      listEmployees(ctx.tenantId, { companyId: id, status: "active", pageSize: 1 }),
+      listEmployees(ctx.tenantId, { companyId: id, status: "on_leave", pageSize: 1 }),
+      listMedicos(ctx.tenantId, { status: "active", pageSize: PAGE_SIZE_MAX }),
+      currentCriteria(ctx, id),
+    ],
+  );
   const coordinator = history.find((row) => row.endsOn === null);
   const approved = plans.find((plan) => plan.status === "approved");
   // A conferência sem bloqueio garante ambos; a checagem protege contra corrida.
@@ -125,6 +129,7 @@ export async function generateDocument(
     examiners: medicos.rows
       .filter((m) => m.profession === "physician")
       .map((m) => ({ name: m.name, registration: formatProfessionalRegistration(m) })),
+    interpretationCriteria: criteria,
     pendingSections: readiness.items.filter((item) => item.severity === "not_available"),
   });
 

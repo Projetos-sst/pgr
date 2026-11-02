@@ -88,6 +88,12 @@ export default async function PcmsoReadinessPage({
       <Link href={`/companies/${id}/pcmso`} className="text-primary text-sm underline">
         PCMSO: prévias geradas e versões arquivadas
       </Link>
+      <Link
+        href={`/companies/${id}/interpretation-criteria`}
+        className="text-primary text-sm underline"
+      >
+        Critérios de interpretação e condutas (médico coordenador)
+      </Link>
 
       {SECTIONS.map(({ severity, title, tone }) => {
         const rows = items.filter((item) => item.severity === severity);
