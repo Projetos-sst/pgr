@@ -161,7 +161,7 @@ normativa necessária.
 
 ### SEG-03 · Colaboradores do escritório por empresa
 
-- **Resposta:** [X] 2. O administrador atribui as empresas de cada colaborador. [X] 3. Por empresa e por módulo (PGR ou Medicina).
+- **Resposta:** [X] 2. "Sim. O administrador atribui as empresas de cada colaborador." [X] 3. "Sim, por empresa e por módulo (PGR ou Medicina)."
 - **Observação:** "O administrador atribui empresas a cada colaborador, isso também serve quando a contratação ocorrer diretamente pela empresa, onde o administrador pode atribuir colaboradores pera gestão de cada obra".
 - **Interpretação:** a alternativa 3 contém a 2; as duas são compatíveis. A observação acrescenta o nível de obra.
 - **Status:** DEFINIDO COM RESSALVAS (o nível de obra não foi detalhado).
@@ -506,7 +506,7 @@ normativa necessária.
 ### SEG-28 · Teste grátis e restrições durante o teste
 
 - **Resposta:**
-  - [x] 2. 15 dias.
+  - [x] 2. "15 dias, como na planilha do protótipo."
   - Bloqueado: [X] Imprimir, [X] Assinar e emitir. **Download não bloqueado.**
   - Um teste por: [X] CNPJ da empresa.
 - **Observação (trecho):**
@@ -525,7 +525,7 @@ normativa necessária.
 ### SEG-29 · Inadimplência e carência
 
 - **Resposta:**
-  - [x] 1. Sim, como na especificação (15 dias depois do vencimento, emissão suspensa, dados acessíveis).
+  - [x] 1. "Sim, como está na especificação." A especificação prevê 15 dias depois do vencimento, emissão suspensa e dados acessíveis.
   - Download dos PGRs emitidos durante a suspensão: [X] Não.
 - **Observação (trecho):**
   - "Somente visualização do último PGR emitido, sem download";
