@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import type { HealthExam } from "@/shared/db/schema/health-exams";
+import type { HealthExam, HealthExamRecord } from "@/shared/db/schema/health-exams";
+import { CLINICAL_NOTES_MOVED_MESSAGE } from "@/shared/domains/medicine/clinical-record";
 import { classifyDocumentValidity } from "@/shared/domains/documents/validity";
 import { todayInSaoPaulo } from "@/shared/dates";
 
@@ -11,7 +12,7 @@ import {
   requiredUuid,
 } from "./form-fields";
 
-export type { HealthExam };
+export type { HealthExam, HealthExamRecord };
 
 // ── Tipo de exame ────────────────────────────────────────────────────────────
 
@@ -91,9 +92,7 @@ const performedAtSchema = z.iso
     message: "Data de realização não pode ser no futuro",
   });
 
-// Limites de entrada dos campos administrativos (só aplicação; as colunas seguem
-// `text`, e dados antigos maiores não são alterados).
-export const HEALTH_EXAM_NOTES_MAX = 2000;
+// Limite de entrada do campo administrativo (só aplicação; a coluna segue `text`).
 export const HEALTH_EXAM_CERTIFICATE_PATH_MAX = 500;
 
 export const VALID_UNTIL_BEFORE_PERFORMED_MESSAGE = "Vencimento anterior à realização.";
@@ -133,10 +132,19 @@ export const healthExamInputSchema = z
     performedAt: performedAtSchema,
     validUntil: optionalIsoDate,
     aptitude: examAptitudeSchema,
-    notes: boundedOptionalString(
-      HEALTH_EXAM_NOTES_MAX,
-      `Observações: máximo de ${HEALTH_EXAM_NOTES_MAX.toLocaleString("pt-BR")} caracteres.`,
-    ),
+    // NOB-155: observações clínicas saíram do cadastro (prontuário segregado). Recusa em vez de
+    // descartar em silêncio, para quem envia saber que o texto não foi gravado aqui.
+    notes: z
+      .unknown()
+      .refine(
+        (value) =>
+          value === undefined ||
+          value === null ||
+          (typeof value === "string" && value.trim() === ""),
+        { message: CLINICAL_NOTES_MOVED_MESSAGE },
+      )
+      .transform(() => undefined)
+      .optional(),
     certificatePath: boundedOptionalString(
       HEALTH_EXAM_CERTIFICATE_PATH_MAX,
       `Caminho do ASO: máximo de ${HEALTH_EXAM_CERTIFICATE_PATH_MAX} caracteres.`,

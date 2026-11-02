@@ -70,6 +70,12 @@ export const healthExams = pgTable(
     performedAt: date("performed_at").notNull(),
     validUntil: date("valid_until"),
     aptitude: examAptitude("aptitude").notNull(),
+    /**
+     * Desativada (NOB-155, DT-21): as observações clínicas foram migradas pela 0067 para o
+     * prontuário segregado (`health_exam_clinical_notes`), e o CHECK `ck_health_exams_notes_retired`
+     * mantém a coluna vazia. Nenhum código lê nem grava; a remoção física fica para uma migration
+     * posterior, quando nenhuma versão do app em uso selecionar a coluna.
+     */
     notes: text("notes"),
     certificatePath: text("certificate_path"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -78,6 +84,9 @@ export const healthExams = pgTable(
   (table) => [
     index("idx_health_exams_org_id").on(table.orgId),
     unique("uq_health_exams_identity").on(table.id, table.orgId, table.companyId),
+    // Alvo das FKs compostas do prontuário (NOB-155), que vale também para exame sem origem.
+    unique("uq_health_exams_id_org").on(table.id, table.orgId),
+    check("ck_health_exams_notes_retired", sql`${table.notes} is null`),
     foreignKey({
       columns: [table.companyId, table.orgId],
       foreignColumns: [companies.id, companies.orgId],
@@ -111,6 +120,8 @@ export const healthExams = pgTable(
 
 export type HealthExam = InferSelectModel<typeof healthExams>;
 export type NewHealthExam = InferInsertModel<typeof healthExams>;
+/** Exame como a aplicação lê: sem a coluna desativada `notes` (NOB-155). */
+export type HealthExamRecord = Omit<HealthExam, "notes">;
 
 /**
  * Exames complementares realizados no exame ocupacional (NOB-152, NR-7 7.5.19.1 d): código da

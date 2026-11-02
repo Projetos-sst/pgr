@@ -310,6 +310,14 @@ export {
   type HealthExamProcedure,
 } from "./health-exams";
 export {
+  healthExamClinicalNotes,
+  healthExamWorkRestrictions,
+  clinicalRecordAccessEvents,
+  type HealthExamClinicalNote,
+  type HealthExamWorkRestriction,
+  type ClinicalRecordAccessEvent,
+} from "./clinical-records";
+export {
   asoDocuments,
   asoExaminerConclusions,
   type AsoDocument,

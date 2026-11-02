@@ -1,13 +1,13 @@
 import {
   EXAM_DUE_WINDOW_DAYS,
   HEALTH_EXAM_CERTIFICATE_PATH_MAX,
-  HEALTH_EXAM_NOTES_MAX,
   VALID_UNTIL_BEFORE_PERFORMED_MESSAGE,
   examBadge,
   healthExamInputSchema,
   healthExamListFiltersSchema,
   isValidUntilBeforePerformedAt,
 } from "@/shared/domains/pgr/health-exams";
+import { CLINICAL_NOTES_MOVED_MESSAGE } from "@/shared/domains/medicine/clinical-record";
 
 const EMP = "11111111-1111-1111-1111-1111111111a4";
 const DOC = "11111111-1111-1111-1111-1111111111c1";
@@ -20,7 +20,7 @@ describe("healthExamInputSchema", () => {
     aptitude: "fit",
   };
 
-  it("aceita entrada mínima válida (doctor/validUntil/notes opcionais)", () => {
+  it("aceita entrada mínima válida (doctor/validUntil opcionais)", () => {
     const parsed = healthExamInputSchema.parse(base);
     expect(parsed.employeeId).toBe(EMP);
     expect(parsed.examType).toBe("periodic");
@@ -29,13 +29,12 @@ describe("healthExamInputSchema", () => {
     expect(parsed.validUntil).toBeUndefined();
   });
 
-  it("aceita médico, vencimento e observações", () => {
+  it("aceita médico e vencimento", () => {
     const parsed = healthExamInputSchema.parse({
       ...base,
       doctorId: DOC,
       validUntil: "2027-01-14",
       aptitude: "fit_with_restrictions",
-      notes: "uso de EPI auditivo",
     });
     expect(parsed.doctorId).toBe(DOC);
     expect(parsed.validUntil).toBe("2027-01-14");
@@ -166,26 +165,20 @@ describe("healthExamInputSchema — limites dos campos administrativos (Lote 02A
     aptitude: "fit",
   };
 
-  it("limites planejados: notes 2.000 e certificatePath 500", () => {
-    expect(HEALTH_EXAM_NOTES_MAX).toBe(2000);
+  it("limite planejado: certificatePath 500", () => {
     expect(HEALTH_EXAM_CERTIFICATE_PATH_MAX).toBe(500);
   });
 
-  it("notes no limite → aceito; acima → erro sem ecoar o conteúdo", () => {
-    const atLimit = "a".repeat(HEALTH_EXAM_NOTES_MAX);
-    expect(healthExamInputSchema.parse({ ...base, notes: atLimit }).notes).toBe(atLimit);
-
-    const secret = `EXEMPLO-SIGILO ${"b".repeat(HEALTH_EXAM_NOTES_MAX)}`;
-    const issues = issuesOf({ ...base, notes: secret });
-    expect(issues.notes).toBe("Observações: máximo de 2.000 caracteres.");
+  it("NOB-155: observações clínicas no cadastro → recusadas sem ecoar o conteúdo", () => {
+    const issues = issuesOf({ ...base, notes: "EXEMPLO-SIGILO observação clínica" });
+    expect(issues.notes).toBe(CLINICAL_NOTES_MOVED_MESSAGE);
     expect(JSON.stringify(issues)).not.toContain("EXEMPLO-SIGILO");
+    expect(issuesOf({ ...base, notes: 42 }).notes).toBe(CLINICAL_NOTES_MOVED_MESSAGE);
   });
 
-  it("notes conta após o trim (espaços nas pontas não estouram o limite)", () => {
-    const padded = `  ${"a".repeat(HEALTH_EXAM_NOTES_MAX)}  `;
-    expect(healthExamInputSchema.parse({ ...base, notes: padded }).notes).toHaveLength(
-      HEALTH_EXAM_NOTES_MAX,
-    );
+  it("NOB-155: notes vazio ou nulo é aceito e nunca chega ao repositório", () => {
+    expect(healthExamInputSchema.parse({ ...base, notes: null }).notes).toBeUndefined();
+    expect(healthExamInputSchema.parse({ ...base, notes: "" }).notes).toBeUndefined();
   });
 
   it("certificatePath no limite → aceito; acima → erro", () => {

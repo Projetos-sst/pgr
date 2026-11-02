@@ -14,6 +14,7 @@ import { ges } from "../schema/ges";
 import { jobRoles } from "../schema/job-roles";
 import { gesJobRoles } from "../schema/ges-job-roles";
 import { hasAsoDocumentsTx } from "./aso";
+import { isClinicalHistoryFkViolation } from "./clinical-records";
 import { auditedTenantWrite } from "./audited-write";
 import {
   companyModuleSchema,
@@ -226,18 +227,27 @@ export async function updateEmployee(
 }
 
 export async function deleteEmployee(orgId: string, id: string): Promise<boolean> {
-  return auditedTenantWrite(orgId, "pgr.employees.write_rejected", () =>
-    withOrg(orgId, async (tx) => {
-      // Prévias de ASO são histórico médico (NR-7 7.6.1.1): o funcionário não é apagado com elas.
-      if (await hasAsoDocumentsTx(tx, orgId, { employeeId: id }))
+  return auditedTenantWrite(orgId, "pgr.employees.write_rejected", async () => {
+    try {
+      return await withOrg(orgId, async (tx) => {
+        // Prévias de ASO são histórico médico (NR-7 7.6.1.1): o funcionário não é apagado com elas.
+        if (await hasAsoDocumentsTx(tx, orgId, { employeeId: id }))
+          throw new EntityInUseError(
+            "Funcionário com prévia de ASO arquivada não pode ser excluído; altere a situação para desligado.",
+          );
+        const rows = await tx
+          .delete(employees)
+          .where(and(eq(employees.orgId, orgId), eq(employees.id, id)))
+          .returning({ id: employees.id });
+        return rows.length > 0;
+      });
+    } catch (error) {
+      // Prontuário e comunicação de restrição (NOB-155) barram a cascata pela FK RESTRICT.
+      if (isClinicalHistoryFkViolation(error))
         throw new EntityInUseError(
-          "Funcionário com prévia de ASO arquivada não pode ser excluído; altere a situação para desligado.",
+          "Funcionário com histórico médico registrado (prontuário ou restrição) não pode ser excluído; altere a situação para desligado.",
         );
-      const rows = await tx
-        .delete(employees)
-        .where(and(eq(employees.orgId, orgId), eq(employees.id, id)))
-        .returning({ id: employees.id });
-      return rows.length > 0;
-    }),
-  );
+      throw error;
+    }
+  });
 }

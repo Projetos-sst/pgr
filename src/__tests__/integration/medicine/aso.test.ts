@@ -165,24 +165,32 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     return approve(doctor, plan.id, { note: "Aprovação fictícia." });
   }
 
-  const newExam = (overrides: Record<string, unknown> = {}) =>
-    createHealthExam("org_a", {
+  // NOB-155: a observação clínica de controle fica no prontuário segregado e não pode vazar no ASO.
+  const newExam = async (
+    overrides: Record<string, unknown> = {},
+    { clinicalNote = true } = {},
+  ) => {
+    const exam = await createHealthExam("org_a", {
       employeeId: I.employeeA,
       doctorId: EXAMINER,
       examType: "periodic",
       performedAt: "2026-10-20",
       aptitude: "fit_with_restrictions",
-      notes: SECRET_NOTE,
       ...overrides,
     } as Parameters<typeof createHealthExam>[1]);
+    if (clinicalNote)
+      await admin`insert into health_exam_clinical_notes (org_id, health_exam_id, origin, content)
+        values ('org_a', ${exam.id}, 'legacy_exam_notes', ${SECRET_NOTE})`;
+    return exam;
+  };
 
   /** Exame anterior à 0064: sem empresa de origem (o trigger só existe a partir dela). */
   async function legacyExam(aptitude = "fit") {
     await admin`alter table health_exams disable trigger health_exams_set_company`;
     try {
       const [row] =
-        await admin`insert into health_exams (org_id, employee_id, doctor_id, exam_type, performed_at, aptitude, notes)
-        values ('org_a', ${I.employeeA}, ${EXAMINER}, 'periodic', '2026-03-10', ${aptitude}, ${SECRET_NOTE}) returning id, company_id, company_origin`;
+        await admin`insert into health_exams (org_id, employee_id, doctor_id, exam_type, performed_at, aptitude)
+        values ('org_a', ${I.employeeA}, ${EXAMINER}, 'periodic', '2026-03-10', ${aptitude}) returning id, company_id, company_origin`;
       return row as {
         id: string;
         company_id: string | null;
@@ -326,9 +334,8 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     });
     expect(await codes(exam.id)).toEqual([]);
     // O registro original do exame não muda.
-    const [original] =
-      await admin`select aptitude, notes from health_exams where id=${exam.id}`;
-    expect(original).toEqual({ aptitude: "fit_with_restrictions", notes: SECRET_NOTE });
+    const [original] = await admin`select aptitude from health_exams where id=${exam.id}`;
+    expect(original).toEqual({ aptitude: "fit_with_restrictions" });
     // Trocar o examinador invalida a confirmação anterior.
     await admin`update health_exams set doctor_id=${COORDINATOR} where id=${exam.id}`;
     expect(await codes(exam.id)).toContain("aptitude_confirmation_required");
@@ -417,7 +424,7 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     await expect(
       asStaff((tx) => tx`delete from aso_documents where id=${v1.id}`),
     ).rejects.toMatchObject({ code: "42501" });
-    const noExaminer = await newExam({ doctorId: undefined });
+    const noExaminer = await newExam({ doctorId: undefined }, { clinicalNote: false });
     await expect(
       asStaff(
         (tx) =>

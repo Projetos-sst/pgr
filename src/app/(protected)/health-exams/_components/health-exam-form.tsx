@@ -9,7 +9,6 @@ import {
   EXAM_TYPES,
   EXAM_TYPE_LABELS,
   HEALTH_EXAM_CERTIFICATE_PATH_MAX,
-  HEALTH_EXAM_NOTES_MAX,
   VALID_UNTIL_BEFORE_PERFORMED_MESSAGE,
   isValidUntilBeforePerformedAt,
   type HealthExamInput,
@@ -27,7 +26,6 @@ import {
   FormSection,
   SelectField,
   SubmitButton,
-  TextAreaField,
   TextField,
 } from "../../_ui/form";
 
@@ -50,7 +48,6 @@ export type HealthExamFormInitial = {
   performedAt: string;
   validUntil: string | null;
   aptitude: string;
-  notes: string | null;
   certificatePath: string | null;
 };
 
@@ -63,9 +60,6 @@ function clientFieldErrors(input: HealthExamInput): Record<string, string> {
   const validUntil = typeof input.validUntil === "string" ? input.validUntil : undefined;
   if (isValidUntilBeforePerformedAt(input.performedAt, validUntil)) {
     errors.validUntil = VALID_UNTIL_BEFORE_PERFORMED_MESSAGE;
-  }
-  if ((input.notes ?? "").trim().length > HEALTH_EXAM_NOTES_MAX) {
-    errors.notes = `Observações: máximo de ${HEALTH_EXAM_NOTES_MAX.toLocaleString("pt-BR")} caracteres.`;
   }
   if ((input.certificatePath ?? "").trim().length > HEALTH_EXAM_CERTIFICATE_PATH_MAX) {
     errors.certificatePath = `Caminho do ASO: máximo de ${HEALTH_EXAM_CERTIFICATE_PATH_MAX} caracteres.`;
@@ -113,7 +107,6 @@ export function HealthExamForm({
       performedAt: (fd.get("performedAt") as string) ?? "",
       validUntil: (fd.get("validUntil") as string) || undefined,
       aptitude: ((fd.get("aptitude") as string) || "") as HealthExamInput["aptitude"],
-      notes: (fd.get("notes") as string) ?? "",
       certificatePath: (fd.get("certificatePath") as string) ?? "",
     };
     // Os campos não são controlados nem resetados: em erro, o que foi digitado fica.
@@ -226,20 +219,10 @@ export function HealthExamForm({
           defaultValue={initial?.certificatePath}
           error={errors.certificatePath}
         />
-        <div className="sm:col-span-full">
-          <TextAreaField
-            label="Observações"
-            name="notes"
-            rows={3}
-            placeholder="Observações administrativas…"
-            defaultValue={initial?.notes}
-            error={errors.notes}
-          />
-          <p className="text-text-subtle mt-1 text-xs">
-            Não registre diagnósticos, CID ou informações clínicas sensíveis neste campo.
-            Máximo de {HEALTH_EXAM_NOTES_MAX.toLocaleString("pt-BR")} caracteres.
-          </p>
-        </div>
+        <p className="text-text-subtle text-xs sm:col-span-full">
+          Observações clínicas não ficam no cadastro do exame: o médico examinador ou o
+          coordenador do PCMSO as registra no prontuário, acessível só a eles.
+        </p>
       </FormSection>
 
       <FormActions>
