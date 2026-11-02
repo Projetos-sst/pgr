@@ -8,6 +8,8 @@ import { getMedicalRiskInventoryAction } from "@/shared/server/actions/medicine/
 import { MEDICAL_RISK_STATUS_LABELS } from "@/shared/domains/medicine/risk-sources";
 import { riskAgentTypeLabel } from "@/shared/domains/pgr/risks";
 import { PageHeader } from "../../../_ui/list";
+import { listRiskAbsenceAction } from "@/shared/server/actions/medicine/risk-absence";
+import { RiskAbsenceSection } from "./risk-absence-section";
 import { SourceForm } from "./source-form";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +33,10 @@ export default async function MedicalRisksPage({
         <Link href={`/companies/${id}/services`}>Consultar serviços da empresa</Link>
       </div>
     );
-  const pgrs = await listPgrAction({ companyId: id, pageSize: 100 });
+  const [pgrs, absence] = await Promise.all([
+    listPgrAction({ companyId: id, pageSize: 100 }),
+    listRiskAbsenceAction(id),
+  ]);
   const sourceOptions = inventory.data.rows
     .filter((source) => !source.superseded)
     .map((source) => ({ id: source.id, label: `${source.title} — ${source.version}` }));
@@ -148,6 +153,13 @@ export default async function MedicalRisksPage({
           </ul>
         </section>
       ))}
+      {absence.ok ? (
+        <RiskAbsenceSection
+          companyId={id}
+          data={absence.data}
+          sources={inventory.data.rows}
+        />
+      ) : null}
       <nav aria-label="Páginas das fontes" className="flex gap-4">
         {page > 1 && <Link href={`?page=${page - 1}`}>Anterior</Link>}
         {page * 20 < inventory.data.total && (

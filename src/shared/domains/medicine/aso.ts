@@ -11,6 +11,11 @@ import {
   procedureSelectionSchema,
 } from "./procedure-catalog";
 import {
+  RISK_ABSENCE_STATEMENT,
+  riskMatchesScope,
+  type ApplicableRiskAbsence,
+} from "./risk-absence";
+import {
   canUseMedicalRisk,
   type MedicalRiskStatus,
   type SourceFreshness,
@@ -24,11 +29,13 @@ import {
  *   confirmação de apto ou inapto pelo próprio examinador, pela conta vinculada (MED-10, DT-21);
  *   restrição e observações clínicas ficam fora;
  * - riscos só validados de fonte vigente; pendentes bloqueiam; ausência de risco nunca é presumida
- *   (MED-09, DT-12) e a declaração de inexistência ainda não existe no sistema;
+ *   (MED-09, DT-12): só a declaração de inexistência do profissional autorizado, na versão vigente
+ *   da fonte (NOB-156), leva "inexistência de riscos" ao item c;
  * - só exames da empresa onde foram realizados (MED-07); origem não comprovada bloqueia;
  * - sem assinatura verificável (MED-12) o documento é prévia, nunca ASO emitido.
  */
-export const ASO_CONTENT_SCHEMA_VERSION = 1;
+// v2 (NOB-156): `risksAbsence` com a declaração de inexistência vigente.
+export const ASO_CONTENT_SCHEMA_VERSION = 2;
 export const ASO_PREVIEW_NOTICE =
   "PRÉVIA — sem assinatura do médico examinador; não é ASO emitido e não tem validade legal (MED-12).";
 
@@ -104,13 +111,8 @@ export function employeeRisks(
     let usable = false;
     for (const risk of source.risks) {
       const c = risk.content;
-      const sameGroup = c.originGesId
-        ? c.originGesId === employee.gesId
-        : norm(c.exposureGroup) !== "" &&
-          norm(c.exposureGroup) === norm(employee.gesName);
-      const sameRole = !norm(c.jobRole) || norm(c.jobRole) === norm(employee.jobRole);
       if (canUseMedicalRisk(risk.status, source.freshness)) usable = true;
-      if (!sameGroup || !sameRole) continue;
+      if (!riskMatchesScope(c, employee)) continue;
       if (risk.status === "pending") pending += 1;
       else if (canUseMedicalRisk(risk.status, source.freshness))
         validated.push({ description: c.description, agentType: c.agentType });
@@ -180,6 +182,8 @@ export type AsoFacts = {
   } | null;
   coordinator: { name: string; registration: string; rqe: string | null } | null;
   risks: ReturnType<typeof employeeRisks>;
+  /** Declaração de inexistência vigente para o GES/função do funcionário (NOB-156), ou `null`. */
+  riskAbsence: ApplicableRiskAbsence | null;
   procedures: {
     procedureCode: string;
     otherDescription: string | null;
@@ -249,7 +253,9 @@ export function asoReadiness(facts: AsoFacts): AsoReadinessItem[] {
       `${facts.risks.pending} risco(s) do grupo do funcionário ainda pendente(s) de validação técnica. O ASO não sai com riscos pendentes.`,
       "MED-09",
     );
-  else if (facts.risks.usableSources === 0)
+  else if (facts.risks.validated.length === 0 && facts.riskAbsence) {
+    // Declaração vigente de inexistência (DT-12): o item c traz a inexistência, sem bloqueio.
+  } else if (facts.risks.usableSources === 0)
     block(
       "risk_source",
       "c",
@@ -260,8 +266,15 @@ export function asoReadiness(facts: AsoFacts): AsoReadinessItem[] {
     block(
       "risks_absence_not_declared",
       "c",
-      "Nenhum risco validado para o grupo e a função. A inexistência de riscos só pode constar por declaração do responsável pelo PGR, que o sistema ainda não registra; ausência de cadastro não comprova ausência de risco.",
+      "Nenhum risco validado para o grupo e a função, e não há declaração de inexistência de riscos na versão vigente da fonte. Ausência de cadastro não comprova ausência de risco: só o profissional autorizado pode declarar.",
       "MED-09, DT-12",
+    );
+  if (facts.riskAbsence && facts.risks.validated.length > 0)
+    warn(
+      "risk_absence_conflict",
+      "c",
+      "Há declaração de inexistência de riscos para o grupo/função, mas a fonte vigente tem riscos validados. O ASO traz os riscos validados.",
+      "DT-12",
     );
 
   if (facts.plannedProcedures === null)
@@ -387,6 +400,20 @@ export function composeAso(facts: AsoFacts) {
       description: r.description,
       agentType: r.agentType,
     })),
+    risksAbsence:
+      facts.risks.validated.length === 0 && facts.risks.pending === 0 && facts.riskAbsence
+        ? {
+            statement: RISK_ABSENCE_STATEMENT,
+            source: {
+              title: facts.riskAbsence.source.title,
+              version: facts.riskAbsence.source.version,
+            },
+            exposureGroup: facts.riskAbsence.exposureGroup,
+            jobRole: facts.riskAbsence.jobRole || null,
+            declaredBy: facts.riskAbsence.declaredByName,
+            declaredAt: facts.riskAbsence.declaredAt,
+          }
+        : null,
     procedures: {
       clinical: { performedAt: facts.exam.performedAt },
       complementary: [...facts.procedures]

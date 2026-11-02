@@ -12,6 +12,7 @@ import {
   type AsoFacts,
   type AsoRiskSource,
 } from "@/shared/domains/medicine/aso";
+import { RISK_ABSENCE_STATEMENT } from "@/shared/domains/medicine/risk-absence";
 
 const employee = { gesId: "g1", gesName: "Produção", jobRole: "Soldador" };
 
@@ -68,6 +69,7 @@ function facts(overrides: Partial<AsoFacts> = {}): AsoFacts {
       { procedureCode: "0281", otherDescription: null, performedAt: "2026-10-18" },
     ],
     plannedProcedures: [{ procedureCode: "0281", otherDescription: null }],
+    riskAbsence: null,
     ...overrides,
   };
 }
@@ -220,6 +222,42 @@ describe("asoReadiness", () => {
     expect(blocking(facts({ employee: { ...facts().employee, gesId: null } }))).toEqual([
       "employee_ges",
     ]);
+  });
+
+  it("NOB-156: declaração vigente de inexistência libera o item c; pendentes continuam bloqueando", () => {
+    const riskAbsence = {
+      declarationId: "d1",
+      source: { id: "s1", title: "PGR Fictício", version: "3" },
+      exposureGroup: "Produção",
+      jobRole: "",
+      declaredByName: "Profissional Fictícia",
+      declaredAt: "2026-10-01T10:00:00.000Z",
+    };
+    const declared = facts({
+      risks: { validated: [], pending: 0, usableSources: 0 },
+      riskAbsence,
+    });
+    expect(blocking(declared)).toEqual([]);
+    expect(composeAso(declared).risks).toEqual([]);
+    expect(composeAso(declared).risksAbsence).toMatchObject({
+      statement: RISK_ABSENCE_STATEMENT,
+      source: { title: "PGR Fictício", version: "3" },
+      jobRole: null,
+      declaredBy: "Profissional Fictícia",
+    });
+    expect(
+      blocking(
+        facts({ risks: { validated: [], pending: 1, usableSources: 1 }, riskAbsence }),
+      ),
+    ).toEqual(["risks_pending"]);
+    // Com riscos validados, a declaração não substitui os riscos: aviso de conflito.
+    const conflict = facts({ riskAbsence });
+    expect(blocking(conflict)).toEqual([]);
+    expect(composeAso(conflict).risksAbsence).toBeNull();
+    expect(composeAso(conflict).warnings.map((w) => w.code)).toContain(
+      "risk_absence_conflict",
+    );
+    expect(composeAso(facts()).risksAbsence).toBeNull();
   });
 
   it("exame de outra empresa ou com origem não comprovada não serve ao ASO (MED-07)", () => {

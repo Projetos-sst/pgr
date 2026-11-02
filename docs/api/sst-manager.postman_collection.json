@@ -323,6 +323,11 @@
       "key": "analyticalReportId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "medicalRiskSourceId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -4429,6 +4434,87 @@
               ]
             },
             "description": "Trilha de acesso ao prontuário (quem, base, ação, quando), sem conteúdo. Só owner; demais → 403."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inexistência de riscos (NOB-156)",
+      "item": [
+        {
+          "name": "GET /companies/{id}/risk-absence-declarations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-absence-declarations",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "risk-absence-declarations"
+              ]
+            },
+            "description": "Declarações de inexistência de riscos da empresa, com a fonte, o autor e a data, e se o ator pode declarar (canDeclare) e os GES. Cliente sem autorização ativa → 403."
+          }
+        },
+        {
+          "name": "POST /companies/{id}/risk-absence-declarations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceId\": \"{{medicalRiskSourceId}}\",\n  \"gesId\": \"{{gesId}}\",\n  \"jobRole\": \"\",\n  \"justification\": \"Justificativa técnica do profissional responsável.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-absence-declarations",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "risk-absence-declarations"
+              ]
+            },
+            "description": "Só o profissional com autorização ativa de validação de riscos (x-dev-user = profissional). Fonte vigente; GES/função sem risco pendente ou validado; justificativa com 20+ caracteres. jobRole vazio = grupo todo. 201; demais → 403; fonte substituída ou escopo com riscos → 422."
           }
         }
       ]

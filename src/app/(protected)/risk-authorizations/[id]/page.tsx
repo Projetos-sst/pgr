@@ -5,6 +5,8 @@ import { MEDICAL_RISK_STATUS_LABELS } from "@/shared/domains/medicine/risk-sourc
 import { riskAgentTypeLabel } from "@/shared/domains/pgr/risks";
 import { resolvePageParams } from "@/shared/pagination";
 import { PageHeader } from "../../_ui/list";
+import { listRiskAbsenceAction } from "@/shared/server/actions/medicine/risk-absence";
+import { RiskAbsenceSection } from "../../companies/[id]/medical-risks/risk-absence-section";
 import { AuthorizationForms, RiskDecisionForm } from "./forms";
 export const dynamic = "force-dynamic";
 const date = (value: Date) =>
@@ -28,6 +30,8 @@ export default async function RiskAuthorizationPage({
       </div>
     );
   const view = result.data;
+  // Declarações de inexistência (NOB-156): quem valida riscos também declara, aqui.
+  const absence = view.inventory ? await listRiskAbsenceAction(id) : null;
   const label = (userId: string) =>
     view.candidates.find((c) => c.userId === userId)?.label ??
     view.professionals.find((p) => p.userId === userId)?.identity.fullName ??
@@ -135,6 +139,13 @@ export default async function RiskAuthorizationPage({
           </>
         )}
       </section>
+      {view.inventory && absence?.ok ? (
+        <RiskAbsenceSection
+          companyId={id}
+          data={absence.data}
+          sources={view.inventory.rows}
+        />
+      ) : null}
       <section>
         <h2 className="font-semibold">Histórico de indicação e autorizações</h2>
         {view.history.rows.map((event) => (

@@ -310,6 +310,10 @@ export {
   type HealthExamProcedure,
 } from "./health-exams";
 export {
+  medicalRiskAbsenceDeclarations,
+  type MedicalRiskAbsenceDeclaration,
+} from "./medical-risk-absence";
+export {
   healthExamClinicalNotes,
   healthExamWorkRestrictions,
   clinicalRecordAccessEvents,
