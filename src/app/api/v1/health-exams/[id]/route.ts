@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 
+import { readJsonBody } from "@/shared/api/read-json-body";
 import { restHandler } from "@/shared/api/rest";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { healthExamInputSchema } from "@/shared/domains/pgr/health-exams";
@@ -22,7 +23,7 @@ export function GET(req: NextRequest, { params }: Ctx) {
 export function PUT(req: NextRequest, { params }: Ctx) {
   return restHandler(req, async ({ tenantId }) => {
     const { id } = await params;
-    const input = healthExamInputSchema.parse(await req.json());
+    const input = healthExamInputSchema.parse(await readJsonBody(req));
     const row = await repo.updateHealthExam(tenantId, id, input);
     if (!row) throw new NotFoundError();
     return row;

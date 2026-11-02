@@ -115,12 +115,13 @@ describe("OccupationalHealthSection", () => {
     expect(container.textContent).not.toMatch(/nenhum/i);
   });
 
-  it("erro ao ler os exames → alerta com o código, nunca o vazio", () => {
+  it("erro ao ler os exames → alerta com rótulo amigável (sem código cru), nunca o vazio", () => {
     const { container } = renderSection({
       exams: { ok: false, error: { code: "FORBIDDEN", message: "x" } },
     });
     const alert = screen.getByRole("alert");
-    expect(within(alert).getByText(/FORBIDDEN/)).toBeInTheDocument();
+    expect(within(alert).getByText(/Acesso não permitido/)).toBeInTheDocument();
+    expect(alert.textContent).not.toMatch(/FORBIDDEN/);
     expect(
       within(alert).getByRole("heading", { name: "Não foi possível carregar os exames" }),
     ).toBeInTheDocument();
@@ -209,5 +210,56 @@ describe("OccupationalHealthSection", () => {
     expect(html).not.toContain(SECRET_PATH);
     expect(html).not.toContain("arquivo-sigiloso");
     expect(container.textContent).not.toMatch(/observa/i);
+  });
+
+  describe("sugestão do demissional (NR-7 7.5.11)", () => {
+    const note = () =>
+      screen.queryByRole("note", { name: "Sugestão para o exame demissional" });
+
+    it("sem data de desligamento → nenhuma sugestão", () => {
+      renderSection({ exams: okExams([DUE_SOON]) });
+      expect(note()).toBeNull();
+    });
+
+    it("grau 1: último exame há 134 dias sugere dispensa; prazo de 10 dias", () => {
+      // 2026-05-02 + 134 dias = 2026-09-13
+      renderSection({
+        exams: okExams([DUE_SOON, EXPIRED]),
+        dismissal: { contractEndOn: "2026-09-13", riskGrade: 1 },
+      });
+      const box = note();
+      expect(box).not.toBeNull();
+      expect(box).toHaveTextContent("há 134 dias, menos que 135");
+      expect(box).toHaveTextContent("exame clínico até 23/09/2026");
+      expect(box).toHaveTextContent("sem valor de conclusão médica");
+    });
+
+    it("grau 3: 90 dias exige o demissional", () => {
+      // 2026-05-02 + 90 dias = 2026-07-31
+      renderSection({
+        exams: okExams([DUE_SOON]),
+        dismissal: { contractEndOn: "2026-07-31", riskGrade: 3 },
+      });
+      expect(note()).toHaveTextContent("igual ou acima de 90");
+    });
+
+    it("sem exames e sem grau de risco → não presume dispensa", () => {
+      renderSection({
+        exams: okExams([]),
+        dismissal: { contractEndOn: "2026-07-31", riskGrade: null },
+      });
+      expect(note()).toHaveTextContent("Grau de risco da empresa não informado");
+    });
+
+    it("demissional já registrado → sem sugestão", () => {
+      renderSection({
+        exams: okExams([
+          exam({ examType: "dismissal", performedAt: "2026-08-01" }),
+          DUE_SOON,
+        ]),
+        dismissal: { contractEndOn: "2026-07-31", riskGrade: 3 },
+      });
+      expect(note()).toBeNull();
+    });
   });
 });

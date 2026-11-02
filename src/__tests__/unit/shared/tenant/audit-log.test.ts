@@ -1,4 +1,4 @@
-import { logTenantEvent } from "@/shared/tenant/audit-log";
+import { logTenantEvent, safeErrorMessage } from "@/shared/tenant/audit-log";
 
 describe("logTenantEvent", () => {
   let infoSpy: jest.SpyInstance;
@@ -71,5 +71,22 @@ describe("logTenantEvent", () => {
     for (const forbidden of ["name", "email", "cpf", "password", "token", "secret"]) {
       expect(parsed).not.toHaveProperty(forbidden);
     }
+  });
+});
+
+describe("safeErrorMessage", () => {
+  it("omite os valores (params) de um erro de query do Drizzle", () => {
+    const error = new Error(
+      'Failed query: insert into "health_exams" ("notes") values ($1)\nparams: EXEMPLO-NOTA-SIGILOSA',
+    );
+    const safe = safeErrorMessage(error);
+    expect(safe).toContain('Failed query: insert into "health_exams"');
+    expect(safe).toContain("params: [omitidos]");
+    expect(safe).not.toContain("EXEMPLO-NOTA-SIGILOSA");
+  });
+
+  it("mantém mensagens sem params e aceita valores que não são Error", () => {
+    expect(safeErrorMessage(new Error("boom"))).toBe("boom");
+    expect(safeErrorMessage("texto")).toBe("texto");
   });
 });

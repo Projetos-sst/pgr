@@ -25,17 +25,28 @@ function revalidateExamViews(employeeId: string): void {
   revalidatePath(`/employees/${employeeId}`);
 }
 
+/** `examType` chega cru (ex.: da URL) e é validado aqui: fora do enum → VALIDATION. */
+export type ListHealthExamsActionParams = Omit<repo.ListHealthExamsParams, "examType"> & {
+  examType?: string;
+};
+
 export async function listHealthExamsAction(
-  params: repo.ListHealthExamsParams = {},
+  params: ListHealthExamsActionParams = {},
 ): Promise<ActionResult<Paginated<HealthExamListItem>>> {
   return officeAction("pgr.health-exams.list", async ({ tenantId }) => {
-    // ID malformado → ZodError → VALIDATION (nunca lista vazia). Os filtros são
-    // somados a org_id no repositório: ID de outro tenant → lista vazia.
+    // ID malformado ou tipo fora do enum → ZodError → VALIDATION (nunca lista
+    // vazia). Os filtros são somados a org_id no repositório: ID de outro tenant →
+    // lista vazia.
     const filters = healthExamListFiltersSchema.parse({
       employeeId: params.employeeId,
       companyId: params.companyId,
+      examType: params.examType,
     });
-    return repo.listHealthExams(tenantId, { ...params, ...filters });
+    return repo.listHealthExams(tenantId, {
+      ...params,
+      ...filters,
+      examType: filters.examType,
+    });
   });
 }
 

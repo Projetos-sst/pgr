@@ -11,6 +11,7 @@ import {
 } from "@/shared/domains/pgr/health-exams";
 import { listHealthExamsAction } from "@/shared/server/actions/pgr/health-exams";
 import { listCompanyOptionsAction } from "@/shared/server/actions/pgr/companies";
+import { medicineErrorLabel } from "@/shared/domains/medicine/error-messages";
 
 import { EmptyState, PageHeader } from "../_ui/list";
 import {
@@ -78,11 +79,20 @@ export default async function HealthExamsPage({
   const { page, pageSize } = resolvePageParams({
     page: sp.page ? Number(sp.page) : undefined,
   });
-  const examType = (EXAM_TYPES as readonly string[]).includes(sp.examType ?? "")
-    ? (sp.examType as ExamType)
+  const rawExamType = sp.examType?.trim() || undefined;
+  // Tipo válido alimenta o filtro da tela; o valor cru vai para a Action, que
+  // recusa tipo fora do enum (VALIDATION → "Filtro inválido") em vez de ignorá-lo.
+  const examType = (EXAM_TYPES as readonly string[]).includes(rawExamType ?? "")
+    ? (rawExamType as ExamType)
     : undefined;
   const [result, companiesResult] = await Promise.all([
-    listHealthExamsAction({ search, examType, companyId, employeeId, page }),
+    listHealthExamsAction({
+      search,
+      examType: rawExamType,
+      companyId,
+      employeeId,
+      page,
+    }),
     listCompanyOptionsAction("medicine"),
   ]);
   const today = todayInSaoPaulo();
@@ -139,7 +149,7 @@ export default async function HealthExamsPage({
         {!result.ok ? (
           <ListErrorState
             isFlat
-            code={result.error.code}
+            code={medicineErrorLabel(result.error.code)}
             title={
               LIST_ERROR[result.error.code]?.title ??
               "Não foi possível carregar os exames"

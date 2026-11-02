@@ -24,3 +24,15 @@ export function logTenantEvent(level: "info" | "error", fields: TenantAuditField
   }
   console.log(line);
 }
+
+/**
+ * Mensagem de erro inesperado pronta para log, sem os valores da query: o erro
+ * do Drizzle é `Failed query: <sql>\nparams: <valores>`, e os valores podem ser
+ * texto livre do usuário (ex.: observações de um exame). Mantém o SQL (com `$1`…)
+ * para o 500 continuar diagnosticável.
+ */
+export function safeErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const paramsAt = message.indexOf("\nparams:");
+  return paramsAt === -1 ? message : `${message.slice(0, paramsAt)}\nparams: [omitidos]`;
+}

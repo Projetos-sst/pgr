@@ -3643,6 +3643,36 @@
           }
         },
         {
+          "name": "POST /health-exams (vencimento anterior → 422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "description": "Lote 02A (NOB-112): validUntil anterior a performedAt → 422 VALIDATION com fields.validUntil = \"Vencimento anterior à realização.\". Vencimento igual à realização é aceito.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"examType\": \"periodic\",\n  \"performedAt\": \"2026-03-10\",\n  \"validUntil\": \"2026-03-09\",\n  \"aptitude\": \"fit\"\n}"
+            }
+          }
+        },
+        {
           "name": "GET /health-exams/:id",
           "request": {
             "method": "GET",
