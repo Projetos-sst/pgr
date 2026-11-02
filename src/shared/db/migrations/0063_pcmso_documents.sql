@@ -4,8 +4,8 @@ CREATE TABLE "pcmso_documents" (
 	"company_id" uuid NOT NULL,
 	"version" integer NOT NULL,
 	"status" text DEFAULT 'preview' NOT NULL,
-	"validity_start" date NOT NULL,
-	"validity_end" date NOT NULL,
+	"cycle_start" date NOT NULL,
+	"cycle_end" date NOT NULL,
 	"exam_plan_id" uuid NOT NULL,
 	"content" jsonb NOT NULL,
 	"content_sha256" text NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE "pcmso_documents" (
 	CONSTRAINT "uq_pcmso_documents_version" UNIQUE("org_id","company_id","version"),
 	CONSTRAINT "ck_pcmso_documents_status" CHECK ("pcmso_documents"."status" = 'preview'),
 	CONSTRAINT "ck_pcmso_documents_version" CHECK ("pcmso_documents"."version" > 0),
-	CONSTRAINT "ck_pcmso_documents_validity" CHECK ("pcmso_documents"."validity_end" > "pcmso_documents"."validity_start"),
+	CONSTRAINT "ck_pcmso_documents_cycle" CHECK ("pcmso_documents"."cycle_end" > "pcmso_documents"."cycle_start"),
 	CONSTRAINT "ck_pcmso_documents_hash" CHECK ("pcmso_documents"."content_sha256" ~ '^[0-9a-f]{64}$')
 );
 --> statement-breakpoint

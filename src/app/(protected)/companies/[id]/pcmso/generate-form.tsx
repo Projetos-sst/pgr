@@ -7,7 +7,7 @@ import { generatePcmsoDocumentAction } from "@/shared/server/actions/medicine/pc
 
 import { FormError, SubmitButton, TextField } from "../../../_ui/form";
 
-/** Gera e arquiva uma nova versão prévia do PCMSO a partir da data-base informada. */
+/** Gera e arquiva uma nova versão prévia do PCMSO a partir da data-base do ciclo de planejamento. */
 export function GeneratePcmsoForm({ companyId }: { companyId: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -19,7 +19,7 @@ export function GeneratePcmsoForm({ companyId }: { companyId: string }) {
     const fd = new FormData(event.currentTarget);
     startTransition(async () => {
       const result = await generatePcmsoDocumentAction(companyId, {
-        validityStart: fd.get("validityStart"),
+        cycleStart: fd.get("cycleStart"),
       });
       if (result.ok) {
         setError(null);
@@ -36,11 +36,11 @@ export function GeneratePcmsoForm({ companyId }: { companyId: string }) {
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
       <FormError message={error} />
       <TextField
-        label="Data-base da vigência (12 meses)"
-        name="validityStart"
+        label="Data-base do ciclo de planejamento (12 meses, MED-14)"
+        name="cycleStart"
         type="date"
         required
-        error={fields.validityStart}
+        error={fields.cycleStart}
       />
       <SubmitButton pending={pending} label="Gerar prévia do PCMSO" />
     </form>

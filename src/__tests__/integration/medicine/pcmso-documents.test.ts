@@ -130,7 +130,7 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
 
   it("sem plano aprovado, a prévia é recusada com as pendências", async () => {
     const denied = await generatePcmsoDocumentAction(I.companyA, {
-      validityStart: "2026-11-01",
+      cycleStart: "2026-11-01",
     });
     expect(!denied.ok && denied.error.code).toBe("VALIDATION");
     expect(!denied.ok && denied.error.message).toMatch(/plano de exames/i);
@@ -140,13 +140,13 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
   it("compõe a prévia com riscos, agravos, exames e periodicidade aprovados, vigência e hash", async () => {
     const plan = await approvedPlan();
     const created = await generateDocument(staff, I.companyA, {
-      validityStart: "2026-11-01",
+      cycleStart: "2026-11-01",
     });
     expect(created).toMatchObject({
       version: 1,
       status: "preview",
-      validityStart: "2026-11-01",
-      validityEnd: "2027-10-31",
+      cycleStart: "2026-11-01",
+      cycleEnd: "2027-10-31",
       examPlanId: plan.id,
       generatedBy: "staff",
     });
@@ -187,8 +187,8 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
 
   it("versões arquivadas são imutáveis e numeradas; RLS exige plano aprovado", async () => {
     const plan = await approvedPlan();
-    const v1 = await generateDocument(staff, I.companyA, { validityStart: "2026-11-01" });
-    const v2 = await generateDocument(staff, I.companyA, { validityStart: "2026-12-01" });
+    const v1 = await generateDocument(staff, I.companyA, { cycleStart: "2026-11-01" });
+    const v2 = await generateDocument(staff, I.companyA, { cycleStart: "2026-12-01" });
     expect(v2.version).toBe(2);
     expect((await listDocuments(staff, I.companyA)).map((d) => d.version)).toEqual([
       2, 1,
@@ -200,8 +200,7 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       });
     await expect(
       asStaff(
-        (tx) =>
-          tx`update pcmso_documents set validity_end='2030-01-01' where id=${v1.id}`,
+        (tx) => tx`update pcmso_documents set cycle_end='2030-01-01' where id=${v1.id}`,
       ),
     ).rejects.toMatchObject({ code: "42501" });
     await expect(
@@ -213,7 +212,7 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     await expect(
       asStaff(
         (tx) =>
-          tx`insert into pcmso_documents (org_id, company_id, version, validity_start, validity_end, exam_plan_id, content, content_sha256, generated_by)
+          tx`insert into pcmso_documents (org_id, company_id, version, cycle_start, cycle_end, exam_plan_id, content, content_sha256, generated_by)
             values ('org_a', ${I.companyA}, 99, '2026-01-01', '2026-12-31', ${draft.id}, '{}', ${"a".repeat(64)}, 'staff')`,
       ),
     ).rejects.toMatchObject({ code: "42501" });
@@ -221,7 +220,7 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     await expect(
       asStaff(
         (tx) =>
-          tx`insert into pcmso_documents (org_id, company_id, version, status, validity_start, validity_end, exam_plan_id, content, content_sha256, generated_by)
+          tx`insert into pcmso_documents (org_id, company_id, version, status, cycle_start, cycle_end, exam_plan_id, content, content_sha256, generated_by)
             values ('org_a', ${I.companyA}, 98, 'issued', '2026-01-01', '2026-12-31', ${plan.id}, '{}', ${"a".repeat(64)}, 'staff')`,
       ),
     ).rejects.toMatchObject({ code: "23514" });
@@ -230,11 +229,11 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
   it("data-base inválida, isolamento e módulo", async () => {
     await approvedPlan();
     const invalid = await generatePcmsoDocumentAction(I.companyA, {
-      validityStart: "01/11/2026",
+      cycleStart: "01/11/2026",
     });
     expect(!invalid.ok && invalid.error.code).toBe("VALIDATION");
     const created = await generateDocument(staff, I.companyA, {
-      validityStart: "2026-11-01",
+      cycleStart: "2026-11-01",
     });
     await expect(getDocument(ownerB, created.id)).rejects.toMatchObject({
       code: "NOT_FOUND",
@@ -249,7 +248,7 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     await approvedPlan();
     const company = { params: Promise.resolve({ id: I.companyA }) };
     const created = await GENERATE(
-      req(staff, "POST", { validityStart: "2026-11-01" }),
+      req(staff, "POST", { cycleStart: "2026-11-01" }),
       company,
     );
     expect(created.status).toBe(201);

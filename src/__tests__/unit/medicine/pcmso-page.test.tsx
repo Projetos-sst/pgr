@@ -36,7 +36,7 @@ jest.mock("@/shared/server/actions/medicine/pcmso-documents", () => ({
 
 const COMPANY = "c1111111-1111-4111-8111-111111111111";
 const content = composePcmso({
-  validityStart: "2026-11-01",
+  cycleStart: "2026-11-01",
   company: {
     razaoSocial: "Empresa Fictícia",
     cnpj: "11222333000181",
@@ -88,8 +88,8 @@ const content = composePcmso({
 const DOC = {
   id: "d1",
   version: 1,
-  validityStart: "2026-11-01",
-  validityEnd: "2027-10-31",
+  cycleStart: "2026-11-01",
+  cycleEnd: "2027-10-31",
   generatedAt: "2026-11-02T10:00:00.000Z",
   contentSha256: "a".repeat(64),
 };

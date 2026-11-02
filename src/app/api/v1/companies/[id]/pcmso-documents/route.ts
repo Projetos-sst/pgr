@@ -15,7 +15,7 @@ export function GET(req: NextRequest, context: Context) {
   return restHandler(req, async (ctx) => listDocuments(ctx, (await context.params).id));
 }
 
-// Gera e arquiva uma prévia ({ validityStart }); só sem bloqueios na conferência do PCMSO.
+// Gera e arquiva uma prévia ({ cycleStart }); só sem bloqueios na conferência do PCMSO.
 export function POST(req: NextRequest, context: Context) {
   return restHandler(
     req,

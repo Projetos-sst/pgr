@@ -1,5 +1,5 @@
 {
-  "id": "1ca63d30-4f3e-476c-a641-44aeeed702d8",
+  "id": "17b81511-531a-4f1a-b864-b085887ce199",
   "prevId": "15687f13-762d-45a1-a43d-16f61a2aec99",
   "version": "7",
   "dialect": "postgresql",
@@ -9349,14 +9349,14 @@
           "notNull": true,
           "default": "'preview'"
         },
-        "validity_start": {
-          "name": "validity_start",
+        "cycle_start": {
+          "name": "cycle_start",
           "type": "date",
           "primaryKey": false,
           "notNull": true
         },
-        "validity_end": {
-          "name": "validity_end",
+        "cycle_end": {
+          "name": "cycle_end",
           "type": "date",
           "primaryKey": false,
           "notNull": true
@@ -9521,9 +9521,9 @@
           "name": "ck_pcmso_documents_version",
           "value": "\"pcmso_documents\".\"version\" > 0"
         },
-        "ck_pcmso_documents_validity": {
-          "name": "ck_pcmso_documents_validity",
-          "value": "\"pcmso_documents\".\"validity_end\" > \"pcmso_documents\".\"validity_start\""
+        "ck_pcmso_documents_cycle": {
+          "name": "ck_pcmso_documents_cycle",
+          "value": "\"pcmso_documents\".\"cycle_end\" > \"pcmso_documents\".\"cycle_start\""
         },
         "ck_pcmso_documents_hash": {
           "name": "ck_pcmso_documents_hash",

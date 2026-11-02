@@ -43,7 +43,7 @@ export async function generateDocument(
   input: unknown,
 ) {
   const id = companyUuid(companyId);
-  const { validityStart } = pcmsoGenerationSchema.parse(input);
+  const { cycleStart } = pcmsoGenerationSchema.parse(input);
   const readiness = await getPcmsoReadiness(ctx, id);
   const blocking = readiness.items.filter((item) => item.severity === "blocking");
   if (blocking.length)
@@ -73,7 +73,7 @@ export async function generateDocument(
   const live = sources.filter((source) => !source.superseded);
 
   const content = composePcmso({
-    validityStart,
+    cycleStart,
     company: {
       razaoSocial: company.razaoSocial,
       cnpj: company.cnpj ?? "",
@@ -130,8 +130,8 @@ export async function generateDocument(
 
   return repo.insertPcmsoDocument(ctx, id, {
     examPlanId: plan.id,
-    validityStart: content.validity.start,
-    validityEnd: content.validity.end,
+    cycleStart: content.planningCycle.start,
+    cycleEnd: content.planningCycle.end,
     content,
     contentSha256: pcmsoContentHash(content),
   });

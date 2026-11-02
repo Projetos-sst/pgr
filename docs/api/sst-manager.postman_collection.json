@@ -3931,14 +3931,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"validityStart\": \"2026-11-01\"\n}"
+              "raw": "{\n  \"cycleStart\": \"2026-11-01\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/pcmso-documents",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "companies", "{{companyId}}", "pcmso-documents"]
             },
-            "description": "Gera e arquiva uma prévia (vigência de 12 meses). 422 enquanto a conferência do PCMSO tiver bloqueios (inclui plano aprovado). 201."
+            "description": "Gera e arquiva uma prévia (ciclo de planejamento de 12 meses, MED-14). 422 enquanto a conferência do PCMSO tiver bloqueios (inclui plano aprovado). 201."
           }
         },
         {

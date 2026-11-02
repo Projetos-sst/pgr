@@ -31,11 +31,25 @@ function Preview({
       </p>
       <header className="flex flex-col gap-1">
         <h2 className="text-text text-base font-semibold">
-          PCMSO · versão {version} · vigência {content.validity.start} a{" "}
-          {content.validity.end}
+          PCMSO · versão {version} · ciclo de planejamento {content.planningCycle.start} a{" "}
+          {content.planningCycle.end}
         </h2>
         <p className="text-text-subtle text-xs">SHA-256 {hash}</p>
       </header>
+      <section>
+        <h3 className="text-text font-semibold">Ciclo, revisão e relatório analítico</h3>
+        <p className="text-text-subtle">{content.planningCycle.basis}</p>
+        <ul className="text-text-subtle list-disc pl-5">
+          {content.revision.triggers.map((trigger) => (
+            <li key={trigger}>Revisão: {trigger}</li>
+          ))}
+          <li>{content.revision.administrativeUpdate}</li>
+          <li>
+            Relatório analítico: {content.analyticalReport.frequency}{" "}
+            {content.analyticalReport.note}
+          </li>
+        </ul>
+      </section>
       <section>
         <h3 className="text-text font-semibold">Empresa</h3>
         <p className="text-text-subtle">
@@ -183,9 +197,8 @@ export default async function PcmsoPage({ params }: { params: Promise<{ id: stri
           <ul className="text-text-subtle list-disc pl-5 text-sm">
             {docs.data.map((doc) => (
               <li key={doc.id}>
-                Versão {doc.version} · prévia · vigência {doc.validityStart} a{" "}
-                {doc.validityEnd} · gerada em{" "}
-                {new Date(doc.generatedAt).toISOString().slice(0, 10)} · SHA-256{" "}
+                Versão {doc.version} · prévia · ciclo {doc.cycleStart} a {doc.cycleEnd} ·
+                gerada em {new Date(doc.generatedAt).toISOString().slice(0, 10)} · SHA-256{" "}
                 {doc.contentSha256.slice(0, 12)}…
               </li>
             ))}

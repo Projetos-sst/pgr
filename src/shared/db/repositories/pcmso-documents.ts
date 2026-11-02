@@ -36,8 +36,8 @@ const summary = {
   companyId: docs.companyId,
   version: docs.version,
   status: docs.status,
-  validityStart: docs.validityStart,
-  validityEnd: docs.validityEnd,
+  cycleStart: docs.cycleStart,
+  cycleEnd: docs.cycleEnd,
   examPlanId: docs.examPlanId,
   contentSha256: docs.contentSha256,
   generatedBy: docs.generatedBy,
@@ -81,8 +81,8 @@ export async function insertPcmsoDocument(
   companyId: string,
   input: {
     examPlanId: string;
-    validityStart: string;
-    validityEnd: string;
+    cycleStart: string;
+    cycleEnd: string;
     content: unknown;
     contentSha256: string;
   },
@@ -104,8 +104,8 @@ export async function insertPcmsoDocument(
             companyId,
             version: (last ?? 0) + 1,
             examPlanId: input.examPlanId,
-            validityStart: input.validityStart,
-            validityEnd: input.validityEnd,
+            cycleStart: input.cycleStart,
+            cycleEnd: input.cycleEnd,
             content: input.content,
             contentSha256: input.contentSha256,
             generatedBy: ctx.userId,

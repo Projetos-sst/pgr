@@ -10,8 +10,8 @@ import { getProcedure } from "./procedure-catalog";
 /**
  * Composição do PCMSO (NOB-151) a partir do que já foi validado e aprovado: empresa, coordenador
  * (NOB-144), riscos validados de fonte vigente com possíveis agravos (NR-7 7.5.4 a), exames e
- * periodicidades do plano **aprovado pelo coordenador** (NOB-150; 7.5.4 b) e vigência de 12 meses
- * a partir da data-base (MED-14). Sai sempre como **prévia**: sem assinatura verificável não há
+ * periodicidades do plano **aprovado pelo coordenador** (NOB-150; 7.5.4 b) e ciclo de planejamento
+ * de 12 meses a partir da data-base (MED-14), distinto da revisão (7.5.1) e do relatório anual (7.6.2). Sai sempre como **prévia**: sem assinatura verificável não há
  * documento oficial (MED-12). Seções que o sistema ainda não tem entram como pendentes, nunca
  * com texto inventado. O leiaute final depende do modelo do Dr. Alcides (MED-08), não enviado.
  */
@@ -21,7 +21,7 @@ export const PCMSO_PREVIEW_NOTICE =
 
 export const pcmsoGenerationSchema = z
   .object({
-    validityStart: z
+    cycleStart: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Informe a data-base (AAAA-MM-DD).")
       .refine((v) => !Number.isNaN(Date.parse(`${v}T00:00:00Z`)), "Data-base inválida."),
@@ -30,7 +30,7 @@ export const pcmsoGenerationSchema = z
 export type PcmsoGenerationValues = z.infer<typeof pcmsoGenerationSchema>;
 
 export type PcmsoCompositionInput = {
-  validityStart: string;
+  cycleStart: string;
   company: {
     razaoSocial: string;
     cnpj: string;
@@ -125,10 +125,25 @@ export function composePcmso(input: PcmsoCompositionInput) {
     schemaVersion: PCMSO_CONTENT_SCHEMA_VERSION,
     status: "preview" as const,
     notice: PCMSO_PREVIEW_NOTICE,
-    validity: {
-      start: input.validityStart,
-      end: addDays(addMonths(input.validityStart, 12), -1),
-      reference: "MED-14 (12 meses a partir da data-base)",
+    // Três conceitos distintos; a NR-7 não fixa prazo de validade do PCMSO.
+    planningCycle: {
+      start: input.cycleStart,
+      end: addDays(addMonths(input.cycleStart, 12), -1),
+      basis:
+        "Ciclo de planejamento de 12 meses a partir da data-base, conforme a resposta do médico coordenador (MED-14). Não é prazo de validade normativo: a NR-7 não fixa validade do PCMSO.",
+    },
+    revision: {
+      triggers: [
+        "Mudança nos riscos identificados e classificados pelo PGR (NR-7 7.5.1; MED-14: risco novo).",
+        "Inconsistência no inventário de riscos reavaliada com os responsáveis pelo PGR (NR-7 7.5.5).",
+      ],
+      administrativeUpdate:
+        "Troca do médico responsável é atualização administrativa do PCMSO, não revisão do programa (MED-14).",
+    },
+    analyticalReport: {
+      frequency: "Anual, considerando a data do último relatório (NR-7 7.6.2).",
+      status: "pending" as const,
+      note: "O relatório analítico ainda não é gerado pelo sistema; depende dos exames do período.",
     },
     company: input.company,
     coordinator: { ...input.coordinator, reference: "NR-7 7.4.1 c; 7.5.2" },
