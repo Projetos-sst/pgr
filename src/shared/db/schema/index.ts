@@ -274,7 +274,9 @@ export {
   medicalProfession,
   medicalAffiliation,
   pcmsoCoordinatorAssignments,
+  medicoUserLinks,
   type Medico,
+  type MedicoUserLink,
   type NewMedico,
   type PcmsoCoordinatorAssignment,
 } from "./medicos";

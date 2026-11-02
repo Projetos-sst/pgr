@@ -165,3 +165,71 @@ export const pcmsoCoordinatorAssignments = pgTable(
 export type PcmsoCoordinatorAssignment = InferSelectModel<
   typeof pcmsoCoordinatorAssignments
 >;
+
+/**
+ * Vínculo profissional ↔ conta de acesso (NOB-149). Dá ao profissional cadastrado uma identidade
+ * autenticada: só a conta vinculada ao médico com designação aberta de coordenador age como
+ * coordenador daquela empresa. Histórico preservado: no máximo um vínculo ABERTO por profissional
+ * e um por conta no escritório; revogar só encerra (sem DELETE). Só o owner vincula e revoga
+ * (RLS com o ator da sessão, padrão 0056). Sem FK para `org_memberships`: a saída da conta do
+ * escritório não pode apagar o histórico — a autorização exige a associação viva no uso.
+ */
+export const medicoUserLinks = pgTable(
+  "medico_user_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    medicoId: uuid("medico_id").notNull(),
+    userId: text("user_id").notNull(),
+    reason: text("reason").notNull(),
+    linkedBy: text("linked_by").notNull(),
+    linkedAt: timestamp("linked_at", { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedBy: text("revoked_by"),
+    revokeReason: text("revoke_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.medicoId, t.orgId],
+      foreignColumns: [medicos.id, medicos.orgId],
+    }).onDelete("restrict"),
+    index("idx_medico_user_links_medico").on(t.orgId, t.medicoId),
+    index("idx_medico_user_links_user").on(t.orgId, t.userId),
+    uniqueIndex("uq_medico_user_links_open_medico")
+      .on(t.orgId, t.medicoId)
+      .where(sql`${t.revokedAt} is null`),
+    uniqueIndex("uq_medico_user_links_open_user")
+      .on(t.orgId, t.userId)
+      .where(sql`${t.revokedAt} is null`),
+    check(
+      "ck_medico_user_links_revocation",
+      sql`(${t.revokedAt} is null) = (${t.revokedBy} is null) and (${t.revokedAt} is null) = (${t.revokeReason} is null)`,
+    ),
+    pgPolicy("medico_user_links_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+    pgPolicy("medico_user_links_owner_insert", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${actorIsOwner} and ${t.linkedBy} = current_setting('app.current_actor', true) and ${t.revokedAt} is null`,
+    }),
+    // Só um vínculo ABERTO pode ser alterado (revogado); revogado não reabre nem muda.
+    pgPolicy("medico_user_links_owner_revoke", {
+      as: "restrictive",
+      for: "update",
+      to: appRuntimeRole,
+      using: sql`${t.revokedAt} is null and ${actorIsOwner}`,
+      withCheck: sql`${t.revokedBy} = current_setting('app.current_actor', true)`,
+    }),
+  ],
+).enableRLS();
+
+export type MedicoUserLink = InferSelectModel<typeof medicoUserLinks>;

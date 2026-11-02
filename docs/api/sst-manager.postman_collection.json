@@ -247,6 +247,11 @@
       "type": "string"
     },
     {
+      "key": "medicoUserLinkId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "machineCatalogId",
       "value": "",
       "type": "string"
@@ -3506,6 +3511,146 @@
               "mode": "raw",
               "raw": "{\n  \"endsOn\": \"2026-12-31\",\n  \"endReason\": \"Encerramento do contrato de coordenação (exemplo).\"\n}"
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vínculo profissional (NOB-149)",
+      "item": [
+        {
+          "name": "GET /medicos/{id}/user-links (histórico)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-links",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicos", "{{medicoId}}", "user-links"]
+            },
+            "description": "Histórico de vínculos do profissional com contas do escritório. 404 profissional de outro tenant; 403 client."
+          }
+        },
+        {
+          "name": "POST /medicos/{id}/user-links (vincular)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{devUser}}\",\n  \"reason\": \"Profissional da equipe com acesso próprio.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-links",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicos", "{{medicoId}}", "user-links"]
+            },
+            "description": "Só owner (403 para colaborador; RLS barra owner forjado). 201. Conta precisa ser membro do escritório e o profissional ativo (422). Um vínculo aberto por profissional e por conta (409 DUPLICATE)."
+          }
+        },
+        {
+          "name": "PUT /medicos/{id}/user-links/{linkId} (revogar)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Saída da equipe (exemplo fictício).\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-links/{{medicoUserLinkId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "medicos",
+                "{{medicoId}}",
+                "user-links",
+                "{{medicoUserLinkId}}"
+              ]
+            },
+            "description": "Só revoga vínculo aberto (404 se já revogado). Sem DELETE: histórico preservado."
+          }
+        },
+        {
+          "name": "GET /me/professional (perfil da sessão)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/professional",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "me", "professional"]
+            },
+            "description": "Perfil profissional da conta da sessão (null sem vínculo aberto) e empresas em que é coordenador do PCMSO."
           }
         }
       ]
