@@ -45,6 +45,9 @@ export default async function MedicalRisksPage({
       <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
         {inventory.data.validationNotice}
       </p>
+      <Link href={`/companies/${id}/exam-proposal`} className="text-primary underline">
+        Proposta de exames a partir dos riscos validados
+      </Link>
       <Link href={`/risk-authorizations/${id}`} className="text-primary underline">
         Indicação do autorizador, permissões profissionais e revisão dos riscos
       </Link>
