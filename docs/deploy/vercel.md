@@ -22,8 +22,10 @@ quando ele passa. A branch escolhe os secrets do projeto correspondente; não h�
 fallback entre testes e produção. A CLI baixa a configuração real, aplica as
 migrations pendentes no banco do ambiente com `drizzle-kit migrate` (conexão
 `DATABASE_URL_UNPOOLED` do próprio projeto Vercel), constrói o Next.js com
-`--standalone` e publica o mesmo output com `--prebuilt`. Migration que falha
-interrompe o CD antes do deploy; o drizzle aplica as pendentes numa transação.
+`--standalone` e publica o mesmo output com `--prebuilt --archive=tgz` (envio
+compactado, para não estourar o limite de uploads por arquivo do plano Free).
+Migration que falha interrompe o CD antes do deploy; o drizzle aplica as
+pendentes numa transação.
 Build e deploy ficam no mesmo job, preservando arquivos ocultos e links sem
 exportar variáveis privadas em artefatos do Actions. O resumo registra URL e SHA.
 
