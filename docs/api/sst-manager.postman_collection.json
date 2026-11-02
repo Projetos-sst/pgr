@@ -242,6 +242,11 @@
       "type": "string"
     },
     {
+      "key": "procedureCode",
+      "value": "0281",
+      "type": "string"
+    },
+    {
       "key": "machineCatalogId",
       "value": "",
       "type": "string"
@@ -275,10 +280,6 @@
       "key": "pgrReviewSampleId",
       "value": "",
       "type": "string"
-    },
-    {
-      "key": "procedureCode",
-      "value": "0281"
     }
   ],
   "item": [
