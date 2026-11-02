@@ -15,6 +15,7 @@ import {
 } from "@/shared/domains/medicine/aso";
 import { formatProfessionalRegistration } from "@/shared/domains/pgr/medicos";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
+import { z } from "zod";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
@@ -30,7 +31,8 @@ const norm = (value: string | null | undefined) =>
  */
 async function loadFacts(ctx: TenantContext, examId: string): Promise<AsoFacts> {
   const data = await repo.loadAsoExamFacts(ctx, examUuid(examId));
-  const companyId = data.exam.companyId;
+  // Sem origem comprovada, a referência é a empresa atual do funcionário; a conferência bloqueia.
+  const companyId = data.exam.companyId ?? data.employee.companyId;
   const [sources, coordinators, plans] = await Promise.all([
     loadProposalSources(ctx, companyId),
     listCoordinatorAssignments(ctx, companyId),
@@ -50,8 +52,14 @@ async function loadFacts(ctx: TenantContext, examId: string): Promise<AsoFacts> 
       examType: data.exam.examType,
       performedAt,
       aptitude: data.exam.aptitude,
-      companyId,
+      companyId: data.exam.companyId,
     },
+    examinerConclusion: data.examinerConclusion
+      ? {
+          conclusion: data.examinerConclusion.conclusion,
+          confirmedAt: new Date(data.examinerConclusion.confirmedAt).toISOString(),
+        }
+      : null,
     employee: data.employee,
     company: data.company,
     examiner: examiner
@@ -150,4 +158,44 @@ export async function generateDocument(ctx: TenantContext, examId: string) {
     content,
     contentSha256: asoContentHash(content),
   });
+}
+
+export const examOriginConfirmationSchema = z
+  .object({
+    justification: z
+      .string()
+      .trim()
+      .min(10, "Explique em pelo menos 10 caracteres como a origem foi comprovada.")
+      .max(1000, "Máximo de 1.000 caracteres."),
+  })
+  .strict();
+
+/** O responsável confirma, com justificativa, que um exame antigo foi feito na empresa atual. */
+export async function confirmCompanyOrigin(
+  ctx: TenantContext,
+  examId: string,
+  input: unknown,
+) {
+  const { justification } = examOriginConfirmationSchema.parse(input);
+  return repo.confirmExamCompanyOrigin(ctx, examUuid(examId), justification);
+}
+
+export const examinerConclusionSchema = z
+  .object({
+    conclusion: z.enum(["fit", "unfit"], { error: "Informe apto ou inapto." }),
+  })
+  .strict();
+
+export function listExaminerConclusions(ctx: TenantContext, examId: string) {
+  return repo.listExaminerConclusions(ctx, examUuid(examId));
+}
+
+/** O examinador, pela conta vinculada, confirma apto ou inapto para "apto com restrição". */
+export async function confirmExaminerConclusion(
+  ctx: TenantContext,
+  examId: string,
+  input: unknown,
+) {
+  const { conclusion } = examinerConclusionSchema.parse(input);
+  return repo.confirmExaminerConclusion(ctx, examUuid(examId), conclusion);
 }

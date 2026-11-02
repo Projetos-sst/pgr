@@ -185,6 +185,7 @@ export async function createHealthExam(
         .values({
           orgId,
           companyId,
+          companyOrigin: "registered",
           employeeId: input.employeeId,
           doctorId: input.doctorId ?? null,
           examType: input.examType,

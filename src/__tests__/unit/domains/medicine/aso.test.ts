@@ -42,6 +42,7 @@ function facts(overrides: Partial<AsoFacts> = {}): AsoFacts {
       aptitude: "fit",
       companyId: "c1",
     },
+    examinerConclusion: null,
     employee: {
       fullName: "Pessoa Fictícia",
       cpf: "00000000191",
@@ -221,20 +222,38 @@ describe("asoReadiness", () => {
     ]);
   });
 
-  it("exame de outra empresa não serve ao ASO (MED-07)", () => {
+  it("exame de outra empresa ou com origem não comprovada não serve ao ASO (MED-07)", () => {
     expect(blocking(facts({ exam: { ...facts().exam, companyId: "c2" } }))).toEqual([
       "exam_other_company",
     ]);
+    expect(blocking(facts({ exam: { ...facts().exam, companyId: null } }))).toEqual([
+      "exam_company_unverified",
+    ]);
   });
 
-  it("avisos: exame previsto não realizado, sem plano, sem coordenador, apto com restrição", () => {
+  it("apto com restrição bloqueia sem a confirmação do examinador; com ela, libera", () => {
+    const restricted = { ...facts().exam, aptitude: "fit_with_restrictions" as const };
+    expect(blocking(facts({ exam: restricted }))).toEqual([
+      "aptitude_confirmation_required",
+    ]);
+    expect(
+      blocking(
+        facts({
+          exam: restricted,
+          examinerConclusion: {
+            conclusion: "fit",
+            confirmedAt: "2026-10-21T10:00:00.000Z",
+          },
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("avisos: exame previsto não realizado, sem plano, sem coordenador", () => {
     const codes = (f: AsoFacts) => asoReadiness(f).map((i) => i.code);
     expect(codes(facts({ procedures: [] }))).toContain("planned_not_done_0281");
     expect(codes(facts({ plannedProcedures: null }))).toContain("exam_plan_missing");
     expect(codes(facts({ coordinator: null }))).toContain("coordinator_missing");
-    expect(
-      codes(facts({ exam: { ...facts().exam, aptitude: "fit_with_restrictions" } })),
-    ).toContain("aptitude_restriction");
     expect(
       blocking(facts({ procedures: [], plannedProcedures: null, coordinator: null })),
     ).toEqual([]);
@@ -242,10 +261,30 @@ describe("asoReadiness", () => {
 });
 
 describe("composeAso", () => {
-  it("apto com restrição sai apto; inapto sai inapto; o sistema não conclui", () => {
-    const fit = composeAso(
-      facts({ exam: { ...facts().exam, aptitude: "fit_with_restrictions" } }),
+  it("apto com restrição: nunca converte; usa só a confirmação do examinador", () => {
+    const restricted = { ...facts().exam, aptitude: "fit_with_restrictions" as const };
+    expect(() => composeAso(facts({ exam: restricted }))).toThrow(/confirmação/);
+    const confirmed = composeAso(
+      facts({
+        exam: restricted,
+        examinerConclusion: {
+          conclusion: "unfit",
+          confirmedAt: "2026-10-21T10:00:00.000Z",
+        },
+      }),
     );
+    expect(confirmed.conclusion).toMatchObject({
+      result: "unfit",
+      label: "Inapto para a função",
+    });
+    expect(confirmed.conclusion.basis).toMatch(
+      /Confirmada pelo médico examinador.*2026-10-21/,
+    );
+    expect(JSON.stringify(confirmed)).not.toMatch(/restri/i);
+  });
+
+  it("apto e inapto registrados valem como estão; o sistema não conclui", () => {
+    const fit = composeAso(facts());
     expect(fit.conclusion).toMatchObject({ result: "fit", label: "Apto para a função" });
     expect(fit.conclusion.basis).toMatch(/não conclui/);
     expect(

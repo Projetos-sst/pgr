@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { officeAction } from "@/shared/server/office-action";
 import {
   addProcedure,
+  confirmCompanyOrigin,
+  confirmExaminerConclusion,
+  listExaminerConclusions,
   generateDocument,
   getAsoReadiness,
   getDocument,
@@ -62,6 +65,36 @@ export async function generateAsoDocumentAction(examId: string) {
       const doc = await generateDocument(ctx, examId);
       revalidatePath(asoPath(examId));
       return doc;
+    },
+    { audit: true },
+  );
+}
+
+export async function confirmExamCompanyOriginAction(examId: string, input: unknown) {
+  return officeAction(
+    "medicine.exam_origin.confirm",
+    async (ctx) => {
+      const row = await confirmCompanyOrigin(ctx, examId, input);
+      revalidatePath(asoPath(examId));
+      return row;
+    },
+    { audit: true },
+  );
+}
+
+export async function listExaminerConclusionsAction(examId: string) {
+  return officeAction("medicine.aso_examiner_conclusions.list", (ctx) =>
+    listExaminerConclusions(ctx, examId),
+  );
+}
+
+export async function confirmExaminerConclusionAction(examId: string, input: unknown) {
+  return officeAction(
+    "medicine.aso_examiner_conclusions.confirm",
+    async (ctx) => {
+      const row = await confirmExaminerConclusion(ctx, examId, input);
+      revalidatePath(asoPath(examId));
+      return row;
     },
     { audit: true },
   );

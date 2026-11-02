@@ -30,6 +30,7 @@ jest.mock("@/shared/server/actions/medicine/aso", () => ({
   getAsoReadinessAction: jest.fn(),
   listExamProceduresAction: jest.fn(),
   listAsoDocumentsAction: jest.fn(),
+  listExaminerConclusionsAction: jest.fn().mockResolvedValue({ ok: true, data: [] }),
   getAsoDocumentAction: jest.fn(),
   addExamProcedureAction: jest.fn(),
   removeExamProcedureAction: jest.fn(),
@@ -44,6 +45,7 @@ const content = composeAso({
     aptitude: "fit",
     companyId: "c1",
   },
+  examinerConclusion: null,
   employee: {
     fullName: "Pessoa Fictícia",
     cpf: "00000000191",

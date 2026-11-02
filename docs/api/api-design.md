@@ -155,6 +155,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/health-exams` · `/health-exams/{id}`                                                                                                                         | GET (`?search=` funcionário ou tipo de exame, `?examType=`, `?employeeId=`, `?companyId=` = empresa **atual** do funcionário; ID malformado ou tipo inválido → `422 VALIDATION`), POST (`201`) · GET, PUT, DELETE (`204`) — exames ocupacionais/ASO; validade **derivada** na leitura; `validUntil < performedAt` e troca de `employeeId` no PUT → `422 VALIDATION`; funcionário/médico cross-tenant → `422 FK_NOT_FOUND`; sem `/dependents`                                                                                                                                                                                                    |
 | `/health-exams/{id}/procedures` · `/health-exams/{id}/procedures/{procedureId}`                                                                                | GET, POST (`201`, `{ code*, otherDescription?, performedAt* }`; Tabela 27; data não futura; duplicado → `409`) · DELETE (`204`) — exames complementares realizados (NR-7 7.5.19.1 d), sem resultado clínico — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `/health-exams/{id}/aso-readiness` · `/health-exams/{id}/aso-documents` · `/aso-documents/{id}`                                                                | GET conferência 7.5.19.1 a–g · GET prévias, POST gerar (`201`, sem corpo; só sem bloqueio) · GET prévia arquivada — sem PUT/DELETE; só `preview` (sem assinatura do examinador não há ASO emitido) — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `/health-exams/{id}/company-origin` · `/health-exams/{id}/examiner-conclusions`                                                                                | POST confirma origem de exame antigo (`{ justification* }`, owner, `200`) · GET confirmações, POST apto/inapto para “apto com restrição” (`{ conclusion* }`, só o examinador vinculado, `201`) — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `/medicine/overview` · `/medicine/employees`                                                                                                                   | GET (read-model do painel da Medicina: empresas com Medicina habilitada + contagem pela validade **informada** do último exame de cada funcionário) · GET (`?companyId=` **obrigatório**, `?search=`, `?page=`/`?pageSize=` ≤ 100; funcionários da empresa + último exame; `422` sem/má `companyId`, `404` empresa de outro tenant, `403` empresa sem Medicina); só GET, sem `/dependents` — não são entidades                                                                                                                                                                                                                                  |
 | `/companies/{id}/pcmso-coordinators` · `/pcmso-coordinators/{id}`                                                                                              | GET (histórico, mais recente primeiro), POST (`201`, designa; a designação aberta é encerrada na véspera) · GET, PUT (só encerra: `{ endsOn, endReason }`) — **sem DELETE** (histórico preservado, `405`); escrita só `owner`; empresa com Medicina habilitada                                                                                                                                                                                                                                                                                                                                                                                  |
 | `/risk-methodology`                                                                                                                                            | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -422,7 +423,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Plano de exames              | `actions/medicine/exam-plans.ts`             | list, get, draft, decide, add, approve + REST (NOB-150; coordenadora vinculada no app e na RLS; versões; sem DELETE)                                                                                                                                                                                                                                                                   |
 | PCMSO (prévias)              | `actions/medicine/pcmso-documents.ts`        | list, get, generate + REST (NOB-151; prévia composta do plano aprovado, arquivada com SHA-256; imutável)                                                                                                                                                                                                                                                                               |
 | Exame ocupacional (ASO)      | `actions/pgr/health-exams.ts`                | list (busca funcionário ou tipo de exame, filtros tipo/funcionário/empresa), get, create, update, delete + REST `/api/v1/health-exams/**` (validade derivada na leitura; funcionário/médico cross-tenant → `FK_NOT_FOUND`; sem `/dependents`)                                                                                                                                          |
-| ASO (conferência e prévias)  | `actions/medicine/aso.ts`                    | readiness, procedimentos (list/add/remove), prévias (list/get/generate) + REST (NOB-152; NR-7 7.5.19.1; prévia imutável com SHA-256, sem assinatura)                                                                                                                                                                                                                                   |
+| ASO (conferência e prévias)  | `actions/medicine/aso.ts`                    | readiness, procedimentos, prévias, origem do exame e confirmação do examinador + REST (NOB-152; NR-7 7.5.19.1; sem assinatura)                                                                                                                                                                                                                                                         |
 | Medicina — painel            | `actions/medicine/overview.ts`               | getMedicineOverviewAction, listMedicineEmployeesAction + REST `GET /api/v1/medicine/overview` · `GET /api/v1/medicine/employees` (read-models; core `server/medicine/overview-core.ts`; validade informada, sem periodicidade; sem `notes`/CPF)                                                                                                                                        |
 | Controle de formulário (ISO) | `actions/documents/form-controls.ts`         | list, get, create, update, delete + REST `/api/v1/form-controls/**` (código FRM único por org → `DUPLICATE`; empresa/GES opcionais)                                                                                                                                                                                                                                                    |
 | Documentos (GED)             | `actions/documents/documents.ts`             | list (versão corrente + KPIs + árvore + breadcrumb), get, create (multipart), update (só a vigente; antiga → `DOCUMENT_VERSION_READ_ONLY`), addVersion (vigente+1, herda da vigente; corrida → `DUPLICATE`), versions (histórico, #56), move, delete (grupo inteiro) + REST `/api/v1/documents/**`                                                                                     |
@@ -848,8 +849,11 @@ Primeira entrega do ASO (NOB-152, filha da NOB-110), em `domains/medicine/aso.ts
 
 **Empresa do exame (MED-07).**
 
-- `health_exams.company_id` guarda a empresa onde o exame foi realizado. O servidor grava o valor na criação, a partir do vínculo do funcionário; o cliente nunca informa.
-- Exames antigos receberam a empresa do vínculo atual (backfill). Um INSERT sem a coluna é preenchido pelo trigger `health_exams_set_company`.
+- `health_exams.company_id` guarda a empresa onde o exame foi realizado, com `company_origin`:
+  - `registered`: gravada pelo servidor na criação, a partir do vínculo do funcionário. O cliente nunca informa. Um INSERT sem a coluna é preenchido pelo trigger `health_exams_set_company`;
+  - `confirmed`: exame antigo confirmado pelo responsável (`owner`), com justificativa (10 a 1.000 caracteres). Ficam registrados autor, data e motivo;
+  - nula: exame anterior à 0064. **Sem backfill**, porque a empresa atual do funcionário pode não ser a do exame (transferência). A origem não comprovada bloqueia o ASO (`exam_company_unverified`), os exames complementares e a prévia (também pela RLS).
+- Depois de registrada, a empresa não muda: o trigger recusa com `23514`.
 - A transferência do funcionário não leva o exame junto. Exame de outra empresa bloqueia o ASO da empresa atual (`exam_other_company`).
 
 **Exames complementares realizados (`health_exam_procedures`).**
@@ -867,7 +871,10 @@ Primeira entrega do ASO (NOB-152, filha da NOB-110), em `domains/medicine/aso.ts
   - sem fonte utilizável bloqueia (`risk_source`);
   - sem risco validado para o grupo bloqueia (`risks_absence_not_declared`). A ausência de cadastro não comprova ausência de risco; a declaração de inexistência (DT-12) ainda não existe;
 - d) exame clínico e complementares com data. Exame do plano aprovado sem registro gera aviso; a indicação é do médico;
-- e) apto ou inapto, repetindo a conclusão registrada do examinador. Sem examinador, bloqueia (MED-01). "Apto com restrição" sai como apto, com aviso: a restrição fica fora do ASO (MED-10, DT-21);
+- e) apto ou inapto. Sem examinador, bloqueia (MED-01).
+  - "Apto" e "inapto" registrados valem como estão.
+  - "Apto com restrição" **não é convertido**: bloqueia (`aptitude_confirmation_required`) até o médico examinador do exame confirmar apto ou inapto pela conta vinculada a ele (NOB-149). Ver `aso_examiner_conclusions` abaixo.
+  - O registro original do exame não muda, e a descrição da restrição fica fora do ASO (MED-10, DT-21);
 - f) médico responsável pelo PCMSO vigente na data do exame. Gera aviso se não houver;
 - g) examinador médico com CRM e UF. Há sempre o aviso de assinatura indisponível (MED-12).
 
@@ -879,20 +886,32 @@ Primeira entrega do ASO (NOB-152, filha da NOB-110), em `domains/medicine/aso.ts
 - O conteúdo nunca inclui `notes` nem `certificatePath`.
 - Excluir exame ou funcionário com prévia → `409 IN_USE` (o histórico é preservado).
 
-| Action                      | Entrada                                              | Retorno (`data`)                                          |
-| --------------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
-| `getAsoReadinessAction`     | `examId`                                             | `{ items, checklist }`                                    |
-| `listExamProceduresAction`  | `examId`                                             | procedimentos realizados                                  |
-| `addExamProcedureAction`    | `examId, { code*, otherDescription?, performedAt* }` | procedimento (`DUPLICATE` se repetido)                    |
-| `removeExamProcedureAction` | `examId, procedureId`                                | —                                                         |
-| `listAsoDocumentsAction`    | `examId`                                             | versões sem conteúdo                                      |
-| `getAsoDocumentAction`      | `id`                                                 | versão com `content` e `contentSha256`                    |
-| `generateAsoDocumentAction` | `examId`                                             | versão arquivada (`preview`); com bloqueio → `VALIDATION` |
+**Confirmação do examinador (`aso_examiner_conclusions`).**
+
+- Só inclusão: `app_runtime` com SELECT e INSERT.
+- Só a conta vinculada ao médico examinador do exame confirma: vínculo aberto, médico ativo, CRM e membro do escritório. O papel no escritório (owner, colaborador, coordenador) não substitui o vínculo → `403`. A RLS repete a regra.
+- Só vale para exame registrado como "apto com restrição" (`CHECK recorded_aptitude`); outros → `422`.
+- A confirmação vigente é a mais recente do examinador atual sobre o registro atual. Trocar o examinador ou a aptidão a invalida.
+
+| Action                            | Entrada                                              | Retorno (`data`)                                          |
+| --------------------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
+| `getAsoReadinessAction`           | `examId`                                             | `{ items, checklist }`                                    |
+| `listExamProceduresAction`        | `examId`                                             | procedimentos realizados                                  |
+| `addExamProcedureAction`          | `examId, { code*, otherDescription?, performedAt* }` | procedimento (`DUPLICATE` se repetido)                    |
+| `removeExamProcedureAction`       | `examId, procedureId`                                | —                                                         |
+| `listAsoDocumentsAction`          | `examId`                                             | versões sem conteúdo                                      |
+| `getAsoDocumentAction`            | `id`                                                 | versão com `content` e `contentSha256`                    |
+| `generateAsoDocumentAction`       | `examId`                                             | versão arquivada (`preview`); com bloqueio → `VALIDATION` |
+| `confirmExamCompanyOriginAction`  | `examId, { justification* }`                         | `{ id, companyId, companyOrigin: "confirmed" }` (owner)   |
+| `listExaminerConclusionsAction`   | `examId`                                             | confirmações, da mais recente à mais antiga               |
+| `confirmExaminerConclusionAction` | `examId, { conclusion* }` (`fit` \| `unfit`)         | confirmação (só o examinador vinculado)                   |
 
 REST:
 
 - `GET|POST /api/v1/health-exams/{id}/procedures` · `DELETE /api/v1/health-exams/{id}/procedures/{procedureId}`;
 - `GET /api/v1/health-exams/{id}/aso-readiness`;
+- `POST /api/v1/health-exams/{id}/company-origin` (`200`, owner);
+- `GET|POST /api/v1/health-exams/{id}/examiner-conclusions` (`201`, examinador vinculado);
 - `GET|POST /api/v1/health-exams/{id}/aso-documents` · `GET /api/v1/aso-documents/{id}`.
 
 Tela: `/health-exams/{id}/aso`.

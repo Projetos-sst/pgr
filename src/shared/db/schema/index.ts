@@ -301,7 +301,12 @@ export {
   type NewHealthExam,
   type HealthExamProcedure,
 } from "./health-exams";
-export { asoDocuments, type AsoDocument } from "./aso-documents";
+export {
+  asoDocuments,
+  asoExaminerConclusions,
+  type AsoDocument,
+  type AsoExaminerConclusion,
+} from "./aso-documents";
 export {
   ergonomicEvaluations,
   ergonomicAdequacy,

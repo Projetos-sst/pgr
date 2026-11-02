@@ -20,10 +20,12 @@ import {
  * ASO (NOB-152, filha da NOB-110): conferência do conteúdo mínimo da NR-7 7.5.19.1 e prévia
  * montada só com o que está cadastrado. Regras:
  * - a conclusão apto/inapto é a registrada do médico examinador; o sistema não conclui nada (MED-01);
- * - o ASO traz apto ou inapto (7.5.19.1 e); restrição e observações clínicas ficam fora (MED-10, DT-21);
+ * - o ASO traz apto ou inapto (7.5.19.1 e). "Apto com restrição" não é convertido: exige a
+ *   confirmação de apto ou inapto pelo próprio examinador, pela conta vinculada (MED-10, DT-21);
+ *   restrição e observações clínicas ficam fora;
  * - riscos só validados de fonte vigente; pendentes bloqueiam; ausência de risco nunca é presumida
  *   (MED-09, DT-12) e a declaração de inexistência ainda não existe no sistema;
- * - só exames da empresa onde foram realizados (MED-07);
+ * - só exames da empresa onde foram realizados (MED-07); origem não comprovada bloqueia;
  * - sem assinatura verificável (MED-12) o documento é prévia, nunca ASO emitido.
  */
 export const ASO_CONTENT_SCHEMA_VERSION = 1;
@@ -153,8 +155,14 @@ export type AsoFacts = {
     examType: ExamType;
     performedAt: string;
     aptitude: ExamAptitude;
-    companyId: string;
+    /** `null` = exame anterior ao controle da empresa de origem, sem comprovação. */
+    companyId: string | null;
   };
+  /** Confirmação vigente do examinador para "apto com restrição" (conta vinculada). */
+  examinerConclusion: {
+    conclusion: "fit" | "unfit";
+    confirmedAt: string;
+  } | null;
   employee: {
     fullName: string;
     cpf: string;
@@ -198,7 +206,14 @@ export function asoReadiness(facts: AsoFacts): AsoReadinessItem[] {
     reference = REF,
   ) => items.push({ code, item, severity: "warning", message, reference });
 
-  if (facts.exam.companyId !== facts.employee.companyId)
+  if (facts.exam.companyId === null)
+    block(
+      "exam_company_unverified",
+      "company_of_exam",
+      "Exame registrado antes do controle da empresa de origem: não está comprovado em qual empresa foi realizado, então não serve ao ASO. O responsável pode confirmar a origem, com justificativa.",
+      "MED-07",
+    );
+  else if (facts.exam.companyId !== facts.employee.companyId)
     block(
       "exam_other_company",
       "company_of_exam",
@@ -287,12 +302,12 @@ export function asoReadiness(facts: AsoFacts): AsoReadinessItem[] {
     if (!facts.examiner.registrationUf)
       block("examiner_registration", "g", "CRM do médico examinador sem UF.");
   }
-  if (facts.exam.aptitude === "fit_with_restrictions")
-    warn(
-      "aptitude_restriction",
+  if (facts.exam.aptitude === "fit_with_restrictions" && !facts.examinerConclusion)
+    block(
+      "aptitude_confirmation_required",
       "e",
-      "O ASO registra apenas apto; a descrição da restrição fica no prontuário, fora do ASO.",
-      "NR-7 7.5.19.1 e; MED-10; DT-21",
+      "O exame registra “apto com restrição”, e o ASO precisa de apto ou inapto. O sistema não converte a conclusão: o médico examinador precisa confirmar apto ou inapto pela conta vinculada a ele. A descrição da restrição fica fora do ASO.",
+      "NR-7 7.5.19.1 e; MED-01; MED-10; DT-21",
     );
 
   if (!facts.coordinator)
@@ -327,6 +342,33 @@ export function asoChecklist(items: AsoReadinessItem[]) {
 
 // ── Composição da prévia ─────────────────────────────────────────────────────
 
+const CONCLUSION_LABELS = { fit: "Apto para a função", unfit: "Inapto para a função" };
+
+/**
+ * Apto ou inapto do ASO. "Apto" e "inapto" registrados valem como estão; "apto com restrição" só
+ * com a confirmação do examinador. Nunca converte: sem confirmação, lança (a conferência bloqueia
+ * antes).
+ */
+function asoConclusion(facts: AsoFacts) {
+  if (facts.exam.aptitude === "fit_with_restrictions") {
+    const confirmed = facts.examinerConclusion;
+    if (!confirmed)
+      throw new Error("Apto com restrição exige a confirmação do médico examinador.");
+    return {
+      result: confirmed.conclusion,
+      label: CONCLUSION_LABELS[confirmed.conclusion],
+      basis: `Confirmada pelo médico examinador, pela conta vinculada, em ${confirmed.confirmedAt.slice(0, 10)} (MED-01). O registro original do exame é preservado e os detalhes clínicos ficam fora do ASO.`,
+    };
+  }
+  const result = facts.exam.aptitude;
+  return {
+    result,
+    label: CONCLUSION_LABELS[result],
+    basis:
+      "Conclusão registrada do médico examinador (MED-01). O sistema não conclui aptidão.",
+  };
+}
+
 export function composeAso(facts: AsoFacts) {
   const readiness = asoReadiness(facts);
   return {
@@ -359,13 +401,7 @@ export function composeAso(facts: AsoFacts) {
           performedAt: p.performedAt,
         })),
     },
-    conclusion: {
-      result: facts.exam.aptitude === "unfit" ? ("unfit" as const) : ("fit" as const),
-      label:
-        facts.exam.aptitude === "unfit" ? "Inapto para a função" : "Apto para a função",
-      basis:
-        "Conclusão registrada do médico examinador (MED-01). O sistema não conclui aptidão.",
-    },
+    conclusion: asoConclusion(facts),
     coordinator: facts.coordinator,
     examiner: {
       name: facts.examiner?.name ?? "",

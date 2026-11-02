@@ -32,6 +32,8 @@ import {
 } from "@/shared/server/medicine/exam-plan-core";
 import {
   addProcedure,
+  confirmCompanyOrigin,
+  confirmExaminerConclusion,
   generateDocument,
   getAsoReadiness,
   getDocument,
@@ -54,6 +56,11 @@ import {
   POST as GENERATE,
 } from "@/app/api/v1/health-exams/[id]/aso-documents/route";
 import { GET as SHOW_DOC } from "@/app/api/v1/aso-documents/[id]/route";
+import { POST as CONFIRM_ORIGIN } from "@/app/api/v1/health-exams/[id]/company-origin/route";
+import {
+  GET as LIST_CONCLUSIONS,
+  POST as CONFIRM_CONCLUSION,
+} from "@/app/api/v1/health-exams/[id]/examiner-conclusions/route";
 import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS as I } from "../_helpers/pgr-seed";
 
@@ -67,6 +74,7 @@ const owner: TenantContext = {
 };
 const staff: TenantContext = { ...owner, userId: "staff", role: "collaborator" };
 const doctor: TenantContext = { ...owner, userId: "doctor", role: "collaborator" };
+const examiner: TenantContext = { ...owner, userId: "examiner", role: "collaborator" };
 const ownerB: TenantContext = {
   tenantId: "org_b",
   userId: "owner-b",
@@ -115,8 +123,8 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
   beforeEach(async () => {
     jest.clearAllMocks();
     await seedPgrBase(admin);
-    await admin`insert into users (id,email) values ('owner','o@example.test'),('staff','s@example.test'),('doctor','d@example.test'),('owner-b','ob@example.test')`;
-    await admin`insert into org_memberships (org_id,user_id,role) values ('org_a','owner','owner'),('org_a','staff','collaborator'),('org_a','doctor','collaborator'),('org_b','owner-b','owner')`;
+    await admin`insert into users (id,email) values ('owner','o@example.test'),('staff','s@example.test'),('doctor','d@example.test'),('examiner','e@example.test'),('owner-b','ob@example.test')`;
+    await admin`insert into org_memberships (org_id,user_id,role) values ('org_a','owner','owner'),('org_a','staff','collaborator'),('org_a','doctor','collaborator'),('org_a','examiner','collaborator'),('org_b','owner-b','owner')`;
     await admin`insert into medicos (id, org_id, name, crm, profession, registration_uf, rqe, affiliation, status) values
       (${COORDINATOR}, 'org_a', 'Dra. Coordenadora Fictícia', '60001', 'physician', 'MA', '961', 'internal', 'active'),
       (${EXAMINER}, 'org_a', 'Dr. Examinador Fictício', '60002', 'physician', 'MA', null, 'external', 'active'),
@@ -134,6 +142,10 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     await link(owner, COORDINATOR, {
       userId: "doctor",
       reason: "Coordenadora fictícia.",
+    });
+    await link(owner, EXAMINER, {
+      userId: "examiner",
+      reason: "Examinador fictício com acesso próprio.",
     });
     process.env.APP_ENV = "local";
     process.env.DEV_API_AUTH_BYPASS = "true";
@@ -164,6 +176,23 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       ...overrides,
     } as Parameters<typeof createHealthExam>[1]);
 
+  /** Exame anterior à 0064: sem empresa de origem (o trigger só existe a partir dela). */
+  async function legacyExam(aptitude = "fit") {
+    await admin`alter table health_exams disable trigger health_exams_set_company`;
+    try {
+      const [row] =
+        await admin`insert into health_exams (org_id, employee_id, doctor_id, exam_type, performed_at, aptitude, notes)
+        values ('org_a', ${I.employeeA}, ${EXAMINER}, 'periodic', '2026-03-10', ${aptitude}, ${SECRET_NOTE}) returning id, company_id, company_origin`;
+      return row as {
+        id: string;
+        company_id: string | null;
+        company_origin: string | null;
+      };
+    } finally {
+      await admin`alter table health_exams enable trigger health_exams_set_company`;
+    }
+  }
+
   const codes = async (examId: string) =>
     (await getAsoReadiness(staff, examId)).items
       .filter((i) => i.severity === "blocking")
@@ -172,11 +201,12 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
   it("empresa do exame vem do servidor (MED-07); exames complementares com data", async () => {
     const exam = await newExam();
     expect(exam.companyId).toBe(I.companyA);
-    // INSERT sem company_id (legado/SQL direto) recebe a empresa atual do funcionário.
-    const [legacy] =
+    expect(exam.companyOrigin).toBe("registered");
+    // INSERT novo sem company_id (SQL direto) recebe a empresa atual do funcionário.
+    const [direct] =
       await admin`insert into health_exams (org_id, employee_id, exam_type, performed_at, aptitude)
-      values ('org_a', ${I.employeeA}, 'admissional', '2026-01-05', 'fit') returning company_id`;
-    expect(legacy.company_id).toBe(I.companyA);
+      values ('org_a', ${I.employeeA}, 'admissional', '2026-01-05', 'fit') returning company_id, company_origin`;
+    expect(direct).toEqual({ company_id: I.companyA, company_origin: "registered" });
 
     const added = await addProcedure(staff, exam.id, {
       code: "0281",
@@ -222,7 +252,7 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
   });
 
   it("conferência bloqueia dados incompletos e distingue riscos pendentes de ausência não declarada", async () => {
-    const exam = await newExam({ doctorId: undefined });
+    const exam = await newExam({ doctorId: undefined, aptitude: "fit" });
     // Riscos ainda pendentes de validação técnica.
     expect(await codes(exam.id)).toEqual(
       expect.arrayContaining(["risks_pending", "examiner_missing"]),
@@ -261,17 +291,64 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     expect(await admin`select * from aso_documents`).toHaveLength(0);
   });
 
-  it("prévia só com dados cadastrados, sem observações clínicas; apto com restrição sai apto", async () => {
+  it("apto com restrição: sem conversão; só o examinador vinculado confirma apto ou inapto", async () => {
+    await validateRisks();
+    const exam = await newExam();
+    expect(await codes(exam.id)).toEqual(["aptitude_confirmation_required"]);
+    const denied = await generateAsoDocumentAction(exam.id);
+    expect(!denied.ok && denied.error.message).toMatch(
+      /médico examinador precisa confirmar/,
+    );
+    // Equipe, responsável e coordenadora (vinculada a outro médico) não confirmam.
+    for (const ctx of [staff, owner, doctor])
+      await expect(
+        confirmExaminerConclusion(ctx, exam.id, { conclusion: "fit" }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      confirmExaminerConclusion(examiner, exam.id, { conclusion: "talvez" }),
+    ).rejects.toMatchObject({ name: "ZodError" });
+    // Nem por SQL direto: a RLS exige a conta vinculada ao examinador do exame.
+    await expect(
+      runtime.begin(async (tx) => {
+        await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', 'staff', true)`;
+        return tx`insert into aso_examiner_conclusions (org_id, company_id, health_exam_id, conclusion, recorded_aptitude, examiner_medico_id, confirmed_by)
+          values ('org_a', ${I.companyA}, ${exam.id}, 'fit', 'fit_with_restrictions', ${EXAMINER}, 'staff')`;
+      }),
+    ).rejects.toMatchObject({ code: "42501" });
+    const confirmed = await confirmExaminerConclusion(examiner, exam.id, {
+      conclusion: "fit",
+    });
+    expect(confirmed).toMatchObject({
+      conclusion: "fit",
+      recordedAptitude: "fit_with_restrictions",
+      examinerMedicoId: EXAMINER,
+      confirmedBy: "examiner",
+    });
+    expect(await codes(exam.id)).toEqual([]);
+    // O registro original do exame não muda.
+    const [original] =
+      await admin`select aptitude, notes from health_exams where id=${exam.id}`;
+    expect(original).toEqual({ aptitude: "fit_with_restrictions", notes: SECRET_NOTE });
+    // Trocar o examinador invalida a confirmação anterior.
+    await admin`update health_exams set doctor_id=${COORDINATOR} where id=${exam.id}`;
+    expect(await codes(exam.id)).toContain("aptitude_confirmation_required");
+    await admin`update health_exams set doctor_id=${EXAMINER} where id=${exam.id}`;
+    expect(await codes(exam.id)).toEqual([]);
+    // Exame sem restrição não usa confirmação.
+    const plain = await newExam({ aptitude: "fit" });
+    await expect(
+      confirmExaminerConclusion(examiner, plain.id, { conclusion: "fit" }),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+  });
+
+  it("prévia só com dados cadastrados, sem observações clínicas; conclusão confirmada pelo examinador", async () => {
     await validateRisks();
     await approvedPlan();
     const exam = await newExam();
+    await confirmExaminerConclusion(examiner, exam.id, { conclusion: "fit" });
     const before = await getAsoReadiness(staff, exam.id);
     expect(before.items.map((i) => i.code)).toEqual(
-      expect.arrayContaining([
-        "planned_not_done_0281",
-        "aptitude_restriction",
-        "signature_unavailable",
-      ]),
+      expect.arrayContaining(["planned_not_done_0281", "signature_unavailable"]),
     );
     expect(before.checklist.find((c) => c.item === "a")?.status).toBe("ok");
     await addProcedure(staff, exam.id, { code: "0281", performedAt: "2026-10-18" });
@@ -302,6 +379,8 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       result: "fit",
       label: "Apto para a função",
     });
+    expect(content.conclusion.basis).toMatch(/Confirmada pelo médico examinador/);
+    expect(JSON.stringify(content)).not.toMatch(/restri/i);
     expect(content.coordinator).toMatchObject({
       name: "Dra. Coordenadora Fictícia",
       registration: "CRM 60001/MA",
@@ -365,7 +444,7 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
 
   it("isolamento, módulo e perfil cliente; REST", async () => {
     await validateRisks();
-    const exam = await newExam();
+    const exam = await newExam({ aptitude: "fit" });
     const params = { params: Promise.resolve({ id: exam.id }) };
     const added = await ADD_PROCEDURE(
       req(staff, "POST", { code: "0281", performedAt: "2026-10-18" }),
@@ -406,5 +485,111 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     await expect(getDocument(staff, docId)).rejects.toMatchObject({
       code: expect.stringMatching(/NOT_FOUND|FORBIDDEN/),
     });
+  });
+
+  it("exame antigo sem origem e transferências: nada é presumido (MED-07)", async () => {
+    await validateRisks();
+    // Exame anterior ao controle: sem empresa, mesmo com o funcionário ainda na empresa A.
+    const legacy = await legacyExam();
+    expect(legacy).toMatchObject({ company_id: null, company_origin: null });
+    expect(await codes(legacy.id)).toEqual(["exam_company_unverified"]);
+    await expect(
+      addProcedure(staff, legacy.id, { code: "0281", performedAt: "2026-03-08" }),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    await expect(generateDocument(staff, legacy.id)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+    // Nem por SQL direto: a RLS da prévia exige a empresa do exame.
+    await expect(
+      runtime.begin(async (tx) => {
+        await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', 'staff', true)`;
+        return tx`insert into aso_documents (org_id, company_id, health_exam_id, version, content, content_sha256, generated_by)
+          values ('org_a', ${I.companyA}, ${legacy.id}, 1, '{}', ${"a".repeat(64)}, 'staff')`;
+      }),
+    ).rejects.toMatchObject({ code: "42501" });
+
+    // Confirmação: só o responsável, com justificativa; registra autor e motivo.
+    await expect(
+      confirmCompanyOrigin(staff, legacy.id, {
+        justification: "Prontuário da clínica fictícia.",
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      confirmCompanyOrigin(owner, legacy.id, { justification: "curta" }),
+    ).rejects.toMatchObject({ name: "ZodError" });
+    const confirmed = await confirmCompanyOrigin(owner, legacy.id, {
+      justification: "Prontuário da clínica fictícia indica a empresa A.",
+    });
+    expect(confirmed).toMatchObject({
+      companyId: I.companyA,
+      companyOrigin: "confirmed",
+    });
+    const [row] =
+      await admin`select company_origin_confirmed_by, company_origin_note from health_exams where id=${legacy.id}`;
+    expect(row).toEqual({
+      company_origin_confirmed_by: "owner",
+      company_origin_note: "Prontuário da clínica fictícia indica a empresa A.",
+    });
+    expect(await codes(legacy.id)).toEqual([]);
+    await expect(
+      confirmCompanyOrigin(owner, legacy.id, {
+        justification: "Segunda confirmação fictícia.",
+      }),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    // Depois de registrada, a empresa de origem não muda nem por SQL.
+    await expect(
+      admin`update health_exams set company_id=${COMPANY_C} where id=${legacy.id}`,
+    ).rejects.toMatchObject({ code: "23514" });
+
+    // Transferência: o exame registrado fica na empresa A e não serve à C; o antigo sem
+    // origem continua sem origem; um exame novo nasce na empresa C.
+    const registered = await newExam({ aptitude: "fit" });
+    const legacyBeforeTransfer = await legacyExam();
+    await admin`update employees set company_id=${COMPANY_C} where id=${I.employeeA}`;
+    expect(await codes(registered.id)).toContain("exam_other_company");
+    expect(await codes(legacy.id)).toContain("exam_other_company");
+    expect(await codes(legacyBeforeTransfer.id)).toContain("exam_company_unverified");
+    const [after] =
+      await admin`select company_id from health_exams where id=${legacyBeforeTransfer.id}`;
+    expect(after.company_id).toBeNull();
+    const fresh = await newExam({ aptitude: "fit" });
+    expect(fresh.companyId).toBe(COMPANY_C);
+
+    // REST: confirmação de origem (owner) e confirmação do examinador.
+    const params = { params: Promise.resolve({ id: legacyBeforeTransfer.id }) };
+    expect(
+      (
+        await CONFIRM_ORIGIN(
+          req(staff, "POST", { justification: "Tentativa da equipe." }),
+          params,
+        )
+      ).status,
+    ).toBe(403);
+    const ok = await CONFIRM_ORIGIN(
+      req(owner, "POST", { justification: "Registro fictício confirma a empresa C." }),
+      params,
+    );
+    expect(ok.status).toBe(200);
+    expect((await ok.json()).companyId).toBe(COMPANY_C);
+    const restricted = await newExam();
+    const restrictedParams = { params: Promise.resolve({ id: restricted.id }) };
+    expect(
+      (
+        await CONFIRM_CONCLUSION(
+          req(staff, "POST", { conclusion: "fit" }),
+          restrictedParams,
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await CONFIRM_CONCLUSION(
+          req(examiner, "POST", { conclusion: "unfit" }),
+          restrictedParams,
+        )
+      ).status,
+    ).toBe(201);
+    expect((await LIST_CONCLUSIONS(req(staff), restrictedParams)).status).toBe(200);
+    expect((await LIST_CONCLUSIONS(req(ownerB), restrictedParams)).status).toBe(404);
   });
 });

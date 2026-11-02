@@ -4328,6 +4328,116 @@
           }
         },
         {
+          "name": "POST /health-exams/{id}/company-origin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"justification\": \"Prontuário da clínica indica a empresa atual.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/company-origin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "company-origin"]
+            },
+            "description": "Confirma a empresa de origem de exame anterior à 0064 (empresa nula = origem não comprovada). Só owner (403 para os demais); justificativa 10–1000 caracteres; já registrada → 422. 200."
+          }
+        },
+        {
+          "name": "GET /health-exams/{id}/examiner-conclusions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/examiner-conclusions",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "health-exams",
+                "{{healthExamId}}",
+                "examiner-conclusions"
+              ]
+            },
+            "description": "Confirmações de apto/inapto do examinador para “apto com restrição”, da mais recente à mais antiga."
+          }
+        },
+        {
+          "name": "POST /health-exams/{id}/examiner-conclusions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conclusion\": \"fit\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/examiner-conclusions",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "health-exams",
+                "{{healthExamId}}",
+                "examiner-conclusions"
+              ]
+            },
+            "description": "Médico examinador do exame, pela conta vinculada (x-dev-user = usuário vinculado), confirma apto ou inapto quando o exame registra “apto com restrição”. Outros usuários → 403; exame sem restrição → 422. 201."
+          }
+        },
+        {
           "name": "GET /health-exams/{id}/aso-readiness",
           "request": {
             "method": "GET",

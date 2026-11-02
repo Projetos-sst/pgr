@@ -8,11 +8,18 @@ import {
   getAsoDocumentAction,
   getAsoReadinessAction,
   listAsoDocumentsAction,
+  listExaminerConclusionsAction,
   listExamProceduresAction,
 } from "@/shared/server/actions/medicine/aso";
 
 import { PageHeader } from "../../../_ui/list";
-import { GenerateAsoButton, ProcedureForm, RemoveProcedureButton } from "./aso-controls";
+import {
+  CompanyOriginForm,
+  ExaminerConclusionForm,
+  GenerateAsoButton,
+  ProcedureForm,
+  RemoveProcedureButton,
+} from "./aso-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -124,10 +131,11 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
   const { id } = await params;
   const exam = await getHealthExamAction(id);
   if (!exam.ok) notFound();
-  const [readiness, procedures, docs] = await Promise.all([
+  const [readiness, procedures, docs, conclusions] = await Promise.all([
     getAsoReadinessAction(id),
     listExamProceduresAction(id),
     listAsoDocumentsAction(id),
+    listExaminerConclusionsAction(id),
   ]);
   if (!readiness.ok)
     return (
@@ -139,6 +147,8 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
   const docRows = docs.ok ? docs.data : [];
   const latest = docRows[0] ? await getAsoDocumentAction(docRows[0].id) : null;
   const blocking = readiness.data.items.filter((item) => item.severity === "blocking");
+  const has = (code: string) => blocking.some((item) => item.code === code);
+  const conclusionRows = conclusions.ok ? conclusions.data : [];
 
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 px-6 py-8">
@@ -166,6 +176,46 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
           ))}
         </ul>
       </section>
+      {has("exam_company_unverified") ? (
+        <section className="glass-card flex flex-col gap-3 rounded-xl p-5 text-sm">
+          <h2 className="text-text text-base font-semibold">
+            Empresa de origem do exame
+          </h2>
+          <p className="text-text-subtle">
+            Exame registrado antes do controle da empresa de origem (MED-07). O sistema
+            não presume a empresa: só o responsável pelo escritório confirma, com
+            justificativa, que o exame foi feito na empresa atual do funcionário. A
+            confirmação fica registrada com autor e data e não pode ser alterada.
+          </p>
+          <CompanyOriginForm examId={id} />
+        </section>
+      ) : null}
+      {exam.data.aptitude === "fit_with_restrictions" ? (
+        <section className="glass-card flex flex-col gap-3 rounded-xl p-5 text-sm">
+          <h2 className="text-text text-base font-semibold">
+            Confirmação do médico examinador
+          </h2>
+          <p className="text-text-subtle">
+            O exame registra “apto com restrição”, e o ASO precisa de apto ou inapto (NR-7
+            7.5.19.1 e). O sistema não converte a conclusão. Só o médico examinador deste
+            exame, pela conta vinculada a ele, confirma. O registro original é preservado,
+            e a descrição da restrição fica fora do ASO.
+          </p>
+          {conclusionRows.length ? (
+            <ul className="text-text-subtle list-disc pl-5">
+              {conclusionRows.map((row) => (
+                <li key={row.id}>
+                  {row.conclusion === "fit" ? "Apto" : "Inapto"} para a função ·
+                  confirmado em {new Date(row.confirmedAt).toISOString().slice(0, 10)}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {has("aptitude_confirmation_required") ? (
+            <ExaminerConclusionForm examId={id} />
+          ) : null}
+        </section>
+      ) : null}
       <section className="glass-card flex flex-col gap-3 rounded-xl p-5 text-sm">
         <h2 className="text-text text-base font-semibold">Exames realizados</h2>
         <ul className="text-text-subtle flex flex-col gap-1">

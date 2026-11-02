@@ -1,13 +1,20 @@
 import "server-only";
 
-import { and, asc, desc, eq, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, max, sql } from "drizzle-orm";
 
+import { ForbiddenError } from "@/shared/auth/errors";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import type { ExamProcedureValues } from "@/shared/domains/medicine/aso";
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 
 import { withOrg, type TenantTransaction } from "../with-org";
-import { asoDocuments as docs, type AsoDocument } from "../schema/aso-documents";
+import {
+  asoDocuments as docs,
+  asoExaminerConclusions as conclusions,
+  type AsoDocument,
+  type AsoExaminerConclusion,
+} from "../schema/aso-documents";
 import { companies } from "../schema/companies";
 import { employees } from "../schema/employees";
 import { ges } from "../schema/ges";
@@ -17,7 +24,8 @@ import {
   type HealthExamProcedure,
 } from "../schema/health-exams";
 import { jobRoles } from "../schema/job-roles";
-import { medicos, type Medico } from "../schema/medicos";
+import { medicos, medicoUserLinks, type Medico } from "../schema/medicos";
+import { orgMemberships } from "../schema/org-memberships";
 import { assertCompanyModuleTx } from "./company-modules";
 import { auditedTenantWrite } from "./audited-write";
 
@@ -32,9 +40,15 @@ async function actorTx<T>(ctx: TenantContext, fn: (tx: TenantTransaction) => Pro
 
 /**
  * Exame do tenant com Medicina ativa na empresa onde foi realizado. A RLS de `health_exams` já
- * esconde exames de funcionários de empresas sem Medicina → NOT_FOUND.
+ * esconde exames de funcionários de empresas sem Medicina → NOT_FOUND. Exame com origem não
+ * comprovada (`companyId` nulo) só tem a checagem da RLS, pela empresa atual do funcionário.
  */
-async function findExam(tx: TenantTransaction, orgId: string, examId: string) {
+async function findExam(
+  tx: TenantTransaction,
+  orgId: string,
+  examId: string,
+  { lock = false } = {},
+) {
   // Só as colunas do ASO: observações clínicas e caminho do atestado nunca são lidos aqui.
   const [exam] = await tx
     .select({
@@ -45,13 +59,24 @@ async function findExam(tx: TenantTransaction, orgId: string, examId: string) {
       examType: healthExams.examType,
       performedAt: healthExams.performedAt,
       aptitude: healthExams.aptitude,
+      companyOrigin: healthExams.companyOrigin,
     })
     .from(healthExams)
     .where(and(eq(healthExams.orgId, orgId), eq(healthExams.id, examId)))
-    .limit(1);
+    .limit(1)
+    .for(lock ? "update" : "share");
   if (!exam) throw new NotFoundError();
-  await assertCompanyModuleTx(tx, orgId, exam.companyId, "medicine");
+  if (exam.companyId) await assertCompanyModuleTx(tx, orgId, exam.companyId, "medicine");
   return exam;
+}
+
+/** Exame com empresa de origem comprovada; sem ela, nada do ASO é gravado (MED-07). */
+function originCompany(exam: { companyId: string | null }): string {
+  if (!exam.companyId)
+    throw new ValidationError(
+      "A empresa onde o exame foi realizado não está comprovada. Confirme a origem antes de usar o exame no ASO.",
+    );
+  return exam.companyId;
 }
 
 export type AsoExamFacts = {
@@ -67,6 +92,8 @@ export type AsoExamFacts = {
   company: { razaoSocial: string; cnpj: string | null };
   examiner: Medico | null;
   procedures: HealthExamProcedure[];
+  /** Confirmação vigente: a mais recente do examinador atual sobre o registro atual do exame. */
+  examinerConclusion: AsoExaminerConclusion | null;
 };
 
 /** Dados cadastrados do exame para o ASO, numa transação. Nunca lê `notes` para fora daqui. */
@@ -97,7 +124,12 @@ export async function loadAsoExamFacts(
     const [company] = await tx
       .select({ razaoSocial: companies.razaoSocial, cnpj: companies.cnpj })
       .from(companies)
-      .where(and(eq(companies.orgId, ctx.tenantId), eq(companies.id, exam.companyId)))
+      .where(
+        and(
+          eq(companies.orgId, ctx.tenantId),
+          eq(companies.id, exam.companyId ?? employee.companyId),
+        ),
+      )
       .limit(1);
     if (!company) throw new NotFoundError();
     const [examiner] = exam.doctorId
@@ -114,7 +146,29 @@ export async function loadAsoExamFacts(
         and(eq(procedures.orgId, ctx.tenantId), eq(procedures.healthExamId, exam.id)),
       )
       .orderBy(asc(procedures.performedAt), asc(procedures.procedureCode));
-    return { exam, employee, company, examiner: examiner ?? null, procedures: rows };
+    const [conclusion] = exam.doctorId
+      ? await tx
+          .select()
+          .from(conclusions)
+          .where(
+            and(
+              eq(conclusions.orgId, ctx.tenantId),
+              eq(conclusions.healthExamId, exam.id),
+              eq(conclusions.examinerMedicoId, exam.doctorId),
+              eq(conclusions.recordedAptitude, exam.aptitude),
+            ),
+          )
+          .orderBy(desc(conclusions.confirmedAt))
+          .limit(1)
+      : [];
+    return {
+      exam,
+      employee,
+      company,
+      examiner: examiner ?? null,
+      procedures: rows,
+      examinerConclusion: conclusion ?? null,
+    };
   });
 }
 
@@ -149,7 +203,7 @@ export async function addExamProcedure(
         .insert(procedures)
         .values({
           orgId: ctx.tenantId,
-          companyId: exam.companyId,
+          companyId: originCompany(exam),
           healthExamId: exam.id,
           procedureCode: input.code,
           otherDescription: input.otherDescription ?? null,
@@ -251,7 +305,7 @@ export async function insertAsoDocument(
           .insert(docs)
           .values({
             orgId: ctx.tenantId,
-            companyId: exam.companyId,
+            companyId: originCompany(exam),
             healthExamId: exam.id,
             version: (last ?? 0) + 1,
             content: input.content,
@@ -286,4 +340,150 @@ export async function hasAsoDocumentsTx(
           )
           .limit(1);
   return rows.length > 0;
+}
+
+// ── Empresa de origem (MED-07) ───────────────────────────────────────────────
+
+/**
+ * Confirma a origem de exame anterior ao controle (empresa nula): o responsável pelo escritório
+ * atesta, com justificativa, que o exame foi realizado na empresa atual do funcionário. Nada é
+ * inferido; a confirmação guarda autor, data e motivo, e a empresa não muda depois (trigger).
+ */
+export async function confirmExamCompanyOrigin(
+  ctx: TenantContext,
+  examId: string,
+  note: string,
+): Promise<{ id: string; companyId: string; companyOrigin: "confirmed" }> {
+  if (ctx.role !== "owner")
+    throw new ForbiddenError(
+      "Somente o responsável pelo escritório pode confirmar a empresa de origem de um exame.",
+    );
+  return auditedTenantWrite(ctx.tenantId, "medicine.exam_origin.write_rejected", () =>
+    actorTx(ctx, async (tx) => {
+      const exam = await findExam(tx, ctx.tenantId, examId, { lock: true });
+      if (exam.companyId)
+        throw new ValidationError("A empresa de origem deste exame já está registrada.");
+      const [employee] = await tx
+        .select({ companyId: employees.companyId })
+        .from(employees)
+        .where(and(eq(employees.orgId, ctx.tenantId), eq(employees.id, exam.employeeId)))
+        .limit(1);
+      if (!employee) throw new NotFoundError();
+      await assertCompanyModuleTx(tx, ctx.tenantId, employee.companyId, "medicine");
+      const [row] = await tx
+        .update(healthExams)
+        .set({
+          companyId: employee.companyId,
+          companyOrigin: "confirmed",
+          companyOriginConfirmedBy: ctx.userId,
+          companyOriginConfirmedAt: new Date(),
+          companyOriginNote: note,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(healthExams.orgId, ctx.tenantId),
+            eq(healthExams.id, exam.id),
+            isNull(healthExams.companyId),
+          ),
+        )
+        .returning({ id: healthExams.id, companyId: healthExams.companyId });
+      if (!row?.companyId) throw new NotFoundError();
+      return {
+        id: row.id,
+        companyId: row.companyId,
+        companyOrigin: "confirmed" as const,
+      };
+    }),
+  );
+}
+
+// ── Confirmação do examinador ("apto com restrição") ─────────────────────────
+
+export async function listExaminerConclusions(
+  ctx: TenantContext,
+  examId: string,
+): Promise<AsoExaminerConclusion[]> {
+  return actorTx(ctx, async (tx) => {
+    const exam = await findExam(tx, ctx.tenantId, examId);
+    return tx
+      .select()
+      .from(conclusions)
+      .where(
+        and(eq(conclusions.orgId, ctx.tenantId), eq(conclusions.healthExamId, exam.id)),
+      )
+      .orderBy(desc(conclusions.confirmedAt));
+  });
+}
+
+/**
+ * O médico examinador do exame, pela conta vinculada a ele (NOB-149), confirma apto ou inapto
+ * quando o exame registra "apto com restrição". Papel no escritório não substitui o vínculo; a
+ * RLS repete a regra.
+ */
+export async function confirmExaminerConclusion(
+  ctx: TenantContext,
+  examId: string,
+  conclusion: "fit" | "unfit",
+): Promise<AsoExaminerConclusion> {
+  return auditedTenantWrite(
+    ctx.tenantId,
+    "medicine.aso_examiner_conclusions.write_rejected",
+    () =>
+      actorTx(ctx, async (tx) => {
+        const exam = await findExam(tx, ctx.tenantId, examId, { lock: true });
+        if (exam.aptitude !== "fit_with_restrictions")
+          throw new ValidationError(
+            "A confirmação do examinador só é usada quando o exame registra “apto com restrição”.",
+          );
+        if (!exam.doctorId)
+          throw new ValidationError("O exame não tem médico examinador informado.");
+        const companyId = originCompany(exam);
+        const [link] = await tx
+          .select({ id: medicoUserLinks.id })
+          .from(medicoUserLinks)
+          .innerJoin(
+            medicos,
+            and(
+              eq(medicos.id, medicoUserLinks.medicoId),
+              eq(medicos.orgId, medicoUserLinks.orgId),
+            ),
+          )
+          .innerJoin(
+            orgMemberships,
+            and(
+              eq(orgMemberships.orgId, medicoUserLinks.orgId),
+              eq(orgMemberships.userId, medicoUserLinks.userId),
+            ),
+          )
+          .where(
+            and(
+              eq(medicoUserLinks.orgId, ctx.tenantId),
+              eq(medicoUserLinks.medicoId, exam.doctorId),
+              eq(medicoUserLinks.userId, ctx.userId),
+              isNull(medicoUserLinks.revokedAt),
+              eq(medicos.status, "active"),
+              eq(medicos.profession, "physician"),
+            ),
+          )
+          .limit(1);
+        if (!link)
+          throw new ForbiddenError(
+            "Somente o médico examinador deste exame, com acesso vinculado, pode confirmar apto ou inapto.",
+          );
+        const [row] = await tx
+          .insert(conclusions)
+          .values({
+            orgId: ctx.tenantId,
+            companyId,
+            healthExamId: exam.id,
+            conclusion,
+            recordedAptitude: exam.aptitude,
+            examinerMedicoId: exam.doctorId,
+            confirmedBy: ctx.userId,
+          })
+          .returning();
+        return row;
+      }),
+  );
 }

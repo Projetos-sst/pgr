@@ -41,8 +41,11 @@ const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
  * validade (vigente/a vencer/vencido) é DERIVADA na leitura a partir de
  * `valid_until` (nullable — ex.: demissional pode não ter validade). `doctor_id`
  * usa ON DELETE SET NULL: excluir um médico não bloqueia nem apaga o exame.
- * `company_id` (NOB-152, MED-07) é a empresa onde o exame foi realizado, gravada pelo
- * servidor a partir do vínculo do funcionário na criação; não acompanha transferências.
+ * `company_id` (NOB-152, MED-07) é a empresa onde o exame foi realizado:
+ * - `registered`: gravada pelo servidor na criação, a partir do vínculo do funcionário;
+ * - `confirmed`: exame antigo cuja origem o responsável confirmou, com justificativa e autoria;
+ * - nula: exame anterior ao controle, com origem não comprovada. Não serve ao ASO.
+ * Não acompanha transferências e, uma vez registrada, não muda (trigger).
  */
 export const healthExams = pgTable(
   "health_exams",
@@ -55,7 +58,13 @@ export const healthExams = pgTable(
       .notNull()
       .references(() => employees.id, { onDelete: "cascade" }),
     // Preenchida pelo trigger `health_exams_set_company` quando o INSERT não a informa.
-    companyId: uuid("company_id").notNull(),
+    companyId: uuid("company_id"),
+    companyOrigin: text("company_origin").$type<"registered" | "confirmed">(),
+    companyOriginConfirmedBy: text("company_origin_confirmed_by"),
+    companyOriginConfirmedAt: timestamp("company_origin_confirmed_at", {
+      withTimezone: true,
+    }),
+    companyOriginNote: text("company_origin_note"),
     doctorId: uuid("doctor_id").references(() => medicos.id, { onDelete: "set null" }),
     examType: examType("exam_type").notNull(),
     performedAt: date("performed_at").notNull(),
@@ -74,6 +83,14 @@ export const healthExams = pgTable(
       foreignColumns: [companies.id, companies.orgId],
     }).onDelete("cascade"),
     index("idx_health_exams_company_id").on(table.orgId, table.companyId),
+    check(
+      "ck_health_exams_company_origin",
+      sql`(${table.companyId} is null and ${table.companyOrigin} is null) or (${table.companyId} is not null and ${table.companyOrigin} in ('registered','confirmed'))`,
+    ),
+    check(
+      "ck_health_exams_company_confirmation",
+      sql`(${table.companyOrigin} = 'confirmed') = (${table.companyOriginConfirmedBy} is not null and ${table.companyOriginConfirmedAt} is not null and ${table.companyOriginNote} is not null)`,
+    ),
     pgPolicy("health_exams_module_access", {
       as: "restrictive",
       for: "all",

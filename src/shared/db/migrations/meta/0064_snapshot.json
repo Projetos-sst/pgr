@@ -1,5 +1,5 @@
 {
-  "id": "3a85efa9-dc4a-4f91-a92e-a6a6d982449f",
+  "id": "9f34911a-0866-45d0-9192-5bdc61e9ceed",
   "prevId": "17b81511-531a-4f1a-b864-b085887ce199",
   "version": "7",
   "dialect": "postgresql",
@@ -919,6 +919,188 @@
         "ck_aso_documents_hash": {
           "name": "ck_aso_documents_hash",
           "value": "\"aso_documents\".\"content_sha256\" ~ '^[0-9a-f]{64}$'"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.aso_examiner_conclusions": {
+      "name": "aso_examiner_conclusions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "health_exam_id": {
+          "name": "health_exam_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "conclusion": {
+          "name": "conclusion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recorded_aptitude": {
+          "name": "recorded_aptitude",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "examiner_medico_id": {
+          "name": "examiner_medico_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confirmed_by": {
+          "name": "confirmed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_aso_examiner_conclusions_exam": {
+          "name": "idx_aso_examiner_conclusions_exam",
+          "columns": [
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "health_exam_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "confirmed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "aso_examiner_conclusions_org_id_orgs_id_fk": {
+          "name": "aso_examiner_conclusions_org_id_orgs_id_fk",
+          "tableFrom": "aso_examiner_conclusions",
+          "tableTo": "orgs",
+          "columnsFrom": [
+            "org_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "aso_examiner_conclusions_company_id_org_id_companies_id_org_id_fk": {
+          "name": "aso_examiner_conclusions_company_id_org_id_companies_id_org_id_fk",
+          "tableFrom": "aso_examiner_conclusions",
+          "tableTo": "companies",
+          "columnsFrom": [
+            "company_id",
+            "org_id"
+          ],
+          "columnsTo": [
+            "id",
+            "org_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "aso_examiner_conclusions_health_exam_id_org_id_company_id_health_exams_id_org_id_company_id_fk": {
+          "name": "aso_examiner_conclusions_health_exam_id_org_id_company_id_health_exams_id_org_id_company_id_fk",
+          "tableFrom": "aso_examiner_conclusions",
+          "tableTo": "health_exams",
+          "columnsFrom": [
+            "health_exam_id",
+            "org_id",
+            "company_id"
+          ],
+          "columnsTo": [
+            "id",
+            "org_id",
+            "company_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "aso_examiner_conclusions_isolation": {
+          "name": "aso_examiner_conclusions_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "app_runtime"
+          ],
+          "using": "org_id = current_setting('app.current_org', true)",
+          "withCheck": "org_id = current_setting('app.current_org', true)"
+        },
+        "aso_examiner_conclusions_module_access": {
+          "name": "aso_examiner_conclusions_module_access",
+          "as": "RESTRICTIVE",
+          "for": "ALL",
+          "to": [
+            "app_runtime"
+          ],
+          "using": "exists (select 1 from public.company_modules cm where cm.org_id = \"aso_examiner_conclusions\".\"org_id\" and cm.company_id = \"aso_examiner_conclusions\".\"company_id\" and cm.module = 'medicine' and cm.enabled = true)",
+          "withCheck": "exists (select 1 from public.company_modules cm where cm.org_id = \"aso_examiner_conclusions\".\"org_id\" and cm.company_id = \"aso_examiner_conclusions\".\"company_id\" and cm.module = 'medicine' and cm.enabled = true)"
+        },
+        "aso_examiner_conclusions_insert": {
+          "name": "aso_examiner_conclusions_insert",
+          "as": "RESTRICTIVE",
+          "for": "INSERT",
+          "to": [
+            "app_runtime"
+          ],
+          "withCheck": "\"aso_examiner_conclusions\".\"confirmed_by\" = current_setting('app.current_actor', true) and exists (select 1 from public.health_exams h\n        join public.medico_user_links l on l.org_id = h.org_id and l.medico_id = h.doctor_id and l.revoked_at is null\n        join public.medicos m on m.id = h.doctor_id and m.org_id = h.org_id and m.status = 'active' and m.profession = 'physician'\n        join public.org_memberships om on om.org_id = l.org_id and om.user_id = l.user_id\n        where h.id = \"aso_examiner_conclusions\".\"health_exam_id\" and h.org_id = \"aso_examiner_conclusions\".\"org_id\" and h.company_id = \"aso_examiner_conclusions\".\"company_id\"\n          and h.doctor_id = \"aso_examiner_conclusions\".\"examiner_medico_id\" and h.aptitude::text = \"aso_examiner_conclusions\".\"recorded_aptitude\"\n          and l.user_id = current_setting('app.current_actor', true))"
+        }
+      },
+      "checkConstraints": {
+        "ck_aso_examiner_conclusions_value": {
+          "name": "ck_aso_examiner_conclusions_value",
+          "value": "\"aso_examiner_conclusions\".\"conclusion\" in ('fit','unfit')"
+        },
+        "ck_aso_examiner_conclusions_recorded": {
+          "name": "ck_aso_examiner_conclusions_recorded",
+          "value": "\"aso_examiner_conclusions\".\"recorded_aptitude\" = 'fit_with_restrictions'"
         }
       },
       "isRLSEnabled": true
@@ -5098,7 +5280,31 @@
           "name": "company_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "company_origin": {
+          "name": "company_origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "company_origin_confirmed_by": {
+          "name": "company_origin_confirmed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "company_origin_confirmed_at": {
+          "name": "company_origin_confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "company_origin_note": {
+          "name": "company_origin_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "doctor_id": {
           "name": "doctor_id",
@@ -5317,7 +5523,16 @@
           "withCheck": "org_id = current_setting('app.current_org', true)"
         }
       },
-      "checkConstraints": {},
+      "checkConstraints": {
+        "ck_health_exams_company_origin": {
+          "name": "ck_health_exams_company_origin",
+          "value": "(\"health_exams\".\"company_id\" is null and \"health_exams\".\"company_origin\" is null) or (\"health_exams\".\"company_id\" is not null and \"health_exams\".\"company_origin\" in ('registered','confirmed'))"
+        },
+        "ck_health_exams_company_confirmation": {
+          "name": "ck_health_exams_company_confirmation",
+          "value": "(\"health_exams\".\"company_origin\" = 'confirmed') = (\"health_exams\".\"company_origin_confirmed_by\" is not null and \"health_exams\".\"company_origin_confirmed_at\" is not null and \"health_exams\".\"company_origin_note\" is not null)"
+        }
+      },
       "isRLSEnabled": true
     },
     "public.company_risk_authorizers": {
