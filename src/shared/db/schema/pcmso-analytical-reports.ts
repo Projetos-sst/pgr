@@ -82,12 +82,11 @@ export const pcmsoAnalyticalReports = pgTable(
       as: "restrictive",
       for: "insert",
       to: appRuntimeRole,
+      // NOB-158: coordenador com identidade verificada (função central).
       withCheck: sql`${t.generatedBy} = ${actor} and exists (select 1 from public.pcmso_coordinator_assignments a
-        join public.medico_user_links l on l.org_id = a.org_id and l.medico_id = a.medico_id and l.revoked_at is null
-        join public.medicos m on m.id = a.medico_id and m.org_id = a.org_id and m.status = 'active'
-        join public.org_memberships om on om.org_id = l.org_id and om.user_id = l.user_id
         where a.org_id = ${t.orgId} and a.company_id = ${t.companyId} and a.ends_on is null
-          and a.medico_id = ${t.authoredByMedicoId} and l.user_id = ${actor})`,
+          and a.medico_id = ${t.authoredByMedicoId}
+          and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id)))`,
     }),
   ],
 ).enableRLS();

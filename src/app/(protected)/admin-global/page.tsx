@@ -23,6 +23,13 @@ export default async function AdminGlobalPage() {
         description="Área de superadmin da plataforma — cross-tenant. Use com cuidado."
       />
 
+      <a
+        href="/admin-global/identity-verifications"
+        className="text-primary text-sm font-semibold underline"
+      >
+        Verificação de identidade profissional (operadores designados)
+      </a>
+
       <section className="flex flex-col gap-3">
         <h2 className="text-text text-sm font-semibold tracking-tight">
           Administradores da plataforma (masters)

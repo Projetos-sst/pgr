@@ -23,6 +23,7 @@ import {
   medicoUserLinks as links,
 } from "../schema/medicos";
 import { orgMemberships } from "../schema/org-memberships";
+import { identityVerified } from "../schema/clinical-actor";
 import { auditedTenantWrite } from "./audited-write";
 
 /** Transação com o ator da sessão: as policies conferem quem convida, aceita e aprova. */
@@ -312,7 +313,58 @@ export async function acceptMedicoLinkInvitation(
             registration: formatProfessionalRegistration(medico),
           }),
         });
-        if (row.invitedBy !== row.userId) await createLinkTx(tx, ctx, row);
+        // Sem autovínculo o vínculo nasce aqui. No autovínculo, só com segunda aprovação ou com
+        // identidade já verificada de forma independente (NOB-160); a RLS confere o mesmo.
+        if (
+          row.invitedBy !== row.userId ||
+          (await identityVerifiedTx(tx, ctx.tenantId, row.medicoId, row.userId))
+        )
+          await createLinkTx(tx, ctx, row);
+        return (await viewsTx(tx, ctx.tenantId, [row]))[0];
+      }),
+  );
+}
+
+/** A identidade (escritório, profissional, conta) foi verificada por operador independente e vale? */
+async function identityVerifiedTx(
+  tx: TenantTransaction,
+  orgId: string,
+  medicoId: string,
+  userId: string,
+): Promise<boolean> {
+  const rows = (await tx.execute(
+    sql`select ${identityVerified(sql`${orgId}`, sql`${medicoId}::uuid`, sql`${userId}`)} as ok`,
+  )) as unknown as { ok: boolean }[];
+  return rows[0]?.ok === true;
+}
+
+/**
+ * NOB-160: autovínculo aceito (único owner médico) é concluído pela própria conta quando a
+ * identidade dela já foi verificada pela plataforma, sem segundo owner. Sem verificação, continua a
+ * falha fechada; a RLS de inclusão confere a mesma condição.
+ */
+export async function completeSelfInvitation(
+  ctx: TenantContext,
+  medicoId: string,
+  invitationId: string,
+): Promise<InvitationView> {
+  return auditedTenantWrite(
+    ctx.tenantId,
+    "medicine.professional_links.complete_rejected",
+    () =>
+      actorTx(ctx, async (tx) => {
+        const { row, view } = await invitationTx(tx, ctx, medicoId, invitationId);
+        if (row.userId !== ctx.userId)
+          throw new ForbiddenError("Só a conta convidada conclui o próprio vínculo.");
+        if (!view.selfInvitation || view.status !== "pending_approval")
+          throw new ValidationError(
+            "O convite não é um autovínculo aguardando conclusão.",
+          );
+        if (!(await identityVerifiedTx(tx, ctx.tenantId, row.medicoId, row.userId)))
+          throw new ForbiddenError(
+            "O autovínculo só é concluído sem segundo responsável depois da verificação independente da identidade profissional.",
+          );
+        await createLinkTx(tx, ctx, row);
         return (await viewsTx(tx, ctx.tenantId, [row]))[0];
       }),
   );

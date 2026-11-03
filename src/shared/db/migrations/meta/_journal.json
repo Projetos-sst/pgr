@@ -498,6 +498,13 @@
       "when": 1793675119633,
       "tag": "0070_medical_employee_absences",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1793712943065,
+      "tag": "0071_professional_identity_verifications",
+      "breakpoints": true
     }
   ]
 }

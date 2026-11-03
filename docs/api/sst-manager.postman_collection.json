@@ -338,6 +338,16 @@
       "key": "absenceId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "identityRequestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "identityVerificationId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -3908,6 +3918,297 @@
               "path": ["api", "v1", "me", "professional-invitations"]
             },
             "description": "Convites endereçados à conta da sessão que aguardam o aceite dela."
+          }
+        },
+        {
+          "name": "POST /medicos/{id}/user-link-invitations/{invitationId}/complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-link-invitations/{{medicoLinkInvitationId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "medicos",
+                "{{medicoId}}",
+                "user-link-invitations",
+                "{{medicoLinkInvitationId}}",
+                "complete"
+              ]
+            },
+            "description": "NOB-160: autovínculo aceito concluído pela própria conta com identidade verificada pela plataforma; sem verificação → 403."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Identidade profissional (NOB-158/159/160)",
+      "item": [
+        {
+          "name": "GET /me/professional-identity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/professional-identity",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "me", "professional-identity"]
+            },
+            "description": "Situação da identidade e do acesso clínico da conta da sessão em cada cadastro; com pedido em análise, traz o código de controle da conta."
+          }
+        },
+        {
+          "name": "POST /me/professional-identity/requests",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"medicoId\": \"{{medicoId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/professional-identity/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "me", "professional-identity", "requests"]
+            },
+            "description": "A própria conta pede a verificação (vínculo ativo ou autovínculo aceito). 201; conta sem vínculo → 403."
+          }
+        },
+        {
+          "name": "POST /me/medico-links/{linkId}/reconfirm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/medico-links/{{medicoUserLinkId}}/reconfirm",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "medico-links",
+                "{{medicoUserLinkId}}",
+                "reconfirm"
+              ]
+            },
+            "description": "Reconfirmação de vínculo legado (anterior à 0069) pela própria conta. 201; outra conta → 403."
+          }
+        },
+        {
+          "name": "GET /admin/identity-verifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/identity-verifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "identity-verifications"]
+            },
+            "description": "Fila do operador designado (designação conferida no banco); demais → 403. Sem dado clínico."
+          }
+        },
+        {
+          "name": "POST /admin/identity-verifications (aprovar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requestId\": \"{{identityRequestId}}\",\n  \"method\": \"live_video\",\n  \"crm\": \"12345\",\n  \"registrationUf\": \"MA\",\n  \"registrySource\": \"Consulta pública do CFM em AAAA-MM-DD\",\n  \"evidenceRef\": \"Referência de auditoria (sem documento)\",\n  \"challengeCode\": \"123456\",\n  \"checklist\": {\n    \"identityDocument\": true,\n    \"professionalDocument\": true,\n    \"registryStatus\": true,\n    \"personMatches\": true,\n    \"accountControl\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/identity-verifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "identity-verifications"]
+            },
+            "description": "Operador designado e independente do escritório. Código de controle informado ao vivo pela própria conta. 201."
+          }
+        },
+        {
+          "name": "POST /admin/identity-verifications/requests/{id}/reject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Documento ilegível na conferência.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/identity-verifications/requests/{{identityRequestId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "identity-verifications",
+                "requests",
+                "{{identityRequestId}}",
+                "reject"
+              ]
+            },
+            "description": "Recusa do pedido com motivo. 201."
+          }
+        },
+        {
+          "name": "POST /admin/identity-verifications/{id}/revoke",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Revogação por divergência posterior.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/identity-verifications/{{identityVerificationId}}/revoke",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "identity-verifications",
+                "{{identityVerificationId}}",
+                "revoke"
+              ]
+            },
+            "description": "Revogação imediata; corta o acesso clínico. 201."
           }
         }
       ]

@@ -13,9 +13,16 @@ type Context = {
   params: Promise<{ id: string; invitationId: string; action: string }>;
 };
 
-const ACTIONS = new Set<InvitationAction>(["accept", "approve", "decline", "cancel"]);
+const ACTIONS = new Set<InvitationAction>([
+  "accept",
+  "approve",
+  "decline",
+  "cancel",
+  "complete",
+]);
 
-// accept/decline: só a conta convidada · approve: outro owner, no autovínculo · cancel: owner.
+// accept/decline: só a conta convidada · approve: outro owner, no autovínculo · cancel: owner ·
+// complete: autovínculo concluído pela própria conta com identidade verificada (NOB-160).
 export function POST(req: NextRequest, context: Context) {
   return restHandler(
     req,

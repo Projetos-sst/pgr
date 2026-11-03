@@ -187,12 +187,11 @@ export type EmployeeAbsenceEvent = InferSelectModel<typeof employeeAbsenceEvents
  * associação viva e designação aberta. Papel no escritório não substitui o vínculo.
  */
 const coordinatorFor = (orgId: unknown, companyId: unknown, medico?: unknown) => {
-  const sameMedico = medico ? sql` and l.medico_id = ${medico}` : sql``;
+  const sameMedico = medico ? sql` and a.medico_id = ${medico}` : sql``;
+  // NOB-158: coordenador com identidade verificada (função central), nunca o vínculo sozinho.
   return sql`exists (select 1 from public.pcmso_coordinator_assignments a
-        join public.medico_user_links l on l.org_id = a.org_id and l.medico_id = a.medico_id and l.revoked_at is null and l.user_id = ${actor}
-        join public.medicos m on m.id = a.medico_id and m.org_id = a.org_id and m.status = 'active' and m.profession = 'physician'
-        join public.org_memberships om on om.org_id = l.org_id and om.user_id = l.user_id
-        where a.org_id = ${orgId} and a.company_id = ${companyId} and a.ends_on is null${sameMedico})`;
+        where a.org_id = ${orgId} and a.company_id = ${companyId} and a.ends_on is null${sameMedico}
+          and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id)))`;
 };
 
 /**

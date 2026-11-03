@@ -141,13 +141,11 @@ export const asoExaminerConclusions = pgTable(
       as: "restrictive",
       for: "insert",
       to: appRuntimeRole,
+      // NOB-158: examinador com identidade verificada (função central).
       withCheck: sql`${t.confirmedBy} = current_setting('app.current_actor', true) and exists (select 1 from public.health_exams h
-        join public.medico_user_links l on l.org_id = h.org_id and l.medico_id = h.doctor_id and l.revoked_at is null
-        join public.medicos m on m.id = h.doctor_id and m.org_id = h.org_id and m.status = 'active' and m.profession = 'physician'
-        join public.org_memberships om on om.org_id = l.org_id and om.user_id = l.user_id
         where h.id = ${t.healthExamId} and h.org_id = ${t.orgId} and h.company_id = ${t.companyId}
           and h.doctor_id = ${t.examinerMedicoId} and h.aptitude::text = ${t.recordedAptitude}
-          and l.user_id = current_setting('app.current_actor', true))`,
+          and h.doctor_id in (select public.actor_clinical_medico_ids(h.org_id)))`,
     }),
   ],
 ).enableRLS();

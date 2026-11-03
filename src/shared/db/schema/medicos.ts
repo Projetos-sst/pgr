@@ -13,7 +13,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel, type SQL } from "drizzle-orm";
 
-import { appRuntimeRole } from "../roles";
+import { appRuntimeRole, identityVerifierRole } from "../roles";
+import { identityVerified } from "./clinical-actor";
 import { orgs } from "./orgs";
 import { companies } from "./companies";
 import { companyModuleScope } from "./module-policy";
@@ -79,6 +80,12 @@ export const medicos = pgTable(
       to: appRuntimeRole,
       using: tenantScope,
       withCheck: tenantScope,
+    }),
+    // NOB-158: o operador confere CRM/UF do cadastro (só leitura, sem dado clínico).
+    pgPolicy("medicos_identity_verifier_read", {
+      for: "select",
+      to: identityVerifierRole,
+      using: sql`true`,
     }),
   ],
 ).enableRLS();
@@ -327,6 +334,8 @@ export const medicoUserLinks = pgTable(
     }).onDelete("restrict"),
     // Um convite gera no máximo um vínculo, mesmo depois de revogado.
     uniqueIndex("uq_medico_user_links_invitation").on(t.invitationId),
+    // Alvo da FK composta da reconfirmação de vínculo legado (NOB-159).
+    uniqueIndex("uq_medico_user_links_id_org").on(t.id, t.orgId),
     index("idx_medico_user_links_medico").on(t.orgId, t.medicoId),
     index("idx_medico_user_links_user").on(t.orgId, t.userId),
     uniqueIndex("uq_medico_user_links_open_medico")
@@ -355,7 +364,8 @@ export const medicoUserLinks = pgTable(
         where i.id = ${t.invitationId} and i.org_id = ${t.orgId} and i.medico_id = ${t.medicoId} and i.user_id = ${t.userId}
           and ${invitationOpen(sql.raw("i"))}
           and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)
-          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)))`,
+          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)
+            or ${identityVerified(sql.raw("i.org_id"), sql.raw("i.medico_id"), sql.raw("i.user_id"))}))`,
     }),
     // Só um vínculo ABERTO pode ser alterado (revogado); revogado não reabre nem muda.
     pgPolicy("medico_user_links_owner_revoke", {

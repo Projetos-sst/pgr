@@ -1,0 +1,463 @@
+/**
+ * Verificação independente da identidade profissional (NOB-158), vínculos legados (NOB-159) e
+ * único owner médico (NOB-160), contra Postgres efêmero:
+ * - acesso clínico só com identidade verificada por operador designado, independente do escritório;
+ * - conta alternativa do owner, segundo owner, verificação forjada e operador verificando a si mesmo
+ *   são barrados (servidor e SQL);
+ * - vínculo legado exige verificação E reconfirmação da própria conta;
+ * - revogação, expiração e mudança de CRM/UF cortam o acesso;
+ * - autovínculo do único owner é concluído só com verificação independente.
+ * Dados fictícios.
+ */
+import type postgres from "postgres";
+import { NextRequest } from "next/server";
+jest.mock("@/shared/db/env", () => ({
+  getDatabaseUrl: () => process.env.INTEGRATION_APP_RUNTIME_URL,
+}));
+jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
+import type { TenantContext } from "@/shared/auth/require-tenant-context";
+import { closeVerifierConnection } from "@/shared/db/identity-verifier-db";
+import { isActorCompanyCoordinator } from "@/shared/db/repositories/medico-user-links";
+import { currentChallengeCode } from "@/shared/server/medicine/identity-challenge";
+import {
+  approveVerification,
+  myProfessionalIdentity,
+  reconfirmLink,
+  rejectRequest,
+  requestVerification,
+  revokeVerification,
+  verificationQueue,
+} from "@/shared/server/medicine/identity-verification-core";
+import {
+  actOnInvitation,
+  invite,
+} from "@/shared/server/medicine/professional-links-core";
+import { GET as MY_IDENTITY } from "@/app/api/v1/me/professional-identity/route";
+import { POST as REQUEST } from "@/app/api/v1/me/professional-identity/requests/route";
+import {
+  GET as QUEUE,
+  POST as APPROVE,
+} from "@/app/api/v1/admin/identity-verifications/route";
+import { adminClient, applyMigrations } from "../_helpers/db";
+import { seedPgrBase, PGR_IDS as I } from "../_helpers/pgr-seed";
+import { linkByInvitation } from "../_helpers/professional-link";
+
+const enabled =
+  !!process.env.INTEGRATION_APP_RUNTIME_URL && !!process.env.INTEGRATION_DATABASE_URL;
+const ctxOf = (
+  userId: string,
+  role: TenantContext["role"] = "collaborator",
+): TenantContext => ({
+  tenantId: "org_a",
+  userId,
+  role,
+  plan: "free",
+});
+const owner = ctxOf("owner", "owner");
+const owner2 = ctxOf("owner2", "owner");
+const doctor = ctxOf("doctor");
+const alt = ctxOf("owner-alt");
+const staff = ctxOf("staff");
+const VERIFIER = "verifier";
+const VERIFIER_MEMBER = "verifier-member";
+const UNDESIGNATED = "master-nd";
+const M1 = "aaaaaaaa-0000-4000-8000-000000000081";
+const M2 = "aaaaaaaa-0000-4000-8000-000000000082";
+const REASON = "Profissional fictício com acesso próprio.";
+const CHECKLIST = {
+  identityDocument: true,
+  professionalDocument: true,
+  registryStatus: true,
+  personMatches: true,
+  accountControl: true,
+};
+
+const req = (
+  userId: string,
+  role: string,
+  method = "GET",
+  body?: unknown,
+  tenant = "org_a",
+) =>
+  new NextRequest("http://localhost/api/v1/me", {
+    method,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    headers: {
+      "content-type": "application/json",
+      "x-dev-tenant": tenant,
+      "x-dev-user": userId,
+      "x-dev-role": role,
+    },
+  });
+
+(enabled ? describe : describe.skip)("Identidade profissional (NOB-158/159/160)", () => {
+  let admin: ReturnType<typeof postgres>;
+  let runtime: ReturnType<typeof postgres>;
+  const originalEnv = { ...process.env };
+  beforeAll(async () => {
+    admin = adminClient();
+    await admin`set client_min_messages = warning`;
+    await applyMigrations(admin);
+    // Conta de login do operador (membro do papel identity_verifier), como a infraestrutura faria.
+    await admin.unsafe(`DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'identity_verifier_test') THEN
+        CREATE ROLE identity_verifier_test LOGIN PASSWORD 'identity_verifier_test' IN ROLE identity_verifier;
+      END IF; END $$;`);
+    const url = new URL(process.env.INTEGRATION_APP_RUNTIME_URL!);
+    url.username = "identity_verifier_test";
+    url.password = "identity_verifier_test";
+    process.env.IDENTITY_VERIFIER_DATABASE_URL = url.toString();
+    process.env.IDENTITY_CHALLENGE_SECRET = "segredo-ficticio-de-teste";
+    runtime = (await import("postgres")).default(
+      process.env.INTEGRATION_APP_RUNTIME_URL!,
+      {
+        max: 1,
+        prepare: false,
+      },
+    );
+  });
+  afterAll(async () => {
+    process.env = originalEnv;
+    await closeVerifierConnection();
+    await runtime?.end({ timeout: 5 });
+    await admin?.end({ timeout: 5 });
+  });
+  beforeEach(async () => {
+    await seedPgrBase(admin);
+    await admin`delete from identity_verifiers`;
+    await admin`insert into users (id,email) values ('owner','o@example.test'),('owner2','o2@example.test'),('doctor','d@example.test'),('owner-alt','oa@example.test'),('staff','s@example.test'),('verifier','v@example.test'),('verifier-member','vm@example.test'),('master-nd','m@example.test'),('owner-b','ob@example.test')`;
+    await admin`insert into org_memberships (org_id,user_id,role) values ('org_a','owner','owner'),('org_a','owner2','owner'),('org_a','doctor','collaborator'),('org_a','owner-alt','collaborator'),('org_a','staff','collaborator'),('org_a','verifier-member','collaborator'),('org_b','owner-b','owner')`;
+    await admin`insert into identity_verifiers (user_id, designated_by) values ('verifier','ops-provisioning'),('verifier-member','ops-provisioning')`;
+    await admin`insert into medicos (id, org_id, name, crm, profession, registration_uf, status) values
+      (${M1}, 'org_a', 'Dra. Coordenadora Fictícia', '90001', 'physician', 'MA', 'active'),
+      (${M2}, 'org_a', 'Dr. Segundo Fictício', '90002', 'physician', 'MA', 'active')`;
+    await admin`insert into pcmso_coordinator_assignments (org_id, company_id, medico_id, starts_on, created_by)
+      values ('org_a', ${I.companyA}, ${M1}, '2026-01-01', 'owner')`;
+    process.env.APP_ENV = "local";
+    process.env.DEV_API_AUTH_BYPASS = "true";
+  });
+
+  const asRuntime = <T>(
+    actor: string,
+    fn: (tx: postgres.TransactionSql) => Promise<T>,
+    org = "org_a",
+  ) =>
+    runtime.begin(async (tx) => {
+      await tx`select set_config('app.current_org', ${org}, true)`;
+      await tx`select set_config('app.current_actor', ${actor}, true)`;
+      return fn(tx);
+    }) as Promise<T>;
+  const approval = (
+    requestId: string,
+    userId: string,
+    overrides: Record<string, unknown> = {},
+  ) => ({
+    requestId,
+    method: "live_video",
+    crm: "90001",
+    registrationUf: "MA",
+    registrySource: "Consulta pública fictícia do CFM",
+    challengeCode: currentChallengeCode(requestId, userId),
+    checklist: CHECKLIST,
+    ...overrides,
+  });
+  const linkDoctor = () =>
+    linkByInvitation(owner, M1, { userId: "doctor", reason: REASON }, undefined, {
+      verify: false,
+    });
+
+  it("vínculo sem verificação não dá acesso; pedido, desafio e aprovação independente liberam", async () => {
+    await linkDoctor();
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    const { id: requestId } = await requestVerification(doctor, { medicoId: M1 });
+    const [mine] = await myProfessionalIdentity(doctor);
+    expect(mine).toMatchObject({
+      status: "in_review",
+      clinicalAccess: false,
+      openRequestId: requestId,
+    });
+    expect(mine.challengeCode).toMatch(/^\d{6}$/);
+    await expect(requestVerification(doctor, { medicoId: M1 })).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+    // Código errado, checklist incompleto e CRM divergente → recusados.
+    await expect(
+      approveVerification(
+        VERIFIER,
+        approval(requestId, "doctor", { challengeCode: "000000" }),
+      ),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    await expect(
+      approveVerification(
+        VERIFIER,
+        approval(requestId, "doctor", {
+          checklist: { ...CHECKLIST, personMatches: false },
+        }),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      approveVerification(VERIFIER, approval(requestId, "doctor", { crm: "99999" })),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await approveVerification(VERIFIER, approval(requestId, "doctor"));
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+    const [after] = await myProfessionalIdentity(doctor);
+    expect(after).toMatchObject({ status: "verified", clinicalAccess: true });
+    const queue = await verificationQueue(VERIFIER);
+    expect(queue.pending).toHaveLength(0);
+    expect(queue.active).toHaveLength(1);
+    expect(JSON.stringify(queue)).not.toMatch(/cid|diagn/i);
+  });
+
+  it("conta alternativa do owner e segundo owner sob controle não obtêm acesso clínico sem verificação", async () => {
+    // Owner convida um e-mail próprio adicional: a conta aceita sozinha, mas sem verificação não há acesso.
+    await linkByInvitation(
+      owner,
+      M1,
+      { userId: "owner-alt", reason: REASON },
+      undefined,
+      {
+        verify: false,
+      },
+    );
+    expect(await isActorCompanyCoordinator(alt, I.companyA)).toBe(false);
+    // Autovínculo aprovado por um segundo owner: o vínculo nasce, mas sem verificação não há acesso.
+    await linkByInvitation(owner, M2, { userId: "owner", reason: REASON }, owner2, {
+      verify: false,
+    });
+    expect(
+      (await myProfessionalIdentity(owner)).find((i) => i.medicoId === M2)
+        ?.clinicalAccess,
+    ).toBe(false);
+    // Nem o owner nem a conta alternativa conseguem se declarar verificados ou operadores.
+    for (const actor of ["owner", "owner-alt", "owner2"]) {
+      await expect(
+        asRuntime(
+          actor,
+          (tx) =>
+            tx`insert into professional_identity_verifications (org_id, request_id, medico_id, user_id, crm, registration_uf, method, checklist, registry_source, verified_by, expires_at)
+              select 'org_a', id, medico_id, user_id, '90001', 'MA', 'in_person', ${tx.json(CHECKLIST)}, 'Forjada', ${actor}, now() + interval '1 month'
+              from professional_identity_requests limit 1`,
+        ),
+      ).rejects.toMatchObject({ code: "42501" });
+      await expect(
+        asRuntime(
+          actor,
+          (tx) =>
+            tx`insert into identity_verifiers (user_id, designated_by) values (${actor}, ${actor})`,
+        ),
+      ).rejects.toMatchObject({ code: "42501" });
+    }
+    // Owner não é operador designado: a fila e a aprovação são recusadas.
+    await expect(verificationQueue("owner")).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("operador não verifica a si mesmo nem conta de escritório do qual é membro; não designado é barrado", async () => {
+    await linkByInvitation(
+      owner,
+      M2,
+      { userId: "verifier-member", reason: REASON },
+      undefined,
+      {
+        verify: false,
+      },
+    );
+    const { id: ownReq } = await requestVerification(ctxOf(VERIFIER_MEMBER), {
+      medicoId: M2,
+    });
+    await expect(
+      approveVerification(
+        VERIFIER_MEMBER,
+        approval(ownReq, VERIFIER_MEMBER, { crm: "90002" }),
+      ),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await linkDoctor();
+    const { id: docReq } = await requestVerification(doctor, { medicoId: M1 });
+    // Membro do escritório, mesmo designado, não verifica.
+    await expect(
+      approveVerification(VERIFIER_MEMBER, approval(docReq, "doctor")),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    // Master sem designação no banco.
+    await expect(verificationQueue(UNDESIGNATED)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(
+      approveVerification(UNDESIGNATED, approval(docReq, "doctor")),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    // Designação revogada → perde o poder.
+    await admin`update identity_verifiers set revoked_at=now(), revoked_by='ops', revoke_reason='Saída fictícia.' where user_id=${VERIFIER}`;
+    await expect(
+      approveVerification(VERIFIER, approval(docReq, "doctor")),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("app_runtime: sem escrita em verificações, decisões e designação; sem leitura da designação; isolamento", async () => {
+    await linkDoctor();
+    await requestVerification(doctor, { medicoId: M1 });
+    for (const stmt of [
+      "update professional_identity_verifications set expires_at = now() + interval '10 years'",
+      "delete from professional_identity_verifications",
+      "insert into professional_identity_review_events (org_id, kind, verification_id, reason, actor_user_id) values ('org_a','revoked', gen_random_uuid(), 'Forjada fictícia.', 'owner')",
+      "select * from identity_verifiers",
+      "delete from professional_identity_requests",
+      "update medico_link_reconfirmations set user_id = 'owner'",
+    ])
+      await expect(asRuntime("owner", (tx) => tx.unsafe(stmt))).rejects.toMatchObject({
+        code: "42501",
+      });
+    // Pedido em nome de outra conta → recusado pela RLS.
+    await expect(
+      asRuntime(
+        "owner",
+        (tx) =>
+          tx`insert into professional_identity_requests (org_id, medico_id, user_id) values ('org_a', ${M1}, 'doctor')`,
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+    // O papel do operador não lê dado clínico.
+    await expect(
+      admin.begin(async (tx) => {
+        await tx`set local role identity_verifier`;
+        return tx`select count(*) from health_exam_clinical_notes`;
+      }),
+    ).rejects.toMatchObject({ code: "42501" });
+    // Outro tenant não vê pedidos de org_a.
+    const rows = (await asRuntime(
+      "owner-b",
+      (tx) => tx`select count(*)::int as n from professional_identity_requests`,
+      "org_b",
+    )) as unknown as { n: number }[];
+    expect(rows[0].n).toBe(0);
+  });
+
+  it("revogação, expiração, CRM alterado, profissional inativo e conta fora do escritório cortam o acesso", async () => {
+    await linkDoctor();
+    const { id: requestId } = await requestVerification(doctor, { medicoId: M1 });
+    const { id: verificationId } = await approveVerification(
+      VERIFIER,
+      approval(requestId, "doctor"),
+    );
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+    await admin`update medicos set crm='90009' where id=${M1}`;
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    await admin`update medicos set crm='90001' where id=${M1}`;
+    await admin`update medicos set status='inactive' where id=${M1}`;
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    await admin`update medicos set status='active' where id=${M1}`;
+    await admin`delete from org_memberships where user_id='doctor'`;
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    await admin`insert into org_memberships (org_id,user_id,role) values ('org_a','doctor','collaborator')`;
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+    await admin`update professional_identity_verifications set verified_at = now() - interval '13 months', expires_at = now() - interval '1 month' where id=${verificationId}`;
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    expect((await myProfessionalIdentity(doctor))[0].status).toBe("expired");
+    await admin`update professional_identity_verifications set verified_at = now(), expires_at = now() + interval '12 months' where id=${verificationId}`;
+    await revokeVerification(VERIFIER, verificationId, {
+      reason: "Revogação fictícia de teste.",
+    });
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    expect((await myProfessionalIdentity(doctor))[0].status).toBe("revoked");
+    // Recusa de pedido novo fica registrada.
+    const { id: second } = await requestVerification(doctor, { medicoId: M1 });
+    await rejectRequest(VERIFIER, second, {
+      reason: "Documento ilegível na sessão fictícia.",
+    });
+    expect((await myProfessionalIdentity(doctor))[0].status).toBe("rejected");
+  });
+
+  it("NOB-159: vínculo legado precisa de verificação E reconfirmação da própria conta", async () => {
+    const [legacy] =
+      await admin`insert into medico_user_links (org_id, medico_id, user_id, reason, linked_by)
+      values ('org_a', ${M1}, 'doctor', 'Vínculo legado fictício', 'owner') returning id`;
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    const { id: requestId } = await requestVerification(doctor, { medicoId: M1 });
+    await approveVerification(VERIFIER, approval(requestId, "doctor"));
+    // Verificado, mas sem reconfirmação: continua sem acesso.
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    expect((await myProfessionalIdentity(doctor))[0]).toMatchObject({
+      legacy: true,
+      needsReconfirmation: true,
+      status: "verified",
+      clinicalAccess: false,
+    });
+    // Reconfirmação por outra conta → recusada (servidor e SQL).
+    await expect(reconfirmLink(staff, legacy.id)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(
+      asRuntime(
+        "staff",
+        (tx) =>
+          tx`insert into medico_link_reconfirmations (org_id, link_id, user_id, statement) values ('org_a', ${legacy.id}, 'staff', 'Forjada')`,
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+    await reconfirmLink(doctor, legacy.id);
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+    await expect(reconfirmLink(doctor, legacy.id)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+    // Vínculo legado de outro tipo (já por convite) não é reconfirmado.
+    const viaInvite = await linkByInvitation(
+      owner,
+      M2,
+      { userId: "staff", reason: REASON },
+      undefined,
+      {
+        verify: false,
+      },
+    );
+    await expect(reconfirmLink(staff, viaInvite.id)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+  });
+
+  it("NOB-160: único owner médico conclui o autovínculo só com verificação independente", async () => {
+    const invitation = await invite(owner, M1, { userId: "owner", reason: REASON });
+    await actOnInvitation(owner, M1, invitation.id, "accept");
+    await expect(
+      actOnInvitation(owner, M1, invitation.id, "complete"),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    // Forjar o vínculo por SQL sem aprovação nem verificação → recusado.
+    await expect(
+      asRuntime(
+        "owner",
+        (tx) =>
+          tx`insert into medico_user_links (org_id, medico_id, user_id, reason, linked_by, invitation_id)
+            values ('org_a', ${M1}, 'owner', 'Forjado', 'owner', ${invitation.id})`,
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+    const { id: requestId } = await requestVerification(owner, { medicoId: M1 });
+    expect((await myProfessionalIdentity(owner))[0]).toMatchObject({
+      pendingSelfInvitationId: invitation.id,
+      status: "in_review",
+    });
+    await approveVerification(VERIFIER, approval(requestId, "owner"));
+    const completed = await actOnInvitation(owner, M1, invitation.id, "complete");
+    expect(completed.status).toBe("linked");
+    expect(await isActorCompanyCoordinator(owner, I.companyA)).toBe(true);
+  });
+
+  it("REST: área do profissional e fila do operador com códigos HTTP", async () => {
+    await linkDoctor();
+    const created = await REQUEST(
+      req("doctor", "collaborator", "POST", { medicoId: M1 }),
+    );
+    expect(created.status).toBe(201);
+    const { id: requestId } = await created.json();
+    const mine = await MY_IDENTITY(req("doctor", "collaborator"));
+    expect(mine.status).toBe(200);
+    expect((await mine.json())[0].status).toBe("in_review");
+    expect((await REQUEST(req("owner", "owner", "POST", { medicoId: M1 }))).status).toBe(
+      403,
+    );
+    expect((await QUEUE(req("owner", "owner"))).status).toBe(403);
+    const queue = await QUEUE(req(VERIFIER, "owner", "GET", undefined, "org_b"));
+    expect(queue.status).toBe(200);
+    expect((await queue.json()).pending).toHaveLength(1);
+    const approved = await APPROVE(
+      req(VERIFIER, "owner", "POST", approval(requestId, "doctor"), "org_b"),
+    );
+    expect(approved.status).toBe(201);
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+  });
+});

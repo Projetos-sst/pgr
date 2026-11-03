@@ -34,7 +34,7 @@ export function myPendingInvitations(ctx: TenantContext) {
   return invitations.listMyPendingInvitations(ctx);
 }
 
-export type InvitationAction = "accept" | "approve" | "decline" | "cancel";
+export type InvitationAction = "accept" | "approve" | "decline" | "cancel" | "complete";
 
 export function actOnInvitation(
   ctx: TenantContext,
@@ -48,6 +48,7 @@ export function actOnInvitation(
     return invitations.acceptMedicoLinkInvitation(ctx, medico, inv);
   if (action === "approve")
     return invitations.approveMedicoLinkInvitation(ctx, medico, inv);
+  if (action === "complete") return invitations.completeSelfInvitation(ctx, medico, inv);
   return invitations.closeMedicoLinkInvitation(
     ctx,
     medico,
