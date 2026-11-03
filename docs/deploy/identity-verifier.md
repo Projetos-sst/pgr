@@ -62,6 +62,19 @@ Além da designação, a tela `/admin-global/identity-verifications` exige que o
 - O CRM/UF conferidos precisam ser iguais ao cadastro.
 - O checklist precisa estar completo.
 - Revogação, expiração ou mudança posterior de CRM/UF cortam o acesso clínico na hora.
+- Cada conferência do código fica em `identity_challenge_attempts` (0072), só inclusão e sem o código.
+  Só o operador grava e lê; o `app_runtime` não tem acesso.
+
+## 4.1 Limites do código de controle da conta
+
+A aplicação conta só os códigos errados e serializa as tentativas da mesma conta e do mesmo operador:
+
+- **5 por pedido**, no total. Esgotado, o operador recusa o pedido e o profissional abre outro.
+- **10 por conta do profissional em 24 h**, somando pedidos e operadores (força bruta distribuída).
+- **10 por operador em 1 h**, somando todas as contas.
+
+Com o limite esgotado, nem o código certo é conferido. Bloqueio repetido de operador ou de conta é sinal
+de abuso e deve ser investigado (consulta somente leitura em `identity_challenge_attempts`).
 
 ## 5. Procedimento operacional proposto (pendente de aprovação)
 

@@ -18,7 +18,10 @@ jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { closeVerifierConnection } from "@/shared/db/identity-verifier-db";
 import { isActorCompanyCoordinator } from "@/shared/db/repositories/medico-user-links";
-import { currentChallengeCode } from "@/shared/server/medicine/identity-challenge";
+import {
+  challengeMatches,
+  currentChallengeCode,
+} from "@/shared/server/medicine/identity-challenge";
 import {
   approveVerification,
   myProfessionalIdentity,
@@ -61,6 +64,7 @@ const staff = ctxOf("staff");
 const VERIFIER = "verifier";
 const VERIFIER_MEMBER = "verifier-member";
 const UNDESIGNATED = "master-nd";
+const VERIFIER_2 = "verifier-2";
 const M1 = "aaaaaaaa-0000-4000-8000-000000000081";
 const M2 = "aaaaaaaa-0000-4000-8000-000000000082";
 const REASON = "Profissional fictício com acesso próprio.";
@@ -125,9 +129,9 @@ const req = (
   beforeEach(async () => {
     await seedPgrBase(admin);
     await admin`delete from identity_verifiers`;
-    await admin`insert into users (id,email) values ('owner','o@example.test'),('owner2','o2@example.test'),('doctor','d@example.test'),('owner-alt','oa@example.test'),('staff','s@example.test'),('verifier','v@example.test'),('verifier-member','vm@example.test'),('master-nd','m@example.test'),('owner-b','ob@example.test')`;
+    await admin`insert into users (id,email) values ('owner','o@example.test'),('owner2','o2@example.test'),('doctor','d@example.test'),('owner-alt','oa@example.test'),('staff','s@example.test'),('verifier','v@example.test'),('verifier-member','vm@example.test'),('master-nd','m@example.test'),('verifier-2','v2@example.test'),('owner-b','ob@example.test')`;
     await admin`insert into org_memberships (org_id,user_id,role) values ('org_a','owner','owner'),('org_a','owner2','owner'),('org_a','doctor','collaborator'),('org_a','owner-alt','collaborator'),('org_a','staff','collaborator'),('org_a','verifier-member','collaborator'),('org_b','owner-b','owner')`;
-    await admin`insert into identity_verifiers (user_id, designated_by) values ('verifier','ops-provisioning'),('verifier-member','ops-provisioning')`;
+    await admin`insert into identity_verifiers (user_id, designated_by) values ('verifier','ops-provisioning'),('verifier-member','ops-provisioning'),('verifier-2','ops-provisioning')`;
     await admin`insert into medicos (id, org_id, name, crm, profession, registration_uf, status) values
       (${M1}, 'org_a', 'Dra. Coordenadora Fictícia', '90001', 'physician', 'MA', 'active'),
       (${M2}, 'org_a', 'Dr. Segundo Fictício', '90002', 'physician', 'MA', 'active')`;
@@ -161,6 +165,13 @@ const req = (
     checklist: CHECKLIST,
     ...overrides,
   });
+  /** Código de 6 dígitos que não confere em nenhuma das duas janelas válidas. */
+  const wrongCode = (requestId: string, userId: string) => {
+    for (let n = 0; ; n += 1) {
+      const code = String(n).padStart(6, "0");
+      if (!challengeMatches(requestId, userId, code)) return code;
+    }
+  };
   const linkDoctor = () =>
     linkByInvitation(owner, M1, { userId: "doctor", reason: REASON }, undefined, {
       verify: false,
@@ -184,7 +195,7 @@ const req = (
     await expect(
       approveVerification(
         VERIFIER,
-        approval(requestId, "doctor", { challengeCode: "000000" }),
+        approval(requestId, "doctor", { challengeCode: wrongCode(requestId, "doctor") }),
       ),
     ).rejects.toMatchObject({ code: "VALIDATION" });
     await expect(
@@ -435,6 +446,136 @@ const req = (
     const completed = await actOnInvitation(owner, M1, invitation.id, "complete");
     expect(completed.status).toBe("linked");
     expect(await isActorCompanyCoordinator(owner, I.companyA)).toBe(true);
+  });
+
+  const attemptsLog = async () =>
+    (await admin`select verifier_user_id as v, succeeded as ok from identity_challenge_attempts order by attempted_at`) as unknown as {
+      v: string;
+      ok: boolean;
+    }[];
+
+  it("desafio: 5 códigos errados travam o pedido (até o código certo); recusa e novo pedido destravam", async () => {
+    await linkDoctor();
+    const { id: requestId } = await requestVerification(doctor, { medicoId: M1 });
+    const bad = approval(requestId, "doctor", {
+      challengeCode: wrongCode(requestId, "doctor"),
+    });
+    for (let left = 4; left >= 0; left -= 1)
+      await expect(approveVerification(VERIFIER, bad)).rejects.toMatchObject({
+        code: "VALIDATION",
+        message: left
+          ? expect.stringContaining(`Restam ${left} tentativa(s)`)
+          : expect.stringContaining("tentativas deste pedido acabaram"),
+      });
+    // Esgotado: nem o código certo passa (por outro operador), e nada novo é conferido ou gravado.
+    await expect(
+      approveVerification(VERIFIER_2, approval(requestId, "doctor")),
+    ).rejects.toMatchObject({
+      message: expect.stringContaining("esgotadas neste pedido"),
+    });
+    const log = await attemptsLog();
+    expect(log).toHaveLength(5);
+    expect(log.every((a) => !a.ok)).toBe(true);
+    const [mine] = await myProfessionalIdentity(doctor);
+    expect(mine).toMatchObject({ status: "in_review", clinicalAccess: false });
+    // O código nunca é gravado.
+    const cols =
+      (await admin`select column_name from information_schema.columns where table_name = 'identity_challenge_attempts'`) as unknown as {
+        column_name: string;
+      }[];
+    expect(cols.map((c) => c.column_name).join(",")).not.toMatch(/code/);
+    await rejectRequest(VERIFIER, requestId, {
+      reason: "Tentativas do código esgotadas (fictício).",
+    });
+    const { id: second } = await requestVerification(doctor, { medicoId: M1 });
+    await approveVerification(VERIFIER, approval(second, "doctor"));
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+    // Pedido já aprovado: não aceita mais conferência (sem reuso) e nada é registrado.
+    await expect(
+      approveVerification(VERIFIER_2, approval(second, "doctor")),
+    ).rejects.toMatchObject({ message: "O pedido não está mais em aberto." });
+    expect(await attemptsLog()).toHaveLength(6);
+  });
+
+  it("desafio: limite por conta (força bruta distribuída entre operadores e pedidos) e por operador", async () => {
+    await linkDoctor();
+    const { id: first } = await requestVerification(doctor, { medicoId: M1 });
+    // Erros antigos (fora da janela de 24 h) não contam.
+    await admin`insert into identity_challenge_attempts (org_id, request_id, user_id, verifier_user_id, succeeded, attempted_at)
+      select 'org_a', ${first}, 'doctor', case when g % 2 = 0 then 'verifier' else 'verifier-2' end, false, now() - interval '25 hours'
+      from generate_series(1, 4) g`;
+    await rejectRequest(VERIFIER, first, {
+      reason: "Pedido fictício encerrado no teste.",
+    });
+    // 9 erros da mesma conta nas últimas 24 h, por dois operadores, em dois pedidos já recusados.
+    const closed: string[] = [];
+    for (const [verifier, n] of [
+      ["verifier", 4],
+      ["verifier-2", 5],
+    ] as const) {
+      const { id } = await requestVerification(doctor, { medicoId: M1 });
+      closed.push(id);
+      await admin`insert into identity_challenge_attempts (org_id, request_id, user_id, verifier_user_id, succeeded, attempted_at)
+        select 'org_a', ${id}, 'doctor', ${verifier}, false, now() - interval '2 hours'
+        from generate_series(1, ${n}) g`;
+      await rejectRequest(VERIFIER, id, {
+        reason: "Pedido fictício encerrado no teste.",
+      });
+    }
+    const { id: current } = await requestVerification(doctor, { medicoId: M1 });
+    // O 10º erro em 24 h ainda é conferido; depois a conta trava para qualquer operador.
+    await expect(
+      approveVerification(
+        VERIFIER,
+        approval(current, "doctor", { challengeCode: wrongCode(current, "doctor") }),
+      ),
+    ).rejects.toMatchObject({ message: expect.stringContaining("Restam 4") });
+    await expect(
+      approveVerification(VERIFIER_2, approval(current, "doctor")),
+    ).rejects.toMatchObject({ message: expect.stringContaining("para esta conta") });
+
+    // Por operador: 10 erros na última hora, em contas diferentes, travam esse operador; outro segue.
+    await admin`delete from identity_challenge_attempts`;
+    await admin`insert into identity_challenge_attempts (org_id, request_id, user_id, verifier_user_id, succeeded)
+      select 'org_a', ${closed[0]}, 'conta-ficticia-' || g, 'verifier', false from generate_series(1, 10) g`;
+    await expect(
+      approveVerification(VERIFIER, approval(current, "doctor")),
+    ).rejects.toMatchObject({ message: expect.stringContaining("última hora") });
+    await approveVerification(VERIFIER_2, approval(current, "doctor"));
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+  });
+
+  it("desafio: tentativas em paralelo não furam o limite; só inclusão; app_runtime sem acesso", async () => {
+    await linkDoctor();
+    const { id: requestId } = await requestVerification(doctor, { medicoId: M1 });
+    const bad = approval(requestId, "doctor", {
+      challengeCode: wrongCode(requestId, "doctor"),
+    });
+    const results = await Promise.allSettled(
+      Array.from({ length: 8 }, (_, i) =>
+        approveVerification(i % 2 ? VERIFIER : VERIFIER_2, bad),
+      ),
+    );
+    expect(results.every((r) => r.status === "rejected")).toBe(true);
+    expect(await attemptsLog()).toHaveLength(5);
+    for (const stmt of [
+      "select * from identity_challenge_attempts",
+      `insert into identity_challenge_attempts (org_id, request_id, user_id, verifier_user_id, succeeded) values ('org_a', '${requestId}', 'doctor', 'owner', true)`,
+      "delete from identity_challenge_attempts",
+    ])
+      await expect(asRuntime("owner", (tx) => tx.unsafe(stmt))).rejects.toMatchObject({
+        code: "42501",
+      });
+    for (const stmt of [
+      "delete from identity_challenge_attempts",
+      "update identity_challenge_attempts set succeeded = true",
+    ])
+      await expect(
+        admin.begin(async (tx) => {
+          await tx`set local role identity_verifier`;
+          return tx.unsafe(stmt);
+        }),
+      ).rejects.toMatchObject({ code: "42501" });
   });
 
   it("REST: área do profissional e fila do operador com códigos HTTP", async () => {

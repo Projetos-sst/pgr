@@ -1,5 +1,6 @@
 import { sql, type InferSelectModel } from "drizzle-orm";
 import {
+  boolean,
   check,
   foreignKey,
   index,
@@ -323,3 +324,53 @@ export const medicoLinkReconfirmations = pgTable(
 ).enableRLS();
 
 export type MedicoLinkReconfirmation = InferSelectModel<typeof medicoLinkReconfirmations>;
+
+/**
+ * Tentativas do desafio de controle da conta (NOB-158): uma linha por código conferido pelo
+ * operador, com o resultado. Só inclusão. Serve aos limites de tentativas por pedido, por conta do
+ * profissional e por operador (força bruta, inclusive distribuída entre operadores). O código em si
+ * nunca é gravado. Sem acesso pelo `app_runtime`.
+ */
+export const identityChallengeAttempts = pgTable(
+  "identity_challenge_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    requestId: uuid("request_id").notNull(),
+    userId: text("user_id").notNull(),
+    verifierUserId: text("verifier_user_id").notNull(),
+    succeeded: boolean("succeeded").notNull(),
+    attemptedAt: timestamp("attempted_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "fk_identity_attempts_request",
+      columns: [t.requestId, t.orgId],
+      foreignColumns: [
+        professionalIdentityRequests.id,
+        professionalIdentityRequests.orgId,
+      ],
+    }).onDelete("restrict"),
+    index("idx_identity_attempts_request").on(t.requestId, t.attemptedAt),
+    index("idx_identity_attempts_user").on(t.userId, t.attemptedAt),
+    index("idx_identity_attempts_verifier").on(t.verifierUserId, t.attemptedAt),
+    pgPolicy("identity_attempts_verifier_read", {
+      for: "select",
+      to: identityVerifierRole,
+      using: sql`true`,
+    }),
+    // Só o próprio operador designado, independente do escritório, registra a tentativa, ligada à
+    // conta dona do pedido.
+    pgPolicy("identity_attempts_verifier_insert", {
+      for: "insert",
+      to: identityVerifierRole,
+      withCheck: sql`${t.verifierUserId} = ${actor} and ${actorIsDesignatedVerifier}
+        and not exists (select 1 from public.org_memberships om where om.org_id = ${t.orgId} and om.user_id = ${actor})
+        and exists (select 1 from public.professional_identity_requests rq where rq.id = ${t.requestId} and rq.org_id = ${t.orgId} and rq.user_id = ${t.userId})`,
+    }),
+  ],
+).enableRLS();
+
+export type IdentityChallengeAttempt = InferSelectModel<typeof identityChallengeAttempts>;

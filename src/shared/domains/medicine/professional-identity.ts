@@ -136,3 +136,46 @@ export type ProfessionalIdentityItem = {
   expiresAt: string | null;
   clinicalAccess: boolean;
 };
+
+/**
+ * Limites do desafio de controle da conta (NOB-158). Contam só os códigos errados:
+ * - por pedido, no total: esgotado, o operador recusa o pedido e o profissional abre outro;
+ * - por conta do profissional, em 24 h, somando pedidos e operadores (força bruta distribuída);
+ * - por operador, em 1 h, somando todas as contas.
+ * Com 6 dígitos e duas janelas válidas, o acerto por sorte fica em ~2 em 100 mil por conta por dia.
+ */
+export const CHALLENGE_LIMITS = {
+  perRequest: 5,
+  perAccount24h: 10,
+  perVerifier1h: 10,
+} as const;
+
+export type ChallengeFailureCounts = {
+  request: number;
+  account24h: number;
+  verifier1h: number;
+};
+
+export type ChallengeLock = "request" | "account" | "verifier";
+
+/** Bloqueio vigente antes de conferir mais um código (null se ainda pode tentar). */
+export function challengeLock(counts: ChallengeFailureCounts): ChallengeLock | null {
+  if (counts.request >= CHALLENGE_LIMITS.perRequest) return "request";
+  if (counts.account24h >= CHALLENGE_LIMITS.perAccount24h) return "account";
+  if (counts.verifier1h >= CHALLENGE_LIMITS.perVerifier1h) return "verifier";
+  return null;
+}
+
+export const CHALLENGE_LOCK_MESSAGES: Record<ChallengeLock, string> = {
+  request:
+    "Tentativas do código esgotadas neste pedido. Recuse o pedido; o profissional abre outro.",
+  account:
+    "Tentativas do código esgotadas para esta conta nas últimas 24 horas. Tente de novo depois.",
+  verifier:
+    "Você errou o código muitas vezes na última hora. A conferência fica bloqueada por enquanto.",
+};
+
+/** Tentativas que ainda restam no pedido depois de um erro. */
+export function challengeAttemptsLeft(requestFailures: number): number {
+  return Math.max(0, CHALLENGE_LIMITS.perRequest - requestFailures);
+}

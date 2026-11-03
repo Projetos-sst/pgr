@@ -1,10 +1,12 @@
 import "server-only";
 
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
 import {
+  CHALLENGE_LOCK_MESSAGES,
+  challengeLock,
   identityStatus,
   reconfirmationStatement,
   type IdentityApprovalValues,
@@ -24,6 +26,7 @@ import {
 } from "../schema/medicos";
 import { orgs } from "../schema/orgs";
 import {
+  identityChallengeAttempts as attempts,
   identityVerifiers,
   medicoLinkReconfirmations as reconfirmations,
   professionalIdentityRequests as requests,
@@ -497,23 +500,95 @@ export async function listVerificationQueue(verifierUserId: string): Promise<{
   });
 }
 
-/** Pedido em aberto (para o desafio de controle da conta e a decisão). */
-export async function getPendingRequest(verifierUserId: string, requestId: string) {
-  return withVerifier(verifierUserId, async (tx) => {
-    await assertDesignatedTx(tx, verifierUserId);
-    const [row] = await tx
-      .select({
-        id: requests.id,
-        orgId: requests.orgId,
-        medicoId: requests.medicoId,
-        userId: requests.userId,
-      })
-      .from(requests)
-      .where(eq(requests.id, requestId))
-      .limit(1);
-    if (!row) throw new NotFoundError();
-    return row;
-  });
+export type ChallengeAttemptResult = {
+  request: { id: string; orgId: string; medicoId: string; userId: string };
+  succeeded: boolean;
+  requestFailures: number;
+};
+
+/**
+ * Confere o código de controle da conta e registra a tentativa (só inclusão), sob os limites por
+ * pedido, por conta do profissional e por operador. Tentativas da mesma conta e do mesmo operador
+ * são serializadas (advisory lock da transação), para que pedidos paralelos não furem o limite.
+ * Com o limite esgotado, nada é conferido nem gravado. O código nunca é gravado.
+ */
+export async function attemptChallenge(
+  verifierUserId: string,
+  requestId: string,
+  matches: (request: { id: string; userId: string }) => boolean,
+): Promise<ChallengeAttemptResult> {
+  try {
+    return await withVerifier(verifierUserId, async (tx) => {
+      await assertDesignatedTx(tx, verifierUserId);
+      const [request] = await tx
+        .select({
+          id: requests.id,
+          orgId: requests.orgId,
+          medicoId: requests.medicoId,
+          userId: requests.userId,
+        })
+        .from(requests)
+        .where(eq(requests.id, requestId))
+        .limit(1);
+      if (!request) throw new NotFoundError();
+      const [closed] = await tx
+        .select({ id: verifications.id })
+        .from(verifications)
+        .where(eq(verifications.requestId, request.id))
+        .union(
+          tx
+            .select({ id: reviews.id })
+            .from(reviews)
+            .where(and(eq(reviews.requestId, request.id), eq(reviews.kind, "rejected"))),
+        )
+        .limit(1);
+      if (closed) throw new ValidationError("O pedido não está mais em aberto.");
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${`identity-challenge:account:${request.userId}`}, 0))`,
+      );
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${`identity-challenge:verifier:${verifierUserId}`}, 0))`,
+      );
+      const [counts] = await tx
+        .select({
+          request: sql<number>`count(*) filter (where ${attempts.requestId} = ${request.id})::int`,
+          account24h: sql<number>`count(*) filter (where ${attempts.userId} = ${request.userId} and ${attempts.attemptedAt} > now() - interval '24 hours')::int`,
+          verifier1h: sql<number>`count(*) filter (where ${attempts.verifierUserId} = ${verifierUserId} and ${attempts.attemptedAt} > now() - interval '1 hour')::int`,
+        })
+        .from(attempts)
+        .where(
+          and(
+            eq(attempts.succeeded, false),
+            or(
+              eq(attempts.requestId, request.id),
+              eq(attempts.userId, request.userId),
+              eq(attempts.verifierUserId, verifierUserId),
+            ),
+          ),
+        );
+      const lock = challengeLock(counts);
+      if (lock) throw new ValidationError(CHALLENGE_LOCK_MESSAGES[lock]);
+      const succeeded = matches(request);
+      await tx.insert(attempts).values({
+        orgId: request.orgId,
+        requestId: request.id,
+        userId: request.userId,
+        verifierUserId,
+        succeeded,
+      });
+      return {
+        request,
+        succeeded,
+        requestFailures: counts.request + (succeeded ? 0 : 1),
+      };
+    });
+  } catch (error) {
+    if (rlsDenied(error))
+      throw new ForbiddenError(
+        "Conferência recusada pelo banco: o operador precisa ser designado e independente do escritório.",
+      );
+    throw error;
+  }
 }
 
 function rlsDenied(error: unknown): boolean {

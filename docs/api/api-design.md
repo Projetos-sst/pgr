@@ -810,6 +810,9 @@ Todas as policies clínicas e as checagens do servidor (`repositories/clinical-a
 1. A própria conta pede a verificação. Isso exige vínculo ativo ou autovínculo aceito.
 2. A tela mostra a ela um código de controle (HMAC, janela de 10 min).
 3. O operador confere documentos, registro em fonte oficial e o código ao vivo, presencial ou por vídeo sem gravação.
+   - Cada código conferido fica em `identity_challenge_attempts` (migration `0072`), só inclusão, sem o código. Só o operador grava e lê; o `app_runtime` não tem acesso.
+   - Limites de códigos errados: 5 por pedido, no total (depois só resta recusar o pedido, e o profissional abre outro); 10 por conta do profissional em 24 h, somando pedidos e operadores; 10 por operador em 1 h. Esgotado, nem o código certo é conferido (`VALIDATION`).
+   - Pedido já aprovado ou recusado não aceita conferência.
 4. O operador registra método, fonte e referência (sem documento bruto). A validade é configurável (padrão 12 meses, teto 36).
 5. Recusa e revogação ficam em `professional_identity_review_events`, só inclusão. A revogação corta o acesso na hora.
 
