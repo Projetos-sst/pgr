@@ -4,6 +4,7 @@ import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { verifierConfigured } from "@/shared/db/identity-verifier-db";
 import * as repo from "@/shared/db/repositories/professional-identity";
 import {
+  challengeAttemptsLeft,
   identityApprovalSchema,
   identityDecisionReasonSchema,
   identityRequestSchema,
@@ -70,17 +71,24 @@ export async function verificationQueue(verifierUserId: string) {
 
 /**
  * Aprovação pelo operador: checklist completo, CRM/UF conferidos e o código de controle da conta
- * mostrado ao vivo pela própria conta do profissional. A validade vem da configuração.
+ * mostrado ao vivo pela própria conta do profissional, sob limite de tentativas (cada conferência
+ * fica registrada). A validade vem da configuração.
  */
 export async function approveVerification(verifierUserId: string, input: unknown) {
   const values = identityApprovalSchema.parse(input);
   if (!verificationAvailability().available)
     throw new ValidationError(verificationAvailability().reason!);
-  const request = await repo.getPendingRequest(verifierUserId, values.requestId);
-  if (!challengeMatches(request.id, request.userId, values.challengeCode))
+  const attempt = await repo.attemptChallenge(verifierUserId, values.requestId, (r) =>
+    challengeMatches(r.id, r.userId, values.challengeCode),
+  );
+  if (!attempt.succeeded) {
+    const left = challengeAttemptsLeft(attempt.requestFailures);
     throw new ValidationError(
-      "O código de controle da conta não confere: peça ao profissional o código exibido agora na sessão dele.",
+      left > 0
+        ? `O código de controle da conta não confere: peça ao profissional o código exibido agora na sessão dele. Restam ${left} tentativa(s) neste pedido.`
+        : "O código de controle da conta não confere e as tentativas deste pedido acabaram. Recuse o pedido; o profissional abre outro.",
     );
+  }
   const months = identityValidityMonths(
     process.env.IDENTITY_VERIFICATION_VALIDITY_MONTHS,
   );

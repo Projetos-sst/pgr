@@ -3,6 +3,9 @@
  * operador (checklist completo) e desafio de controle da conta. Fictício.
  */
 import {
+  CHALLENGE_LIMITS,
+  challengeAttemptsLeft,
+  challengeLock,
   identityApprovalSchema,
   identityStatus,
   identityValidityMonths,
@@ -151,5 +154,28 @@ describe("desafio de controle da conta", () => {
     expect(
       reconfirmationStatement({ name: "Dra. Fictícia", registration: "CRM 1/MA" }),
     ).toContain("Dra. Fictícia, CRM 1/MA");
+  });
+});
+
+describe("limites do desafio", () => {
+  const zero = { request: 0, account24h: 0, verifier1h: 0 };
+  it("libera abaixo dos limites e trava no limite, pedido antes de conta e de operador", () => {
+    expect(challengeLock(zero)).toBeNull();
+    expect(challengeLock({ request: 4, account24h: 9, verifier1h: 9 })).toBeNull();
+    expect(challengeLock({ ...zero, request: CHALLENGE_LIMITS.perRequest })).toBe(
+      "request",
+    );
+    expect(challengeLock({ ...zero, account24h: CHALLENGE_LIMITS.perAccount24h })).toBe(
+      "account",
+    );
+    expect(challengeLock({ ...zero, verifier1h: CHALLENGE_LIMITS.perVerifier1h })).toBe(
+      "verifier",
+    );
+    expect(challengeLock({ request: 5, account24h: 10, verifier1h: 10 })).toBe("request");
+  });
+  it("tentativas restantes no pedido nunca ficam negativas", () => {
+    expect(challengeAttemptsLeft(1)).toBe(4);
+    expect(challengeAttemptsLeft(5)).toBe(0);
+    expect(challengeAttemptsLeft(9)).toBe(0);
   });
 });

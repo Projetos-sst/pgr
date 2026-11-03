@@ -358,9 +358,11 @@ export {
   professionalIdentityVerifications,
   professionalIdentityReviewEvents,
   medicoLinkReconfirmations,
+  identityChallengeAttempts,
   type IdentityVerifier,
   type ProfessionalIdentityRequest,
   type ProfessionalIdentityVerification,
   type ProfessionalIdentityReviewEvent,
   type MedicoLinkReconfirmation,
+  type IdentityChallengeAttempt,
 } from "./professional-identity";
