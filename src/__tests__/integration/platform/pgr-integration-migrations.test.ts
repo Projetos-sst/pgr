@@ -27,6 +27,8 @@ const newTables = [
   "health_exam_work_restrictions",
   "clinical_record_access_events",
   "medical_risk_absence_declarations",
+  "medico_link_invitations",
+  "medico_link_invitation_events",
 ];
 
 (enabled ? describe : describe.skip)(

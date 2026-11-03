@@ -26,7 +26,7 @@ import {
   listHealthExams,
 } from "@/shared/db/repositories/health-exams";
 import { deleteEmployee } from "@/shared/db/repositories/employees";
-import { link } from "@/shared/server/medicine/professional-links-core";
+import { linkByInvitation as link } from "../_helpers/professional-link";
 import {
   addClinicalNote,
   getClinicalAccess,

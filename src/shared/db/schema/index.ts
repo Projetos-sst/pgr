@@ -274,6 +274,8 @@ export {
   medicalProfession,
   medicalAffiliation,
   pcmsoCoordinatorAssignments,
+  medicoLinkInvitations,
+  medicoLinkInvitationEvents,
   medicoUserLinks,
   type Medico,
   type MedicoUserLink,

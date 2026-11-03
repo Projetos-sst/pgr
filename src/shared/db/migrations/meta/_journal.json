@@ -484,6 +484,13 @@
       "when": 1793662534446,
       "tag": "0068_medical_risk_absence_declarations",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1793667555629,
+      "tag": "0069_medico_link_invitations",
+      "breakpoints": true
     }
   ]
 }

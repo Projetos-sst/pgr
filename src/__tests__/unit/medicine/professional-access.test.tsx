@@ -11,20 +11,24 @@ import {
   professionalRevokeSchema,
 } from "@/shared/domains/medicine/professional-links";
 import {
-  linkMedicoUserAction,
+  actOnMedicoLinkInvitationAction,
+  inviteMedicoUserAction,
   revokeMedicoUserLinkAction,
 } from "@/shared/server/actions/medicine/professional-links";
+import type { InvitationView } from "@/shared/domains/medicine/professional-links";
 
 const mockRefresh = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh: mockRefresh }),
 }));
 jest.mock("@/shared/server/actions/medicine/professional-links", () => ({
-  linkMedicoUserAction: jest.fn(),
+  inviteMedicoUserAction: jest.fn(),
   revokeMedicoUserLinkAction: jest.fn(),
+  actOnMedicoLinkInvitationAction: jest.fn(),
 }));
 
-const linkAction = linkMedicoUserAction as jest.Mock;
+const linkAction = inviteMedicoUserAction as jest.Mock;
+const actAction = actOnMedicoLinkInvitationAction as jest.Mock;
 const revokeAction = revokeMedicoUserLinkAction as jest.Mock;
 const MEDICO = "b1111111-1111-4111-8111-111111111111";
 const MEMBERS = [
@@ -38,7 +42,21 @@ const OPEN = {
   linkedAt: "2026-11-01T10:00:00.000Z",
   revokedAt: null,
   revokeReason: null,
+  legacy: false,
 };
+const INVITATION: InvitationView = {
+  id: "e1111111-1111-4111-8111-111111111111",
+  medicoId: MEDICO,
+  userId: "u-doctor",
+  reason: "Acesso fictício",
+  invitedBy: "u-owner",
+  invitedAt: "2026-11-02T10:00:00.000Z",
+  expiresAt: "2026-11-09T10:00:00.000Z",
+  selfInvitation: false,
+  status: "pending_acceptance",
+  events: [],
+};
+const base = { medicoId: MEDICO, currentUserId: "u-owner", invitations: [] };
 
 beforeEach(() => jest.clearAllMocks());
 
@@ -68,11 +86,9 @@ describe("schemas do vínculo", () => {
 });
 
 describe("ProfessionalAccess", () => {
-  it("owner sem vínculo vincula com conta e motivo", async () => {
+  it("owner sem vínculo convida com conta e motivo (o vínculo só nasce do aceite)", async () => {
     linkAction.mockResolvedValue({ ok: true, data: {} });
-    render(
-      <ProfessionalAccess medicoId={MEDICO} canManage members={MEMBERS} links={[]} />,
-    );
+    render(<ProfessionalAccess {...base} canManage members={MEMBERS} links={[]} />);
     expect(screen.getByRole("status")).toHaveTextContent("Nenhuma conta vinculada");
     fireEvent.change(screen.getByRole("combobox", { name: /Conta/ }), {
       target: { value: "u-doctor" },
@@ -80,7 +96,7 @@ describe("ProfessionalAccess", () => {
     fireEvent.change(screen.getByLabelText(/^Motivo/), {
       target: { value: "Profissional da equipe." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Vincular conta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Convidar conta" }));
     await waitFor(() => expect(mockRefresh).toHaveBeenCalled());
     expect(linkAction).toHaveBeenCalledWith(MEDICO, {
       userId: "u-doctor",
@@ -93,12 +109,10 @@ describe("ProfessionalAccess", () => {
       ok: false,
       error: { code: "FORBIDDEN", message: "Somente o responsável pode revogar." },
     });
-    render(
-      <ProfessionalAccess medicoId={MEDICO} canManage members={MEMBERS} links={[OPEN]} />,
-    );
+    render(<ProfessionalAccess {...base} canManage members={MEMBERS} links={[OPEN]} />);
     expect(screen.getByRole("status")).toHaveTextContent("Dra. Fictícia · Colaborador");
     expect(
-      screen.queryByRole("button", { name: "Vincular conta" }),
+      screen.queryByRole("button", { name: "Convidar conta" }),
     ).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Motivo da revogação/), {
       target: { value: "Saída fictícia." },
@@ -116,7 +130,7 @@ describe("ProfessionalAccess", () => {
   it("colaborador vê o vínculo e o histórico, sem formulários", () => {
     render(
       <ProfessionalAccess
-        medicoId={MEDICO}
+        {...base}
         canManage={false}
         members={[]}
         links={[
@@ -131,5 +145,94 @@ describe("ProfessionalAccess", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.getByText(/Somente o responsável pelo escritório/)).toBeInTheDocument();
     expect(screen.getByText(/revogado: Troca fictícia/)).toBeInTheDocument();
+  });
+
+  it("NOB-157: só a conta convidada vê Aceitar/Recusar; o owner só cancela", async () => {
+    actAction.mockResolvedValue({ ok: true, data: {} });
+    const { unmount } = render(
+      <ProfessionalAccess
+        {...base}
+        canManage
+        members={MEMBERS}
+        links={[]}
+        invitations={[INVITATION]}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /Aceitar/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Convidar conta" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancelar convite" })).toBeInTheDocument();
+    unmount();
+    render(
+      <ProfessionalAccess
+        {...base}
+        currentUserId="u-doctor"
+        canManage={false}
+        members={MEMBERS}
+        links={[]}
+        invitations={[INVITATION]}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Aceitar: sou este profissional/ }),
+    );
+    await waitFor(() =>
+      expect(actAction).toHaveBeenCalledWith(MEDICO, INVITATION.id, "accept"),
+    );
+    expect(screen.getByRole("button", { name: "Recusar" })).toBeInTheDocument();
+  });
+
+  it("NOB-157: autovínculo aceito só pode ser aprovado por outro owner", () => {
+    const self = {
+      ...INVITATION,
+      userId: "u-owner",
+      invitedBy: "u-owner",
+      selfInvitation: true,
+      status: "pending_approval" as const,
+    };
+    const { unmount } = render(
+      <ProfessionalAccess
+        {...base}
+        canManage
+        members={MEMBERS}
+        links={[]}
+        invitations={[self]}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Aprovar o autovínculo" }),
+    ).not.toBeInTheDocument();
+    unmount();
+    render(
+      <ProfessionalAccess
+        {...base}
+        currentUserId="u-owner-2"
+        canManage
+        members={MEMBERS}
+        links={[]}
+        invitations={[self]}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Aprovar o autovínculo" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/aguardando a aprovação de outro responsável/).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("vínculo legado aparece sinalizado", () => {
+    render(
+      <ProfessionalAccess
+        {...base}
+        canManage
+        members={MEMBERS}
+        links={[{ ...OPEN, legacy: true }]}
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "anterior ao convite com aceite",
+    );
   });
 });
