@@ -4253,6 +4253,187 @@
       ]
     },
     {
+      "name": "Prontuário segregado (NOB-155)",
+      "item": [
+        {
+          "name": "GET /health-exams/{id}/clinical-notes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/clinical-notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "clinical-notes"]
+            },
+            "description": "Prontuário do exame. Só a conta vinculada ao médico examinador ou ao coordenador do PCMSO da empresa (x-dev-user = usuário vinculado); owner/colaborador → 403; outro tenant → 404. Cada leitura entra na trilha de acesso, sem conteúdo."
+          }
+        },
+        {
+          "name": "POST /health-exams/{id}/clinical-notes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Texto do médico examinador.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/clinical-notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "clinical-notes"]
+            },
+            "description": "Nova observação clínica, só inclusão, escrita pelo médico vinculado. 201. Demais → 403."
+          }
+        },
+        {
+          "name": "GET /health-exams/{id}/work-restrictions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/work-restrictions",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "health-exams",
+                "{{healthExamId}}",
+                "work-restrictions"
+              ]
+            },
+            "description": "Comunicações de restrição ao trabalho (o RH lê), da vigente à mais antiga. Sem diagnóstico."
+          }
+        },
+        {
+          "name": "POST /health-exams/{id}/work-restrictions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"restriction\",\n  \"restriction\": \"Não levantar cargas acima de 10 kg por 30 dias.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/work-restrictions",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "health-exams",
+                "{{healthExamId}}",
+                "work-restrictions"
+              ]
+            },
+            "description": "Só o médico vinculado: { kind: restriction, restriction } ou { kind: withdrawal }. Texto com CID → 422. 201."
+          }
+        },
+        {
+          "name": "GET /health-exams/{id}/clinical-access-events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/clinical-access-events",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "health-exams",
+                "{{healthExamId}}",
+                "clinical-access-events"
+              ]
+            },
+            "description": "Trilha de acesso ao prontuário (quem, base, ação, quando), sem conteúdo. Só owner; demais → 403."
+          }
+        }
+      ]
+    },
+    {
       "name": "Saude Ocupacional (ASO)",
       "item": [
         {

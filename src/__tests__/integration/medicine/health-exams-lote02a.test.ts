@@ -1,7 +1,7 @@
 /**
  * Lote 02A (NOB-112) contra Postgres efêmero — Server Actions E REST mirror:
  * vencimento × realização, tipo de exame, identidade do exame (sem troca de
- * funcionário), limites de `notes`/`certificatePath`, permissões (módulo, papel,
+ * funcionário), limite de `certificatePath` e recusa de `notes` (NOB-155), permissões (módulo, papel,
  * tenant) e ausência das observações nos logs. Só dados fictícios; nenhuma
  * migration nova (o schema é o mesmo do Lote 01).
  */
@@ -28,6 +28,7 @@ import {
 } from "@/shared/server/actions/pgr/health-exams";
 import type { HealthExamInput } from "@/shared/domains/pgr/health-exams";
 
+import { CLINICAL_NOTES_MOVED_MESSAGE } from "@/shared/domains/medicine/clinical-record";
 import { adminClient, applyMigrations } from "../_helpers/db";
 import {
   LOTE02A_IDS as L,
@@ -377,20 +378,16 @@ async function putJson(
 
     // ── Campos administrativos ─────────────────────────────────────────────────
 
-    describe("limites de notes e certificatePath", () => {
-      it("notes com 2.000 caracteres → ok; 2.001 → 422 sem ecoar o texto", async () => {
-        const atLimit = "n".repeat(2000);
-        const ok = await postJson({ ...NEW_INPUT, notes: atLimit });
-        expect(ok.status).toBe(201);
-        expect(ok.body.notes).toHaveLength(2000);
-
-        const over = `${SENSITIVE_MARKERS.notes}${"n".repeat(2000)}`;
-        const rejected = await postJson({ ...NEW_INPUT, notes: over });
+    describe("notes recusado e limite de certificatePath", () => {
+      it("NOB-155: observações clínicas no cadastro → 422 sem ecoar o texto; vazio é aceito", async () => {
+        const rejected = await postJson({ ...NEW_INPUT, notes: SENSITIVE_MARKERS.notes });
         expect(rejected.status).toBe(422);
-        expect(rejected.body.error.fields.notes).toBe(
-          "Observações: máximo de 2.000 caracteres.",
-        );
+        expect(rejected.body.error.fields.notes).toBe(CLINICAL_NOTES_MOVED_MESSAGE);
         expect(JSON.stringify(rejected.body)).not.toContain(SENSITIVE_MARKERS.notes);
+
+        const ok = await postJson({ ...NEW_INPUT, notes: "" });
+        expect(ok.status).toBe(201);
+        expect(ok.body).not.toHaveProperty("notes");
       });
 
       it("certificatePath com 500 caracteres → ok; 501 → 422", async () => {

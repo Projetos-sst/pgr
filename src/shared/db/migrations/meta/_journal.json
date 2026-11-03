@@ -470,6 +470,13 @@
       "when": 1793653749315,
       "tag": "0066_pcmso_analytical_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1793661341928,
+      "tag": "0067_health_exam_clinical_records",
+      "breakpoints": true
     }
   ]
 }

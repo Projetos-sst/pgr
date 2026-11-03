@@ -39,7 +39,6 @@ const INITIAL = {
   performedAt: "2026-01-14",
   validUntil: "2027-01-14",
   aptitude: "fit",
-  notes: null,
   certificatePath: null,
 };
 
@@ -87,14 +86,9 @@ describe("HealthExamForm — validações do Lote 02A", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Exame salvo");
   });
 
-  it("observações acima de 2.000 caracteres → aviso no campo", () => {
+  it("NOB-155: o cadastro não tem campo de observações clínicas", () => {
     renderNew();
-    fireEvent.change(field("notes"), { target: { value: "a".repeat(2001) } });
-    fireEvent.submit(form());
-    expect(
-      screen.getByText("Observações: máximo de 2.000 caracteres."),
-    ).toBeInTheDocument();
-    expect(createHealthExamAction).not.toHaveBeenCalled();
+    expect(form().querySelector('[name="notes"]')).toBeNull();
   });
 
   it("caminho do ASO acima de 500 caracteres → aviso no campo", () => {
@@ -107,12 +101,10 @@ describe("HealthExamForm — validações do Lote 02A", () => {
     expect(createHealthExamAction).not.toHaveBeenCalled();
   });
 
-  it("mostra a orientação de não registrar dados clínicos nas observações", () => {
+  it("orienta que observações clínicas ficam no prontuário do médico", () => {
     render(<HealthExamForm employees={[EMPLOYEE]} doctors={[]} />);
     expect(
-      screen.getByText(
-        /Não registre diagnósticos, CID ou informações clínicas sensíveis/,
-      ),
+      screen.getByText(/Observações clínicas não ficam no cadastro do exame/),
     ).toBeInTheDocument();
   });
 
@@ -154,11 +146,11 @@ describe("HealthExamForm — validações do Lote 02A", () => {
       },
     });
     renderNew();
-    fireEvent.change(field("notes"), { target: { value: "Retorno agendado" } });
+    fireEvent.change(field("certificatePath"), { target: { value: "/docs/aso.pdf" } });
     fireEvent.submit(form());
     expect(await screen.findByText("Tipo de exame inválido")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("Revise os campos destacados.");
-    expect(field("notes").value).toBe("Retorno agendado");
+    expect(field("certificatePath").value).toBe("/docs/aso.pdf");
     expect(mockPush).not.toHaveBeenCalled();
   });
 

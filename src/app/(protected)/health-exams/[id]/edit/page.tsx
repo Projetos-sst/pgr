@@ -1,12 +1,22 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import {
+  CLINICAL_ACCESS_ACTION_LABELS,
+  CLINICAL_ACCESS_BASIS_LABELS,
+} from "@/shared/domains/medicine/clinical-record";
 import {
   getEmployeeAction,
   listEmployeesAction,
 } from "@/shared/server/actions/pgr/employees";
 import { listMedicoOptionsAction } from "@/shared/server/actions/pgr/medicos";
 import { getHealthExamAction } from "@/shared/server/actions/pgr/health-exams";
+import {
+  getClinicalAccessAction,
+  listClinicalAccessEventsAction,
+  listWorkRestrictionsAction,
+} from "@/shared/server/actions/medicine/clinical-record";
 
 import { PageHeader, PrimaryLink } from "../../../_ui/list";
 import { HealthExamForm } from "../../_components/health-exam-form";
@@ -19,7 +29,7 @@ export default async function EditHealthExamPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireOfficeStaffPage();
+  const { role } = await requireOfficeStaffPage();
   const { id } = await params;
   const [examResult, employeesResult, doctorsResult] = await Promise.all([
     getHealthExamAction(id),
@@ -28,6 +38,15 @@ export default async function EditHealthExamPage({
   ]);
   if (!examResult.ok) notFound();
   const exam = examResult.data;
+  // RH vê só a comunicação de restrição (sem diagnóstico); o prontuário é do médico vinculado.
+  const [access, restrictions, accessEvents] = await Promise.all([
+    getClinicalAccessAction(id),
+    listWorkRestrictionsAction(id),
+    role === "owner" ? listClinicalAccessEventsAction(id) : Promise.resolve(null),
+  ]);
+  const canOpenRecord = access.ok && access.data.allowed;
+  const currentRestriction = restrictions.ok ? restrictions.data[0] : undefined;
+  const eventRows = accessEvents?.ok ? accessEvents.data : [];
   const employees = employeesResult.ok
     ? employeesResult.data.rows.map((e) => ({
         id: e.id,
@@ -71,10 +90,59 @@ export default async function EditHealthExamPage({
           performedAt: exam.performedAt,
           validUntil: exam.validUntil,
           aptitude: exam.aptitude,
-          notes: exam.notes,
           certificatePath: exam.certificatePath,
         }}
       />
+      <section className="glass-card flex flex-col gap-2 rounded-xl p-5 text-sm">
+        <h2 className="text-text text-base font-semibold">
+          Restrição necessária ao trabalho
+        </h2>
+        {currentRestriction?.kind === "restriction" ? (
+          <p role="status">
+            {currentRestriction.restriction} · comunicada em{" "}
+            {currentRestriction.recordedAt.slice(0, 10)}
+            {currentRestriction.authorName ? ` por ${currentRestriction.authorName}` : ""}
+          </p>
+        ) : (
+          <p className="text-text-subtle">
+            Nenhuma restrição vigente comunicada pelo médico.
+          </p>
+        )}
+        <p className="text-text-subtle text-xs">
+          Observações clínicas ficam no prontuário, aberto só pela conta vinculada ao
+          médico examinador ou ao coordenador do PCMSO.
+        </p>
+        {canOpenRecord ? (
+          <Link
+            href={`/health-exams/${exam.id}/clinical-record`}
+            className="text-primary self-start font-semibold underline"
+          >
+            Abrir prontuário clínico
+          </Link>
+        ) : null}
+      </section>
+      {role === "owner" ? (
+        <section className="glass-card flex flex-col gap-2 rounded-xl p-5 text-sm">
+          <h2 className="text-text text-base font-semibold">Acessos ao prontuário</h2>
+          {eventRows.length ? (
+            <ul className="text-text-subtle list-disc pl-5">
+              {eventRows.map((event) => (
+                <li key={event.id}>
+                  {event.occurredAt.slice(0, 10)} ·{" "}
+                  {CLINICAL_ACCESS_ACTION_LABELS[event.action]} ·{" "}
+                  {event.medicoName ?? "Profissional"} (
+                  {CLINICAL_ACCESS_BASIS_LABELS[event.basis].toLowerCase()})
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-text-subtle">Nenhum acesso registrado.</p>
+          )}
+          <p className="text-text-subtle text-xs">
+            A trilha mostra quem acessou e quando, nunca o conteúdo clínico.
+          </p>
+        </section>
+      ) : null}
     </div>
   );
 }

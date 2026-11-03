@@ -13,7 +13,7 @@ import {
 } from "@/shared/domains/pgr/health-exams";
 import type { Paginated } from "@/shared/pagination";
 import * as repo from "@/shared/db/repositories/health-exams";
-import type { HealthExam } from "@/shared/db/schema/health-exams";
+import type { HealthExamRecord } from "@/shared/db/schema/health-exams";
 
 const BASE_PATH = "/health-exams";
 
@@ -50,7 +50,9 @@ export async function listHealthExamsAction(
   });
 }
 
-export async function getHealthExamAction(id: string): Promise<ActionResult<HealthExam>> {
+export async function getHealthExamAction(
+  id: string,
+): Promise<ActionResult<HealthExamRecord>> {
   return officeAction("pgr.health-exams.get", async ({ tenantId }) => {
     const exam = await repo.getHealthExamById(tenantId, id);
     if (!exam) throw new NotFoundError();
@@ -60,7 +62,7 @@ export async function getHealthExamAction(id: string): Promise<ActionResult<Heal
 
 export async function createHealthExamAction(
   input: HealthExamInput,
-): Promise<ActionResult<HealthExam>> {
+): Promise<ActionResult<HealthExamRecord>> {
   return officeAction(
     "pgr.health-exams.create",
     async ({ tenantId }) => {
@@ -76,7 +78,7 @@ export async function createHealthExamAction(
 export async function updateHealthExamAction(
   id: string,
   input: HealthExamInput,
-): Promise<ActionResult<HealthExam>> {
+): Promise<ActionResult<HealthExamRecord>> {
   return officeAction(
     "pgr.health-exams.update",
     async ({ tenantId }) => {

@@ -18,11 +18,12 @@ import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-erro
 import { ValidationError } from "@/shared/errors/validation-error";
 
 import { withOrg } from "../with-org";
-import { healthExams, type HealthExam } from "../schema/health-exams";
+import { healthExams, type HealthExamRecord } from "../schema/health-exams";
 import { employees } from "../schema/employees";
 import { medicos } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
 import { hasAsoDocumentsTx } from "./aso";
+import { isClinicalHistoryFkViolation } from "./clinical-records";
 import { assertCompanyModuleTx } from "./company-modules";
 
 // A FK (employee/medico) é por PK global e o check de FK do Postgres ignora RLS —
@@ -52,6 +53,32 @@ async function assertRefsInTenant(
   }
   return { companyId: emp.companyId };
 }
+
+/**
+ * Colunas que a aplicação lê do exame. A coluna desativada `notes` (NOB-155) fica de fora: as
+ * observações clínicas vivem no prontuário segregado.
+ */
+const examColumns = {
+  id: healthExams.id,
+  orgId: healthExams.orgId,
+  employeeId: healthExams.employeeId,
+  companyId: healthExams.companyId,
+  companyOrigin: healthExams.companyOrigin,
+  companyOriginConfirmedBy: healthExams.companyOriginConfirmedBy,
+  companyOriginConfirmedAt: healthExams.companyOriginConfirmedAt,
+  companyOriginNote: healthExams.companyOriginNote,
+  doctorId: healthExams.doctorId,
+  examType: healthExams.examType,
+  performedAt: healthExams.performedAt,
+  validUntil: healthExams.validUntil,
+  aptitude: healthExams.aptitude,
+  certificatePath: healthExams.certificatePath,
+  createdAt: healthExams.createdAt,
+  updatedAt: healthExams.updatedAt,
+} satisfies Record<keyof HealthExamRecord, unknown>;
+
+export const EXAM_WITH_CLINICAL_HISTORY_MESSAGE =
+  "Exame com prontuário clínico ou comunicação de restrição registrados não pode ser excluído: o histórico médico é preservado.";
 
 export const EXAM_WITH_ASO_MESSAGE =
   "Exame com prévia de ASO arquivada não pode ser excluído: o histórico do ASO é preservado.";
@@ -161,10 +188,10 @@ export async function listLatestHealthExamsByEmployee(
 export async function getHealthExamById(
   orgId: string,
   id: string,
-): Promise<HealthExam | null> {
+): Promise<HealthExamRecord | null> {
   return withOrg(orgId, async (tx) => {
     const [row] = await tx
-      .select()
+      .select(examColumns)
       .from(healthExams)
       .where(and(eq(healthExams.orgId, orgId), eq(healthExams.id, id)))
       .limit(1);
@@ -175,7 +202,7 @@ export async function getHealthExamById(
 export async function createHealthExam(
   orgId: string,
   input: HealthExamValues,
-): Promise<HealthExam> {
+): Promise<HealthExamRecord> {
   return auditedTenantWrite(orgId, "pgr.health-exams.write_rejected", () =>
     withOrg(orgId, async (tx) => {
       // Empresa do exame = vínculo atual do funcionário no servidor (MED-07), nunca do cliente.
@@ -192,10 +219,9 @@ export async function createHealthExam(
           performedAt: input.performedAt,
           validUntil: input.validUntil ?? null,
           aptitude: input.aptitude,
-          notes: input.notes ?? null,
           certificatePath: input.certificatePath ?? null,
         })
-        .returning();
+        .returning(examColumns);
       return row;
     }),
   );
@@ -205,7 +231,7 @@ export async function updateHealthExam(
   orgId: string,
   id: string,
   input: HealthExamValues,
-): Promise<HealthExam | null> {
+): Promise<HealthExamRecord | null> {
   return auditedTenantWrite(orgId, "pgr.health-exams.write_rejected", () =>
     withOrg(orgId, async (tx) => {
       // Identidade do exame: o funcionário não muda na edição. Lê o exame (org +
@@ -230,7 +256,6 @@ export async function updateHealthExam(
           performedAt: input.performedAt,
           validUntil: input.validUntil ?? null,
           aptitude: input.aptitude,
-          notes: input.notes ?? null,
           certificatePath: input.certificatePath ?? null,
           updatedAt: new Date(),
         })
@@ -241,22 +266,29 @@ export async function updateHealthExam(
             eq(healthExams.employeeId, current.employeeId),
           ),
         )
-        .returning();
+        .returning(examColumns);
       return row ?? null;
     }),
   );
 }
 
 export async function deleteHealthExam(orgId: string, id: string): Promise<boolean> {
-  return auditedTenantWrite(orgId, "pgr.health-exams.write_rejected", () =>
-    withOrg(orgId, async (tx) => {
-      if (await hasAsoDocumentsTx(tx, orgId, { examId: id }))
-        throw new EntityInUseError(EXAM_WITH_ASO_MESSAGE);
-      const rows = await tx
-        .delete(healthExams)
-        .where(and(eq(healthExams.orgId, orgId), eq(healthExams.id, id)))
-        .returning({ id: healthExams.id });
-      return rows.length > 0;
-    }),
-  );
+  return auditedTenantWrite(orgId, "pgr.health-exams.write_rejected", async () => {
+    try {
+      return await withOrg(orgId, async (tx) => {
+        if (await hasAsoDocumentsTx(tx, orgId, { examId: id }))
+          throw new EntityInUseError(EXAM_WITH_ASO_MESSAGE);
+        const rows = await tx
+          .delete(healthExams)
+          .where(and(eq(healthExams.orgId, orgId), eq(healthExams.id, id)))
+          .returning({ id: healthExams.id });
+        return rows.length > 0;
+      });
+    } catch (error) {
+      // O RH não lê o prontuário (RLS): a FK RESTRICT do banco é quem barra a exclusão.
+      if (isClinicalHistoryFkViolation(error))
+        throw new EntityInUseError(EXAM_WITH_CLINICAL_HISTORY_MESSAGE);
+      throw error;
+    }
+  });
 }

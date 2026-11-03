@@ -23,6 +23,9 @@ const newTables = [
   "pgr_basic_offer_events",
   "pgr_review_samples",
   "pgr_review_decisions",
+  "health_exam_clinical_notes",
+  "health_exam_work_restrictions",
+  "clinical_record_access_events",
 ];
 
 (enabled ? describe : describe.skip)(
@@ -132,9 +135,11 @@ const newTables = [
             "health_exams",
             "medical_risk_sources",
           ];
-          // Colunas acrescentadas depois da 0056 ficam fora da comparação e são conferidas à parte.
+          // Colunas acrescentadas ou esvaziadas depois da 0056 ficam fora da comparação e são
+          // conferidas à parte (`notes` vai para o prontuário segregado na 0067, NOB-155).
           const addedColumns: Record<string, string[]> = {
             health_exams: [
+              "notes",
               "company_id",
               "company_origin",
               "company_origin_confirmed_by",
@@ -156,6 +161,9 @@ const newTables = [
             return records;
           };
           const before = await read();
+          const notesBefore = await db<
+            { id: string; org_id: string; notes: string; updated_at: Date }[]
+          >`select id, org_id, notes, updated_at from health_exams where notes is not null order by id`;
           await migrate(drizzle(db), { migrationsFolder: folder });
           await assertFinal(db);
           expect(await read()).toEqual(before);
@@ -165,6 +173,46 @@ const newTables = [
             await db`select count(*) filter (where company_id is null and company_origin is null)::int as unverified, count(*)::int as total from health_exams`;
           expect(total).toBeGreaterThan(0);
           expect(unverified).toBe(total);
+          // NOB-155: cada observação antiga está no prontuário do mesmo exame e tenant, sem perda,
+          // sem autoria presumida, com a data da última alteração do exame; o campo antigo ficou vazio.
+          expect(notesBefore.length).toBeGreaterThan(0);
+          const moved = await db<
+            {
+              health_exam_id: string;
+              org_id: string;
+              content: string;
+              recorded_at: Date;
+              authored_by_medico_id: string | null;
+              recorded_by: string | null;
+            }[]
+          >`select health_exam_id, org_id, content, recorded_at, authored_by_medico_id, recorded_by
+            from health_exam_clinical_notes where origin = 'legacy_exam_notes' order by health_exam_id`;
+          expect(
+            moved.map((m) => ({
+              id: m.health_exam_id,
+              org_id: m.org_id,
+              notes: m.content,
+              updated_at: m.recorded_at,
+            })),
+          ).toEqual(notesBefore);
+          expect(
+            moved.every(
+              (m) => m.authored_by_medico_id === null && m.recorded_by === null,
+            ),
+          ).toBe(true);
+          const [{ residual }] =
+            await db`select count(*)::int as residual from health_exams where notes is not null`;
+          expect(residual).toBe(0);
+          await expect(
+            db`update health_exams set notes = 'x' where id = ${notesBefore[0].id}`,
+          ).rejects.toMatchObject({ code: "23514" });
+          // O papel do app, mesmo no tenant certo e sem vínculo médico, não lê o prontuário.
+          const [{ visible }] = await db.begin(async (tx) => {
+            await tx`set local role app_runtime`;
+            await tx`select set_config('app.current_org', ${notesBefore[0].org_id}, true)`;
+            return tx`select count(*)::int as visible from health_exam_clinical_notes`;
+          });
+          expect(visible).toBe(0);
         });
       } finally {
         // Only remove the exact temporary folder created by this test.

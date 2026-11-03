@@ -114,7 +114,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 **Recursos** (todos sob `/api/v1`, escopados ao tenant ativo):
 
 | Recurso                                                                                                                                                        | Verbos                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `/companies` · `/companies/{id}` · `/companies/{id}/dependents`                                                                                                | GET, POST · GET, PUT, DELETE · GET                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `/companies/{id}/modules`                                                                                                                                      | GET (habilitações + histórico), PUT (owner)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `/companies/{id}/medical-risk-sources`                                                                                                                         | GET (fontes/riscos paginados), POST (registrar fonte pendente)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -158,6 +158,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/health-exams/{id}/procedures` · `/health-exams/{id}/procedures/{procedureId}`                                                                                | GET, POST (`201`, `{ code*, otherDescription?, performedAt* }`; Tabela 27; data não futura; duplicado → `409`) · DELETE (`204`) — exames complementares realizados (NR-7 7.5.19.1 d), sem resultado clínico — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `/health-exams/{id}/aso-readiness` · `/health-exams/{id}/aso-documents` · `/aso-documents/{id}`                                                                | GET conferência 7.5.19.1 a–g · GET prévias, POST gerar (`201`, sem corpo; só sem bloqueio) · GET prévia arquivada — sem PUT/DELETE; só `preview` (sem assinatura do examinador não há ASO emitido) — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/health-exams/{id}/company-origin` · `/health-exams/{id}/examiner-conclusions`                                                                                | POST confirma origem de exame antigo (`{ justification* }`, owner, `200`) · GET confirmações, POST apto/inapto para “apto com restrição” (`{ conclusion* }`, só o examinador vinculado, `201`) — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `/health-exams/{id}/clinical-notes` · `/health-exams/{id}/work-restrictions` · `/health-exams/{id}/clinical-access-events`                                     | GET prontuário (leitura auditada), POST observação (`201`, `{ content* }`) — só a conta vinculada ao examinador ou ao coordenador, demais → `403` · GET restrições (RH lê), POST (`201`, `{ kind: restriction                                                                                                                                                                                                                                                                                                                                                                                                                                   | withdrawal, restriction? }`, sem CID → senão `422`; só o médico vinculado) · GET trilha de acesso (owner) — NOB-155 |
 | `/medicine/overview` · `/medicine/employees`                                                                                                                   | GET (read-model do painel da Medicina: empresas com Medicina habilitada + contagem pela validade **informada** do último exame de cada funcionário) · GET (`?companyId=` **obrigatório**, `?search=`, `?page=`/`?pageSize=` ≤ 100; funcionários da empresa + último exame; `422` sem/má `companyId`, `404` empresa de outro tenant, `403` empresa sem Medicina); só GET, sem `/dependents` — não são entidades                                                                                                                                                                                                                                  |
 | `/companies/{id}/pcmso-coordinators` · `/pcmso-coordinators/{id}`                                                                                              | GET (histórico, mais recente primeiro), POST (`201`, designa; a designação aberta é encerrada na véspera) · GET, PUT (só encerra: `{ endsOn, endReason }`) — **sem DELETE** (histórico preservado, `405`); escrita só `owner`; empresa com Medicina habilitada                                                                                                                                                                                                                                                                                                                                                                                  |
 | `/risk-methodology`                                                                                                                                            | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -428,6 +429,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Relatório analítico          | actions/medicine/analytical-reports.ts       | list, get, context, generate + REST (NOB-154; NR-7 7.6.2–7.6.6; coordenador vinculado; dados consolidados)                                                                                                                                                                                                                                                                             |
 | Exame ocupacional (ASO)      | `actions/pgr/health-exams.ts`                | list (busca funcionário ou tipo de exame, filtros tipo/funcionário/empresa), get, create, update, delete + REST `/api/v1/health-exams/**` (validade derivada na leitura; funcionário/médico cross-tenant → `FK_NOT_FOUND`; sem `/dependents`)                                                                                                                                          |
 | ASO (conferência e prévias)  | `actions/medicine/aso.ts`                    | readiness, procedimentos, prévias, origem do exame e confirmação do examinador + REST (NOB-152; NR-7 7.5.19.1; sem assinatura)                                                                                                                                                                                                                                                         |
+| Prontuário segregado         | actions/medicine/clinical-record.ts          | access, read, addNote, restrictions, accessEvents + REST (NOB-155; DT-21; examinador ou coordenador vinculado; leitura auditada)                                                                                                                                                                                                                                                       |
 | Medicina — painel            | `actions/medicine/overview.ts`               | getMedicineOverviewAction, listMedicineEmployeesAction + REST `GET /api/v1/medicine/overview` · `GET /api/v1/medicine/employees` (read-models; core `server/medicine/overview-core.ts`; validade informada, sem periodicidade; sem `notes`/CPF)                                                                                                                                        |
 | Controle de formulário (ISO) | `actions/documents/form-controls.ts`         | list, get, create, update, delete + REST `/api/v1/form-controls/**` (código FRM único por org → `DUPLICATE`; empresa/GES opcionais)                                                                                                                                                                                                                                                    |
 | Documentos (GED)             | `actions/documents/documents.ts`             | list (versão corrente + KPIs + árvore + breadcrumb), get, create (multipart), update (só a vigente; antiga → `DOCUMENT_VERSION_READ_ONLY`), addVersion (vigente+1, herda da vigente; corrida → `DUPLICATE`), versions (histórico, #56), move, delete (grupo inteiro) + REST `/api/v1/documents/**`                                                                                     |
@@ -923,7 +925,7 @@ Janela de "a vencer": `EXAM_DUE_WINDOW_DAYS = 30` (`domains/pgr/health-exams.ts`
 **Validações de entrada (Lote 02A, NOB-112; mesmas regras na Action e no REST, `422 VALIDATION`):**
 `validUntil` (opcional) não pode ser anterior a `performedAt` (igual é permitido; datas comparadas
 como calendário, sem fuso) → `fields.validUntil = "Vencimento anterior à realização."`; `examType`
-fora do enum é recusado (no corpo e no filtro `?examType=`, que antes era ignorado); `notes` ≤ 2.000 e
+fora do enum é recusado (no corpo e no filtro `?examType=`, que antes era ignorado);
 `certificatePath` ≤ 500 caracteres (após `trim`; limite só da aplicação, colunas inalteradas); corpo
 JSON malformado → `422`. No `PUT`, `employeeId` precisa ser o funcionário atual do exame: troca →
 `422 VALIDATION` (o exame não muda de funcionário). Nenhuma validade é calculada: o vencimento continua
@@ -938,8 +940,71 @@ informado.
 | `deleteHealthExamAction` | `id`                                                                | `{ id }`                                                               |
 
 **`HealthExamInput`**: `{ employeeId*, doctorId?, examType*, performedAt* (não-futura), validUntil?,
-aptitude*, notes?, certificatePath? }`. `examType` = `admissional|periodic|change_of_function|
+aptitude*, certificatePath? }`. `examType` = `admissional|periodic|change_of_function|
 return_to_work|dismissal`; `aptitude` = `fit|fit_with_restrictions|unfit`.
+
+**Observações clínicas (NOB-155).** Saíram do cadastro de exames e ficam no prontuário segregado:
+
+- `notes` preenchido no corpo → `422 VALIDATION` (`fields.notes`), sem ecoar o texto; vazio ou `null` é ignorado.
+- Nenhuma leitura do exame (Action, REST, listas, painel, ASO) devolve `notes`.
+- Exame ou funcionário com prontuário ou comunicação de restrição não é excluído → `409 IN_USE`.
+
+## Prontuário segregado — `actions/medicine/clinical-record.ts`
+
+Prontuário clínico do exame (NOB-155, DT-21, MED-10/17), em `domains/medicine/clinical-record.ts`, `server/medicine/clinical-record-core.ts` e `repositories/clinical-records.ts`. Migration `0067_health_exam_clinical_records`.
+
+**Quem acessa.**
+
+- Só a conta vinculada (NOB-149) ao médico ativo que é:
+  - o examinador do exame; ou
+  - o coordenador com designação aberta da empresa onde o exame foi realizado (MED-07). Exame sem origem comprovada → só o examinador.
+- Owner, colaborador, médico sem relação com o exame, vínculo revogado, designação encerrada, profissional inativo e conta fora do escritório → `403`. Cliente → `403`; outro tenant → `404`.
+- As policies da 0067 repetem a regra no banco, para o papel `app_runtime`, com o ator da sessão.
+
+**Observações clínicas** (`health_exam_clinical_notes`).
+
+- Só inclusão, sem UPDATE nem DELETE: uma correção entra como nova observação.
+- A autoria (médico e conta) vem do servidor.
+- As antigas `health_exams.notes` foram migradas como `legacy_exam_notes`:
+  - na mesma transação, com conferência de integridade;
+  - com a data da última alteração do exame e sem autoria médica presumida.
+- O campo antigo ficou vazio, e o CHECK `ck_health_exams_notes_retired` impede gravar nele, inclusive pelo `app_runtime`. A remoção física da coluna fica para uma migration posterior.
+
+**Comunicação de restrição ao RH** (`health_exam_work_restrictions`).
+
+- É o único texto do médico que o RH lê: a restrição funcional ao trabalho, sem diagnóstico.
+- Texto com código CID ou com a palavra "CID" → `422`.
+- Fica fora do ASO.
+- Só inclusão; a vigente é a mais recente. `withdrawal` registra que as restrições deixaram de valer.
+
+**CID.** O sistema não coleta nem guarda CID, então nada clínico vai para o ASO ou para o RH.
+
+**Auditoria** (`clinical_record_access_events`).
+
+- Cada leitura e cada gravação registra o exame, o médico, a base (examinador ou coordenador), a ação, a conta e a data, nunca o conteúdo.
+- Só inclusão, e só em nome da própria conta autorizada.
+- Leem a trilha o owner e a própria conta.
+- Negativas vão para o log de eventos do tenant, sem conteúdo.
+
+| Action                           | Entrada                           | Retorno (`data`)                           |
+| -------------------------------- | --------------------------------- | ------------------------------------------ |
+| `getClinicalAccessAction`        | `examId`                          | `{ allowed, basis }` (não registra acesso) |
+| `readClinicalRecordAction`       | `examId`                          | `{ basis, notes[] }` (leitura auditada)    |
+| `addClinicalNoteAction`          | `examId, { content* }`            | observação criada                          |
+| `listWorkRestrictionsAction`     | `examId`                          | comunicações, da vigente à mais antiga     |
+| `recordWorkRestrictionAction`    | `examId, { kind*, restriction? }` | comunicação criada (só o médico vinculado) |
+| `listClinicalAccessEventsAction` | `examId`                          | trilha sem conteúdo (só owner)             |
+
+REST:
+
+- `GET|POST /api/v1/health-exams/{id}/clinical-notes`;
+- `GET|POST /api/v1/health-exams/{id}/work-restrictions`;
+- `GET /api/v1/health-exams/{id}/clinical-access-events`.
+
+Telas:
+
+- `/health-exams/{id}/clinical-record` (médico vinculado);
+- `/health-exams/{id}/edit` mostra ao RH só a restrição vigente e, ao owner, a trilha de acesso.
 
 ## ASO — conferência e prévias — `actions/medicine/aso.ts`
 
@@ -1485,6 +1550,7 @@ inexistente ou de outro escritório → `notFound()`.
 | `/companies/[id]/analytical-report`                                          | Relatório analítico anual do PCMSO (contexto do período, elaboração pelo coordenador, prévia e versões) — NOB-154                                     |
 | `/health-exams` · `/health-exams/new` · `/health-exams/[id]/edit`            | Gestão de Saúde/ASO (lista + busca + filtros tipo/empresa/funcionário; erro ≠ vazio / criar, `?employeeId=` pré-seleciona / editar)                   |
 | `/health-exams/[id]/aso`                                                     | Conferência do ASO (NR-7 7.5.19.1), exames realizados com data e prévias arquivadas — NOB-152                                                         |
+| `/health-exams/[id]/clinical-record`                                         | Prontuário clínico do exame (só o médico vinculado) e comunicação de restrição ao RH — NOB-155                                                        |
 | `/form-controls` · `/form-controls/new` · `/form-controls/[id]/edit`         | Controle de formulário (ISO); form com preview em tempo real do cabeçalho                                                                             |
 
 ## Invariantes de isolamento (multi-tenant)

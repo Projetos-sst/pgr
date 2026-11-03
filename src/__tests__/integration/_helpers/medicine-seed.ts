@@ -13,8 +13,10 @@ import { PGR_IDS } from "./pgr-seed";
  *     (sem validade informada), `employeeA3` (inserido como admin, invisível para o
  *     runtime porque a empresa não tem Medicina).
  * Em `org_b`: um exame de `employeeB`.
- * Todo exame leva `notes`/`certificate_path` com marcadores para provar que nenhum
- * contrato novo os devolve.
+ * Todo exame leva `certificate_path` com marcador para provar que nenhum contrato novo o devolve.
+ * A observação clínica marcada fica, a partir da 0067 (NOB-155), no prontuário segregado
+ * (`health_exam_clinical_notes`, origem `legacy_exam_notes`) de `examAOld`, `examARecent` e
+ * `examB`; num banco anterior à 0067 (ensaio de upgrade), fica em `health_exams.notes` de todos.
  */
 export const MEDICINE_IDS = {
   companyA2: "11111111-1111-1111-1111-1111111111f1",
@@ -43,7 +45,16 @@ const I = PGR_IDS;
 const M = MEDICINE_IDS;
 const N = SENSITIVE_MARKERS;
 
+/** O banco já tem o prontuário segregado (0067)? Antes dele, `notes` ainda guarda o texto. */
+async function hasClinicalRecord(admin: ReturnType<typeof postgres>): Promise<boolean> {
+  const [row] =
+    await admin`select to_regclass('public.health_exam_clinical_notes') is not null as present`;
+  return Boolean(row?.present);
+}
+
 export async function seedMedicine(admin: ReturnType<typeof postgres>): Promise<void> {
+  const segregated = await hasClinicalRecord(admin);
+  const notes = segregated ? "null" : `'${N.notes}'`;
   await admin.unsafe(`
     insert into public.companies (id, org_id, razao_social) values
       ('${M.companyA2}','org_a','EXEMPLO Empresa A2'),
@@ -66,12 +77,19 @@ export async function seedMedicine(admin: ReturnType<typeof postgres>): Promise<
 
     insert into public.health_exams
       (id, org_id, employee_id, doctor_id, exam_type, performed_at, valid_until, aptitude, notes, certificate_path) values
-      ('${M.examAOld}','org_a','${I.employeeA}','${M.doctorA1}','admissional','2024-01-10','2025-01-10','fit','${N.notes}','${N.certificatePath}'),
-      ('${M.examARecent}','org_a','${I.employeeA}','${M.doctorA2}','periodic','2026-01-10','${FAR_FUTURE}','fit_with_restrictions','${N.notes}','${N.certificatePath}'),
-      ('${M.examA2}','org_a','${M.employeeA2}',null,'admissional','2026-02-10',null,'fit','${N.notes}','${N.certificatePath}'),
-      ('${M.examA3}','org_a','${M.employeeA3}',null,'admissional','2026-03-10','${FAR_FUTURE}','fit','${N.notes}','${N.certificatePath}'),
-      ('${M.examB}','org_b','${I.employeeB}',null,'periodic','2026-01-20','${FAR_FUTURE}','unfit','${N.notes}','${N.certificatePath}');
+      ('${M.examAOld}','org_a','${I.employeeA}','${M.doctorA1}','admissional','2024-01-10','2025-01-10','fit',${notes},'${N.certificatePath}'),
+      ('${M.examARecent}','org_a','${I.employeeA}','${M.doctorA2}','periodic','2026-01-10','${FAR_FUTURE}','fit_with_restrictions',${notes},'${N.certificatePath}'),
+      ('${M.examA2}','org_a','${M.employeeA2}',null,'admissional','2026-02-10',null,'fit',${notes},'${N.certificatePath}'),
+      ('${M.examA3}','org_a','${M.employeeA3}',null,'admissional','2026-03-10','${FAR_FUTURE}','fit',${notes},'${N.certificatePath}'),
+      ('${M.examB}','org_b','${I.employeeB}',null,'periodic','2026-01-20','${FAR_FUTURE}','unfit',${notes},'${N.certificatePath}');
   `);
+  if (segregated)
+    await admin.unsafe(`
+      insert into public.health_exam_clinical_notes (org_id, health_exam_id, origin, content) values
+        ('org_a','${M.examAOld}','legacy_exam_notes','${N.notes}'),
+        ('org_a','${M.examARecent}','legacy_exam_notes','${N.notes}'),
+        ('org_b','${M.examB}','legacy_exam_notes','${N.notes}');
+    `);
 }
 
 /**
@@ -89,8 +107,8 @@ export async function seedLegacyInvalidDateExam(
 ): Promise<void> {
   await admin.unsafe(`
     insert into public.health_exams
-      (id, org_id, employee_id, doctor_id, exam_type, performed_at, valid_until, aptitude, notes, certificate_path) values
-      ('${LOTE02A_IDS.examA2LegacyInvalidDates}','org_a','${M.employeeA2}',null,'periodic','2026-03-10','2026-03-01','fit','${N.notes}','${N.certificatePath}');
+      (id, org_id, employee_id, doctor_id, exam_type, performed_at, valid_until, aptitude, certificate_path) values
+      ('${LOTE02A_IDS.examA2LegacyInvalidDates}','org_a','${M.employeeA2}',null,'periodic','2026-03-10','2026-03-01','fit','${N.certificatePath}');
   `);
 }
 
