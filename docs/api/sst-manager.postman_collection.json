@@ -328,6 +328,11 @@
       "key": "medicalRiskSourceId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "medicoLinkInvitationId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -3551,7 +3556,7 @@
       ]
     },
     {
-      "name": "Vínculo profissional (NOB-149)",
+      "name": "Vínculo profissional (NOB-149, NOB-157)",
       "item": [
         {
           "name": "GET /medicos/{id}/user-links (histórico)",
@@ -3581,40 +3586,6 @@
               "path": ["api", "v1", "medicos", "{{medicoId}}", "user-links"]
             },
             "description": "Histórico de vínculos do profissional com contas do escritório. 404 profissional de outro tenant; 403 client."
-          }
-        },
-        {
-          "name": "POST /medicos/{id}/user-links (vincular)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "x-dev-tenant",
-                "value": "{{devTenant}}"
-              },
-              {
-                "key": "x-dev-role",
-                "value": "{{devRole}}"
-              },
-              {
-                "key": "x-dev-user",
-                "value": "{{devUser}}"
-              },
-              {
-                "key": "content-type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{devUser}}\",\n  \"reason\": \"Profissional da equipe com acesso próprio.\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-links",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "medicos", "{{medicoId}}", "user-links"]
-            },
-            "description": "Só owner (403 para colaborador; RLS barra owner forjado). 201. Conta precisa ser membro do escritório e o profissional ativo (422). Um vínculo aberto por profissional e por conta (409 DUPLICATE)."
           }
         },
         {
@@ -3686,6 +3657,252 @@
               "path": ["api", "v1", "me", "professional"]
             },
             "description": "Perfil profissional da conta da sessão (null sem vínculo aberto) e empresas em que é coordenador do PCMSO."
+          }
+        },
+        {
+          "name": "GET /medicos/{id}/user-link-invitations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-link-invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicos", "{{medicoId}}", "user-link-invitations"]
+            },
+            "description": "Convites de acesso do profissional, com a situação (aguardando aceite, aguardando aprovação, vinculado, recusado, cancelado, expirado) e os eventos."
+          }
+        },
+        {
+          "name": "POST /medicos/{id}/user-link-invitations (convidar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{devUser}}\",\n  \"reason\": \"Profissional da equipe com acesso próprio.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-link-invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicos", "{{medicoId}}", "user-link-invitations"]
+            },
+            "description": "Só o owner convida uma conta do escritório. Não cria vínculo: ele nasce do aceite da conta convidada (e, no autovínculo, da aprovação de outro owner). 201."
+          }
+        },
+        {
+          "name": "POST /medicos/{id}/user-link-invitations/{invitationId}/accept",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-link-invitations/{{medicoLinkInvitationId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "medicos",
+                "{{medicoId}}",
+                "user-link-invitations",
+                "{{medicoLinkInvitationId}}",
+                "accept"
+              ]
+            },
+            "description": "Só a conta convidada (x-dev-user = conta convidada) aceita, declarando ser o profissional do cadastro. Outras contas → 403."
+          }
+        },
+        {
+          "name": "POST /medicos/{id}/user-link-invitations/{invitationId}/approve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-link-invitations/{{medicoLinkInvitationId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "medicos",
+                "{{medicoId}}",
+                "user-link-invitations",
+                "{{medicoLinkInvitationId}}",
+                "approve"
+              ]
+            },
+            "description": "Autovínculo: outro owner aprova depois do aceite. Quem se convidou → 403; convite comum → 422."
+          }
+        },
+        {
+          "name": "POST /medicos/{id}/user-link-invitations/{invitationId}/decline",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-link-invitations/{{medicoLinkInvitationId}}/decline",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "medicos",
+                "{{medicoId}}",
+                "user-link-invitations",
+                "{{medicoLinkInvitationId}}",
+                "decline"
+              ]
+            },
+            "description": "A conta convidada recusa um convite aberto."
+          }
+        },
+        {
+          "name": "POST /medicos/{id}/user-link-invitations/{invitationId}/cancel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicos/{{medicoId}}/user-link-invitations/{{medicoLinkInvitationId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "medicos",
+                "{{medicoId}}",
+                "user-link-invitations",
+                "{{medicoLinkInvitationId}}",
+                "cancel"
+              ]
+            },
+            "description": "O owner cancela um convite aberto."
+          }
+        },
+        {
+          "name": "GET /me/professional-invitations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/professional-invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "me", "professional-invitations"]
+            },
+            "description": "Convites endereçados à conta da sessão que aguardam o aceite dela."
           }
         }
       ]

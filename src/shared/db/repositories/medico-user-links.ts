@@ -4,10 +4,7 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
-import type {
-  ProfessionalLinkValues,
-  ProfessionalRevokeValues,
-} from "@/shared/domains/medicine/professional-links";
+import type { ProfessionalRevokeValues } from "@/shared/domains/medicine/professional-links";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
@@ -60,49 +57,6 @@ export async function listMedicoUserLinks(
       .where(and(eq(links.orgId, ctx.tenantId), eq(links.medicoId, medicoId)))
       .orderBy(desc(links.linkedAt), desc(links.id));
   });
-}
-
-export async function linkMedicoUser(
-  ctx: TenantContext,
-  medicoId: string,
-  input: ProfessionalLinkValues,
-): Promise<MedicoUserLink> {
-  assertOwner(ctx);
-  return auditedTenantWrite(
-    ctx.tenantId,
-    "medicine.professional_links.link_rejected",
-    () =>
-      actorTx(ctx, async (tx) => {
-        const medico = await medicoTx(tx, ctx.tenantId, medicoId);
-        if (medico.status !== "active")
-          throw new ValidationError(
-            "Profissional inativo não pode receber acesso. Reative o cadastro.",
-          );
-        const [member] = await tx
-          .select({ userId: orgMemberships.userId })
-          .from(orgMemberships)
-          .where(
-            and(
-              eq(orgMemberships.orgId, ctx.tenantId),
-              eq(orgMemberships.userId, input.userId),
-            ),
-          )
-          .limit(1);
-        if (!member) throw new ValidationError("A conta não pertence a este escritório.");
-        // Os índices únicos parciais barram vínculo aberto duplicado (DUPLICATE) em concorrência.
-        const [created] = await tx
-          .insert(links)
-          .values({
-            orgId: ctx.tenantId,
-            medicoId,
-            userId: input.userId,
-            reason: input.reason,
-            linkedBy: ctx.userId,
-          })
-          .returning();
-        return created;
-      }),
-  );
 }
 
 export async function revokeMedicoUserLink(

@@ -24,7 +24,7 @@ import {
   analyticalReportHash,
   type AnalyticalReportContent,
 } from "@/shared/domains/medicine/analytical-report";
-import { link } from "@/shared/server/medicine/professional-links-core";
+import { linkByInvitation as link } from "../_helpers/professional-link";
 import {
   generateReport,
   getReport,

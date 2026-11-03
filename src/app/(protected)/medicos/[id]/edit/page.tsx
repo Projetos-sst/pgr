@@ -2,7 +2,10 @@ import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getMedicoAction } from "@/shared/server/actions/pgr/medicos";
-import { listMedicoUserLinksAction } from "@/shared/server/actions/medicine/professional-links";
+import {
+  listMedicoLinkInvitationsAction,
+  listMedicoUserLinksAction,
+} from "@/shared/server/actions/medicine/professional-links";
 import { listTeamMembers } from "@/shared/server/actions/platform/team";
 import { formatProfessionalRegistration } from "@/shared/domains/pgr/medicos";
 
@@ -24,9 +27,10 @@ export default async function EditMedicoPage({
   if (!result.ok) notFound();
   const m = result.data;
   const canManage = ctx.role === "owner";
-  const [links, team] = await Promise.all([
+  const [links, team, invitations] = await Promise.all([
     listMedicoUserLinksAction(id),
     canManage ? listTeamMembers({ pageSize: 200 }) : null,
+    listMedicoLinkInvitationsAction(id),
   ]);
 
   return (
@@ -55,6 +59,8 @@ export default async function EditMedicoPage({
       <ProfessionalAccess
         medicoId={m.id}
         canManage={canManage}
+        currentUserId={ctx.userId}
+        invitations={invitations.ok ? invitations.data : []}
         members={
           team && team.ok
             ? team.data.rows.map((member) => ({
@@ -74,6 +80,7 @@ export default async function EditMedicoPage({
                 linkedAt: new Date(l.linkedAt).toISOString(),
                 revokedAt: l.revokedAt ? new Date(l.revokedAt).toISOString() : null,
                 revokeReason: l.revokeReason,
+                legacy: l.invitationId === null,
               }))
             : []
         }

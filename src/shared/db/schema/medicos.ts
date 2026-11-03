@@ -11,7 +11,7 @@ import {
   foreignKey,
   check,
 } from "drizzle-orm/pg-core";
-import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
+import { sql, type InferInsertModel, type InferSelectModel, type SQL } from "drizzle-orm";
 
 import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
@@ -167,6 +167,127 @@ export type PcmsoCoordinatorAssignment = InferSelectModel<
 >;
 
 /**
+ * Convite para uma conta assumir a identidade do profissional (NOB-157). O owner convida; o
+ * vínculo efetivo (`medico_user_links`) só nasce quando a própria conta convidada aceita, com login
+ * próprio, e, se quem convidou é a própria conta convidada (autovínculo), quando outra conta owner
+ * aprova. Só inclusão: aceite, recusa, aprovação e cancelamento são eventos.
+ */
+export const medicoLinkInvitations = pgTable(
+  "medico_link_invitations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    medicoId: uuid("medico_id").notNull(),
+    userId: text("user_id").notNull(),
+    reason: text("reason").notNull(),
+    invitedBy: text("invited_by").notNull(),
+    invitedAt: timestamp("invited_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now() + interval '7 days'`),
+  },
+  (t) => [
+    foreignKey({
+      name: "fk_medico_link_invitations_medico",
+      columns: [t.medicoId, t.orgId],
+      foreignColumns: [medicos.id, medicos.orgId],
+    }).onDelete("restrict"),
+    // Alvo das FKs compostas dos eventos e do vínculo.
+    uniqueIndex("uq_medico_link_invitations_id_org").on(t.id, t.orgId),
+    index("idx_medico_link_invitations_medico").on(t.orgId, t.medicoId, t.invitedAt),
+    index("idx_medico_link_invitations_user").on(t.orgId, t.userId),
+    check("ck_medico_link_invitations_expiry", sql`${t.expiresAt} > ${t.invitedAt}`),
+    pgPolicy("medico_link_invitations_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+    pgPolicy("medico_link_invitations_owner_insert", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${actorIsOwner} and ${t.invitedBy} = current_setting('app.current_actor', true)`,
+    }),
+  ],
+).enableRLS();
+
+export type MedicoLinkInvitation = InferSelectModel<typeof medicoLinkInvitations>;
+
+/** Convite (alias SQL) ainda aberto: sem recusa nem cancelamento e dentro da validade. */
+function invitationOpen(alias: SQL): SQL {
+  return sql`not exists (select 1 from public.medico_link_invitation_events c where c.org_id = ${alias}.org_id and c.invitation_id = ${alias}.id and c.kind in ('declined','cancelled')) and ${alias}.expires_at > now()`;
+}
+
+/**
+ * Eventos do convite (NOB-157), um de cada tipo por convite:
+ * - `accepted`/`declined`: só a própria conta convidada, com o convite aberto;
+ * - `approved`: só no autovínculo, por outra conta owner, depois do aceite;
+ * - `cancelled`: o owner encerra um convite aberto.
+ * `statement` guarda a declaração de identidade aceita (nome e registro do cadastro): é
+ * declaração autenticada da conta, não verificação do conselho profissional.
+ */
+export const medicoLinkInvitationEvents = pgTable(
+  "medico_link_invitation_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id").notNull(),
+    invitationId: uuid("invitation_id").notNull(),
+    kind: text("kind")
+      .$type<"accepted" | "declined" | "approved" | "cancelled">()
+      .notNull(),
+    actorUserId: text("actor_user_id").notNull(),
+    statement: text("statement"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "fk_medico_link_invitation_events_invitation",
+      columns: [t.invitationId, t.orgId],
+      foreignColumns: [medicoLinkInvitations.id, medicoLinkInvitations.orgId],
+    }).onDelete("cascade"),
+    uniqueIndex("uq_medico_link_invitation_events_kind").on(
+      t.orgId,
+      t.invitationId,
+      t.kind,
+    ),
+    check(
+      "ck_medico_link_invitation_events_kind",
+      sql`${t.kind} in ('accepted','declined','approved','cancelled')`,
+    ),
+    check(
+      "ck_medico_link_invitation_events_statement",
+      sql`(${t.kind} = 'accepted') = (${t.statement} is not null)`,
+    ),
+    pgPolicy("medico_link_invitation_events_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+    pgPolicy("medico_link_invitation_events_insert", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${t.actorUserId} = current_setting('app.current_actor', true) and exists (select 1 from public.medico_link_invitations i
+        where i.id = ${t.invitationId} and i.org_id = ${t.orgId} and ${invitationOpen(sql.raw("i"))}
+          and (
+            (${t.kind} in ('accepted','declined') and i.user_id = ${t.actorUserId})
+            or (${t.kind} = 'cancelled' and ${actorIsOwner})
+            or (${t.kind} = 'approved' and ${actorIsOwner} and i.invited_by = i.user_id and i.user_id <> ${t.actorUserId}
+              and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted'))
+          ))`,
+    }),
+  ],
+).enableRLS();
+
+export type MedicoLinkInvitationEvent = InferSelectModel<
+  typeof medicoLinkInvitationEvents
+>;
+
+/**
  * Vínculo profissional ↔ conta de acesso (NOB-149). Dá ao profissional cadastrado uma identidade
  * autenticada: só a conta vinculada ao médico com designação aberta de coordenador age como
  * coordenador daquela empresa. Histórico preservado: no máximo um vínculo ABERTO por profissional
@@ -189,6 +310,8 @@ export const medicoUserLinks = pgTable(
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     revokedBy: text("revoked_by"),
     revokeReason: text("revoke_reason"),
+    // NOB-157: convite aceito que originou o vínculo. Nulo só nos vínculos anteriores ao convite.
+    invitationId: uuid("invitation_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -197,6 +320,13 @@ export const medicoUserLinks = pgTable(
       columns: [t.medicoId, t.orgId],
       foreignColumns: [medicos.id, medicos.orgId],
     }).onDelete("restrict"),
+    foreignKey({
+      name: "fk_medico_user_links_invitation",
+      columns: [t.invitationId, t.orgId],
+      foreignColumns: [medicoLinkInvitations.id, medicoLinkInvitations.orgId],
+    }).onDelete("restrict"),
+    // Um convite gera no máximo um vínculo, mesmo depois de revogado.
+    uniqueIndex("uq_medico_user_links_invitation").on(t.invitationId),
     index("idx_medico_user_links_medico").on(t.orgId, t.medicoId),
     index("idx_medico_user_links_user").on(t.orgId, t.userId),
     uniqueIndex("uq_medico_user_links_open_medico")
@@ -215,11 +345,17 @@ export const medicoUserLinks = pgTable(
       using: tenantScope,
       withCheck: tenantScope,
     }),
-    pgPolicy("medico_user_links_owner_insert", {
+    // NOB-157: o vínculo só nasce de convite aceito pela própria conta convidada e, no
+    // autovínculo, aprovado por outra conta owner. O owner não cria vínculo direto.
+    pgPolicy("medico_user_links_invited_insert", {
       as: "restrictive",
       for: "insert",
       to: appRuntimeRole,
-      withCheck: sql`${actorIsOwner} and ${t.linkedBy} = current_setting('app.current_actor', true) and ${t.revokedAt} is null`,
+      withCheck: sql`${t.linkedBy} = current_setting('app.current_actor', true) and ${t.revokedAt} is null and exists (select 1 from public.medico_link_invitations i
+        where i.id = ${t.invitationId} and i.org_id = ${t.orgId} and i.medico_id = ${t.medicoId} and i.user_id = ${t.userId}
+          and ${invitationOpen(sql.raw("i"))}
+          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)
+          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)))`,
     }),
     // Só um vínculo ABERTO pode ser alterado (revogado); revogado não reabre nem muda.
     pgPolicy("medico_user_links_owner_revoke", {

@@ -21,7 +21,7 @@ import {
   type PcmsoContent,
 } from "@/shared/domains/medicine/pcmso-composition";
 import { registerMedicalRiskSource } from "@/shared/server/medicine/risk-source-core";
-import { link } from "@/shared/server/medicine/professional-links-core";
+import { linkByInvitation as link } from "../_helpers/professional-link";
 import {
   approve,
   createDraft,

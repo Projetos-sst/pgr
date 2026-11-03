@@ -23,7 +23,7 @@ import {
 } from "@/shared/db/repositories/health-exams";
 import { deleteEmployee } from "@/shared/db/repositories/employees";
 import { registerMedicalRiskSource } from "@/shared/server/medicine/risk-source-core";
-import { link } from "@/shared/server/medicine/professional-links-core";
+import { linkByInvitation as link } from "../_helpers/professional-link";
 import {
   approve,
   createDraft,

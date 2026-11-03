@@ -17,7 +17,7 @@ jest.mock("@/shared/auth/require-office-staff", () => ({
 import { requireOfficeStaff } from "@/shared/auth/require-office-staff";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { registerMedicalRiskSource } from "@/shared/server/medicine/risk-source-core";
-import { link } from "@/shared/server/medicine/professional-links-core";
+import { linkByInvitation as link } from "../_helpers/professional-link";
 import {
   addItem,
   approve,
