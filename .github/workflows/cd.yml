@@ -79,6 +79,8 @@ jobs:
 
       # No mesmo job: mantém arquivos ocultos e links do output do Next.js.
       # Não envia variáveis/configurações privadas como artefatos do Actions.
+      # --archive=tgz envia o output compactado em poucos arquivos, em vez de uma
+      # requisição por arquivo (limite "api-upload-free": 5000 uploads/24h).
       - name: Publica o build validado
         id: publish
         shell: bash
@@ -86,7 +88,7 @@ jobs:
           deploy_dir="$RUNNER_TEMP/vercel-prebuilt"
           mkdir -p "$deploy_dir/.vercel"
           cp -a .vercel/output .vercel/project.json "$deploy_dir/.vercel/"
-          deployment_url=$(vercel deploy --cwd "$deploy_dir" --prebuilt --yes --target="$VERCEL_TARGET" --token="$VERCEL_TOKEN" \
+          deployment_url=$(vercel deploy --cwd "$deploy_dir" --prebuilt --archive=tgz --yes --target="$VERCEL_TARGET" --token="$VERCEL_TOKEN" \
             --meta "githubDeployment=1" \
             --meta "githubCommitSha=$GITHUB_SHA" \
             --meta "githubCommitRef=$GITHUB_REF_NAME" \
