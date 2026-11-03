@@ -26,6 +26,7 @@ const newTables = [
   "health_exam_clinical_notes",
   "health_exam_work_restrictions",
   "clinical_record_access_events",
+  "medical_risk_absence_declarations",
 ];
 
 (enabled ? describe : describe.skip)(

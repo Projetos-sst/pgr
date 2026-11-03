@@ -477,6 +477,13 @@
       "when": 1793661341928,
       "tag": "0067_health_exam_clinical_records",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1793662534446,
+      "tag": "0068_medical_risk_absence_declarations",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,8 @@ import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
 import { loadProposalSources } from "./exam-proposal-core";
+import { listRiskAbsenceDeclarations } from "@/shared/db/repositories/risk-absence-declarations";
+import { applicableRiskAbsence } from "@/shared/domains/medicine/risk-absence";
 
 const examUuid = (id: string) => requiredUuid("Exame inválido.").parse(id);
 const norm = (value: string | null | undefined) =>
@@ -33,10 +35,11 @@ async function loadFacts(ctx: TenantContext, examId: string): Promise<AsoFacts> 
   const data = await repo.loadAsoExamFacts(ctx, examUuid(examId));
   // Sem origem comprovada, a referência é a empresa atual do funcionário; a conferência bloqueia.
   const companyId = data.exam.companyId ?? data.employee.companyId;
-  const [sources, coordinators, plans] = await Promise.all([
+  const [sources, coordinators, plans, absenceDeclarations] = await Promise.all([
     loadProposalSources(ctx, companyId),
     listCoordinatorAssignments(ctx, companyId),
     listExamPlans(ctx, companyId),
+    listRiskAbsenceDeclarations(ctx, companyId),
   ]);
   const performedAt = data.exam.performedAt;
   const coordinator = coordinators.find(
@@ -82,6 +85,8 @@ async function loadFacts(ctx: TenantContext, examId: string): Promise<AsoFacts> 
         }
       : null,
     risks: employeeRisks(sources, data.employee),
+    // Só declaração explícita na versão vigente da fonte (NOB-156, DT-12); nunca presumida.
+    riskAbsence: applicableRiskAbsence(absenceDeclarations, sources, data.employee),
     procedures: data.procedures.map((p) => ({
       procedureCode: p.procedureCode,
       otherDescription: p.otherDescription,

@@ -72,6 +72,17 @@ function Preview({
                 <li key={`${risk.agentType}-${risk.description}`}>{risk.description}</li>
               ))}
             </ul>
+            {/* Prévias v1 não têm o campo; só a declaração vigente o preenche (NOB-156). */}
+            {content.risksAbsence ? (
+              <p>
+                {content.risksAbsence.statement} Fonte {content.risksAbsence.source.title}{" "}
+                — {content.risksAbsence.source.version}
+                {content.risksAbsence.declaredBy
+                  ? ` · declarada por ${content.risksAbsence.declaredBy}`
+                  : ""}{" "}
+                em {content.risksAbsence.declaredAt.slice(0, 10)}.
+              </p>
+            ) : null}
           </dd>
         </div>
         <div>

@@ -71,6 +71,7 @@ const content = composeAso({
     { procedureCode: "0281", otherDescription: null, performedAt: "2026-10-18" },
   ],
   plannedProcedures: null,
+  riskAbsence: null,
 });
 const DOC = {
   id: "d1",
