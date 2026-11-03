@@ -29,6 +29,8 @@ import { TrainingStatusBadge } from "../../_ui/training-status-badge";
 import { todayInSaoPaulo } from "@/shared/dates";
 import { moduleIsEnabled } from "@/shared/domains/platform/company-modules";
 import { getCompanyModuleOverviewAction } from "@/shared/server/actions/platform/company-modules";
+import { listAbsencesAction } from "@/shared/server/actions/medicine/absences";
+import { AbsencesSection } from "./_components/absences-section";
 import { listHealthExamsAction } from "@/shared/server/actions/pgr/health-exams";
 import {
   OccupationalHealthSection,
@@ -105,6 +107,10 @@ export default async function EmployeeDetailPage({
     : moduleIsEnabled(moduleResult.data.modules, "medicine")
       ? "enabled"
       : "disabled";
+
+  // Afastamentos (NOB-139): só com Medicina habilitada na empresa; sem dado clínico.
+  const absencesResult =
+    medicineState === "enabled" ? await listAbsencesAction(employee.id) : null;
 
   const trainingRows = trainingRecordsResult.ok ? trainingRecordsResult.data.rows : [];
   const trainingOptions = trainingOptionsResult.ok ? trainingOptionsResult.data : [];
@@ -348,6 +354,14 @@ export default async function EmployeeDetailPage({
         today={todayInSaoPaulo()}
         dismissal={dismissal}
       />
+
+      {absencesResult ? (
+        <AbsencesSection
+          employeeId={employee.id}
+          items={absencesResult.ok ? absencesResult.data : []}
+          loadError={absencesResult.ok ? null : absencesResult.error.message}
+        />
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Placeholder title="Histórico" />

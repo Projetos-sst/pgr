@@ -40,6 +40,8 @@ async function actorTx<T>(ctx: TenantContext, fn: (tx: TenantTransaction) => Pro
 const CLINICAL_FK_CONSTRAINTS = [
   "fk_health_exam_clinical_notes_exam",
   "fk_health_exam_work_restrictions_exam",
+  // NOB-139: área clínica do afastamento barra a cascata da exclusão do funcionário.
+  "fk_absence_clinical_notes_absence",
 ];
 
 /**
