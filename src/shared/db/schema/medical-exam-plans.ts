@@ -51,11 +51,10 @@ export function actorCoordinatesCompany(
   org: AnyPgColumn | SQL,
   company: AnyPgColumn | SQL,
 ) {
+  // NOB-158: coordenador com identidade verificada (função central), nunca o vínculo sozinho.
   return sql`exists (select 1 from public.pcmso_coordinator_assignments a
-    join public.medico_user_links l on l.org_id = a.org_id and l.medico_id = a.medico_id and l.revoked_at is null
-    join public.medicos m on m.id = a.medico_id and m.org_id = a.org_id and m.status = 'active'
-    join public.org_memberships om on om.org_id = l.org_id and om.user_id = l.user_id
-    where a.org_id = ${org} and a.company_id = ${company} and a.ends_on is null and l.user_id = ${actor})`;
+    where a.org_id = ${org} and a.company_id = ${company} and a.ends_on is null
+      and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id)))`;
 }
 
 export const medicalExamPlans = pgTable(

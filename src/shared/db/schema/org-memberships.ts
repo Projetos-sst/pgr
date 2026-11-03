@@ -13,7 +13,7 @@ import { authenticatedRole } from "drizzle-orm/supabase";
 import { orgs } from "./orgs";
 import { users } from "./users";
 import { companies } from "./companies";
-import { appRuntimeRole } from "../roles";
+import { appRuntimeRole, identityVerifierRole } from "../roles";
 
 export const orgMemberships = pgTable(
   "org_memberships",
@@ -38,6 +38,12 @@ export const orgMemberships = pgTable(
       for: "select",
       to: authenticatedRole,
       using: sql`${table.orgId} = (auth.jwt() ->> 'org_id')`,
+    }),
+    // NOB-158: o operador confere que não é membro do escritório que verifica.
+    pgPolicy("org_memberships_identity_verifier_read", {
+      for: "select",
+      to: identityVerifierRole,
+      using: sql`true`,
     }),
     pgPolicy("org_memberships_risk_actor_read", {
       for: "select",

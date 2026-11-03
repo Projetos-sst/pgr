@@ -27,14 +27,13 @@ const actorIsOwner = sql`exists (select 1 from public.org_memberships m where m.
  * o médico registrado na linha seja o da conta.
  */
 function clinicianFor(orgId: SQLWrapper, examId: SQLWrapper, medico?: SQLWrapper): SQL {
-  const sameMedico = medico ? sql` and l.medico_id = ${medico}` : sql``;
+  const sameMedico = medico ? sql` and c.medico_id = ${medico}` : sql``;
+  // NOB-158: só profissional com identidade verificada (função central), nunca o vínculo sozinho.
   return sql`exists (select 1 from public.health_exams h
-        join public.medico_user_links l on l.org_id = h.org_id and l.revoked_at is null and l.user_id = ${actor}
-        join public.medicos m on m.id = l.medico_id and m.org_id = l.org_id and m.status = 'active' and m.profession = 'physician'
-        join public.org_memberships om on om.org_id = l.org_id and om.user_id = l.user_id
+        join lateral public.actor_clinical_medico_ids(h.org_id) c(medico_id) on true
         where h.id = ${examId} and h.org_id = ${orgId}${sameMedico}
-          and (h.doctor_id = l.medico_id or exists (select 1 from public.pcmso_coordinator_assignments a
-            where a.org_id = h.org_id and a.company_id = h.company_id and a.medico_id = l.medico_id and a.ends_on is null)))`;
+          and (h.doctor_id = c.medico_id or exists (select 1 from public.pcmso_coordinator_assignments a
+            where a.org_id = h.org_id and a.company_id = h.company_id and a.medico_id = c.medico_id and a.ends_on is null)))`;
 }
 
 /**

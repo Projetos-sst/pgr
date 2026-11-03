@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
@@ -21,13 +21,9 @@ import {
   healthExamWorkRestrictions as workRestrictions,
 } from "../schema/clinical-records";
 import { healthExams } from "../schema/health-exams";
-import {
-  medicos,
-  medicoUserLinks as links,
-  pcmsoCoordinatorAssignments as assignments,
-} from "../schema/medicos";
-import { orgMemberships } from "../schema/org-memberships";
+import { medicos, pcmsoCoordinatorAssignments as assignments } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
+import { actorClinicalMedicoIdsTx } from "./clinical-actor";
 
 /** Transação com o ator da sessão: as policies do prontuário conferem o vínculo da conta. */
 async function actorTx<T>(ctx: TenantContext, fn: (tx: TenantTransaction) => Promise<T>) {
@@ -96,44 +92,24 @@ async function clinicalAccessTx(
   ctx: TenantContext,
   exam: ExamRef,
 ): Promise<{ medicoId: string; basis: ClinicalAccessBasis } | null> {
-  const [link] = await tx
-    .select({ medicoId: links.medicoId })
-    .from(links)
-    .innerJoin(
-      medicos,
-      and(eq(medicos.id, links.medicoId), eq(medicos.orgId, links.orgId)),
-    )
-    .innerJoin(
-      orgMemberships,
-      and(eq(orgMemberships.orgId, links.orgId), eq(orgMemberships.userId, links.userId)),
-    )
-    .where(
-      and(
-        eq(links.orgId, ctx.tenantId),
-        eq(links.userId, ctx.userId),
-        isNull(links.revokedAt),
-        eq(medicos.status, "active"),
-        eq(medicos.profession, "physician"),
-      ),
-    )
-    .limit(1);
-  if (!link) return null;
-  if (exam.doctorId === link.medicoId)
-    return { medicoId: link.medicoId, basis: "examiner" };
-  if (!exam.companyId) return null;
+  // NOB-158: só profissionais com identidade verificada (função central do banco).
+  const clinical = await actorClinicalMedicoIdsTx(tx, ctx.tenantId);
+  if (exam.doctorId && clinical.includes(exam.doctorId))
+    return { medicoId: exam.doctorId, basis: "examiner" };
+  if (!exam.companyId || clinical.length === 0) return null;
   const [assignment] = await tx
-    .select({ id: assignments.id })
+    .select({ medicoId: assignments.medicoId })
     .from(assignments)
     .where(
       and(
         eq(assignments.orgId, ctx.tenantId),
         eq(assignments.companyId, exam.companyId),
-        eq(assignments.medicoId, link.medicoId),
+        inArray(assignments.medicoId, clinical),
         isNull(assignments.endsOn),
       ),
     )
     .limit(1);
-  return assignment ? { medicoId: link.medicoId, basis: "coordinator" } : null;
+  return assignment ? { medicoId: assignment.medicoId, basis: "coordinator" } : null;
 }
 
 const DENIED =

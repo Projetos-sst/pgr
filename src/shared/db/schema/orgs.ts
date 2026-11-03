@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 import { authenticatedRole } from "drizzle-orm/supabase";
+import { identityVerifierRole } from "../roles";
 
 export const orgs = pgTable(
   "orgs",
@@ -30,6 +31,12 @@ export const orgs = pgTable(
     uniqueIndex("orgs_clerk_org_id_unique").on(table.clerkOrgId),
     uniqueIndex("orgs_stripe_customer_id_unique").on(table.stripeCustomerId),
     check("orgs_plan_check", sql`${table.plan} in ('free','pro')`),
+    // NOB-158: a fila do operador mostra o escritório (nome), sem dado clínico.
+    pgPolicy("orgs_identity_verifier_read", {
+      for: "select",
+      to: identityVerifierRole,
+      using: sql`true`,
+    }),
     pgPolicy("orgs_select_active_org", {
       for: "select",
       to: authenticatedRole,

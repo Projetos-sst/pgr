@@ -1,12 +1,11 @@
 import "server-only";
 
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
 import type { ProfessionalRevokeValues } from "@/shared/domains/medicine/professional-links";
 import { NotFoundError } from "@/shared/errors/not-found-error";
-import { ValidationError } from "@/shared/errors/validation-error";
 
 import { withOrg, type TenantTransaction } from "../with-org";
 import { companies } from "../schema/companies";
@@ -18,6 +17,7 @@ import {
 } from "../schema/medicos";
 import { orgMemberships } from "../schema/org-memberships";
 import { auditedTenantWrite } from "./audited-write";
+import { actorClinicalMedicoIdsTx } from "./clinical-actor";
 
 /** Transação com o ator da sessão (as policies de escrita conferem owner + autoria). */
 async function actorTx<T>(ctx: TenantContext, fn: (tx: TenantTransaction) => Promise<T>) {
@@ -183,38 +183,34 @@ export async function assertActorIsCompanyCoordinator(
   ctx: TenantContext,
   companyId: string,
 ): Promise<{ medicoId: string; linkId: string }> {
-  const [row] = await tx
-    .select({ medicoId: assignments.medicoId, linkId: links.id })
-    .from(assignments)
-    .innerJoin(
-      links,
-      and(
-        eq(links.orgId, assignments.orgId),
-        eq(links.medicoId, assignments.medicoId),
-        isNull(links.revokedAt),
-      ),
-    )
-    .innerJoin(
-      medicos,
-      and(eq(medicos.id, assignments.medicoId), eq(medicos.orgId, assignments.orgId)),
-    )
-    .innerJoin(
-      orgMemberships,
-      and(eq(orgMemberships.orgId, links.orgId), eq(orgMemberships.userId, links.userId)),
-    )
-    .where(
-      and(
-        eq(assignments.orgId, ctx.tenantId),
-        eq(assignments.companyId, companyId),
-        isNull(assignments.endsOn),
-        eq(links.userId, ctx.userId),
-        eq(medicos.status, "active"),
-      ),
-    )
-    .limit(1);
+  // NOB-158: coordenador com identidade verificada (função central do banco), nunca o vínculo sozinho.
+  const clinical = await actorClinicalMedicoIdsTx(tx, ctx.tenantId);
+  const [row] = clinical.length
+    ? await tx
+        .select({ medicoId: assignments.medicoId, linkId: links.id })
+        .from(assignments)
+        .innerJoin(
+          links,
+          and(
+            eq(links.orgId, assignments.orgId),
+            eq(links.medicoId, assignments.medicoId),
+            eq(links.userId, ctx.userId),
+            isNull(links.revokedAt),
+          ),
+        )
+        .where(
+          and(
+            eq(assignments.orgId, ctx.tenantId),
+            eq(assignments.companyId, companyId),
+            isNull(assignments.endsOn),
+            inArray(assignments.medicoId, clinical),
+          ),
+        )
+        .limit(1)
+    : [];
   if (!row)
     throw new ForbiddenError(
-      "Somente o médico coordenador do PCMSO desta empresa, com acesso vinculado, pode executar esta ação.",
+      "Somente o médico coordenador do PCMSO desta empresa, com acesso vinculado e identidade verificada, pode executar esta ação.",
     );
   return row;
 }

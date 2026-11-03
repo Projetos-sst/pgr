@@ -150,6 +150,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/categories` · `/categories/{id}`                                                                                                                             | GET, POST · GET, PUT, DELETE                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/medicos` · `/medicos/{id}`                                                                                                                                   | GET (`?search=` nome/CRM, `?clinic=` empresa/clínica, `?status=active\|inactive`), POST (`201`) · GET, PUT, DELETE (`204`) — CRM único por org (`DUPLICATE`); sem `/dependents`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/medicos/{id}/user-links(/{linkId})` · `/medicos/{id}/user-link-invitations(/{inv}/{ação})` · `/me/professional(-invitations)`                                | GET histórico de vínculos · PUT só revoga (`{ reason }`; sem DELETE) · GET convites, POST convidar (`201`, só `owner`) · POST `accept`/`decline` (só a conta convidada), `approve` (outro `owner`, no autovínculo), `cancel` (`owner`) · GET perfil da sessão e convites pendentes — NOB-149/NOB-157                                                                                                                                                                                                                                                                                                                                            |
+| `/me/professional-identity(/requests)` · `/me/medico-links/{id}/reconfirm` · `/admin/identity-verifications(…)`                                                | GET situação da identidade e do acesso clínico, POST pedido (`201`, só a própria conta) · POST reconfirmação de vínculo legado (`201`) · GET fila, POST aprovação (`201`), POST recusa/revogação — só operador designado (banco); demais → `403` — NOB-158/159/160                                                                                                                                                                                                                                                                                                                                                                              |
 | `/companies/{id}/exam-plans` · `/exam-plans/{id}` · `/exam-plans/{id}/items(/{itemId})` · `/exam-plans/{id}/approval`                                          | GET versões, POST rascunho (`201`) · GET detalhe · POST acrescentar (`201`), PUT decidir · POST aprovar — decisões e aprovação só da coordenadora vinculada (RLS); sem DELETE — NOB-150                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `/companies/{id}/pcmso-documents` · `/pcmso-documents/{id}`                                                                                                    | GET versões, POST gerar prévia (`201`, `{ cycleStart }`; só sem bloqueio na conferência) · GET versão arquivada — sem PUT/DELETE; só `preview` (sem assinatura não há emissão) — NOB-151                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `/companies/{id}/interpretation-criteria` · `/companies/{id}/interpretation-criteria/{code}`                                                                   | GET exames do plano aprovado com o critério vigente e os que faltam, POST nova versão (`201`, `{ code*, otherDescription?, criteria*, conduct* }`; só o coordenador vinculado, demais → `403`) · GET histórico do procedimento (código inválido → `422`) — só inclusão; NR-7 7.5.4 c — NOB-153                                                                                                                                                                                                                                                                                                                                                  |
@@ -425,6 +426,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Médico                       | `actions/pgr/medicos.ts`                     | list (busca nome/CRM, filtro empresa/clínica e status), options, clinics, get, create, update, delete + REST `/api/v1/medicos/**` (cadastro de médicos do trabalho; CRM único por org → `DUPLICATE`; sem `/dependents`)                                                                                                                                                                |
 | Coordenador do PCMSO         | `actions/medicine/pcmso-coordinators.ts`     | list (histórico por empresa), designate, close + REST `/api/v1/companies/{id}/pcmso-coordinators` e `/api/v1/pcmso-coordinators/{id}` (MED-02/NOB-121; escrita só `owner`, policy RLS de ator; sem DELETE)                                                                                                                                                                             |
 | Vínculo profissional         | `actions/medicine/professional-links.ts`     | list, invite, accept/decline/approve/cancel, revoke, perfil e convites da sessão + REST (NOB-149/NOB-157; vínculo só por aceite)                                                                                                                                                                                                                                                       |
+| Identidade profissional      | `actions/medicine/professional-identity.ts`  | pedido, reconfirmação, fila, aprovação, recusa, revogação + REST (NOB-158/159/160; operador independente; acesso clínico só com verificação)                                                                                                                                                                                                                                           |
 | Plano de exames              | `actions/medicine/exam-plans.ts`             | list, get, draft, decide, add, approve + REST (NOB-150; coordenadora vinculada no app e na RLS; versões; sem DELETE)                                                                                                                                                                                                                                                                   |
 | PCMSO (prévias)              | `actions/medicine/pcmso-documents.ts`        | list, get, generate + REST (NOB-151; prévia composta do plano aprovado, arquivada com SHA-256; imutável)                                                                                                                                                                                                                                                                               |
 | Critérios de interpretação   | actions/medicine/interpretation-criteria.ts  | list, history, define + REST (NOB-153; NR-7 7.5.4 c; texto do coordenador vinculado; versões só inclusão)                                                                                                                                                                                                                                                                              |
@@ -782,6 +784,58 @@ O vínculo dá acesso clínico (prontuário, atos de examinador e coordenador), 
 | `listMyProfessionalInvitationsAction` | —                                                          | convites aguardando o aceite da conta |
 
 REST: `GET|POST /api/v1/medicos/{id}/user-link-invitations` · `POST /api/v1/medicos/{id}/user-link-invitations/{invitationId}/{accept|decline|approve|cancel}` · `GET /api/v1/me/professional-invitations`.
+
+### Verificação independente de identidade — NOB-158, NOB-159, NOB-160
+
+Migration `0071_professional_identity_verifications`. Provisionamento e procedimento: `docs/deploy/identity-verifier.md`.
+
+**Regra central.** O acesso clínico (prontuário, examinador do ASO, coordenador do PCMSO, plano de exames, critérios, relatório analítico, área clínica dos afastamentos) passa a depender da função **`public.actor_clinical_medico_ids(org)`** (SECURITY INVOKER, `search_path` fixo, EXECUTE só para o `app_runtime`). Ela exige ao mesmo tempo:
+
+- vínculo ativo da conta da sessão, profissional ativo (médico) e associação viva ao escritório;
+- vínculo criado por convite (NOB-157) **ou** legado reconfirmado pela própria conta (NOB-159);
+- **identidade verificada** por operador designado: não revogada, dentro da validade e com CRM/UF conferidos iguais ao cadastro atual.
+
+Todas as policies clínicas e as checagens do servidor (`repositories/clinical-actor.ts`) usam essa função; nenhuma confia só em `medico_user_links`.
+
+**Quem verifica.**
+
+- Operador designado da plataforma, registrado em `identity_verifiers`. A designação não tem caminho pela aplicação: só provisionamento no banco.
+- Ele usa uma conexão própria (`IDENTITY_VERIFIER_DATABASE_URL`, papel `identity_verifier`), separada do `app_runtime` e da conta de migrations.
+- O banco recusa operador membro do escritório, operador verificando a própria conta, pedido que não seja da própria conta, CRM/UF divergente e checklist incompleto.
+- O `app_runtime` não grava verificações nem decisões e não lê a designação.
+- Sem conexão ou segredo configurados, a verificação fica indisponível e o acesso continua bloqueado.
+
+**Fluxo.**
+
+1. A própria conta pede a verificação. Isso exige vínculo ativo ou autovínculo aceito.
+2. A tela mostra a ela um código de controle (HMAC, janela de 10 min).
+3. O operador confere documentos, registro em fonte oficial e o código ao vivo, presencial ou por vídeo sem gravação.
+4. O operador registra método, fonte e referência (sem documento bruto). A validade é configurável (padrão 12 meses, teto 36).
+5. Recusa e revogação ficam em `professional_identity_review_events`, só inclusão. A revogação corta o acesso na hora.
+
+**NOB-159.** O vínculo legado (sem convite) só dá acesso com verificação **e** a reconfirmação explícita da própria conta (`medico_link_reconfirmations`). Nenhum vínculo é alterado ou revogado pela migration.
+
+**NOB-160.** No autovínculo do único owner médico, a verificação independente substitui a segunda aprovação. A conta conclui o vínculo (ação `complete`) só depois de verificada. A policy de inclusão do vínculo confere a mesma condição; sem verificação, a falha continua fechada.
+
+| Action                              | Entrada                                                                                                     | Retorno                                        |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `getMyProfessionalIdentityAction`   | —                                                                                                           | situação por cadastro, acesso clínico e código |
+| `requestIdentityVerificationAction` | `{ medicoId* }`                                                                                             | pedido                                         |
+| `reconfirmLegacyLinkAction`         | `linkId`                                                                                                    | reconfirmação                                  |
+| `getVerificationQueueAction`        | — (master + designado)                                                                                      | pedidos em aberto e verificações vigentes      |
+| `approveIdentityVerificationAction` | `{ requestId*, method*, crm*, registrationUf*, registrySource*, evidenceRef?, challengeCode*, checklist* }` | verificação                                    |
+| `rejectIdentityRequestAction`       | `requestId, { reason* }`                                                                                    | decisão                                        |
+| `revokeIdentityVerificationAction`  | `verificationId, { reason* }`                                                                               | decisão                                        |
+
+REST:
+
+- `GET /api/v1/me/professional-identity` · `POST /api/v1/me/professional-identity/requests`;
+- `POST /api/v1/me/medico-links/{linkId}/reconfirm`;
+- `GET|POST /api/v1/admin/identity-verifications`;
+- `POST /api/v1/admin/identity-verifications/requests/{id}/reject` · `POST /api/v1/admin/identity-verifications/{id}/revoke`;
+- `POST /api/v1/medicos/{id}/user-link-invitations/{inv}/complete`.
+
+Telas: `/professional-identity` (profissional) e `/admin-global/identity-verifications` (operador).
 
 ## Plano de exames — `actions/medicine/exam-plans.ts`
 

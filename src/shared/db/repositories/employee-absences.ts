@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
@@ -24,13 +24,9 @@ import {
 } from "../schema/employee-absences";
 import { employees } from "../schema/employees";
 import { healthExams } from "../schema/health-exams";
-import {
-  medicos,
-  medicoUserLinks as links,
-  pcmsoCoordinatorAssignments as assignments,
-} from "../schema/medicos";
-import { orgMemberships } from "../schema/org-memberships";
+import { medicos, pcmsoCoordinatorAssignments as assignments } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
+import { actorClinicalMedicoIdsTx } from "./clinical-actor";
 import { assertCompanyModuleTx } from "./company-modules";
 
 /** Transação com o ator da sessão: as policies conferem autoria e, na área clínica, o vínculo. */
@@ -371,33 +367,18 @@ async function coordinatorTx(
   ctx: TenantContext,
   companyId: string,
 ) {
+  // NOB-158: coordenador com identidade verificada (função central do banco).
+  const clinical = await actorClinicalMedicoIdsTx(tx, ctx.tenantId);
+  if (clinical.length === 0) throw new ForbiddenError(DENIED);
   const [row] = await tx
     .select({ medicoId: assignments.medicoId })
     .from(assignments)
-    .innerJoin(
-      links,
-      and(
-        eq(links.orgId, assignments.orgId),
-        eq(links.medicoId, assignments.medicoId),
-        isNull(links.revokedAt),
-      ),
-    )
-    .innerJoin(
-      medicos,
-      and(eq(medicos.id, assignments.medicoId), eq(medicos.orgId, assignments.orgId)),
-    )
-    .innerJoin(
-      orgMemberships,
-      and(eq(orgMemberships.orgId, links.orgId), eq(orgMemberships.userId, links.userId)),
-    )
     .where(
       and(
         eq(assignments.orgId, ctx.tenantId),
         eq(assignments.companyId, companyId),
         isNull(assignments.endsOn),
-        eq(links.userId, ctx.userId),
-        eq(medicos.status, "active"),
-        eq(medicos.profession, "physician"),
+        inArray(assignments.medicoId, clinical),
       ),
     )
     .limit(1);

@@ -47,7 +47,10 @@ import { GET as MY_INVITATIONS } from "@/app/api/v1/me/professional-invitations/
 import { GET as ME } from "@/app/api/v1/me/professional/route";
 import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS as I } from "../_helpers/pgr-seed";
-import { linkByInvitation as link } from "../_helpers/professional-link";
+import {
+  linkByInvitation as link,
+  verifyIdentityForTest,
+} from "../_helpers/professional-link";
 
 const enabled =
   !!process.env.INTEGRATION_APP_RUNTIME_URL && !!process.env.INTEGRATION_DATABASE_URL;
@@ -143,6 +146,9 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     ]);
     const accepted = await actOnInvitation(doctor, M.coord, invitation.id, "accept");
     expect(accepted.status).toBe("linked");
+    // NOB-158: vínculo aceito sem verificação independente não dá acesso clínico.
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    await verifyIdentityForTest("org_a", M.coord, "doctor");
     expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
     // Papel de owner não substitui o vínculo.
     expect(await isActorCompanyCoordinator(owner, I.companyA)).toBe(false);
@@ -218,7 +224,10 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     expect(approved.status).toBe("linked");
     const [created] = await admin`select user_id, linked_by from medico_user_links`;
     expect(created).toEqual({ user_id: "owner", linked_by: "owner2" });
-    // O owner legitimamente médico exerce a função depois da segunda aprovação.
+    // O owner legitimamente médico exerce a função depois da segunda aprovação E da verificação
+    // independente da identidade (NOB-158).
+    expect(await isActorCompanyCoordinator(owner, I.companyA)).toBe(false);
+    await verifyIdentityForTest("org_a", M.coord, "owner");
     expect(await isActorCompanyCoordinator(owner, I.companyA)).toBe(true);
     // Convite comum não aceita "aprovação".
     const other = await invite(owner, M.other, { userId: "staff", reason: REASON });

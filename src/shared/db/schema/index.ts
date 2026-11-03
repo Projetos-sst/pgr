@@ -352,3 +352,15 @@ export {
   type EmployeeAbsenceEvent,
   type EmployeeAbsenceClinicalNote,
 } from "./employee-absences";
+export {
+  identityVerifiers,
+  professionalIdentityRequests,
+  professionalIdentityVerifications,
+  professionalIdentityReviewEvents,
+  medicoLinkReconfirmations,
+  type IdentityVerifier,
+  type ProfessionalIdentityRequest,
+  type ProfessionalIdentityVerification,
+  type ProfessionalIdentityReviewEvent,
+  type MedicoLinkReconfirmation,
+} from "./professional-identity";

@@ -107,8 +107,13 @@ export function ProfessionalAccess({
         Conta do escritório usada pelo profissional. O vínculo dá acesso clínico
         (prontuário, atos de examinador e de coordenador) e só nasce do aceite da própria
         conta convidada. Quando o responsável convida a própria conta, outro responsável
-        precisa aprovar. O aceite é uma declaração com login; o sistema ainda não verifica
-        o registro no conselho profissional.
+        precisa aprovar. O aceite é uma declaração com login. O acesso clínico só passa a
+        valer depois da verificação independente da identidade pela plataforma, que o
+        próprio profissional pede em{" "}
+        <a href="/professional-identity" className="text-primary underline">
+          Minha identidade profissional
+        </a>
+        ; vínculos anteriores ao convite também precisam ser reconfirmados por ele.
       </p>
       {open ? (
         <p role="status" className="text-text text-sm">

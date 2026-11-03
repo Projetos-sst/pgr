@@ -24,10 +24,10 @@ import {
   type HealthExamProcedure,
 } from "../schema/health-exams";
 import { jobRoles } from "../schema/job-roles";
-import { medicos, medicoUserLinks, type Medico } from "../schema/medicos";
-import { orgMemberships } from "../schema/org-memberships";
+import { medicos, type Medico } from "../schema/medicos";
 import { assertCompanyModuleTx } from "./company-modules";
 import { auditedTenantWrite } from "./audited-write";
+import { actorClinicalMedicoIdsTx } from "./clinical-actor";
 
 export type AsoDocumentSummary = Omit<AsoDocument, "content">;
 
@@ -439,37 +439,11 @@ export async function confirmExaminerConclusion(
         if (!exam.doctorId)
           throw new ValidationError("O exame não tem médico examinador informado.");
         const companyId = originCompany(exam);
-        const [link] = await tx
-          .select({ id: medicoUserLinks.id })
-          .from(medicoUserLinks)
-          .innerJoin(
-            medicos,
-            and(
-              eq(medicos.id, medicoUserLinks.medicoId),
-              eq(medicos.orgId, medicoUserLinks.orgId),
-            ),
-          )
-          .innerJoin(
-            orgMemberships,
-            and(
-              eq(orgMemberships.orgId, medicoUserLinks.orgId),
-              eq(orgMemberships.userId, medicoUserLinks.userId),
-            ),
-          )
-          .where(
-            and(
-              eq(medicoUserLinks.orgId, ctx.tenantId),
-              eq(medicoUserLinks.medicoId, exam.doctorId),
-              eq(medicoUserLinks.userId, ctx.userId),
-              isNull(medicoUserLinks.revokedAt),
-              eq(medicos.status, "active"),
-              eq(medicos.profession, "physician"),
-            ),
-          )
-          .limit(1);
-        if (!link)
+        // NOB-158: só com identidade verificada (função central), nunca o vínculo sozinho.
+        const clinical = await actorClinicalMedicoIdsTx(tx, ctx.tenantId);
+        if (!clinical.includes(exam.doctorId))
           throw new ForbiddenError(
-            "Somente o médico examinador deste exame, com acesso vinculado, pode confirmar apto ou inapto.",
+            "Somente o médico examinador deste exame, com acesso vinculado e identidade verificada, pode confirmar apto ou inapto.",
           );
         const [row] = await tx
           .insert(conclusions)

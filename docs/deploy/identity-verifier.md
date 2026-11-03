@@ -1,0 +1,91 @@
+# Verificação de identidade profissional: provisionamento do operador (NOB-158)
+
+O acesso clínico só existe para profissional com identidade verificada por um **operador designado
+da plataforma**, independente do escritório. Este documento descreve o provisionamento seguro. Ele
+não designa ninguém: a nomeação dos operadores, o canal de conferência, a política de evidências e a
+validade definitiva são decisões do Carlos e precisam estar aprovadas antes da produção.
+
+Enquanto nada abaixo estiver feito, a verificação fica indisponível, e o acesso clínico de todos os
+vínculos continua bloqueado. Isso é intencional (falha fechada).
+
+## 1. Papel de banco
+
+A migration `0071_professional_identity_verifications` cria o papel **`identity_verifier` (NOLOGIN)**
+e dá a ele só o necessário:
+
+- `SELECT` em `identity_verifiers`, pedidos, verificações, decisões, `medicos`, `org_memberships` e `orgs`;
+- `INSERT` em `professional_identity_verifications` e `professional_identity_review_events`.
+
+Ele não tem acesso a nenhuma tabela clínica (prontuário, exames, afastamentos). O `app_runtime` não é
+membro desse papel e não tem escrita nas verificações nem leitura da designação.
+
+## 2. Conta de login do operador (infraestrutura)
+
+Feito pela infraestrutura (Douglas), por ambiente, com a conta administrativa do banco, **fora** do
+app e das migrations:
+
+```sql
+-- Senha gerada e guardada no cofre de segredos; nunca em código ou em log.
+CREATE ROLE identity_verifier_login LOGIN PASSWORD '<segredo>' IN ROLE identity_verifier;
+```
+
+Para usar o pooler (Supabase), siga o mesmo procedimento usado na criação do `app_runtime`. Configure no
+projeto da Vercel, só no servidor:
+
+- `IDENTITY_VERIFIER_DATABASE_URL`: URL dessa conta (nunca a de migrations nem a do `app_runtime`);
+- `IDENTITY_CHALLENGE_SECRET`: segredo aleatório longo do desafio de controle da conta;
+- `IDENTITY_VERIFICATION_VALIDITY_MONTHS`: validade em meses (1 a 36; padrão 12, até a decisão final).
+
+Nenhuma dessas variáveis é exposta ao navegador.
+
+## 3. Designação de operadores
+
+A designação fica em `identity_verifiers` e **não tem caminho pela aplicação**. Nem owner, nem master,
+nem o próprio operador designam. Ela é feita com a conta administrativa do banco, depois da aprovação
+formal do Carlos:
+
+```sql
+INSERT INTO public.identity_verifiers (user_id, designated_by)
+VALUES ('<id Clerk do operador aprovado>', '<quem executa o provisionamento>');
+-- Revogação (o histórico fica):
+UPDATE public.identity_verifiers
+   SET revoked_at = now(), revoked_by = '<quem executa>', revoke_reason = '<motivo>'
+ WHERE user_id = '<id>' AND revoked_at IS NULL;
+```
+
+Além da designação, a tela `/admin-global/identity-verifications` exige que o operador seja master.
+
+## 4. Regras que o banco garante
+
+- O operador não verifica a própria conta nem contas de escritórios dos quais é membro.
+- A verificação exige pedido em aberto feito pela própria conta do profissional.
+- O CRM/UF conferidos precisam ser iguais ao cadastro.
+- O checklist precisa estar completo.
+- Revogação, expiração ou mudança posterior de CRM/UF cortam o acesso clínico na hora.
+
+## 5. Procedimento operacional proposto (pendente de aprovação)
+
+1. O profissional pede a verificação em **Minha identidade profissional**.
+2. O operador faz a conferência **presencial ou por vídeo ao vivo, sem gravação**:
+   - documento oficial de identidade;
+   - documento ou registro profissional;
+   - situação do CRM/UF em fonte oficial;
+   - correspondência entre pessoa, documentos e cadastro.
+3. **Controle da conta:** o profissional lê ao operador o código de 6 dígitos exibido na sessão
+   autenticada dele. O código muda a cada 10 minutos.
+4. O operador registra método, fonte consultada e uma referência de auditoria. Fotos ou documentos não
+   são guardados na aplicação.
+
+A conferência documental reduz, mas **não elimina**, o risco de fraude (por exemplo, documentos de
+terceiros). A evolução prevista é o certificado ICP-Brasil (MED-12).
+
+## 6. Liberação (expand/contract)
+
+A 0071 já aplica a regra no banco. Na janela do deploy, e até haver verificação, todo acesso clínico
+fica bloqueado: falha fechada, sem bypass. Ordem recomendada por ambiente:
+
+1. rodar o inventário da NOB-159 (somente leitura);
+2. provisionar a conta, o segredo e os operadores aprovados;
+3. publicar;
+4. conferir os profissionais;
+5. validar o acesso clínico.
