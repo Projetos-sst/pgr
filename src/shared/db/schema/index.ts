@@ -343,3 +343,12 @@ export {
   type PlatformLead,
   type NewPlatformLead,
 } from "./platform-leads";
+export {
+  employeeAbsences,
+  employeeAbsenceEvents,
+  employeeAbsenceClinicalNotes,
+  absenceClinicalAccessEvents,
+  type EmployeeAbsence,
+  type EmployeeAbsenceEvent,
+  type EmployeeAbsenceClinicalNote,
+} from "./employee-absences";

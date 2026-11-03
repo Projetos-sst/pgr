@@ -333,6 +333,11 @@
       "key": "medicoLinkInvitationId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "absenceId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -4651,6 +4656,271 @@
               ]
             },
             "description": "Trilha de acesso ao prontuário (quem, base, ação, quando), sem conteúdo. Só owner; demais → 403."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Afastamentos (NOB-139)",
+      "item": [
+        {
+          "name": "GET /employees/{id}/absences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}/absences",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}", "absences"]
+            },
+            "description": "Afastamentos administrativos do funcionário com a avaliação: exame de retorno (NR-7 7.5.9, sugestão) e sinalização 7.5.19.5 c. Sem CID nem atestado."
+          }
+        },
+        {
+          "name": "POST /employees/{id}/absences",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cause\": \"illness\",\n  \"workRelation\": \"not_determined\",\n  \"startsOn\": \"2026-01-01\",\n  \"endsOn\": \"2026-01-30\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}/absences",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}", "absences"]
+            },
+            "description": "Registra afastamento (empresa = vínculo atual do funcionário). Período sobreposto ou fim antes do início → 422. 201."
+          }
+        },
+        {
+          "name": "GET /absences/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/absences/{{absenceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "absences", "{{absenceId}}"]
+            },
+            "description": "Afastamento com avaliação e histórico de eventos."
+          }
+        },
+        {
+          "name": "PUT /absences/{id} (previsão do fim)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endsOn\": \"2026-02-10\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/absences/{{absenceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "absences", "{{absenceId}}"]
+            },
+            "description": "Último dia previsto/conhecido de afastamento aberto; null = sem data de fim."
+          }
+        },
+        {
+          "name": "POST /absences/{id}/return",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"returnedOn\": \"2026-02-11\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/absences/{{absenceId}}/return",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "absences", "{{absenceId}}", "return"]
+            },
+            "description": "Confirma o retorno (não registra exame nem aptidão). Futuro ou antes do início → 422."
+          }
+        },
+        {
+          "name": "POST /absences/{id}/cancel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Registro duplicado por engano.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/absences/{{absenceId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "absences", "{{absenceId}}", "cancel"]
+            },
+            "description": "Cancela registro aberto feito por engano; o histórico fica."
+          }
+        },
+        {
+          "name": "GET /absences/{id}/clinical-notes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/absences/{{absenceId}}/clinical-notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "absences", "{{absenceId}}", "clinical-notes"]
+            },
+            "description": "Área clínica (atestado e CID): só o coordenador do PCMSO vinculado (x-dev-user = conta vinculada); demais → 403. Leitura auditada."
+          }
+        },
+        {
+          "name": "POST /absences/{id}/clinical-notes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Atestado de 30 dias (texto do médico).\",\n  \"cid\": \"\",\n  \"workerAuthorization\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/absences/{{absenceId}}/clinical-notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "absences", "{{absenceId}}", "clinical-notes"]
+            },
+            "description": "Registro clínico do coordenador. CID só com autorização do trabalhador registrada. 201."
           }
         }
       ]

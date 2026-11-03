@@ -29,6 +29,10 @@ const newTables = [
   "medical_risk_absence_declarations",
   "medico_link_invitations",
   "medico_link_invitation_events",
+  "employee_absences",
+  "employee_absence_events",
+  "employee_absence_clinical_notes",
+  "absence_clinical_access_events",
 ];
 
 (enabled ? describe : describe.skip)(
