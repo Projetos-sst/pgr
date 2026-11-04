@@ -25,7 +25,10 @@ import {
 } from "../schema/medical-risk-sources";
 import { assertCompanyModuleTx } from "./company-modules";
 import { auditedTenantWrite } from "./audited-write";
-import { getInternalMedicalSources } from "./medical-risk-sources";
+import {
+  getInternalMedicalSources,
+  lockMedicalRiskBasisTx,
+} from "./medical-risk-sources";
 import { medicalSourceFingerprint } from "@/shared/domains/medicine/source-fingerprint";
 import { resolvePageParams, type PageParams } from "@/shared/pagination";
 
@@ -226,6 +229,7 @@ export async function reviewMedicalRisk(
           "Validação exige autorização profissional ativa nesta empresa.",
         );
       await assertCompanyModuleTx(tx, ctx.tenantId, companyId, "medicine");
+      await lockMedicalRiskBasisTx(tx, ctx.tenantId, companyId);
       const [entry] = await tx
         .select()
         .from(entries)

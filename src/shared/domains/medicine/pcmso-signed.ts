@@ -145,11 +145,14 @@ export function pcmsoSignedOnProblem(input: {
 }
 
 export type PcmsoSignedWarning =
+  | "risk_basis_changed"
   | "newer_preview"
   | "plan_changed"
   | "coordinator_changed"
   | "cycle_ended";
 export const PCMSO_SIGNED_WARNING_LABELS: Record<PcmsoSignedWarning, string> = {
+  risk_basis_changed:
+    "Os riscos ou as fontes de riscos mudaram depois da prévia assinada: o programa precisa de nova conferência, nova prévia e nova versão assinada.",
   newer_preview:
     "Há prévia mais recente que a assinada: o documento vigente pode estar desatualizado.",
   plan_changed:
@@ -189,5 +192,118 @@ export function pcmsoSignedWarnings(input: {
   )
     out.push("coordinator_changed");
   if (input.today > c.cycleEnd) out.push("cycle_ended");
+  return out;
+}
+
+// ── Base de riscos do documento × riscos vigentes (NR-7 7.5.1, 7.5.5; SEG-21) ──
+
+export type RiskBasisSource = { id: string; version: string };
+export type RiskBasisRisk = {
+  exposureGroup: string;
+  jobRole: string;
+  description: string;
+  agentType: string;
+  possibleInjuries: string | null;
+};
+
+export type RiskBasisProblem =
+  | "no_live_source"
+  | "source_changed"
+  | "preview_sources_mismatch"
+  | "plan_sources_mismatch"
+  | "preview_risks_mismatch";
+
+export const RISK_BASIS_PROBLEM_MESSAGES: Record<RiskBasisProblem, string> = {
+  no_live_source:
+    "Não há fonte de riscos vigente que possa ser conferida para a empresa: o PCMSO não é registrado como vigente.",
+  source_changed:
+    "O PGR de origem mudou ou ficou indisponível depois do registro da fonte: registre a nova versão da fonte, valide os riscos e gere nova prévia.",
+  preview_sources_mismatch:
+    "A prévia foi composta sobre outra fonte ou versão de riscos: gere nova prévia a partir das fontes vigentes.",
+  plan_sources_mismatch:
+    "O plano de exames aprovado foi feito sobre outra fonte ou versão de riscos: revalide o plano com o médico responsável e gere nova prévia.",
+  preview_risks_mismatch:
+    "Os riscos validados da empresa mudaram depois da prévia: gere nova prévia (e revalide o plano, se necessário).",
+};
+
+/** Fontes (id e versão) gravadas num snapshot (`content.riskBasis.sources` ou `based_on.sources`). */
+export function snapshotSources(sources: unknown): RiskBasisSource[] | null {
+  if (!Array.isArray(sources)) return null;
+  const out: RiskBasisSource[] = [];
+  for (const s of sources) {
+    const id = (s as { id?: unknown })?.id;
+    const version = (s as { version?: unknown })?.version;
+    if (typeof id !== "string" || typeof version !== "string") return null;
+    out.push({ id, version });
+  }
+  return out;
+}
+
+/** Riscos impressos na prévia (`content.groups[].risks`), na forma usada para comparar. */
+export function previewRisks(content: unknown): RiskBasisRisk[] | null {
+  const groups = (content as { groups?: unknown })?.groups;
+  if (!Array.isArray(groups)) return null;
+  return groups.flatMap((g) => {
+    const group = g as {
+      exposureGroup?: string;
+      jobRole?: string;
+      risks?: {
+        description: string;
+        agentType: string;
+        possibleInjuries: string | null;
+      }[];
+    };
+    return (group.risks ?? []).map((r) => ({
+      exposureGroup: group.exposureGroup ?? "",
+      jobRole: group.jobRole ?? "",
+      description: r.description,
+      agentType: r.agentType,
+      possibleInjuries: r.possibleInjuries ?? null,
+    }));
+  });
+}
+
+const sourceKey = (list: RiskBasisSource[]) =>
+  list
+    .map((s) => `${s.id}@${s.version}`)
+    .sort()
+    .join("|");
+const riskKey = (list: RiskBasisRisk[]) =>
+  list
+    .map((r) =>
+      JSON.stringify([
+        r.exposureGroup,
+        r.jobRole,
+        r.description,
+        r.agentType,
+        r.possibleInjuries,
+      ]),
+    )
+    .sort()
+    .join("\n");
+
+/**
+ * Compara a base de riscos que fundamentou o documento (prévia e plano) com a vigente. Falha
+ * fechada: snapshot ilegível, nenhuma fonte vigente ou fonte não conferível contam como problema.
+ * Não classifica mudança clínica: qualquer divergência de versão ou de riscos exige nova conferência.
+ */
+export function riskBasisProblems(input: {
+  live: RiskBasisSource[];
+  liveFresh: boolean;
+  liveRisks: RiskBasisRisk[];
+  previewSources: RiskBasisSource[] | null;
+  planSources: RiskBasisSource[] | null;
+  previewRisks: RiskBasisRisk[] | null;
+}): RiskBasisProblem[] {
+  const out: RiskBasisProblem[] = [];
+  if (!input.live.length) out.push("no_live_source");
+  if (!input.liveFresh) out.push("source_changed");
+  const live = sourceKey(input.live);
+  if (!input.previewSources || sourceKey(input.previewSources) !== live)
+    out.push("preview_sources_mismatch");
+  if (!input.planSources || sourceKey(input.planSources) !== live)
+    out.push("plan_sources_mismatch");
+  if (!input.previewRisks || riskKey(input.previewRisks) !== riskKey(input.liveRisks))
+    out.push("preview_risks_mismatch");
   return out;
 }

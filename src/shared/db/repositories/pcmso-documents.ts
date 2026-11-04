@@ -1,10 +1,19 @@
 import "server-only";
 
-import { and, asc, desc, eq, isNull, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, max, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
-import type { PcmsoSignedInput } from "@/shared/domains/medicine/pcmso-signed";
+import { canUseMedicalRisk } from "@/shared/domains/medicine/risk-sources";
+import {
+  previewRisks,
+  RISK_BASIS_PROBLEM_MESSAGES,
+  riskBasisProblems,
+  snapshotSources,
+  type PcmsoSignedInput,
+  type RiskBasisProblem,
+} from "@/shared/domains/medicine/pcmso-signed";
+import { medicalSourceFingerprint } from "@/shared/domains/medicine/source-fingerprint";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
@@ -17,10 +26,15 @@ import {
   type PcmsoSignedDocument,
 } from "../schema/pcmso-documents";
 import { medicalExamPlans as plans } from "../schema/medical-exam-plans";
+import { medicalRiskEntries, medicalRiskSources } from "../schema/medical-risk-sources";
 import { medicos, pcmsoCoordinatorAssignments as assignments } from "../schema/medicos";
 import { assertCompanyModuleTx } from "./company-modules";
 import { auditedTenantWrite } from "./audited-write";
 import { actorClinicalMedicoIdsTx } from "./clinical-actor";
+import {
+  getInternalMedicalSources,
+  lockMedicalRiskBasisTx,
+} from "./medical-risk-sources";
 
 export type PcmsoDocumentSummary = Omit<PcmsoDocument, "content">;
 
@@ -205,6 +219,92 @@ async function currentCoordinatorTx(
   return row ?? null;
 }
 
+/**
+ * Confere a base de riscos do documento contra a vigente, na transação (NR-7 7.5.1, 7.5.5;
+ * SEG-21). Fontes vigentes = não substituídas; fonte interna só conta se o PGR de origem ainda
+ * tem a mesma impressão digital (recalculada aqui); riscos utilizáveis = validados em fonte
+ * conferível. Com `lock`, toma a trava da base de riscos da empresa (a mesma do registro de fonte e
+ * da revisão técnica), para nenhuma mudança concorrente passar entre a conferência e a gravação.
+ */
+async function riskBasisProblemsTx(
+  tx: TenantTransaction,
+  orgId: string,
+  companyId: string,
+  basis: { previewContent: unknown; planBasedOn: unknown },
+  { lock = false } = {},
+): Promise<RiskBasisProblem[]> {
+  if (lock) await lockMedicalRiskBasisTx(tx, orgId, companyId);
+  const all = await tx
+    .select()
+    .from(medicalRiskSources)
+    .where(
+      and(
+        eq(medicalRiskSources.orgId, orgId),
+        eq(medicalRiskSources.companyId, companyId),
+      ),
+    );
+  const superseded = new Set(all.map((row) => row.supersedesSourceId).filter(Boolean));
+  const live = all.filter((row) => !superseded.has(row.id));
+  const entryQuery = live.length
+    ? tx
+        .select()
+        .from(medicalRiskEntries)
+        .where(
+          and(
+            eq(medicalRiskEntries.orgId, orgId),
+            eq(medicalRiskEntries.companyId, companyId),
+            inArray(
+              medicalRiskEntries.sourceId,
+              live.map((row) => row.id),
+            ),
+          ),
+        )
+    : null;
+  const entries = entryQuery ? await entryQuery : [];
+  const internal = live.filter((row) => row.originPgrId);
+  const current = await getInternalMedicalSources(
+    orgId,
+    companyId,
+    internal.map((row) => row.originPgrId!),
+    tx,
+  );
+  const fresh = new Set(
+    internal
+      .filter((row) => {
+        const pgr = current.find((c) => c.pgrId === row.originPgrId);
+        return pgr && medicalSourceFingerprint(pgr) === row.fingerprint;
+      })
+      .map((row) => row.id),
+  );
+  const freshness = (row: (typeof live)[number]) =>
+    row.kind === "external"
+      ? ("external_reference" as const)
+      : fresh.has(row.id)
+        ? ("current" as const)
+        : ("changed" as const);
+  const liveRisks = live.flatMap((row) =>
+    entries
+      .filter((e) => e.sourceId === row.id && canUseMedicalRisk(e.status, freshness(row)))
+      .map((e) => ({
+        exposureGroup: e.content.exposureGroup,
+        jobRole: e.content.jobRole?.trim() ?? "",
+        description: e.content.description,
+        agentType: e.content.agentType,
+        possibleInjuries: e.content.possibleInjuries?.trim() || null,
+      })),
+  );
+  return riskBasisProblems({
+    live: live.map((row) => ({ id: row.id, version: row.version })),
+    liveFresh: internal.every((row) => fresh.has(row.id)),
+    liveRisks,
+    previewSources: snapshotSources(
+      (basis.previewContent as { riskBasis?: { sources?: unknown } })?.riskBasis?.sources,
+    ),
+    planSources: snapshotSources((basis.planBasedOn as { sources?: unknown })?.sources),
+    previewRisks: previewRisks(basis.previewContent),
+  });
+}
+
 /** PCMSOs assinados da empresa e o contexto para os alertas de desatualização. */
 export async function listSignedPcmsos(ctx: TenantContext, companyId: string) {
   return actorTx(ctx, async (tx) => {
@@ -226,8 +326,33 @@ export async function listSignedPcmsos(ctx: TenantContext, companyId: string) {
       )
       .limit(1);
     const coordinator = await currentCoordinatorTx(tx, ctx.tenantId, companyId);
+    const items = toSignedItems(rows);
+    const currentItem = items.find((item) => item.replacedById === null) ?? null;
+    let riskBasisChanged = false;
+    if (currentItem) {
+      const [preview] = await tx
+        .select({ content: docs.content })
+        .from(docs)
+        .where(
+          and(eq(docs.orgId, ctx.tenantId), eq(docs.id, currentItem.previewDocumentId)),
+        )
+        .limit(1);
+      const [plan] = await tx
+        .select({ basedOn: plans.basedOn })
+        .from(plans)
+        .where(and(eq(plans.orgId, ctx.tenantId), eq(plans.id, currentItem.examPlanId)))
+        .limit(1);
+      riskBasisChanged =
+        (
+          await riskBasisProblemsTx(tx, ctx.tenantId, companyId, {
+            previewContent: preview?.content,
+            planBasedOn: plan?.basedOn,
+          })
+        ).length > 0;
+    }
     return {
-      items: toSignedItems(rows),
+      riskBasisChanged,
+      items,
       latestPreviewVersion: last ?? null,
       approvedPlanId: approved?.id ?? null,
       coordinator: coordinator ? { crm: coordinator.crm, uf: coordinator.uf } : null,
@@ -317,6 +442,22 @@ export async function insertSignedPcmso(
       if (!approved || approved.id !== preview.examPlanId)
         throw new ValidationError(
           "O plano de exames da prévia não é o plano aprovado vigente: gere uma nova prévia.",
+        );
+      const [planRow] = await tx
+        .select({ basedOn: plans.basedOn })
+        .from(plans)
+        .where(and(eq(plans.orgId, ctx.tenantId), eq(plans.id, approved.id)))
+        .limit(1);
+      const problems = await riskBasisProblemsTx(
+        tx,
+        ctx.tenantId,
+        companyId,
+        { previewContent: preview.content, planBasedOn: planRow?.basedOn },
+        { lock: true },
+      );
+      if (problems.length)
+        throw new ValidationError(
+          problems.map((code) => RISK_BASIS_PROBLEM_MESSAGES[code]).join(" "),
         );
       const coordinator = await currentCoordinatorTx(tx, ctx.tenantId, companyId);
       if (

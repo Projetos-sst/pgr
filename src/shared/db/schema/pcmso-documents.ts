@@ -218,7 +218,9 @@ export const pcmsoSignedDocuments = pgTable(
       using: companyModuleScope(t.orgId, t.companyId, "medicine"),
       withCheck: companyModuleScope(t.orgId, t.companyId, "medicine"),
     }),
-    // Ator como autor; prévia da mesma empresa com o mesmo hash e o mesmo plano, aprovado; signatário
+    // Ator como autor; prévia da mesma empresa com o mesmo hash e o mesmo plano, aprovado; prévia e
+    // plano fundamentados exatamente nas fontes de riscos vigentes (não substituídas, mesma versão);
+    // signatário
     // = coordenador designado vigente; fluxo A só pela conta verificada desse coordenador, fluxo B
     // só pela equipe do escritório.
     pgPolicy("pcmso_signed_documents_insert", {
@@ -227,9 +229,19 @@ export const pcmsoSignedDocuments = pgTable(
       to: appRuntimeRole,
       withCheck: sql`${t.registeredBy} = current_setting('app.current_actor', true)
         and exists (select 1 from public.pcmso_documents d where d.id = ${t.previewDocumentId} and d.org_id = ${t.orgId}
-          and d.company_id = ${t.companyId} and d.content_sha256 = ${t.previewSha256} and d.exam_plan_id = ${t.examPlanId})
+          and d.company_id = ${t.companyId} and d.content_sha256 = ${t.previewSha256} and d.exam_plan_id = ${t.examPlanId}
+          and jsonb_typeof(d.content->'riskBasis'->'sources') = 'array' and jsonb_array_length(d.content->'riskBasis'->'sources') > 0
+          and not exists (select 1 from jsonb_array_elements(d.content->'riskBasis'->'sources') sx where not exists (select 1 from public.medical_risk_sources ms
+            where ms.id::text = sx->>'id' and ms.org_id = ${t.orgId} and ms.company_id = ${t.companyId} and ms.version = sx->>'version' and not exists (select 1 from public.medical_risk_sources nx where nx.org_id = ms.org_id and nx.company_id = ms.company_id and nx.supersedes_source_id = ms.id)))
+          and not exists (select 1 from public.medical_risk_sources ms where ms.org_id = ${t.orgId} and ms.company_id = ${t.companyId} and not exists (select 1 from public.medical_risk_sources nx where nx.org_id = ms.org_id and nx.company_id = ms.company_id and nx.supersedes_source_id = ms.id)
+            and not exists (select 1 from jsonb_array_elements(d.content->'riskBasis'->'sources') sx where sx->>'id' = ms.id::text)))
         and exists (select 1 from public.medical_exam_plans p where p.id = ${t.examPlanId} and p.org_id = ${t.orgId}
-          and p.company_id = ${t.companyId} and p.status = 'approved')
+          and p.company_id = ${t.companyId} and p.status = 'approved'
+          and jsonb_typeof(p.based_on->'sources') = 'array' and jsonb_array_length(p.based_on->'sources') > 0
+          and not exists (select 1 from jsonb_array_elements(p.based_on->'sources') sx where not exists (select 1 from public.medical_risk_sources ms
+            where ms.id::text = sx->>'id' and ms.org_id = ${t.orgId} and ms.company_id = ${t.companyId} and ms.version = sx->>'version' and not exists (select 1 from public.medical_risk_sources nx where nx.org_id = ms.org_id and nx.company_id = ms.company_id and nx.supersedes_source_id = ms.id)))
+          and not exists (select 1 from public.medical_risk_sources ms where ms.org_id = ${t.orgId} and ms.company_id = ${t.companyId} and not exists (select 1 from public.medical_risk_sources nx where nx.org_id = ms.org_id and nx.company_id = ms.company_id and nx.supersedes_source_id = ms.id)
+            and not exists (select 1 from jsonb_array_elements(p.based_on->'sources') sx where sx->>'id' = ms.id::text)))
         and exists (select 1 from public.pcmso_coordinator_assignments a join public.medicos m on m.id = a.medico_id and m.org_id = a.org_id
           where a.org_id = ${t.orgId} and a.company_id = ${t.companyId} and a.ends_on is null
             and m.crm = ${t.signerRegistration} and m.registration_uf = ${t.signerUf}

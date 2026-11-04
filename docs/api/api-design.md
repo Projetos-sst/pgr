@@ -923,6 +923,16 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
 - **O que vira oficial:** o PDF da **prévia mais recente** da empresa (com o mesmo hash), ligada ao **plano de exames aprovado vigente**, assinado pelo **coordenador designado vigente** (CRM/UF do cadastro).
   - Prévia antiga, de outra empresa ou de plano superado é recusada.
   - Uma versão antiga não é reescrita para parecer atual.
+- **Base de riscos (NR-7 7.5.1 e 7.5.5; SEG-21):** a prévia (`content.riskBasis.sources`) e o plano aprovado (`based_on.sources`) precisam ter exatamente as **fontes de riscos vigentes** da empresa (não substituídas), com as mesmas versões. O registro é recusado, falhando fechado, quando:
+  - o PGR interno de origem mudou ou ficou indisponível (impressão digital recalculada na transação);
+  - os riscos validados mudaram depois da prévia (validação ou rejeição na mesma fonte);
+  - a fonte foi substituída ou removida;
+  - não há fonte conferível.
+  - Nenhuma classificação clínica automática: qualquer divergência exige nova conferência, novo plano (se for o caso) e nova prévia. Não existe justificativa livre que libere o bloqueio.
+  - **Concorrência:** registro de fonte, revisão técnica de risco e registro do PCMSO assinado tomam a mesma trava transacional da base de riscos da empresa (`pg_advisory_xact_lock`).
+  - **Banco:** a policy de inclusão confere fontes e versões dos snapshots da prévia e do plano contra as fontes vigentes. A impressão digital do PGR e o conjunto de riscos validados são conferidos no servidor, porque não são recalculáveis em SQL.
+  - Depois de registrado, se a base mudar, o vigente ganha o alerta `risk_basis_changed`.
+- **Hash da prévia × hash do PDF:** `previewSha256` identifica o snapshot JSON da prévia que fundamentou o documento. `fileSha256` identifica os bytes do PDF assinado. Os dois são diferentes por natureza, e a diferença não é motivo de recusa.
 - **Quem registra:**
   - `coordinator`: o próprio médico responsável, pela conta vinculada e com identidade verificada (`actor_clinical_medico_ids`, NOB-158);
   - `office_received`: a equipe do escritório arquiva o documento que o médico responsável assinou.
@@ -938,7 +948,7 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
   - substituição só dentro da mesma empresa e tenant (FK composta);
   - cada documento é substituído no máximo uma vez;
   - registros concorrentes da mesma empresa são serializados.
-- **Alertas** (derivados, sem reescrever nada): prévia mais recente que a assinada, plano aprovado trocado, médico responsável trocado e ciclo encerrado.
+- **Alertas** (derivados, sem reescrever nada): base de riscos alterada, prévia mais recente que a assinada, plano aprovado trocado, médico responsável trocado e ciclo encerrado.
 - **Arquivo:**
   - PDF conferido pelo cabeçalho, até 25 MB;
   - SHA-256 no servidor;

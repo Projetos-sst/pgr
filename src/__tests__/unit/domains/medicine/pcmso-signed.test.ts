@@ -4,6 +4,9 @@
  */
 import {
   PCMSO_VERIFICATION_LABEL,
+  previewRisks,
+  riskBasisProblems,
+  snapshotSources,
   pcmsoSignedInputSchema,
   pcmsoSignedOnProblem,
   pcmsoSignedWarnings,
@@ -115,5 +118,75 @@ describe("pcmsoSignedWarnings", () => {
         today: "2027-11-01",
       }),
     ).toEqual(["newer_preview", "plan_changed", "coordinator_changed", "cycle_ended"]);
+  });
+});
+
+describe("riskBasisProblems (base de riscos do documento × vigente)", () => {
+  const risk = {
+    exposureGroup: "GES A",
+    jobRole: "",
+    description: "Ruído",
+    agentType: "physical",
+    possibleInjuries: null,
+  };
+  const ok = {
+    live: [{ id: "s1", version: "Revisão 1" }],
+    liveFresh: true,
+    liveRisks: [risk],
+    previewSources: [{ id: "s1", version: "Revisão 1" }],
+    planSources: [{ id: "s1", version: "Revisão 1" }],
+    previewRisks: [risk],
+  };
+  it("base coerente: nenhum problema (ordem não importa)", () => {
+    expect(riskBasisProblems(ok)).toEqual([]);
+    expect(
+      riskBasisProblems({
+        ...ok,
+        live: [ok.live[0], { id: "s2", version: "2026.1" }],
+        previewSources: [{ id: "s2", version: "2026.1" }, ok.live[0]],
+        planSources: [{ id: "s2", version: "2026.1" }, ok.live[0]],
+      }),
+    ).toEqual([]);
+  });
+  it("falha fechada: sem fonte vigente, fonte não conferível e snapshot ilegível", () => {
+    expect(riskBasisProblems({ ...ok, live: [], liveRisks: [] })).toEqual(
+      expect.arrayContaining(["no_live_source", "preview_sources_mismatch"]),
+    );
+    expect(riskBasisProblems({ ...ok, liveFresh: false })).toContain("source_changed");
+    expect(riskBasisProblems({ ...ok, previewSources: null, planSources: null })).toEqual(
+      expect.arrayContaining(["preview_sources_mismatch", "plan_sources_mismatch"]),
+    );
+  });
+  it("versão, fonte e riscos divergentes são problemas distintos", () => {
+    expect(
+      riskBasisProblems({ ...ok, previewSources: [{ id: "s1", version: "Revisão 0" }] }),
+    ).toEqual(["preview_sources_mismatch"]);
+    expect(
+      riskBasisProblems({ ...ok, planSources: [{ id: "s0", version: "Revisão 1" }] }),
+    ).toEqual(["plan_sources_mismatch"]);
+    expect(
+      riskBasisProblems({ ...ok, liveRisks: [risk, { ...risk, description: "Calor" }] }),
+    ).toEqual(["preview_risks_mismatch"]);
+  });
+  it("lê fontes e riscos dos snapshots; formato inesperado vira null", () => {
+    expect(snapshotSources([{ id: "s1", version: "v", title: "x" }])).toEqual([
+      { id: "s1", version: "v" },
+    ]);
+    expect(snapshotSources([{ id: 1 }])).toBeNull();
+    expect(snapshotSources(undefined)).toBeNull();
+    expect(
+      previewRisks({
+        groups: [
+          {
+            exposureGroup: "GES A",
+            jobRole: "",
+            risks: [
+              { description: "Ruído", agentType: "physical", possibleInjuries: null },
+            ],
+          },
+        ],
+      }),
+    ).toEqual([risk]);
+    expect(previewRisks({})).toBeNull();
   });
 });

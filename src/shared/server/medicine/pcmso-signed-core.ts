@@ -51,13 +51,16 @@ export async function listSignedPcmsos(ctx: TenantContext, companyId: string) {
   return {
     items: data.items,
     currentId: current?.id ?? null,
-    warnings: pcmsoSignedWarnings({
-      current,
-      latestPreviewVersion: data.latestPreviewVersion,
-      approvedPlanId: data.approvedPlanId,
-      coordinator: data.coordinator,
-      today: todayInSaoPaulo(),
-    }),
+    warnings: [
+      ...(data.riskBasisChanged ? (["risk_basis_changed"] as const) : []),
+      ...pcmsoSignedWarnings({
+        current,
+        latestPreviewVersion: data.latestPreviewVersion,
+        approvedPlanId: data.approvedPlanId,
+        coordinator: data.coordinator,
+        today: todayInSaoPaulo(),
+      }),
+    ],
   };
 }
 
