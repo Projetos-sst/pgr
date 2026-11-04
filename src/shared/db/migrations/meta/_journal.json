@@ -519,6 +519,13 @@
       "when": 1793750158185,
       "tag": "0073_aso_signed_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1793754822803,
+      "tag": "0074_aso_deliveries",
+      "breakpoints": true
     }
   ]
 }

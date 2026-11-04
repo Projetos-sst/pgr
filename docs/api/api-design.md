@@ -160,6 +160,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/health-exams/{id}/aso-readiness` · `/health-exams/{id}/aso-documents` · `/aso-documents/{id}`                                                                | GET conferência 7.5.19.1 a–g · GET prévias, POST gerar (`201`, sem corpo; só sem bloqueio) · GET prévia arquivada — sem PUT/DELETE; só `preview` (sem assinatura do examinador não há ASO emitido) — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/health-exams/{id}/company-origin` · `/health-exams/{id}/examiner-conclusions`                                                                                | POST confirma origem de exame antigo (`{ justification* }`, owner, `200`) · GET confirmações, POST apto/inapto para “apto com restrição” (`{ conclusion* }`, só o examinador vinculado, `201`) — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `/health-exams/{id}/signed-asos` · `/signed-asos/{id}/download`                                                                                                | GET ASOs assinados (cadeia de substituição) · POST multipart (`201`; `file` PDF ≤ 25 MB + `{ origin*, previewDocumentId?, signatureMethod*, verificationReference*, signerName*, signerRegistration*, signerUf*, conclusion*, signedOn*, replacesId?, replaceReason? }`) · GET URL assinada curta (`{ url, expiresInSeconds, sha256 }`) — sem PUT/DELETE; o sistema não assina — NOB-163                                                                                                                                                                                                                                                        |
+| `/health-exams/{id}/aso-deliveries` · `/health-exams/{id}/aso-deliveries/{deliveryId}/void` · `/aso-deliveries/{id}/evidence`                                  | GET entregas + situação do ASO vigente · POST multipart (`201`; `{ kind*, method?, channelDescription?, occurredAt*, evidenceReference?, evidenceKind? }` + `evidence?` PDF/JPEG/PNG ≤ 10 MB) · POST correção (`{ reason* }`, `201`) · GET URL assinada curta do comprovante — sem PUT/DELETE; só ASO assinado vigente; recebimento só com recibo assinado — NOB-165                                                                                                                                                                                                                                                                            |
 | `/health-exams/{id}/clinical-notes` · `/health-exams/{id}/work-restrictions` · `/health-exams/{id}/clinical-access-events`                                     | GET prontuário (leitura auditada), POST observação (`201`, `{ content* }`) — só a conta vinculada ao examinador ou ao coordenador, demais → `403` · GET restrições (RH lê), POST (`201`, `{ kind: restriction                                                                                                                                                                                                                                                                                                                                                                                                                                   | withdrawal, restriction? }`, sem CID → senão `422`; só o médico vinculado) · GET trilha de acesso (owner) — NOB-155                                                                                                                         |
 | `/employees/{id}/absences` · `/absences/{id}(/return                                                                                                           | /cancel)`·`/absences/{id}/clinical-notes`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | GET afastamentos com avaliação (retorno NR-7 7.5.9, sinalização 7.5.19.5 c), POST (`201`) · GET/PUT previsão do fim · POST retorno confirmado e cancelamento · GET/POST área clínica (atestado e CID), só o coordenador vinculado — NOB-139 |
 | `/companies/{id}/risk-absence-declarations`                                                                                                                    | GET declarações e permissão (equipe do escritório; cliente só com autorização ativa) · POST declarar (`201`, `{ sourceId*, gesId*, jobRole?, justification* }`; só o profissional com autorização ativa de validação de riscos, demais → `403`; fonte substituída ou grupo/função com risco pendente/validado → `422`) — NOB-156                                                                                                                                                                                                                                                                                                                |
@@ -435,6 +436,7 @@ APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sess
 | Exame ocupacional (ASO)      | `actions/pgr/health-exams.ts`                | list (busca funcionário ou tipo de exame, filtros tipo/funcionário/empresa), get, create, update, delete + REST `/api/v1/health-exams/**` (validade derivada na leitura; funcionário/médico cross-tenant → `FK_NOT_FOUND`; sem `/dependents`)                                                                                                                                          |
 | ASO (conferência e prévias)  | `actions/medicine/aso.ts`                    | readiness, procedimentos, prévias, origem do exame e confirmação do examinador + REST (NOB-152; NR-7 7.5.19.1; sem assinatura)                                                                                                                                                                                                                                                         |
 | ASO assinado (oficial)       | `actions/medicine/aso.ts`                    | registro do PDF assinado (examinador ou clínica externa), conferência da assinatura, substituição com motivo e download + REST (NOB-163; MED-01/11/12)                                                                                                                                                                                                                                 |
+| Entrega do ASO               | `actions/medicine/aso.ts`                    | disponibilização (via física ou cópia digital por canal informado), comprovante, pedido de via física e correção + REST (NOB-165; MED-13; NR-7 7.5.19)                                                                                                                                                                                                                                 |
 | Prontuário segregado         | actions/medicine/clinical-record.ts          | access, read, addNote, restrictions, accessEvents + REST (NOB-155; DT-21; examinador ou coordenador vinculado; leitura auditada)                                                                                                                                                                                                                                                       |
 | Afastamentos                 | actions/medicine/absences.ts                 | list, get, create, end, return, cancel, área clínica + REST (NOB-139; administrativo sem CID; NR-7 7.5.9)                                                                                                                                                                                                                                                                              |
 | Inexistência de riscos       | actions/medicine/risk-absence.ts             | list, declare + REST (NOB-156; DT-12; profissional autorizado; por versão da fonte)                                                                                                                                                                                                                                                                                                    |
@@ -1240,7 +1242,7 @@ Tela: `/health-exams/{id}/aso`.
 Ficam fora (NOB-110):
 
 - leiaute final (MED-08);
-- entrega ao trabalhador (MED-13).
+- entrega digital pelo portal do trabalhador (NOB-122).
 
 ### ASO assinado (documento oficial) — NOB-163
 
@@ -1275,6 +1277,44 @@ REST:
 - `GET /api/v1/signed-asos/{id}/download`.
 
 Tela: seção "ASO assinado (documento oficial)" em `/health-exams/{id}/aso`.
+
+### Entrega do ASO ao trabalhador — NOB-165
+
+NR-7 7.5.19: o ASO é disponibilizado ao empregado, com comprovação, e fornecido em meio físico quando ele pedir (MED-13). Migration `0074_aso_deliveries`; core `server/medicine/aso-delivery-core.ts`; regras puras em `domains/medicine/aso-delivery.ts`.
+
+- **Vínculo:** cada evento aponta o ASO **assinado vigente** e o SHA-256 dele, lidos do banco. A prévia nunca é entregue. A FK composta prende o evento ao exame e ao tenant; a policy confere trabalhador do exame, hash e documento não substituído.
+- **Eventos (só inclusão):**
+  - `made_available`: via física ou cópia digital (canal informado), com referência da evidência;
+  - `physical_copy_requested`: pedido de via física;
+  - `voided`: correção de um registro, com motivo de pelo menos 10 caracteres. Um registro é corrigido no máximo uma vez, e a correção não é corrigida.
+- **Situação do ASO vigente** (derivada, nunca presumida):
+  - **registrada:** entrega sem comprovante;
+  - **comprovada:** comprovante anexado;
+  - **recebimento confirmado:** só com `evidenceKind = signed_receipt`, o recibo assinado pelo trabalhador.
+  - Mais dois avisos: via física pedida e ainda não entregue depois do pedido; versão anterior entregue e a vigente não, quando a substituição exige nova entrega.
+- **Comprovante:**
+  - PDF, JPEG ou PNG conferido pelos bytes, até 10 MB;
+  - SHA-256 no servidor;
+  - caminho `{org}/aso-entregas/{exame}/{id}.{ext}` no bucket privado, que nunca sai na API;
+  - se o registro falha, o arquivo é removido.
+- **Quem registra:** a equipe do escritório (owner ou colaborador). O cliente recebe `FORBIDDEN`. Nenhuma conclusão médica é criada e nenhum dado clínico é exposto.
+- **Data e hora** em horário de Brasília (`AAAA-MM-DDTHH:mm`): não futura e não anterior à assinatura do ASO.
+- **Fora desta fatia:** entrega digital autenticada ao trabalhador (portal, NOB-122). Não há integração de e-mail, WhatsApp ou assinatura simulada.
+
+| Action                         | Entrada                                         | Retorno                                            |
+| ------------------------------ | ----------------------------------------------- | -------------------------------------------------- |
+| `listAsoDeliveriesAction`      | `examId`                                        | `{ currentSignedDocumentId, summary, deliveries }` |
+| `registerAsoDeliveryAction`    | `examId, FormData` (campos acima + `evidence?`) | evento registrado                                  |
+| `voidAsoDeliveryAction`        | `examId, deliveryId, { reason* }`               | evento de correção                                 |
+| `getAsoDeliveryEvidenceAction` | `id`                                            | `{ url, expiresInSeconds, sha256 }`                |
+
+REST:
+
+- `GET|POST /api/v1/health-exams/{id}/aso-deliveries` (POST multipart, `201`);
+- `POST /api/v1/health-exams/{id}/aso-deliveries/{deliveryId}/void` (`201`);
+- `GET /api/v1/aso-deliveries/{id}/evidence`.
+
+Tela: seção "Entrega ao trabalhador (NR-7 7.5.19)" em `/health-exams/{id}/aso`.
 
 ## Medicina — painel — `actions/medicine/overview.ts`
 

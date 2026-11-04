@@ -286,3 +286,141 @@ export const asoSignedDocuments = pgTable(
 ).enableRLS();
 
 export type AsoSignedDocument = InferSelectModel<typeof asoSignedDocuments>;
+
+export type AsoDeliveryKind = "made_available" | "physical_copy_requested" | "voided";
+export type AsoDeliveryMethod = "physical_copy" | "digital_copy";
+export type AsoDeliveryEvidenceKind = "signed_receipt" | "channel_confirmation";
+
+/**
+ * Disponibilização e entrega do ASO ao trabalhador (NOB-165; MED-13; NR-7 7.5.19). Eventos só de
+ * inclusão, ligados a um ASO **assinado** específico (nunca a prévia), com o SHA-256 dele:
+ * - `made_available`: o escritório registra a entrega (via física ou cópia digital por canal
+ *   informado), com referência da evidência. Com comprovante anexado (PDF/imagem, íntegro), a
+ *   disponibilização fica comprovada; só o recibo assinado pelo trabalhador comprova a ciência;
+ * - `physical_copy_requested`: o trabalhador pediu a via física (7.5.19, fornecimento quando
+ *   solicitado);
+ * - `voided`: correção de um registro anterior, com motivo; nada é alterado ou apagado.
+ * A entrega de uma versão substituída não vale para a nova (o vínculo é com o documento).
+ */
+export const asoDeliveries = pgTable(
+  "aso_deliveries",
+  {
+    id: uuid("id").primaryKey(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id").notNull(),
+    healthExamId: uuid("health_exam_id").notNull(),
+    employeeId: uuid("employee_id").notNull(),
+    signedDocumentId: uuid("signed_document_id").notNull(),
+    documentSha256: text("document_sha256").notNull(),
+    kind: text("kind").$type<AsoDeliveryKind>().notNull(),
+    method: text("method").$type<AsoDeliveryMethod>(),
+    channelDescription: text("channel_description"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    evidenceReference: text("evidence_reference"),
+    evidenceKind: text("evidence_kind").$type<AsoDeliveryEvidenceKind>(),
+    evidencePath: text("evidence_path"),
+    evidenceSha256: text("evidence_sha256"),
+    evidenceSizeBytes: integer("evidence_size_bytes"),
+    evidenceContentType: text("evidence_content_type"),
+    voidsId: uuid("voids_id"),
+    voidReason: text("void_reason"),
+    recordedBy: text("recorded_by").notNull(),
+    recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "fk_aso_deliveries_company",
+      columns: [t.companyId, t.orgId],
+      foreignColumns: [companies.id, companies.orgId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "fk_aso_deliveries_exam",
+      columns: [t.healthExamId, t.orgId, t.companyId],
+      foreignColumns: [healthExams.id, healthExams.orgId, healthExams.companyId],
+    }),
+    foreignKey({
+      name: "fk_aso_deliveries_signed",
+      columns: [t.signedDocumentId, t.orgId, t.healthExamId],
+      foreignColumns: [
+        asoSignedDocuments.id,
+        asoSignedDocuments.orgId,
+        asoSignedDocuments.healthExamId,
+      ],
+    }),
+    uniqueIndex("uq_aso_deliveries_id_scope").on(t.id, t.orgId, t.healthExamId),
+    foreignKey({
+      name: "fk_aso_deliveries_voids",
+      columns: [t.voidsId, t.orgId, t.healthExamId],
+      foreignColumns: [t.id, t.orgId, t.healthExamId],
+    }),
+    uniqueIndex("uq_aso_deliveries_voids").on(t.voidsId),
+    uniqueIndex("uq_aso_deliveries_evidence_path").on(t.evidencePath),
+    index("idx_aso_deliveries_exam").on(t.orgId, t.healthExamId, t.recordedAt),
+    check(
+      "ck_aso_deliveries_kind",
+      sql`${t.kind} in ('made_available','physical_copy_requested','voided')`,
+    ),
+    check("ck_aso_deliveries_hash", sql`${t.documentSha256} ~ '^[0-9a-f]{64}$'`),
+    // Entrega: método e referência da evidência obrigatórios; cópia digital exige o canal.
+    check(
+      "ck_aso_deliveries_made_available",
+      sql`(${t.kind} = 'made_available') = (${t.method} is not null)
+        and (${t.method} is null or ${t.method} in ('physical_copy','digital_copy'))
+        and (${t.kind} <> 'made_available' or char_length(btrim(coalesce(${t.evidenceReference}, ''))) >= 5)
+        and (${t.method} is distinct from 'digital_copy' or char_length(btrim(coalesce(${t.channelDescription}, ''))) >= 5)`,
+    ),
+    // Comprovante: tudo ou nada; só em entrega; tipos e hash conferidos.
+    check(
+      "ck_aso_deliveries_evidence",
+      sql`((${t.evidenceKind} is null) = (${t.evidencePath} is null)
+          and (${t.evidencePath} is null) = (${t.evidenceSha256} is null)
+          and (${t.evidencePath} is null) = (${t.evidenceSizeBytes} is null)
+          and (${t.evidencePath} is null) = (${t.evidenceContentType} is null))
+        and (${t.evidenceKind} is null or (${t.kind} = 'made_available' and ${t.evidenceKind} in ('signed_receipt','channel_confirmation')))
+        and (${t.evidenceSha256} is null or ${t.evidenceSha256} ~ '^[0-9a-f]{64}$')
+        and (${t.evidenceSizeBytes} is null or ${t.evidenceSizeBytes} > 0)
+        and (${t.evidenceContentType} is null or ${t.evidenceContentType} in ('application/pdf','image/jpeg','image/png'))`,
+    ),
+    // Correção: só o evento `voided` aponta outro registro, sempre com motivo.
+    check(
+      "ck_aso_deliveries_void",
+      sql`(${t.kind} = 'voided') = (${t.voidsId} is not null)
+        and (${t.voidsId} is null) = (${t.voidReason} is null)
+        and (${t.voidReason} is null or char_length(btrim(${t.voidReason})) >= 10)
+        and (${t.voidsId} is null or ${t.voidsId} <> ${t.id})`,
+    ),
+    pgPolicy("aso_deliveries_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+    pgPolicy("aso_deliveries_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: companyModuleScope(t.orgId, t.companyId, "medicine"),
+      withCheck: companyModuleScope(t.orgId, t.companyId, "medicine"),
+    }),
+    // Equipe do escritório, como ator; trabalhador do exame; documento assinado do exame com o
+    // mesmo hash; entrega e pedido só para o documento vigente (não substituído).
+    pgPolicy("aso_deliveries_insert", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${t.recordedBy} = current_setting('app.current_actor', true)
+        and exists (select 1 from public.org_memberships om where om.org_id = ${t.orgId}
+          and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','collaborator','org:admin','org:member'))
+        and exists (select 1 from public.health_exams h where h.id = ${t.healthExamId} and h.org_id = ${t.orgId}
+          and h.company_id = ${t.companyId} and h.employee_id = ${t.employeeId})
+        and exists (select 1 from public.aso_signed_documents s where s.id = ${t.signedDocumentId} and s.org_id = ${t.orgId}
+          and s.health_exam_id = ${t.healthExamId} and s.file_sha256 = ${t.documentSha256})
+        and (${t.kind} = 'voided' or not exists (select 1 from public.aso_signed_documents r
+          where r.org_id = ${t.orgId} and r.replaces_id = ${t.signedDocumentId}))`,
+    }),
+  ],
+).enableRLS();
+
+export type AsoDelivery = InferSelectModel<typeof asoDeliveries>;

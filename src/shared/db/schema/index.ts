@@ -327,11 +327,16 @@ export {
   asoDocuments,
   asoExaminerConclusions,
   asoSignedDocuments,
+  asoDeliveries,
   type AsoDocument,
   type AsoExaminerConclusion,
   type AsoSignedDocument,
   type AsoSignatureMethod,
   type AsoSignedOrigin,
+  type AsoDelivery,
+  type AsoDeliveryKind,
+  type AsoDeliveryMethod,
+  type AsoDeliveryEvidenceKind,
 } from "./aso-documents";
 export {
   ergonomicEvaluations,
