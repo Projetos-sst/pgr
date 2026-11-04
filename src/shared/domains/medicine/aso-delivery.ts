@@ -6,9 +6,11 @@ import { z } from "zod";
  *
  * Distinções que o sistema mantém (e nunca presume):
  * - **registrada:** o escritório informou a entrega (método, data e referência), sem comprovante;
- * - **comprovada:** há comprovante anexado e íntegro (recibo digitalizado ou confirmação do canal);
- * - **ciência confirmada:** só com o recibo assinado pelo trabalhador anexado. Um clique
- *   administrativo nunca vira "recebido pelo trabalhador".
+ * - **aguardando conferência:** há comprovante anexado e íntegro, ainda não conferido;
+ * - **conferido documentalmente:** uma pessoa autorizada conferiu o comprovante (NOB-167), sem
+ *   confirmar a autoria da assinatura;
+ * - **recebimento confirmado:** só com recibo assinado pelo trabalhador **na presença** do revisor,
+ *   que registra a conferência. Upload, hash ou o tipo escolhido nunca confirmam recebimento.
  * A entrega vale para o documento assinado específico (hash). Substituído o ASO, a entrega da
  * versão anterior fica no histórico e a nova versão precisa de entrega própria.
  */
@@ -31,13 +33,65 @@ export const ASO_DELIVERY_EVIDENCE_LABELS: Record<AsoDeliveryEvidenceKindValue, 
     channel_confirmation: "Comprovante do canal (ex.: confirmação de envio ou leitura)",
   };
 
-export type AsoDeliveryState = "none" | "registered" | "proven" | "acknowledged";
+export type AsoDeliveryState =
+  | "none"
+  | "registered"
+  | "evidence_pending"
+  | "evidence_rejected"
+  | "evidence_checked"
+  | "receipt_confirmed";
 export const ASO_DELIVERY_STATE_LABELS: Record<AsoDeliveryState, string> = {
   none: "Entrega ainda não registrada",
-  registered: "Disponibilização registrada, sem comprovante",
-  proven: "Disponibilização comprovada",
-  acknowledged: "Recebimento confirmado por recibo assinado pelo trabalhador",
+  registered: "Entrega registrada, sem comprovante",
+  evidence_pending: "Comprovante anexado, aguardando conferência",
+  evidence_rejected: "Comprovante recusado na conferência",
+  evidence_checked:
+    "Comprovante conferido documentalmente (autoria da assinatura não confirmada)",
+  receipt_confirmed:
+    "Recebimento confirmado: recibo assinado pelo trabalhador na presença do revisor",
 };
+
+export const ASO_EVIDENCE_REVIEW_METHODS = [
+  "documentary",
+  "signature_witnessed",
+] as const;
+export const ASO_EVIDENCE_REVIEW_RESULTS = ["confirmed", "rejected"] as const;
+export type AsoEvidenceReviewMethodValue = (typeof ASO_EVIDENCE_REVIEW_METHODS)[number];
+export type AsoEvidenceReviewResultValue = (typeof ASO_EVIDENCE_REVIEW_RESULTS)[number];
+export const ASO_EVIDENCE_REVIEW_METHOD_LABELS: Record<
+  AsoEvidenceReviewMethodValue,
+  string
+> = {
+  documentary:
+    "Conferência documental do arquivo (corresponde ao trabalhador e ao ASO; não confirma autoria)",
+  signature_witnessed:
+    "Recibo assinado pelo trabalhador na minha presença, com identidade conferida em documento",
+};
+export const ASO_EVIDENCE_REVIEW_RESULT_LABELS: Record<
+  AsoEvidenceReviewResultValue,
+  string
+> = {
+  confirmed: "Conferido",
+  rejected: "Recusado (não corresponde ou ilegível)",
+};
+
+/** Conferência humana do comprovante (o revisor é o usuário da sessão; nunca vem do cliente). */
+export const asoEvidenceReviewSchema = z
+  .object({
+    method: z.enum(ASO_EVIDENCE_REVIEW_METHODS, {
+      error: "Informe como o comprovante foi conferido.",
+    }),
+    result: z.enum(ASO_EVIDENCE_REVIEW_RESULTS, {
+      error: "Informe o resultado da conferência.",
+    }),
+    reference: z
+      .string()
+      .trim()
+      .min(5, "Registre o que foi conferido (mínimo de 5 caracteres).")
+      .max(500, "Máximo de 500 caracteres."),
+  })
+  .strict();
+export type AsoEvidenceReviewInput = z.output<typeof asoEvidenceReviewSchema>;
 
 /** Comprovante: PDF ou imagem, até 10 MB. */
 export const ASO_DELIVERY_EVIDENCE_MAX_BYTES = 10 * 1024 * 1024;
@@ -194,7 +248,10 @@ export function occurredAtProblem(
 export type AsoDeliveryEvent = {
   id: string;
   signedDocumentId: string;
-  kind: "made_available" | "physical_copy_requested" | "voided";
+  kind: "made_available" | "physical_copy_requested" | "voided" | "evidence_reviewed";
+  reviewsId?: string | null;
+  reviewMethod?: AsoEvidenceReviewMethodValue | null;
+  reviewResult?: AsoEvidenceReviewResultValue | null;
   method: AsoDeliveryMethodValue | null;
   occurredAt: string;
   evidenceKind: AsoDeliveryEvidenceKindValue | null;
@@ -219,15 +276,28 @@ export function summarizeDelivery(
   const effective = events.filter((e) => e.kind !== "voided" && !voided.has(e.id));
   const current = effective.filter((e) => e.signedDocumentId === currentDocumentId);
   const deliveries = current.filter((e) => e.kind === "made_available");
-  const state: AsoDeliveryState = deliveries.some(
-    (e) => e.evidenceKind === "signed_receipt",
+  // Conferência só vale enquanto ela e o comprovante conferido não foram corrigidos.
+  const reviewOf = (delivery: AsoDeliveryEvent) =>
+    current.find((e) => e.kind === "evidence_reviewed" && e.reviewsId === delivery.id) ??
+    null;
+  const withEvidence = deliveries.filter((e) => e.hasEvidence);
+  const reviews = withEvidence.map((d) => ({ delivery: d, review: reviewOf(d) }));
+  const state: AsoDeliveryState = reviews.some(
+    (r) =>
+      r.review?.reviewResult === "confirmed" &&
+      r.review.reviewMethod === "signature_witnessed" &&
+      r.delivery.evidenceKind === "signed_receipt",
   )
-    ? "acknowledged"
-    : deliveries.some((e) => e.hasEvidence)
-      ? "proven"
-      : deliveries.length
-        ? "registered"
-        : "none";
+    ? "receipt_confirmed"
+    : reviews.some((r) => r.review?.reviewResult === "confirmed")
+      ? "evidence_checked"
+      : reviews.some((r) => !r.review)
+        ? "evidence_pending"
+        : reviews.some((r) => r.review?.reviewResult === "rejected")
+          ? "evidence_rejected"
+          : deliveries.length
+            ? "registered"
+            : "none";
   const requests = current.filter((e) => e.kind === "physical_copy_requested");
   const lastRequest = requests
     .map((e) => e.occurredAt)

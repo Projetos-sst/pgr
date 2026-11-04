@@ -97,7 +97,7 @@ describe("summarizeDelivery", () => {
     voidsId: null,
     ...o,
   });
-  it("registrada, comprovada e ciência só com recibo assinado", () => {
+  it("comprovante anexado só aguarda conferência; o tipo escolhido não confirma nada (NOB-167)", () => {
     expect(summarizeDelivery([], "v2").state).toBe("none");
     expect(summarizeDelivery([ev({})], "v2").state).toBe("registered");
     expect(
@@ -105,11 +105,68 @@ describe("summarizeDelivery", () => {
         [ev({ hasEvidence: true, evidenceKind: "channel_confirmation" })],
         "v2",
       ).state,
-    ).toBe("proven");
+    ).toBe("evidence_pending");
     expect(
       summarizeDelivery([ev({ hasEvidence: true, evidenceKind: "signed_receipt" })], "v2")
         .state,
-    ).toBe("acknowledged");
+    ).toBe("evidence_pending");
+  });
+  it("conferência humana: recusada, documental e presenciada; anulada não conta", () => {
+    const receipt = ev({ id: "r1", hasEvidence: true, evidenceKind: "signed_receipt" });
+    const review = (o: Partial<AsoDeliveryEvent>) =>
+      ev({
+        id: "x" + Math.random(),
+        kind: "evidence_reviewed",
+        method: null,
+        reviewsId: "r1",
+        ...o,
+      });
+    expect(
+      summarizeDelivery(
+        [receipt, review({ reviewResult: "rejected", reviewMethod: "documentary" })],
+        "v2",
+      ).state,
+    ).toBe("evidence_rejected");
+    expect(
+      summarizeDelivery(
+        [receipt, review({ reviewResult: "confirmed", reviewMethod: "documentary" })],
+        "v2",
+      ).state,
+    ).toBe("evidence_checked");
+    const witnessed = review({
+      id: "w1",
+      reviewResult: "confirmed",
+      reviewMethod: "signature_witnessed",
+    });
+    expect(summarizeDelivery([receipt, witnessed], "v2").state).toBe("receipt_confirmed");
+    // Conferência anulada ou comprovante anulado: perde o efeito.
+    expect(
+      summarizeDelivery([receipt, witnessed, ev({ kind: "voided", voidsId: "w1" })], "v2")
+        .state,
+    ).toBe("evidence_pending");
+    expect(
+      summarizeDelivery([receipt, witnessed, ev({ kind: "voided", voidsId: "r1" })], "v2")
+        .state,
+    ).toBe("none");
+    // Presenciada sobre comprovante de canal não vira recebimento.
+    const channel = ev({
+      id: "c1",
+      hasEvidence: true,
+      evidenceKind: "channel_confirmation",
+    });
+    expect(
+      summarizeDelivery(
+        [
+          channel,
+          review({
+            reviewsId: "c1",
+            reviewResult: "confirmed",
+            reviewMethod: "signature_witnessed",
+          }),
+        ],
+        "v2",
+      ).state,
+    ).toBe("evidence_checked");
   });
   it("registro corrigido não conta; entrega da versão anterior pede nova entrega", () => {
     const d = ev({});

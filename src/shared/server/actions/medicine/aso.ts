@@ -25,6 +25,7 @@ import {
   deliveryEvidenceDownload,
   listDeliveries,
   registerDelivery,
+  reviewDeliveryEvidence,
   voidDelivery,
 } from "@/shared/server/medicine/aso-delivery-core";
 
@@ -188,5 +189,22 @@ export async function voidAsoDeliveryAction(
 export async function getAsoDeliveryEvidenceAction(id: string) {
   return officeAction("medicine.aso_delivery.evidence", (ctx) =>
     deliveryEvidenceDownload(ctx, id),
+  );
+}
+
+/** Conferência do comprovante: { method, result, reference }; o revisor é o usuário da sessão. */
+export async function reviewAsoDeliveryEvidenceAction(
+  examId: string,
+  deliveryId: string,
+  input: unknown,
+) {
+  return officeAction(
+    "medicine.aso_delivery.review",
+    async (ctx) => {
+      const row = await reviewDeliveryEvidence(ctx, examId, deliveryId, input);
+      revalidatePath(asoPath(examId));
+      return row;
+    },
+    { audit: true },
   );
 }

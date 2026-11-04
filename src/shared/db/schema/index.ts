@@ -345,6 +345,8 @@ export {
   type AsoDeliveryKind,
   type AsoDeliveryMethod,
   type AsoDeliveryEvidenceKind,
+  type AsoEvidenceReviewMethod,
+  type AsoEvidenceReviewResult,
 } from "./aso-documents";
 export {
   ergonomicEvaluations,

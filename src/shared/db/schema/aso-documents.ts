@@ -287,7 +287,13 @@ export const asoSignedDocuments = pgTable(
 
 export type AsoSignedDocument = InferSelectModel<typeof asoSignedDocuments>;
 
-export type AsoDeliveryKind = "made_available" | "physical_copy_requested" | "voided";
+export type AsoDeliveryKind =
+  | "made_available"
+  | "physical_copy_requested"
+  | "voided"
+  | "evidence_reviewed";
+export type AsoEvidenceReviewMethod = "documentary" | "signature_witnessed";
+export type AsoEvidenceReviewResult = "confirmed" | "rejected";
 export type AsoDeliveryMethod = "physical_copy" | "digital_copy";
 export type AsoDeliveryEvidenceKind = "signed_receipt" | "channel_confirmation";
 
@@ -326,6 +332,14 @@ export const asoDeliveries = pgTable(
     evidenceContentType: text("evidence_content_type"),
     voidsId: uuid("voids_id"),
     voidReason: text("void_reason"),
+    // NOB-167: conferência humana do comprovante (evento `evidence_reviewed`), ligada ao arquivo
+    // e ao hash conferidos. O revisor é o ator da sessão (`recorded_by`).
+    reviewsId: uuid("reviews_id"),
+    reviewedEvidenceSha256: text("reviewed_evidence_sha256"),
+    reviewedEvidenceKind: text("reviewed_evidence_kind").$type<AsoDeliveryEvidenceKind>(),
+    reviewMethod: text("review_method").$type<AsoEvidenceReviewMethod>(),
+    reviewResult: text("review_result").$type<AsoEvidenceReviewResult>(),
+    reviewReference: text("review_reference"),
     recordedBy: text("recorded_by").notNull(),
     recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -356,11 +370,32 @@ export const asoDeliveries = pgTable(
       foreignColumns: [t.id, t.orgId, t.healthExamId],
     }),
     uniqueIndex("uq_aso_deliveries_voids").on(t.voidsId),
+    // Alvo da FK da conferência: o mesmo arquivo (hash) e tipo de comprovante, no mesmo exame.
+    uniqueIndex("uq_aso_deliveries_evidence_scope").on(
+      t.id,
+      t.orgId,
+      t.healthExamId,
+      t.evidenceSha256,
+      t.evidenceKind,
+    ),
+    foreignKey({
+      name: "fk_aso_deliveries_reviews",
+      columns: [
+        t.reviewsId,
+        t.orgId,
+        t.healthExamId,
+        t.reviewedEvidenceSha256,
+        t.reviewedEvidenceKind,
+      ],
+      foreignColumns: [t.id, t.orgId, t.healthExamId, t.evidenceSha256, t.evidenceKind],
+    }),
+    // Uma conferência por comprovante (duplicata indevida é recusada).
+    uniqueIndex("uq_aso_deliveries_reviews").on(t.reviewsId),
     uniqueIndex("uq_aso_deliveries_evidence_path").on(t.evidencePath),
     index("idx_aso_deliveries_exam").on(t.orgId, t.healthExamId, t.recordedAt),
     check(
       "ck_aso_deliveries_kind",
-      sql`${t.kind} in ('made_available','physical_copy_requested','voided')`,
+      sql`${t.kind} in ('made_available','physical_copy_requested','voided','evidence_reviewed')`,
     ),
     check("ck_aso_deliveries_hash", sql`${t.documentSha256} ~ '^[0-9a-f]{64}$'`),
     // Entrega: método e referência da evidência obrigatórios; cópia digital exige o canal.
@@ -390,6 +425,22 @@ export const asoDeliveries = pgTable(
         and (${t.voidsId} is null) = (${t.voidReason} is null)
         and (${t.voidReason} is null or char_length(btrim(${t.voidReason})) >= 10)
         and (${t.voidsId} is null or ${t.voidsId} <> ${t.id})`,
+    ),
+    // Conferência: todos os campos juntos, só no evento `evidence_reviewed`; "assinatura presenciada"
+    // só para recibo assinado pelo trabalhador.
+    check(
+      "ck_aso_deliveries_review",
+      sql`(${t.kind} = 'evidence_reviewed') = (${t.reviewsId} is not null)
+        and (${t.reviewsId} is null) = (${t.reviewedEvidenceSha256} is null)
+        and (${t.reviewsId} is null) = (${t.reviewedEvidenceKind} is null)
+        and (${t.reviewsId} is null) = (${t.reviewMethod} is null)
+        and (${t.reviewsId} is null) = (${t.reviewResult} is null)
+        and (${t.reviewsId} is null) = (${t.reviewReference} is null)
+        and (${t.reviewMethod} is null or ${t.reviewMethod} in ('documentary','signature_witnessed'))
+        and (${t.reviewResult} is null or ${t.reviewResult} in ('confirmed','rejected'))
+        and (${t.reviewReference} is null or char_length(btrim(${t.reviewReference})) >= 5)
+        and (${t.reviewMethod} is distinct from 'signature_witnessed' or ${t.reviewedEvidenceKind} = 'signed_receipt')
+        and (${t.reviewsId} is null or ${t.reviewsId} <> ${t.id})`,
     ),
     pgPolicy("aso_deliveries_isolation", {
       for: "all",

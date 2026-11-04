@@ -6,6 +6,8 @@ import {
   ASO_DELIVERY_EVIDENCE_LABELS,
   ASO_DELIVERY_METHOD_LABELS,
   ASO_DELIVERY_STATE_LABELS,
+  ASO_EVIDENCE_REVIEW_METHOD_LABELS,
+  ASO_EVIDENCE_REVIEW_RESULT_LABELS,
 } from "@/shared/domains/medicine/aso-delivery";
 import {
   ASO_SIGNATURE_METHOD_LABELS,
@@ -36,6 +38,7 @@ import {
 import {
   AsoDeliveryEvidenceButton,
   AsoDeliveryForm,
+  ReviewAsoEvidenceForm,
   VoidAsoDeliveryForm,
 } from "./aso-delivery-controls";
 import { DownloadSignedAsoButton, SignedAsoForm } from "./signed-aso-controls";
@@ -188,6 +191,11 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
   const voidedIds = new Set(
     (deliveryData?.deliveries ?? []).filter((d) => d.voidsId).map((d) => d.voidsId),
   );
+  const reviewedIds = new Set(
+    (deliveryData?.deliveries ?? [])
+      .filter((d) => d.kind === "evidence_reviewed" && !voidedIds.has(d.id))
+      .map((d) => d.reviewsId),
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 px-6 py-8">
@@ -336,8 +344,9 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
         <p className="text-text-subtle">
           O ASO assinado vigente precisa ser disponibilizado ao trabalhador, com
           comprovação, e fornecido em meio físico quando ele pedir. Sem comprovante, a
-          entrega fica só registrada; o recibo assinado pelo trabalhador é o que confirma
-          o recebimento. A entrega vale para o documento entregue: se o ASO for
+          entrega fica só registrada. Comprovante anexado aguarda a conferência de uma
+          pessoa autorizada; só o recibo assinado pelo trabalhador na presença do revisor
+          confirma o recebimento. A entrega vale para o documento entregue: se o ASO for
           substituído, a nova versão precisa de nova entrega.
         </p>
         {currentSigned && deliveryData ? (
@@ -370,9 +379,11 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
                 <span className="text-text font-semibold">
                   {d.kind === "voided"
                     ? "Correção de registro"
-                    : d.kind === "physical_copy_requested"
-                      ? "Pedido de via física"
-                      : ASO_DELIVERY_METHOD_LABELS[d.method!]}{" "}
+                    : d.kind === "evidence_reviewed"
+                      ? `Conferência do comprovante: ${ASO_EVIDENCE_REVIEW_RESULT_LABELS[d.reviewResult!]}`
+                      : d.kind === "physical_copy_requested"
+                        ? "Pedido de via física"
+                        : ASO_DELIVERY_METHOD_LABELS[d.method!]}{" "}
                   ·{" "}
                   {new Date(d.occurredAt).toLocaleString("pt-BR", {
                     timeZone: "America/Sao_Paulo",
@@ -387,11 +398,33 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
                   <span>Evidência: {d.evidenceReference}</span>
                 ) : null}
                 {d.voidReason ? <span>Motivo: {d.voidReason}</span> : null}
+                {d.kind === "evidence_reviewed" ? (
+                  <span>
+                    {ASO_EVIDENCE_REVIEW_METHOD_LABELS[d.reviewMethod!]} ·{" "}
+                    {d.reviewReference} · revisor {d.recordedBy}
+                  </span>
+                ) : null}
                 {d.hasEvidence && d.evidenceKind ? (
                   <span className="text-xs">
                     {ASO_DELIVERY_EVIDENCE_LABELS[d.evidenceKind]} · SHA-256{" "}
                     {d.evidenceSha256?.slice(0, 16)}…{" "}
                     <AsoDeliveryEvidenceButton id={d.id} />
+                  </span>
+                ) : null}
+                {d.hasEvidence &&
+                d.evidenceKind &&
+                !voidedIds.has(d.id) &&
+                !reviewedIds.has(d.id) &&
+                d.signedDocumentId === currentSigned?.id ? (
+                  <span className="flex flex-col gap-1">
+                    <span className="text-amber-900">
+                      Comprovante aguardando conferência.
+                    </span>
+                    <ReviewAsoEvidenceForm
+                      examId={id}
+                      deliveryId={d.id}
+                      signedReceipt={d.evidenceKind === "signed_receipt"}
+                    />
                   </span>
                 ) : null}
                 {d.kind !== "voided" && !voidedIds.has(d.id) ? (
