@@ -356,6 +356,10 @@
     {
       "key": "asoDeliveryId",
       "value": ""
+    },
+    {
+      "key": "signedPcmsoId",
+      "value": ""
     }
   ],
   "item": [
@@ -11990,6 +11994,162 @@
               "path": ["api", "v1", "companies", "{{companyId}}", "pcmso-readiness"]
             },
             "description": "Conferência só leitura dos dados do PCMSO: itens blocking, warning e not_available, com referência e link. ready=false enquanto houver bloqueio ou etapa inexistente. Não gera, aprova nem assina. 404 outro tenant; 403 sem Medicina ou client."
+          }
+        }
+      ]
+    },
+    {
+      "name": "PCMSO assinado — versão oficial (NOB-166)",
+      "item": [
+        {
+          "name": "GET /companies/{id}/signed-pcmsos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/signed-pcmsos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "signed-pcmsos"]
+            },
+            "description": "PCMSOs assinados da empresa, currentId (vigente) e warnings (newer_preview, plan_changed, coordinator_changed, cycle_ended)."
+          }
+        },
+        {
+          "name": "POST /companies/{id}/signed-pcmsos (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "origin",
+                  "value": "coordinator",
+                  "type": "text"
+                },
+                {
+                  "key": "previewDocumentId",
+                  "value": "{{pcmsoDocumentId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "signatureMethod",
+                  "value": "icp_brasil",
+                  "type": "text"
+                },
+                {
+                  "key": "verificationReference",
+                  "value": "Verificador ITI, relatório fictício",
+                  "type": "text"
+                },
+                {
+                  "key": "signerName",
+                  "value": "Dra. Coordenadora Fictícia",
+                  "type": "text"
+                },
+                {
+                  "key": "signerRegistration",
+                  "value": "12345",
+                  "type": "text"
+                },
+                {
+                  "key": "signerUf",
+                  "value": "MA",
+                  "type": "text"
+                },
+                {
+                  "key": "signedOn",
+                  "value": "2026-11-03",
+                  "type": "text"
+                },
+                {
+                  "key": "replacesId",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "changeKind",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "replaceReason",
+                  "value": "",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/signed-pcmsos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "signed-pcmsos"]
+            },
+            "description": "Registra o PDF da prévia mais recente assinado pelo médico responsável designado (origin=coordinator: conta verificada dele; office_received: equipe). Conferência documental obrigatória; o sistema não valida assinatura criptograficamente. Com vigente: replacesId + changeKind + replaceReason. 201."
+          }
+        },
+        {
+          "name": "GET /signed-pcmsos/{id}/download",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/signed-pcmsos/{{signedPcmsoId}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "signed-pcmsos", "{{signedPcmsoId}}", "download"]
+            },
+            "description": "{ url, expiresInSeconds, sha256 }: URL assinada curta do PDF."
           }
         }
       ]

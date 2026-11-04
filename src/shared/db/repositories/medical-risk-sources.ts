@@ -31,6 +31,22 @@ export async function getInternalMedicalSource(
   return (await getInternalMedicalSources(orgId, companyId, [pgrId]))[0] ?? null;
 }
 
+/**
+ * Trava transacional da base de riscos de uma empresa (NOB-166). Tomada por quem muda a base
+ * (registro de fonte, revisão técnica de risco) e por quem a usa como fundamento de documento
+ * oficial (registro do PCMSO assinado), para que uma mudança concorrente não passe entre a
+ * conferência e a gravação. Advisory lock: não depende de privilégio de UPDATE nem filtra linhas.
+ */
+export async function lockMedicalRiskBasisTx(
+  tx: TenantTransaction,
+  orgId: string,
+  companyId: string,
+): Promise<void> {
+  await tx.execute(
+    sql`select pg_advisory_xact_lock(hashtextextended(${`medical-risk-basis:${orgId}:${companyId}`}, 0))`,
+  );
+}
+
 export async function getInternalMedicalSources(
   orgId: string,
   companyId: string,
@@ -85,6 +101,7 @@ export async function registerMedicalSource(
         .limit(1);
       if (!company) throw new NotFoundError();
       await assertCompanyModuleTx(tx, orgId, companyId, "medicine");
+      await lockMedicalRiskBasisTx(tx, orgId, companyId);
       if (source.supersedesSourceId) {
         const [previous] = await tx
           .select({ id: medicalRiskSources.id })

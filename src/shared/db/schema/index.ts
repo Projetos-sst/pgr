@@ -293,7 +293,15 @@ export {
   type MedicalExamPlanItem,
   type MedicalExamPlanEvent,
 } from "./medical-exam-plans";
-export { pcmsoDocuments, type PcmsoDocument } from "./pcmso-documents";
+export {
+  pcmsoDocuments,
+  pcmsoSignedDocuments,
+  type PcmsoDocument,
+  type PcmsoSignedDocument,
+  type PcmsoSignedOrigin,
+  type PcmsoSignatureMethod,
+  type PcmsoChangeKind,
+} from "./pcmso-documents";
 export {
   pcmsoInterpretationCriteria,
   type PcmsoInterpretationCriterion,

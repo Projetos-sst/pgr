@@ -3,15 +3,24 @@ import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import type { PcmsoContent } from "@/shared/domains/medicine/pcmso-composition";
+import {
+  PCMSO_CHANGE_KIND_LABELS,
+  PCMSO_SIGNATURE_METHOD_LABELS,
+  PCMSO_SIGNED_ORIGIN_LABELS,
+  PCMSO_SIGNED_WARNING_LABELS,
+  PCMSO_VERIFICATION_LABEL,
+} from "@/shared/domains/medicine/pcmso-signed";
 import { getCompanyAction } from "@/shared/server/actions/pgr/companies";
 import { getPcmsoReadinessAction } from "@/shared/server/actions/medicine/pcmso-readiness";
 import {
   getPcmsoDocumentAction,
   listPcmsoDocumentsAction,
+  listSignedPcmsosAction,
 } from "@/shared/server/actions/medicine/pcmso-documents";
 
 import { PageHeader } from "../../../_ui/list";
 import { GeneratePcmsoForm } from "./generate-form";
+import { DownloadSignedPcmsoButton, SignedPcmsoForm } from "./signed-pcmso-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -155,17 +164,19 @@ function Preview({
 }
 
 /**
- * PCMSO da empresa (NOB-151): gera e arquiva prévias versionadas a partir da conferência sem
- * bloqueios. Não há emissão oficial nem assinatura: dependem do provedor de assinatura (MED-12).
+ * PCMSO da empresa (NOB-151, NOB-166): gera e arquiva prévias versionadas a partir da conferência
+ * sem bloqueios e registra a versão oficial assinada pelo médico responsável (conferência
+ * documental; o sistema não assina nem valida assinatura criptograficamente).
  */
 export default async function PcmsoPage({ params }: { params: Promise<{ id: string }> }) {
   await requireOfficeStaffPage();
   const { id } = await params;
   const company = await getCompanyAction(id);
   if (!company.ok) notFound();
-  const [docs, readiness] = await Promise.all([
+  const [docs, readiness, signedDocs] = await Promise.all([
     listPcmsoDocumentsAction(id),
     getPcmsoReadinessAction(id),
+    listSignedPcmsosAction(id),
   ]);
   if (!docs.ok)
     return (
@@ -174,6 +185,8 @@ export default async function PcmsoPage({ params }: { params: Promise<{ id: stri
       </div>
     );
   const latest = docs.data[0] ? await getPcmsoDocumentAction(docs.data[0].id) : null;
+  const signed = signedDocs.ok ? signedDocs.data : null;
+  const latestContent = latest?.ok ? (latest.data.content as PcmsoContent) : null;
   const blocking = readiness.ok
     ? readiness.data.items.filter((item) => item.severity === "blocking")
     : [];
@@ -198,9 +211,89 @@ export default async function PcmsoPage({ params }: { params: Promise<{ id: stri
           <GeneratePcmsoForm companyId={id} />
         )}
         <p className="text-text-subtle text-xs">
-          Emissão oficial e assinatura do médico responsável ainda não estão disponíveis
-          no sistema.
+          A prévia não é o PCMSO oficial. O sistema não assina: a versão oficial é a
+          prévia assinada pelo médico responsável, registrada abaixo.
         </p>
+      </section>
+      <section className="glass-card flex flex-col gap-3 rounded-xl p-5 text-sm">
+        <h2 className="text-text text-base font-semibold">
+          PCMSO assinado (versão oficial)
+        </h2>
+        <p className="text-text-subtle">
+          O médico responsável pelo PCMSO (NR-7 7.4.1 c) assina a prévia mais recente, que
+          está ligada ao plano de exames aprovado. O sistema guarda o PDF íntegro
+          (SHA-256) e a conferência documental da assinatura. Ele não valida a assinatura
+          criptograficamente. Mudanças no programa geram nova versão, com tipo de mudança
+          e motivo, e a anterior é preservada.
+        </p>
+        {latestContent ? (
+          <p className="text-text-subtle">
+            Médico responsável: {latestContent.coordinator.name} · CRM{" "}
+            {latestContent.coordinator.crm}/
+            {latestContent.coordinator.registrationUf ?? "—"} · plano de exames versão{" "}
+            {latestContent.examPlan.version}, aprovado por{" "}
+            {latestContent.examPlan.approvedBy}.
+          </p>
+        ) : null}
+        {signed?.warnings.length ? (
+          <ul className="list-disc pl-5 text-amber-900">
+            {signed.warnings.map((w) => (
+              <li key={w}>{PCMSO_SIGNED_WARNING_LABELS[w]}</li>
+            ))}
+          </ul>
+        ) : null}
+        {signed?.items.length ? (
+          <ul className="flex flex-col gap-2">
+            {signed.items.map((doc) => (
+              <li key={doc.id} className="text-text-subtle flex flex-col gap-1">
+                <span className="text-text font-semibold">
+                  {doc.id === signed.currentId ? "Vigente" : "Substituído"} · prévia
+                  versão {doc.previewVersion} · ciclo {doc.cycleStart} a {doc.cycleEnd} ·
+                  assinado em {doc.signedOn}
+                </span>
+                <span>
+                  {doc.signerName} · CRM {doc.signerRegistration}/{doc.signerUf} ·{" "}
+                  {PCMSO_SIGNATURE_METHOD_LABELS[doc.signatureMethod]}
+                </span>
+                <span>
+                  {PCMSO_VERIFICATION_LABEL}: {doc.verificationReference} ·{" "}
+                  {PCMSO_SIGNED_ORIGIN_LABELS[doc.origin]}
+                </span>
+                {doc.changeKind ? (
+                  <span>
+                    {PCMSO_CHANGE_KIND_LABELS[doc.changeKind]}: {doc.replaceReason}
+                  </span>
+                ) : null}
+                <span className="text-xs">
+                  SHA-256 {doc.fileSha256.slice(0, 16)}… · registrado em{" "}
+                  {doc.registeredAt.slice(0, 10)}{" "}
+                  <DownloadSignedPcmsoButton id={doc.id} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-amber-900">
+            Nenhum PCMSO assinado registrado. Até lá, a empresa não tem versão oficial do
+            programa no sistema.
+          </p>
+        )}
+        <SignedPcmsoForm
+          companyId={id}
+          latestPreview={
+            docs.data[0] ? { id: docs.data[0].id, version: docs.data[0].version } : null
+          }
+          coordinator={
+            latestContent
+              ? {
+                  name: latestContent.coordinator.name,
+                  crm: latestContent.coordinator.crm,
+                  uf: latestContent.coordinator.registrationUf,
+                }
+              : null
+          }
+          currentId={signed?.currentId ?? null}
+        />
       </section>
       {latest?.ok ? (
         <Preview

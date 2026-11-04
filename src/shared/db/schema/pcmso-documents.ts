@@ -11,6 +11,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -43,6 +44,9 @@ export const pcmsoDocuments = pgTable(
     examPlanId: uuid("exam_plan_id").notNull(),
     content: jsonb("content").notNull(),
     contentSha256: text("content_sha256").notNull(),
+    // NOB-166: resumo da base de riscos (fontes vigentes, versões, situação dos riscos e conteúdo
+    // atual do PGR interno) calculado no banco na geração; nulo nas prévias anteriores à 0075.
+    riskBasisDigest: text("risk_basis_digest"),
     generatedBy: text("generated_by").notNull(),
     generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -61,6 +65,8 @@ export const pcmsoDocuments = pgTable(
       ],
     }).onDelete("restrict"),
     index("idx_pcmso_documents_company").on(t.orgId, t.companyId, t.version),
+    // Alvo da FK composta do PCMSO assinado (NOB-166): prévia da mesma empresa e tenant.
+    uniqueIndex("uq_pcmso_documents_id_scope").on(t.id, t.orgId, t.companyId),
     check("ck_pcmso_documents_status", sql`${t.status} = 'preview'`),
     check("ck_pcmso_documents_version", sql`${t.version} > 0`),
     check("ck_pcmso_documents_cycle", sql`${t.cycleEnd} > ${t.cycleStart}`),
@@ -83,9 +89,172 @@ export const pcmsoDocuments = pgTable(
       as: "restrictive",
       for: "insert",
       to: appRuntimeRole,
-      withCheck: sql`${t.generatedBy} = current_setting('app.current_actor', true) and exists (select 1 from public.medical_exam_plans p where p.id = ${t.examPlanId} and p.org_id = ${t.orgId} and p.company_id = ${t.companyId} and p.status = 'approved')`,
+      withCheck: sql`${t.generatedBy} = current_setting('app.current_actor', true) and exists (select 1 from public.medical_exam_plans p where p.id = ${t.examPlanId} and p.org_id = ${t.orgId} and p.company_id = ${t.companyId} and p.status = 'approved')
+        and ${t.riskBasisDigest} is not null and ${t.riskBasisDigest} = public.medical_risk_basis_digest(${t.orgId}, ${t.companyId})`,
     }),
   ],
 ).enableRLS();
 
 export type PcmsoDocument = InferSelectModel<typeof pcmsoDocuments>;
+
+export type PcmsoSignedOrigin = "coordinator" | "office_received";
+export type PcmsoSignatureMethod = "icp_brasil" | "electronic" | "handwritten";
+export type PcmsoChangeKind =
+  | "administrative"
+  | "documentary_update"
+  | "clinical_revision"
+  | "correction";
+
+/**
+ * PCMSO assinado arquivado (NOB-166; MED-02, MED-11, MED-12, MED-14; NR-7 7.4.1 "c", 7.5.4). A
+ * versão oficial é o PDF de uma **prévia do sistema** assinado pelo médico responsável designado:
+ * - `coordinator`: o próprio coordenador designado, pela conta vinculada e verificada, registra;
+ * - `office_received`: a equipe arquiva o documento que o coordenador designado assinou e devolveu.
+ * O signatário (CRM/UF) é sempre o coordenador designado vigente; a prévia é da mesma empresa, com
+ * o mesmo hash e o plano aprovado vigente. A conferência é **documental** (validador ou original
+ * físico): o sistema não valida assinatura criptograficamente e não declara isso. Correção ou
+ * atualização = nova linha que substitui a anterior, com tipo de mudança e motivo (MED-14).
+ */
+export const pcmsoSignedDocuments = pgTable(
+  "pcmso_signed_documents",
+  {
+    id: uuid("id").primaryKey(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id").notNull(),
+    previewDocumentId: uuid("preview_document_id").notNull(),
+    previewSha256: text("preview_sha256").notNull(),
+    examPlanId: uuid("exam_plan_id").notNull(),
+    origin: text("origin").$type<PcmsoSignedOrigin>().notNull(),
+    signatureMethod: text("signature_method").$type<PcmsoSignatureMethod>().notNull(),
+    signerName: text("signer_name").notNull(),
+    signerRegistration: text("signer_registration").notNull(),
+    signerUf: text("signer_uf").notNull(),
+    signedOn: date("signed_on").notNull(),
+    verificationKind: text("verification_kind").notNull().default("documentary"),
+    verificationReference: text("verification_reference").notNull(),
+    storagePath: text("storage_path").notNull(),
+    fileSha256: text("file_sha256").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    replacesId: uuid("replaces_id"),
+    changeKind: text("change_kind").$type<PcmsoChangeKind>(),
+    replaceReason: text("replace_reason"),
+    registeredBy: text("registered_by").notNull(),
+    registeredAt: timestamp("registered_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "fk_pcmso_signed_company",
+      columns: [t.companyId, t.orgId],
+      foreignColumns: [companies.id, companies.orgId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "fk_pcmso_signed_preview",
+      columns: [t.previewDocumentId, t.orgId, t.companyId],
+      foreignColumns: [pcmsoDocuments.id, pcmsoDocuments.orgId, pcmsoDocuments.companyId],
+    }),
+    foreignKey({
+      name: "fk_pcmso_signed_plan",
+      columns: [t.examPlanId, t.orgId, t.companyId],
+      foreignColumns: [
+        medicalExamPlans.id,
+        medicalExamPlans.orgId,
+        medicalExamPlans.companyId,
+      ],
+    }),
+    uniqueIndex("uq_pcmso_signed_id_scope").on(t.id, t.orgId, t.companyId),
+    foreignKey({
+      name: "fk_pcmso_signed_replaces",
+      columns: [t.replacesId, t.orgId, t.companyId],
+      foreignColumns: [t.id, t.orgId, t.companyId],
+    }),
+    uniqueIndex("uq_pcmso_signed_replaces").on(t.replacesId),
+    uniqueIndex("uq_pcmso_signed_storage_path").on(t.storagePath),
+    index("idx_pcmso_signed_company").on(t.orgId, t.companyId, t.registeredAt),
+    check(
+      "ck_pcmso_signed_origin",
+      sql`${t.origin} in ('coordinator','office_received')`,
+    ),
+    check(
+      "ck_pcmso_signed_method",
+      sql`${t.signatureMethod} in ('icp_brasil','electronic','handwritten')`,
+    ),
+    // Só conferência documental existe hoje; validação criptográfica não é representável.
+    check(
+      "ck_pcmso_signed_verification_kind",
+      sql`${t.verificationKind} = 'documentary'`,
+    ),
+    check(
+      "ck_pcmso_signed_verification",
+      sql`char_length(btrim(${t.verificationReference})) >= 5`,
+    ),
+    check("ck_pcmso_signed_uf", sql`${t.signerUf} ~ '^[A-Z]{2}$'`),
+    check(
+      "ck_pcmso_signed_signer",
+      sql`btrim(${t.signerName}) <> '' and btrim(${t.signerRegistration}) <> ''`,
+    ),
+    check(
+      "ck_pcmso_signed_hashes",
+      sql`${t.fileSha256} ~ '^[0-9a-f]{64}$' and ${t.previewSha256} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check("ck_pcmso_signed_size", sql`${t.sizeBytes} > 0`),
+    check(
+      "ck_pcmso_signed_replace",
+      sql`(${t.replacesId} is null) = (${t.replaceReason} is null)
+        and (${t.replacesId} is null) = (${t.changeKind} is null)
+        and (${t.changeKind} is null or ${t.changeKind} in ('administrative','documentary_update','clinical_revision','correction'))
+        and (${t.replaceReason} is null or char_length(btrim(${t.replaceReason})) >= 10)
+        and (${t.replacesId} is null or ${t.replacesId} <> ${t.id})`,
+    ),
+    pgPolicy("pcmso_signed_documents_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+    pgPolicy("pcmso_signed_documents_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: companyModuleScope(t.orgId, t.companyId, "medicine"),
+      withCheck: companyModuleScope(t.orgId, t.companyId, "medicine"),
+    }),
+    // Ator como autor; prévia da mesma empresa com o mesmo hash e o mesmo plano, aprovado; prévia e
+    // plano fundamentados exatamente nas fontes de riscos vigentes (não substituídas, mesma versão);
+    // signatário
+    // = coordenador designado vigente; fluxo A só pela conta verificada desse coordenador, fluxo B
+    // só pela equipe do escritório.
+    pgPolicy("pcmso_signed_documents_insert", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${t.registeredBy} = current_setting('app.current_actor', true)
+        and exists (select 1 from public.pcmso_documents d where d.id = ${t.previewDocumentId} and d.org_id = ${t.orgId}
+          and d.company_id = ${t.companyId} and d.content_sha256 = ${t.previewSha256} and d.exam_plan_id = ${t.examPlanId}
+          and d.risk_basis_digest is not null and d.risk_basis_digest = public.medical_risk_basis_digest(d.org_id, d.company_id)
+          and jsonb_typeof(d.content->'riskBasis'->'sources') = 'array' and jsonb_array_length(d.content->'riskBasis'->'sources') > 0
+          and not exists (select 1 from jsonb_array_elements(d.content->'riskBasis'->'sources') sx where not exists (select 1 from public.medical_risk_sources ms
+            where ms.id::text = sx->>'id' and ms.org_id = ${t.orgId} and ms.company_id = ${t.companyId} and ms.version = sx->>'version' and not exists (select 1 from public.medical_risk_sources nx where nx.org_id = ms.org_id and nx.company_id = ms.company_id and nx.supersedes_source_id = ms.id)))
+          and not exists (select 1 from public.medical_risk_sources ms where ms.org_id = ${t.orgId} and ms.company_id = ${t.companyId} and not exists (select 1 from public.medical_risk_sources nx where nx.org_id = ms.org_id and nx.company_id = ms.company_id and nx.supersedes_source_id = ms.id)
+            and not exists (select 1 from jsonb_array_elements(d.content->'riskBasis'->'sources') sx where sx->>'id' = ms.id::text)))
+        and exists (select 1 from public.medical_exam_plans p where p.id = ${t.examPlanId} and p.org_id = ${t.orgId}
+          and p.company_id = ${t.companyId} and p.status = 'approved'
+          and jsonb_typeof(p.based_on->'sources') = 'array' and jsonb_array_length(p.based_on->'sources') > 0
+          and not exists (select 1 from jsonb_array_elements(p.based_on->'sources') sx where not exists (select 1 from public.medical_risk_sources ms
+            where ms.id::text = sx->>'id' and ms.org_id = ${t.orgId} and ms.company_id = ${t.companyId} and ms.version = sx->>'version' and not exists (select 1 from public.medical_risk_sources nx where nx.org_id = ms.org_id and nx.company_id = ms.company_id and nx.supersedes_source_id = ms.id)))
+          and not exists (select 1 from public.medical_risk_sources ms where ms.org_id = ${t.orgId} and ms.company_id = ${t.companyId} and not exists (select 1 from public.medical_risk_sources nx where nx.org_id = ms.org_id and nx.company_id = ms.company_id and nx.supersedes_source_id = ms.id)
+            and not exists (select 1 from jsonb_array_elements(p.based_on->'sources') sx where sx->>'id' = ms.id::text)))
+        and exists (select 1 from public.pcmso_coordinator_assignments a join public.medicos m on m.id = a.medico_id and m.org_id = a.org_id
+          where a.org_id = ${t.orgId} and a.company_id = ${t.companyId} and a.ends_on is null
+            and m.crm = ${t.signerRegistration} and m.registration_uf = ${t.signerUf}
+            and (${t.origin} <> 'coordinator' or a.medico_id in (select public.actor_clinical_medico_ids(a.org_id))))
+        and (${t.origin} <> 'office_received' or exists (select 1 from public.org_memberships om where om.org_id = ${t.orgId}
+          and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','collaborator','org:admin','org:member')))`,
+    }),
+  ],
+).enableRLS();
+
+export type PcmsoSignedDocument = InferSelectModel<typeof pcmsoSignedDocuments>;
