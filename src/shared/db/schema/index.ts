@@ -308,6 +308,7 @@ export {
 } from "./pcmso-interpretation-criteria";
 export {
   pcmsoAnalyticalReports,
+  pcmsoAnalyticalReportEvents,
   type PcmsoAnalyticalReport,
 } from "./pcmso-analytical-reports";
 export {

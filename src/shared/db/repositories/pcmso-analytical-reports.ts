@@ -8,7 +8,14 @@ import type {
   ClinicalExamRow,
   ProcedureRow,
 } from "@/shared/domains/medicine/analytical-report";
+import {
+  chronologyProblem,
+  effectiveReportEventIds,
+  type ReportEventInput,
+} from "@/shared/domains/medicine/analytical-report-presentation";
+import { ForbiddenError } from "@/shared/auth/errors";
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 
 import { withOrg, type TenantTransaction } from "../with-org";
 import { accidents } from "../schema/accidents";
@@ -17,8 +24,10 @@ import { employees } from "../schema/employees";
 import { healthExamProcedures, healthExams } from "../schema/health-exams";
 import { medicos, type Medico } from "../schema/medicos";
 import {
+  pcmsoAnalyticalReportEvents as reportEvents,
   pcmsoAnalyticalReports as reports,
   type PcmsoAnalyticalReport,
+  type PcmsoAnalyticalReportEvent,
 } from "../schema/pcmso-analytical-reports";
 import { assertCompanyModuleTx } from "./company-modules";
 import { auditedTenantWrite } from "./audited-write";
@@ -291,6 +300,261 @@ export async function insertAnalyticalReport(
           })
           .returning(summary);
         return created;
+      }),
+  );
+}
+
+// ── Finalização, apresentação e discussão (NOB-168; NR-7 7.6.5) ─────────────────
+
+export type ReportEventItem = Omit<PcmsoAnalyticalReportEvent, "recordedAt"> & {
+  recordedAt: string;
+};
+const toEventItem = (row: PcmsoAnalyticalReportEvent): ReportEventItem => ({
+  ...row,
+  recordedAt: row.recordedAt.toISOString(),
+});
+
+/** Eventos de todas as versões da empresa e a versão vigente (a mais recente). */
+export async function listReportEvents(ctx: TenantContext, companyId: string) {
+  return actorTx(ctx, async (tx) => {
+    await findCompany(tx, ctx.tenantId, companyId);
+    const [current] = await tx
+      .select(summary)
+      .from(reports)
+      .where(and(eq(reports.orgId, ctx.tenantId), eq(reports.companyId, companyId)))
+      .orderBy(desc(reports.version))
+      .limit(1);
+    const rows = await tx
+      .select()
+      .from(reportEvents)
+      .where(
+        and(eq(reportEvents.orgId, ctx.tenantId), eq(reportEvents.companyId, companyId)),
+      )
+      .orderBy(reportEvents.recordedAt);
+    return { current: current ?? null, events: rows.map(toEventItem) };
+  });
+}
+
+/** Eventos com efeito do relatório (não corrigidos e com o ato de base também com efeito). */
+async function effectiveEventsTx(tx: TenantTransaction, orgId: string, reportId: string) {
+  const rows = await tx
+    .select({
+      id: reportEvents.id,
+      reportId: reportEvents.reportId,
+      kind: reportEvents.kind,
+      cipaSituation: reportEvents.cipaSituation,
+      basisId: reportEvents.basisId,
+      voidsId: reportEvents.voidsId,
+      occurredOn: reportEvents.occurredOn,
+      recordedAt: reportEvents.recordedAt,
+    })
+    .from(reportEvents)
+    .where(and(eq(reportEvents.orgId, orgId), eq(reportEvents.reportId, reportId)));
+  const ids = effectiveReportEventIds(
+    rows.map((r) => ({ ...r, recordedAt: r.recordedAt.toISOString() })),
+  );
+  return rows.filter((r) => ids.has(r.id));
+}
+
+/** Data civil (YYYY-MM-DD) de um instante no fuso America/Sao_Paulo. */
+const saoPauloDate = (at: Date) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(at);
+
+function eventRejected(error: unknown): never {
+  const code = (error as { cause?: { code?: string } }).cause?.code;
+  if (code === "42501")
+    throw new ForbiddenError(
+      "Registro recusado pelo banco: confira a versão vigente, a finalização pelo médico responsável e o seu perfil.",
+    );
+  if (code === "23505") throw new ValidationError("Este registro já foi corrigido.");
+  throw error;
+}
+
+/**
+ * Registra finalização, apresentação ou discussão da versão **vigente** do relatório. A versão e o
+ * hash vêm do banco, não do cliente. Confere no servidor (e o banco confere de novo): finalização
+ * só pelo médico responsável que elaborou a versão, verificado e ainda designado; apresentação só
+ * de versão finalizada e não anterior ao dia da finalização; discussão só depois de apresentação e
+ * não anterior à data dela; datas reais (não futuras). Cada ato guarda o ato de base (`basisId`).
+ */
+export async function insertReportEvent(
+  ctx: TenantContext,
+  reportId: string,
+  input: ReportEventInput,
+  checkDate: (reportGeneratedOn: string) => string | null,
+): Promise<ReportEventItem> {
+  return auditedTenantWrite(
+    ctx.tenantId,
+    "medicine.analytical_report_event.rejected",
+    () =>
+      actorTx(ctx, async (tx) => {
+        const [report] = await tx
+          .select()
+          .from(reports)
+          .where(and(eq(reports.orgId, ctx.tenantId), eq(reports.id, reportId)))
+          .limit(1);
+        if (!report) throw new NotFoundError();
+        await assertCompanyModuleTx(tx, ctx.tenantId, report.companyId, "medicine");
+        // Serializa os registros do mesmo relatório (finalização e apresentação concorrentes).
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${`analytical-report-events:${report.id}`}, 0))`,
+        );
+        const [{ last }] = await tx
+          .select({ last: max(reports.version) })
+          .from(reports)
+          .where(
+            and(eq(reports.orgId, ctx.tenantId), eq(reports.companyId, report.companyId)),
+          );
+        if (report.version !== last)
+          throw new ValidationError(
+            "Há versão mais recente do relatório: registre a finalização, a apresentação e a discussão da versão vigente.",
+          );
+        const effective = await effectiveEventsTx(tx, ctx.tenantId, report.id);
+        const finalization = effective.find((e) => e.kind === "finalized");
+        let basisId: string | null = null;
+        if (input.kind === "finalized") {
+          if (finalization) throw new ValidationError("Esta versão já está finalizada.");
+          const { medicoId } = await assertActorIsCompanyCoordinator(
+            tx,
+            ctx,
+            report.companyId,
+          );
+          if (medicoId !== report.authoredByMedicoId)
+            throw new ForbiddenError(
+              "Só o médico responsável que elaborou esta versão a finaliza.",
+            );
+        } else {
+          if (!finalization)
+            throw new ValidationError(
+              "A versão ainda não foi finalizada pelo médico responsável: a prévia não é apresentada.",
+            );
+          // Discussão apoia-se na apresentação vigente mais recente (data, depois registro).
+          const presentation = effective
+            .filter((e) => e.kind === "presented")
+            .sort(
+              (a, b) =>
+                (a.occurredOn ?? "").localeCompare(b.occurredOn ?? "") ||
+                a.recordedAt.getTime() - b.recordedAt.getTime(),
+            )
+            .at(-1);
+          if (input.kind === "discussed" && !presentation)
+            throw new ValidationError("Registre antes a apresentação do relatório.");
+          const problem =
+            checkDate(
+              new Date(report.generatedAt.getTime() - 3 * 3600 * 1000)
+                .toISOString()
+                .slice(0, 10),
+            ) ??
+            (input.kind === "presented"
+              ? chronologyProblem(
+                  "presented",
+                  input.occurredOn,
+                  saoPauloDate(finalization.recordedAt),
+                )
+              : chronologyProblem(
+                  "discussed",
+                  input.occurredOn,
+                  presentation!.occurredOn!,
+                ));
+          if (problem) throw new ValidationError(problem);
+          basisId = input.kind === "presented" ? finalization.id : presentation!.id;
+        }
+        const base = {
+          orgId: ctx.tenantId,
+          companyId: report.companyId,
+          reportId: report.id,
+          reportSha256: report.contentSha256,
+          recordedBy: ctx.userId,
+        };
+        const values =
+          input.kind === "finalized"
+            ? { ...base, kind: "finalized" as const, note: input.note }
+            : input.kind === "presented"
+              ? {
+                  ...base,
+                  kind: "presented" as const,
+                  basisId,
+                  occurredOn: input.occurredOn,
+                  modality: input.modality,
+                  participants: input.participants,
+                  cipaSituation: input.cipaSituation,
+                  cipaReference: input.cipaReference,
+                  evidenceReference: input.evidenceReference,
+                }
+              : {
+                  ...base,
+                  kind: "discussed" as const,
+                  basisId,
+                  occurredOn: input.occurredOn,
+                  participants: input.participants,
+                  summary: input.summary,
+                  measures: input.measures,
+                  evidenceReference: input.evidenceReference,
+                };
+        try {
+          const [row] = await tx.insert(reportEvents).values(values).returning();
+          return toEventItem(row);
+        } catch (error) {
+          eventRejected(error);
+        }
+      }),
+  );
+}
+
+/** Corrige um registro (com motivo); o original é preservado. Finalização: só o médico autor. */
+export async function voidReportEvent(
+  ctx: TenantContext,
+  eventId: string,
+  reason: string,
+): Promise<ReportEventItem> {
+  return auditedTenantWrite(
+    ctx.tenantId,
+    "medicine.analytical_report_event.void_rejected",
+    () =>
+      actorTx(ctx, async (tx) => {
+        const [target] = await tx
+          .select()
+          .from(reportEvents)
+          .where(and(eq(reportEvents.orgId, ctx.tenantId), eq(reportEvents.id, eventId)))
+          .limit(1);
+        if (!target) throw new NotFoundError();
+        await assertCompanyModuleTx(tx, ctx.tenantId, target.companyId, "medicine");
+        if (target.kind === "voided")
+          throw new ValidationError(
+            "Uma correção não é corrigida: registre o ato de novo.",
+          );
+        if (target.kind === "finalized") {
+          const [report] = await tx
+            .select({ author: reports.authoredByMedicoId })
+            .from(reports)
+            .where(and(eq(reports.orgId, ctx.tenantId), eq(reports.id, target.reportId)))
+            .limit(1);
+          const { medicoId } = await assertActorIsCompanyCoordinator(
+            tx,
+            ctx,
+            target.companyId,
+          );
+          if (!report || report.author !== medicoId)
+            throw new ForbiddenError("Só o médico responsável corrige a finalização.");
+        }
+        try {
+          const [row] = await tx
+            .insert(reportEvents)
+            .values({
+              orgId: ctx.tenantId,
+              companyId: target.companyId,
+              reportId: target.reportId,
+              reportSha256: target.reportSha256,
+              kind: "voided",
+              voidsId: target.id,
+              voidReason: reason,
+              recordedBy: ctx.userId,
+            })
+            .returning();
+          return toEventItem(row);
+        } catch (error) {
+          eventRejected(error);
+        }
       }),
   );
 }

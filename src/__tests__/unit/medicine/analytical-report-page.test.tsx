@@ -16,6 +16,7 @@ import {
   getAnalyticalReportAction,
   getAnalyticalReportContextAction,
   listAnalyticalReportsAction,
+  listReportPresentationAction,
 } from "@/shared/server/actions/medicine/analytical-reports";
 
 jest.mock("next/navigation", () => ({
@@ -35,6 +36,9 @@ jest.mock("@/shared/server/actions/medicine/analytical-reports", () => ({
   getAnalyticalReportAction: jest.fn(),
   getAnalyticalReportContextAction: jest.fn(),
   generateAnalyticalReportAction: jest.fn(),
+  listReportPresentationAction: jest.fn(),
+  registerReportEventAction: jest.fn(),
+  voidReportEventAction: jest.fn(),
 }));
 
 const COMPANY = "c1111111-1111-4111-8111-111111111111";
@@ -70,6 +74,19 @@ beforeEach(() => {
   (getCompanyAction as jest.Mock).mockResolvedValue({
     ok: true,
     data: { razaoSocial: "Empresa Fictícia" },
+  });
+  (listReportPresentationAction as jest.Mock).mockResolvedValue({
+    ok: true,
+    data: {
+      current: null,
+      summary: {
+        state: "no_report",
+        cipaSituation: null,
+        cipaRequirementMet: false,
+        previousVersionPresented: false,
+      },
+      events: [],
+    },
   });
 });
 
@@ -133,5 +150,87 @@ describe("AnalyticalReportPage", () => {
     expect(
       screen.getByText(`SHA-256 ${"d".repeat(64)}`, { exact: false }),
     ).toBeInTheDocument();
+  });
+  it("apresentação (NOB-168): CIPA não verificada avisa; medidas ficam como propostas; versão não finalizada pede finalização", async () => {
+    (listAnalyticalReportsAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+    (getAnalyticalReportContextAction as jest.Mock).mockResolvedValue({
+      ok: false,
+      error: { message: "x" },
+    });
+    const event = {
+      reportId: "r1",
+      reportSha256: "d".repeat(64),
+      occurredOn: "2026-11-03",
+      modality: null,
+      participants: null,
+      cipaSituation: null,
+      cipaReference: null,
+      summary: null,
+      measures: null,
+      evidenceReference: null,
+      note: null,
+      voidsId: null,
+      voidReason: null,
+      recordedBy: "staff",
+      recordedAt: "2026-11-03T12:00:00.000Z",
+    };
+    (listReportPresentationAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: {
+        current: {
+          id: "r1",
+          version: 1,
+          periodStart: "2025-11-01",
+          periodEnd: "2026-10-31",
+          contentSha256: "d".repeat(64),
+        },
+        summary: {
+          state: "presented_and_discussed",
+          cipaSituation: "unknown",
+          cipaRequirementMet: false,
+          previousVersionPresented: false,
+        },
+        events: [
+          {
+            ...event,
+            id: "e1",
+            kind: "finalized",
+            occurredOn: null,
+            recordedBy: "doctor",
+          },
+          {
+            ...event,
+            id: "e2",
+            kind: "presented",
+            modality: "in_person",
+            participants: [{ role: "sst_responsible", name: "Fulana" }],
+            cipaSituation: "unknown",
+            evidenceReference: "Ata 12",
+          },
+          {
+            ...event,
+            id: "e3",
+            kind: "discussed",
+            participants: [{ role: "pcmso_coordinator" }],
+            summary: "Síntese agregada fictícia.",
+            measures: [{ description: "Revisar cronograma", dueDate: "2027-02-28" }],
+          },
+        ],
+      },
+    });
+    await renderPage();
+    expect(screen.getByText(/Apresentação e discussão registradas/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/não é possível declarar a participação da CIPA atendida/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Revisar cronograma · prazo: 2027-02-28 · proposta/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Responsável por SST da organização \(Fulana\)/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Finalizar versão/ }),
+    ).not.toBeInTheDocument();
   });
 });
