@@ -1,8 +1,9 @@
 /**
  * Tela do ASO (NOB-152): com bloqueio na conferência não oferece a prévia; sem bloqueio oferece;
- * a última versão aparece com aviso de prévia, conclusão e assinatura pendente. Fictício.
+ * a última versão aparece com aviso de prévia, conclusão e assinatura pendente; o ASO assinado
+ * (NOB-163) aparece com vigente, substituído, conferência e motivo. Fictício.
  */
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import AsoPage from "@/app/(protected)/health-exams/[id]/aso/page";
 import { asoChecklist, composeAso } from "@/shared/domains/medicine/aso";
@@ -12,6 +13,7 @@ import {
   getAsoReadinessAction,
   listAsoDocumentsAction,
   listExamProceduresAction,
+  listSignedAsosAction,
 } from "@/shared/server/actions/medicine/aso";
 
 jest.mock("next/navigation", () => ({
@@ -35,6 +37,9 @@ jest.mock("@/shared/server/actions/medicine/aso", () => ({
   addExamProcedureAction: jest.fn(),
   removeExamProcedureAction: jest.fn(),
   generateAsoDocumentAction: jest.fn(),
+  listSignedAsosAction: jest.fn(),
+  registerSignedAsoAction: jest.fn(),
+  getSignedAsoDownloadAction: jest.fn(),
 }));
 
 const EXAM = "e1111111-1111-4111-8111-111111111111";
@@ -87,6 +92,7 @@ beforeEach(() => {
     data: { id: EXAM, examType: "periodic", performedAt: "2026-10-20", notes: "sigilo" },
   });
   (listExamProceduresAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+  (listSignedAsosAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
 });
 
 async function renderPage() {
@@ -135,11 +141,77 @@ describe("AsoPage", () => {
       screen.getByRole("button", { name: "Gerar prévia do ASO" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/PRÉVIA/);
-    expect(screen.getByText(/Apto para a função/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("article")).getByText(/Apto para a função/),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/Assinatura do médico examinador pendente/),
     ).toBeInTheDocument();
     expect(screen.getByText(`SHA-256 ${"b".repeat(64)}`)).toBeInTheDocument();
     expect(screen.queryByText("sigilo")).not.toBeInTheDocument();
+  });
+
+  it("ASO assinado: sem registro avisa que não há ASO oficial e oferece o registro", async () => {
+    (getAsoReadinessAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { items: [], checklist: asoChecklist([]) },
+    });
+    (listAsoDocumentsAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+    await renderPage();
+    expect(screen.getByText(/Nenhum ASO assinado registrado/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Registrar ASO assinado" }),
+    ).toBeInTheDocument();
+  });
+
+  it("ASO assinado com substituição: vigente, substituído, conferência e motivo", async () => {
+    (getAsoReadinessAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { items: [], checklist: asoChecklist([]) },
+    });
+    (listAsoDocumentsAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+    const signed = {
+      origin: "external_clinic",
+      previewDocumentId: null,
+      signatureMethod: "handwritten",
+      signerName: "Dra. Clínica Fictícia",
+      signerRegistration: "88001",
+      signerUf: "PI",
+      conclusion: "fit",
+      signedOn: "2026-10-21",
+      fileSha256: "c".repeat(64),
+      sizeBytes: 10,
+      registeredBy: "staff",
+      registeredAt: "2026-10-22T10:00:00.000Z",
+    };
+    (listSignedAsosAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: [
+        {
+          ...signed,
+          id: "s1",
+          verificationReference: "Original na pasta 1",
+          replacesId: null,
+          replaceReason: null,
+          replacedById: "s2",
+        },
+        {
+          ...signed,
+          id: "s2",
+          verificationReference: "Original na pasta 2",
+          replacesId: "s1",
+          replaceReason: "Data corrigida pela clínica.",
+          replacedById: null,
+        },
+      ],
+    });
+    await renderPage();
+    expect(screen.getByText(/^Vigente/)).toBeInTheDocument();
+    expect(screen.getByText(/^Substituído/)).toBeInTheDocument();
+    expect(screen.getByText(/Conferência: Original na pasta 2/)).toBeInTheDocument();
+    expect(screen.getByText(/Motivo: Data corrigida pela clínica/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Registrar substituição" }),
+    ).toBeInTheDocument();
   });
 });

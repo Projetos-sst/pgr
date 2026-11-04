@@ -5,6 +5,7 @@ import { and, asc, desc, eq, isNull, max, sql } from "drizzle-orm";
 import { ForbiddenError } from "@/shared/auth/errors";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import type { ExamProcedureValues } from "@/shared/domains/medicine/aso";
+import type { AsoSignedInput, AsoSignedItem } from "@/shared/domains/medicine/aso-signed";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
@@ -12,8 +13,10 @@ import { withOrg, type TenantTransaction } from "../with-org";
 import {
   asoDocuments as docs,
   asoExaminerConclusions as conclusions,
+  asoSignedDocuments as signed,
   type AsoDocument,
   type AsoExaminerConclusion,
+  type AsoSignedDocument,
 } from "../schema/aso-documents";
 import { companies } from "../schema/companies";
 import { employees } from "../schema/employees";
@@ -318,28 +321,34 @@ export async function insertAsoDocument(
   );
 }
 
-/** Exame com prévia de ASO arquivada? (bloqueia exclusão do exame e do funcionário). */
+/**
+ * Exame com prévia ou ASO assinado arquivado? Bloqueia a exclusão do exame e do funcionário: o
+ * histórico documental é preservado (MED-11, MED-18).
+ */
 export async function hasAsoDocumentsTx(
   tx: TenantTransaction,
   orgId: string,
   filter: { examId: string } | { employeeId: string },
 ): Promise<boolean> {
-  const rows =
-    "examId" in filter
-      ? await tx
-          .select({ id: docs.id })
-          .from(docs)
-          .where(and(eq(docs.orgId, orgId), eq(docs.healthExamId, filter.examId)))
-          .limit(1)
-      : await tx
-          .select({ id: docs.id })
-          .from(docs)
-          .innerJoin(healthExams, eq(healthExams.id, docs.healthExamId))
-          .where(
-            and(eq(docs.orgId, orgId), eq(healthExams.employeeId, filter.employeeId)),
-          )
-          .limit(1);
-  return rows.length > 0;
+  for (const table of [docs, signed]) {
+    const rows =
+      "examId" in filter
+        ? await tx
+            .select({ id: table.id })
+            .from(table)
+            .where(and(eq(table.orgId, orgId), eq(table.healthExamId, filter.examId)))
+            .limit(1)
+        : await tx
+            .select({ id: table.id })
+            .from(table)
+            .innerJoin(healthExams, eq(healthExams.id, table.healthExamId))
+            .where(
+              and(eq(table.orgId, orgId), eq(healthExams.employeeId, filter.employeeId)),
+            )
+            .limit(1);
+    if (rows.length > 0) return true;
+  }
+  return false;
 }
 
 // ── Empresa de origem (MED-07) ───────────────────────────────────────────────
@@ -459,5 +468,188 @@ export async function confirmExaminerConclusion(
           .returning();
         return row;
       }),
+  );
+}
+
+// ── ASO assinado arquivado (NOB-163) ─────────────────────────────────────────
+
+function toSignedItem(row: AsoSignedDocument, all: AsoSignedDocument[]): AsoSignedItem {
+  return {
+    id: row.id,
+    origin: row.origin,
+    previewDocumentId: row.previewDocumentId,
+    signatureMethod: row.signatureMethod,
+    verificationReference: row.verificationReference,
+    signerName: row.signerName,
+    signerRegistration: row.signerRegistration,
+    signerUf: row.signerUf,
+    conclusion: row.conclusion,
+    signedOn: row.signedOn,
+    fileSha256: row.fileSha256,
+    sizeBytes: row.sizeBytes,
+    replacesId: row.replacesId,
+    replaceReason: row.replaceReason,
+    registeredBy: row.registeredBy,
+    registeredAt: row.registeredAt.toISOString(),
+    replacedById: all.find((other) => other.replacesId === row.id)?.id ?? null,
+  };
+}
+
+async function signedOfExamTx(tx: TenantTransaction, orgId: string, examId: string) {
+  return tx
+    .select()
+    .from(signed)
+    .where(and(eq(signed.orgId, orgId), eq(signed.healthExamId, examId)))
+    .orderBy(asc(signed.registeredAt));
+}
+
+/** ASOs assinados do exame, do mais antigo ao mais recente, com a cadeia de substituição. */
+export async function listSignedAsos(
+  ctx: TenantContext,
+  examId: string,
+): Promise<AsoSignedItem[]> {
+  return actorTx(ctx, async (tx) => {
+    const exam = await findExam(tx, ctx.tenantId, examId);
+    const rows = await signedOfExamTx(tx, ctx.tenantId, exam.id);
+    return rows.map((row) => toSignedItem(row, rows));
+  });
+}
+
+/** Registro para download (o caminho nunca vem do cliente). */
+export async function getSignedAso(
+  ctx: TenantContext,
+  id: string,
+): Promise<AsoSignedDocument> {
+  return actorTx(ctx, async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(signed)
+      .where(and(eq(signed.orgId, ctx.tenantId), eq(signed.id, id)))
+      .limit(1);
+    if (!row) throw new NotFoundError();
+    await assertCompanyModuleTx(tx, ctx.tenantId, row.companyId, "medicine");
+    return row;
+  });
+}
+
+export type SignedAsoFile = {
+  id: string;
+  storagePath: string;
+  sha256: string;
+  sizeBytes: number;
+};
+
+/**
+ * Registra o ASO assinado já gravado no storage. Confere no servidor (e a RLS confere de novo):
+ * - fluxo A: examinador do exame com identidade verificada, CRM/UF do cadastro dele, prévia do
+ *   mesmo exame e conclusão igual à da prévia;
+ * - fluxo B: equipe do escritório (o portão do escritório já barrou cliente);
+ * - um ASO vigente por exame: com vigente, o novo precisa substituí-lo, com motivo.
+ */
+export async function insertSignedAso(
+  ctx: TenantContext,
+  examId: string,
+  input: AsoSignedInput,
+  file: SignedAsoFile,
+  checkSignedOn: (performedAt: string) => string | null,
+): Promise<AsoSignedItem> {
+  return auditedTenantWrite(ctx.tenantId, "medicine.aso_signed.register_rejected", () =>
+    actorTx(ctx, async (tx) => {
+      const exam = await findExam(tx, ctx.tenantId, examId, { lock: true });
+      const companyId = originCompany(exam);
+      const dateProblem = checkSignedOn(exam.performedAt);
+      if (dateProblem) throw new ValidationError(dateProblem);
+
+      if (input.origin === "examiner") {
+        if (!exam.doctorId)
+          throw new ValidationError("O exame não tem médico examinador informado.");
+        const allowed = await actorClinicalMedicoIdsTx(tx, ctx.tenantId);
+        if (!allowed.includes(exam.doctorId))
+          throw new ForbiddenError(
+            "Só o médico examinador do exame, pela conta vinculada e com identidade verificada, registra o ASO assinado por ele.",
+          );
+        const [examiner] = await tx
+          .select({ crm: medicos.crm, uf: medicos.registrationUf })
+          .from(medicos)
+          .where(and(eq(medicos.orgId, ctx.tenantId), eq(medicos.id, exam.doctorId)))
+          .limit(1);
+        if (
+          !examiner ||
+          examiner.crm !== input.signerRegistration ||
+          examiner.uf !== input.signerUf
+        )
+          throw new ValidationError(
+            "O CRM/UF do signatário não é o do médico examinador do exame.",
+          );
+        const [preview] = await tx
+          .select({ content: docs.content })
+          .from(docs)
+          .where(
+            and(
+              eq(docs.orgId, ctx.tenantId),
+              eq(docs.healthExamId, exam.id),
+              eq(docs.id, input.previewDocumentId!),
+            ),
+          )
+          .limit(1);
+        if (!preview) throw new ValidationError("A prévia informada não é deste exame.");
+        const previewConclusion = (
+          preview.content as { conclusion?: { result?: string } }
+        ).conclusion?.result;
+        if (previewConclusion !== input.conclusion)
+          throw new ValidationError(
+            "A conclusão informada não é a da prévia assinada. Gere uma nova prévia se a conclusão do exame mudou.",
+          );
+      }
+
+      const existing = await signedOfExamTx(tx, ctx.tenantId, exam.id);
+      const replacedIds = new Set(existing.map((r) => r.replacesId).filter(Boolean));
+      const current = existing.find((r) => !replacedIds.has(r.id)) ?? null;
+      if (current && input.replacesId !== current.id)
+        throw new ValidationError(
+          "O exame já tem ASO assinado vigente. Para corrigir, registre a substituição do documento vigente, com motivo.",
+        );
+      if (!current && input.replacesId)
+        throw new ValidationError(
+          "O documento a substituir não é o ASO vigente deste exame.",
+        );
+
+      try {
+        const [row] = await tx
+          .insert(signed)
+          .values({
+            id: file.id,
+            orgId: ctx.tenantId,
+            companyId,
+            healthExamId: exam.id,
+            origin: input.origin,
+            previewDocumentId: input.previewDocumentId ?? null,
+            signatureMethod: input.signatureMethod,
+            verificationReference: input.verificationReference,
+            signerName: input.signerName,
+            signerRegistration: input.signerRegistration,
+            signerUf: input.signerUf,
+            conclusion: input.conclusion,
+            signedOn: input.signedOn,
+            storagePath: file.storagePath,
+            fileSha256: file.sha256,
+            sizeBytes: file.sizeBytes,
+            replacesId: input.replacesId ?? null,
+            replaceReason: input.replaceReason,
+            registeredBy: ctx.userId,
+          })
+          .returning();
+        return toSignedItem(row, [...existing, row]);
+      } catch (error) {
+        const code = (error as { cause?: { code?: string } }).cause?.code;
+        if (code === "42501")
+          throw new ForbiddenError(
+            "Registro recusado pelo banco: confira se você é o examinador verificado do exame (fluxo A) ou da equipe do escritório (fluxo B).",
+          );
+        if (code === "23505")
+          throw new ValidationError("Este documento já foi substituído.");
+        throw error;
+      }
+    }),
   );
 }

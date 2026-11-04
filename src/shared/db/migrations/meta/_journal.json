@@ -512,6 +512,13 @@
       "when": 1793716215121,
       "tag": "0072_identity_challenge_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1793750158185,
+      "tag": "0073_aso_signed_documents",
+      "breakpoints": true
     }
   ]
 }

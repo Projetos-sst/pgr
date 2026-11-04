@@ -166,3 +166,20 @@ export function withDownloadName(signedUrl: string, downloadName: string): strin
   const separator = signedUrl.includes("?") ? "&" : "?";
   return `${signedUrl}${separator}download=${encodeURIComponent(downloadName)}`;
 }
+
+/** Caminho do ASO assinado (NOB-163): tenant da sessão, exame e id do registro; nunca do cliente. */
+export function signedAsoPath(orgId: string, examId: string, id: string): string {
+  return `${orgId}/aso-assinados/${examId}/${id}.pdf`;
+}
+
+/** Grava o PDF assinado do ASO (sem sobrescrever). Erro do provedor → lança, sem detalhe. */
+export async function putSignedAsoObject(
+  storagePath: string,
+  bytes: Uint8Array,
+): Promise<void> {
+  const supabase = getRlsBypassingSupabaseClient();
+  const { error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .upload(storagePath, bytes, { contentType: "application/pdf", upsert: false });
+  if (error) throw new Error(`signed ASO upload failed: ${error.message}`);
+}

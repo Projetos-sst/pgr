@@ -14,6 +14,12 @@ import {
   listProcedures,
   removeProcedure,
 } from "@/shared/server/medicine/aso-core";
+import {
+  listSignedAsos,
+  registerSignedAso,
+  signedAsoDownload,
+  signedAsoFields,
+} from "@/shared/server/medicine/aso-signed-core";
 
 const asoPath = (examId: string) => `/health-exams/${examId}/aso`;
 
@@ -97,5 +103,36 @@ export async function confirmExaminerConclusionAction(examId: string, input: unk
       return row;
     },
     { audit: true },
+  );
+}
+
+// ── ASO assinado arquivado (NOB-163) ─────────────────────────────────────────
+
+export async function listSignedAsosAction(examId: string) {
+  return officeAction("medicine.aso_signed.list", (ctx) => listSignedAsos(ctx, examId));
+}
+
+/** FormData: `file` (PDF assinado) + campos de `asoSignedInputSchema`. */
+export async function registerSignedAsoAction(examId: string, form: FormData) {
+  return officeAction(
+    "medicine.aso_signed.register",
+    async (ctx) => {
+      const raw = form.get("file");
+      const row = await registerSignedAso(
+        ctx,
+        examId,
+        signedAsoFields(form),
+        raw instanceof File ? raw : null,
+      );
+      revalidatePath(asoPath(examId));
+      return row;
+    },
+    { audit: true },
+  );
+}
+
+export async function getSignedAsoDownloadAction(id: string) {
+  return officeAction("medicine.aso_signed.download", (ctx) =>
+    signedAsoDownload(ctx, id),
   );
 }
