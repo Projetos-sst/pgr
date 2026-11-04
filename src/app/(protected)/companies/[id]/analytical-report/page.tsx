@@ -7,9 +7,23 @@ import {
   getAnalyticalReportAction,
   getAnalyticalReportContextAction,
   listAnalyticalReportsAction,
+  listReportPresentationAction,
 } from "@/shared/server/actions/medicine/analytical-reports";
 
+import {
+  CIPA_SITUATION_LABELS,
+  REPORT_MODALITY_LABELS,
+  REPORT_PARTICIPANT_ROLE_LABELS,
+  REPORT_PRESENTATION_STATE_LABELS,
+  type ReportParticipantRole,
+} from "@/shared/domains/medicine/analytical-report-presentation";
 import { PageHeader } from "../../../_ui/list";
+import {
+  DiscussionForm,
+  FinalizeReportForm,
+  PresentationForm,
+  VoidReportEventForm,
+} from "./presentation-controls";
 import { ReportForm } from "./report-form";
 
 export const dynamic = "force-dynamic";
@@ -147,8 +161,9 @@ function Preview({
 }
 
 /**
- * Relatório analítico anual do PCMSO (NOB-154). Elaborado pelo médico coordenador a partir dos
- * dados reais; a equipe vê os números consolidados e as prévias, nunca dados individuais.
+ * Relatório analítico anual do PCMSO (NOB-154, NOB-168). Elaborado pelo médico coordenador a partir
+ * dos dados reais; a equipe vê os números consolidados e as prévias, nunca dados individuais. A
+ * versão finalizada pelo médico é apresentada e discutida com SST/CIPA (NR-7 7.6.5).
  */
 export default async function AnalyticalReportPage({
   params,
@@ -159,9 +174,10 @@ export default async function AnalyticalReportPage({
   const { id } = await params;
   const company = await getCompanyAction(id);
   if (!company.ok) notFound();
-  const [reports, context] = await Promise.all([
+  const [reports, context, presentation] = await Promise.all([
     listAnalyticalReportsAction(id),
     getAnalyticalReportContextAction(id),
+    listReportPresentationAction(id),
   ]);
   if (!reports.ok)
     return (
@@ -173,6 +189,24 @@ export default async function AnalyticalReportPage({
     ? await getAnalyticalReportAction(reports.data[0].id)
     : null;
   const ctx = context.ok ? context.data : null;
+  const pres = presentation.ok ? presentation.data : null;
+  const voidedIds = new Set(
+    (pres?.events ?? []).filter((e) => e.voidsId).map((e) => e.voidsId),
+  );
+  const roles = (list: { role: string; name?: string }[] | null) =>
+    (list ?? [])
+      .map((p) =>
+        p.name
+          ? `${REPORT_PARTICIPANT_ROLE_LABELS[p.role as ReportParticipantRole] ?? p.role} (${p.name})`
+          : (REPORT_PARTICIPANT_ROLE_LABELS[p.role as ReportParticipantRole] ?? p.role),
+      )
+      .join("; ");
+  const KIND_LABELS = {
+    finalized: "Versão finalizada pelo médico responsável",
+    presented: "Apresentação realizada",
+    discussed: "Discussão realizada",
+    voided: "Correção de registro",
+  } as const;
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
@@ -198,6 +232,112 @@ export default async function AnalyticalReportPage({
           hasPrevious={Boolean(ctx?.previous)}
           canSimplify={ctx?.eligibility?.eligible ?? true}
         />
+      </section>
+      <section className="glass-card flex flex-col gap-3 rounded-xl p-5 text-sm">
+        <h2 className="text-text text-base font-semibold">
+          Apresentação e discussão (NR-7 7.6.5)
+        </h2>
+        <p className="text-text-subtle">
+          O relatório deve ser apresentado e discutido com os responsáveis por segurança e
+          saúde no trabalho da organização, incluindo a CIPA, quando existente. Registre
+          só o que já aconteceu: agendar, gerar ou baixar o arquivo não conta como
+          apresentação. Só uma versão finalizada pelo médico responsável é apresentada.
+          Medidas discutidas ficam como propostas, não como executadas.
+        </p>
+        {pres?.current ? (
+          <>
+            <p className="text-text font-semibold">
+              Versão {pres.current.version} · {pres.current.periodStart} a{" "}
+              {pres.current.periodEnd} · SHA-256 {pres.current.contentSha256.slice(0, 12)}
+              … · {REPORT_PRESENTATION_STATE_LABELS[pres.summary.state]}
+            </p>
+            {pres.summary.cipaSituation ? (
+              <p className={pres.summary.cipaRequirementMet ? "" : "text-amber-900"}>
+                CIPA: {CIPA_SITUATION_LABELS[pres.summary.cipaSituation]}
+                {pres.summary.cipaRequirementMet
+                  ? ""
+                  : " — não é possível declarar a participação da CIPA atendida."}
+              </p>
+            ) : null}
+            {pres.summary.previousVersionPresented ? (
+              <p className="text-amber-900">
+                A versão anterior foi apresentada; esta versão precisa de apresentação
+                própria.
+              </p>
+            ) : null}
+            {pres.summary.state === "not_finalized" ? (
+              <FinalizeReportForm companyId={id} reportId={pres.current.id} />
+            ) : null}
+            {pres.summary.state === "pending_presentation" ||
+            pres.summary.state === "discussion_pending" ||
+            pres.summary.state === "presented_and_discussed" ? (
+              <details>
+                <summary className="cursor-pointer font-semibold">
+                  Registrar apresentação realizada
+                </summary>
+                <PresentationForm companyId={id} reportId={pres.current.id} />
+              </details>
+            ) : null}
+            {pres.summary.state === "discussion_pending" ||
+            pres.summary.state === "presented_and_discussed" ? (
+              <details>
+                <summary className="cursor-pointer font-semibold">
+                  Registrar discussão realizada
+                </summary>
+                <DiscussionForm companyId={id} reportId={pres.current.id} />
+              </details>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-amber-900">Gere o relatório analítico antes.</p>
+        )}
+        {pres?.events.length ? (
+          <ul className="flex flex-col gap-2">
+            {pres.events.map((e) => (
+              <li key={e.id} className="text-text-subtle flex flex-col gap-1">
+                <span className="text-text font-semibold">
+                  {KIND_LABELS[e.kind]}
+                  {e.occurredOn ? ` · ${e.occurredOn}` : ""}
+                  {e.reportId !== pres.current?.id ? " · versão anterior" : ""}
+                  {voidedIds.has(e.id) ? " · corrigido" : ""}
+                </span>
+                {e.modality ? <span>{REPORT_MODALITY_LABELS[e.modality]}</span> : null}
+                {e.participants ? (
+                  <span>Participantes: {roles(e.participants)}</span>
+                ) : null}
+                {e.cipaSituation ? (
+                  <span>
+                    CIPA: {CIPA_SITUATION_LABELS[e.cipaSituation]}
+                    {e.cipaReference ? ` (${e.cipaReference})` : ""}
+                  </span>
+                ) : null}
+                {e.summary ? <span>Síntese: {e.summary}</span> : null}
+                {e.measures?.length ? (
+                  <ul className="list-disc pl-5">
+                    {e.measures.map((m, i) => (
+                      <li key={i}>
+                        {m.description}
+                        {m.responsible ? ` · responsável: ${m.responsible}` : ""}
+                        {m.dueDate ? ` · prazo: ${m.dueDate}` : ""} · proposta
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {e.evidenceReference ? (
+                  <span>Evidência: {e.evidenceReference}</span>
+                ) : null}
+                {e.note ? <span>Observação: {e.note}</span> : null}
+                {e.voidReason ? <span>Motivo: {e.voidReason}</span> : null}
+                <span className="text-xs">
+                  Registrado por {e.recordedBy} em {e.recordedAt.slice(0, 10)}
+                </span>
+                {e.kind !== "voided" && !voidedIds.has(e.id) ? (
+                  <VoidReportEventForm companyId={id} eventId={e.id} />
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </section>
       {latest?.ok ? (
         <Preview

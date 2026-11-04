@@ -360,6 +360,10 @@
     {
       "key": "signedPcmsoId",
       "value": ""
+    },
+    {
+      "key": "analyticalReportEventId",
+      "value": ""
     }
   ],
   "item": [
@@ -4788,6 +4792,202 @@
               "path": ["api", "v1", "analytical-reports", "{{analyticalReportId}}"]
             },
             "description": "Versão arquivada com content e contentSha256. Imutável; só dados consolidados."
+          }
+        },
+        {
+          "name": "GET /companies/{id}/analytical-report-events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/analytical-report-events",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "analytical-report-events"
+              ]
+            },
+            "description": "Eventos (finalização, apresentação, discussão, correção), versão vigente e situação (NOB-168; NR-7 7.6.5)."
+          }
+        },
+        {
+          "name": "POST /analytical-reports/{id}/events (finalizar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"finalized\",\n  \"note\": \"Versão final (fictício).\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytical-reports/{{analyticalReportId}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "analytical-reports",
+                "{{analyticalReportId}}",
+                "events"
+              ]
+            },
+            "description": "Só o médico responsável que elaborou a versão, verificado e designado. 201."
+          }
+        },
+        {
+          "name": "POST /analytical-reports/{id}/events (apresentação)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"presented\",\n  \"occurredOn\": \"2026-11-03\",\n  \"modality\": \"in_person\",\n  \"participants\": [\n    {\n      \"role\": \"cipa\",\n      \"name\": \"Representante fictício\"\n    },\n    {\n      \"role\": \"sst_responsible\"\n    }\n  ],\n  \"cipaSituation\": \"participated\",\n  \"evidenceReference\": \"Ata fictícia nº 12\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytical-reports/{{analyticalReportId}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "analytical-reports",
+                "{{analyticalReportId}}",
+                "events"
+              ]
+            },
+            "description": "Apresentação já realizada da versão finalizada. cipaSituation: participated | exists_not_participated | not_constituted (com cipaReference) | unknown. 201."
+          }
+        },
+        {
+          "name": "POST /analytical-reports/{id}/events (discussão)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"discussed\",\n  \"occurredOn\": \"2026-11-03\",\n  \"participants\": [\n    {\n      \"role\": \"cipa\"\n    },\n    {\n      \"role\": \"pcmso_coordinator\"\n    }\n  ],\n  \"summary\": \"Síntese agregada fictícia.\",\n  \"measures\": [\n    {\n      \"description\": \"Revisar cronograma de exames\",\n      \"responsible\": \"SESMT\",\n      \"dueDate\": \"2027-02-28\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytical-reports/{{analyticalReportId}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "analytical-reports",
+                "{{analyticalReportId}}",
+                "events"
+              ]
+            },
+            "description": "Discussão efetiva depois da apresentação; medidas ficam como propostas. 201."
+          }
+        },
+        {
+          "name": "POST /analytical-report-events/{id}/void",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Data da reunião registrada errada (fictício).\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytical-report-events/{{analyticalReportEventId}}/void",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "analytical-report-events",
+                "{{analyticalReportEventId}}",
+                "void"
+              ]
+            },
+            "description": "Correção com motivo; finalização só o médico autor corrige. 201."
           }
         }
       ]

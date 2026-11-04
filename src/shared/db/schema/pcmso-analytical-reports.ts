@@ -11,6 +11,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -92,3 +93,150 @@ export const pcmsoAnalyticalReports = pgTable(
 ).enableRLS();
 
 export type PcmsoAnalyticalReport = InferSelectModel<typeof pcmsoAnalyticalReports>;
+
+export type ReportEventKind = "finalized" | "presented" | "discussed" | "voided";
+export type ReportCipaSituation =
+  | "participated"
+  | "exists_not_participated"
+  | "not_constituted"
+  | "unknown";
+
+/**
+ * Finalização, apresentação e discussão do relatório analítico (NOB-168; NR-7 7.6.5: o relatório
+ * deve ser apresentado e discutido com os responsáveis por SST da organização, incluindo a CIPA,
+ * quando existente). Eventos só de inclusão, ligados à versão exata do relatório (id e hash):
+ * - `finalized`: o médico responsável que elaborou a versão (conta vinculada e verificada) a
+ *   declara final e apta à apresentação; a prévia sozinha não é apresentada;
+ * - `presented`: apresentação efetivamente realizada (data, modalidade, funções representadas,
+ *   situação da CIPA, referência da ata); agendar ou gerar arquivo não conta;
+ * - `discussed`: discussão efetiva (síntese agregada, medidas e encaminhamentos propostos, que não
+ *   viram "executados" por terem sido discutidos);
+ * - `voided`: correção de um registro, com motivo. Dados mínimos; nada clínico individual.
+ */
+export const pcmsoAnalyticalReportEvents = pgTable(
+  "pcmso_analytical_report_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id").notNull(),
+    reportId: uuid("report_id").notNull(),
+    reportSha256: text("report_sha256").notNull(),
+    kind: text("kind").$type<ReportEventKind>().notNull(),
+    occurredOn: date("occurred_on"),
+    modality: text("modality").$type<"in_person" | "remote" | "hybrid">(),
+    participants: jsonb("participants").$type<{ role: string; name?: string }[]>(),
+    cipaSituation: text("cipa_situation").$type<ReportCipaSituation>(),
+    cipaReference: text("cipa_reference"),
+    summary: text("summary"),
+    measures:
+      jsonb("measures").$type<
+        { description: string; responsible?: string; dueDate?: string }[]
+      >(),
+    evidenceReference: text("evidence_reference"),
+    note: text("note"),
+    voidsId: uuid("voids_id"),
+    voidReason: text("void_reason"),
+    recordedBy: text("recorded_by").notNull(),
+    recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "fk_report_events_company",
+      columns: [t.companyId, t.orgId],
+      foreignColumns: [companies.id, companies.orgId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "fk_report_events_report",
+      columns: [t.reportId, t.orgId, t.companyId],
+      foreignColumns: [
+        pcmsoAnalyticalReports.id,
+        pcmsoAnalyticalReports.orgId,
+        pcmsoAnalyticalReports.companyId,
+      ],
+    }),
+    uniqueIndex("uq_report_events_id_scope").on(t.id, t.orgId, t.reportId),
+    foreignKey({
+      name: "fk_report_events_voids",
+      columns: [t.voidsId, t.orgId, t.reportId],
+      foreignColumns: [t.id, t.orgId, t.reportId],
+    }),
+    uniqueIndex("uq_report_events_voids").on(t.voidsId),
+    index("idx_report_events_company").on(t.orgId, t.companyId, t.recordedAt),
+    check(
+      "ck_report_events_kind",
+      sql`${t.kind} in ('finalized','presented','discussed','voided')`,
+    ),
+    check("ck_report_events_hash", sql`${t.reportSha256} ~ '^[0-9a-f]{64}$'`),
+    // Apresentação e discussão: data e participantes obrigatórios; só elas os têm.
+    check(
+      "ck_report_events_meeting",
+      sql`(${t.kind} in ('presented','discussed')) = (${t.occurredOn} is not null)
+        and (${t.kind} in ('presented','discussed')) = (${t.participants} is not null)
+        and (${t.participants} is null or (jsonb_typeof(${t.participants}) = 'array' and jsonb_array_length(${t.participants}) > 0))`,
+    ),
+    // Apresentação: modalidade e situação da CIPA; "sem CIPA" exige a referência da verificação.
+    check(
+      "ck_report_events_presented",
+      sql`(${t.kind} = 'presented') = (${t.modality} is not null)
+        and (${t.kind} = 'presented') = (${t.cipaSituation} is not null)
+        and (${t.modality} is null or ${t.modality} in ('in_person','remote','hybrid'))
+        and (${t.cipaSituation} is null or ${t.cipaSituation} in ('participated','exists_not_participated','not_constituted','unknown'))
+        and (${t.cipaSituation} is distinct from 'not_constituted' or char_length(btrim(coalesce(${t.cipaReference}, ''))) >= 5)`,
+    ),
+    // Discussão: síntese obrigatória; medidas só na discussão.
+    check(
+      "ck_report_events_discussed",
+      sql`(${t.kind} = 'discussed') = (${t.summary} is not null)
+        and (${t.summary} is null or char_length(btrim(${t.summary})) >= 10)
+        and (${t.measures} is null or (${t.kind} = 'discussed' and jsonb_typeof(${t.measures}) = 'array'))`,
+    ),
+    check(
+      "ck_report_events_void",
+      sql`(${t.kind} = 'voided') = (${t.voidsId} is not null)
+        and (${t.voidsId} is null) = (${t.voidReason} is null)
+        and (${t.voidReason} is null or char_length(btrim(${t.voidReason})) >= 10)
+        and (${t.voidsId} is null or ${t.voidsId} <> ${t.id})`,
+    ),
+    pgPolicy("report_events_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+    pgPolicy("report_events_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: companyModuleScope(t.orgId, t.companyId, "medicine"),
+      withCheck: companyModuleScope(t.orgId, t.companyId, "medicine"),
+    }),
+    // Ator como autor; versão exata (hash) da empresa; a mais recente (exceto correção). Finalizar:
+    // só o médico responsável que elaborou a versão, verificado e ainda designado. Demais: equipe
+    // do escritório. Regras que dependem de outros eventos ficam no trigger (sem recursão).
+    pgPolicy("report_events_insert", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${t.recordedBy} = ${actor}
+        and exists (select 1 from public.pcmso_analytical_reports r where r.id = ${t.reportId} and r.org_id = ${t.orgId}
+          and r.company_id = ${t.companyId} and r.content_sha256 = ${t.reportSha256}
+          and (${t.kind} = 'voided' or not exists (select 1 from public.pcmso_analytical_reports n
+            where n.org_id = r.org_id and n.company_id = r.company_id and n.version > r.version)))
+        and (
+          (${t.kind} = 'finalized' and exists (select 1 from public.pcmso_analytical_reports r
+            join public.pcmso_coordinator_assignments a on a.org_id = r.org_id and a.company_id = r.company_id
+              and a.medico_id = r.authored_by_medico_id and a.ends_on is null
+            where r.id = ${t.reportId} and r.org_id = ${t.orgId}
+              and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id))))
+          or (${t.kind} <> 'finalized' and exists (select 1 from public.org_memberships om where om.org_id = ${t.orgId}
+            and om.user_id = ${actor} and om.role in ('owner','collaborator','org:admin','org:member')))
+        )`,
+    }),
+  ],
+).enableRLS();
+
+export type PcmsoAnalyticalReportEvent = InferSelectModel<
+  typeof pcmsoAnalyticalReportEvents
+>;
