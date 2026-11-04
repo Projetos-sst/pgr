@@ -44,6 +44,7 @@ jest.mock("@/shared/server/actions/medicine/aso", () => ({
   listAsoDeliveriesAction: jest.fn(),
   registerAsoDeliveryAction: jest.fn(),
   voidAsoDeliveryAction: jest.fn(),
+  reviewAsoDeliveryEvidenceAction: jest.fn(),
   getAsoDeliveryEvidenceAction: jest.fn(),
 }));
 
@@ -317,13 +318,111 @@ describe("AsoPage", () => {
       },
     });
     await renderPage();
-    expect(
-      screen.getByText("Disponibilização registrada, sem comprovante"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Entrega registrada, sem comprovante")).toBeInTheDocument();
     expect(screen.getByText(/pediu a via física/)).toBeInTheDocument();
     expect(screen.getByText(/versão substituída/)).toBeInTheDocument();
     expect(screen.getByText(/Evidência: Recibo da versão 1/)).toBeInTheDocument();
     expect(screen.queryByText(/Recebimento confirmado/)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/O que registrar/)).toBeInTheDocument();
+  });
+  it("conferência do comprovante (NOB-167): pendente oferece a ação; conferido mostra resultado, método e revisor", async () => {
+    (getAsoReadinessAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { items: [], checklist: asoChecklist([]) },
+    });
+    (listAsoDocumentsAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+    const signed = {
+      id: "s1",
+      origin: "external_clinic",
+      previewDocumentId: null,
+      signatureMethod: "handwritten",
+      verificationReference: "Original na pasta 1",
+      signerName: "Dra. Clínica Fictícia",
+      signerRegistration: "88001",
+      signerUf: "PI",
+      conclusion: "fit",
+      signedOn: "2026-10-21",
+      fileSha256: "c".repeat(64),
+      sizeBytes: 10,
+      replacesId: null,
+      replaceReason: null,
+      registeredBy: "staff",
+      registeredAt: "2026-10-22T10:00:00.000Z",
+      replacedById: null,
+    };
+    (listSignedAsosAction as jest.Mock).mockResolvedValue({ ok: true, data: [signed] });
+    const base = {
+      signedDocumentId: "s1",
+      channelDescription: null,
+      voidsId: null,
+      voidReason: null,
+      reviewsId: null,
+      reviewMethod: null,
+      reviewResult: null,
+      reviewReference: null,
+      recordedBy: "staff",
+    };
+    (listAsoDeliveriesAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: {
+        currentSignedDocumentId: "s1",
+        summary: {
+          state: "evidence_checked",
+          physicalCopyPending: false,
+          previousVersionDelivered: false,
+        },
+        deliveries: [
+          {
+            ...base,
+            id: "d1",
+            kind: "made_available",
+            method: "physical_copy",
+            occurredAt: "2026-10-22T13:00:00.000Z",
+            evidenceReference: "Recibo 1",
+            evidenceKind: "signed_receipt",
+            evidenceSha256: "e".repeat(64),
+            hasEvidence: true,
+          },
+          {
+            ...base,
+            id: "d2",
+            kind: "made_available",
+            method: "physical_copy",
+            occurredAt: "2026-10-23T13:00:00.000Z",
+            evidenceReference: "Recibo 2",
+            evidenceKind: "signed_receipt",
+            evidenceSha256: "f".repeat(64),
+            hasEvidence: true,
+          },
+          {
+            ...base,
+            id: "r1",
+            kind: "evidence_reviewed",
+            method: null,
+            occurredAt: "2026-10-23T14:00:00.000Z",
+            evidenceReference: null,
+            evidenceKind: null,
+            evidenceSha256: null,
+            hasEvidence: false,
+            reviewsId: "d1",
+            reviewMethod: "documentary",
+            reviewResult: "confirmed",
+            reviewReference: "Nome e CPF conferidos",
+            recordedBy: "revisora",
+          },
+        ],
+      },
+    });
+    await renderPage();
+    expect(screen.getByText(/Comprovante conferido documentalmente/)).toBeInTheDocument();
+    expect(screen.getByText(/Conferência do comprovante: Conferido/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Nome e CPF conferidos · revisor revisora/),
+    ).toBeInTheDocument();
+    // Só o comprovante ainda não conferido oferece a ação.
+    expect(screen.getAllByRole("button", { name: "Conferir comprovante" })).toHaveLength(
+      1,
+    );
+    expect(screen.getAllByText("Comprovante aguardando conferência.")).toHaveLength(1);
   });
 });

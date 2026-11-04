@@ -8,6 +8,7 @@ import {
   ASO_DELIVERY_EVIDENCE_KINDS,
   asoDeliveryInputSchema,
   asoDeliveryVoidSchema,
+  asoEvidenceReviewSchema,
   checkDeliveryEvidence,
   EVIDENCE_EXTENSIONS,
   occurredAtProblem,
@@ -151,4 +152,21 @@ export async function deliveryEvidenceDownload(ctx: TenantContext, id: string) {
     expiresInSeconds: SIGNED_DOWNLOAD_URL_TTL_SECONDS,
     sha256: row.evidenceSha256,
   };
+}
+
+/** Conferência humana do comprovante, com método, resultado e referência (NOB-167). */
+export async function reviewDeliveryEvidence(
+  ctx: TenantContext,
+  examId: string,
+  deliveryId: string,
+  input: unknown,
+) {
+  const values = asoEvidenceReviewSchema.parse(input);
+  return repo.insertAsoEvidenceReview(
+    ctx,
+    examUuid(examId),
+    requiredUuid("Registro inválido.").parse(deliveryId),
+    values,
+    randomUUID(),
+  );
 }

@@ -162,6 +162,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/health-exams/{id}/company-origin` · `/health-exams/{id}/examiner-conclusions`                                                                                | POST confirma origem de exame antigo (`{ justification* }`, owner, `200`) · GET confirmações, POST apto/inapto para “apto com restrição” (`{ conclusion* }`, só o examinador vinculado, `201`) — NOB-152                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `/health-exams/{id}/signed-asos` · `/signed-asos/{id}/download`                                                                                                | GET ASOs assinados (cadeia de substituição) · POST multipart (`201`; `file` PDF ≤ 25 MB + `{ origin*, previewDocumentId?, signatureMethod*, verificationReference*, signerName*, signerRegistration*, signerUf*, conclusion*, signedOn*, replacesId?, replaceReason? }`) · GET URL assinada curta (`{ url, expiresInSeconds, sha256 }`) — sem PUT/DELETE; o sistema não assina — NOB-163                                                                                                                                                                                                                                                        |
 | `/health-exams/{id}/aso-deliveries` · `/health-exams/{id}/aso-deliveries/{deliveryId}/void` · `/aso-deliveries/{id}/evidence`                                  | GET entregas + situação do ASO vigente · POST multipart (`201`; `{ kind*, method?, channelDescription?, occurredAt*, evidenceReference?, evidenceKind? }` + `evidence?` PDF/JPEG/PNG ≤ 10 MB) · POST correção (`{ reason* }`, `201`) · GET URL assinada curta do comprovante — sem PUT/DELETE; só ASO assinado vigente; recebimento só com recibo assinado — NOB-165                                                                                                                                                                                                                                                                            |
+| `/health-exams/{id}/aso-deliveries/{deliveryId}/review`                                                                                                        | POST conferência humana do comprovante (`201`, `{ method* (documentary\|signature_witnessed), result* (confirmed\|rejected), reference* }`; revisor = usuário da sessão; uma por comprovante) — NOB-167                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `/health-exams/{id}/clinical-notes` · `/health-exams/{id}/work-restrictions` · `/health-exams/{id}/clinical-access-events`                                     | GET prontuário (leitura auditada), POST observação (`201`, `{ content* }`) — só a conta vinculada ao examinador ou ao coordenador, demais → `403` · GET restrições (RH lê), POST (`201`, `{ kind: restriction                                                                                                                                                                                                                                                                                                                                                                                                                                   | withdrawal, restriction? }`, sem CID → senão `422`; só o médico vinculado) · GET trilha de acesso (owner) — NOB-155                                                                                                                         |
 | `/employees/{id}/absences` · `/absences/{id}(/return                                                                                                           | /cancel)`·`/absences/{id}/clinical-notes`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | GET afastamentos com avaliação (retorno NR-7 7.5.9, sinalização 7.5.19.5 c), POST (`201`) · GET/PUT previsão do fim · POST retorno confirmado e cancelamento · GET/POST área clínica (atestado e CID), só o coordenador vinculado — NOB-139 |
 | `/companies/{id}/risk-absence-declarations`                                                                                                                    | GET declarações e permissão (equipe do escritório; cliente só com autorização ativa) · POST declarar (`201`, `{ sourceId*, gesId*, jobRole?, justification* }`; só o profissional com autorização ativa de validação de riscos, demais → `403`; fonte substituída ou grupo/função com risco pendente/validado → `422`) — NOB-156                                                                                                                                                                                                                                                                                                                |
@@ -1343,11 +1344,21 @@ NR-7 7.5.19: o ASO é disponibilizado ao empregado, com comprovação, e forneci
   - `made_available`: via física ou cópia digital (canal informado), com referência da evidência;
   - `physical_copy_requested`: pedido de via física;
   - `voided`: correção de um registro, com motivo de pelo menos 10 caracteres. Um registro é corrigido no máximo uma vez, e a correção não é corrigida.
-- **Situação do ASO vigente** (derivada, nunca presumida):
-  - **registrada:** entrega sem comprovante;
-  - **comprovada:** comprovante anexado;
-  - **recebimento confirmado:** só com `evidenceKind = signed_receipt`, o recibo assinado pelo trabalhador.
+- **Situação do ASO vigente** (derivada dos eventos, nunca presumida; NOB-167):
+  - **entrega registrada:** entrega sem comprovante;
+  - **comprovante aguardando conferência:** comprovante anexado e ainda não conferido. O tipo escolhido ("recibo assinado") não confirma nada;
+  - **comprovante recusado na conferência;**
+  - **comprovante conferido documentalmente:** conferência `documentary` com resultado `confirmed`. Não confirma a autoria da assinatura;
+  - **recebimento confirmado:** só com recibo assinado pelo trabalhador conferido como `signature_witnessed` (assinado na presença do revisor, identidade conferida em documento).
   - Mais dois avisos: via física pedida e ainda não entregue depois do pedido; versão anterior entregue e a vigente não, quando a substituição exige nova entrega.
+- **Conferência humana (NOB-167):** evento `evidence_reviewed`, separado do upload e só de inclusão.
+  - O revisor é o usuário da sessão (`recorded_by`), nunca vem do cliente; data e hora do servidor.
+  - Fica ligado ao comprovante exato por FK composta (id, exame, tenant, `evidence_sha256` e `evidence_kind`), com método, resultado e referência de auditoria.
+  - Uma conferência por comprovante (índice único).
+  - Comprovante corrigido não é conferível: o servidor e o trigger `aso_deliveries_review_guard` (SECURITY INVOKER) recusam.
+  - A conferência de comprovante ou ASO substituído é recusada pela policy de documento vigente.
+  - Conferência ou comprovante corrigidos deixam de valer, mas ficam no histórico.
+  - Registros anteriores à 0076 não têm conferência e ficam "aguardando conferência"; nada é promovido retroativamente.
 - **Comprovante:**
   - PDF, JPEG ou PNG conferido pelos bytes, até 10 MB;
   - SHA-256 no servidor;
@@ -1357,18 +1368,20 @@ NR-7 7.5.19: o ASO é disponibilizado ao empregado, com comprovação, e forneci
 - **Data e hora** em horário de Brasília (`AAAA-MM-DDTHH:mm`): não futura e não anterior à assinatura do ASO.
 - **Fora desta fatia:** entrega digital autenticada ao trabalhador (portal, NOB-122). Não há integração de e-mail, WhatsApp ou assinatura simulada.
 
-| Action                         | Entrada                                         | Retorno                                            |
-| ------------------------------ | ----------------------------------------------- | -------------------------------------------------- |
-| `listAsoDeliveriesAction`      | `examId`                                        | `{ currentSignedDocumentId, summary, deliveries }` |
-| `registerAsoDeliveryAction`    | `examId, FormData` (campos acima + `evidence?`) | evento registrado                                  |
-| `voidAsoDeliveryAction`        | `examId, deliveryId, { reason* }`               | evento de correção                                 |
-| `getAsoDeliveryEvidenceAction` | `id`                                            | `{ url, expiresInSeconds, sha256 }`                |
+| Action                            | Entrada                                                | Retorno                                            |
+| --------------------------------- | ------------------------------------------------------ | -------------------------------------------------- |
+| `listAsoDeliveriesAction`         | `examId`                                               | `{ currentSignedDocumentId, summary, deliveries }` |
+| `registerAsoDeliveryAction`       | `examId, FormData` (campos acima + `evidence?`)        | evento registrado                                  |
+| `voidAsoDeliveryAction`           | `examId, deliveryId, { reason* }`                      | evento de correção                                 |
+| `getAsoDeliveryEvidenceAction`    | `id`                                                   | `{ url, expiresInSeconds, sha256 }`                |
+| `reviewAsoDeliveryEvidenceAction` | `examId, deliveryId, { method*, result*, reference* }` | evento de conferência (NOB-167)                    |
 
 REST:
 
 - `GET|POST /api/v1/health-exams/{id}/aso-deliveries` (POST multipart, `201`);
 - `POST /api/v1/health-exams/{id}/aso-deliveries/{deliveryId}/void` (`201`);
-- `GET /api/v1/aso-deliveries/{id}/evidence`.
+- `GET /api/v1/aso-deliveries/{id}/evidence`;
+- `POST /api/v1/health-exams/{id}/aso-deliveries/{deliveryId}/review` (`201`, NOB-167).
 
 Tela: seção "Entrega ao trabalhador (NR-7 7.5.19)" em `/health-exams/{id}/aso`.
 

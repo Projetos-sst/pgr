@@ -8,10 +8,15 @@ import {
   ASO_DELIVERY_EVIDENCE_LABELS,
   ASO_DELIVERY_METHOD_LABELS,
   ASO_DELIVERY_METHODS,
+  ASO_EVIDENCE_REVIEW_METHOD_LABELS,
+  ASO_EVIDENCE_REVIEW_METHODS,
+  ASO_EVIDENCE_REVIEW_RESULT_LABELS,
+  ASO_EVIDENCE_REVIEW_RESULTS,
 } from "@/shared/domains/medicine/aso-delivery";
 import {
   getAsoDeliveryEvidenceAction,
   registerAsoDeliveryAction,
+  reviewAsoDeliveryEvidenceAction,
   voidAsoDeliveryAction,
 } from "@/shared/server/actions/medicine/aso";
 
@@ -220,5 +225,91 @@ export function AsoDeliveryEvidenceButton({ id }: { id: string }) {
         </span>
       ) : null}
     </span>
+  );
+}
+
+/**
+ * Conferência humana do comprovante (NOB-167): ato separado do upload. Quem confere abre o
+ * comprovante, confere trabalhador e ASO, e registra método, resultado e o que foi conferido. O
+ * revisor é o usuário da sessão; "assinatura presenciada" só vale para recibo do trabalhador.
+ */
+export function ReviewAsoEvidenceForm({
+  examId,
+  deliveryId,
+  signedReceipt,
+}: {
+  examId: string;
+  deliveryId: string;
+  signedReceipt: boolean;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [fields, setFields] = useState<Record<string, string>>({});
+  if (!open)
+    return (
+      <button
+        type="button"
+        className="text-primary text-xs font-semibold underline"
+        onClick={() => setOpen(true)}
+      >
+        Conferir comprovante
+      </button>
+    );
+  const methods = ASO_EVIDENCE_REVIEW_METHODS.filter(
+    (m) => signedReceipt || m !== "signature_witnessed",
+  );
+  return (
+    <form
+      className="flex flex-col gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const fd = new FormData(event.currentTarget);
+        startTransition(async () => {
+          const result = await reviewAsoDeliveryEvidenceAction(examId, deliveryId, {
+            method: fd.get("method"),
+            result: fd.get("result"),
+            reference: fd.get("reference"),
+          });
+          if (result.ok) {
+            setOpen(false);
+            router.refresh();
+          } else {
+            setFields(result.error.fields ?? {});
+            setError(result.error.fields ? null : result.error.message);
+          }
+        });
+      }}
+    >
+      <FormError message={error} />
+      <SelectField
+        label="Como foi conferido"
+        name="method"
+        required
+        options={methods.map((value) => ({
+          value,
+          label: ASO_EVIDENCE_REVIEW_METHOD_LABELS[value],
+        }))}
+        error={fields.method}
+      />
+      <SelectField
+        label="Resultado"
+        name="result"
+        required
+        options={ASO_EVIDENCE_REVIEW_RESULTS.map((value) => ({
+          value,
+          label: ASO_EVIDENCE_REVIEW_RESULT_LABELS[value],
+        }))}
+        error={fields.result}
+      />
+      <TextField
+        label="O que foi conferido (referência de auditoria)"
+        name="reference"
+        required
+        error={fields.reference}
+      />
+      <SubmitButton pending={pending} label="Registrar conferência" />
+    </form>
   );
 }

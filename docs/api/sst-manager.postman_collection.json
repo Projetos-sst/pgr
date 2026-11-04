@@ -6221,6 +6221,48 @@
             },
             "description": "{ url, expiresInSeconds, sha256 } do comprovante; o caminho sai do registro do tenant."
           }
+        },
+        {
+          "name": "POST /health-exams/{id}/aso-deliveries/{deliveryId}/review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"method\": \"documentary\",\n  \"result\": \"confirmed\",\n  \"reference\": \"Nome e CPF do recibo conferidos com a ficha (fictício)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/aso-deliveries/{{asoDeliveryId}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "health-exams",
+                "{{healthExamId}}",
+                "aso-deliveries",
+                "{{asoDeliveryId}}",
+                "review"
+              ]
+            },
+            "description": "Conferência humana do comprovante (NOB-167). method: documentary (não confirma autoria) | signature_witnessed (só recibo assinado na presença do revisor → recebimento confirmado). result: confirmed | rejected. O revisor é o usuário da sessão; uma conferência por comprovante. 201."
+          }
         }
       ]
     },

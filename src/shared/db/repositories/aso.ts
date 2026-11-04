@@ -10,6 +10,7 @@ import type {
   AsoDeliveryEvidenceKindValue,
   AsoDeliveryEvidenceType,
   AsoDeliveryInput,
+  AsoEvidenceReviewInput,
 } from "@/shared/domains/medicine/aso-delivery";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
@@ -845,6 +846,100 @@ export async function voidAsoDelivery(
         return toDeliveryItem(row);
       } catch (error) {
         deliveryRejected(error);
+      }
+    }),
+  );
+}
+
+/**
+ * Conferência humana do comprovante (NOB-167): ato separado do upload, registrado pelo usuário da
+ * sessão, ligado ao comprovante exato (id, hash e tipo copiados do registro conferido, nunca do
+ * cliente). Recusa comprovante inexistente, sem arquivo, corrigido ou já conferido; o banco confere
+ * de novo (FK composta, trigger de comprovante corrigido, policy de documento vigente).
+ */
+export async function insertAsoEvidenceReview(
+  ctx: TenantContext,
+  examId: string,
+  deliveryId: string,
+  input: AsoEvidenceReviewInput,
+  newId: string,
+): Promise<AsoDeliveryItem> {
+  return auditedTenantWrite(ctx.tenantId, "medicine.aso_delivery.review_rejected", () =>
+    actorTx(ctx, async (tx) => {
+      const exam = await findExam(tx, ctx.tenantId, examId, { lock: true });
+      const [target] = await tx
+        .select()
+        .from(deliveries)
+        .where(
+          and(
+            eq(deliveries.orgId, ctx.tenantId),
+            eq(deliveries.healthExamId, exam.id),
+            eq(deliveries.id, deliveryId),
+          ),
+        )
+        .limit(1);
+      if (!target) throw new NotFoundError();
+      if (
+        target.kind !== "made_available" ||
+        !target.evidencePath ||
+        !target.evidenceSha256 ||
+        !target.evidenceKind
+      )
+        throw new ValidationError(
+          "Só um comprovante anexado a uma entrega pode ser conferido.",
+        );
+      if (
+        input.method === "signature_witnessed" &&
+        target.evidenceKind !== "signed_receipt"
+      )
+        throw new ValidationError(
+          "Assinatura presenciada só vale para recibo assinado pelo trabalhador.",
+        );
+      const [voided] = await tx
+        .select({ id: deliveries.id })
+        .from(deliveries)
+        .where(
+          and(
+            eq(deliveries.orgId, ctx.tenantId),
+            eq(deliveries.healthExamId, exam.id),
+            eq(deliveries.voidsId, target.id),
+          ),
+        )
+        .limit(1);
+      if (voided)
+        throw new ValidationError("Comprovante corrigido não pode ser conferido.");
+      try {
+        const [row] = await tx
+          .insert(deliveries)
+          .values({
+            id: newId,
+            orgId: ctx.tenantId,
+            companyId: target.companyId,
+            healthExamId: exam.id,
+            employeeId: target.employeeId,
+            signedDocumentId: target.signedDocumentId,
+            documentSha256: target.documentSha256,
+            kind: "evidence_reviewed",
+            occurredAt: new Date(),
+            reviewsId: target.id,
+            reviewedEvidenceSha256: target.evidenceSha256,
+            reviewedEvidenceKind: target.evidenceKind,
+            reviewMethod: input.method,
+            reviewResult: input.result,
+            reviewReference: input.reference,
+            recordedBy: ctx.userId,
+          })
+          .returning();
+        return toDeliveryItem(row);
+      } catch (error) {
+        const code = (error as { cause?: { code?: string } }).cause?.code;
+        if (code === "23505")
+          throw new ValidationError("Este comprovante já foi conferido.");
+        if (code === "42501")
+          throw new ForbiddenError(
+            "Conferência recusada pelo banco: só a equipe do escritório confere, para comprovante válido do ASO assinado vigente.",
+          );
+        throw error;
       }
     }),
   );

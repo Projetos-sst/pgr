@@ -221,7 +221,8 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData | string) =
       }),
       pdf("confirmação de leitura"),
     );
-    expect((await state(e.id)).state).toBe("proven");
+    // NOB-167: comprovante sem conferência humana fica aguardando conferência.
+    expect((await state(e.id)).state).toBe("evidence_pending");
     const withReceipt = await registerDelivery(
       staff,
       e.id,
@@ -238,7 +239,7 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData | string) =
     });
     const [path] = (putAsoDeliveryEvidence as jest.Mock).mock.calls.at(-1)!;
     expect(path).toBe(`org_a/aso-entregas/${e.id}/${withReceipt.id}.png`);
-    expect((await state(e.id)).state).toBe("acknowledged");
+    expect((await state(e.id)).state).toBe("evidence_pending");
     const dl = await deliveryEvidenceDownload(staff, withReceipt.id);
     expect(dl).toMatchObject({
       sha256: withReceipt.evidenceSha256,
@@ -328,7 +329,7 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData | string) =
       delivery({ evidenceKind: "signed_receipt" }),
       pdf("recibo"),
     );
-    expect((await state(e.id)).state).toBe("acknowledged");
+    expect((await state(e.id)).state).toBe("evidence_pending");
     const v2 = await registerSignedAso(
       owner,
       e.id,
@@ -454,7 +455,7 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData | string) =
     const { id } = await res.json();
     const list = await LIST_DELIVERIES(restReq(staff), params);
     expect(list.status).toBe(200);
-    expect((await list.json()).summary.state).toBe("acknowledged");
+    expect((await list.json()).summary.state).toBe("evidence_pending");
     const ev = await EVIDENCE(restReq(staff), { params: Promise.resolve({ id }) });
     expect(ev.status).toBe(200);
     expect(
