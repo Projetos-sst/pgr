@@ -76,7 +76,7 @@ A aplicação conta só os códigos errados e serializa as tentativas da mesma c
 Com o limite esgotado, nem o código certo é conferido. Bloqueio repetido de operador ou de conta é sinal
 de abuso e deve ser investigado (consulta somente leitura em `identity_challenge_attempts`).
 
-## 5. Procedimento operacional proposto (pendente de aprovação)
+## 5. Procedimento operacional (decisões A–E aprovadas em 03/11/2026)
 
 1. O profissional pede a verificação em **Minha identidade profissional**.
 2. O operador faz a conferência **presencial ou por vídeo ao vivo, sem gravação**:
@@ -85,12 +85,37 @@ de abuso e deve ser investigado (consulta somente leitura em `identity_challenge
    - situação do CRM/UF em fonte oficial;
    - correspondência entre pessoa, documentos e cadastro.
 3. **Controle da conta:** o profissional lê ao operador o código de 6 dígitos exibido na sessão
-   autenticada dele. O código muda a cada 10 minutos.
+   autenticada dele. O código muda a cada 5 minutos e vale no máximo ~10 minutos. O operador pede
+   que o profissional recarregue a tela durante a chamada e leia o código atual.
 4. O operador registra método, fonte consultada e uma referência de auditoria. Fotos ou documentos não
    são guardados na aplicação.
 
 A conferência documental reduz, mas **não elimina**, o risco de fraude (por exemplo, documentos de
 terceiros). A evolução prevista é o certificado ICP-Brasil (MED-12).
+
+Validade de 12 meses (decisão D): a renovação é uma nova verificação. **Guarda das evidências
+(decisão C):** só metadados (checklist, método, fonte e referência), sem documento bruto e sem
+exclusão automática. O prazo de retenção depende de base jurídica escrita (LGPD e obrigações
+aplicáveis) e não foi presumido.
+
+### 5.1 Incidente de sessão ou de conta (risco residual aceito)
+
+Um código copiado de uma sessão que depois foi revogada continua valendo até o fim da janela (no
+máximo ~10 minutos). Mesmo assim, **não dá acesso a quem copiou**:
+
+- a verificação fica gravada para a conta dona do pedido;
+- todo acesso clínico exige, no momento do uso, uma sessão viva da própria conta e associação
+  ativa ao escritório.
+
+Se houver suspeita de sessão ou conta comprometida:
+
+1. No Clerk: revogar as sessões da conta e exigir troca de senha (e MFA, se disponível).
+2. Recusar os pedidos de verificação em aberto da conta
+   (`POST /api/v1/admin/identity-verifications/requests/{id}/reject`, motivo "incidente de sessão").
+3. Se uma verificação foi aprovada durante o incidente, revogá-la
+   (`POST /api/v1/admin/identity-verifications/{id}/revoke`). O acesso clínico cai na hora.
+4. Registrar o incidente e a data, sem dado clínico, e só abrir novo pedido depois de a conta estar
+   sob controle do titular.
 
 ## 6. Liberação (expand/contract)
 

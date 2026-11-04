@@ -12,6 +12,7 @@ import {
   reconfirmationStatement,
 } from "@/shared/domains/medicine/professional-identity";
 import {
+  CHALLENGE_WINDOW_MS,
   challengeMatches,
   currentChallengeCode,
 } from "@/shared/server/medicine/identity-challenge";
@@ -146,8 +147,17 @@ describe("desafio de controle da conta", () => {
     const code = currentChallengeCode(REQ, "u1", t)!;
     expect(code).toMatch(/^\d{6}$/);
     expect(challengeMatches(REQ, "u1", code, t)).toBe(true);
-    expect(challengeMatches(REQ, "u1", code, t + 10 * 60 * 1000)).toBe(true);
-    expect(challengeMatches(REQ, "u1", code, t + 25 * 60 * 1000)).toBe(false);
+    // Janela de 5 min (NOB-164): vale na janela atual e na seguinte; duas janelas depois, não.
+    expect(CHALLENGE_WINDOW_MS).toBe(5 * 60 * 1000);
+    const start = Math.floor(t / CHALLENGE_WINDOW_MS) * CHALLENGE_WINDOW_MS;
+    expect(challengeMatches(REQ, "u1", code, start + CHALLENGE_WINDOW_MS)).toBe(true);
+    expect(challengeMatches(REQ, "u1", code, start + 2 * CHALLENGE_WINDOW_MS - 1)).toBe(
+      true,
+    );
+    expect(challengeMatches(REQ, "u1", code, start + 2 * CHALLENGE_WINDOW_MS)).toBe(
+      false,
+    );
+    expect(challengeMatches(REQ, "u1", code, t + 11 * 60 * 1000)).toBe(false);
     expect(challengeMatches(REQ, "outra-conta", code, t)).toBe(false);
   });
   it("declaração de reconfirmação usa o cadastro", () => {
