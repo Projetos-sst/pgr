@@ -3,6 +3,11 @@ import { notFound } from "next/navigation";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { procedureLabel, type AsoContent } from "@/shared/domains/medicine/aso";
 import {
+  ASO_DELIVERY_EVIDENCE_LABELS,
+  ASO_DELIVERY_METHOD_LABELS,
+  ASO_DELIVERY_STATE_LABELS,
+} from "@/shared/domains/medicine/aso-delivery";
+import {
   ASO_SIGNATURE_METHOD_LABELS,
   ASO_SIGNED_CONCLUSION_LABELS,
   ASO_SIGNED_ORIGIN_LABELS,
@@ -15,6 +20,7 @@ import {
   getAsoReadinessAction,
   listAsoDocumentsAction,
   listExaminerConclusionsAction,
+  listAsoDeliveriesAction,
   listExamProceduresAction,
   listSignedAsosAction,
 } from "@/shared/server/actions/medicine/aso";
@@ -27,6 +33,11 @@ import {
   ProcedureForm,
   RemoveProcedureButton,
 } from "./aso-controls";
+import {
+  AsoDeliveryEvidenceButton,
+  AsoDeliveryForm,
+  VoidAsoDeliveryForm,
+} from "./aso-delivery-controls";
 import { DownloadSignedAsoButton, SignedAsoForm } from "./signed-aso-controls";
 
 export const dynamic = "force-dynamic";
@@ -150,13 +161,15 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
   const { id } = await params;
   const exam = await getHealthExamAction(id);
   if (!exam.ok) notFound();
-  const [readiness, procedures, docs, conclusions, signedDocs] = await Promise.all([
-    getAsoReadinessAction(id),
-    listExamProceduresAction(id),
-    listAsoDocumentsAction(id),
-    listExaminerConclusionsAction(id),
-    listSignedAsosAction(id),
-  ]);
+  const [readiness, procedures, docs, conclusions, signedDocs, deliveries] =
+    await Promise.all([
+      getAsoReadinessAction(id),
+      listExamProceduresAction(id),
+      listAsoDocumentsAction(id),
+      listExaminerConclusionsAction(id),
+      listSignedAsosAction(id),
+      listAsoDeliveriesAction(id),
+    ]);
   if (!readiness.ok)
     return (
       <div className="flex flex-col gap-3 p-6">
@@ -171,6 +184,10 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
   const conclusionRows = conclusions.ok ? conclusions.data : [];
   const signedRows = signedDocs.ok ? signedDocs.data : [];
   const currentSigned = currentSignedAso(signedRows);
+  const deliveryData = deliveries.ok ? deliveries.data : null;
+  const voidedIds = new Set(
+    (deliveryData?.deliveries ?? []).filter((d) => d.voidsId).map((d) => d.voidsId),
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 px-6 py-8">
@@ -311,6 +328,80 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
           previews={docRows.map((doc) => ({ id: doc.id, version: doc.version }))}
           currentId={currentSigned?.id ?? null}
         />
+      </section>
+      <section className="glass-card flex flex-col gap-3 rounded-xl p-5 text-sm">
+        <h2 className="text-text text-base font-semibold">
+          Entrega ao trabalhador (NR-7 7.5.19)
+        </h2>
+        <p className="text-text-subtle">
+          O ASO assinado vigente precisa ser disponibilizado ao trabalhador, com
+          comprovação, e fornecido em meio físico quando ele pedir. Sem comprovante, a
+          entrega fica só registrada; o recibo assinado pelo trabalhador é o que confirma
+          o recebimento. A entrega vale para o documento entregue: se o ASO for
+          substituído, a nova versão precisa de nova entrega.
+        </p>
+        {currentSigned && deliveryData ? (
+          <>
+            <p className="text-text font-semibold">
+              {ASO_DELIVERY_STATE_LABELS[deliveryData.summary.state]}
+            </p>
+            {deliveryData.summary.previousVersionDelivered ? (
+              <p className="text-amber-900">
+                A versão anterior do ASO foi entregue, mas foi substituída: entregue a
+                versão vigente.
+              </p>
+            ) : null}
+            {deliveryData.summary.physicalCopyPending ? (
+              <p className="text-amber-900">
+                O trabalhador pediu a via física, e ela ainda não foi registrada como
+                entregue.
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-amber-900">
+            Registre o ASO assinado antes: a prévia não é entregue como ASO.
+          </p>
+        )}
+        {deliveryData?.deliveries.length ? (
+          <ul className="flex flex-col gap-2">
+            {deliveryData.deliveries.map((d) => (
+              <li key={d.id} className="text-text-subtle flex flex-col gap-1">
+                <span className="text-text font-semibold">
+                  {d.kind === "voided"
+                    ? "Correção de registro"
+                    : d.kind === "physical_copy_requested"
+                      ? "Pedido de via física"
+                      : ASO_DELIVERY_METHOD_LABELS[d.method!]}{" "}
+                  ·{" "}
+                  {new Date(d.occurredAt).toLocaleString("pt-BR", {
+                    timeZone: "America/Sao_Paulo",
+                  })}
+                  {d.signedDocumentId !== currentSigned?.id
+                    ? " · versão substituída"
+                    : ""}
+                  {voidedIds.has(d.id) ? " · corrigido" : ""}
+                </span>
+                {d.channelDescription ? <span>Canal: {d.channelDescription}</span> : null}
+                {d.evidenceReference ? (
+                  <span>Evidência: {d.evidenceReference}</span>
+                ) : null}
+                {d.voidReason ? <span>Motivo: {d.voidReason}</span> : null}
+                {d.hasEvidence && d.evidenceKind ? (
+                  <span className="text-xs">
+                    {ASO_DELIVERY_EVIDENCE_LABELS[d.evidenceKind]} · SHA-256{" "}
+                    {d.evidenceSha256?.slice(0, 16)}…{" "}
+                    <AsoDeliveryEvidenceButton id={d.id} />
+                  </span>
+                ) : null}
+                {d.kind !== "voided" && !voidedIds.has(d.id) ? (
+                  <VoidAsoDeliveryForm examId={id} deliveryId={d.id} />
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {currentSigned ? <AsoDeliveryForm examId={id} /> : null}
       </section>
       {latest?.ok ? (
         <Preview

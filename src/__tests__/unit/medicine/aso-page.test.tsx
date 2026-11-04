@@ -12,6 +12,7 @@ import {
   getAsoDocumentAction,
   getAsoReadinessAction,
   listAsoDocumentsAction,
+  listAsoDeliveriesAction,
   listExamProceduresAction,
   listSignedAsosAction,
 } from "@/shared/server/actions/medicine/aso";
@@ -40,6 +41,10 @@ jest.mock("@/shared/server/actions/medicine/aso", () => ({
   listSignedAsosAction: jest.fn(),
   registerSignedAsoAction: jest.fn(),
   getSignedAsoDownloadAction: jest.fn(),
+  listAsoDeliveriesAction: jest.fn(),
+  registerAsoDeliveryAction: jest.fn(),
+  voidAsoDeliveryAction: jest.fn(),
+  getAsoDeliveryEvidenceAction: jest.fn(),
 }));
 
 const EXAM = "e1111111-1111-4111-8111-111111111111";
@@ -93,6 +98,18 @@ beforeEach(() => {
   });
   (listExamProceduresAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
   (listSignedAsosAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+  (listAsoDeliveriesAction as jest.Mock).mockResolvedValue({
+    ok: true,
+    data: {
+      currentSignedDocumentId: null,
+      summary: {
+        state: "none",
+        physicalCopyPending: false,
+        previousVersionDelivered: false,
+      },
+      deliveries: [],
+    },
+  });
 });
 
 async function renderPage() {
@@ -213,5 +230,100 @@ describe("AsoPage", () => {
     expect(
       screen.getByRole("button", { name: "Registrar substituição" }),
     ).toBeInTheDocument();
+  });
+  it("entrega: sem ASO assinado não oferece registro; com ASO, mostra a situação, avisos e histórico", async () => {
+    (getAsoReadinessAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { items: [], checklist: asoChecklist([]) },
+    });
+    (listAsoDocumentsAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+    await renderPage();
+    expect(screen.getByText(/a prévia não é entregue como ASO/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/O que registrar/)).not.toBeInTheDocument();
+  });
+
+  it("entrega com ASO vigente: situação registrada, via física pendente e versão substituída no histórico", async () => {
+    (getAsoReadinessAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { items: [], checklist: asoChecklist([]) },
+    });
+    (listAsoDocumentsAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+    const signed = {
+      origin: "external_clinic",
+      previewDocumentId: null,
+      signatureMethod: "handwritten",
+      verificationReference: "Original na pasta 1",
+      signerName: "Dra. Clínica Fictícia",
+      signerRegistration: "88001",
+      signerUf: "PI",
+      conclusion: "fit",
+      signedOn: "2026-10-21",
+      fileSha256: "c".repeat(64),
+      sizeBytes: 10,
+      replaceReason: null,
+      registeredBy: "staff",
+      registeredAt: "2026-10-22T10:00:00.000Z",
+    };
+    (listSignedAsosAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: [
+        { ...signed, id: "s1", replacesId: null, replacedById: "s2" },
+        {
+          ...signed,
+          id: "s2",
+          replacesId: "s1",
+          replaceReason: "Data corrigida pela clínica.",
+          replacedById: null,
+        },
+      ],
+    });
+    const event = {
+      channelDescription: null,
+      evidenceKind: null,
+      evidenceSha256: null,
+      hasEvidence: false,
+      voidsId: null,
+      voidReason: null,
+    };
+    (listAsoDeliveriesAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: {
+        currentSignedDocumentId: "s2",
+        summary: {
+          state: "registered",
+          physicalCopyPending: true,
+          previousVersionDelivered: false,
+        },
+        deliveries: [
+          {
+            ...event,
+            id: "d1",
+            signedDocumentId: "s1",
+            kind: "made_available",
+            method: "physical_copy",
+            occurredAt: "2026-10-22T13:00:00.000Z",
+            evidenceReference: "Recibo da versão 1",
+          },
+          {
+            ...event,
+            id: "d2",
+            signedDocumentId: "s2",
+            kind: "physical_copy_requested",
+            method: null,
+            occurredAt: "2026-10-23T11:00:00.000Z",
+            evidenceReference: null,
+          },
+        ],
+      },
+    });
+    await renderPage();
+    expect(
+      screen.getByText("Disponibilização registrada, sem comprovante"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/pediu a via física/)).toBeInTheDocument();
+    expect(screen.getByText(/versão substituída/)).toBeInTheDocument();
+    expect(screen.getByText(/Evidência: Recibo da versão 1/)).toBeInTheDocument();
+    expect(screen.queryByText(/Recebimento confirmado/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/O que registrar/)).toBeInTheDocument();
   });
 });

@@ -352,6 +352,10 @@
     {
       "key": "signedAsoId",
       "value": ""
+    },
+    {
+      "key": "asoDeliveryId",
+      "value": ""
     }
   ],
   "item": [
@@ -6039,6 +6043,179 @@
               "path": ["api", "v1", "signed-asos", "{{signedAsoId}}", "download"]
             },
             "description": "{ url, expiresInSeconds, sha256 }: URL assinada curta do PDF; o caminho sai do registro do tenant."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entrega do ASO ao trabalhador (NOB-165)",
+      "item": [
+        {
+          "name": "GET /health-exams/{id}/aso-deliveries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/aso-deliveries",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "aso-deliveries"]
+            },
+            "description": "Eventos de entrega (todas as versões do ASO assinado) e a situação do ASO vigente: none | registered | proven | acknowledged, physicalCopyPending, previousVersionDelivered."
+          }
+        },
+        {
+          "name": "POST /health-exams/{id}/aso-deliveries (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "kind",
+                  "value": "made_available",
+                  "type": "text"
+                },
+                {
+                  "key": "method",
+                  "value": "physical_copy",
+                  "type": "text"
+                },
+                {
+                  "key": "channelDescription",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "occurredAt",
+                  "value": "2026-10-22T10:30",
+                  "type": "text"
+                },
+                {
+                  "key": "evidenceReference",
+                  "value": "Entregue em mãos; recibo assinado digitalizado",
+                  "type": "text"
+                },
+                {
+                  "key": "evidenceKind",
+                  "value": "signed_receipt",
+                  "type": "text"
+                },
+                {
+                  "key": "evidence",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/aso-deliveries",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "aso-deliveries"]
+            },
+            "description": "Entrega (kind=made_available: method, evidenceReference; digital_copy exige channelDescription) ou pedido de via física (kind=physical_copy_requested). Comprovante opcional (PDF/JPEG/PNG ≤ 10 MB) com evidenceKind; só signed_receipt confirma o recebimento. Sempre o ASO assinado vigente. 201."
+          }
+        },
+        {
+          "name": "POST /health-exams/{id}/aso-deliveries/{deliveryId}/void",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Registro feito na ficha errada (fictício).\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/aso-deliveries/{{asoDeliveryId}}/void",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "health-exams",
+                "{{healthExamId}}",
+                "aso-deliveries",
+                "{{asoDeliveryId}}",
+                "void"
+              ]
+            },
+            "description": "Corrige um registro com motivo (≥ 10). O original fica no histórico. 201."
+          }
+        },
+        {
+          "name": "GET /aso-deliveries/{id}/evidence",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/aso-deliveries/{{asoDeliveryId}}/evidence",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "aso-deliveries", "{{asoDeliveryId}}", "evidence"]
+            },
+            "description": "{ url, expiresInSeconds, sha256 } do comprovante; o caminho sai do registro do tenant."
           }
         }
       ]

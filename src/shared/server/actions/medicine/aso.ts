@@ -20,6 +20,13 @@ import {
   signedAsoDownload,
   signedAsoFields,
 } from "@/shared/server/medicine/aso-signed-core";
+import {
+  asoDeliveryFields,
+  deliveryEvidenceDownload,
+  listDeliveries,
+  registerDelivery,
+  voidDelivery,
+} from "@/shared/server/medicine/aso-delivery-core";
 
 const asoPath = (examId: string) => `/health-exams/${examId}/aso`;
 
@@ -134,5 +141,52 @@ export async function registerSignedAsoAction(examId: string, form: FormData) {
 export async function getSignedAsoDownloadAction(id: string) {
   return officeAction("medicine.aso_signed.download", (ctx) =>
     signedAsoDownload(ctx, id),
+  );
+}
+
+// ── Entrega do ASO ao trabalhador (NOB-165) ──────────────────────────────────
+
+export async function listAsoDeliveriesAction(examId: string) {
+  return officeAction("medicine.aso_delivery.list", (ctx) => listDeliveries(ctx, examId));
+}
+
+/** FormData: kind, method?, channelDescription?, occurredAt, evidenceReference?, evidenceKind?, evidence? */
+export async function registerAsoDeliveryAction(examId: string, form: FormData) {
+  return officeAction(
+    "medicine.aso_delivery.register",
+    async (ctx) => {
+      const raw = form.get("evidence");
+      const row = await registerDelivery(
+        ctx,
+        examId,
+        asoDeliveryFields(form),
+        raw instanceof File ? raw : null,
+      );
+      revalidatePath(asoPath(examId));
+      return row;
+    },
+    { audit: true },
+  );
+}
+
+export async function voidAsoDeliveryAction(
+  examId: string,
+  deliveryId: string,
+  input: unknown,
+) {
+  return officeAction(
+    "medicine.aso_delivery.void",
+    async (ctx) => {
+      const row = await voidDelivery(ctx, examId, deliveryId, input);
+      revalidatePath(asoPath(examId));
+      return row;
+    },
+    { audit: true },
+  );
+}
+
+export async function getAsoDeliveryEvidenceAction(id: string) {
+  return officeAction("medicine.aso_delivery.evidence", (ctx) =>
+    deliveryEvidenceDownload(ctx, id),
   );
 }

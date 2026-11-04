@@ -6,6 +6,11 @@ import { ForbiddenError } from "@/shared/auth/errors";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import type { ExamProcedureValues } from "@/shared/domains/medicine/aso";
 import type { AsoSignedInput, AsoSignedItem } from "@/shared/domains/medicine/aso-signed";
+import type {
+  AsoDeliveryEvidenceKindValue,
+  AsoDeliveryEvidenceType,
+  AsoDeliveryInput,
+} from "@/shared/domains/medicine/aso-delivery";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
@@ -14,6 +19,8 @@ import {
   asoDocuments as docs,
   asoExaminerConclusions as conclusions,
   asoSignedDocuments as signed,
+  asoDeliveries as deliveries,
+  type AsoDelivery,
   type AsoDocument,
   type AsoExaminerConclusion,
   type AsoSignedDocument,
@@ -649,6 +656,195 @@ export async function insertSignedAso(
         if (code === "23505")
           throw new ValidationError("Este documento já foi substituído.");
         throw error;
+      }
+    }),
+  );
+}
+
+// ── Entrega do ASO ao trabalhador (NOB-165) ──────────────────────────────────
+
+/** Registro de entrega sem o caminho do comprovante (que nunca sai do servidor). */
+export type AsoDeliveryItem = Omit<
+  AsoDelivery,
+  "evidencePath" | "occurredAt" | "recordedAt"
+> & {
+  occurredAt: string;
+  recordedAt: string;
+  hasEvidence: boolean;
+};
+
+function toDeliveryItem(row: AsoDelivery): AsoDeliveryItem {
+  const { evidencePath, ...rest } = row;
+  return {
+    ...rest,
+    occurredAt: row.occurredAt.toISOString(),
+    recordedAt: row.recordedAt.toISOString(),
+    hasEvidence: evidencePath !== null,
+  };
+}
+
+/** Eventos de entrega do exame (todas as versões do ASO assinado), do mais antigo ao mais recente. */
+export async function listAsoDeliveries(
+  ctx: TenantContext,
+  examId: string,
+): Promise<{ deliveries: AsoDeliveryItem[]; signed: AsoSignedItem[] }> {
+  return actorTx(ctx, async (tx) => {
+    const exam = await findExam(tx, ctx.tenantId, examId);
+    const rows = await tx
+      .select()
+      .from(deliveries)
+      .where(
+        and(eq(deliveries.orgId, ctx.tenantId), eq(deliveries.healthExamId, exam.id)),
+      )
+      .orderBy(asc(deliveries.recordedAt));
+    const signedRows = await signedOfExamTx(tx, ctx.tenantId, exam.id);
+    return {
+      deliveries: rows.map(toDeliveryItem),
+      signed: signedRows.map((row) => toSignedItem(row, signedRows)),
+    };
+  });
+}
+
+/** Registro para baixar o comprovante (o caminho sai do registro do tenant). */
+export async function getAsoDelivery(
+  ctx: TenantContext,
+  id: string,
+): Promise<AsoDelivery> {
+  return actorTx(ctx, async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(deliveries)
+      .where(and(eq(deliveries.orgId, ctx.tenantId), eq(deliveries.id, id)))
+      .limit(1);
+    if (!row) throw new NotFoundError();
+    await assertCompanyModuleTx(tx, ctx.tenantId, row.companyId, "medicine");
+    return row;
+  });
+}
+
+export type AsoDeliveryEvidenceFile = {
+  path: string;
+  sha256: string;
+  sizeBytes: number;
+  contentType: AsoDeliveryEvidenceType;
+  kind: AsoDeliveryEvidenceKindValue;
+};
+
+function deliveryRejected(error: unknown): never {
+  const code = (error as { cause?: { code?: string } }).cause?.code;
+  if (code === "42501")
+    throw new ForbiddenError(
+      "Registro recusado pelo banco: só a equipe do escritório registra a entrega, para o ASO assinado vigente do exame.",
+    );
+  if (code === "23505") throw new ValidationError("Este registro já foi corrigido.");
+  throw error;
+}
+
+/**
+ * Registra uma entrega ou um pedido de via física para o ASO assinado **vigente** do exame (nunca a
+ * prévia): o documento e o hash são lidos do banco, não do cliente. A RLS confere de novo.
+ */
+export async function insertAsoDelivery(
+  ctx: TenantContext,
+  examId: string,
+  id: string,
+  input: AsoDeliveryInput,
+  evidence: AsoDeliveryEvidenceFile | null,
+  checkOccurredAt: (signedOn: string) => string | null,
+): Promise<AsoDeliveryItem> {
+  return auditedTenantWrite(ctx.tenantId, "medicine.aso_delivery.register_rejected", () =>
+    actorTx(ctx, async (tx) => {
+      const exam = await findExam(tx, ctx.tenantId, examId, { lock: true });
+      const companyId = originCompany(exam);
+      const signedRows = await signedOfExamTx(tx, ctx.tenantId, exam.id);
+      const replaced = new Set(signedRows.map((r) => r.replacesId).filter(Boolean));
+      const current = signedRows.find((r) => !replaced.has(r.id));
+      if (!current)
+        throw new ValidationError(
+          "O exame não tem ASO assinado registrado. A prévia não é ASO e não pode ser entregue.",
+        );
+      const problem = checkOccurredAt(current.signedOn);
+      if (problem) throw new ValidationError(problem);
+      try {
+        const [row] = await tx
+          .insert(deliveries)
+          .values({
+            id,
+            orgId: ctx.tenantId,
+            companyId,
+            healthExamId: exam.id,
+            employeeId: exam.employeeId,
+            signedDocumentId: current.id,
+            documentSha256: current.fileSha256,
+            kind: input.kind,
+            method: input.kind === "made_available" ? input.method! : null,
+            channelDescription: input.channelDescription,
+            occurredAt: input.occurredAt,
+            evidenceReference: input.evidenceReference,
+            evidenceKind: evidence?.kind ?? null,
+            evidencePath: evidence?.path ?? null,
+            evidenceSha256: evidence?.sha256 ?? null,
+            evidenceSizeBytes: evidence?.sizeBytes ?? null,
+            evidenceContentType: evidence?.contentType ?? null,
+            recordedBy: ctx.userId,
+          })
+          .returning();
+        return toDeliveryItem(row);
+      } catch (error) {
+        deliveryRejected(error);
+      }
+    }),
+  );
+}
+
+/** Corrige um registro anterior (entrega ou pedido) com motivo; o original é preservado. */
+export async function voidAsoDelivery(
+  ctx: TenantContext,
+  examId: string,
+  deliveryId: string,
+  reason: string,
+  newId: string,
+): Promise<AsoDeliveryItem> {
+  return auditedTenantWrite(ctx.tenantId, "medicine.aso_delivery.void_rejected", () =>
+    actorTx(ctx, async (tx) => {
+      const exam = await findExam(tx, ctx.tenantId, examId, { lock: true });
+      const [target] = await tx
+        .select()
+        .from(deliveries)
+        .where(
+          and(
+            eq(deliveries.orgId, ctx.tenantId),
+            eq(deliveries.healthExamId, exam.id),
+            eq(deliveries.id, deliveryId),
+          ),
+        )
+        .limit(1);
+      if (!target) throw new NotFoundError();
+      if (target.kind === "voided")
+        throw new ValidationError(
+          "Uma correção não é corrigida: registre a entrega de novo.",
+        );
+      try {
+        const [row] = await tx
+          .insert(deliveries)
+          .values({
+            id: newId,
+            orgId: ctx.tenantId,
+            companyId: target.companyId,
+            healthExamId: exam.id,
+            employeeId: target.employeeId,
+            signedDocumentId: target.signedDocumentId,
+            documentSha256: target.documentSha256,
+            kind: "voided",
+            occurredAt: new Date(),
+            voidsId: target.id,
+            voidReason: reason,
+            recordedBy: ctx.userId,
+          })
+          .returning();
+        return toDeliveryItem(row);
+      } catch (error) {
+        deliveryRejected(error);
       }
     }),
   );

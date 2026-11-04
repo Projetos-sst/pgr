@@ -183,3 +183,26 @@ export async function putSignedAsoObject(
     .upload(storagePath, bytes, { contentType: "application/pdf", upsert: false });
   if (error) throw new Error(`signed ASO upload failed: ${error.message}`);
 }
+
+/** Caminho do comprovante de entrega do ASO (NOB-165): tenant da sessão, exame e id do registro. */
+export function asoDeliveryEvidencePath(
+  orgId: string,
+  examId: string,
+  id: string,
+  extension: string,
+): string {
+  return `${orgId}/aso-entregas/${examId}/${id}.${extension}`;
+}
+
+/** Grava o comprovante de entrega (sem sobrescrever). Erro do provedor → lança, sem detalhe. */
+export async function putAsoDeliveryEvidence(
+  storagePath: string,
+  bytes: Uint8Array,
+  contentType: string,
+): Promise<void> {
+  const supabase = getRlsBypassingSupabaseClient();
+  const { error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .upload(storagePath, bytes, { contentType, upsert: false });
+  if (error) throw new Error(`ASO delivery evidence upload failed: ${error.message}`);
+}
