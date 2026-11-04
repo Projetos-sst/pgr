@@ -2,6 +2,12 @@ import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { procedureLabel, type AsoContent } from "@/shared/domains/medicine/aso";
+import {
+  ASO_SIGNATURE_METHOD_LABELS,
+  ASO_SIGNED_CONCLUSION_LABELS,
+  ASO_SIGNED_ORIGIN_LABELS,
+  currentSignedAso,
+} from "@/shared/domains/medicine/aso-signed";
 import { EXAM_TYPE_LABELS } from "@/shared/domains/pgr/health-exams";
 import { getHealthExamAction } from "@/shared/server/actions/pgr/health-exams";
 import {
@@ -10,6 +16,7 @@ import {
   listAsoDocumentsAction,
   listExaminerConclusionsAction,
   listExamProceduresAction,
+  listSignedAsosAction,
 } from "@/shared/server/actions/medicine/aso";
 
 import { PageHeader } from "../../../_ui/list";
@@ -20,6 +27,7 @@ import {
   ProcedureForm,
   RemoveProcedureButton,
 } from "./aso-controls";
+import { DownloadSignedAsoButton, SignedAsoForm } from "./signed-aso-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -133,20 +141,21 @@ function Preview({
 }
 
 /**
- * ASO do exame (NOB-152): conferência da NR-7 7.5.19.1, exames complementares realizados e
- * prévias arquivadas. Não há emissão oficial nem assinatura: dependem de assinatura verificável
- * do examinador (MED-12). Observações clínicas do exame nunca aparecem aqui.
+ * ASO do exame (NOB-152, NOB-163): conferência da NR-7 7.5.19.1, exames complementares
+ * realizados, prévias arquivadas e o ASO assinado (documento oficial) registrado com integridade e
+ * conferência. O sistema não assina (MED-12). Observações clínicas do exame nunca aparecem aqui.
  */
 export default async function AsoPage({ params }: { params: Promise<{ id: string }> }) {
   await requireOfficeStaffPage();
   const { id } = await params;
   const exam = await getHealthExamAction(id);
   if (!exam.ok) notFound();
-  const [readiness, procedures, docs, conclusions] = await Promise.all([
+  const [readiness, procedures, docs, conclusions, signedDocs] = await Promise.all([
     getAsoReadinessAction(id),
     listExamProceduresAction(id),
     listAsoDocumentsAction(id),
     listExaminerConclusionsAction(id),
+    listSignedAsosAction(id),
   ]);
   if (!readiness.ok)
     return (
@@ -160,6 +169,8 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
   const blocking = readiness.data.items.filter((item) => item.severity === "blocking");
   const has = (code: string) => blocking.some((item) => item.code === code);
   const conclusionRows = conclusions.ok ? conclusions.data : [];
+  const signedRows = signedDocs.ok ? signedDocs.data : [];
+  const currentSigned = currentSignedAso(signedRows);
 
   return (
     <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 px-6 py-8">
@@ -252,9 +263,54 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
           <GenerateAsoButton examId={id} />
         )}
         <p className="text-text-subtle text-xs">
-          Emissão do ASO e assinatura do médico examinador ainda não estão disponíveis no
-          sistema.
+          A prévia não é o ASO oficial. O sistema não assina: o ASO oficial é o documento
+          assinado pelo médico examinador, registrado abaixo.
         </p>
+      </section>
+      <section className="glass-card flex flex-col gap-3 rounded-xl p-5 text-sm">
+        <h2 className="text-text text-base font-semibold">
+          ASO assinado (documento oficial)
+        </h2>
+        <p className="text-text-subtle">
+          O ASO oficial é o PDF assinado pelo médico examinador (NR-7 7.5.19.1 g). O
+          sistema guarda o arquivo íntegro (SHA-256), o método de assinatura e a
+          conferência feita; ele não assina e não declara assinatura que não foi
+          conferida. Correções substituem o documento vigente, com motivo, e o anterior é
+          preservado.
+        </p>
+        {signedRows.length ? (
+          <ul className="flex flex-col gap-2">
+            {signedRows.map((doc) => (
+              <li key={doc.id} className="text-text-subtle flex flex-col gap-1">
+                <span className="text-text font-semibold">
+                  {doc.id === currentSigned?.id ? "Vigente" : "Substituído"} ·{" "}
+                  {ASO_SIGNED_CONCLUSION_LABELS[doc.conclusion]} · assinado em{" "}
+                  {doc.signedOn}
+                </span>
+                <span>
+                  {ASO_SIGNED_ORIGIN_LABELS[doc.origin]} ·{" "}
+                  {ASO_SIGNATURE_METHOD_LABELS[doc.signatureMethod]} · {doc.signerName} ·
+                  CRM {doc.signerRegistration}/{doc.signerUf}
+                </span>
+                <span>Conferência: {doc.verificationReference}</span>
+                {doc.replaceReason ? <span>Motivo: {doc.replaceReason}</span> : null}
+                <span className="text-xs">
+                  SHA-256 {doc.fileSha256.slice(0, 16)}… · registrado em{" "}
+                  {doc.registeredAt.slice(0, 10)} <DownloadSignedAsoButton id={doc.id} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-amber-900">
+            Nenhum ASO assinado registrado. Até lá, o exame não tem ASO oficial.
+          </p>
+        )}
+        <SignedAsoForm
+          examId={id}
+          previews={docRows.map((doc) => ({ id: doc.id, version: doc.version }))}
+          currentId={currentSigned?.id ?? null}
+        />
       </section>
       {latest?.ok ? (
         <Preview

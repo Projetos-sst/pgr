@@ -1,6 +1,7 @@
 import { sql, type InferSelectModel } from "drizzle-orm";
 import {
   check,
+  date,
   foreignKey,
   index,
   integer,
@@ -10,6 +11,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -151,3 +153,136 @@ export const asoExaminerConclusions = pgTable(
 ).enableRLS();
 
 export type AsoExaminerConclusion = InferSelectModel<typeof asoExaminerConclusions>;
+
+/** Método de assinatura do ASO arquivado (MED-12). O sistema não assina: registra como foi assinado. */
+export type AsoSignatureMethod = "icp_brasil" | "electronic" | "handwritten";
+/** Fluxo A (examinador do exame, a partir da prévia) ou fluxo B (clínica externa) (MED-01). */
+export type AsoSignedOrigin = "examiner" | "external_clinic";
+
+/**
+ * ASO assinado arquivado (NOB-163; MED-01, MED-11, MED-12; NR-7 7.5.19.1 "g"). É o ASO oficial:
+ * o PDF assinado pelo médico examinador, guardado com SHA-256 calculado no servidor e no bucket
+ * privado do tenant. O sistema não assina e não presume assinatura: a conferência é obrigatória
+ * (referência do validador para ICP-Brasil/plataforma; guarda do original físico para assinatura
+ * manual). Correção = nova linha que substitui a anterior, com motivo; nada é alterado ou apagado.
+ */
+export const asoSignedDocuments = pgTable(
+  "aso_signed_documents",
+  {
+    id: uuid("id").primaryKey(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id").notNull(),
+    healthExamId: uuid("health_exam_id").notNull(),
+    origin: text("origin").$type<AsoSignedOrigin>().notNull(),
+    previewDocumentId: uuid("preview_document_id"),
+    signatureMethod: text("signature_method").$type<AsoSignatureMethod>().notNull(),
+    verificationReference: text("verification_reference").notNull(),
+    signerName: text("signer_name").notNull(),
+    signerRegistration: text("signer_registration").notNull(),
+    signerUf: text("signer_uf").notNull(),
+    conclusion: text("conclusion").$type<"fit" | "unfit">().notNull(),
+    signedOn: date("signed_on").notNull(),
+    storagePath: text("storage_path").notNull(),
+    fileSha256: text("file_sha256").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    replacesId: uuid("replaces_id"),
+    replaceReason: text("replace_reason"),
+    registeredBy: text("registered_by").notNull(),
+    registeredAt: timestamp("registered_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "fk_aso_signed_company",
+      columns: [t.companyId, t.orgId],
+      foreignColumns: [companies.id, companies.orgId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "fk_aso_signed_exam",
+      columns: [t.healthExamId, t.orgId, t.companyId],
+      foreignColumns: [healthExams.id, healthExams.orgId, healthExams.companyId],
+    }),
+    foreignKey({
+      name: "fk_aso_signed_preview",
+      columns: [t.previewDocumentId],
+      foreignColumns: [asoDocuments.id],
+    }),
+    // Substituição só dentro do mesmo exame e tenant (FK composta; sem consulta recursiva na policy).
+    uniqueIndex("uq_aso_signed_id_scope").on(t.id, t.orgId, t.healthExamId),
+    foreignKey({
+      name: "fk_aso_signed_replaces",
+      columns: [t.replacesId, t.orgId, t.healthExamId],
+      foreignColumns: [t.id, t.orgId, t.healthExamId],
+    }),
+    uniqueIndex("uq_aso_signed_replaces").on(t.replacesId),
+    uniqueIndex("uq_aso_signed_storage_path").on(t.storagePath),
+    index("idx_aso_signed_exam").on(t.orgId, t.healthExamId, t.registeredAt),
+    check("ck_aso_signed_origin", sql`${t.origin} in ('examiner','external_clinic')`),
+    check(
+      "ck_aso_signed_preview",
+      sql`(${t.origin} = 'examiner') = (${t.previewDocumentId} is not null)`,
+    ),
+    check(
+      "ck_aso_signed_method",
+      sql`${t.signatureMethod} in ('icp_brasil','electronic','handwritten')`,
+    ),
+    check(
+      "ck_aso_signed_verification",
+      sql`char_length(btrim(${t.verificationReference})) >= 5`,
+    ),
+    check("ck_aso_signed_conclusion", sql`${t.conclusion} in ('fit','unfit')`),
+    check("ck_aso_signed_uf", sql`${t.signerUf} ~ '^[A-Z]{2}$'`),
+    check(
+      "ck_aso_signed_signer",
+      sql`btrim(${t.signerName}) <> '' and btrim(${t.signerRegistration}) <> ''`,
+    ),
+    check("ck_aso_signed_hash", sql`${t.fileSha256} ~ '^[0-9a-f]{64}$'`),
+    check("ck_aso_signed_size", sql`${t.sizeBytes} > 0`),
+    check(
+      "ck_aso_signed_replace",
+      sql`(${t.replacesId} is null) = (${t.replaceReason} is null) and (${t.replaceReason} is null or char_length(btrim(${t.replaceReason})) >= 10)`,
+    ),
+    check(
+      "ck_aso_signed_not_self",
+      sql`${t.replacesId} is null or ${t.replacesId} <> ${t.id}`,
+    ),
+    pgPolicy("aso_signed_documents_isolation", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenantScope,
+      withCheck: tenantScope,
+    }),
+    pgPolicy("aso_signed_documents_module_access", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: companyModuleScope(t.orgId, t.companyId, "medicine"),
+      withCheck: companyModuleScope(t.orgId, t.companyId, "medicine"),
+    }),
+    // Fluxo A: só o examinador do exame com identidade verificada, CRM/UF do cadastro dele e prévia
+    // do mesmo exame. Fluxo B: só a equipe do escritório. Substituição: garantida pela FK composta.
+    pgPolicy("aso_signed_documents_insert", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${t.registeredBy} = current_setting('app.current_actor', true)
+        and exists (select 1 from public.health_exams h where h.id = ${t.healthExamId} and h.org_id = ${t.orgId} and h.company_id = ${t.companyId})
+        and (
+          (${t.origin} = 'examiner'
+            and exists (select 1 from public.health_exams h join public.medicos m on m.id = h.doctor_id and m.org_id = h.org_id
+              where h.id = ${t.healthExamId} and h.org_id = ${t.orgId}
+                and m.crm = ${t.signerRegistration} and m.registration_uf = ${t.signerUf}
+                and h.doctor_id in (select public.actor_clinical_medico_ids(h.org_id)))
+            and exists (select 1 from public.aso_documents d where d.id = ${t.previewDocumentId} and d.org_id = ${t.orgId} and d.health_exam_id = ${t.healthExamId}))
+          or (${t.origin} = 'external_clinic'
+            and exists (select 1 from public.org_memberships om where om.org_id = ${t.orgId}
+              and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','collaborator','org:admin','org:member')))
+        )`,
+    }),
+  ],
+).enableRLS();
+
+export type AsoSignedDocument = InferSelectModel<typeof asoSignedDocuments>;

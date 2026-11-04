@@ -348,6 +348,10 @@
       "key": "identityVerificationId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "signedAsoId",
+      "value": ""
     }
   ],
   "item": [
@@ -5879,6 +5883,162 @@
               "path": ["api", "v1", "aso-documents", "{{asoDocumentId}}"]
             },
             "description": "Prévia arquivada com content e contentSha256. Imutável; nunca contém observações clínicas do exame."
+          }
+        }
+      ]
+    },
+    {
+      "name": "ASO assinado — documento oficial (NOB-163)",
+      "item": [
+        {
+          "name": "GET /health-exams/{id}/signed-asos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/signed-asos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "signed-asos"]
+            },
+            "description": "ASOs assinados do exame, com replacedById (cadeia de substituição). O vigente é o que ninguém substituiu."
+          }
+        },
+        {
+          "name": "POST /health-exams/{id}/signed-asos (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "origin",
+                  "value": "examiner",
+                  "type": "text"
+                },
+                {
+                  "key": "previewDocumentId",
+                  "value": "{{asoDocumentId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "signatureMethod",
+                  "value": "icp_brasil",
+                  "type": "text"
+                },
+                {
+                  "key": "verificationReference",
+                  "value": "Verificador ITI, relatório fictício",
+                  "type": "text"
+                },
+                {
+                  "key": "signerName",
+                  "value": "Dr. Examinador Fictício",
+                  "type": "text"
+                },
+                {
+                  "key": "signerRegistration",
+                  "value": "12345",
+                  "type": "text"
+                },
+                {
+                  "key": "signerUf",
+                  "value": "MA",
+                  "type": "text"
+                },
+                {
+                  "key": "conclusion",
+                  "value": "fit",
+                  "type": "text"
+                },
+                {
+                  "key": "signedOn",
+                  "value": "2026-10-21",
+                  "type": "text"
+                },
+                {
+                  "key": "replacesId",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "replaceReason",
+                  "value": "",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health-exams/{{healthExamId}}/signed-asos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health-exams", "{{healthExamId}}", "signed-asos"]
+            },
+            "description": "Registra o PDF assinado (≤ 25 MB). origin=examiner exige previewDocumentId, examinador verificado, CRM/UF do examinador e a conclusão da prévia; origin=external_clinic (equipe do escritório) não usa prévia. verificationReference obrigatória. Com documento vigente: replacesId + replaceReason. 201. O sistema não assina."
+          }
+        },
+        {
+          "name": "GET /signed-asos/{id}/download",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/signed-asos/{{signedAsoId}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "signed-asos", "{{signedAsoId}}", "download"]
+            },
+            "description": "{ url, expiresInSeconds, sha256 }: URL assinada curta do PDF; o caminho sai do registro do tenant."
           }
         }
       ]

@@ -326,8 +326,12 @@ export {
 export {
   asoDocuments,
   asoExaminerConclusions,
+  asoSignedDocuments,
   type AsoDocument,
   type AsoExaminerConclusion,
+  type AsoSignedDocument,
+  type AsoSignatureMethod,
+  type AsoSignedOrigin,
 } from "./aso-documents";
 export {
   ergonomicEvaluations,
