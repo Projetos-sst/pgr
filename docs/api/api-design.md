@@ -930,7 +930,12 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
   - não há fonte conferível.
   - Nenhuma classificação clínica automática: qualquer divergência exige nova conferência, novo plano (se for o caso) e nova prévia. Não existe justificativa livre que libere o bloqueio.
   - **Concorrência:** registro de fonte, revisão técnica de risco e registro do PCMSO assinado tomam a mesma trava transacional da base de riscos da empresa (`pg_advisory_xact_lock`).
-  - **Banco:** a policy de inclusão confere fontes e versões dos snapshots da prévia e do plano contra as fontes vigentes. A impressão digital do PGR e o conjunto de riscos validados são conferidos no servidor, porque não são recalculáveis em SQL.
+  - **Banco:** a policy de inclusão confere fontes e versões dos snapshots da prévia e do plano contra as fontes vigentes. Também confere o **resumo da base de riscos** calculado no próprio banco, que precisa ser igual ao gravado na prévia.
+    - O resumo vem de `public.medical_risk_basis_digest(org, empresa)`: SECURITY INVOKER, `search_path` fixo, EXECUTE só para o `app_runtime`.
+    - Ele cobre as fontes vigentes com versão, a situação de cada risco e o conteúdo atual do PGR interno de origem (data, revisão e riscos com a última avaliação).
+    - A prévia grava esse resumo na geração (`pcmso_documents.risk_basis_digest`), e a policy da prévia impede forjá-lo.
+    - Mudança de conteúdo do PGR sem nova versão da fonte, ou risco validado depois da prévia, é recusada também por INSERT direto (`42501`).
+    - Prévias anteriores à 0075 não têm resumo e precisam ser geradas de novo.
   - Depois de registrado, se a base mudar, o vigente ganha o alerta `risk_basis_changed`.
 - **Hash da prévia × hash do PDF:** `previewSha256` identifica o snapshot JSON da prévia que fundamentou o documento. `fileSha256` identifica os bytes do PDF assinado. Os dois são diferentes por natureza, e a diferença não é motivo de recusa.
 - **Quem registra:**

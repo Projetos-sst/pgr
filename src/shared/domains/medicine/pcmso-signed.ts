@@ -211,7 +211,8 @@ export type RiskBasisProblem =
   | "source_changed"
   | "preview_sources_mismatch"
   | "plan_sources_mismatch"
-  | "preview_risks_mismatch";
+  | "preview_risks_mismatch"
+  | "basis_changed_since_preview";
 
 export const RISK_BASIS_PROBLEM_MESSAGES: Record<RiskBasisProblem, string> = {
   no_live_source:
@@ -224,6 +225,8 @@ export const RISK_BASIS_PROBLEM_MESSAGES: Record<RiskBasisProblem, string> = {
     "O plano de exames aprovado foi feito sobre outra fonte ou versão de riscos: revalide o plano com o médico responsável e gere nova prévia.",
   preview_risks_mismatch:
     "Os riscos validados da empresa mudaram depois da prévia: gere nova prévia (e revalide o plano, se necessário).",
+  basis_changed_since_preview:
+    "A base de riscos (fontes, situação dos riscos ou conteúdo do PGR) mudou depois da prévia, ou a prévia é anterior a esse controle: gere nova prévia.",
 };
 
 /** Fontes (id e versão) gravadas num snapshot (`content.riskBasis.sources` ou `based_on.sources`). */
@@ -294,6 +297,9 @@ export function riskBasisProblems(input: {
   previewSources: RiskBasisSource[] | null;
   planSources: RiskBasisSource[] | null;
   previewRisks: RiskBasisRisk[] | null;
+  /** Resumo da base calculado no banco: o gravado na prévia e o atual (nulo = sem controle). */
+  previewDigest?: string | null;
+  currentDigest?: string | null;
 }): RiskBasisProblem[] {
   const out: RiskBasisProblem[] = [];
   if (!input.live.length) out.push("no_live_source");
@@ -305,5 +311,10 @@ export function riskBasisProblems(input: {
     out.push("plan_sources_mismatch");
   if (!input.previewRisks || riskKey(input.previewRisks) !== riskKey(input.liveRisks))
     out.push("preview_risks_mismatch");
+  if (
+    input.previewDigest !== undefined &&
+    (!input.previewDigest || input.previewDigest !== input.currentDigest)
+  )
+    out.push("basis_changed_since_preview");
   return out;
 }

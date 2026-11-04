@@ -44,6 +44,9 @@ export const pcmsoDocuments = pgTable(
     examPlanId: uuid("exam_plan_id").notNull(),
     content: jsonb("content").notNull(),
     contentSha256: text("content_sha256").notNull(),
+    // NOB-166: resumo da base de riscos (fontes vigentes, versões, situação dos riscos e conteúdo
+    // atual do PGR interno) calculado no banco na geração; nulo nas prévias anteriores à 0075.
+    riskBasisDigest: text("risk_basis_digest"),
     generatedBy: text("generated_by").notNull(),
     generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -86,7 +89,8 @@ export const pcmsoDocuments = pgTable(
       as: "restrictive",
       for: "insert",
       to: appRuntimeRole,
-      withCheck: sql`${t.generatedBy} = current_setting('app.current_actor', true) and exists (select 1 from public.medical_exam_plans p where p.id = ${t.examPlanId} and p.org_id = ${t.orgId} and p.company_id = ${t.companyId} and p.status = 'approved')`,
+      withCheck: sql`${t.generatedBy} = current_setting('app.current_actor', true) and exists (select 1 from public.medical_exam_plans p where p.id = ${t.examPlanId} and p.org_id = ${t.orgId} and p.company_id = ${t.companyId} and p.status = 'approved')
+        and ${t.riskBasisDigest} is not null and ${t.riskBasisDigest} = public.medical_risk_basis_digest(${t.orgId}, ${t.companyId})`,
     }),
   ],
 ).enableRLS();
@@ -230,6 +234,7 @@ export const pcmsoSignedDocuments = pgTable(
       withCheck: sql`${t.registeredBy} = current_setting('app.current_actor', true)
         and exists (select 1 from public.pcmso_documents d where d.id = ${t.previewDocumentId} and d.org_id = ${t.orgId}
           and d.company_id = ${t.companyId} and d.content_sha256 = ${t.previewSha256} and d.exam_plan_id = ${t.examPlanId}
+          and d.risk_basis_digest is not null and d.risk_basis_digest = public.medical_risk_basis_digest(d.org_id, d.company_id)
           and jsonb_typeof(d.content->'riskBasis'->'sources') = 'array' and jsonb_array_length(d.content->'riskBasis'->'sources') > 0
           and not exists (select 1 from jsonb_array_elements(d.content->'riskBasis'->'sources') sx where not exists (select 1 from public.medical_risk_sources ms
             where ms.id::text = sx->>'id' and ms.org_id = ${t.orgId} and ms.company_id = ${t.companyId} and ms.version = sx->>'version' and not exists (select 1 from public.medical_risk_sources nx where nx.org_id = ms.org_id and nx.company_id = ms.company_id and nx.supersedes_source_id = ms.id)))

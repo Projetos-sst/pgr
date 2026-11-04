@@ -220,12 +220,21 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
             values ('org_a', ${I.companyA}, 99, '2026-01-01', '2026-12-31', ${draft.id}, '{}', ${"a".repeat(64)}, 'staff')`,
       ),
     ).rejects.toMatchObject({ code: "42501" });
+    // Prévia sem o resumo da base de riscos do banco (NOB-166) é recusada pela RLS.
+    await expect(
+      asStaff(
+        (tx) =>
+          tx`insert into pcmso_documents (org_id, company_id, version, cycle_start, cycle_end, exam_plan_id, content, content_sha256, risk_basis_digest, generated_by)
+            values ('org_a', ${I.companyA}, 97, '2026-01-01', '2026-12-31', ${plan.id}, '{}', ${"a".repeat(64)}, ${"f".repeat(64)}, 'staff')`,
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
     // Status diferente de prévia é barrado pelo CHECK (não há emissão oficial sem assinatura).
     await expect(
       asStaff(
         (tx) =>
-          tx`insert into pcmso_documents (org_id, company_id, version, status, cycle_start, cycle_end, exam_plan_id, content, content_sha256, generated_by)
-            values ('org_a', ${I.companyA}, 98, 'issued', '2026-01-01', '2026-12-31', ${plan.id}, '{}', ${"a".repeat(64)}, 'staff')`,
+          tx`insert into pcmso_documents (org_id, company_id, version, status, cycle_start, cycle_end, exam_plan_id, content, content_sha256, risk_basis_digest, generated_by)
+            values ('org_a', ${I.companyA}, 98, 'issued', '2026-01-01', '2026-12-31', ${plan.id}, '{}', ${"a".repeat(64)},
+              public.medical_risk_basis_digest('org_a', ${I.companyA}::uuid), 'staff')`,
       ),
     ).rejects.toMatchObject({ code: "23514" });
   });

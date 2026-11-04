@@ -167,6 +167,58 @@ const sha = (text: string) => createHash("sha256").update(pdfBytes(text)).digest
     expect(await signed()).toHaveLength(0);
   });
 
+  it("PGR interno alterado sem nova fonte nem versão: INSERT direto pela conta do coordenador é recusado pelo banco", async () => {
+    const plan = await approvedPlan();
+    const v1 = await preview();
+    await admin`update risks set description = 'Ruído contínuo alterado sem nova fonte' where id = ${I.riskA}`;
+    // A fonte vigente continua a mesma (mesmo id e versão).
+    const live =
+      await admin`select id, version from medical_risk_sources where company_id = ${I.companyA}`;
+    expect(live).toHaveLength(1);
+    expect(live[0].id).toBe(internalSourceId);
+    // app_runtime com RLS, ator = coordenador verificado (sem superusuário nem BYPASSRLS).
+    const forged = runtime.begin(async (tx) => {
+      await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', 'doctor', true)`;
+      return tx`insert into pcmso_signed_documents (id, org_id, company_id, preview_document_id, preview_sha256, exam_plan_id,
+          origin, signature_method, signer_name, signer_registration, signer_uf, signed_on, verification_reference,
+          storage_path, file_sha256, size_bytes, registered_by)
+        values (gen_random_uuid(), 'org_a', ${I.companyA}, ${v1.id}, ${v1.contentSha256}, ${plan.id}, 'coordinator',
+          'icp_brasil', 'Dra. Coordenadora Fictícia', '71001', 'MA', ${today}, 'Forjado fictício',
+          ${"org_a/x/" + Math.random()}, ${"a".repeat(64)}, 10, 'doctor')`;
+    });
+    await expect(forged).rejects.toMatchObject({ code: "42501" });
+    expect(await signed()).toHaveLength(0);
+  });
+
+  it("risco validado depois da prévia: INSERT direto também é recusado pelo banco", async () => {
+    const ext = await registerMedicalRiskSource(owner, I.companyA, {
+      kind: "external",
+      title: "PGR externo fictício",
+      version: "2026.1",
+      reference: "Documento externo fictício",
+      risks: [
+        { agentType: "physical", description: "Calor", exposureGroup: "GES A" },
+        { agentType: "chemical", description: "Poeira mineral", exposureGroup: "GES A" },
+      ],
+    });
+    await admin`update medical_risk_entries set status='validated', reviewed_by='prof', reviewed_at=now()
+      where source_id=${ext.id} and content->>'description' = 'Calor'`;
+    const plan = await approvedPlan();
+    const v1 = await preview();
+    await admin`update medical_risk_entries set status='validated', reviewed_by='prof', reviewed_at=now()
+      where source_id=${ext.id} and content->>'description' = 'Poeira mineral'`;
+    const forged = runtime.begin(async (tx) => {
+      await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', 'doctor', true)`;
+      return tx`insert into pcmso_signed_documents (id, org_id, company_id, preview_document_id, preview_sha256, exam_plan_id,
+          origin, signature_method, signer_name, signer_registration, signer_uf, signed_on, verification_reference,
+          storage_path, file_sha256, size_bytes, registered_by)
+        values (gen_random_uuid(), 'org_a', ${I.companyA}, ${v1.id}, ${v1.contentSha256}, ${plan.id}, 'coordinator',
+          'icp_brasil', 'Dra. Coordenadora Fictícia', '71001', 'MA', ${today}, 'Forjado fictício',
+          ${"org_a/x/" + Math.random()}, ${"a".repeat(64)}, 10, 'doctor')`;
+    });
+    await expect(forged).rejects.toMatchObject({ code: "42501" });
+  });
+
   it("fonte interna substituída por nova versão: bloqueado (servidor e SQL); fluxo coerente depois é aceito", async () => {
     const oldPlan = await approvedPlan();
     const v1 = await preview();

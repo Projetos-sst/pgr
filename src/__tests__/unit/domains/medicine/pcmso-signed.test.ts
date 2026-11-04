@@ -168,6 +168,17 @@ describe("riskBasisProblems (base de riscos do documento × vigente)", () => {
       riskBasisProblems({ ...ok, liveRisks: [risk, { ...risk, description: "Calor" }] }),
     ).toEqual(["preview_risks_mismatch"]);
   });
+  it("resumo do banco: igual passa; diferente ou ausente na prévia falha fechado", () => {
+    expect(
+      riskBasisProblems({ ...ok, previewDigest: "d1", currentDigest: "d1" }),
+    ).toEqual([]);
+    expect(
+      riskBasisProblems({ ...ok, previewDigest: "d1", currentDigest: "d2" }),
+    ).toEqual(["basis_changed_since_preview"]);
+    expect(
+      riskBasisProblems({ ...ok, previewDigest: null, currentDigest: "d1" }),
+    ).toEqual(["basis_changed_since_preview"]);
+  });
   it("lê fontes e riscos dos snapshots; formato inesperado vira null", () => {
     expect(snapshotSources([{ id: "s1", version: "v", title: "x" }])).toEqual([
       { id: "s1", version: "v" },

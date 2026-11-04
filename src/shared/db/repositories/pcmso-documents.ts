@@ -65,6 +65,7 @@ const summary = {
   cycleEnd: docs.cycleEnd,
   examPlanId: docs.examPlanId,
   contentSha256: docs.contentSha256,
+  riskBasisDigest: docs.riskBasisDigest,
   generatedBy: docs.generatedBy,
   generatedAt: docs.generatedAt,
 };
@@ -133,6 +134,7 @@ export async function insertPcmsoDocument(
             cycleEnd: input.cycleEnd,
             content: input.content,
             contentSha256: input.contentSha256,
+            riskBasisDigest: sql`public.medical_risk_basis_digest(${ctx.tenantId}, ${companyId}::uuid)`,
             generatedBy: ctx.userId,
           })
           .returning(summary);
@@ -230,7 +232,7 @@ async function riskBasisProblemsTx(
   tx: TenantTransaction,
   orgId: string,
   companyId: string,
-  basis: { previewContent: unknown; planBasedOn: unknown },
+  basis: { previewContent: unknown; planBasedOn: unknown; previewDigest: string | null },
   { lock = false } = {},
 ): Promise<RiskBasisProblem[]> {
   if (lock) await lockMedicalRiskBasisTx(tx, orgId, companyId);
@@ -293,7 +295,12 @@ async function riskBasisProblemsTx(
         possibleInjuries: e.content.possibleInjuries?.trim() || null,
       })),
   );
+  const [digest] = (await tx.execute(
+    sql`select public.medical_risk_basis_digest(${orgId}, ${companyId}::uuid) as digest`,
+  )) as unknown as { digest: string | null }[];
   return riskBasisProblems({
+    previewDigest: basis.previewDigest,
+    currentDigest: digest?.digest ?? null,
     live: live.map((row) => ({ id: row.id, version: row.version })),
     liveFresh: internal.every((row) => fresh.has(row.id)),
     liveRisks,
@@ -331,7 +338,7 @@ export async function listSignedPcmsos(ctx: TenantContext, companyId: string) {
     let riskBasisChanged = false;
     if (currentItem) {
       const [preview] = await tx
-        .select({ content: docs.content })
+        .select({ content: docs.content, riskBasisDigest: docs.riskBasisDigest })
         .from(docs)
         .where(
           and(eq(docs.orgId, ctx.tenantId), eq(docs.id, currentItem.previewDocumentId)),
@@ -347,6 +354,7 @@ export async function listSignedPcmsos(ctx: TenantContext, companyId: string) {
           await riskBasisProblemsTx(tx, ctx.tenantId, companyId, {
             previewContent: preview?.content,
             planBasedOn: plan?.basedOn,
+            previewDigest: preview?.riskBasisDigest ?? null,
           })
         ).length > 0;
     }
@@ -452,7 +460,11 @@ export async function insertSignedPcmso(
         tx,
         ctx.tenantId,
         companyId,
-        { previewContent: preview.content, planBasedOn: planRow?.basedOn },
+        {
+          previewContent: preview.content,
+          planBasedOn: planRow?.basedOn,
+          previewDigest: preview.riskBasisDigest,
+        },
         { lock: true },
       );
       if (problems.length)
