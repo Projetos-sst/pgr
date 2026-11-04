@@ -14,6 +14,7 @@ CREATE TABLE "pcmso_analytical_report_events" (
 	"measures" jsonb,
 	"evidence_reference" text,
 	"note" text,
+	"basis_id" uuid,
 	"voids_id" uuid,
 	"void_reason" text,
 	"recorded_by" text NOT NULL,
@@ -31,6 +32,7 @@ CREATE TABLE "pcmso_analytical_report_events" (
 	CONSTRAINT "ck_report_events_discussed" CHECK (("pcmso_analytical_report_events"."kind" = 'discussed') = ("pcmso_analytical_report_events"."summary" is not null)
         and ("pcmso_analytical_report_events"."summary" is null or char_length(btrim("pcmso_analytical_report_events"."summary")) >= 10)
         and ("pcmso_analytical_report_events"."measures" is null or ("pcmso_analytical_report_events"."kind" = 'discussed' and jsonb_typeof("pcmso_analytical_report_events"."measures") = 'array'))),
+	CONSTRAINT "ck_report_events_basis" CHECK (("pcmso_analytical_report_events"."kind" in ('presented','discussed')) = ("pcmso_analytical_report_events"."basis_id" is not null)),
 	CONSTRAINT "ck_report_events_void" CHECK (("pcmso_analytical_report_events"."kind" = 'voided') = ("pcmso_analytical_report_events"."voids_id" is not null)
         and ("pcmso_analytical_report_events"."voids_id" is null) = ("pcmso_analytical_report_events"."void_reason" is null)
         and ("pcmso_analytical_report_events"."void_reason" is null or char_length(btrim("pcmso_analytical_report_events"."void_reason")) >= 10)
@@ -44,6 +46,8 @@ CREATE UNIQUE INDEX "uq_report_events_voids" ON "pcmso_analytical_report_events"
 ALTER TABLE "pcmso_analytical_report_events" ADD CONSTRAINT "fk_report_events_company" FOREIGN KEY ("company_id","org_id") REFERENCES "public"."companies"("id","org_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pcmso_analytical_report_events" ADD CONSTRAINT "fk_report_events_report" FOREIGN KEY ("report_id","org_id","company_id") REFERENCES "public"."pcmso_analytical_reports"("id","org_id","company_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pcmso_analytical_report_events" ADD CONSTRAINT "fk_report_events_voids" FOREIGN KEY ("voids_id","org_id","report_id") REFERENCES "public"."pcmso_analytical_report_events"("id","org_id","report_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pcmso_analytical_report_events" ADD CONSTRAINT "fk_report_events_basis" FOREIGN KEY ("basis_id","org_id","report_id") REFERENCES "public"."pcmso_analytical_report_events"("id","org_id","report_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "idx_report_events_basis" ON "pcmso_analytical_report_events" USING btree ("basis_id");--> statement-breakpoint
 CREATE INDEX "idx_report_events_company" ON "pcmso_analytical_report_events" USING btree ("org_id","company_id","recorded_at");--> statement-breakpoint
 CREATE POLICY "report_events_isolation" ON "pcmso_analytical_report_events" AS PERMISSIVE FOR ALL TO "app_runtime" USING (org_id = current_setting('app.current_org', true)) WITH CHECK (org_id = current_setting('app.current_org', true));--> statement-breakpoint
 CREATE POLICY "report_events_module_access" ON "pcmso_analytical_report_events" AS RESTRICTIVE FOR ALL TO "app_runtime" USING (exists (select 1 from public.company_modules cm where cm.org_id = "pcmso_analytical_report_events"."org_id" and cm.company_id = "pcmso_analytical_report_events"."company_id" and cm.module = 'medicine' and cm.enabled = true)) WITH CHECK (exists (select 1 from public.company_modules cm where cm.org_id = "pcmso_analytical_report_events"."org_id" and cm.company_id = "pcmso_analytical_report_events"."company_id" and cm.module = 'medicine' and cm.enabled = true));--> statement-breakpoint
@@ -64,11 +68,14 @@ CREATE POLICY "report_events_insert" ON "pcmso_analytical_report_events" AS REST
 --> statement-breakpoint
 -- Custom (NOB-168): regras que dependem de outros eventos do mesmo relatório (uma policy não pode
 -- consultar a própria tabela sem recursão). SECURITY INVOKER: roda com a RLS de quem insere.
--- - apresentação exige finalização vigente pelo médico responsável;
--- - discussão exige apresentação vigente;
+-- - apresentação aponta (basis_id) para a finalização vigente da mesma versão e não é anterior ao
+--   dia da finalização (data civil em America/Sao_Paulo);
+-- - discussão aponta para uma apresentação vigente cuja finalização segue vigente e não é anterior
+--   à data da apresentação;
 -- - não há duas finalizações vigentes da mesma versão;
 -- - correção: alvo do mesmo relatório, que não seja outra correção; corrigir a finalização é só do
 --   médico responsável que elaborou a versão.
+-- Um ato cujo ato de base foi corrigido perde efeito (a leitura deriva isso da cadeia basis_id).
 CREATE OR REPLACE FUNCTION public.pcmso_report_event_guard()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -77,24 +84,38 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   target_kind text;
+  basis_kind text;
+  basis_on date;
+  basis_basis uuid;
 BEGIN
-  IF NEW.kind IN ('presented', 'discussed') AND NOT EXISTS (
-    SELECT 1 FROM public.pcmso_analytical_report_events f
-    WHERE f.org_id = NEW.org_id AND f.report_id = NEW.report_id AND f.kind = 'finalized'
+  IF NEW.kind IN ('presented', 'discussed') THEN
+    SELECT b.kind,
+           CASE WHEN b.kind = 'finalized' THEN (b.recorded_at AT TIME ZONE 'America/Sao_Paulo')::date
+                ELSE b.occurred_on END,
+           b.basis_id
+      INTO basis_kind, basis_on, basis_basis
+    FROM public.pcmso_analytical_report_events b
+    WHERE b.id = NEW.basis_id AND b.org_id = NEW.org_id AND b.report_id = NEW.report_id
       AND NOT EXISTS (SELECT 1 FROM public.pcmso_analytical_report_events v
-                      WHERE v.org_id = f.org_id AND v.voids_id = f.id)
-  ) THEN
-    RAISE EXCEPTION 'pcmso_report_event_guard: relatório sem finalização vigente do médico responsável'
-      USING ERRCODE = '42501';
-  END IF;
-  IF NEW.kind = 'discussed' AND NOT EXISTS (
-    SELECT 1 FROM public.pcmso_analytical_report_events p
-    WHERE p.org_id = NEW.org_id AND p.report_id = NEW.report_id AND p.kind = 'presented'
-      AND NOT EXISTS (SELECT 1 FROM public.pcmso_analytical_report_events v
-                      WHERE v.org_id = p.org_id AND v.voids_id = p.id)
-  ) THEN
-    RAISE EXCEPTION 'pcmso_report_event_guard: discussão sem apresentação vigente'
-      USING ERRCODE = '42501';
+                      WHERE v.org_id = b.org_id AND v.voids_id = b.id);
+    IF NEW.kind = 'presented' AND basis_kind IS DISTINCT FROM 'finalized' THEN
+      RAISE EXCEPTION 'pcmso_report_event_guard: relatório sem finalização vigente do médico responsável'
+        USING ERRCODE = '42501';
+    END IF;
+    IF NEW.kind = 'discussed' AND (basis_kind IS DISTINCT FROM 'presented' OR NOT EXISTS (
+      SELECT 1 FROM public.pcmso_analytical_report_events f
+      WHERE f.id = basis_basis AND f.org_id = NEW.org_id AND f.report_id = NEW.report_id
+        AND f.kind = 'finalized'
+        AND NOT EXISTS (SELECT 1 FROM public.pcmso_analytical_report_events v
+                        WHERE v.org_id = f.org_id AND v.voids_id = f.id)
+    )) THEN
+      RAISE EXCEPTION 'pcmso_report_event_guard: discussão sem apresentação vigente'
+        USING ERRCODE = '42501';
+    END IF;
+    IF NEW.occurred_on < basis_on THEN
+      RAISE EXCEPTION 'pcmso_report_event_guard: data anterior ao ato de que depende'
+        USING ERRCODE = '42501';
+    END IF;
   END IF;
   IF NEW.kind = 'finalized' AND EXISTS (
     SELECT 1 FROM public.pcmso_analytical_report_events f

@@ -15,6 +15,7 @@ import {
   REPORT_MODALITY_LABELS,
   REPORT_PARTICIPANT_ROLE_LABELS,
   REPORT_PRESENTATION_STATE_LABELS,
+  effectiveReportEventIds,
   type ReportParticipantRole,
 } from "@/shared/domains/medicine/analytical-report-presentation";
 import { PageHeader } from "../../../_ui/list";
@@ -193,6 +194,7 @@ export default async function AnalyticalReportPage({
   const voidedIds = new Set(
     (pres?.events ?? []).filter((e) => e.voidsId).map((e) => e.voidsId),
   );
+  const effectiveIds = effectiveReportEventIds(pres?.events ?? []);
   const roles = (list: { role: string; name?: string }[] | null) =>
     (list ?? [])
       .map((p) =>
@@ -300,6 +302,9 @@ export default async function AnalyticalReportPage({
                   {e.occurredOn ? ` · ${e.occurredOn}` : ""}
                   {e.reportId !== pres.current?.id ? " · versão anterior" : ""}
                   {voidedIds.has(e.id) ? " · corrigido" : ""}
+                  {e.kind !== "voided" && !voidedIds.has(e.id) && !effectiveIds.has(e.id)
+                    ? " · sem efeito (o ato de que dependia foi corrigido)"
+                    : ""}
                 </span>
                 {e.modality ? <span>{REPORT_MODALITY_LABELS[e.modality]}</span> : null}
                 {e.participants ? (
@@ -331,7 +336,7 @@ export default async function AnalyticalReportPage({
                 <span className="text-xs">
                   Registrado por {e.recordedBy} em {e.recordedAt.slice(0, 10)}
                 </span>
-                {e.kind !== "voided" && !voidedIds.has(e.id) ? (
+                {e.kind !== "voided" && effectiveIds.has(e.id) ? (
                   <VoidReportEventForm companyId={id} eventId={e.id} />
                 ) : null}
               </li>

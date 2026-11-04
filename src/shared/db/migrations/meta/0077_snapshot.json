@@ -1,5 +1,5 @@
 {
-  "id": "886d9477-e097-4b2d-9224-86198c199d3b",
+  "id": "fe2d0473-f294-4a31-a122-b8bf1678fd2f",
   "prevId": "ada0c76b-e4be-4877-8882-903ad15c9c3c",
   "version": "7",
   "dialect": "postgresql",
@@ -12801,6 +12801,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "basis_id": {
+          "name": "basis_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "voids_id": {
           "name": "voids_id",
           "type": "uuid",
@@ -12866,6 +12872,21 @@
             }
           ],
           "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_report_events_basis": {
+          "name": "idx_report_events_basis",
+          "columns": [
+            {
+              "expression": "basis_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -12960,6 +12981,23 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+        },
+        "fk_report_events_basis": {
+          "name": "fk_report_events_basis",
+          "tableFrom": "pcmso_analytical_report_events",
+          "tableTo": "pcmso_analytical_report_events",
+          "columnsFrom": [
+            "basis_id",
+            "org_id",
+            "report_id"
+          ],
+          "columnsTo": [
+            "id",
+            "org_id",
+            "report_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -13015,6 +13053,10 @@
         "ck_report_events_discussed": {
           "name": "ck_report_events_discussed",
           "value": "(\"pcmso_analytical_report_events\".\"kind\" = 'discussed') = (\"pcmso_analytical_report_events\".\"summary\" is not null)\n        and (\"pcmso_analytical_report_events\".\"summary\" is null or char_length(btrim(\"pcmso_analytical_report_events\".\"summary\")) >= 10)\n        and (\"pcmso_analytical_report_events\".\"measures\" is null or (\"pcmso_analytical_report_events\".\"kind\" = 'discussed' and jsonb_typeof(\"pcmso_analytical_report_events\".\"measures\") = 'array'))"
+        },
+        "ck_report_events_basis": {
+          "name": "ck_report_events_basis",
+          "value": "(\"pcmso_analytical_report_events\".\"kind\" in ('presented','discussed')) = (\"pcmso_analytical_report_events\".\"basis_id\" is not null)"
         },
         "ck_report_events_void": {
           "name": "ck_report_events_void",

@@ -1080,9 +1080,10 @@ NR-7 7.6.5: o relatório analítico deve ser apresentado e discutido com os resp
   - SESMT não é obrigatório.
 - **Situação derivada:** sem relatório, não finalizada, apresentação pendente, discussão pendente, apresentação e discussão registradas. Nova versão não herda a apresentação anterior (aviso `previousVersionPresented`).
 - **Correção (`voided`):** com motivo; o registro corrigido perde efeito e fica no histórico. A finalização só é corrigida pelo médico autor.
+- **Cronologia (datas civis, America/Sao_Paulo):** cada apresentação guarda a finalização em que se apoia e cada discussão guarda a apresentação (`basis_id`). A apresentação não pode ser anterior ao dia da finalização e a discussão não pode ser anterior à apresentação, mesmo que o registro seja inserido depois. Corrigida a finalização (ou a apresentação), os atos que dependiam dela perdem efeito e não são reaproveitados por uma nova finalização; continuam no histórico.
 - **Banco:**
   - a policy de inclusão exige ator como autor, versão exata (hash) da empresa, versão vigente (exceto correção), finalização só pelo médico autor verificado e demais registros só pela equipe do escritório;
-  - o trigger `pcmso_report_event_guard` (SECURITY INVOKER, `search_path` fixo) exige finalização vigente para apresentar, apresentação vigente para discutir, nenhuma finalização dupla e correção válida;
+  - o trigger `pcmso_report_event_guard` (SECURITY INVOKER, `search_path` fixo) exige que o ato de base (`basis_id`) seja a finalização vigente (apresentar) ou uma apresentação vigente com finalização vigente (discutir), data não anterior ao ato de base, nenhuma finalização dupla e correção válida;
   - sem UPDATE ou DELETE para o `app_runtime`.
 - **Privacidade:** nenhum dado clínico individual; o relatório já é agregado. Não há anexos nesta fatia: a ata entra como referência textual.
 

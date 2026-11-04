@@ -136,6 +136,8 @@ export const pcmsoAnalyticalReportEvents = pgTable(
       >(),
     evidenceReference: text("evidence_reference"),
     note: text("note"),
+    /** Ato de que este depende: apresentação → finalização; discussão → apresentação. */
+    basisId: uuid("basis_id"),
     voidsId: uuid("voids_id"),
     voidReason: text("void_reason"),
     recordedBy: text("recorded_by").notNull(),
@@ -163,6 +165,13 @@ export const pcmsoAnalyticalReportEvents = pgTable(
       foreignColumns: [t.id, t.orgId, t.reportId],
     }),
     uniqueIndex("uq_report_events_voids").on(t.voidsId),
+    // Apresentação e discussão apontam para o ato de base do mesmo relatório (cronologia no trigger).
+    foreignKey({
+      name: "fk_report_events_basis",
+      columns: [t.basisId, t.orgId, t.reportId],
+      foreignColumns: [t.id, t.orgId, t.reportId],
+    }),
+    index("idx_report_events_basis").on(t.basisId),
     index("idx_report_events_company").on(t.orgId, t.companyId, t.recordedAt),
     check(
       "ck_report_events_kind",
@@ -191,6 +200,10 @@ export const pcmsoAnalyticalReportEvents = pgTable(
       sql`(${t.kind} = 'discussed') = (${t.summary} is not null)
         and (${t.summary} is null or char_length(btrim(${t.summary})) >= 10)
         and (${t.measures} is null or (${t.kind} = 'discussed' and jsonb_typeof(${t.measures}) = 'array'))`,
+    ),
+    check(
+      "ck_report_events_basis",
+      sql`(${t.kind} in ('presented','discussed')) = (${t.basisId} is not null)`,
     ),
     check(
       "ck_report_events_void",

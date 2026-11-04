@@ -8,7 +8,11 @@ import type {
   ClinicalExamRow,
   ProcedureRow,
 } from "@/shared/domains/medicine/analytical-report";
-import type { ReportEventInput } from "@/shared/domains/medicine/analytical-report-presentation";
+import {
+  chronologyProblem,
+  effectiveReportEventIds,
+  type ReportEventInput,
+} from "@/shared/domains/medicine/analytical-report-presentation";
 import { ForbiddenError } from "@/shared/auth/errors";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
@@ -331,20 +335,30 @@ export async function listReportEvents(ctx: TenantContext, companyId: string) {
   });
 }
 
-async function effectiveKindsTx(tx: TenantTransaction, orgId: string, reportId: string) {
+/** Eventos com efeito do relatório (não corrigidos e com o ato de base também com efeito). */
+async function effectiveEventsTx(tx: TenantTransaction, orgId: string, reportId: string) {
   const rows = await tx
     .select({
       id: reportEvents.id,
+      reportId: reportEvents.reportId,
       kind: reportEvents.kind,
+      cipaSituation: reportEvents.cipaSituation,
+      basisId: reportEvents.basisId,
       voidsId: reportEvents.voidsId,
+      occurredOn: reportEvents.occurredOn,
+      recordedAt: reportEvents.recordedAt,
     })
     .from(reportEvents)
     .where(and(eq(reportEvents.orgId, orgId), eq(reportEvents.reportId, reportId)));
-  const voided = new Set(rows.filter((r) => r.kind === "voided").map((r) => r.voidsId));
-  return new Set(
-    rows.filter((r) => r.kind !== "voided" && !voided.has(r.id)).map((r) => r.kind),
+  const ids = effectiveReportEventIds(
+    rows.map((r) => ({ ...r, recordedAt: r.recordedAt.toISOString() })),
   );
+  return rows.filter((r) => ids.has(r.id));
 }
+
+/** Data civil (YYYY-MM-DD) de um instante no fuso America/Sao_Paulo. */
+const saoPauloDate = (at: Date) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(at);
 
 function eventRejected(error: unknown): never {
   const code = (error as { cause?: { code?: string } }).cause?.code;
@@ -360,7 +374,8 @@ function eventRejected(error: unknown): never {
  * Registra finalização, apresentação ou discussão da versão **vigente** do relatório. A versão e o
  * hash vêm do banco, não do cliente. Confere no servidor (e o banco confere de novo): finalização
  * só pelo médico responsável que elaborou a versão, verificado e ainda designado; apresentação só
- * de versão finalizada; discussão só depois de apresentação; datas reais (não futuras).
+ * de versão finalizada e não anterior ao dia da finalização; discussão só depois de apresentação e
+ * não anterior à data dela; datas reais (não futuras). Cada ato guarda o ato de base (`basisId`).
  */
 export async function insertReportEvent(
   ctx: TenantContext,
@@ -394,10 +409,11 @@ export async function insertReportEvent(
           throw new ValidationError(
             "Há versão mais recente do relatório: registre a finalização, a apresentação e a discussão da versão vigente.",
           );
-        const kinds = await effectiveKindsTx(tx, ctx.tenantId, report.id);
+        const effective = await effectiveEventsTx(tx, ctx.tenantId, report.id);
+        const finalization = effective.find((e) => e.kind === "finalized");
+        let basisId: string | null = null;
         if (input.kind === "finalized") {
-          if (kinds.has("finalized"))
-            throw new ValidationError("Esta versão já está finalizada.");
+          if (finalization) throw new ValidationError("Esta versão já está finalizada.");
           const { medicoId } = await assertActorIsCompanyCoordinator(
             tx,
             ctx,
@@ -408,18 +424,40 @@ export async function insertReportEvent(
               "Só o médico responsável que elaborou esta versão a finaliza.",
             );
         } else {
-          if (!kinds.has("finalized"))
+          if (!finalization)
             throw new ValidationError(
               "A versão ainda não foi finalizada pelo médico responsável: a prévia não é apresentada.",
             );
-          if (input.kind === "discussed" && !kinds.has("presented"))
+          // Discussão apoia-se na apresentação vigente mais recente (data, depois registro).
+          const presentation = effective
+            .filter((e) => e.kind === "presented")
+            .sort(
+              (a, b) =>
+                (a.occurredOn ?? "").localeCompare(b.occurredOn ?? "") ||
+                a.recordedAt.getTime() - b.recordedAt.getTime(),
+            )
+            .at(-1);
+          if (input.kind === "discussed" && !presentation)
             throw new ValidationError("Registre antes a apresentação do relatório.");
-          const problem = checkDate(
-            new Date(report.generatedAt.getTime() - 3 * 3600 * 1000)
-              .toISOString()
-              .slice(0, 10),
-          );
+          const problem =
+            checkDate(
+              new Date(report.generatedAt.getTime() - 3 * 3600 * 1000)
+                .toISOString()
+                .slice(0, 10),
+            ) ??
+            (input.kind === "presented"
+              ? chronologyProblem(
+                  "presented",
+                  input.occurredOn,
+                  saoPauloDate(finalization.recordedAt),
+                )
+              : chronologyProblem(
+                  "discussed",
+                  input.occurredOn,
+                  presentation!.occurredOn!,
+                ));
           if (problem) throw new ValidationError(problem);
+          basisId = input.kind === "presented" ? finalization.id : presentation!.id;
         }
         const base = {
           orgId: ctx.tenantId,
@@ -435,6 +473,7 @@ export async function insertReportEvent(
               ? {
                   ...base,
                   kind: "presented" as const,
+                  basisId,
                   occurredOn: input.occurredOn,
                   modality: input.modality,
                   participants: input.participants,
@@ -445,6 +484,7 @@ export async function insertReportEvent(
               : {
                   ...base,
                   kind: "discussed" as const,
+                  basisId,
                   occurredOn: input.occurredOn,
                   participants: input.participants,
                   summary: input.summary,

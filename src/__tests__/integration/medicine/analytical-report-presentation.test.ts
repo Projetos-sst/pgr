@@ -44,6 +44,8 @@ const ownerB: TenantContext = {
 const MEDICO = "aaaaaaaa-0000-4000-8000-000000000091";
 const COMPANY_C = "cccccccc-0000-4000-8000-000000000092";
 const FIRST = { periodStart: "2025-11-01", periodEnd: "2026-10-31" };
+const daysAgo = (day: string, n: number) =>
+  new Date(Date.parse(`${day}T12:00:00Z`) - n * 86400000).toISOString().slice(0, 10);
 
 const req = (ctx: TenantContext, body?: unknown) =>
   new NextRequest("http://localhost/api", {
@@ -331,16 +333,18 @@ const req = (ctx: TenantContext, body?: unknown) =>
           companyId?: string;
           sha?: string;
           reportId?: string;
+          basisId?: string | null;
         } = {},
       ) =>
         as(actor, (tx) =>
           (o.kind ?? "presented") === "finalized"
             ? tx`insert into pcmso_analytical_report_events (org_id, company_id, report_id, report_sha256, kind, recorded_by)
               values ('org_a', ${o.companyId ?? I.companyA}, ${o.reportId ?? report.id}, ${o.sha ?? report.contentSha256}, 'finalized', ${o.recordedBy ?? actor})`
-            : tx`insert into pcmso_analytical_report_events (org_id, company_id, report_id, report_sha256, kind, occurred_on, modality, participants, cipa_situation, recorded_by)
-              values ('org_a', ${o.companyId ?? I.companyA}, ${o.reportId ?? report.id}, ${o.sha ?? report.contentSha256}, 'presented', ${today},
-                'in_person', ${JSON.stringify([{ role: "sst_responsible" }])}::jsonb, 'unknown', ${o.recordedBy ?? actor})`,
+            : tx`insert into pcmso_analytical_report_events (org_id, company_id, report_id, report_sha256, kind, basis_id, occurred_on, modality, participants, cipa_situation, recorded_by)
+              values ('org_a', ${o.companyId ?? I.companyA}, ${o.reportId ?? report.id}, ${o.sha ?? report.contentSha256}, 'presented', ${o.basisId === undefined ? finId : o.basisId}, ${today},
+                'in_person', ${tx.json([{ role: "sst_responsible" }])}, 'unknown', ${o.recordedBy ?? actor})`,
         );
+      let finId: string | null = null;
       // Finalização forjada por owner ou equipe; apresentação sem finalização (trigger).
       await expect(forge("owner", { kind: "finalized" })).rejects.toMatchObject({
         code: "42501",
@@ -348,8 +352,12 @@ const req = (ctx: TenantContext, body?: unknown) =>
       await expect(forge("staff", { kind: "finalized" })).rejects.toMatchObject({
         code: "42501",
       });
+      // Sem ato de base (trigger antes do CHECK) e base inexistente: recusados.
       await expect(forge("staff")).rejects.toMatchObject({ code: "42501" });
-      await registerReportEvent(doctor, report.id, { kind: "finalized" });
+      await expect(
+        forge("staff", { basisId: "bbbbbbbb-0000-4000-8000-000000000004" }),
+      ).rejects.toMatchObject({ code: expect.stringMatching(/42501|23503/) });
+      finId = (await registerReportEvent(doctor, report.id, { kind: "finalized" })).id;
       await expect(forge("staff", { recordedBy: "owner" })).rejects.toMatchObject({
         code: "42501",
       });
@@ -380,6 +388,144 @@ const req = (ctx: TenantContext, body?: unknown) =>
           (tx) => tx`delete from pcmso_analytical_report_events where id = ${pres.id}`,
         ),
       ).rejects.toMatchObject({ code: "42501" });
+    });
+
+    it("cronologia: apresentação não anterior à finalização; discussão não anterior à apresentação; finalização corrigida não é reaproveitada", async () => {
+      const report = await generateReport(doctor, I.companyA, FIRST);
+      await admin`update pcmso_analytical_reports set generated_at = now() - interval '10 days' where id = ${report.id}`;
+      const asActor = (
+        actor: string,
+        fn: (tx: postgres.TransactionSql) => Promise<unknown>,
+      ) =>
+        runtime.begin(async (tx) => {
+          await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', ${actor}, true)`;
+          return fn(tx);
+        });
+      const sqlEvent = (kind: "presented" | "discussed", basisId: string, on: string) =>
+        asActor("staff", (tx) =>
+          kind === "presented"
+            ? tx`insert into pcmso_analytical_report_events (org_id, company_id, report_id, report_sha256, kind, basis_id, occurred_on, modality, participants, cipa_situation, recorded_by)
+                values ('org_a', ${I.companyA}, ${report.id}, ${report.contentSha256}, 'presented', ${basisId}, ${on}, 'in_person',
+                  ${tx.json([{ role: "cipa" }])}, 'participated', 'staff')`
+            : tx`insert into pcmso_analytical_report_events (org_id, company_id, report_id, report_sha256, kind, basis_id, occurred_on, participants, summary, recorded_by)
+                values ('org_a', ${I.companyA}, ${report.id}, ${report.contentSha256}, 'discussed', ${basisId}, ${on},
+                  ${tx.json([{ role: "cipa" }])}, 'Síntese agregada fictícia do período.', 'staff')`,
+        );
+
+      // A: prévia de 10 dias atrás e finalização de hoje; apresentação de 5 dias atrás (depois da
+      // prévia, antes da finalização) é recusada no servidor e no banco.
+      const fin = await registerReportEvent(doctor, report.id, { kind: "finalized" });
+      await expect(
+        registerReportEvent(
+          staff,
+          report.id,
+          presentation({ occurredOn: daysAgo(today, 5) }),
+        ),
+      ).rejects.toMatchObject({
+        code: "VALIDATION",
+        message: expect.stringMatching(/anterior à finalização/),
+      });
+      await expect(
+        sqlEvent("presented", fin.id, daysAgo(today, 5)),
+      ).rejects.toMatchObject({
+        code: "42501",
+        message: expect.stringMatching(/data anterior ao ato/),
+      });
+      // Finalização retroativa só no setup (8 dias atrás): apresentação de 3 dias atrás é válida.
+      await admin`update pcmso_analytical_report_events set recorded_at = now() - interval '8 days' where id = ${fin.id}`;
+      const pres = await registerReportEvent(
+        staff,
+        report.id,
+        presentation({ occurredOn: daysAgo(today, 3) }),
+      );
+      expect(pres).toMatchObject({ basisId: fin.id, occurredOn: daysAgo(today, 3) });
+      // Mesmo dia da finalização (data civil, sem horário inventado): aceito.
+      await expect(
+        sqlEvent("presented", fin.id, daysAgo(today, 8)),
+      ).resolves.toBeDefined();
+
+      // B: discussão de 5 dias atrás (depois da finalização, antes da apresentação) é recusada,
+      // embora inserida depois; base que não é apresentação também.
+      await expect(
+        registerReportEvent(
+          staff,
+          report.id,
+          discussion({ occurredOn: daysAgo(today, 5) }),
+        ),
+      ).rejects.toMatchObject({
+        code: "VALIDATION",
+        message: expect.stringMatching(/anterior à apresentação/),
+      });
+      await expect(
+        sqlEvent("discussed", pres.id, daysAgo(today, 5)),
+      ).rejects.toMatchObject({
+        code: "42501",
+        message: expect.stringMatching(/data anterior ao ato/),
+      });
+      await expect(
+        sqlEvent("discussed", fin.id, daysAgo(today, 2)),
+      ).rejects.toMatchObject({
+        code: "42501",
+        message: expect.stringMatching(/discussão sem apresentação vigente/),
+      });
+      const disc = await registerReportEvent(
+        staff,
+        report.id,
+        discussion({ occurredOn: daysAgo(today, 3) }),
+      );
+      expect(disc.basisId).toBe(pres.id);
+      expect(await state()).toMatchObject({
+        state: "presented_and_discussed",
+        cipaRequirementMet: true,
+      });
+
+      // C: corrigida a finalização, apresentação e discussão perdem efeito; refeita a finalização,
+      // os atos antigos não voltam a valer e não servem de base no banco.
+      await voidReportEvent(doctor, fin.id, {
+        reason: "Versão reaberta para revisão médica.",
+      });
+      expect(await state()).toMatchObject({
+        state: "not_finalized",
+        cipaSituation: null,
+        cipaRequirementMet: false,
+      });
+      await expect(sqlEvent("presented", fin.id, today)).rejects.toMatchObject({
+        code: "42501",
+        message: expect.stringMatching(/sem finalização vigente/),
+      });
+      await expect(sqlEvent("discussed", pres.id, today)).rejects.toMatchObject({
+        code: "42501",
+        message: expect.stringMatching(/discussão sem apresentação vigente/),
+      });
+      const fin2 = await registerReportEvent(doctor, report.id, { kind: "finalized" });
+      expect(await state()).toMatchObject({
+        state: "pending_presentation",
+        cipaSituation: null,
+        cipaRequirementMet: false,
+      });
+      await expect(sqlEvent("discussed", pres.id, today)).rejects.toMatchObject({
+        code: "42501",
+        message: expect.stringMatching(/discussão sem apresentação vigente/),
+      });
+      await expect(
+        registerReportEvent(staff, report.id, discussion()),
+      ).rejects.toMatchObject({ code: "VALIDATION" });
+      // A nova apresentação depende da nova finalização (de hoje): data anterior recusada.
+      await expect(
+        registerReportEvent(
+          staff,
+          report.id,
+          presentation({ occurredOn: daysAgo(today, 3) }),
+        ),
+      ).rejects.toMatchObject({ code: "VALIDATION" });
+      const pres2 = await registerReportEvent(staff, report.id, presentation());
+      expect(pres2.basisId).toBe(fin2.id);
+      expect((await state()).state).toBe("discussion_pending");
+      // Histórico preservado: nada apagado.
+      const { events } = await listReportPresentation(staff, I.companyA);
+      expect(events.map((e) => e.id)).toEqual(
+        expect.arrayContaining([fin.id, pres.id, disc.id, fin2.id, pres2.id]),
+      );
     });
 
     it("REST, perfis e tenant: cliente 403, outro tenant 404; sigilo: nenhum dado clínico individual", async () => {

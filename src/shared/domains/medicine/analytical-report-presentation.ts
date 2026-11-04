@@ -201,9 +201,49 @@ export type ReportEventLike = {
   reportId: string;
   kind: "finalized" | "presented" | "discussed" | "voided";
   cipaSituation: CipaSituation | null;
+  /** Ato de que este depende (apresentação → finalização; discussão → apresentação). */
+  basisId?: string | null;
   voidsId: string | null;
   recordedAt: string;
 };
+
+/**
+ * Registros com efeito: não corrigidos e cujo ato de base (cadeia `basisId`) também tem efeito.
+ * Corrigir a finalização tira o efeito da apresentação e da discussão que dependiam dela; o
+ * histórico continua, mas o ato invalidado nunca é reaproveitado.
+ */
+export function effectiveReportEventIds(events: ReportEventLike[]): Set<string> {
+  const voided = new Set(events.filter((e) => e.kind === "voided").map((e) => e.voidsId));
+  const byId = new Map(events.map((e) => [e.id, e]));
+  const memo = new Map<string, boolean>();
+  const isEffective = (e: ReportEventLike, depth = 0): boolean => {
+    const known = memo.get(e.id);
+    if (known !== undefined) return known;
+    let ok = e.kind !== "voided" && !voided.has(e.id);
+    if (ok && e.basisId) {
+      const basis = byId.get(e.basisId);
+      ok = !!basis && depth < 4 && isEffective(basis, depth + 1);
+    }
+    memo.set(e.id, ok);
+    return ok;
+  };
+  return new Set(events.filter((e) => isEffective(e)).map((e) => e.id));
+}
+
+/**
+ * Cronologia: a apresentação não é anterior ao dia da finalização da mesma versão, e a discussão
+ * não é anterior à apresentação em que se apoia. Só datas civis (sem horário inventado).
+ */
+export function chronologyProblem(
+  kind: "presented" | "discussed",
+  occurredOn: string,
+  basisOn: string,
+): string | null {
+  if (occurredOn >= basisOn) return null;
+  return kind === "presented"
+    ? `A apresentação não pode ser anterior à finalização da versão pelo médico responsável (${basisOn}).`
+    : `A discussão não pode ser anterior à apresentação registrada (${basisOn}).`;
+}
 
 export type ReportPresentationSummary = {
   state: ReportPresentationState;
@@ -215,13 +255,13 @@ export type ReportPresentationSummary = {
   previousVersionPresented: boolean;
 };
 
-/** Situação da versão vigente a partir dos eventos (registros corrigidos não contam). */
+/** Situação da versão vigente a partir dos eventos (sem efeito, por correção própria ou do ato de base, não contam). */
 export function summarizeReportPresentation(
   events: ReportEventLike[],
   currentReportId: string | null,
 ): ReportPresentationSummary {
-  const voided = new Set(events.filter((e) => e.kind === "voided").map((e) => e.voidsId));
-  const effective = events.filter((e) => e.kind !== "voided" && !voided.has(e.id));
+  const ids = effectiveReportEventIds(events);
+  const effective = events.filter((e) => ids.has(e.id));
   const current = effective.filter((e) => e.reportId === currentReportId);
   const finalized = current.some((e) => e.kind === "finalized");
   const presentations = current
