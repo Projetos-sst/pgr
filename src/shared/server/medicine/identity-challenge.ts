@@ -4,11 +4,13 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 /**
  * Desafio de controle da conta (NOB-158): código de 6 dígitos, derivado por HMAC do pedido, da conta
- * e de uma janela de 10 minutos, exibido só na sessão autenticada do profissional. O operador pede o
- * código ao vivo e o sistema confere (janela atual ou anterior). Sem `IDENTITY_CHALLENGE_SECRET`, o
+ * e de uma janela de 5 minutos, exibido só na sessão autenticada do profissional. O operador pede o
+ * código ao vivo e o sistema confere (janela atual ou anterior): um código vale no máximo ~10 minutos,
+ * o que limita o uso de um código copiado de uma sessão depois revogada (NOB-164). Sem `IDENTITY_CHALLENGE_SECRET`, o
  * desafio fica indisponível e a verificação não pode ser concluída.
  */
-const WINDOW_MS = 10 * 60 * 1000;
+export const CHALLENGE_WINDOW_MS = 5 * 60 * 1000;
+const WINDOW_MS = CHALLENGE_WINDOW_MS;
 
 function secret(): string | null {
   return process.env.IDENTITY_CHALLENGE_SECRET || null;

@@ -808,7 +808,7 @@ Todas as policies clínicas e as checagens do servidor (`repositories/clinical-a
 **Fluxo.**
 
 1. A própria conta pede a verificação. Isso exige vínculo ativo ou autovínculo aceito.
-2. A tela mostra a ela um código de controle (HMAC, janela de 10 min).
+2. A tela mostra a ela um código de controle (HMAC, janela de 5 min; vale no máximo ~10 min, janela atual ou anterior — NOB-164).
 3. O operador confere documentos, registro em fonte oficial e o código ao vivo, presencial ou por vídeo sem gravação.
    - Cada código conferido fica em `identity_challenge_attempts` (migration `0072`), só inclusão, sem o código. Só o operador grava e lê; o `app_runtime` não tem acesso.
    - Limites de códigos errados: 5 por pedido, no total (depois só resta recusar o pedido, e o profissional abre outro); 10 por conta do profissional em 24 h, somando pedidos e operadores; 10 por operador em 1 h. Esgotado, nem o código certo é conferido (`VALIDATION`).

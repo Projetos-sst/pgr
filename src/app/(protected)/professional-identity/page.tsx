@@ -73,7 +73,7 @@ export default async function ProfessionalIdentityPage() {
                 <p>
                   Código de controle da conta para informar ao operador:{" "}
                   <strong className="font-mono">{item.challengeCode}</strong> (muda a cada
-                  10 minutos).
+                  5 minutos; leia o código atual durante a conferência).
                 </p>
               ) : null}
               <IdentityControls item={item} />
