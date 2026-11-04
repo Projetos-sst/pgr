@@ -206,3 +206,8 @@ export async function putAsoDeliveryEvidence(
     .upload(storagePath, bytes, { contentType, upsert: false });
   if (error) throw new Error(`ASO delivery evidence upload failed: ${error.message}`);
 }
+
+/** Caminho do PCMSO assinado (NOB-166): tenant da sessão, empresa e id do registro. */
+export function signedPcmsoPath(orgId: string, companyId: string, id: string): string {
+  return `${orgId}/pcmso-assinados/${companyId}/${id}.pdf`;
+}
