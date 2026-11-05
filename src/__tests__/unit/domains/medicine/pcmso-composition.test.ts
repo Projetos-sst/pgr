@@ -29,7 +29,15 @@ function input(overrides: Partial<PcmsoCompositionInput> = {}): PcmsoComposition
       rqeExceptionReason: null,
       startsOn: "2026-01-01",
     },
-    riskSources: [{ id: "s1", kind: "internal", title: "PGR", version: "Revisão 1" }],
+    riskSources: [
+      {
+        id: "s1",
+        kind: "internal",
+        origin: "PGR interno",
+        title: "PGR",
+        version: "Revisão 1",
+      },
+    ],
     risks: [
       {
         exposureGroup: "Produção",

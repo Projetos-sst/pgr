@@ -58,7 +58,13 @@ const content = composePcmso({
     startsOn: "2026-01-01",
   },
   riskSources: [
-    { id: "s1", kind: "internal", title: "PGR da plataforma", version: "Revisão 1" },
+    {
+      id: "s1",
+      kind: "internal",
+      origin: "PGR interno",
+      title: "PGR da plataforma",
+      version: "Revisão 1",
+    },
   ],
   risks: [
     {

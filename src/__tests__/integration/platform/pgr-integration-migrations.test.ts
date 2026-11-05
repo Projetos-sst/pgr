@@ -153,6 +153,8 @@ const newTables = [
               "company_origin_confirmed_at",
               "company_origin_note",
             ],
+            // NOB-111 (0079): proveniência do PGR externo; legado fica vazio, nada é presumido.
+            medical_risk_sources: ["document_date", "prepared_by", "review_due_on"],
           };
           const read = async () => {
             const records: Record<string, unknown> = {};
@@ -174,6 +176,9 @@ const newTables = [
           await migrate(drizzle(db), { migrationsFolder: folder });
           await assertFinal(db);
           expect(await read()).toEqual(before);
+          expect(
+            await db`select count(*)::int as n from medical_risk_sources where document_date is not null or prepared_by is not null or review_due_on is not null`,
+          ).toEqual([{ n: 0 }]);
           // NOB-152 (MED-07): exames antigos ficam sem empresa de origem (não comprovada); nada é
           // presumido a partir do vínculo atual do funcionário.
           const [{ unverified, total }] =

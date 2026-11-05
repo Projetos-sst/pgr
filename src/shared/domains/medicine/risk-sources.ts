@@ -17,6 +17,19 @@ export const medicalRiskContentSchema = z
     jobRole: z.string().trim().max(500).optional(),
     possibleInjuries: z.string().trim().max(5000).optional(),
     exposureDescription: z.string().trim().max(5000).optional(),
+    /**
+     * Código do agente nocivo (Tabela 24 do eSocial) **como informado no PGR externo** (NOB-111).
+     * Só formato; fica pendente de validação como o resto do risco. Ausente → o coordenador define
+     * os exames (nunca é inventado).
+     */
+    noxiousAgentCode: z
+      .string()
+      .trim()
+      .regex(
+        /^\d{2}\.\d{2}\.\d{3}$/,
+        "Código do agente nocivo no formato da Tabela 24 (ex.: 02.01.001).",
+      )
+      .optional(),
   })
   .strict();
 export type MedicalRiskContent = z.infer<typeof medicalRiskContentSchema>;
@@ -31,17 +44,33 @@ export type MedicalRiskSnapshot = MedicalRiskContent & {
 const commonSource = {
   title: z.string().trim().min(1).max(200),
   version: z.string().trim().min(1).max(100),
-  reference: z.string().trim().min(1).max(2000),
+  reference: z
+    .string()
+    .trim()
+    .min(5, "Identifique o documento: título, revisão e onde está arquivado.")
+    .max(2000),
   supersedesSourceId: requiredUuid("Fonte anterior inválida.").optional(),
+};
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida.");
+/** Proveniência do PGR externo (NOB-111), só o que o documento informa. */
+const externalProvenance = {
+  documentDate: isoDate.optional(),
+  preparedBy: z.string().trim().min(1).max(300).optional(),
+  reviewDueOn: isoDate.optional(),
 };
 export const medicalSourceInputSchema = z.discriminatedUnion("kind", [
   z
     .object({
       kind: z.literal("external"),
       ...commonSource,
+      ...externalProvenance,
       risks: medicalRiskListSchema,
     })
-    .strict(),
+    .strict()
+    .refine((v) => !v.reviewDueOn || !v.documentDate || v.reviewDueOn >= v.documentDate, {
+      message: "A data de revisão não pode ser anterior à data do documento.",
+      path: ["reviewDueOn"],
+    }),
   z
     .object({
       kind: z.literal("internal"),
@@ -63,8 +92,19 @@ export function medicalSourceWarnings(
   riskCount: number,
   pendingCount: number,
   freshness: SourceFreshness,
+  external?: { documentDate: string | null; reviewDueOn: string | null; today: string },
 ): string[] {
   const warnings: string[] = [];
+  if (external && freshness === "external_reference") {
+    if (!external.documentDate)
+      warnings.push(
+        "Data do documento externo não informada: confira a versão com a empresa.",
+      );
+    if (external.reviewDueOn && external.reviewDueOn < external.today)
+      warnings.push(
+        `A data de revisão informada no PGR externo (${external.reviewDueOn}) já passou: registre a versão revisada como nova fonte.`,
+      );
+  }
   if (riskCount === 0)
     warnings.push(
       "Fonte sem riscos registrados. Isso não comprova ausência de riscos ocupacionais.",
@@ -93,4 +133,40 @@ export function canUseMedicalRisk(
     status === "validated" &&
     (freshness === "current" || freshness === "external_reference")
   );
+}
+
+export type MedicalSourceStatus =
+  | "registered_without_risks"
+  | "awaiting_validation"
+  | "validated"
+  | "rejected"
+  | "superseded"
+  | "origin_changed";
+export const MEDICAL_SOURCE_STATUS_LABELS: Record<MedicalSourceStatus, string> = {
+  registered_without_risks: "Fonte cadastrada, sem riscos registrados",
+  awaiting_validation: "Aguardando validação técnica",
+  validated: "Fonte validada",
+  rejected: "Fonte rejeitada",
+  superseded: "Fonte substituída por nova versão",
+  origin_changed: "PGR de origem alterado: registrar nova versão",
+};
+
+/**
+ * Situação da fonte, derivada dos riscos (nunca gravada): só é "validada" quando nenhum risco está
+ * pendente e ao menos um foi validado por profissional autorizado; todos rejeitados = rejeitada.
+ */
+export function medicalSourceStatus(
+  statuses: readonly MedicalRiskStatus[],
+  freshness: SourceFreshness,
+): MedicalSourceStatus {
+  if (freshness === "superseded") return "superseded";
+  if (freshness === "changed" || freshness === "unavailable") return "origin_changed";
+  if (statuses.length === 0) return "registered_without_risks";
+  if (statuses.includes("pending")) return "awaiting_validation";
+  return statuses.includes("validated") ? "validated" : "rejected";
+}
+
+/** Rótulo da origem dos riscos no PCMSO (NOB-111). */
+export function riskOriginLabel(kind: "internal" | "external" | string): string {
+  return kind === "external" ? "PGR externo validado" : "PGR interno";
 }

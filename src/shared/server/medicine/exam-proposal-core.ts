@@ -50,12 +50,16 @@ export async function loadProposalSources(
         title: row.title,
         version: row.version,
         reference: row.reference,
+        documentDate: row.documentDate,
+        preparedBy: row.preparedBy,
+        reviewDueOn: row.reviewDueOn,
         freshness: row.freshness,
         superseded: row.superseded,
         risks: row.risks.map((risk) => ({
           id: risk.id,
           status: risk.status,
           content: risk.content,
+          reviewedAt: risk.reviewedAt ? new Date(risk.reviewedAt).toISOString() : null,
         })),
       })),
     );

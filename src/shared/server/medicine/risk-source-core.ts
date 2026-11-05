@@ -5,10 +5,13 @@ import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import {
   medicalSourceInputSchema,
+  medicalSourceStatus,
   medicalSourceWarnings,
   canUseMedicalRisk,
   type SourceFreshness,
 } from "@/shared/domains/medicine/risk-sources";
+import { todayInSaoPaulo } from "@/shared/dates";
+import { ValidationError } from "@/shared/errors/validation-error";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import type { PageParams } from "@/shared/pagination";
 import * as repo from "@/shared/db/repositories/medical-risk-sources";
@@ -44,6 +47,14 @@ export async function registerMedicalRiskSource(
       snapshot.risks,
     );
   }
+  if (data.documentDate && data.documentDate > todayInSaoPaulo())
+    throw new ValidationError("A data do documento externo não pode ser futura.");
+  // Campos ausentes ficam fora da impressão digital: fontes antigas mantêm o mesmo valor.
+  const provenance = {
+    ...(data.documentDate ? { documentDate: data.documentDate } : {}),
+    ...(data.preparedBy ? { preparedBy: data.preparedBy } : {}),
+    ...(data.reviewDueOn ? { reviewDueOn: data.reviewDueOn } : {}),
+  };
   return repo.registerMedicalSource(
     ctx.tenantId,
     id,
@@ -53,11 +64,15 @@ export async function registerMedicalRiskSource(
       title: data.title,
       version: data.version,
       reference: data.reference,
+      documentDate: data.documentDate ?? null,
+      preparedBy: data.preparedBy ?? null,
+      reviewDueOn: data.reviewDueOn ?? null,
       fingerprint: medicalSourceFingerprint({
         kind: data.kind,
         reference: data.reference,
         version: data.version,
         risks: data.risks,
+        ...provenance,
       }),
       supersedesSourceId: data.supersedesSourceId,
     },
@@ -100,10 +115,21 @@ export async function getMedicalRiskInventory(
       source.risks.length,
       source.risks.filter((r) => r.status === "pending").length,
       freshness,
+      source.kind === "external"
+        ? {
+            documentDate: source.documentDate,
+            reviewDueOn: source.reviewDueOn,
+            today: todayInSaoPaulo(),
+          }
+        : undefined,
     );
     return {
       ...source,
       freshness,
+      status: medicalSourceStatus(
+        source.risks.map((r) => r.status),
+        freshness,
+      ),
       warnings,
       risks: source.risks.map((risk) => ({
         ...risk,

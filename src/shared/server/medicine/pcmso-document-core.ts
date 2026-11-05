@@ -12,7 +12,10 @@ import {
   pcmsoContentHash,
   pcmsoGenerationSchema,
 } from "@/shared/domains/medicine/pcmso-composition";
-import { canUseMedicalRisk } from "@/shared/domains/medicine/risk-sources";
+import {
+  canUseMedicalRisk,
+  riskOriginLabel,
+} from "@/shared/domains/medicine/risk-sources";
 import { formatProfessionalRegistration } from "@/shared/domains/pgr/medicos";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import { NotFoundError } from "@/shared/errors/not-found-error";
@@ -96,12 +99,34 @@ export async function generateDocument(
       rqeExceptionReason: coordinator.rqeExceptionReason,
       startsOn: coordinator.startsOn,
     },
-    riskSources: live.map(({ id: sourceId, kind, title, version }) => ({
-      id: sourceId,
-      kind,
-      title,
-      version,
-    })),
+    riskSources: live.map((source) => {
+      const used = source.risks.filter((risk) =>
+        canUseMedicalRisk(risk.status, source.freshness),
+      );
+      const lastValidatedOn =
+        used
+          .map((risk) => risk.reviewedAt ?? "")
+          .sort()
+          .at(-1)
+          ?.slice(0, 10) || null;
+      return {
+        id: source.id,
+        kind: source.kind,
+        origin:
+          source.kind === "external"
+            ? used.length
+              ? riskOriginLabel("external")
+              : "PGR externo sem risco validado"
+            : riskOriginLabel("internal"),
+        title: source.title,
+        version: source.version,
+        reference: source.reference,
+        documentDate: source.documentDate ?? null,
+        preparedBy: source.preparedBy ?? null,
+        validatedRisks: used.length,
+        lastValidatedOn,
+      };
+    }),
     risks: live.flatMap((source) =>
       source.risks
         .filter((risk) => canUseMedicalRisk(risk.status, source.freshness))

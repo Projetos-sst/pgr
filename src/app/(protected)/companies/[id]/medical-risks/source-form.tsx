@@ -56,6 +56,8 @@ export function SourceForm({
         const form = event.currentTarget;
         const data = new FormData(form);
         const previous = String(data.get("supersedesSourceId") ?? "") || undefined;
+        const optional = (name: string) =>
+          String(data.get(name) ?? "").trim() || undefined;
         const input = medicalSourceInputSchema.safeParse(
           kind === "internal"
             ? { kind, pgrId: data.get("pgrId"), supersedesSourceId: previous }
@@ -64,7 +66,16 @@ export function SourceForm({
                 title: data.get("title"),
                 reference: data.get("reference"),
                 version: data.get("version"),
-                risks,
+                documentDate: optional("documentDate"),
+                preparedBy: optional("preparedBy"),
+                reviewDueOn: optional("reviewDueOn"),
+                // Campo vazio não vira código: fica ausente e o coordenador define os exames.
+                risks: risks.map(({ noxiousAgentCode, ...risk }) => ({
+                  ...risk,
+                  ...(noxiousAgentCode?.trim()
+                    ? { noxiousAgentCode: noxiousAgentCode.trim() }
+                    : {}),
+                })),
                 supersedesSourceId: previous,
               },
         );
@@ -120,6 +131,21 @@ export function SourceForm({
               required
             />
             <TextField name="version" label="Versão do documento" required />
+            <TextField name="documentDate" label="Data do documento" type="date" />
+            <TextField
+              name="preparedBy"
+              label="Responsável pela elaboração (como consta no documento)"
+            />
+            <TextField
+              name="reviewDueOn"
+              label="Data de revisão informada no documento (se houver)"
+              type="date"
+            />
+            <p className="text-text-muted text-sm">
+              O documento externo não é autenticado nem considerado conforme à NR-1 por
+              ser registrado: os riscos só entram no PCMSO depois da validação técnica por
+              profissional autorizado pela empresa.
+            </p>
             <label className="text-text-muted text-sm">
               Importar lista de riscos (.json)
               <input
@@ -212,6 +238,12 @@ export function SourceForm({
                   label="Informações de exposição da origem"
                   value={risk.exposureDescription ?? ""}
                   onChange={(value) => updateRisk(index, { exposureDescription: value })}
+                />
+                <TextField
+                  name={`agent-${index}`}
+                  label="Código do agente nocivo — Tabela 24 do eSocial (se informado na origem)"
+                  value={risk.noxiousAgentCode ?? ""}
+                  onChange={(value) => updateRisk(index, { noxiousAgentCode: value })}
                 />
                 <button
                   type="button"
