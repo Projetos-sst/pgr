@@ -5,7 +5,10 @@ import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { getCompanyAction } from "@/shared/server/actions/pgr/companies";
 import { listPgrAction } from "@/shared/server/actions/pgr/pgr";
 import { getMedicalRiskInventoryAction } from "@/shared/server/actions/medicine/risk-sources";
-import { MEDICAL_RISK_STATUS_LABELS } from "@/shared/domains/medicine/risk-sources";
+import {
+  MEDICAL_RISK_STATUS_LABELS,
+  MEDICAL_SOURCE_STATUS_LABELS,
+} from "@/shared/domains/medicine/risk-sources";
 import { riskAgentTypeLabel } from "@/shared/domains/pgr/risks";
 import { PageHeader } from "../../../_ui/list";
 import { listRiskAbsenceAction } from "@/shared/server/actions/medicine/risk-absence";
@@ -89,10 +92,25 @@ export default async function MedicalRisksPage({
           <h3 className="font-semibold">
             {source.title} — {source.version}
           </h3>
+          <p className="text-sm font-semibold">
+            {MEDICAL_SOURCE_STATUS_LABELS[source.status]}
+          </p>
           <p className="text-text-muted text-sm">
-            {source.kind === "external" ? "Origem externa" : "PGR da plataforma"} ·{" "}
+            {source.kind === "external" ? "PGR externo" : "PGR da plataforma"} ·{" "}
             {source.reference}
           </p>
+          {source.kind === "external" &&
+          (source.documentDate || source.preparedBy || source.reviewDueOn) ? (
+            <p className="text-text-muted text-sm">
+              {[
+                source.documentDate ? `Documento de ${source.documentDate}` : null,
+                source.preparedBy ? `elaborado por ${source.preparedBy}` : null,
+                source.reviewDueOn ? `revisão informada até ${source.reviewDueOn}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          ) : null}
           <p className="text-text-muted text-sm">
             Registrado por {source.registeredBy} em{" "}
             {new Date(source.registeredAt).toLocaleString("pt-BR", {
@@ -123,6 +141,12 @@ export default async function MedicalRisksPage({
                 {risk.content.exposureDescription && (
                   <p className="text-sm">
                     Exposição informada na origem: {risk.content.exposureDescription}
+                  </p>
+                )}
+                {risk.content.noxiousAgentCode && (
+                  <p className="text-sm">
+                    Agente nocivo (Tabela 24, conforme a origem):{" "}
+                    {risk.content.noxiousAgentCode}
                   </p>
                 )}
                 <p

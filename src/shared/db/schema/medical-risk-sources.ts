@@ -3,6 +3,7 @@ import {
   pgTable,
   uuid,
   text,
+  date,
   timestamp,
   jsonb,
   integer,
@@ -32,6 +33,10 @@ export const medicalRiskSources = pgTable(
     title: text("title").notNull(),
     version: text("version").notNull(),
     reference: text("reference").notNull(),
+    // PGR externo (NOB-111): proveniência informada pelo documento; nunca preenchida por suposição.
+    documentDate: date("document_date"),
+    preparedBy: text("prepared_by"),
+    reviewDueOn: date("review_due_on"),
     // Intentionally not cascading to the PGR: preserve provenance after deletion.
     originPgrId: uuid("origin_pgr_id"),
     originRevision: integer("origin_revision"),
@@ -67,6 +72,11 @@ export const medicalRiskSources = pgTable(
       sql`${table.supersedesSourceId} is null or ${table.supersedesSourceId} <> ${table.id}`,
     ),
     check("medical_sources_kind_check", sql`${table.kind} in ('internal','external')`),
+    check(
+      "medical_sources_external_provenance_check",
+      sql`(${table.kind} = 'external' or (${table.documentDate} is null and ${table.preparedBy} is null and ${table.reviewDueOn} is null))
+        and (${table.reviewDueOn} is null or ${table.documentDate} is null or ${table.reviewDueOn} >= ${table.documentDate})`,
+    ),
     check(
       "medical_sources_origin_check",
       sql`(${table.kind} = 'internal' and ${table.originPgrId} is not null) or (${table.kind} = 'external' and ${table.originPgrId} is null)`,

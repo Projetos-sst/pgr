@@ -17,6 +17,31 @@ import { getProcedure } from "./procedure-catalog";
  * com texto inventado. O leiaute final depende do modelo do Dr. Alcides (MED-08), não enviado.
  */
 // v2 (NOB-153): critérios de interpretação; v3 (NOB-154): referência ao relatório analítico.
+/**
+ * Fonte de riscos usada no PCMSO, com a origem explícita (NOB-111): "PGR interno" ou "PGR externo
+ * validado". Externa sem risco validado nunca recebe o rótulo de validada.
+ */
+export type PcmsoRiskSource = {
+  id: string;
+  kind: string;
+  origin: string;
+  title: string;
+  version: string;
+  reference?: string;
+  documentDate?: string | null;
+  preparedBy?: string | null;
+  validatedRisks?: number;
+  lastValidatedOn?: string | null;
+};
+
+/** Resumo da origem da base de riscos do documento. */
+export function riskBasisOrigin(sources: readonly PcmsoRiskSource[]): string {
+  const labels = [
+    ...new Set(sources.filter((s) => (s.validatedRisks ?? 1) > 0).map((s) => s.origin)),
+  ];
+  return labels.length ? labels.join(" e ") : "Nenhuma fonte com risco validado";
+}
+
 export const PCMSO_CONTENT_SCHEMA_VERSION = 3;
 export const PCMSO_PREVIEW_NOTICE =
   "PRÉVIA — documento sem assinatura do médico responsável e sem validade legal (MED-12).";
@@ -49,7 +74,7 @@ export type PcmsoCompositionInput = {
     rqeExceptionReason: string | null;
     startsOn: string;
   };
-  riskSources: { id: string; kind: string; title: string; version: string }[];
+  riskSources: PcmsoRiskSource[];
   risks: {
     exposureGroup: string;
     jobRole: string;
@@ -171,6 +196,7 @@ export function composePcmso(input: PcmsoCompositionInput) {
     company: input.company,
     coordinator: { ...input.coordinator, reference: "NR-7 7.4.1 c; 7.5.2" },
     riskBasis: {
+      origin: riskBasisOrigin(input.riskSources),
       sources: input.riskSources,
       reference: "NR-7 7.5.1 (riscos identificados e classificados pelo PGR)",
     },

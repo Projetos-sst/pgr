@@ -81,12 +81,27 @@ function Preview({
       </section>
       <section>
         <h3 className="text-text font-semibold">Base de riscos e plano de exames</h3>
+        {content.riskBasis.origin ? (
+          <p className="text-text font-semibold">
+            Origem dos riscos: {content.riskBasis.origin}
+          </p>
+        ) : null}
+        <ul className="text-text-subtle list-disc pl-5">
+          {content.riskBasis.sources.map((s) => (
+            <li key={s.id}>
+              {s.origin ? `${s.origin}: ` : ""}
+              {s.title} (versão {s.version})
+              {s.reference && s.kind === "external" ? ` · documento: ${s.reference}` : ""}
+              {s.documentDate ? ` · data do documento ${s.documentDate}` : ""}
+              {s.preparedBy ? ` · elaborado por ${s.preparedBy}` : ""}
+              {s.kind === "external" && s.lastValidatedOn
+                ? ` · ${s.validatedRisks} risco(s) validado(s) até ${s.lastValidatedOn}`
+                : ""}
+            </li>
+          ))}
+        </ul>
         <p className="text-text-subtle">
-          Fontes:{" "}
-          {content.riskBasis.sources
-            .map((s) => `${s.title} (versão ${s.version})`)
-            .join("; ")}{" "}
-          · plano de exames versão {content.examPlan.version}, aprovado por{" "}
+          Plano de exames versão {content.examPlan.version}, aprovado por{" "}
           {content.examPlan.approvedBy || "médico coordenador"} em{" "}
           {content.examPlan.approvedAt.slice(0, 10)}
         </p>

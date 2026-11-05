@@ -11883,7 +11883,7 @@
           }
         },
         {
-          "name": "Registrar PGR externo pendente",
+          "name": "Registrar PGR externo pendente (NOB-98/111)",
           "request": {
             "method": "POST",
             "header": [
@@ -11903,8 +11903,9 @@
             "url": "{{baseUrl}}/api/v1/companies/{{companyId}}/medical-risk-sources",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"kind\": \"external\",\n  \"title\": \"PGR externo de exemplo\",\n  \"reference\": \"GED:identificacao-do-documento\",\n  \"version\": \"1\",\n  \"risks\": [\n    {\n      \"agentType\": \"physical\",\n      \"description\": \"Risco informado na origem\",\n      \"exposureGroup\": \"Grupo de exemplo\"\n    }\n  ]\n}"
-            }
+              "raw": "{\n  \"kind\": \"external\",\n  \"title\": \"PGR externo de exemplo\",\n  \"reference\": \"GED:identificacao-do-documento\",\n  \"version\": \"1\",\n  \"risks\": [\n    {\n      \"agentType\": \"physical\",\n      \"description\": \"Risco informado na origem\",\n      \"exposureGroup\": \"Grupo de exemplo\",\n      \"noxiousAgentCode\": \"02.01.001\"\n    }\n  ],\n  \"documentDate\": \"2026-08-01\",\n  \"preparedBy\": \"Responsável indicado no documento (fictício)\",\n  \"reviewDueOn\": \"2028-08-01\"\n}"
+            },
+            "description": "NOB-111: proveniência opcional (documentDate, preparedBy, reviewDueOn) e noxiousAgentCode como informado na origem; tudo pendente de validação técnica."
           }
         },
         {

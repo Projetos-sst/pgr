@@ -2010,9 +2010,40 @@ A mudança de estado e o evento são transacionais. Repetir o estado atual não 
 
 GET `/api/v1/companies/{id}/medical-risk-sources?page=1&pageSize=20` retorna `{rows,total,validationAvailable,validationNotice}`. Cada fonte inclui origem/referência/versão/fingerprint, registro por usuário/data, situação de atualização (`current`, `changed`, `unavailable`, `superseded`, `external_reference`), avisos e riscos com estado de revisão. Não exige PCMSO cadastrado.
 
-POST externo: `{kind:"external",title,reference,version,risks:[{agentType,description,exposureGroup,jobRole?,possibleInjuries?,exposureDescription?}],supersedesSourceId?}`. POST interno: `{kind:"internal",pgrId,supersedesSourceId?}`. Retorno 201 com os metadados da fonte. Ambos validam empresa/tenant e Medicina habilitada. A origem interna também respeita acesso ao PGR. Apenas funcionários internos owner/collaborator; cliente → 403.
+POST externo: `{kind:"external",title,reference (≥ 5 caracteres),version,documentDate?,preparedBy?,reviewDueOn?,risks:[{agentType,description,exposureGroup,jobRole?,possibleInjuries?,exposureDescription?,noxiousAgentCode?}],supersedesSourceId?}`. POST interno: `{kind:"internal",pgrId,supersedesSourceId?}`. Retorno 201 com os metadados da fonte. Ambos validam empresa/tenant e Medicina habilitada. A origem interna também respeita acesso ao PGR. Apenas funcionários internos owner/collaborator; cliente → 403.
 
 Importação nunca aceita status, aprovador ou dados clínicos não previstos. Os riscos começam pendentes e não são liberados automaticamente para PCMSO. A revisão exige autorização profissional ativa por empresa, conforme o fluxo abaixo.
+
+### PGR externo em empresa só com Medicina — NOB-111
+
+O fluxo da NOB-98 já permitia, com **Medicina habilitada e PGR desabilitado**:
+
+- registrar o PGR de terceiros como fonte externa;
+- validar cada risco pelo profissional autorizado pela empresa-cliente;
+- usar só os riscos validados no plano e no PCMSO.
+
+A NOB-111 completa as lacunas desse fluxo (migration `0079_external_pgr_provenance`, aditiva):
+
+- **Proveniência do documento.** `documentDate`, `preparedBy` e `reviewDueOn` (colunas em `medical_risk_sources`), só como o documento informa e sempre opcionais.
+  - O CHECK as limita a fontes externas e exige revisão ≥ data do documento.
+  - Data do documento futura → `422`.
+  - A referência exige ≥ 5 caracteres.
+  - Avisos: data do documento não informada; data de revisão informada já vencida (nesse caso, registrar a versão revisada como nova fonte).
+- **Código do agente nocivo informado na origem.** `noxiousAgentCode` (formato da Tabela 24, `NN.NN.NNN`), pendente de validação como o resto do risco.
+  - A proposta de exames passa a aplicar as regras também aos riscos externos validados. Antes, todo risco externo caía em "sem código".
+  - Sem código, o coordenador define os exames; nada é inventado.
+- **Situação da fonte (derivada, não gravada):** `registered_without_risks`, `awaiting_validation`, `validated`, `rejected`, `superseded`, `origin_changed`. Ausência de riscos nunca é ausência comprovada.
+- **Origem no PCMSO.** `riskBasis.origin` ("PGR interno", "PGR externo validado" ou ambos) e, por fonte, `origin`, `reference`, `documentDate`, `preparedBy`, `validatedRisks` e `lastValidatedOn`.
+  - Fonte externa sem risco validado nunca recebe o rótulo de validada.
+  - Prévias já arquivadas não mudam.
+- **Permissões.** O recurso é do escopo Medicina (RLS `medical_sources_module_access`).
+  - O módulo PGR continua fechado para a empresa: `pgr_module_access` recusa leitura e escrita de PGR interno.
+  - Owner, colaborador e médico coordenador não validam riscos pelo papel.
+  - O plano continua dependendo da decisão e aprovação do médico (NOB-150).
+- **Fora do escopo.**
+  - Upload do arquivo do PGR externo: a referência é textual e não há bucket.
+  - Extração automática de PDF e IA.
+  - Revogação de fonte sem nova versão: a invalidação é feita por rejeição dos riscos pelo profissional autorizado ou por nova versão. Quem poderia revogar uma fonte inteira não está definido, então o fluxo falha fechado.
 
 ## Autorização profissional e revisão de riscos — NOB-98
 

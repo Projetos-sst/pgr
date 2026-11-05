@@ -24,9 +24,18 @@ export type ProposalSource = {
   title: string;
   version: string;
   reference: string;
+  /** PGR externo (NOB-111): proveniência informada pelo documento. */
+  documentDate?: string | null;
+  preparedBy?: string | null;
+  reviewDueOn?: string | null;
   freshness: SourceFreshness;
   superseded: boolean;
-  risks: { id: string; status: MedicalRiskStatus; content: MedicalRiskSnapshot }[];
+  risks: {
+    id: string;
+    status: MedicalRiskStatus;
+    content: MedicalRiskSnapshot;
+    reviewedAt?: string | null;
+  }[];
 };
 
 export type RiskRef = {
@@ -76,6 +85,8 @@ const NO_RULE_REASON =
 
 /** Código da Tabela 24 copiado do inventário do PGR interno; fonte externa não traz. */
 export function agentCodeOf(content: MedicalRiskSnapshot): string | null {
+  // PGR externo (NOB-111): código informado no próprio registro do risco, validado com ele.
+  if (content.noxiousAgentCode?.trim()) return content.noxiousAgentCode.trim();
   const inventory = content.originalData?.inventory;
   if (!inventory || typeof inventory !== "object") return null;
   const code = (inventory as Record<string, unknown>).noxious_agent_code;
