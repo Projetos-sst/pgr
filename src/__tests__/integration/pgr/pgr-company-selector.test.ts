@@ -52,6 +52,8 @@ const ids = (r: { ok: boolean; data?: { id: string }[] }) =>
   });
   beforeEach(async () => {
     await seedPgrBase(admin);
+    await admin`insert into users (id, email) values ('owner-user','o@example.test'), ('collaborator-user','c@example.test')`;
+    await admin`insert into org_memberships (org_id, user_id, role) values ('org_a','owner-user','owner'), ('org_a','collaborator-user','org:member')`;
     gate.mockReset();
   });
 

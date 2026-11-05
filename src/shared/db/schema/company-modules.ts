@@ -16,6 +16,11 @@ import { appRuntimeRole } from "../roles";
 import { companies } from "./companies";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
+const actor = sql`current_setting('app.current_actor', true)`;
+/** Só o administrador do escritório (owner / org:admin) altera serviços — também no banco. */
+const officeOwner = (orgId: unknown) =>
+  sql`exists (select 1 from public.org_memberships om where om.org_id = ${orgId}
+    and om.user_id = ${actor} and om.role in ('owner','org:admin'))`;
 
 export const companyModules = pgTable(
   "company_modules",
@@ -43,6 +48,19 @@ export const companyModules = pgTable(
       to: appRuntimeRole,
       using: tenantScope,
       withCheck: tenantScope,
+    }),
+    pgPolicy("company_modules_owner_insert", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: officeOwner(table.orgId),
+    }),
+    pgPolicy("company_modules_owner_update", {
+      as: "restrictive",
+      for: "update",
+      to: appRuntimeRole,
+      using: officeOwner(table.orgId),
+      withCheck: officeOwner(table.orgId),
     }),
   ],
 ).enableRLS();
@@ -76,6 +94,13 @@ export const companyModuleEvents = pgTable(
       to: appRuntimeRole,
       using: tenantScope,
       withCheck: tenantScope,
+    }),
+    // O evento registra o próprio ator da sessão, que precisa ser administrador.
+    pgPolicy("company_module_events_owner_insert", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${table.changedBy} = ${actor} and ${officeOwner(table.orgId)}`,
     }),
   ],
 ).enableRLS();

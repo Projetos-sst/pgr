@@ -27,6 +27,7 @@ import {
 import { EmptyState, PageHeader } from "../_ui/list";
 import { CompanyIcon } from "./_components/company-icon";
 import { DeleteCompany } from "./_components/delete-company";
+import { CompanyServicesSummary } from "./_components/service-status";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,7 @@ export default async function CompaniesPage({
     state: sp.state,
     page,
   });
+  // Falha de consulta nunca vira "nenhuma empresa" nem "sem serviços" (NOB-170).
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
 
   return (
@@ -109,7 +111,19 @@ export default async function CompaniesPage({
           <ToolbarButton href="/companies/new">Nova Empresa</ToolbarButton>
         </ListToolbar>
 
-        {rows.length === 0 ? (
+        {!result.ok ? (
+          <div className="p-6">
+            <p
+              role="alert"
+              className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+            >
+              Não foi possível carregar as empresas.{" "}
+              <Link href="/companies" className="font-semibold underline">
+                Tentar novamente
+              </Link>
+            </p>
+          </div>
+        ) : rows.length === 0 ? (
           <div className="p-6">
             <EmptyState
               message={
@@ -141,17 +155,18 @@ export default async function CompaniesPage({
                       <AvatarBadge name={row.razaoSocial} />
                       <span className="flex flex-col">
                         <span className="text-text font-semibold">{row.razaoSocial}</span>
-                        <Link
-                          href={`/companies/${row.id}/services`}
-                          className="text-primary text-xs"
-                        >
-                          {[
-                            row.pgrEnabled ? "PGR" : "",
-                            row.medicineEnabled ? "Medicina" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" · ") || "Sem módulos — gerenciar serviços"}
-                        </Link>
+                        <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                          <CompanyServicesSummary
+                            pgrEnabled={row.pgrEnabled}
+                            medicineEnabled={row.medicineEnabled}
+                          />
+                          <Link
+                            href={`/companies/${row.id}/services`}
+                            className="text-primary text-xs font-semibold"
+                          >
+                            Gerenciar serviços
+                          </Link>
+                        </span>
                       </span>
                     </span>
                   </Cell>

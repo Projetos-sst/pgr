@@ -1985,6 +1985,22 @@ curl -s -A 'sst-manager/1.0' "https://brasilapi.com.br/api/cnpj/v1/0000000000019
 
 GET `/api/v1/companies/{id}/modules?page=1&pageSize=20` retorna `{modules,history:{rows,total}}`. A consulta exige equipe interna. PUT usa `{module:"pgr"|"medicine",enabled:boolean,reason:string}` (motivo obrigatório, até 500 caracteres), exige owner e retorna as habilitações. Ambas as superfícies usam o mesmo core das Actions `getCompanyModuleOverviewAction` e `changeCompanyModuleAction`. Empresa fora do tenant → NOT_FOUND; colaborador tentando alterar → FORBIDDEN; entrada inválida → VALIDATION.
 
+**Consistência e proteção no banco (NOB-170/171):**
+
+- **Uma única fonte de verdade:** `company_modules` com `enabled = true`. A listagem (`pgrEnabled`/`medicineEnabled`), a página de serviços, os seletores (`listCompanyOptionsAction(module)`) e as policies usam o mesmo predicado `companyModuleScope`, que qualifica as colunas pela tabela.
+  - Antes, no SELECT da listagem, o drizzle omitia o nome da tabela, e a subconsulta comparava `company_modules` com ela mesma. Resultado: "Sem módulos" para empresas habilitadas.
+- **Owner também no banco (migration `0078_company_module_owner_writes`):** policies restritivas aceitam INSERT/UPDATE em `company_modules` e INSERT em `company_module_events` só quando o ator da sessão (`app.current_actor`) é administrador do escritório (`owner`/`org:admin`).
+  - O evento registra o próprio ator em `changed_by`.
+  - O core passa o ator à sessão.
+- **Falhas de leitura** aparecem como erro com "Tentar novamente", nunca como "Desabilitado" ou "Nenhuma empresa".
+- **Tela `/companies/{id}/services`:**
+  - um cartão por serviço, com status "Habilitado"/"Desabilitado" (texto e ícone);
+  - a ação conforme o estado, só para o owner;
+  - um diálogo de confirmação com empresa, estado atual e novo, consequência e motivo obrigatório (até 500 caracteres);
+  - o estado vem do servidor após a resposta, sem atualização otimista;
+  - histórico recolhível, em que eventos de migration aparecem como "Sistema".
+- **Listagem `/companies`:** "PGR ativo/desabilitado", "Medicina ativa/desabilitada" ou "Nenhum serviço habilitado".
+
 A mudança de estado e o evento são transacionais. Repetir o estado atual não duplica histórico. Desabilitar preserva registros; RLS bloqueia uso de PGR/exames para a empresa. Não altera Pro, trial, preços ou Stripe. UI: `/companies/{id}/services`, acessível na lista de empresas. Medicina sem PGR e o registro externo são integrados na NOB-98.
 
 ## Fontes de riscos para Medicina — NOB-98
