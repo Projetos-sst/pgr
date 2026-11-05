@@ -4360,7 +4360,7 @@
                 "{{examPlanItemId}}"
               ]
             },
-            "description": "Só a coordenadora vinculada (403 para os demais, inclusive owner). Retirar exige justificativa (422). Só em rascunho."
+            "description": "Só a coordenadora vinculada (403 para os demais, inclusive owner). Retirar exige justificativa (422). Só em rascunho. NOB-112: envia a decisão inteira (justification ausente grava null). Exame acrescentado (origin added) sem justificativa → 422 com mensagem clara; retirada sem justificativa → 422 no campo justification."
           }
         },
         {

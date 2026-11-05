@@ -20,6 +20,10 @@ const periodicity = z
   .min(3, "Informe a periodicidade.")
   .max(1000, "Máximo de 1000 caracteres.");
 
+/** Exame acrescentado pelo médico sempre tem justificativa, inclusive ao mudar só a periodicidade. */
+export const ADDED_ITEM_JUSTIFICATION_MESSAGE =
+  "Exame acrescentado pelo médico exige justificativa (mínimo de 10 caracteres). Ela não pode ficar em branco ao alterar a decisão ou a periodicidade.";
+
 export const itemDecisionSchema = z
   .object({
     decision: z.enum(["kept", "removed"]),

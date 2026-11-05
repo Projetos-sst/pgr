@@ -53,17 +53,25 @@ export function CreateDraftButton({ companyId }: { companyId: string }) {
   );
 }
 
-/** Decisão da coordenadora sobre um item (manter/retirar e periodicidade). */
+/**
+ * Decisão da coordenadora sobre um item (manter/retirar e periodicidade). Abre com a decisão, a
+ * periodicidade e a justificativa já registradas (NOB-112): alterar um campo não apaga os demais.
+ * Limpar a justificativa é deliberado; o servidor recusa quando ela é obrigatória.
+ */
 export function ItemDecisionForm({
   planId,
   itemId,
   decision,
   periodicity,
+  justification,
+  origin,
 }: {
   planId: string;
   itemId: string;
   decision: "kept" | "removed";
   periodicity: string;
+  justification: string | null;
+  origin: "suggested" | "added";
 }) {
   const { pending, error, fields, run } = useSubmit();
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -96,9 +104,14 @@ export function ItemDecisionForm({
         error={fields.periodicity}
       />
       <TextField
-        label="Justificativa (obrigatória para retirar)"
+        label={
+          origin === "added"
+            ? "Justificativa (obrigatória para exame acrescentado)"
+            : "Justificativa (obrigatória para retirar)"
+        }
         name="justification"
         isFullWidth
+        defaultValue={justification ?? ""}
         error={fields.justification}
       />
       <SubmitButton pending={pending} label="Registrar decisão" />

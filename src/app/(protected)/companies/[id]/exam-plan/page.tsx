@@ -126,6 +126,8 @@ export default async function ExamPlanPage({
                       itemId={item.id}
                       decision={item.decision}
                       periodicity={item.periodicity}
+                      justification={item.justification}
+                      origin={item.origin}
                     />
                   ) : null}
                 </li>
