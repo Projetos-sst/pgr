@@ -12867,6 +12867,106 @@
           }
         }
       ]
+    },
+    {
+      "name": "Medicina — Lista C / NTEP (NOB-113)",
+      "item": [
+        {
+          "name": "GET /medicine/ntep (CID + CNAE)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicine/ntep?cid=A15.0&cnae=0810",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicine", "ntep"],
+              "query": [
+                {
+                  "key": "cid",
+                  "value": "A15.0"
+                },
+                {
+                  "key": "cnae",
+                  "value": "0810"
+                }
+              ]
+            },
+            "description": "Lista C do Anexo II do Decreto 3.048/1999. kind: match | no_match | unavailable | unvalidated | version_not_available; código malformado → 422. Informativo: não conclui nexo individual."
+          }
+        },
+        {
+          "name": "GET /medicine/ntep (só CNAE)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medicine/ntep?cnae=4120-4/00",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medicine", "ntep"],
+              "query": [
+                {
+                  "key": "cnae",
+                  "value": "4120-4/00"
+                }
+              ]
+            },
+            "description": "Intervalos CID-10 da classe (subclasse vale pelos 4 dígitos iniciais)."
+          }
+        },
+        {
+          "name": "GET /companies/{id}/ntep",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/ntep",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "ntep"],
+              "query": []
+            },
+            "description": "Classe do CNAE cadastrado da empresa (Medicina habilitada). status: ok | missing_cnae | invalid_cnae."
+          }
+        }
+      ]
     }
   ]
 }

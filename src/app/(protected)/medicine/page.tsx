@@ -69,6 +69,12 @@ export default async function MedicinePage({
           >
             Procedimentos (Tabela 27)
           </Link>
+          <Link
+            href="/medicine/ntep"
+            className="glass-input text-text flex h-11 items-center rounded-xl px-[18px] text-[13px] font-bold"
+          >
+            Lista C (NTEP)
+          </Link>
           <ToolbarButton href="/health-exams/new">Registrar exame</ToolbarButton>
         </div>
       }
