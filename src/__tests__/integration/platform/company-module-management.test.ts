@@ -40,6 +40,9 @@ const ctx = {
   });
   beforeEach(async () => {
     await seedPgrBase(admin);
+    // O banco exige que o ator seja administrador do escritório (NOB-170).
+    await admin`insert into users (id, email) values ('owner-1','o1@example.test'), ('api-owner','api@example.test')`;
+    await admin`insert into org_memberships (org_id, user_id, role) values ('org_a','owner-1','owner'), ('org_a','api-owner','org:admin')`;
     (requireOfficeStaff as jest.Mock).mockResolvedValue(ctx);
   });
   it("changes one company/service atomically and preserves Pro and records", async () => {

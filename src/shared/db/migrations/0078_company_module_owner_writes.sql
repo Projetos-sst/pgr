@@ -1,0 +1,7 @@
+CREATE POLICY "company_module_events_owner_insert" ON "company_module_events" AS RESTRICTIVE FOR INSERT TO "app_runtime" WITH CHECK ("company_module_events"."changed_by" = current_setting('app.current_actor', true) and exists (select 1 from public.org_memberships om where om.org_id = "company_module_events"."org_id"
+    and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','org:admin')));--> statement-breakpoint
+CREATE POLICY "company_modules_owner_insert" ON "company_modules" AS RESTRICTIVE FOR INSERT TO "app_runtime" WITH CHECK (exists (select 1 from public.org_memberships om where om.org_id = "company_modules"."org_id"
+    and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','org:admin')));--> statement-breakpoint
+CREATE POLICY "company_modules_owner_update" ON "company_modules" AS RESTRICTIVE FOR UPDATE TO "app_runtime" USING (exists (select 1 from public.org_memberships om where om.org_id = "company_modules"."org_id"
+    and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','org:admin'))) WITH CHECK (exists (select 1 from public.org_memberships om where om.org_id = "company_modules"."org_id"
+    and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','org:admin')));

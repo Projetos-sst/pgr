@@ -59,7 +59,10 @@ export async function getCompanyModules(
   });
 }
 
-/** Company row lock serializes enable/disable and its append-only event. */
+/**
+ * Company row lock serializes enable/disable and its append-only event. O ator vai para a sessão
+ * do banco: as policies só aceitam a escrita de administrador do escritório (NOB-170).
+ */
 export async function setCompanyModule(
   orgId: string,
   companyId: string,
@@ -68,6 +71,7 @@ export async function setCompanyModule(
 ): Promise<void> {
   return auditedTenantWrite(orgId, "platform.company_modules.write_rejected", () =>
     withOrg(orgId, async (tx) => {
+      await tx.execute(sql`select set_config('app.current_actor', ${actor}, true)`);
       const [company] = await tx
         .select({ id: companies.id })
         .from(companies)
