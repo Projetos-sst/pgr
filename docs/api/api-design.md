@@ -886,6 +886,12 @@ Ao aprovar, o aprovado anterior vira `superseded` na mesma transação. Para mud
 
 REST: `GET|POST /api/v1/companies/{id}/exam-plans` · `GET /api/v1/exam-plans/{id}` · `POST /api/v1/exam-plans/{id}/items` · `PUT /api/v1/exam-plans/{id}/items/{itemId}` · `POST /api/v1/exam-plans/{id}/approval`. Tela: `/companies/{id}/exam-plan`.
 
+**Decisão do item é retomada sem perda (NOB-112, lote 02B).** `PUT .../items/{itemId}` grava a decisão inteira: `justification` ausente vira `null`.
+
+- A tela abre cada item com a decisão, a periodicidade e a **justificativa já registradas**. Mudar só a periodicidade reenvia a justificativa salva; apagá-la é um ato deliberado.
+- Exame **acrescentado** pelo médico (`origin = 'added'`) sem justificativa → `VALIDATION` (`422`) com a mensagem "Exame acrescentado pelo médico exige justificativa…", conferida antes do `CHECK` (antes da correção, a tela só mostrava "Valor fora do permitido."). Nada é alterado.
+- Retirada sem justificativa continua → `VALIDATION` no campo `justification`. Item sugerido e mantido: justificativa opcional.
+
 ## PCMSO composto (prévias) — `actions/medicine/pcmso-documents.ts`
 
 Composição do PCMSO (NOB-151) a partir do que já foi validado e aprovado (`domains/medicine/pcmso-composition.ts`):

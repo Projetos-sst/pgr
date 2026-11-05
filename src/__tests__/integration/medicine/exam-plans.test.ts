@@ -35,6 +35,7 @@ import {
 import { GET as LIST, POST as DRAFT } from "@/app/api/v1/companies/[id]/exam-plans/route";
 import { GET as SHOW } from "@/app/api/v1/exam-plans/[id]/route";
 import { POST as APPROVE } from "@/app/api/v1/exam-plans/[id]/approval/route";
+import { PUT as DECIDE } from "@/app/api/v1/exam-plans/[id]/items/[itemId]/route";
 import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS as I } from "../_helpers/pgr-seed";
 
@@ -223,6 +224,95 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       justification: WHY,
     });
     expect(!other.ok && other.error.code).toBe("VALIDATION");
+  });
+
+  it("NOB-112: decisão em exame acrescentado sem justificativa é recusada com mensagem clara e nada muda; a justificativa persiste e é retomada", async () => {
+    const plan = await createDraft(staff, I.companyA);
+    const [suggested] = (await getPlan(staff, plan.id)).items;
+    const added = await addItem(doctor, plan.id, {
+      exposureGroup: "Produção",
+      code: "1057",
+      periodicity: "Anual",
+      justification: WHY,
+    });
+    (requireOfficeStaff as jest.Mock).mockResolvedValue(doctor);
+
+    // Antes da correção: o CHECK do banco recusava (23514) e a tela só dizia "Valor fora do permitido.".
+    const noWhy = await decideExamPlanItemAction(plan.id, added.id, {
+      decision: "kept",
+      periodicity: "Admissional e a cada dois anos",
+    });
+    expect(noWhy.ok).toBe(false);
+    expect(!noWhy.ok && noWhy.error).toMatchObject({
+      code: "VALIDATION",
+      message: expect.stringMatching(/acrescentado pelo médico exige justificativa/),
+    });
+    const unchanged = (await getPlan(staff, plan.id)).items.find(
+      (i) => i.id === added.id,
+    )!;
+    expect(unchanged).toMatchObject({ periodicity: "Anual", justification: WHY });
+
+    // REST: mesma regra e mesmo código (422), sem reimplementar.
+    const restRes = await DECIDE(
+      req(doctor, "PUT", { decision: "kept", periodicity: "Semestral" }),
+      { params: Promise.resolve({ id: plan.id, itemId: added.id }) },
+    );
+    expect(restRes.status).toBe(422);
+
+    // Com a justificativa (a tela agora a traz preenchida), a periodicidade muda e a justificativa fica.
+    const ok = await decideExamPlanItemAction(plan.id, added.id, {
+      decision: "kept",
+      periodicity: "Admissional e a cada dois anos",
+      justification: WHY,
+    });
+    expect(ok.ok).toBe(true);
+    const reloaded = (await getPlan(staff, plan.id)).items.find(
+      (i) => i.id === added.id,
+    )!;
+    expect(reloaded).toMatchObject({
+      periodicity: "Admissional e a cada dois anos",
+      justification: WHY,
+      origin: "added",
+    });
+
+    // Item sugerido e mantido: justificativa é opcional e limpá-la de propósito grava nulo.
+    await decideItem(doctor, plan.id, suggested.id, {
+      decision: "kept",
+      periodicity: "Anual",
+      justification: WHY,
+    });
+    await decideItem(doctor, plan.id, suggested.id, {
+      decision: "kept",
+      periodicity: "Anual",
+    });
+    expect(
+      (await getPlan(staff, plan.id)).items.find((i) => i.id === suggested.id),
+    ).toMatchObject({ justification: null });
+
+    // Retirar exige justificativa, inclusive em item acrescentado (regra existente, inalterada).
+    const removeNoWhy = await decideExamPlanItemAction(plan.id, added.id, {
+      decision: "removed",
+      periodicity: "Anual",
+    });
+    expect(!removeNoWhy.ok && removeNoWhy.error.fields).toMatchObject({
+      justification: "Justifique a retirada do exame.",
+    });
+
+    // Outro escritório não alcança o item; a equipe sem vínculo segue sem decidir.
+    await expect(
+      decideItem(ownerB, plan.id, added.id, {
+        decision: "kept",
+        periodicity: "Anual",
+        justification: WHY,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      decideItem(staff, plan.id, added.id, {
+        decision: "kept",
+        periodicity: "Anual",
+        justification: WHY,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("aprovação: itens decididos, aprovado imutável, nova versão substitui a anterior, trilha completa", async () => {

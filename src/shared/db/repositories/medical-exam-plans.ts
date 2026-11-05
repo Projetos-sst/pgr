@@ -4,11 +4,12 @@ import { and, asc, desc, eq, max, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
-import type {
-  AddItemValues,
-  ApprovePlanValues,
-  DraftItem,
-  ItemDecisionValues,
+import {
+  ADDED_ITEM_JUSTIFICATION_MESSAGE,
+  type AddItemValues,
+  type ApprovePlanValues,
+  type DraftItem,
+  type ItemDecisionValues,
 } from "@/shared/domains/medicine/exam-plan";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
@@ -196,6 +197,10 @@ export async function decideExamPlanItem(
         )
         .limit(1);
       if (!current) throw new NotFoundError();
+      // Mesma regra do CHECK `ck_exam_plan_items_justification` (MED-15), conferida antes para a
+      // tela dizer o motivo em vez de "Valor fora do permitido." (NOB-112).
+      if (current.origin === "added" && !input.justification)
+        throw new ValidationError(ADDED_ITEM_JUSTIFICATION_MESSAGE);
       const [updated] = await tx
         .update(items)
         .set({
