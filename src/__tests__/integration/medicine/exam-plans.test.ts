@@ -36,6 +36,8 @@ import { GET as LIST, POST as DRAFT } from "@/app/api/v1/companies/[id]/exam-pla
 import { GET as SHOW } from "@/app/api/v1/exam-plans/[id]/route";
 import { POST as APPROVE } from "@/app/api/v1/exam-plans/[id]/approval/route";
 import { PUT as DECIDE } from "@/app/api/v1/exam-plans/[id]/items/[itemId]/route";
+import { POST as ADD } from "@/app/api/v1/exam-plans/[id]/items/route";
+import { EXAM_PLAN_ITEM_DUPLICATE_MESSAGE } from "@/shared/domains/medicine/exam-plan";
 import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS as I } from "../_helpers/pgr-seed";
 
@@ -354,6 +356,65 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       "item_decided",
       "superseded",
     ]);
+  });
+
+  it("NOB-112: exame repetido no mesmo grupo e função é recusado com mensagem clara e nada é inserido; aprovado não aceita acréscimo", async () => {
+    const plan = await createDraft(staff, I.companyA);
+    (requireOfficeStaff as jest.Mock).mockResolvedValue(doctor);
+    const input = {
+      exposureGroup: "Produção",
+      code: "1057",
+      periodicity: "Anual",
+      justification: WHY,
+    };
+    const first = await addExamPlanItemAction(plan.id, input);
+    expect(first.ok).toBe(true);
+    const countAdded = async () =>
+      (
+        await admin`select count(*)::int as n from medical_exam_plan_items where plan_id=${plan.id} and origin='added'`
+      )[0].n;
+
+    // Antes da correção: o 23505 do índice único virava "Registro já existe neste escritório.".
+    const again = await addExamPlanItemAction(plan.id, {
+      ...input,
+      periodicity: "Semestral",
+    });
+    expect(!again.ok && again.error).toEqual({
+      code: "DUPLICATE",
+      message: EXAM_PLAN_ITEM_DUPLICATE_MESSAGE,
+    });
+    const rest = await ADD(req(doctor, "POST", input), {
+      params: Promise.resolve({ id: plan.id }),
+    });
+    expect(rest.status).toBe(409);
+    expect(await rest.json()).toEqual({
+      error: { code: "DUPLICATE", message: EXAM_PLAN_ITEM_DUPLICATE_MESSAGE },
+    });
+    expect(await countAdded()).toBe(1);
+    const trail = (await getPlan(staff, plan.id)).events.filter(
+      (e) => e.event === "item_added",
+    );
+    expect(trail).toHaveLength(1);
+
+    // A regra de unicidade não mudou: o mesmo exame em outra função é outro item.
+    const otherRole = await addExamPlanItemAction(plan.id, {
+      ...input,
+      jobRole: "Operador fictício",
+    });
+    expect(otherRole.ok).toBe(true);
+    expect(await countAdded()).toBe(2);
+
+    // Plano aprovado não muda: acrescentar segue recusado e nada é inserido.
+    await approve(doctor, plan.id, {});
+    const afterApproval = await addExamPlanItemAction(plan.id, {
+      ...input,
+      exposureGroup: "Manutenção",
+    });
+    expect(!afterApproval.ok && afterApproval.error).toMatchObject({
+      code: "VALIDATION",
+      message: expect.stringMatching(/Plano aprovado ou substituído não muda/),
+    });
+    expect(await countAdded()).toBe(2);
   });
 
   it("revogar o vínculo ou encerrar a designação tira o poder de decidir", async () => {

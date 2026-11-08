@@ -5474,7 +5474,7 @@
                 "risk-absence-declarations"
               ]
             },
-            "description": "Declarações de inexistência de riscos da empresa, com a fonte, o autor e a data, e se o ator pode declarar (canDeclare) e os GES. Cliente sem autorização ativa → 403."
+            "description": "Declarações de inexistência de riscos da empresa, com a fonte, o autor e a data, e se o ator pode declarar (canDeclare) e os GES, cada um com as funções vinculadas (groups[].jobRoles: id, title). Cliente sem autorização ativa → 403."
           }
         },
         {
@@ -5514,7 +5514,7 @@
                 "risk-absence-declarations"
               ]
             },
-            "description": "Só o profissional com autorização ativa de validação de riscos (x-dev-user = profissional). Fonte vigente; GES/função sem risco pendente ou validado; justificativa com 20+ caracteres. jobRole vazio = grupo todo. 201; demais → 403; fonte substituída ou escopo com riscos → 422."
+            "description": "Só o profissional com autorização ativa de validação de riscos (x-dev-user = profissional). Fonte vigente; GES/função sem risco pendente ou validado; justificativa com 20+ caracteres. jobRole vazio = grupo todo; preenchido, precisa ser o título exato de uma função vinculada ao GES (copie de groups[].jobRoles[].title do GET), senão 422 com error.fields.jobRole e nada é gravado (NOB-112). 201; demais → 403; fonte substituída ou escopo com riscos → 422."
           }
         }
       ]
@@ -6182,7 +6182,8 @@
                 {
                   "key": "signerRegistration",
                   "value": "12345",
-                  "type": "text"
+                  "type": "text",
+                  "description": "Numero do CRM; ponto, hifen, barra e espaco sao aceitos e ignorados na conferencia (NOB-110). No fluxo examiner, confere com o cadastro do examinador pela forma canonica (zeros a esquerda contam) e o documento grava o CRM/UF como estao no cadastro; cadastro com letras no CRM (ex.: 12345-MA) e recusado ate o escritorio corrigir o cadastro. Letras aqui sao recusadas (a UF vai em signerUf)."
                 },
                 {
                   "key": "signerUf",

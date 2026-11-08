@@ -260,6 +260,25 @@ describe("asoReadiness", () => {
     expect(composeAso(facts()).risksAbsence).toBeNull();
   });
 
+  it("NOB-112: declaração com função que não é a do funcionário não libera e é explicada", () => {
+    const noRisks = { validated: [], pending: 0, usableSources: 1 };
+    const mismatch = facts({
+      risks: noRisks,
+      riskAbsenceUnmatchedJobRoles: ["Op. soldador"],
+    });
+    expect(blocking(mismatch)).toEqual(["risks_absence_not_declared"]);
+    const item = asoReadiness(mismatch).find(
+      (i) => i.code === "risks_absence_not_declared",
+    );
+    expect(item?.message).toMatch(/"Op\. soldador"/);
+    expect(item?.message).toMatch(/\("Soldador"\): ela não vale/);
+    // Sem divergência, a mensagem é a de sempre.
+    const plain = asoReadiness(facts({ risks: noRisks })).find(
+      (i) => i.code === "risks_absence_not_declared",
+    );
+    expect(plain?.message).not.toMatch(/não é exatamente a função/);
+  });
+
   it("exame de outra empresa ou com origem não comprovada não serve ao ASO (MED-07)", () => {
     expect(blocking(facts({ exam: { ...facts().exam, companyId: "c2" } }))).toEqual([
       "exam_other_company",
@@ -319,6 +338,21 @@ describe("composeAso", () => {
       /Confirmada pelo médico examinador.*2026-10-21/,
     );
     expect(JSON.stringify(confirmed)).not.toMatch(/restri/i);
+  });
+
+  it("data da confirmação do examinador é a de Brasília, não o dia UTC do carimbo", () => {
+    const restricted = { ...facts().exam, aptitude: "fit_with_restrictions" as const };
+    const night = composeAso(
+      facts({
+        exam: restricted,
+        // 22h30 de 21/10 em Brasília = 01h30 de 22/10 em UTC.
+        examinerConclusion: {
+          conclusion: "fit",
+          confirmedAt: "2026-10-22T01:30:00.000Z",
+        },
+      }),
+    );
+    expect(night.conclusion.basis).toMatch(/em 2026-10-21 \(MED-01\)/);
   });
 
   it("apto e inapto registrados valem como estão; o sistema não conclui", () => {

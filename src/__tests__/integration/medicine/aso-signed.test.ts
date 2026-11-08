@@ -269,6 +269,74 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("NOB-110: CRM do cadastro com pontuação confere pela forma canônica; identidade e autoria intactas", async () => {
+    const { exam, preview } = await examWithPreview();
+    // Cadastro legado com pontuação. Alterar o cadastro invalida a verificação (comparação exata
+    // da NOB-158, que esta correção não afrouxa): sem nova verificação, o examinador é barrado.
+    await admin`update medicos set crm='70.002' where id=${EXAMINER}`;
+    await expect(
+      registerSignedAso(examiner, exam.id, examinerFields(preview.id), pdf()),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    // Verificação conferida com o CRM como está no cadastro (simula o operador independente).
+    await admin`update professional_identity_verifications set crm='70.002' where medico_id=${EXAMINER} and user_id='examiner'`;
+    // O CRM certo não autoriza ninguém além do examinador verificado.
+    for (const ctx of [owner, staff, doctor])
+      await expect(
+        registerSignedAso(ctx, exam.id, examinerFields(preview.id), pdf()),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    // Número diferente, UF diferente e zero à esquerda a mais: não é o CRM do examinador.
+    const bads: Record<string, string>[] = [
+      { signerRegistration: "70003" },
+      { signerUf: "PI" },
+      { signerRegistration: "070002" },
+    ];
+    for (const bad of bads)
+      await expect(
+        registerSignedAso(examiner, exam.id, examinerFields(preview.id, bad), pdf()),
+      ).rejects.toMatchObject({
+        code: "VALIDATION",
+        message: expect.stringMatching(/não é o do médico examinador/),
+      });
+    expect(await admin`select id from aso_signed_documents`).toHaveLength(0);
+
+    // Só números e UF minúscula: confere; o signatário fica gravado como está no cadastro.
+    const created = await registerSignedAso(
+      examiner,
+      exam.id,
+      examinerFields(preview.id, { signerRegistration: "70002", signerUf: "ma" }),
+      pdf(),
+    );
+    expect(created).toMatchObject({
+      origin: "examiner",
+      registeredBy: "examiner",
+      signerRegistration: "70.002",
+      signerUf: "MA",
+    });
+    const [stored] =
+      await admin`select signer_registration, signer_uf from aso_signed_documents where id=${created.id}`;
+    expect(stored).toEqual({ signer_registration: "70.002", signer_uf: "MA" });
+    // O cadastro continua como estava (nada é reescrito).
+    const [medico] = await admin`select crm from medicos where id=${EXAMINER}`;
+    expect(medico.crm).toBe("70.002");
+  });
+
+  it("NOB-110: CRM do cadastro com letras não é adivinhado; pede a correção do cadastro", async () => {
+    const { exam, preview } = await examWithPreview();
+    await admin`update medicos set crm='70002-MA' where id=${EXAMINER}`;
+    await admin`update professional_identity_verifications set crm='70002-MA' where medico_id=${EXAMINER} and user_id='examiner'`;
+    await expect(
+      registerSignedAso(examiner, exam.id, examinerFields(preview.id), pdf()),
+    ).rejects.toMatchObject({
+      code: "VALIDATION",
+      message: expect.stringMatching(/corrigir o cadastro/),
+    });
+    // Outro médico continua barrado antes de qualquer conferência de CRM.
+    await expect(
+      registerSignedAso(doctor, exam.id, examinerFields(preview.id), pdf()),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(await admin`select id from aso_signed_documents`).toHaveLength(0);
+  });
+
   it("arquivo, conferência e campos: PDF de verdade, método com conferência, sem terceiro estado", async () => {
     const { exam, preview } = await examWithPreview();
     const notPdf = new File(["texto qualquer"], "aso.pdf", { type: "application/pdf" });

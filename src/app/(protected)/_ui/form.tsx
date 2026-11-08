@@ -15,20 +15,46 @@ const labelClass = "text-text-muted mb-1.5 block text-xs font-semibold";
 const actionButtonClass =
   "hover-lift flex h-[46px] items-center gap-2 rounded-[12px] text-[13px] font-bold transition-all active:scale-95";
 
-export function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-danger mt-1 text-xs">{message}</p>;
-}
-
-export function FormError({ message }: { message?: string | null }) {
+export function FieldError({ message, id }: { message?: string; id?: string }) {
   if (!message) return null;
   return (
-    <p
-      role="alert"
-      className="rounded-field text-danger border border-red-300 bg-red-50/80 px-3.5 py-2.5 text-[13px]"
-    >
+    <p id={id} className="text-danger mt-1 text-xs">
       {message}
     </p>
+  );
+}
+
+const formErrorClass =
+  "rounded-field text-danger border border-red-300 bg-red-50/80 px-3.5 py-2.5 text-[13px]";
+
+/**
+ * Resumo de erro do formulário. `details` lista, em texto legível, erros que não
+ * têm campo próprio na tela (ex.: item de lista ou seção sem lugar para a mensagem).
+ */
+export function FormError({
+  message,
+  details,
+}: {
+  message?: string | null;
+  details?: readonly string[];
+}) {
+  if (!details?.length) {
+    if (!message) return null;
+    return (
+      <p role="alert" className={formErrorClass}>
+        {message}
+      </p>
+    );
+  }
+  return (
+    <div role="alert" className={formErrorClass}>
+      {message ? <p>{message}</p> : null}
+      <ul className="mt-1 list-disc pl-5">
+        {details.map((detail) => (
+          <li key={detail}>{detail}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

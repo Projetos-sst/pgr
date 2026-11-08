@@ -6,19 +6,16 @@ import { useState, useTransition, type FormEvent } from "react";
 import { RISK_ABSENCE_JUSTIFICATION_MIN } from "@/shared/domains/medicine/risk-absence";
 import { declareRiskAbsenceAction } from "@/shared/server/actions/medicine/risk-absence";
 
-import {
-  FormError,
-  SelectField,
-  SubmitButton,
-  TextAreaField,
-  TextField,
-} from "../../../_ui/form";
+import { FormError, SelectField, SubmitButton, TextAreaField } from "../../../_ui/form";
 
 type Option = { id: string; label: string };
+type GroupOption = Option & { jobRoles: { id: string; title: string }[] };
 
 /**
  * Declaração de inexistência de riscos (NOB-156, DT-12) pelo profissional autorizado: GES,
- * função (vazia = grupo todo), versão vigente da fonte e justificativa. O servidor recusa fonte
+ * função (vazia = grupo todo), versão vigente da fonte e justificativa. A função é escolhida
+ * entre as cadastradas e vinculadas ao GES, nunca digitada (NOB-112): texto livre com erro de
+ * digitação era gravado e nunca valia no ASO. O servidor confere de novo a função, e recusa fonte
  * substituída e grupo/função com risco pendente ou validado.
  */
 export function RiskAbsenceForm({
@@ -28,12 +25,15 @@ export function RiskAbsenceForm({
 }: {
   companyId: string;
   sources: Option[];
-  groups: Option[];
+  groups: GroupOption[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
+  const [gesId, setGesId] = useState("");
+  const [jobRole, setJobRole] = useState("");
+  const jobRoles = groups.find((g) => g.id === gesId)?.jobRoles ?? [];
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -42,12 +42,14 @@ export function RiskAbsenceForm({
       const result = await declareRiskAbsenceAction(companyId, {
         sourceId: fd.get("sourceId") ?? "",
         gesId: fd.get("gesId") ?? "",
-        jobRole: (fd.get("jobRole") as string) ?? "",
+        jobRole,
         justification: fd.get("justification") ?? "",
       });
       if (result.ok) {
         setError(null);
         setFields({});
+        setGesId("");
+        setJobRole("");
         form.reset();
         router.refresh();
       } else {
@@ -74,12 +76,29 @@ export function RiskAbsenceForm({
         options={groups.map((g) => ({ value: g.id, label: g.label }))}
         emptyLabel="— selecione o GES —"
         error={fields.gesId}
+        value={gesId}
+        onChange={(value) => {
+          setGesId(value);
+          // Função de outro GES não vale: troca de GES limpa a escolha.
+          setJobRole("");
+        }}
       />
-      <TextField
-        label="Função (vazio = grupo todo)"
+      <SelectField
+        label="Função"
         name="jobRole"
+        options={jobRoles.map((r) => ({ value: r.title, label: r.title }))}
+        emptyLabel="Grupo todo (todas as funções do GES)"
         error={fields.jobRole}
+        value={jobRole}
+        onChange={setJobRole}
+        disabled={!gesId}
       />
+      {gesId && jobRoles.length === 0 ? (
+        <p className="text-text-subtle text-xs">
+          Este GES não tem funções vinculadas no cadastro: a declaração só pode ser para o
+          grupo todo.
+        </p>
+      ) : null}
       <TextAreaField
         label="Justificativa técnica"
         name="justification"

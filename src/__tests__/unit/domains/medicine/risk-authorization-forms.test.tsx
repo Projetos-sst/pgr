@@ -123,3 +123,151 @@ it("review submits the displayed concurrency token and shows a stale-decision er
   ).toBeInTheDocument();
   expect(refresh).not.toHaveBeenCalled();
 });
+
+// NOB-112: erros por campo (e aninhados) ficam no campo, não numa frase única com os textos
+// colados; permissão segue como mensagem de permissão; falha inesperada vira mensagem segura.
+const invalid = (fields: Record<string, string>) => ({
+  ok: false,
+  error: { code: "VALIDATION", message: "Dados inválidos.", fields },
+});
+
+it("appoint: each server field error is shown next to its own field", async () => {
+  (appointCompanyAuthorizerAction as jest.Mock).mockResolvedValue(
+    invalid({
+      evidence: "Informe a evidência da indicação da empresa.",
+      reason: "Informe o motivo do registro ou da substituição.",
+    }),
+  );
+  render(
+    <AuthorizationForms
+      companyId="company"
+      canAppoint
+      canAuthorize={false}
+      candidates={candidates}
+      currentAuthorizer={null}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Registrar indicação" }));
+  expect(
+    await screen.findByText("Informe a evidência da indicação da empresa."),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("Informe o motivo do registro ou da substituição."),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("textbox", { name: /^Evidência da indicação/ }),
+  ).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByRole("textbox", { name: /^Motivo do registro/ })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent("Revise os campos destacados.");
+  expect(screen.queryByText(/ · /)).not.toBeInTheDocument();
+  expect(refresh).not.toHaveBeenCalled();
+});
+
+it("grant: nested identity errors reach the identity fields; unslotted keys are readable", async () => {
+  (authorizeCompanyProfessionalAction as jest.Mock).mockResolvedValue(
+    invalid({
+      "identity.fullName": "Informe o nome completo do profissional.",
+      "identity.registration.council": "Informe o conselho ou órgão de registro.",
+      active: "Invalid input",
+    }),
+  );
+  render(
+    <AuthorizationForms
+      companyId="company"
+      canAppoint={false}
+      canAuthorize
+      candidates={candidates}
+      currentAuthorizer="delegate"
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Registrar autorização" }));
+  expect(
+    await screen.findByText("Informe o nome completo do profissional."),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("textbox", { name: /^Nome completo/ })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(screen.getByRole("textbox", { name: /^Conselho ou órgão/ })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent("Operação: Valor inválido.");
+  expect(document.body).not.toHaveTextContent(/identity\.|Invalid input/);
+});
+
+it("decision: FORBIDDEN keeps the authorization message (not a validation one)", async () => {
+  (decideCompanyRiskAction as jest.Mock).mockResolvedValue({
+    ok: false,
+    error: { code: "FORBIDDEN", message: "Você não está autorizado a validar riscos." },
+  });
+  render(
+    <RiskDecisionForm
+      companyId="company"
+      entryId="risk"
+      status="pending"
+      reviewedAt={null}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Registrar decisão" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Você não está autorizado a validar riscos.",
+  );
+  expect(screen.queryByText(/Revise os campos/)).not.toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /^Decisão técnica/ })).not.toHaveAttribute(
+    "aria-invalid",
+  );
+});
+
+it("decision: several errors at once, each in place; stale token stays readable", async () => {
+  (decideCompanyRiskAction as jest.Mock).mockResolvedValue(
+    invalid({
+      status: "Selecione a decisão técnica.",
+      reason: "Registre o parecer e o motivo da decisão.",
+      expectedReviewedAt: "Atualize a página e tente novamente.",
+    }),
+  );
+  render(
+    <RiskDecisionForm
+      companyId="company"
+      entryId="risk"
+      status="pending"
+      reviewedAt={null}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Registrar decisão" }));
+  expect(await screen.findByText("Selecione a decisão técnica.")).toBeInTheDocument();
+  expect(
+    screen.getByText("Registre o parecer e o motivo da decisão."),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /^Decisão técnica/ })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Atualize a página e tente novamente.",
+  );
+  expect(document.body).not.toHaveTextContent(/expectedReviewedAt/);
+});
+
+it("decision: unexpected failure shows a safe generic message", async () => {
+  (decideCompanyRiskAction as jest.Mock).mockRejectedValue(
+    new Error("duplicate key value violates unique constraint"),
+  );
+  render(
+    <RiskDecisionForm
+      companyId="company"
+      entryId="risk"
+      status="pending"
+      reviewedAt={null}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Registrar decisão" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Não foi possível concluir a operação. Tente novamente.",
+  );
+  expect(screen.queryByText(/duplicate key/)).not.toBeInTheDocument();
+});

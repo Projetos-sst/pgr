@@ -12,10 +12,12 @@ import {
   pcmsoContentHash,
   pcmsoGenerationSchema,
 } from "@/shared/domains/medicine/pcmso-composition";
+import { coordinatorInForceOn } from "@/shared/domains/medicine/pcmso-coordinators";
 import {
   canUseMedicalRisk,
   riskOriginLabel,
 } from "@/shared/domains/medicine/risk-sources";
+import { dateInSaoPaulo, todayInSaoPaulo } from "@/shared/dates";
 import { formatProfessionalRegistration } from "@/shared/domains/pgr/medicos";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import { NotFoundError } from "@/shared/errors/not-found-error";
@@ -26,7 +28,7 @@ import { loadProposalSources } from "./exam-proposal-core";
 import { getLatestAnalyticalReport } from "@/shared/db/repositories/pcmso-analytical-reports";
 
 import { currentCriteria } from "./interpretation-criteria-core";
-import { getPcmsoReadiness } from "./pcmso-readiness-core";
+import { getPcmsoReadinessOn } from "./pcmso-readiness-core";
 
 const companyUuid = (id: string) => requiredUuid("Empresa inválida.").parse(id);
 
@@ -41,7 +43,9 @@ export function getDocument(ctx: TenantContext, id: string) {
 /**
  * Gera e arquiva uma nova versão **prévia** do PCMSO. Só com a conferência (NOB-148) sem
  * bloqueios — inclui plano de exames aprovado e atual. Etapas inexistentes no sistema entram no
- * documento como seções pendentes. Não assina nem emite.
+ * documento como seções pendentes. Não assina nem emite. O coordenador do documento é o vigente
+ * na data da geração (America/Sao_Paulo; NOB-109), a mesma data usada na conferência. Prévias já
+ * arquivadas são imutáveis e não são recompostas.
  */
 export async function generateDocument(
   ctx: TenantContext,
@@ -50,7 +54,8 @@ export async function generateDocument(
 ) {
   const id = companyUuid(companyId);
   const { cycleStart } = pcmsoGenerationSchema.parse(input);
-  const readiness = await getPcmsoReadiness(ctx, id);
+  const today = todayInSaoPaulo();
+  const readiness = await getPcmsoReadinessOn(ctx, id, today);
   const blocking = readiness.items.filter((item) => item.severity === "blocking");
   if (blocking.length)
     throw new ValidationError(
@@ -70,9 +75,11 @@ export async function generateDocument(
       currentCriteria(ctx, id),
       getLatestAnalyticalReport(ctx, id),
     ]);
-  const coordinator = history.find((row) => row.endsOn === null);
+  const inForce = coordinatorInForceOn(history, today);
+  const coordinator = inForce.kind === "in_force" ? inForce.assignment : null;
   const approved = plans.find((plan) => plan.status === "approved");
-  // A conferência sem bloqueio garante ambos; a checagem protege contra corrida.
+  // A conferência sem bloqueio garante ambos; a checagem protege contra corrida (inclusive
+  // sobreposição de designações, que nunca escolhe uma delas).
   if (!coordinator || !approved)
     throw new ValidationError("Coordenador e plano de exames aprovado são obrigatórios.");
   const plan = await getExamPlan(ctx, approved.id);
@@ -103,12 +110,13 @@ export async function generateDocument(
       const used = source.risks.filter((risk) =>
         canUseMedicalRisk(risk.status, source.freshness),
       );
-      const lastValidatedOn =
-        used
-          .map((risk) => risk.reviewedAt ?? "")
-          .sort()
-          .at(-1)
-          ?.slice(0, 10) || null;
+      // Data da última validação no fuso do negócio, não o dia UTC do carimbo.
+      const lastReviewedAt = used
+        .map((risk) => risk.reviewedAt ?? "")
+        .filter(Boolean)
+        .sort()
+        .at(-1);
+      const lastValidatedOn = lastReviewedAt ? dateInSaoPaulo(lastReviewedAt) : null;
       return {
         id: source.id,
         kind: source.kind,

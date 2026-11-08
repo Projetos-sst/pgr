@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { signerRegistrationSchema } from "@/shared/domains/pgr/medicos";
+
 /**
  * ASO assinado arquivado (NOB-163; MED-01, MED-11, MED-12; NR-7 7.5.19.1 "g").
  *
@@ -68,10 +70,8 @@ export const asoSignedInputSchema = z
       .trim()
       .min(3, "Informe o nome do médico que assinou.")
       .max(200, "Máximo de 200 caracteres."),
-    signerRegistration: z
-      .string()
-      .trim()
-      .regex(/^\d{1,10}$/, "CRM do signatário: só números."),
+    // Separadores tolerados; a conferência com o cadastro usa a forma canônica (NOB-110).
+    signerRegistration: signerRegistrationSchema,
     signerUf: z
       .string()
       .trim()

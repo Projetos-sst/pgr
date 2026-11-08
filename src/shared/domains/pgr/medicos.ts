@@ -110,6 +110,85 @@ export type MedicoListItem = Medico;
 /** Opção (id + nome) para selects (ex.: médico responsável em exames/ASO). */
 export type MedicoOption = Pick<Medico, "id" | "name" | "crm">;
 
+/** Separadores tolerados ao comparar o número do registro: ponto, hífen, barra e espaços. */
+const REGISTRATION_SEPARATORS = /[.\-/\s]/g;
+
+/**
+ * Forma canônica do número do registro profissional (CRM/CRP), usada SÓ para comparar formatos
+ * (NOB-110/NOB-163): tira ponto, hífen, barra e espaços e mantém os dígitos exatamente como estão
+ * (sem conversão numérica: zeros à esquerda contam, "012345" ≠ "12345"). Devolve `null` quando
+ * sobra algo que não é dígito (ex.: "12345-MA", "CRM 12345") ou quando não há dígito: o valor não
+ * é comparável. Nunca usar para reescrever o valor guardado nem para exibição.
+ */
+export function canonicalRegistrationNumber(
+  value: string | null | undefined,
+): string | null {
+  if (typeof value !== "string") return null;
+  const stripped = value.replace(REGISTRATION_SEPARATORS, "");
+  return /^\d+$/.test(stripped) ? stripped : null;
+}
+
+/**
+ * CRM do signatário informado no registro de ASO/PCMSO assinado: dígitos, com ponto, hífen, barra
+ * ou espaço opcionais (até 10 dígitos). O valor é guardado como informado (aparado); a forma
+ * canônica serve só para comparar com o cadastro.
+ */
+export const signerRegistrationSchema = z
+  .string()
+  .trim()
+  .max(20, "CRM do signatário com no máximo 20 caracteres.")
+  .refine((value) => {
+    const canonical = canonicalRegistrationNumber(value);
+    return canonical !== null && canonical.length <= 10;
+  }, "CRM do signatário: só números (ponto, hífen, barra e espaço são aceitos como separadores; a UF vai no campo próprio).");
+
+/** UF comparável: sem espaços nas pontas, maiúscula; vazia → `null`. */
+function canonicalUf(value: string | null | undefined): string | null {
+  const uf = typeof value === "string" ? value.trim().toUpperCase() : "";
+  return uf === "" ? null : uf;
+}
+
+/**
+ * Resultado da conferência de consistência entre o registro do cadastro e o informado:
+ * - `match`: mesmo número (forma canônica) e mesma UF (sem diferenciar maiúsculas);
+ * - `mismatch`: número ou UF diferentes (ou UF ausente no cadastro);
+ * - `registered_not_canonical`: o número do cadastro tem letras ou outro caractere além dos
+ *   separadores — o escritório precisa corrigir o cadastro; o sistema não adivinha o número.
+ */
+export type RegistrationMatch = "match" | "mismatch" | "registered_not_canonical";
+
+/**
+ * Confere se o registro informado (signatário de ASO/PCMSO) é o do cadastro do profissional,
+ * tolerando só diferenças de formatação. É conferência de CONSISTÊNCIA: nunca autoriza sozinha —
+ * quem pode agir vem do vínculo verificado (`actor_clinical_medico_ids`).
+ */
+export function compareProfessionalRegistration(
+  registered: { crm: string; uf: string | null },
+  informed: { registration: string; uf: string },
+): RegistrationMatch {
+  const registeredNumber = canonicalRegistrationNumber(registered.crm);
+  if (registeredNumber === null) return "registered_not_canonical";
+  const informedNumber = canonicalRegistrationNumber(informed.registration);
+  const registeredUf = canonicalUf(registered.uf);
+  if (
+    informedNumber === null ||
+    informedNumber !== registeredNumber ||
+    registeredUf === null ||
+    registeredUf !== canonicalUf(informed.uf)
+  )
+    return "mismatch";
+  return "match";
+}
+
+/**
+ * Mensagem para cadastro com número de registro não comparável (letras ou outros caracteres):
+ * decisão conservadora da NOB-110 — o sistema não remove sufixo de UF nem adivinha o número; o
+ * escritório corrige o cadastro (o que, pela NOB-158, exige nova verificação de identidade).
+ */
+export function registeredNotCanonicalMessage(whose: string, registered: string): string {
+  return `O CRM no cadastro ${whose} ("${registered}") tem letras ou caracteres além de ponto, hífen, barra e espaço. O escritório precisa corrigir o cadastro (só o número do CRM; a UF vai no campo próprio) antes de registrar o documento assinado.`;
+}
+
 /** "CRM 12345/SP" — identificação do registro para listas e documentos. */
 export function formatProfessionalRegistration(
   medico: Pick<Medico, "crm" | "profession" | "registrationUf">,

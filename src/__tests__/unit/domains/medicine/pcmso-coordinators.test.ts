@@ -2,9 +2,11 @@ import {
   assessCoordinatorEligibility,
   coordinatorClosingSchema,
   coordinatorDesignationSchema,
+  coordinatorInForceOn,
   coordinatorOn,
   planCoordinatorSwitch,
   previousIsoDay,
+  type CoordinatorInForce,
 } from "@/shared/domains/medicine/pcmso-coordinators";
 
 const physician = {
@@ -97,6 +99,64 @@ describe("coordinatorOn", () => {
     ["2030-01-01", "b"],
   ])("on %s → %s", (day, expected) => {
     expect(coordinatorOn(history, day)?.id ?? null).toBe(expected);
+  });
+});
+
+describe("coordinatorInForceOn (NOB-109: vigente na data, não só aberta)", () => {
+  const TODAY = "2026-11-07";
+  type Row = { id: string; startsOn: string; endsOn: string | null };
+  const ids = (r: CoordinatorInForce<{ id: string }>) =>
+    r.kind === "in_force" ? r.assignment.id : r.kind;
+  const on = (history: Row[], day = TODAY) => ids(coordinatorInForceOn(history, day));
+
+  it("designação aberta iniciada antes da data está em vigor", () => {
+    expect(on([{ id: "a", startsOn: "2026-01-01", endsOn: null }])).toBe("a");
+  });
+  it("designação que começa depois da data não conta (sucessor agendado)", () => {
+    expect(on([{ id: "f", startsOn: "2026-12-01", endsOn: null }])).toBe("none");
+  });
+  it("designação encerrada antes da data não conta", () => {
+    expect(on([{ id: "a", startsOn: "2026-01-01", endsOn: "2026-11-06" }])).toBe("none");
+  });
+  it("encerramento agendado (fim depois da data, ou na própria data) segue em vigor", () => {
+    expect(on([{ id: "a", startsOn: "2026-01-01", endsOn: "2026-12-31" }])).toBe("a");
+    expect(on([{ id: "a", startsOn: "2026-01-01", endsOn: TODAY }])).toBe("a");
+  });
+  it("troca agendada: a atual vale até a véspera do sucessor; o sucessor só depois", () => {
+    const history = [
+      { id: "b", startsOn: "2026-11-08", endsOn: null },
+      { id: "a", startsOn: "2026-01-01", endsOn: "2026-11-07" },
+    ];
+    expect(on(history)).toBe("a");
+    expect(on(history, "2026-11-08")).toBe("b");
+  });
+  it("sem designação → none; sobreposição → overlap, sem escolher uma", () => {
+    expect(coordinatorInForceOn([], TODAY)).toEqual({ kind: "none" });
+    const overlap = coordinatorInForceOn(
+      [
+        { id: "a", startsOn: "2026-01-01", endsOn: null },
+        { id: "b", startsOn: "2026-06-01", endsOn: "2026-12-31" },
+      ],
+      TODAY,
+    );
+    expect(overlap.kind).toBe("overlap");
+    expect(overlap.kind === "overlap" && overlap.assignments.map((a) => a.id)).toEqual([
+      "a",
+      "b",
+    ]);
+  });
+  it("a troca planejada pelo app nunca produz sobreposição", () => {
+    const plan = planCoordinatorSwitch(
+      [{ startsOn: "2026-01-01", endsOn: null }],
+      "2026-12-01",
+    );
+    if (!plan.ok) throw new Error(plan.message);
+    const history = [
+      { id: "a", startsOn: "2026-01-01", endsOn: plan.closeOpenOn },
+      { id: "b", startsOn: "2026-12-01", endsOn: null },
+    ];
+    for (const day of ["2026-01-01", "2026-11-30", "2026-12-01", "2027-06-01"])
+      expect(coordinatorInForceOn(history, day).kind).toBe("in_force");
   });
 });
 

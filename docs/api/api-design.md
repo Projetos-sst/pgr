@@ -167,7 +167,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/health-exams/{id}/aso-deliveries/{deliveryId}/review`                                                                                                        | POST conferência humana do comprovante (`201`, `{ method* (documentary\|signature_witnessed), result* (confirmed\|rejected), reference* }`; revisor = usuário da sessão; uma por comprovante) — NOB-167                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `/health-exams/{id}/clinical-notes` · `/health-exams/{id}/work-restrictions` · `/health-exams/{id}/clinical-access-events`                                     | GET prontuário (leitura auditada), POST observação (`201`, `{ content* }`) — só a conta vinculada ao examinador ou ao coordenador, demais → `403` · GET restrições (RH lê), POST (`201`, `{ kind: restriction                                                                                                                                                                                                                                                                                                                                                                                                                                   | withdrawal, restriction? }`, sem CID → senão `422`; só o médico vinculado) · GET trilha de acesso (owner) — NOB-155                                                                                                                         |
 | `/employees/{id}/absences` · `/absences/{id}(/return                                                                                                           | /cancel)`·`/absences/{id}/clinical-notes`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | GET afastamentos com avaliação (retorno NR-7 7.5.9, sinalização 7.5.19.5 c), POST (`201`) · GET/PUT previsão do fim · POST retorno confirmado e cancelamento · GET/POST área clínica (atestado e CID), só o coordenador vinculado — NOB-139 |
-| `/companies/{id}/risk-absence-declarations`                                                                                                                    | GET declarações e permissão (equipe do escritório; cliente só com autorização ativa) · POST declarar (`201`, `{ sourceId*, gesId*, jobRole?, justification* }`; só o profissional com autorização ativa de validação de riscos, demais → `403`; fonte substituída ou grupo/função com risco pendente/validado → `422`) — NOB-156                                                                                                                                                                                                                                                                                                                |
+| `/companies/{id}/risk-absence-declarations`                                                                                                                    | GET declarações e permissão (equipe do escritório; cliente só com autorização ativa) · POST declarar (`201`, `{ sourceId*, gesId*, jobRole?, justification* }`; só o profissional com autorização ativa de validação de riscos, demais → `403`; fonte substituída ou grupo/função com risco pendente/validado ou função fora das vinculadas ao GES → `422`) — NOB-156                                                                                                                                                                                                                                                                           |
 | `/medicine/overview` · `/medicine/employees`                                                                                                                   | GET (read-model do painel da Medicina: empresas com Medicina habilitada + contagem pela validade **informada** do último exame de cada funcionário) · GET (`?companyId=` **obrigatório**, `?search=`, `?page=`/`?pageSize=` ≤ 100; funcionários da empresa + último exame; `422` sem/má `companyId`, `404` empresa de outro tenant, `403` empresa sem Medicina); só GET, sem `/dependents` — não são entidades                                                                                                                                                                                                                                  |
 | `/companies/{id}/pcmso-coordinators` · `/pcmso-coordinators/{id}`                                                                                              | GET (histórico, mais recente primeiro), POST (`201`, designa; a designação aberta é encerrada na véspera) · GET, PUT (só encerra: `{ endsOn, endReason }`) — **sem DELETE** (histórico preservado, `405`); escrita só `owner`; empresa com Medicina habilitada                                                                                                                                                                                                                                                                                                                                                                                  |
 | `/risk-methodology`                                                                                                                                            | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -726,6 +726,8 @@ Regras (`domains/medicine/pcmso-coordinators.ts`): só médico ativo, com UF do 
 Trabalho, exige `rqeExceptionReason` (exceção do NR-7 item 7.5.2: inexistência de médico do trabalho na
 localidade). Trocar de coordenador encerra a designação aberta na véspera do início da nova, na mesma transação.
 
+**Aberta × vigente (NOB-109):** designação aberta (`ends_on` nulo) não é o mesmo que designação vigente. A data de início pode ser futura (sucessor agendado) e o encerramento pode ser agendado. A conferência e a prévia do PCMSO usam o coordenador **vigente hoje** (`coordinatorInForceOn`, America/Sao_Paulo). Os atos do coordenador (plano, critérios, relatório, PCMSO assinado) continuam exigindo a designação **aberta**, no app e na RLS.
+
 | Action                            | Entrada                                                    | Retorno (`data`)             |
 | --------------------------------- | ---------------------------------------------------------- | ---------------------------- |
 | `listPcmsoCoordinatorsAction`     | `companyId`                                                | `CoordinatorAssignmentRow[]` |
@@ -888,6 +890,8 @@ REST: `GET|POST /api/v1/companies/{id}/exam-plans` · `GET /api/v1/exam-plans/{i
 
 **Decisão do item é retomada sem perda (NOB-112, lote 02B).** `PUT .../items/{itemId}` grava a decisão inteira: `justification` ausente vira `null`.
 
+**Exame repetido ao acrescentar (NOB-112).** O mesmo procedimento no mesmo grupo de exposição e função (índice único `uq_exam_plan_items_procedure`, inclusive item retirado) é recusado com `DUPLICATE` (409 no `POST .../items`) e a mensagem "Este exame já está no plano para este grupo de exposição e função…"; nada é inserido. Para mudar o item existente, use a decisão (`PUT .../items/{itemId}`). Na tela, o formulário só é limpo após o sucesso confirmado; erro e falha de rede mantêm o que foi digitado.
+
 - A tela abre cada item com a decisão, a periodicidade e a **justificativa já registradas**. Mudar só a periodicidade reenvia a justificativa salva; apagá-la é um ato deliberado.
 - Exame **acrescentado** pelo médico (`origin = 'added'`) sem justificativa → `VALIDATION` (`422`) com a mensagem "Exame acrescentado pelo médico exige justificativa…", conferida antes do `CHECK` (antes da correção, a tela só mostrava "Valor fora do permitido."). Nada é alterado.
 - Retirada sem justificativa continua → `VALIDATION` no campo `justification`. Item sugerido e mantido: justificativa opcional.
@@ -913,7 +917,7 @@ Tabela `pcmso_documents` (migration `0063_pcmso_documents`):
 - `CHECK status = 'preview'`: sem assinatura médica verificável (MED-12) não há emissão oficial;
 - `app_runtime` só com SELECT e INSERT.
 
-A geração exige a conferência (NOB-148) **sem bloqueios**: inclui coordenador, riscos validados e plano aprovado sobre a fonte atual. A conferência passa a bloquear quando:
+A geração exige a conferência (NOB-148) **sem bloqueios**: inclui coordenador, riscos validados e plano aprovado sobre a fonte atual. O coordenador da prévia é o vigente na data da geração, a mesma data usada na conferência (NOB-109). Prévias já arquivadas não são recompostas. A conferência passa a bloquear quando:
 
 - não há plano aprovado (`exam_plan`);
 - o plano aprovado foi feito sobre outra fonte de riscos (`exam_plan_outdated`);
@@ -953,6 +957,7 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
   - `coordinator`: o próprio médico responsável, pela conta vinculada e com identidade verificada (`actor_clinical_medico_ids`, NOB-158);
   - `office_received`: a equipe do escritório arquiva o documento que o médico responsável assinou.
   - O owner não vira signatário por escolher um nome. Colaborador e coordenador de outra empresa são barrados.
+- **Signatário (NOB-110):** o CRM/UF informado é conferido com o coordenador designado vigente pela forma canônica do número (só separadores `.`, `-`, `/` e espaço são ignorados; zeros à esquerda contam; UF sem diferenciar maiúsculas). É conferência de consistência: no fluxo `coordinator`, quem registra continua decidido pela conta vinculada e verificada. O documento grava o CRM/UF como estão no cadastro; CRM do cadastro com letras é recusado até a correção do cadastro. O alerta de médico responsável trocado usa a mesma conferência (reformatar o CRM não é troca).
 - **Conferência:** só **documental**:
   - `verificationKind = 'documentary'`, o único valor que o CHECK aceita;
   - `verificationReference`: relatório do validador, código da plataforma ou guarda do original físico.
@@ -1353,8 +1358,14 @@ O ASO oficial é o PDF **assinado pelo médico examinador** (NR-7 7.5.19.1 g). O
 
 - **Fluxo A (`examiner`):**
   - só a conta do médico examinador do exame, com identidade verificada (`actor_clinical_medico_ids`, NOB-158);
-  - CRM/UF do signatário iguais ao cadastro do examinador;
+  - CRM/UF do signatário iguais ao cadastro do examinador — conferência de **consistência**, que nunca autoriza sozinha (quem registra vem do `doctorId` do exame + conta vinculada e verificada);
   - prévia (`previewDocumentId`) do mesmo exame, com a mesma conclusão.
+- **Formato do CRM (NOB-110):**
+  - `signerRegistration` aceita dígitos com ponto, hífen, barra ou espaço (até 10 dígitos); letras são recusadas (a UF vai em `signerUf`, sem diferenciar maiúsculas);
+  - a conferência com o cadastro usa a forma canônica (`canonicalRegistrationNumber` em `domains/pgr/medicos.ts`): tira só os separadores e mantém os dígitos como estão — `12.345` = `12345`, mas `012345` ≠ `12345`;
+  - no fluxo A, o documento grava o CRM/UF **como estão no cadastro** do examinador (o que a prévia imprime e o que a RLS confere por igualdade exata). O cadastro nunca é reescrito;
+  - cadastro com letras ou outros caracteres no CRM (ex.: `12345-MA`, `CRM 12.345/MA`) não é adivinhado: o registro é recusado (`VALIDATION`) até o escritório corrigir o cadastro — o que, pela NOB-158, exige nova verificação de identidade;
+  - a verificação de identidade (NOB-158) continua comparando o CRM conferido com o cadastro por igualdade exata.
 - **Fluxo B (`external_clinic`):** a equipe do escritório (owner ou colaborador) arquiva o ASO assinado entregue pela clínica, com o signatário como consta no documento. Sem prévia.
 - **Conferência obrigatória (`verificationReference`):**
   - ICP-Brasil ou plataforma: referência do validador (ex.: Verificador ITI);
@@ -2082,6 +2093,13 @@ Em `domains/medicine/risk-absence.ts`, `server/medicine/risk-absence-core.ts` e 
 
 **O que declara.** Que o GES, para uma função ou para o grupo todo (função vazia), não tem exposição a riscos que exijam controle médico, numa versão da fonte, com justificativa (mínimo de 20 caracteres).
 
+**Função (NOB-112).**
+
+- A função não é texto livre: precisa ser o título exato de uma função cadastrada da empresa e vinculada ao GES escolhido (`ges_job_roles`). Erro de digitação, abreviação, outra caixa, função de outro GES ou inexistente → `422` com a mensagem em `fields.jobRole`, e nada é gravado. Vazio continua valendo para o grupo todo.
+- Sem casamento aproximado: o cadastro de funções distingue títulos só pela caixa ("Operador" ≠ "OPERADOR"), então juntar variações misturaria funções diferentes.
+- O GET devolve `groups[].jobRoles` (`id`, `title`) para quem pode declarar; a tela escolhe a função numa lista do GES.
+- Sem migration: a declaração guarda o título (`job_role`), não o id da função.
+
 **Nunca automática.**
 
 - Cadastro vazio nunca vira inexistência.
@@ -2100,6 +2118,7 @@ Em `domains/medicine/risk-absence.ts`, `server/medicine/risk-absence-core.ts` e 
 - Riscos pendentes continuam bloqueando.
 - Com riscos validados, valem os riscos, e o aviso `risk_absence_conflict` aparece.
 - Sem declaração: `risks_absence_not_declared` ou `risk_source`, como antes.
+- A função casa pelo título exato da função cadastrada do funcionário (antes, ignorando caixa). Declaração antiga cujo texto não é exatamente esse título (digitação, abreviação, caixa) ou função renomeada depois da declaração → não vale, o ASO continua bloqueado e a mensagem de `risks_absence_not_declared` cita a função declarada. Nada é associado automaticamente nem apagado: o profissional autorizado faz nova declaração escolhendo a função do GES.
 
 Telas: seção "Declarações de inexistência de riscos" em `/companies/{id}/medical-risks` e em `/risk-authorizations/{id}`, onde o profissional valida os riscos.
 
@@ -2169,15 +2188,22 @@ Fora desta fatia: revisão/aprovação do plano pelo médico coordenador (persis
 
 Fatia da NOB-109, **sem migration**. `checkPcmsoReadiness` (`domains/medicine/pcmso-readiness.ts`) confere o que falta para o PCMSO de uma empresa poder ser gerado, nos moldes da conferência do PGR (NOB-105). Ela não gera, não aprova e não assina.
 
-| Situação        | Itens                                                                                                                                                                                                                                                                                                                  |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blocking`      | razão social/CNPJ, CNAE, ramo de atividade e grau de risco da empresa (MED-08); coordenador do PCMSO aberto (NR-7 7.4.1 c); fonte de riscos (7.5.1); nenhum risco validado em fonte vigente (7.5.1; não comprova ausência de riscos); risco validado em fonte que mudou (7.5.5); nenhum médico ativo (MED-08; 7.5.4 d) |
-| `warning`       | sem funcionário ativo (cronograma vazio); coordenador sem RQE (exceção 7.5.2, mostra a justificativa); riscos pendentes; risco sem possível agravo (7.5.4 a); risco sem regra de exame (7.5.4 b)                                                                                                                       |
-| `not_available` | plano de exames aprovado pelo coordenador (7.5.4 b; MED-15), critérios de interpretação e condutas (7.5.4 c), clínicas (MED-08), campanhas de saúde (MED-08), relatório analítico (7.5.4 e; 7.6.2). São etapas que o sistema ainda não tem; nunca são simuladas                                                        |
+| Situação        | Itens                                                                                                                                                                                                                                                                                                                                                     |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blocking`      | razão social/CNPJ, CNAE, ramo de atividade e grau de risco da empresa (MED-08); coordenador do PCMSO vigente hoje, e sem sobreposição (NR-7 7.4.1 c; NOB-109); fonte de riscos (7.5.1); nenhum risco validado em fonte vigente (7.5.1; não comprova ausência de riscos); risco validado em fonte que mudou (7.5.5); nenhum médico ativo (MED-08; 7.5.4 d) |
+| `warning`       | sem funcionário ativo (cronograma vazio); coordenador sem RQE (exceção 7.5.2, mostra a justificativa); riscos pendentes; risco sem possível agravo (7.5.4 a); risco sem regra de exame (7.5.4 b)                                                                                                                                                          |
+| `not_available` | plano de exames aprovado pelo coordenador (7.5.4 b; MED-15), critérios de interpretação e condutas (7.5.4 c), clínicas (MED-08), campanhas de saúde (MED-08), relatório analítico (7.5.4 e; 7.6.2). São etapas que o sistema ainda não tem; nunca são simuladas                                                                                           |
 
 Retorno: `{ ready, items[{ code, severity, message, reference, href }], counts }`. `ready` só fica `true` sem `blocking` e sem `not_available`.
 
 O core reúne empresa, inventário (`loadProposalSources`, da NOB-147), coordenador (NOB-144), funcionários ativos ou afastados e médicos ativos. Empresa de outro tenant → `NOT_FOUND`; sem Medicina → `FORBIDDEN`.
+
+**Coordenador conferido (NOB-109):** é o **vigente na data da conferência** (hoje em America/Sao_Paulo, calculado no servidor, nunca vindo do cliente), pelo período `starts_on ≤ hoje ≤ ends_on` (ou `ends_on` nulo):
+
+- designação que só começa no futuro não conta (`coordinator`, bloqueio);
+- designação encerrada antes de hoje não conta;
+- encerramento agendado mantém a coordenadora vigente até a data final;
+- mais de uma designação vigente no mesmo dia → `coordinator_overlap` (bloqueio), sem escolher uma. O app impede períodos sobrepostos; a sobreposição só surge por escrita fora do app.
 
 | Action                    | Entrada     | Retorno (`data`) |
 | ------------------------- | ----------- | ---------------- |

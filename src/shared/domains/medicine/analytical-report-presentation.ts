@@ -56,7 +56,9 @@ export const CIPA_SITUATION_LABELS: Record<CipaSituation, string> = {
 
 const participantSchema = z
   .object({
-    role: z.enum(REPORT_PARTICIPANT_ROLES, { error: "Função do participante inválida." }),
+    role: z.enum(REPORT_PARTICIPANT_ROLES, {
+      error: "Selecione a função do participante.",
+    }),
     name: z
       .string()
       .trim()

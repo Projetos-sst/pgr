@@ -69,6 +69,24 @@ describe("reportEventInputSchema", () => {
       }),
     ).toThrow();
   });
+  it("erros de lista saem com o caminho do item e mensagem em PT (NOB-112)", () => {
+    const result = reportEventInputSchema.safeParse({
+      kind: "discussed",
+      occurredOn: "2026-11-03",
+      participants: [{ role: "cipa" }, { role: "", name: "Pessoa Fictícia" }],
+      summary: "Síntese agregada fictícia.",
+      measures: [{ description: "", responsible: "Gestor Fictício" }],
+    });
+    expect(result.success).toBe(false);
+    const messages = Object.fromEntries(
+      (result.error?.issues ?? []).map((i) => [i.path.join("."), i.message]),
+    );
+    expect(messages).toEqual({
+      "participants.1.role": "Selecione a função do participante.",
+      "measures.0.description":
+        "Descreva a medida ou o encaminhamento (mínimo de 5 caracteres).",
+    });
+  });
 });
 
 describe("occurredOnProblem", () => {

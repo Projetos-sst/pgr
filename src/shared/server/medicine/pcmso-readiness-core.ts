@@ -9,7 +9,9 @@ import { listCoordinatorAssignments } from "@/shared/db/repositories/pcmso-coord
 import { buildExamProposal } from "@/shared/domains/medicine/exam-proposal";
 import { criteriaCoverage } from "@/shared/domains/medicine/interpretation-criteria";
 import { checkPcmsoReadiness } from "@/shared/domains/medicine/pcmso-readiness";
+import { coordinatorInForceOn } from "@/shared/domains/medicine/pcmso-coordinators";
 import { canUseMedicalRisk } from "@/shared/domains/medicine/risk-sources";
+import { todayInSaoPaulo } from "@/shared/dates";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { PAGE_SIZE_MAX } from "@/shared/pagination";
@@ -25,8 +27,23 @@ import {
 /**
  * Conferência do PCMSO (NOB-148). As leituras sensíveis passam pelos repositórios de cada
  * domínio: inventário e coordenador conferem empresa, tenant e módulo Medicina (RLS).
+ * O coordenador conferido é o **vigente hoje** (America/Sao_Paulo), data em que a conferência e a
+ * prévia são produzidas (NOB-109): designação agendada para o futuro não conta; encerramento
+ * agendado não tira quem segue vigente até lá.
  */
 export async function getPcmsoReadiness(ctx: TenantContext, companyId: string) {
+  return getPcmsoReadinessOn(ctx, companyId, todayInSaoPaulo());
+}
+
+/**
+ * Conferência numa data de referência calculada no servidor (nunca vinda do cliente): a geração
+ * da prévia usa a mesma data na conferência e na composição.
+ */
+export async function getPcmsoReadinessOn(
+  ctx: TenantContext,
+  companyId: string,
+  referenceDay: string,
+) {
   const id = requiredUuid("Empresa inválida.").parse(companyId);
   const company = await getCompanyById(ctx.tenantId, id);
   if (!company) throw new NotFoundError();
@@ -44,7 +61,8 @@ export async function getPcmsoReadiness(ctx: TenantContext, companyId: string) {
     ]);
   const approved = plans.find((plan) => plan.status === "approved") ?? null;
   const draft = plans.find((plan) => plan.status === "draft") ?? null;
-  const open = history.find((row) => row.endsOn === null) ?? null;
+  const inForce = coordinatorInForceOn(history, referenceDay);
+  const current = inForce.kind === "in_force" ? inForce.assignment : null;
   const usableRisks = sources
     .filter((source) => !source.superseded)
     .flatMap((source) =>
@@ -65,13 +83,14 @@ export async function getPcmsoReadiness(ctx: TenantContext, companyId: string) {
       riskGrade: company.riskGrade,
     },
     activeEmployees: active.total + onLeave.total,
-    coordinator: open
+    coordinator: current
       ? {
-          medicoName: open.medicoName,
-          rqe: open.medicoRqe,
-          rqeExceptionReason: open.rqeExceptionReason,
+          medicoName: current.medicoName,
+          rqe: current.medicoRqe,
+          rqeExceptionReason: current.rqeExceptionReason,
         }
       : null,
+    coordinatorOverlap: inForce.kind === "overlap",
     proposal: buildExamProposal(sources),
     usableRisks,
     activePhysicians: medicos.rows.filter((m) => m.profession === "physician").length,
