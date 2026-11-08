@@ -3,6 +3,7 @@ import { z } from "zod";
 import { toActionError } from "@/shared/server/action-error";
 import { ok, fail } from "@/shared/server/result";
 import { ForbiddenError } from "@/shared/auth/errors";
+import { DuplicateError } from "@/shared/errors/duplicate-error";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 
 it("maps a wrapped company CNPJ constraint to its field, preserving other duplicate errors", () => {
@@ -56,6 +57,19 @@ describe("toActionError", () => {
     expect(toActionError(new ForbiddenError())).toEqual({
       code: "FORBIDDEN",
       message: "FORBIDDEN",
+    });
+  });
+
+  it("DuplicateError com campo leva a mensagem ao campo; sem campo, sem fields", () => {
+    const withField = new DuplicateError("Registro repetido.", { field: "crm" });
+    expect(toActionError(withField)).toEqual({
+      code: "DUPLICATE",
+      message: "Registro repetido.",
+      fields: { crm: "Registro repetido." },
+    });
+    expect(toActionError(new DuplicateError("Registro repetido."))).toEqual({
+      code: "DUPLICATE",
+      message: "Registro repetido.",
     });
   });
 

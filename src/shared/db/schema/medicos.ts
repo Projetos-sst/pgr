@@ -296,8 +296,8 @@ export type MedicoLinkInvitationEvent = InferSelectModel<
 
 /**
  * Vínculo profissional ↔ conta de acesso (NOB-149). Dá ao profissional cadastrado uma identidade
- * autenticada: só a conta vinculada ao médico com designação aberta de coordenador age como
- * coordenador daquela empresa. Histórico preservado: no máximo um vínculo ABERTO por profissional
+ * autenticada: só a conta vinculada ao médico com designação de coordenador em vigor hoje age
+ * como coordenador daquela empresa. Histórico preservado: no máximo um vínculo ABERTO por profissional
  * e um por conta no escritório; revogar só encerra (sem DELETE). Só o owner vincula e revoga
  * (RLS com o ator da sessão, padrão 0056). Sem FK para `org_memberships`: a saída da conta do
  * escritório não pode apagar o histórico — a autorização exige a associação viva no uso.

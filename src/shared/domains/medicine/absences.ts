@@ -256,7 +256,11 @@ export const absenceClinicalNoteSchema = z
       .regex(/^[A-TV-Z][0-9]{2}(\.[0-9A-Z]{1,2})?$/, "CID-10 inválido (ex.: M54.5).")
       .optional()
       .or(z.literal("").transform(() => undefined)),
-    workerAuthorization: z.string().trim().max(1000).optional(),
+    workerAuthorization: z
+      .string()
+      .trim()
+      .max(1000, "Máximo de 1.000 caracteres.")
+      .optional(),
     content: z.string().trim().max(5000, "Máximo de 5.000 caracteres.").optional(),
   })
   .strict()

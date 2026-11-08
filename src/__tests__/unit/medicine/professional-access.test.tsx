@@ -147,6 +147,27 @@ describe("ProfessionalAccess", () => {
     expect(screen.getByText(/revogado: Troca fictícia/)).toBeInTheDocument();
   });
 
+  it("datas do histórico no dia de Brasília: vínculo e revogação às 22h30 não avançam o dia", () => {
+    render(
+      <ProfessionalAccess
+        {...base}
+        canManage={false}
+        members={[]}
+        links={[
+          {
+            ...OPEN,
+            // 22h30 de Brasília = 01h30 do dia seguinte em UTC.
+            linkedAt: "2026-11-02T01:30:00.000Z",
+            revokedAt: "2026-11-06T01:30:00.000Z",
+            revokeReason: "Troca fictícia",
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText(/2026-11-01 → 2026-11-05/)).toBeInTheDocument();
+    expect(screen.queryByText(/2026-11-02 →/)).not.toBeInTheDocument();
+  });
+
   it("NOB-157: só a conta convidada vê Aceitar/Recusar; o owner só cancela", async () => {
     actAction.mockResolvedValue({ ok: true, data: {} });
     const { unmount } = render(

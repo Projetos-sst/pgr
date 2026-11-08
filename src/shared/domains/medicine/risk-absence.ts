@@ -7,7 +7,7 @@
  */
 import { z } from "zod";
 
-import { requiredUuid } from "@/shared/domains/pgr/form-fields";
+import { optionalUuidWith, requiredUuid } from "@/shared/domains/pgr/form-fields";
 
 import type { MedicalRiskStatus, SourceFreshness } from "./risk-sources";
 
@@ -22,13 +22,15 @@ export const riskAbsenceInputSchema = z
   .object({
     sourceId: requiredUuid("Fonte de riscos inválida."),
     gesId: requiredUuid("GES inválido."),
-    // Vazio = vale para o grupo todo.
+    // Função cadastrada (id) vinculada ao GES; vazio/ausente = vale para o grupo todo (NOB-112).
+    jobRoleId: optionalUuidWith("Função inválida."),
+    // Texto livre não identifica a função (renomear quebrava a declaração): recusado com a dica.
     jobRole: z
-      .string()
-      .trim()
-      .max(200, "Função: máximo de 200 caracteres.")
-      .optional()
-      .transform((value) => value ?? ""),
+      .never({
+        error:
+          "Informe a função pelo identificador (jobRoleId), escolhida entre as funções vinculadas ao GES.",
+      })
+      .optional(),
     justification: z
       .string({ error: "Escreva a justificativa da declaração." })
       .trim()
@@ -46,31 +48,33 @@ export const riskAbsenceInputSchema = z
 export type RiskAbsenceValues = z.output<typeof riskAbsenceInputSchema>;
 
 /**
- * A função declarada precisa identificar exatamente uma função cadastrada e vinculada ao GES
- * escolhido (NOB-112/NOB-156): texto livre com erro de digitação era gravado e nunca valia no ASO.
- * Comparação por identidade exata do título (caixa, acento e abreviação contam): o cadastro de funções
- * distingue "Operador" de "OPERADOR", então juntar variações misturaria funções diferentes.
- * Vazio = grupo todo, sem conferência. `gesJobRoleTitles` = títulos das funções do GES na empresa.
+ * A função declarada precisa ser uma função cadastrada e vinculada ao GES escolhido, identificada
+ * pelo id (NOB-112/NOB-156): texto livre com erro de digitação era gravado e nunca valia no ASO, e
+ * o título mudava com a renomeação. `gesJobRoles` = funções do GES na empresa e no tenant
+ * (`ges_job_roles`). Sem id = grupo todo. A saída traz o id e o título atual, que fica gravado
+ * como texto histórico da declaração.
  */
-export function riskAbsenceJobRoleSchema(gesJobRoleTitles: readonly string[]) {
-  return z.object({ jobRole: z.string() }).superRefine((value, ctx) => {
-    if (value.jobRole === "") return;
-    const matches = gesJobRoleTitles.filter((title) => title === value.jobRole).length;
-    if (matches === 0)
-      ctx.addIssue({
-        code: "custom",
-        path: ["jobRole"],
-        message:
-          "Função não encontrada entre as funções cadastradas e vinculadas a este GES. Escolha uma função do GES ou deixe em branco para o grupo todo.",
-      });
-    else if (matches > 1)
-      ctx.addIssue({
-        code: "custom",
-        path: ["jobRole"],
-        message:
-          "Há mais de uma função com este nome vinculada a este GES; a declaração não identifica uma função só. Corrija o cadastro das funções antes de declarar.",
-      });
-  });
+export function riskAbsenceJobRoleSchema(
+  gesJobRoles: readonly { jobRoleId: string; title: string }[],
+) {
+  return z
+    .object({ jobRoleId: z.string().optional() })
+    .superRefine((value, ctx) => {
+      if (!value.jobRoleId) return;
+      if (!gesJobRoles.some((r) => r.jobRoleId === value.jobRoleId))
+        ctx.addIssue({
+          code: "custom",
+          path: ["jobRoleId"],
+          message:
+            "Função não encontrada entre as funções cadastradas e vinculadas a este GES. Escolha uma função do GES ou deixe em branco para o grupo todo.",
+        });
+    })
+    .transform((value) => {
+      const role = value.jobRoleId
+        ? gesJobRoles.find((r) => r.jobRoleId === value.jobRoleId)
+        : undefined;
+      return { jobRoleId: role?.jobRoleId ?? null, jobRole: role?.title ?? "" };
+    });
 }
 
 const norm = (value: string | null | undefined) =>
@@ -147,7 +151,12 @@ export type RiskAbsenceDeclarationView = {
   sourceId: string;
   gesId: string;
   exposureGroup: string;
+  /** Título da função no momento da declaração (texto histórico); vazio = grupo todo. */
   jobRole: string;
+  /** Função cadastrada declarada; `null` no grupo todo e nas declarações antigas só com texto. */
+  jobRoleId: string | null;
+  /** Título atual da função declarada (renomeada depois?); `null` sem id ou função excluída. */
+  currentJobRole: string | null;
   justification: string;
   declaredBy: string;
   declaredByName: string | null;
@@ -163,17 +172,51 @@ export type ApplicableRiskAbsence = {
   declaredAt: string;
 };
 
-/** A declaração alcança a função do funcionário? Vazia = grupo todo; senão, título idêntico. */
-function declarationCoversJobRole(declared: string, employeeJobRole: string | null) {
-  return !declared || declared === employeeJobRole;
+/** Funcionário visto pela declaração: GES, função cadastrada e funções vinculadas hoje ao GES. */
+export type RiskAbsenceEmployee = {
+  gesId: string | null;
+  jobRoleId: string | null;
+  /** Ids das funções vinculadas hoje ao GES do funcionário (`ges_job_roles`). */
+  gesJobRoleIds: readonly string[];
+};
+
+/** Declaração antiga, só com o título, sem vínculo inequívoco com a função cadastrada. */
+const isLegacy = (d: RiskAbsenceDeclarationView) => d.jobRole !== "" && !d.jobRoleId;
+
+/**
+ * A declaração alcança a função do funcionário? Grupo todo (sem função) sempre. Com função, pelo
+ * id (NOB-112): a mesma função cadastrada do funcionário, ainda vinculada ao GES da declaração.
+ * Renomear a função não muda nada; trocar o funcionário de função, ou desvincular a função do GES,
+ * tira a cobertura. Declaração antiga só com texto nunca alcança (regularização: declarar de novo).
+ */
+function declarationCoversEmployee(
+  d: RiskAbsenceDeclarationView,
+  employee: RiskAbsenceEmployee,
+) {
+  if (d.jobRole === "" && !d.jobRoleId) return true;
+  if (!d.jobRoleId) return false;
+  return (
+    d.jobRoleId === employee.jobRoleId && employee.gesJobRoleIds.includes(d.jobRoleId)
+  );
+}
+
+type LiveSource = { id: string; superseded: boolean; freshness: SourceFreshness };
+
+/** Declarações da fonte vigente, do GES do funcionário. */
+function liveGesDeclarations(
+  declarations: RiskAbsenceDeclarationView[],
+  sources: LiveSource[],
+  employee: RiskAbsenceEmployee,
+) {
+  if (!employee.gesId) return [];
+  const live = new Set(sources.filter(sourceIsLive).map((s) => s.id));
+  return declarations.filter((d) => live.has(d.sourceId) && d.gesId === employee.gesId);
 }
 
 /**
  * Declaração que vale para o ASO do funcionário: da fonte vigente, do GES do funcionário, para a
- * função dele ou para o grupo todo. A mais recente prevalece. Fonte substituída → não vale.
- * A função casa por identidade exata do título cadastrado (NOB-112): declaração antiga com texto
- * que não é exatamente o título da função do funcionário (abreviação, erro de digitação, outra
- * caixa) não vale e o ASO continua bloqueado; nada é associado automaticamente.
+ * função dele (pelo id, ainda vinculada ao GES) ou para o grupo todo. A mais recente prevalece.
+ * Fonte substituída → não vale. Nada é associado por semelhança de texto.
  */
 export function applicableRiskAbsence(
   declarations: RiskAbsenceDeclarationView[],
@@ -184,20 +227,13 @@ export function applicableRiskAbsence(
     superseded: boolean;
     freshness: SourceFreshness;
   }[],
-  employee: { gesId: string | null; jobRole: string | null },
+  employee: RiskAbsenceEmployee,
 ): ApplicableRiskAbsence | null {
-  if (!employee.gesId) return null;
-  const live = new Map(sources.filter(sourceIsLive).map((s) => [s.id, s]));
-  const match = declarations
-    .filter(
-      (d) =>
-        live.has(d.sourceId) &&
-        d.gesId === employee.gesId &&
-        declarationCoversJobRole(d.jobRole, employee.jobRole),
-    )
+  const match = liveGesDeclarations(declarations, sources, employee)
+    .filter((d) => declarationCoversEmployee(d, employee))
     .sort((a, b) => b.declaredAt.localeCompare(a.declaredAt))[0];
   if (!match) return null;
-  const source = live.get(match.sourceId)!;
+  const source = sources.find((s) => s.id === match.sourceId)!;
   return {
     declarationId: match.id,
     source: { id: source.id, title: source.title, version: source.version },
@@ -208,24 +244,37 @@ export function applicableRiskAbsence(
   };
 }
 
+export type RiskAbsenceMismatch = {
+  /** Declarações vigentes do GES para outras funções cadastradas (título atual). */
+  otherJobRoles: string[];
+  /** Declarações antigas só com texto, sem vínculo inequívoco: exigem nova declaração. */
+  legacyJobRoles: string[];
+  /** Há declaração para a função do funcionário, mas ela não está mais vinculada ao GES. */
+  jobRoleUnlinked: boolean;
+};
+
 /**
- * Funções das declarações vigentes do GES do funcionário que não casam com a função cadastrada
- * dele: só para explicar ao usuário por que o ASO segue bloqueado. Não muda o que vale.
+ * Por que as declarações vigentes do GES do funcionário não valem para ele: só para explicar o
+ * bloqueio do ASO. Não muda o que vale.
  */
-export function unmatchedRiskAbsenceJobRoles(
+export function riskAbsenceMismatch(
   declarations: RiskAbsenceDeclarationView[],
-  sources: { id: string; superseded: boolean; freshness: SourceFreshness }[],
-  employee: { gesId: string | null; jobRole: string | null },
-): string[] {
-  if (!employee.gesId) return [];
-  const live = new Set(sources.filter(sourceIsLive).map((s) => s.id));
-  const roles = declarations
-    .filter(
-      (d) =>
-        live.has(d.sourceId) &&
-        d.gesId === employee.gesId &&
-        !declarationCoversJobRole(d.jobRole, employee.jobRole),
-    )
-    .map((d) => d.jobRole);
-  return [...new Set(roles)];
+  sources: LiveSource[],
+  employee: RiskAbsenceEmployee,
+): RiskAbsenceMismatch {
+  const notCovering = liveGesDeclarations(declarations, sources, employee).filter(
+    (d) => !declarationCoversEmployee(d, employee),
+  );
+  const unique = (values: string[]) => [...new Set(values)];
+  return {
+    otherJobRoles: unique(
+      notCovering
+        .filter((d) => !!d.jobRoleId && d.jobRoleId !== employee.jobRoleId)
+        .map((d) => d.currentJobRole ?? d.jobRole),
+    ),
+    legacyJobRoles: unique(notCovering.filter(isLegacy).map((d) => d.jobRole)),
+    jobRoleUnlinked: notCovering.some(
+      (d) => !!d.jobRoleId && d.jobRoleId === employee.jobRoleId,
+    ),
+  };
 }

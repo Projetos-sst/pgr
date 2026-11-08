@@ -22,7 +22,8 @@ export function GET(req: NextRequest, context: Context) {
   );
 }
 
-// Só o profissional com autorização ativa de validação de riscos: { sourceId, gesId, jobRole?, justification }.
+// Só o profissional com autorização ativa de validação de riscos: { sourceId, gesId, jobRoleId?, justification }.
+// `jobRoleId` = função cadastrada vinculada ao GES (vazio = grupo todo); `jobRole` texto → 422 (NOB-112).
 export function POST(req: NextRequest, context: Context) {
   return restHandler(
     req,

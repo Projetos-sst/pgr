@@ -30,7 +30,9 @@ export const EXAM_PLAN_ITEM_DUPLICATE_MESSAGE =
 
 export const itemDecisionSchema = z
   .object({
-    decision: z.enum(["kept", "removed"]),
+    decision: z.enum(["kept", "removed"], {
+      error: "Escolha manter ou retirar o exame.",
+    }),
     periodicity,
     justification: justification.optional(),
   })
@@ -47,10 +49,14 @@ export type ItemDecisionValues = z.infer<typeof itemDecisionSchema>;
 
 export const addItemSchema = z
   .object({
-    exposureGroup: z.string().trim().min(1, "Informe o grupo de exposição.").max(500),
-    jobRole: z.string().trim().max(500).default(""),
+    exposureGroup: z
+      .string()
+      .trim()
+      .min(1, "Informe o grupo de exposição.")
+      .max(500, "Máximo de 500 caracteres."),
+    jobRole: z.string().trim().max(500, "Máximo de 500 caracteres.").default(""),
     code: procedureSelectionSchema.shape.code,
-    otherDescription: z.string().trim().max(500).optional(),
+    otherDescription: z.string().trim().max(500, "Máximo de 500 caracteres.").optional(),
     periodicity,
     justification,
   })

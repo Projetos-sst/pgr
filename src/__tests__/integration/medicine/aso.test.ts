@@ -84,6 +84,7 @@ const ownerB: TenantContext = {
 const COORDINATOR = "aaaaaaaa-0000-4000-8000-000000000041";
 const EXAMINER = "aaaaaaaa-0000-4000-8000-000000000042";
 const PSYCHOLOGIST = "aaaaaaaa-0000-4000-8000-000000000043";
+const COORDINATOR_2 = "aaaaaaaa-0000-4000-8000-000000000044";
 const COMPANY_C = "cccccccc-0000-4000-8000-000000000044";
 const GES_WITHOUT_RISKS = "cccccccc-0000-4000-8000-000000000045";
 const SECRET_NOTE = "Observação clínica sigilosa fictícia";
@@ -401,6 +402,80 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     expect(JSON.stringify(content)).not.toContain(SECRET_NOTE);
     expect(content.warnings.map((w) => w.code)).not.toContain("planned_not_done_0281");
     expect(doc.contentSha256).toBe(asoContentHash(content));
+  });
+
+  describe("coordenador na data histórica do exame (2026-10-20)", () => {
+    const secondCoordinator = () =>
+      admin`insert into medicos (id, org_id, name, crm, profession, registration_uf, rqe, affiliation, status)
+        values (${COORDINATOR_2}, 'org_a', 'Dr. Segundo Coordenador Fictício', '60004', 'physician', 'MA', '962', 'internal', 'active')`;
+    const assign = (startsOn: string, endsOn: string | null) =>
+      admin`insert into pcmso_coordinator_assignments (org_id, company_id, medico_id, starts_on, ends_on, end_reason, created_by)
+        values ('org_a', ${I.companyA}, ${COORDINATOR_2}, ${startsOn}, ${endsOn}, ${endsOn ? "Encerramento fictício." : null}, 'owner')`;
+    const endBase = (endsOn: string) =>
+      admin`update pcmso_coordinator_assignments set ends_on=${endsOn}, end_reason='Troca fictícia.' where medico_id=${COORDINATOR}`;
+    const composedCoordinator = async () => {
+      const exam = await newExam({ aptitude: "unfit" });
+      const created = await generateDocument(staff, exam.id);
+      return ((await getDocument(staff, created.id)).content as AsoContent).coordinator;
+    };
+
+    beforeEach(async () => {
+      await validateRisks();
+      await secondCoordinator();
+    });
+
+    it("troca antes do exame: o ASO nomeia quem estava em vigor na data do exame", async () => {
+      await endBase("2026-06-30");
+      await assign("2026-07-01", null);
+      expect(await composedCoordinator()).toMatchObject({
+        name: "Dr. Segundo Coordenador Fictício",
+      });
+    });
+
+    it("designação que só começa depois do exame não conta; a anterior segue no ASO", async () => {
+      await endBase("2026-10-31");
+      await assign("2026-11-01", null);
+      expect(await composedCoordinator()).toMatchObject({
+        name: "Dra. Coordenadora Fictícia",
+      });
+    });
+
+    it("fim inclusivo: encerrada no próprio dia do exame ainda é a responsável", async () => {
+      await endBase("2026-10-20");
+      await assign("2026-10-21", null);
+      expect(await composedCoordinator()).toMatchObject({
+        name: "Dra. Coordenadora Fictícia",
+      });
+    });
+
+    it("sem designação em vigor na data: aviso (NR-7 pede o nome 'se houver'), sem inventar médico", async () => {
+      await admin`update pcmso_coordinator_assignments set starts_on='2026-11-01' where medico_id=${COORDINATOR}`;
+      const exam = await newExam({ aptitude: "unfit" });
+      const readiness = await getAsoReadiness(staff, exam.id);
+      expect(readiness.items.map((i) => i.code)).toContain("coordinator_missing");
+      expect(await codes(exam.id)).not.toContain("coordinator_overlap");
+      const created = await generateDocument(staff, exam.id);
+      expect(
+        ((await getDocument(staff, created.id)).content as AsoContent).coordinator,
+      ).toBeNull();
+    });
+
+    it("duas designações em vigor na data do exame: bloqueia sem escolher; a prévia arquivada não muda", async () => {
+      const exam = await newExam({ aptitude: "unfit" });
+      const archived = await generateDocument(staff, exam.id);
+      const before = await getDocument(staff, archived.id);
+      // Sobreposição só alcançável fora do app (o app recusa períodos sobrepostos).
+      await assign("2026-10-01", "2026-10-31");
+      expect(await codes(exam.id)).toContain("coordinator_overlap");
+      await expect(generateDocument(staff, exam.id)).rejects.toMatchObject({
+        code: "VALIDATION",
+        message: expect.stringMatching(/mais de uma designação/),
+      });
+      expect((await listDocuments(staff, exam.id)).map((d) => d.version)).toEqual([1]);
+      const after = await getDocument(staff, archived.id);
+      expect(after.content).toEqual(before.content);
+      expect(after.contentSha256).toBe(before.contentSha256);
+    });
   });
 
   it("versões imutáveis; RLS exige examinador; só prévia; histórico bloqueia exclusão", async () => {

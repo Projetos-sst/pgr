@@ -3,8 +3,11 @@
  * o que não tem lugar vira item legível (nunca caminho cru nem texto padrão do Zod em inglês) e
  * erro sem campos (permissão, sessão, regra) segue como mensagem do formulário.
  */
+import { z } from "zod";
+
 import {
   compactRows,
+  fieldsFromIssues,
   formFeedback,
   parseFieldPath,
   pathDescriber,
@@ -157,6 +160,34 @@ describe("caminhos e listas", () => {
       x: "D",
     });
     expect(remapListIndexes(undefined, "participants", [])).toBeUndefined();
+  });
+
+  it("fieldsFromIssues usa o mesmo formato de `fields` do servidor", () => {
+    const parsed = z
+      .object({
+        title: z.string().min(1, "Informe o título."),
+        risks: z.array(z.object({ description: z.string().min(1, "Descreva o risco.") })),
+      })
+      .strict()
+      .safeParse({
+        title: "",
+        risks: [{ description: "ok" }, { description: "" }],
+        x: 1,
+      });
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    const fields = fieldsFromIssues(parsed.error.issues);
+    expect(fields).toMatchObject({
+      title: "Informe o título.",
+      "risks.1.description": "Descreva o risco.",
+    });
+    expect(Object.keys(fields)).toContain("_");
+    expect(
+      fieldsFromIssues([
+        { path: ["a"], message: "primeiro" },
+        { path: ["a"], message: "segundo" },
+      ]),
+    ).toEqual({ a: "primeiro" });
   });
 
   it("readableMessage mantém frase em PT", () => {

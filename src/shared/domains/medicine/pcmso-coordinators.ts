@@ -145,5 +145,27 @@ export function coordinatorInForceOn<T extends Period>(
   return { kind: "in_force", assignment: matches[0] };
 }
 
+/** Situação de uma designação num dia de calendário (fim inclusivo). */
+export type DesignationStatus = "scheduled" | "in_force" | "ended";
+
+export function designationStatusOn(p: Period, isoDay: string): DesignationStatus {
+  if (isoDay < p.startsOn) return "scheduled";
+  if (p.endsOn !== null && p.endsOn < isoDay) return "ended";
+  return "in_force";
+}
+
+/**
+ * Título da designação na tela do coordenador (NOB-109): "aberta" não é "vigente". Designação que
+ * só começa depois de hoje aparece como agendada; com encerramento agendado, segue vigente até lá.
+ */
+export function designationHeading(p: Period, isoDay: string): string {
+  const status = designationStatusOn(p, isoDay);
+  if (status === "scheduled") return `Designação agendada (a partir de ${p.startsOn})`;
+  if (status === "ended") return `Designação encerrada (em ${p.endsOn})`;
+  return p.endsOn
+    ? `Designação vigente (encerramento agendado para ${p.endsOn})`
+    : "Designação vigente";
+}
+
 export const SWITCH_END_REASON =
   "Substituído por nova designação de coordenador do PCMSO.";

@@ -149,7 +149,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/pgr/{id}/nr18-checklist` · `/pgr/{id}/epi-relation`                                                                                                          | GET (leituras **derivadas** do PGR: checklist informativo dos projetos da NR-18 por `doc_type` e relação deduplicada de EPIs; somente leitura — sem POST/PUT/DELETE)                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `/risks/{id}/control-measures` · `/control-measures/{id}`                                                                                                      | GET, POST (plano de ação 5W2H por nível NR-01; 201) · GET, PUT, DELETE (nível imutável; **DUPLICATE/409** se nível repetido; sem `/dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/categories` · `/categories/{id}`                                                                                                                             | GET, POST · GET, PUT, DELETE                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `/medicos` · `/medicos/{id}`                                                                                                                                   | GET (`?search=` nome/CRM, `?clinic=` empresa/clínica, `?status=active\|inactive`), POST (`201`) · GET, PUT, DELETE (`204`) — CRM único por org (`DUPLICATE`); sem `/dependents`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `/medicos` · `/medicos/{id}`                                                                                                                                   | GET (`?search=` nome/CRM, `?clinic=` empresa/clínica, `?status=active\|inactive`), POST (`201`) · GET, PUT, DELETE (`204`) — CRM único por org (`DUPLICATE`, inclusive formato equivalente na mesma categoria+UF → `fields.crm`); sem `/dependents`                                                                                                                                                                                                                                                                                                                                                                                             |
 | `/medicos/{id}/user-links(/{linkId})` · `/medicos/{id}/user-link-invitations(/{inv}/{ação})` · `/me/professional(-invitations)`                                | GET histórico de vínculos · PUT só revoga (`{ reason }`; sem DELETE) · GET convites, POST convidar (`201`, só `owner`) · POST `accept`/`decline` (só a conta convidada), `approve` (outro `owner`, no autovínculo), `cancel` (`owner`) · GET perfil da sessão e convites pendentes — NOB-149/NOB-157                                                                                                                                                                                                                                                                                                                                            |
 | `/me/professional-identity(/requests)` · `/me/medico-links/{id}/reconfirm` · `/admin/identity-verifications(…)`                                                | GET situação da identidade e do acesso clínico, POST pedido (`201`, só a própria conta) · POST reconfirmação de vínculo legado (`201`) · GET fila, POST aprovação (`201`), POST recusa/revogação — só operador designado (banco); demais → `403` — NOB-158/159/160                                                                                                                                                                                                                                                                                                                                                                              |
 | `/companies/{id}/exam-plans` · `/exam-plans/{id}` · `/exam-plans/{id}/items(/{itemId})` · `/exam-plans/{id}/approval`                                          | GET versões, POST rascunho (`201`) · GET detalhe · POST acrescentar (`201`), PUT decidir · POST aprovar — decisões e aprovação só da coordenadora vinculada (RLS); sem DELETE — NOB-150                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -167,7 +167,7 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 | `/health-exams/{id}/aso-deliveries/{deliveryId}/review`                                                                                                        | POST conferência humana do comprovante (`201`, `{ method* (documentary\|signature_witnessed), result* (confirmed\|rejected), reference* }`; revisor = usuário da sessão; uma por comprovante) — NOB-167                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `/health-exams/{id}/clinical-notes` · `/health-exams/{id}/work-restrictions` · `/health-exams/{id}/clinical-access-events`                                     | GET prontuário (leitura auditada), POST observação (`201`, `{ content* }`) — só a conta vinculada ao examinador ou ao coordenador, demais → `403` · GET restrições (RH lê), POST (`201`, `{ kind: restriction                                                                                                                                                                                                                                                                                                                                                                                                                                   | withdrawal, restriction? }`, sem CID → senão `422`; só o médico vinculado) · GET trilha de acesso (owner) — NOB-155                                                                                                                         |
 | `/employees/{id}/absences` · `/absences/{id}(/return                                                                                                           | /cancel)`·`/absences/{id}/clinical-notes`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | GET afastamentos com avaliação (retorno NR-7 7.5.9, sinalização 7.5.19.5 c), POST (`201`) · GET/PUT previsão do fim · POST retorno confirmado e cancelamento · GET/POST área clínica (atestado e CID), só o coordenador vinculado — NOB-139 |
-| `/companies/{id}/risk-absence-declarations`                                                                                                                    | GET declarações e permissão (equipe do escritório; cliente só com autorização ativa) · POST declarar (`201`, `{ sourceId*, gesId*, jobRole?, justification* }`; só o profissional com autorização ativa de validação de riscos, demais → `403`; fonte substituída ou grupo/função com risco pendente/validado ou função fora das vinculadas ao GES → `422`) — NOB-156                                                                                                                                                                                                                                                                           |
+| `/companies/{id}/risk-absence-declarations`                                                                                                                    | GET declarações e permissão (equipe do escritório; cliente só com autorização ativa) · POST declarar (`201`, `{ sourceId*, gesId*, jobRoleId?, justification* }`; só o profissional com autorização ativa de validação de riscos, demais → `403`; fonte substituída ou grupo/função com risco pendente/validado ou `jobRoleId` fora das funções vinculadas ao GES → `422`; `jobRole` texto não é mais aceito → `422`) — NOB-156/NOB-112                                                                                                                                                                                                         |
 | `/medicine/overview` · `/medicine/employees`                                                                                                                   | GET (read-model do painel da Medicina: empresas com Medicina habilitada + contagem pela validade **informada** do último exame de cada funcionário) · GET (`?companyId=` **obrigatório**, `?search=`, `?page=`/`?pageSize=` ≤ 100; funcionários da empresa + último exame; `422` sem/má `companyId`, `404` empresa de outro tenant, `403` empresa sem Medicina); só GET, sem `/dependents` — não são entidades                                                                                                                                                                                                                                  |
 | `/companies/{id}/pcmso-coordinators` · `/pcmso-coordinators/{id}`                                                                                              | GET (histórico, mais recente primeiro), POST (`201`, designa; a designação aberta é encerrada na véspera) · GET, PUT (só encerra: `{ endsOn, endReason }`) — **sem DELETE** (histórico preservado, `405`); escrita só `owner`; empresa com Medicina habilitada                                                                                                                                                                                                                                                                                                                                                                                  |
 | `/risk-methodology`                                                                                                                                            | GET, PUT (singleton por org — sem `list`/`{id}`/`dependents`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -692,7 +692,7 @@ coordenação do PCMSO não pode ser excluído → `IN_USE` (409), deve ser inat
 | `listMedicoClinicsAction` | —                                                 | `string[]` (clínicas distintas do tenant)   |
 | `getMedicoAction`         | `id`                                              | `Medico` (null → `NOT_FOUND`)               |
 | `createMedicoAction`      | `MedicoInput`                                     | `Medico` (CRM dup → `DUPLICATE`)            |
-| `updateMedicoAction`      | `id, MedicoInput`                                 | `Medico`                                    |
+| `updateMedicoAction`      | `id, MedicoInput`                                 | `Medico` (CRM equivalente → `DUPLICATE`)    |
 | `deleteMedicoAction`      | `id`                                              | `{ id }`                                    |
 
 **`MedicoInput`**: `{ name*, crm*, registrationUf*, profession, rqe?, affiliation, specialty?, clinic?, phone?, status }`
@@ -704,6 +704,21 @@ próxima edição, que passa a exigi-la. Filtro de listagem por **Empresa/clíni
 `listMedicoClinicsAction` = `SELECT DISTINCT clinic` do tenant) — fiel ao mockup "Todas as Empresas";
 `clinic` é texto livre (empregador do médico), não a empresa-cliente do tenant. `?status=` continua
 suportado no backend/REST.
+
+**Registro duplicado por formatação (NOB-110/NOB-112)**: além do índice bruto, criar (POST/`createMedicoAction`)
+ou editar (PUT/`updateMedicoAction`) um profissional com registro **equivalente** a outro do mesmo escritório
+→ `DUPLICATE` (409) com `fields.crm`. Equivalente = mesma categoria (`profession`; CRM ≠ CRP) + mesma UF (sem
+diferenciar maiúsculas) + mesmo número canônico (`canonicalRegistrationNumber`: tira ponto, hífen, barra e
+espaços; zeros à esquerda contam, `012345` ≠ `12345`; número com letras fica fora da conferência). UF diferente,
+categoria diferente ou outro escritório **não** são duplicata. Cadastro antigo **sem UF** com o mesmo número e
+categoria bloqueia um novo (mensagem pede completar a UF dele). A conferência roda na mesma transação da
+gravação com `pg_advisory_xact_lock` por (escritório, categoria, UF, número canônico) — duas gravações
+concorrentes: só uma passa. **Sem índice canônico nem migration** (duplicatas antigas da homologação fariam a
+migration falhar): o legado não é juntado, apagado nem corrigido; editar um cadastro antigo sem mudar o registro
+(número canônico, categoria, UF já informada — completar UF nula não conta como mudança) continua permitido.
+Texto de registro idêntico (índice bruto `uq_medicos_org_crm`, mesmo em outra UF/categoria) → `DUPLICATE` com
+`fields.crm`. Leitura operacional: `countMedicoRegistrationDuplicateGroups(orgId)` (repositório, só a contagem
+de grupos, sem dado pessoal; não exposto em HTTP). **Limite:** a equivalência é garantida só nos caminhos da aplicação (Server Action e REST, mesmo repositório); o banco impõe apenas o índice bruto, então um INSERT/UPDATE direto por SQL (inclusive como `app_runtime`) ainda consegue gravar um registro equivalente. O CRM nunca autoriza nada (NOB-158).
 
 **`CategoryInput`**: `type*` (`epi`|`machine`|`supply`), `name*`, `note?`, `isActive` (default `true`).
 Unicidade por `UNIQUE(org_id, type, name)` → duplicidade no mesmo escritório+tipo vira `DUPLICATE`; o
@@ -726,7 +741,9 @@ Regras (`domains/medicine/pcmso-coordinators.ts`): só médico ativo, com UF do 
 Trabalho, exige `rqeExceptionReason` (exceção do NR-7 item 7.5.2: inexistência de médico do trabalho na
 localidade). Trocar de coordenador encerra a designação aberta na véspera do início da nova, na mesma transação.
 
-**Aberta × vigente (NOB-109):** designação aberta (`ends_on` nulo) não é o mesmo que designação vigente. A data de início pode ser futura (sucessor agendado) e o encerramento pode ser agendado. A conferência e a prévia do PCMSO usam o coordenador **vigente hoje** (`coordinatorInForceOn`, America/Sao_Paulo). Os atos do coordenador (plano, critérios, relatório, PCMSO assinado) continuam exigindo a designação **aberta**, no app e na RLS.
+**Aberta × vigente (NOB-109):** designação aberta (`ends_on` nulo) não é o mesmo que designação vigente. A data de início pode ser futura (sucessor agendado) e o encerramento pode ser agendado. A conferência e a prévia do PCMSO usam o coordenador **vigente hoje** (`coordinatorInForceOn`, America/Sao_Paulo).
+
+**Permissão = designação vigente hoje (America/Sao_Paulo); sobreposição nega.** Os atos do coordenador (decidir e aprovar o plano de exames, critérios de interpretação, relatório analítico e sua finalização, PCMSO assinado, prontuário e área clínica do afastamento como coordenador) exigem a designação **em vigor hoje** (`starts_on <= hoje` e `ends_on` nulo ou `>= hoje`, fim inclusivo), não a "aberta": encerramento agendado mantém o poder até o fim; sucessor agendado só o tem a partir do início; no dia da troca só a nova vale (a anterior termina na véspera). Duas designações em vigor no mesmo dia (só alcançável fora do app) → ninguém age (`403`/`422`), sem escolher uma. Mesma regra no app (`coordinatorInForceTodayTx`, `repositories/pcmso-coordinator-in-force.ts`) e na RLS (fragmento único `coordinatorAssignmentInForceToday`, `schema/coordinator-in-force.ts`). Vínculo aberto, identidade verificada (NOB-158), profissional ativo, associação viva e módulo seguem exigidos; owner sem identidade médica não substitui o coordenador. Quem era o coordenador na data de um documento (prévia, ASO) é conteúdo do documento, não permissão.
 
 | Action                            | Entrada                                                    | Retorno (`data`)             |
 | --------------------------------- | ---------------------------------------------------------- | ---------------------------- |
@@ -751,7 +768,7 @@ Dá ao profissional cadastrado uma identidade autenticada (NOB-149, critério de
 
 A conta precisa ser membro do escritório e o profissional precisa estar ativo (`VALIDATION`). Não há FK para `org_memberships`: a saída da conta não apaga o histórico, e a autorização exige a associação viva no uso.
 
-**Autorização por vínculo:** `assertActorIsCompanyCoordinator(tx, ctx, companyId)` (`repositories/medico-user-links.ts`) só aceita a conta da sessão vinculada ao profissional da designação **aberta** de coordenador da empresa (NOB-144), com profissional ativo e associação viva. O papel no escritório (owner, colaborador) não substitui o vínculo. É a base para os atos do coordenador (revisão do plano de exames).
+**Autorização por vínculo:** `assertActorIsCompanyCoordinator(tx, ctx, companyId)` (`repositories/medico-user-links.ts`) só aceita a conta da sessão vinculada ao profissional da designação de coordenador da empresa **em vigor hoje** e única (NOB-144/NOB-109), com profissional ativo e associação viva. O papel no escritório (owner, colaborador) não substitui o vínculo. É a base para os atos do coordenador (revisão do plano de exames).
 
 | Action                           | Entrada                          | Retorno (`data`)                                               |
 | -------------------------------- | -------------------------------- | -------------------------------------------------------------- |
@@ -871,7 +888,7 @@ Plano de exames por grupo de exposição (NOB-150, MED-15). Migration `0062_medi
 | Regra                                                      | App                                         | Banco (RLS e grants)                                                                                                            |
 | ---------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | A equipe prepara o rascunho a partir da proposta (NOB-147) | `createDraft`                               | insert só com `status='draft'` e `prepared_by` = ator                                                                           |
-| Só a coordenadora vinculada decide, acrescenta e aprova    | `assertActorIsCompanyCoordinator` (NOB-149) | `actorCoordinatesCompany`: designação aberta + vínculo aberto + profissional ativo + associação viva; `approved_by_user` = ator |
+| Só a coordenadora vinculada decide, acrescenta e aprova    | `assertActorIsCompanyCoordinator` (NOB-149) | `actorCoordinatesCompany`: designação vigente hoje + vínculo aberto + médico ativo + associação viva; `approved_by_user` = ator |
 | Aprovado e substituído não mudam                           | `assertDraft`                               | itens só mudam com plano em rascunho; UPDATE só nas colunas de decisão e aprovação                                              |
 | Nada é apagado                                             | sem rota DELETE                             | `REVOKE DELETE` nas três tabelas; eventos sem UPDATE                                                                            |
 
@@ -993,7 +1010,7 @@ Critérios de interpretação dos achados e planejamento das condutas por exame 
 **Autoria médica.**
 
 - O texto é do médico coordenador. O sistema não gera, não sugere e não completa texto clínico (DT-23, MED-19/20).
-- Só a conta vinculada (NOB-149) ao coordenador com designação aberta registra, e a versão fica em nome desse médico (`authored_by_medico_id`).
+- Só a conta vinculada (NOB-149) ao coordenador com designação em vigor hoje (NOB-109) registra, e a versão fica em nome desse médico (`authored_by_medico_id`).
 - Equipe, owner, vínculo revogado ou designação encerrada → `403`. A RLS repete a regra.
 
 **Versões (`pcmso_interpretation_criteria`).**
@@ -1022,7 +1039,7 @@ Relatório analítico anual do PCMSO (NOB-154, NR-7 7.6.2 a 7.6.6), em `domains/
 
 **Elaboração (7.6.2).**
 
-- Só a conta vinculada (NOB-149) ao coordenador com designação aberta elabora, e a versão fica em nome desse médico.
+- Só a conta vinculada (NOB-149) ao coordenador com designação em vigor hoje (NOB-109) elabora, e a versão fica em nome desse médico.
 - Owner, colaborador, cliente e vínculo revogado → `403`. A RLS repete a regra.
 
 **Período.**
@@ -1191,7 +1208,7 @@ Afastamentos e alertas de exame de retorno (NOB-139, MED-23), em `domains/medici
 
 **Área clínica** (`employee_absence_clinical_notes`):
 
-- Atestado e CID; só a conta vinculada ao coordenador do PCMSO com designação aberta lê e grava (servidor e RLS).
+- Atestado e CID; só a conta vinculada ao coordenador do PCMSO com designação em vigor hoje (NOB-109) lê e grava (servidor e RLS).
 - O CID exige a autorização do trabalhador registrada (referência do termo); o formato CID-10 é conferido também no banco.
 - Só inclusão. Funcionário com área clínica de afastamento não é excluído (`409`).
 - Cada leitura e gravação vai para `absence_clinical_access_events`, sem conteúdo.
@@ -1225,7 +1242,7 @@ Prontuário clínico do exame (NOB-155, DT-21, MED-10/17), em `domains/medicine/
 
 - Só a conta vinculada (NOB-149) ao médico ativo que é:
   - o examinador do exame; ou
-  - o coordenador com designação aberta da empresa onde o exame foi realizado (MED-07). Exame sem origem comprovada → só o examinador.
+  - o coordenador com designação em vigor hoje (NOB-109) da empresa onde o exame foi realizado (MED-07). Exame sem origem comprovada → só o examinador.
 - Owner, colaborador, médico sem relação com o exame, vínculo revogado, designação encerrada, profissional inativo e conta fora do escritório → `403`. Cliente → `403`; outro tenant → `404`.
 - As policies da 0067 repetem a regra no banco, para o papel `app_runtime`, com o ator da sessão.
 
@@ -1476,6 +1493,16 @@ Erros de `listMedicineEmployees*`: `companyId` ausente/malformado ou `pageSize` 
 Regras: status = validade **informada** (`valid_until`), **sem periodicidade calculada**; nenhum dado
 clínico livre (`notes`/`certificatePath`) nem CPF nos contratos; leituras não emitem auditoria
 (`officeAction` só registra operação/resultado em caso de erro, sem payload).
+
+**Datas exibidas (civil × instante, NOB-112/109/110).** Os contratos não mudam: data civil (coluna
+`date`, `YYYY-MM-DD` — realização e validade do exame, assinatura, ciclo, período, afastamento) e
+instante (`timestamptz`, ISO com hora — registro, geração, aprovação, confirmação, declaração,
+autoria, trilhas). Nas telas, a data civil aparece **como está** (`formatCivilDate`, sem passar por
+`Date`/UTC) e o instante aparece pelo **dia de Brasília** (`formatInstantDate` /
+`formatInstantDateTime`, `America/Sao_Paulo` via `Intl`, mesmo texto no servidor e no navegador) — nunca
+por `iso.slice(0, 10)`, que entre 21h e 23h59 de Brasília mostraria o dia seguinte. Instantes guardados
+no `content` arquivado (ex.: `examPlan.approvedAt` do PCMSO) seguem a mesma regra na exibição, sem
+alterar o conteúdo nem o hash. Helpers em `src/shared/dates.ts`.
 
 ---
 
@@ -2084,7 +2111,7 @@ Estado e histórico são transacionais. A decisão guarda usuário, instante, mo
 
 ### Declaração de inexistência de riscos — NOB-156
 
-Em `domains/medicine/risk-absence.ts`, `server/medicine/risk-absence-core.ts` e `repositories/risk-absence-declarations.ts`. Migration `0068_medical_risk_absence_declarations`.
+Em `domains/medicine/risk-absence.ts`, `server/medicine/risk-absence-core.ts` e `repositories/risk-absence-declarations.ts`. Migrations `0068_medical_risk_absence_declarations` e `0080` (função pelo id, NOB-112/NOB-110).
 
 **Quem declara.**
 
@@ -2095,10 +2122,11 @@ Em `domains/medicine/risk-absence.ts`, `server/medicine/risk-absence-core.ts` e 
 
 **Função (NOB-112).**
 
-- A função não é texto livre: precisa ser o título exato de uma função cadastrada da empresa e vinculada ao GES escolhido (`ges_job_roles`). Erro de digitação, abreviação, outra caixa, função de outro GES ou inexistente → `422` com a mensagem em `fields.jobRole`, e nada é gravado. Vazio continua valendo para o grupo todo.
-- Sem casamento aproximado: o cadastro de funções distingue títulos só pela caixa ("Operador" ≠ "OPERADOR"), então juntar variações misturaria funções diferentes.
-- O GET devolve `groups[].jobRoles` (`id`, `title`) para quem pode declarar; a tela escolhe a função numa lista do GES.
-- Sem migration: a declaração guarda o título (`job_role`), não o id da função.
+- A função vai pelo id: `jobRoleId` de uma função cadastrada desta empresa, deste tenant, vinculada ao GES escolhido (`ges_job_roles`). Id de outro GES, de outra empresa, de outro tenant ou inexistente → `422` com a mensagem em `fields.jobRoleId`, e nada é gravado. Sem `jobRoleId` (ou vazio) = grupo todo.
+- `jobRole` (texto) não é mais aceito no POST → `422` com a dica em `fields.jobRole`. Texto livre não identifica a função: digitação errada nunca valia, e renomear a função invalidava a declaração.
+- O GET devolve `groups[].jobRoles` (`id`, `title`) para quem pode declarar; a tela escolhe a função numa lista do GES e envia o `id`.
+- A declaração grava `job_role_id` e, como texto histórico, o título no momento da declaração (`job_role`). O GET devolve `jobRole` (título declarado), `jobRoleId` e `currentJobRole` (título atual, se renomeada; `null` sem id).
+- Banco: FK composta `(job_role_id, org_id, company_id)` → `job_roles (id, org_id, company_id)` (mesmo tenant e mesma empresa); `ON DELETE SET NULL (job_role_id)`: excluir a função zera só o id, e a declaração deixa de valer. CHECK: grupo todo nunca tem id. Policy de inclusão: título vazio sem id, ou id vinculado ao GES com o título atual da função; texto sem id não entra mais. Uma declaração por fonte, GES e função (pelo id), mesmo depois de renomeada.
 
 **Nunca automática.**
 
@@ -2118,7 +2146,8 @@ Em `domains/medicine/risk-absence.ts`, `server/medicine/risk-absence-core.ts` e 
 - Riscos pendentes continuam bloqueando.
 - Com riscos validados, valem os riscos, e o aviso `risk_absence_conflict` aparece.
 - Sem declaração: `risks_absence_not_declared` ou `risk_source`, como antes.
-- A função casa pelo título exato da função cadastrada do funcionário (antes, ignorando caixa). Declaração antiga cujo texto não é exatamente esse título (digitação, abreviação, caixa) ou função renomeada depois da declaração → não vale, o ASO continua bloqueado e a mensagem de `risks_absence_not_declared` cita a função declarada. Nada é associado automaticamente nem apagado: o profissional autorizado faz nova declaração escolhendo a função do GES.
+- A função casa pelo id da função cadastrada do funcionário, e ela precisa continuar vinculada ao GES da declaração. Renomear a função não muda nada. Funcionário trocado de função, ou função desvinculada do GES → não vale, e a mensagem de `risks_absence_not_declared` explica.
+- Declarações antigas (só título): a migração `0080` preenche `job_role_id` só quando é inequívoco (exatamente uma função da mesma empresa com exatamente aquele título, vinculada ao GES da declaração). As demais ficam sem id, não valem e a mensagem pede regularização: o profissional autorizado declara de novo escolhendo a função do GES. Nada é associado por semelhança de texto, apagado ou reescrito (autor, data e justificativa ficam).
 
 Telas: seção "Declarações de inexistência de riscos" em `/companies/{id}/medical-risks` e em `/risk-authorizations/{id}`, onde o profissional valida os riscos.
 

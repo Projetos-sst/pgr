@@ -18,6 +18,7 @@ import {
 
 import { appRuntimeRole } from "../roles";
 import { companies } from "./companies";
+import { coordinatorAssignmentInForceToday } from "./coordinator-in-force";
 import { medicos } from "./medicos";
 import { companyModuleScope } from "./module-policy";
 import { orgs } from "./orgs";
@@ -43,9 +44,9 @@ const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 const actor = sql`current_setting('app.current_actor', true)`;
 
 /**
- * A conta da sessão é a coordenadora do PCMSO da empresa: designação aberta (NOB-144) + vínculo
- * aberto da conta ao profissional (NOB-149) + profissional ativo + associação viva. Mesmo
- * predicado de `assertActorIsCompanyCoordinator`, imposto também no banco.
+ * A conta da sessão é a coordenadora do PCMSO da empresa: designação em vigor hoje e única
+ * (NOB-109/NOB-144) + vínculo aberto da conta ao profissional (NOB-149) + profissional ativo +
+ * associação viva. Mesmo predicado de `assertActorIsCompanyCoordinator`, imposto também no banco.
  */
 export function actorCoordinatesCompany(
   org: AnyPgColumn | SQL,
@@ -53,7 +54,8 @@ export function actorCoordinatesCompany(
 ) {
   // NOB-158: coordenador com identidade verificada (função central), nunca o vínculo sozinho.
   return sql`exists (select 1 from public.pcmso_coordinator_assignments a
-    where a.org_id = ${org} and a.company_id = ${company} and a.ends_on is null
+    where a.org_id = ${org} and a.company_id = ${company}
+      and ${coordinatorAssignmentInForceToday("a")}
       and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id)))`;
 }
 

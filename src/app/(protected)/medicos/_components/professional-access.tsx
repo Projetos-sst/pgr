@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition, type FormEvent } from "react";
+import { useId, type FormEvent } from "react";
 
+import { formatInstantDate } from "@/shared/dates";
+import { pathDescriber } from "@/shared/domains/medicine/form-feedback";
 import {
   INVITATION_STATUS_LABELS,
   type InvitationView,
@@ -13,7 +14,18 @@ import {
   revokeMedicoUserLinkAction,
 } from "@/shared/server/actions/medicine/professional-links";
 
-import { FormError, SubmitButton, TextField, fieldClass } from "../../_ui/form";
+import {
+  FieldError,
+  FormError,
+  SubmitButton,
+  TextField,
+  fieldClass,
+} from "../../_ui/form";
+import { useActionFeedback } from "../../_ui/use-action-feedback";
+
+const describeAccessPath = pathDescriber({
+  fields: { userId: "Conta convidada", reason: "Motivo" },
+});
 
 export type AccessMember = { userId: string; label: string };
 export type AccessLink = {
@@ -26,10 +38,6 @@ export type AccessLink = {
   /** Vínculo criado antes do convite e aceite (NOB-157). */
   legacy: boolean;
 };
-
-type Result =
-  | { ok: true }
-  | { ok: false; error: { message: string; fields?: Record<string, string> } };
 
 /**
  * Acesso do profissional (NOB-149, NOB-157). O owner convida uma conta; o vínculo só nasce quando a
@@ -51,10 +59,9 @@ export function ProfessionalAccess({
   links: AccessLink[];
   invitations: InvitationView[];
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const { pending, feedback, run } = useActionFeedback({ describe: describeAccessPath });
+  const fields = feedback.fields;
+  const userIdErrorId = useId();
   const open = links.find((l) => !l.revokedAt) ?? null;
   const active = invitations.find(
     (i) => i.status === "pending_acceptance" || i.status === "pending_approval",
@@ -63,34 +70,24 @@ export function ProfessionalAccess({
     members.find((m) => m.userId === userId)?.label ??
     (userId === currentUserId ? "Sua conta" : `Conta ${userId}`);
 
-  const run = (fn: () => Promise<Result>) =>
-    startTransition(async () => {
-      const result = await fn();
-      if (result.ok) {
-        setError(null);
-        setFields({});
-        router.refresh();
-      } else {
-        setFields(result.error.fields ?? {});
-        setError(result.error.fields ? null : result.error.message);
-      }
-    });
-
   function onInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
-    run(() =>
-      inviteMedicoUserAction(medicoId, {
-        userId: fd.get("userId"),
-        reason: fd.get("reason"),
-      }),
+    run(
+      () =>
+        inviteMedicoUserAction(medicoId, {
+          userId: fd.get("userId"),
+          reason: fd.get("reason"),
+        }),
+      { slots: ["userId", "reason"] },
     );
   }
   function onRevoke(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
-    run(() =>
-      revokeMedicoUserLinkAction(medicoId, open!.id, { reason: fd.get("reason") }),
+    run(
+      () => revokeMedicoUserLinkAction(medicoId, open!.id, { reason: fd.get("reason") }),
+      { slots: ["reason"] },
     );
   }
   const act = (action: "accept" | "approve" | "decline" | "cancel") =>
@@ -118,7 +115,7 @@ export function ProfessionalAccess({
       {open ? (
         <p role="status" className="text-text text-sm">
           Vinculado a <strong>{label(open.userId)}</strong> desde{" "}
-          {open.linkedAt.slice(0, 10)}
+          {formatInstantDate(open.linkedAt)}
           {open.legacy ? " (vínculo anterior ao convite com aceite)" : ""}.
         </p>
       ) : (
@@ -126,13 +123,13 @@ export function ProfessionalAccess({
           Nenhuma conta vinculada.
         </p>
       )}
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       {active ? (
         <div className="flex flex-col gap-2 text-sm">
           <p>
             Convite para <strong>{label(active.userId)}</strong>:{" "}
             {INVITATION_STATUS_LABELS[active.status]} · válido até{" "}
-            {active.expiresAt.slice(0, 10)}.
+            {formatInstantDate(active.expiresAt)}.
           </p>
           <div className="flex flex-wrap gap-3">
             {isInvitee && active.status === "pending_acceptance" ? (
@@ -184,7 +181,14 @@ export function ProfessionalAccess({
             <span className="text-text font-semibold">
               Conta convidada <span className="text-danger">*</span>
             </span>
-            <select name="userId" required className={fieldClass} defaultValue="">
+            <select
+              name="userId"
+              required
+              className={fieldClass}
+              defaultValue=""
+              aria-invalid={fields.userId ? true : undefined}
+              aria-describedby={fields.userId ? userIdErrorId : undefined}
+            >
               <option value="">
                 {members.length ? "Selecione" : "Nenhuma conta disponível"}
               </option>
@@ -194,7 +198,7 @@ export function ProfessionalAccess({
                 </option>
               ))}
             </select>
-            {fields.userId ? <span className="text-danger">{fields.userId}</span> : null}
+            <FieldError id={userIdErrorId} message={fields.userId} />
           </label>
           <TextField
             label="Motivo"
@@ -227,9 +231,9 @@ export function ProfessionalAccess({
         <ul className="text-text-subtle list-disc pl-5 text-sm">
           {links.map((l) => (
             <li key={l.id}>
-              {label(l.userId)} · {l.linkedAt.slice(0, 10)}
+              {label(l.userId)} · {formatInstantDate(l.linkedAt)}
               {l.revokedAt
-                ? ` → ${l.revokedAt.slice(0, 10)} (revogado: ${l.revokeReason})`
+                ? ` → ${formatInstantDate(l.revokedAt)} (revogado: ${l.revokeReason})`
                 : " → vigente"}
               {l.legacy ? " · anterior ao convite com aceite" : ""}
             </li>
@@ -240,7 +244,7 @@ export function ProfessionalAccess({
         <ul className="text-text-subtle list-disc pl-5 text-sm">
           {invitations.map((i) => (
             <li key={i.id}>
-              Convite {i.invitedAt.slice(0, 10)} para {label(i.userId)}
+              Convite {formatInstantDate(i.invitedAt)} para {label(i.userId)}
               {i.selfInvitation ? " (autovínculo)" : ""}:{" "}
               {INVITATION_STATUS_LABELS[i.status]}
             </li>

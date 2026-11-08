@@ -3366,6 +3366,7 @@
           "name": "POST /medicos (create)",
           "request": {
             "method": "POST",
+            "description": "Cria o profissional (201). Registro equivalente a outro do escritorio (mesma categoria CRM/CRP + mesma UF + mesmo numero ignorando ponto, hifen, barra e espaco; ex.: 12.345 = 12345, mas 012345 != 12345) -> 409 DUPLICATE com fields.crm. Cadastro antigo sem UF com o mesmo numero tambem bloqueia (complete a UF dele). Vale igual para o PUT.",
             "header": [
               {
                 "key": "Content-Type",
@@ -5474,7 +5475,7 @@
                 "risk-absence-declarations"
               ]
             },
-            "description": "Declarações de inexistência de riscos da empresa, com a fonte, o autor e a data, e se o ator pode declarar (canDeclare) e os GES, cada um com as funções vinculadas (groups[].jobRoles: id, title). Cliente sem autorização ativa → 403."
+            "description": "Declarações de inexistência de riscos da empresa, com a fonte, o autor e a data, e se o ator pode declarar (canDeclare) e os GES, cada um com as funções vinculadas (groups[].jobRoles: id, title). Cada declaração traz jobRole (título no momento da declaração), jobRoleId e currentJobRole (título atual; null sem id: declaração antiga sem vínculo, que não vale no ASO até nova declaração). Cliente sem autorização ativa → 403."
           }
         },
         {
@@ -5501,7 +5502,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sourceId\": \"{{medicalRiskSourceId}}\",\n  \"gesId\": \"{{gesId}}\",\n  \"jobRole\": \"\",\n  \"justification\": \"Justificativa técnica do profissional responsável.\"\n}"
+              "raw": "{\n  \"sourceId\": \"{{medicalRiskSourceId}}\",\n  \"gesId\": \"{{gesId}}\",\n  \"jobRoleId\": \"\",\n  \"justification\": \"Justificativa técnica do profissional responsável.\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-absence-declarations",
@@ -5514,7 +5515,7 @@
                 "risk-absence-declarations"
               ]
             },
-            "description": "Só o profissional com autorização ativa de validação de riscos (x-dev-user = profissional). Fonte vigente; GES/função sem risco pendente ou validado; justificativa com 20+ caracteres. jobRole vazio = grupo todo; preenchido, precisa ser o título exato de uma função vinculada ao GES (copie de groups[].jobRoles[].title do GET), senão 422 com error.fields.jobRole e nada é gravado (NOB-112). 201; demais → 403; fonte substituída ou escopo com riscos → 422."
+            "description": "Só o profissional com autorização ativa de validação de riscos (x-dev-user = profissional). Fonte vigente; GES/função sem risco pendente ou validado; justificativa com 20+ caracteres. jobRoleId vazio/ausente = grupo todo; preenchido, precisa ser o id de uma função cadastrada e vinculada ao GES, desta empresa e tenant (copie de groups[].jobRoles[].id do GET), senão 422 com error.fields.jobRoleId e nada é gravado (NOB-112). Grava o id e o título do momento: renomear a função não invalida a declaração no ASO. jobRole (texto) não é mais aceito → 422. 201; demais → 403; fonte substituída ou escopo com riscos → 422."
           }
         }
       ]

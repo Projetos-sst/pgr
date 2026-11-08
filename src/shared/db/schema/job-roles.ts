@@ -6,6 +6,7 @@ import {
   timestamp,
   index,
   uniqueIndex,
+  unique,
   pgPolicy,
 } from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
@@ -44,6 +45,9 @@ export const jobRoles = pgTable(
       table.companyId,
       table.title,
     ),
+    // Alvo das FKs compostas que prendem a função ao mesmo tenant e à mesma empresa
+    // (ex.: declaração de inexistência de riscos da Medicina, NOB-112/NOB-156).
+    unique("uq_job_roles_id_scope").on(table.id, table.orgId, table.companyId),
     pgPolicy("job_roles_isolation", {
       for: "all",
       to: appRuntimeRole,

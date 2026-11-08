@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition, type FormEvent } from "react";
+import { useId, type FormEvent } from "react";
 
+import { pathDescriber } from "@/shared/domains/medicine/form-feedback";
 import {
   addExamPlanItemAction,
   approveExamPlanAction,
@@ -10,59 +10,47 @@ import {
   decideExamPlanItemAction,
 } from "@/shared/server/actions/medicine/exam-plans";
 
-import { FormError, SubmitButton, TextField, fieldClass } from "../../../_ui/form";
-
-type Result =
-  | { ok: true }
-  | { ok: false; error: { message: string; fields?: Record<string, string> } };
+import {
+  FieldError,
+  FormError,
+  SubmitButton,
+  TextField,
+  fieldClass,
+} from "../../../_ui/form";
+import { useActionFeedback } from "../../../_ui/use-action-feedback";
 
 /** Falha sem resposta do servidor (rede, erro inesperado): nada se perde do que foi digitado. */
 const UNEXPECTED_ERROR_MESSAGE =
   "Não foi possível concluir agora. Verifique a conexão e tente de novo; o que você digitou foi mantido.";
 
+const describePlanPath = pathDescriber({
+  fields: {
+    decision: "Decisão",
+    periodicity: "Periodicidade",
+    justification: "Justificativa",
+    exposureGroup: "Grupo de exposição",
+    jobRole: "Função",
+    code: "Código do procedimento",
+    otherDescription: "Descrição do procedimento",
+    note: "Observação da aprovação",
+  },
+});
+
 /**
  * Envio dos formulários do plano. Só limpa o formulário depois do sucesso confirmado pelo
- * servidor (`onSuccess`); erro de campo, erro do servidor ou falha de rede mantêm os valores.
- * Um segundo envio enquanto o primeiro está pendente é ignorado (NOB-112).
+ * servidor (`onOk`); erro de campo, erro do servidor ou falha de rede mantêm os valores. Erro
+ * sem lugar na tela aparece no resumo; um segundo envio enquanto o primeiro está pendente é
+ * ignorado (NOB-112).
  */
-function useSubmit() {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const submitting = useRef(false);
-  const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string>>({});
-  const [succeeded, setSucceeded] = useState(false);
-  const run = (fn: () => Promise<Result>, onSuccess?: () => void) => {
-    if (submitting.current) return;
-    submitting.current = true;
-    setSucceeded(false);
-    startTransition(async () => {
-      try {
-        const result = await fn();
-        if (result.ok) {
-          setError(null);
-          setFields({});
-          setSucceeded(true);
-          onSuccess?.();
-          router.refresh();
-        } else {
-          setFields(result.error.fields ?? {});
-          setError(result.error.fields ? null : result.error.message);
-        }
-      } catch {
-        setFields({});
-        setError(UNEXPECTED_ERROR_MESSAGE);
-      } finally {
-        submitting.current = false;
-      }
-    });
-  };
-  return { pending, error, fields, succeeded, run };
-}
+const useSubmit = () =>
+  useActionFeedback({
+    describe: describePlanPath,
+    unexpectedMessage: UNEXPECTED_ERROR_MESSAGE,
+  });
 
 /** A equipe prepara o rascunho a partir da proposta atual (riscos validados). */
 export function CreateDraftButton({ companyId }: { companyId: string }) {
-  const { pending, error, run } = useSubmit();
+  const { pending, feedback, run } = useSubmit();
   return (
     <form
       onSubmit={(e) => {
@@ -71,7 +59,7 @@ export function CreateDraftButton({ companyId }: { companyId: string }) {
       }}
       className="flex flex-col gap-2"
     >
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <SubmitButton pending={pending} label="Preparar rascunho a partir da proposta" />
     </form>
   );
@@ -97,27 +85,38 @@ export function ItemDecisionForm({
   justification: string | null;
   origin: "suggested" | "added";
 }) {
-  const { pending, error, fields, run } = useSubmit();
+  const { pending, feedback, run } = useSubmit();
+  const decisionErrorId = useId();
+  const decisionError = feedback.fields.decision;
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
-    run(() =>
-      decideExamPlanItemAction(planId, itemId, {
-        decision: fd.get("decision"),
-        periodicity: fd.get("periodicity"),
-        justification: (fd.get("justification") as string) || undefined,
-      }),
+    run(
+      () =>
+        decideExamPlanItemAction(planId, itemId, {
+          decision: fd.get("decision"),
+          periodicity: fd.get("periodicity"),
+          justification: (fd.get("justification") as string) || undefined,
+        }),
+      { slots: ["decision", "periodicity", "justification"] },
     );
   }
   return (
     <form onSubmit={onSubmit} className="mt-2 flex flex-col gap-2">
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-text font-semibold">Decisão</span>
-        <select name="decision" defaultValue={decision} className={fieldClass}>
+        <select
+          name="decision"
+          defaultValue={decision}
+          className={fieldClass}
+          aria-invalid={decisionError ? true : undefined}
+          aria-describedby={decisionError ? decisionErrorId : undefined}
+        >
           <option value="kept">Manter</option>
           <option value="removed">Retirar</option>
         </select>
+        <FieldError id={decisionErrorId} message={decisionError} />
       </label>
       <TextField
         label="Periodicidade"
@@ -125,7 +124,7 @@ export function ItemDecisionForm({
         required
         isFullWidth
         defaultValue={periodicity}
-        error={fields.periodicity}
+        error={feedback.fields.periodicity}
       />
       <TextField
         label={
@@ -136,16 +135,26 @@ export function ItemDecisionForm({
         name="justification"
         isFullWidth
         defaultValue={justification ?? ""}
-        error={fields.justification}
+        error={feedback.fields.justification}
       />
       <SubmitButton pending={pending} label="Registrar decisão" />
     </form>
   );
 }
 
+const ADD_ITEM_SLOTS = [
+  "exposureGroup",
+  "jobRole",
+  "code",
+  "otherDescription",
+  "periodicity",
+  "justification",
+] as const;
+
 /** Exame acrescentado pela coordenadora (código da Tabela 27, com justificativa). */
 export function AddItemForm({ planId }: { planId: string }) {
-  const { pending, error, fields, succeeded, run } = useSubmit();
+  const { pending, feedback, succeeded, run } = useSubmit();
+  const fields = feedback.fields;
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -161,7 +170,7 @@ export function AddItemForm({ planId }: { planId: string }) {
           justification: fd.get("justification"),
         }),
       // Limpa só depois do sucesso: um novo clique não reenvia o mesmo exame.
-      () => form.reset(),
+      { slots: ADD_ITEM_SLOTS, onOk: () => form.reset() },
     );
   }
   return (
@@ -174,7 +183,7 @@ export function AddItemForm({ planId }: { planId: string }) {
           Exame acrescentado ao plano. O formulário foi limpo para o próximo.
         </p>
       ) : null}
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <TextField
         label="Grupo de exposição"
         name="exposureGroup"
@@ -214,26 +223,28 @@ export function AddItemForm({ planId }: { planId: string }) {
 }
 
 export function ApproveForm({ planId }: { planId: string }) {
-  const { pending, error, fields, run } = useSubmit();
+  const { pending, feedback, run } = useSubmit();
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
-        run(() =>
-          approveExamPlanAction(planId, {
-            note: (fd.get("note") as string) || undefined,
-          }),
+        run(
+          () =>
+            approveExamPlanAction(planId, {
+              note: (fd.get("note") as string) || undefined,
+            }),
+          { slots: ["note"] },
         );
       }}
       className="flex flex-col gap-3"
     >
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <TextField
         label="Observação da aprovação (opcional)"
         name="note"
         isFullWidth
-        error={fields.note}
+        error={feedback.fields.note}
       />
       <SubmitButton pending={pending} label="Aprovar plano" />
     </form>

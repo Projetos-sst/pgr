@@ -1,7 +1,8 @@
 /**
  * NOB-112/NOB-156: na declaração de inexistência de riscos a função é escolhida entre as
- * funções vinculadas ao GES (nunca digitada), vazia = grupo todo, trocar o GES limpa a função
- * e o erro de campo do servidor aparece em "Função". Dados fictícios.
+ * funções vinculadas ao GES (nunca digitada) e vai pelo id da função cadastrada (renomear não
+ * invalida), vazia = grupo todo, trocar o GES limpa a função e o erro de campo do servidor
+ * aparece em "Função". Dados fictícios.
  */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
@@ -76,22 +77,24 @@ describe("RiskAbsenceForm", () => {
 
     change(/^GES/, GES_PROD);
     expect(field(/^Função/)).not.toBeDisabled();
-    expect(optionValues(field(/^Função/))).toEqual([
-      "",
+    // O valor de cada opção é o id da função; o rótulo, o título.
+    expect(optionValues(field(/^Função/))).toEqual(["", "r2", "r3"]);
+    expect(Array.from(field(/^Função/).options).map((o) => o.text)).toEqual([
+      "Grupo todo (todas as funções do GES)",
       "Operador de empilhadeira",
       "OPERADOR DE EMPILHADEIRA",
     ]);
   });
 
-  it("envia o título exato escolhido; trocar o GES limpa a função", async () => {
+  it("envia o id da função escolhida, não o título; trocar o GES limpa a função", async () => {
     declare.mockResolvedValue({ ok: true, data: { id: "d1" } });
     renderForm();
     change(/^Versão vigente da fonte/, SOURCE);
     change(/^GES/, GES_PROD);
-    change(/^Função/, "OPERADOR DE EMPILHADEIRA");
+    change(/^Função/, "r3");
     change(/^GES/, GES_ADM);
     expect(field(/^Função/)).toHaveValue("");
-    change(/^Função/, "Auxiliar administrativo");
+    change(/^Função/, "r1");
     change(/^Justificativa técnica/, JUSTIFICATION);
     submit();
 
@@ -99,12 +102,12 @@ describe("RiskAbsenceForm", () => {
     expect(declare).toHaveBeenCalledWith(COMPANY, {
       sourceId: SOURCE,
       gesId: GES_ADM,
-      jobRole: "Auxiliar administrativo",
+      jobRoleId: "r1",
       justification: JUSTIFICATION,
     });
   });
 
-  it("sem função escolhida = grupo todo (jobRole vazio)", async () => {
+  it("sem função escolhida = grupo todo (jobRoleId vazio)", async () => {
     declare.mockResolvedValue({ ok: true, data: { id: "d1" } });
     renderForm();
     change(/^Versão vigente da fonte/, SOURCE);
@@ -115,7 +118,7 @@ describe("RiskAbsenceForm", () => {
     await waitFor(() => expect(declare).toHaveBeenCalled());
     expect(declare).toHaveBeenCalledWith(
       COMPANY,
-      expect.objectContaining({ gesId: GES_ADM, jobRole: "" }),
+      expect.objectContaining({ gesId: GES_ADM, jobRoleId: "" }),
     );
   });
 
@@ -139,12 +142,12 @@ describe("RiskAbsenceForm", () => {
       error: {
         code: "VALIDATION",
         message: "Dados inválidos.",
-        fields: { jobRole: message },
+        fields: { jobRoleId: message },
       },
     });
     renderForm();
     change(/^GES/, GES_PROD);
-    change(/^Função/, "Operador de empilhadeira");
+    change(/^Função/, "r2");
     submit();
 
     expect(await screen.findByText(message)).toBeInTheDocument();

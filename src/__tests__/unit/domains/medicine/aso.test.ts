@@ -279,6 +279,23 @@ describe("asoReadiness", () => {
     expect(plain?.message).not.toMatch(/não é exatamente a função/);
   });
 
+  it("NOB-112: declaração antiga só com texto e função desvinculada do GES bloqueiam com explicação", () => {
+    const noRisks = { validated: [], pending: 0, usableSources: 1 };
+    const message = (f: AsoFacts) =>
+      asoReadiness(f).find((i) => i.code === "risks_absence_not_declared")?.message;
+    const legacy = facts({ risks: noRisks, riskAbsenceLegacyJobRoles: ["Soldador"] });
+    expect(blocking(legacy)).toEqual(["risks_absence_not_declared"]);
+    expect(message(legacy)).toMatch(
+      /declaração antiga neste GES para a função "Soldador"/,
+    );
+    expect(message(legacy)).toMatch(/Regularização: o profissional autorizado/);
+    const unlinked = facts({ risks: noRisks, riskAbsenceJobRoleUnlinked: true });
+    expect(blocking(unlinked)).toEqual(["risks_absence_not_declared"]);
+    expect(message(unlinked)).toMatch(
+      /função do funcionário \("Soldador"\), mas a função não está mais vinculada a este GES/,
+    );
+  });
+
   it("exame de outra empresa ou com origem não comprovada não serve ao ASO (MED-07)", () => {
     expect(blocking(facts({ exam: { ...facts().exam, companyId: "c2" } }))).toEqual([
       "exam_other_company",
@@ -314,6 +331,22 @@ describe("asoReadiness", () => {
     expect(
       blocking(facts({ procedures: [], plannedProcedures: null, coordinator: null })),
     ).toEqual([]);
+  });
+});
+
+describe("coordenador sobreposto na data do exame", () => {
+  it("bloqueia sem escolher; sem sobreposição e sem coordenador é só aviso", () => {
+    const overlap = asoReadiness(facts({ coordinator: null, coordinatorOverlap: true }));
+    expect(overlap.find((i) => i.code === "coordinator_overlap")).toMatchObject({
+      severity: "blocking",
+      item: "f",
+    });
+    expect(overlap.map((i) => i.code)).not.toContain("coordinator_missing");
+    const missing = asoReadiness(facts({ coordinator: null }));
+    expect(missing.find((i) => i.code === "coordinator_missing")?.severity).toBe(
+      "warning",
+    );
+    expect(missing.map((i) => i.code)).not.toContain("coordinator_overlap");
   });
 });
 

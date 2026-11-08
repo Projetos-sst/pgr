@@ -4,10 +4,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
-import type {
-  RiskAbsenceDeclarationView,
-  RiskAbsenceValues,
-} from "@/shared/domains/medicine/risk-absence";
+import type { RiskAbsenceDeclarationView } from "@/shared/domains/medicine/risk-absence";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
@@ -54,6 +51,8 @@ export async function listRiskAbsenceDeclarations(
         gesId: declarations.gesId,
         exposureGroup: declarations.exposureGroup,
         jobRole: declarations.jobRole,
+        jobRoleId: declarations.jobRoleId,
+        currentJobRole: jobRoles.title,
         justification: declarations.justification,
         declaredBy: declarations.declaredBy,
         identity: grants.identity,
@@ -66,6 +65,15 @@ export async function listRiskAbsenceDeclarations(
           eq(grants.orgId, declarations.orgId),
           eq(grants.companyId, declarations.companyId),
           eq(grants.userId, declarations.declaredBy),
+        ),
+      )
+      // Título atual da função declarada (pode ter sido renomeada depois da declaração).
+      .leftJoin(
+        jobRoles,
+        and(
+          eq(jobRoles.id, declarations.jobRoleId),
+          eq(jobRoles.orgId, declarations.orgId),
+          eq(jobRoles.companyId, declarations.companyId),
         ),
       )
       .where(
@@ -190,14 +198,24 @@ export async function getCompanyGes(
   });
 }
 
+/** Declaração já conferida por quem chama: função resolvida (id + título atual) ou grupo todo. */
+export type RiskAbsenceInsert = {
+  sourceId: string;
+  gesId: string;
+  jobRoleId: string | null;
+  jobRole: string;
+  justification: string;
+};
+
 /**
- * Grava a declaração. Quem chama já conferiu a fonte vigente e a ausência de riscos no escopo
- * (`declarationBlocker`); aqui ficam a autorização (servidor + RLS) e a unicidade por escopo.
+ * Grava a declaração. Quem chama já conferiu a fonte vigente, a ausência de riscos no escopo
+ * (`declarationBlocker`) e que a função está vinculada ao GES; aqui ficam a autorização
+ * (servidor + RLS), a função presa ao id com o título do momento (FK + policy) e a unicidade.
  */
 export async function insertRiskAbsenceDeclaration(
   ctx: TenantContext,
   companyId: string,
-  input: RiskAbsenceValues,
+  input: RiskAbsenceInsert,
   exposureGroup: string,
 ): Promise<{ id: string }> {
   return auditedTenantWrite(
@@ -220,6 +238,7 @@ export async function insertRiskAbsenceDeclaration(
               gesId: input.gesId,
               exposureGroup,
               jobRole: input.jobRole,
+              jobRoleId: input.jobRoleId,
               justification: input.justification,
               declaredBy: ctx.userId,
             })

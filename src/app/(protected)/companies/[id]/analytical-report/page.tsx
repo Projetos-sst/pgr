@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { formatInstantDate } from "@/shared/dates";
 import type { AnalyticalReportContent } from "@/shared/domains/medicine/analytical-report";
 import { getCompanyAction } from "@/shared/server/actions/pgr/companies";
 import {
@@ -224,8 +225,8 @@ export default async function AnalyticalReportPage({
             : "Nenhum relatório analítico anterior registrado: informe o período do primeiro relatório (até 12 meses)."}
         </p>
         <p className="text-text-subtle text-xs">
-          Só a conta vinculada ao médico coordenador com designação aberta elabora o
-          relatório. Resultados de exames e diagnósticos não são registrados no sistema;
+          Só a conta vinculada ao médico coordenador com designação em vigor hoje elabora
+          o relatório. Resultados de exames e diagnósticos não são registrados no sistema;
           essas alíneas saem como informação insuficiente.
         </p>
         <ReportForm
@@ -334,7 +335,7 @@ export default async function AnalyticalReportPage({
                 {e.note ? <span>Observação: {e.note}</span> : null}
                 {e.voidReason ? <span>Motivo: {e.voidReason}</span> : null}
                 <span className="text-xs">
-                  Registrado por {e.recordedBy} em {e.recordedAt.slice(0, 10)}
+                  Registrado por {e.recordedBy} em {formatInstantDate(e.recordedAt)}
                 </span>
                 {e.kind !== "voided" && effectiveIds.has(e.id) ? (
                   <VoidReportEventForm companyId={id} eventId={e.id} />
@@ -358,7 +359,7 @@ export default async function AnalyticalReportPage({
             {reports.data.map((r) => (
               <li key={r.id}>
                 Versão {r.version} · prévia · {r.periodStart} a {r.periodEnd} · gerada em{" "}
-                {new Date(r.generatedAt).toISOString().slice(0, 10)} · SHA-256{" "}
+                {formatInstantDate(r.generatedAt)} · SHA-256{" "}
                 {r.contentSha256.slice(0, 12)}…
               </li>
             ))}

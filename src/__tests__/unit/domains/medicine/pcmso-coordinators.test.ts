@@ -4,6 +4,8 @@ import {
   coordinatorDesignationSchema,
   coordinatorInForceOn,
   coordinatorOn,
+  designationHeading,
+  designationStatusOn,
   planCoordinatorSwitch,
   previousIsoDay,
   type CoordinatorInForce,
@@ -157,6 +159,38 @@ describe("coordinatorInForceOn (NOB-109: vigente na data, não só aberta)", () 
     ];
     for (const day of ["2026-01-01", "2026-11-30", "2026-12-01", "2027-06-01"])
       expect(coordinatorInForceOn(history, day).kind).toBe("in_force");
+  });
+});
+
+describe("designationStatusOn / designationHeading (NOB-109: tela do coordenador)", () => {
+  const TODAY = "2026-11-07";
+  it.each([
+    [{ startsOn: "2026-11-08", endsOn: null }, "scheduled"],
+    [{ startsOn: TODAY, endsOn: null }, "in_force"],
+    [{ startsOn: "2026-01-01", endsOn: null }, "in_force"],
+    [{ startsOn: "2026-01-01", endsOn: TODAY }, "in_force"],
+    [{ startsOn: "2026-01-01", endsOn: "2026-12-31" }, "in_force"],
+    [{ startsOn: "2026-01-01", endsOn: "2026-11-06" }, "ended"],
+  ] as const)("%o → %s", (period, expected) => {
+    expect(designationStatusOn(period, TODAY)).toBe(expected);
+  });
+
+  it("designação que só começa no futuro é rotulada como agendada, não vigente", () => {
+    // Antes da correção a tela dizia "Designação vigente" para qualquer designação aberta.
+    expect(designationHeading({ startsOn: "2026-11-08", endsOn: null }, TODAY)).toBe(
+      "Designação agendada (a partir de 2026-11-08)",
+    );
+  });
+  it("vigente sem fim, vigente com encerramento agendado e encerrada", () => {
+    expect(designationHeading({ startsOn: "2026-01-01", endsOn: null }, TODAY)).toBe(
+      "Designação vigente",
+    );
+    expect(
+      designationHeading({ startsOn: "2026-01-01", endsOn: "2026-12-31" }, TODAY),
+    ).toBe("Designação vigente (encerramento agendado para 2026-12-31)");
+    expect(
+      designationHeading({ startsOn: "2026-01-01", endsOn: "2026-11-06" }, TODAY),
+    ).toBe("Designação encerrada (em 2026-11-06)");
   });
 });
 

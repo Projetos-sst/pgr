@@ -16,6 +16,31 @@ import {
 
 const WHY = "Justificativa clínica fictícia.";
 
+// NOB-112 (etapa E): mensagens em português onde o padrão do Zod vazava em inglês.
+describe("mensagens dos schemas do plano", () => {
+  const messages = (r: { error?: { issues: { message: string }[] } }) =>
+    (r.error?.issues ?? []).map((i) => i.message);
+
+  it("decisão inválida e textos longos têm mensagem própria", () => {
+    expect(
+      messages(itemDecisionSchema.safeParse({ decision: "x", periodicity: "Anual" })),
+    ).toContain("Escolha manter ou retirar o exame.");
+    const long = "x".repeat(501);
+    const added = messages(
+      addItemSchema.safeParse({
+        exposureGroup: long,
+        jobRole: long,
+        code: "0281",
+        otherDescription: long,
+        periodicity: "Anual",
+        justification: WHY,
+      }),
+    );
+    expect(added).toContain("Máximo de 500 caracteres.");
+    expect(added.join(" ")).not.toMatch(/Too big|Too small/);
+  });
+});
+
 function source(code: string, group = "Produção", jobRole?: string): ProposalSource {
   return {
     id: "s1",

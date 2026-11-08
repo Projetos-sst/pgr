@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { formatInstantDate } from "@/shared/dates";
 import type { PcmsoContent } from "@/shared/domains/medicine/pcmso-composition";
 import {
   PCMSO_CHANGE_KIND_LABELS,
@@ -103,7 +104,7 @@ function Preview({
         <p className="text-text-subtle">
           Plano de exames versão {content.examPlan.version}, aprovado por{" "}
           {content.examPlan.approvedBy || "médico coordenador"} em{" "}
-          {content.examPlan.approvedAt.slice(0, 10)}
+          {formatInstantDate(content.examPlan.approvedAt)}
         </p>
         <p className="text-text-subtle">
           {content.clinicalExam.text} ({content.clinicalExam.reference})
@@ -281,7 +282,7 @@ export default async function PcmsoPage({ params }: { params: Promise<{ id: stri
                 ) : null}
                 <span className="text-xs">
                   SHA-256 {doc.fileSha256.slice(0, 16)}… · registrado em{" "}
-                  {doc.registeredAt.slice(0, 10)}{" "}
+                  {formatInstantDate(doc.registeredAt)}{" "}
                   <DownloadSignedPcmsoButton id={doc.id} />
                 </span>
               </li>
@@ -324,7 +325,7 @@ export default async function PcmsoPage({ params }: { params: Promise<{ id: stri
             {docs.data.map((doc) => (
               <li key={doc.id}>
                 Versão {doc.version} · prévia · ciclo {doc.cycleStart} a {doc.cycleEnd} ·
-                gerada em {new Date(doc.generatedAt).toISOString().slice(0, 10)} · SHA-256{" "}
+                gerada em {formatInstantDate(doc.generatedAt)} · SHA-256{" "}
                 {doc.contentSha256.slice(0, 12)}…
               </li>
             ))}

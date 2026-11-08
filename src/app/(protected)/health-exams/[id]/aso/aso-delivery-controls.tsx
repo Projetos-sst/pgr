@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
+import { pathDescriber } from "@/shared/domains/medicine/form-feedback";
 import {
   ASO_DELIVERY_EVIDENCE_KINDS,
   ASO_DELIVERY_EVIDENCE_LABELS,
@@ -27,8 +27,29 @@ import {
   TextAreaField,
   TextField,
 } from "../../../_ui/form";
+import { useActionFeedback } from "../../../_ui/use-action-feedback";
 
 type Kind = "made_available" | "physical_copy_requested" | "";
+
+const describeDeliveryPath = pathDescriber({
+  fields: {
+    kind: "O que registrar",
+    method: "Método",
+    channelDescription: "Canal usado",
+    occurredAt: "Data e hora",
+    evidenceReference: "Evidência da entrega",
+    evidenceKind: "Tipo do comprovante",
+    reason: "Motivo da correção",
+  },
+});
+
+const describeReviewPath = pathDescriber({
+  fields: {
+    method: "Como foi conferido",
+    result: "Resultado da conferência",
+    reference: "O que foi conferido",
+  },
+});
 
 /**
  * Registro da entrega do ASO assinado vigente ao trabalhador, ou do pedido de via física (NOB-165).
@@ -36,10 +57,10 @@ type Kind = "made_available" | "physical_copy_requested" | "";
  * confirma a ciência. Nada aqui marca recebimento por um clique.
  */
 export function AsoDeliveryForm({ examId }: { examId: string }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const { pending, feedback, run } = useActionFeedback({
+    describe: describeDeliveryPath,
+  });
+  const fields = feedback.fields;
   const [kind, setKind] = useState<Kind>("");
   const [method, setMethod] = useState("");
 
@@ -47,25 +68,28 @@ export function AsoDeliveryForm({ examId }: { examId: string }) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    startTransition(async () => {
-      const result = await registerAsoDeliveryAction(examId, data);
-      if (result.ok) {
-        setError(null);
-        setFields({});
+    const delivery = kind === "made_available";
+    // Só os campos visíveis recebem o erro no próprio campo; os demais vão ao resumo.
+    const slots = [
+      "kind",
+      "occurredAt",
+      "evidenceReference",
+      ...(delivery ? ["method", "evidenceKind"] : []),
+      ...(delivery && method === "digital_copy" ? ["channelDescription"] : []),
+    ];
+    run(() => registerAsoDeliveryAction(examId, data), {
+      slots,
+      onOk: () => {
         form.reset();
         setKind("");
         setMethod("");
-        router.refresh();
-      } else {
-        setFields(result.error.fields ?? {});
-        setError(result.error.fields ? null : result.error.message);
-      }
+      },
     });
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <SelectField
         label="O que registrar"
         name="kind"
@@ -156,10 +180,10 @@ export function VoidAsoDeliveryForm({
   examId: string;
   deliveryId: string;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const { pending, feedback, run } = useActionFeedback({
+    describe: describeDeliveryPath,
+  });
   if (!open)
     return (
       <button
@@ -176,21 +200,20 @@ export function VoidAsoDeliveryForm({
       onSubmit={(event) => {
         event.preventDefault();
         const reason = new FormData(event.currentTarget).get("reason");
-        startTransition(async () => {
-          const result = await voidAsoDeliveryAction(examId, deliveryId, { reason });
-          if (result.ok) {
-            setOpen(false);
-            router.refresh();
-          } else setError(result.error.fields?.reason ?? result.error.message);
+        // Permissão ou regra do servidor fica no resumo, nunca como erro do motivo.
+        run(() => voidAsoDeliveryAction(examId, deliveryId, { reason }), {
+          slots: ["reason"],
+          onOk: () => setOpen(false),
         });
       }}
     >
+      <FormError message={feedback.formError} details={feedback.details} />
       <TextAreaField
         label="Motivo da correção"
         name="reason"
         required
         rows={2}
-        error={error ?? undefined}
+        error={feedback.fields.reason}
       />
       <SubmitButton pending={pending} label="Registrar correção" />
     </form>
@@ -199,8 +222,7 @@ export function VoidAsoDeliveryForm({
 
 /** Abre o comprovante por URL assinada curta. */
 export function AsoDeliveryEvidenceButton({ id }: { id: string }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const { pending, feedback, run } = useActionFeedback();
   return (
     <span className="inline-flex items-center gap-2">
       <button
@@ -208,20 +230,18 @@ export function AsoDeliveryEvidenceButton({ id }: { id: string }) {
         disabled={pending}
         className="text-primary text-xs font-semibold underline disabled:opacity-60"
         onClick={() =>
-          startTransition(async () => {
-            const result = await getAsoDeliveryEvidenceAction(id);
-            if (result.ok) {
-              setError(null);
-              window.open(result.data.url, "_blank", "noopener,noreferrer");
-            } else setError(result.error.message);
+          run(() => getAsoDeliveryEvidenceAction(id), {
+            refresh: false,
+            onOk: (result) =>
+              window.open(result.data.url, "_blank", "noopener,noreferrer"),
           })
         }
       >
         {pending ? "Abrindo…" : "Ver comprovante"}
       </button>
-      {error ? (
+      {feedback.formError ? (
         <span role="alert" className="text-xs text-red-700">
-          {error}
+          {feedback.formError}
         </span>
       ) : null}
     </span>
@@ -242,11 +262,11 @@ export function ReviewAsoEvidenceForm({
   deliveryId: string;
   signedReceipt: boolean;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const { pending, feedback, run } = useActionFeedback({
+    describe: describeReviewPath,
+  });
+  const fields = feedback.fields;
   if (!open)
     return (
       <button
@@ -266,23 +286,18 @@ export function ReviewAsoEvidenceForm({
       onSubmit={(event) => {
         event.preventDefault();
         const fd = new FormData(event.currentTarget);
-        startTransition(async () => {
-          const result = await reviewAsoDeliveryEvidenceAction(examId, deliveryId, {
-            method: fd.get("method"),
-            result: fd.get("result"),
-            reference: fd.get("reference"),
-          });
-          if (result.ok) {
-            setOpen(false);
-            router.refresh();
-          } else {
-            setFields(result.error.fields ?? {});
-            setError(result.error.fields ? null : result.error.message);
-          }
-        });
+        run(
+          () =>
+            reviewAsoDeliveryEvidenceAction(examId, deliveryId, {
+              method: fd.get("method"),
+              result: fd.get("result"),
+              reference: fd.get("reference"),
+            }),
+          { slots: ["method", "result", "reference"], onOk: () => setOpen(false) },
+        );
       }}
     >
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <SelectField
         label="Como foi conferido"
         name="method"

@@ -32,6 +32,7 @@ import {
 import { assertCompanyModuleTx } from "./company-modules";
 import { auditedTenantWrite } from "./audited-write";
 import { assertActorIsCompanyCoordinator } from "./medico-user-links";
+import { dateInSaoPaulo } from "@/shared/dates";
 
 export type AnalyticalReportSummary = Omit<PcmsoAnalyticalReport, "content">;
 
@@ -177,7 +178,7 @@ export async function loadAnalyticalReportData(
   });
 }
 
-/** Médico coordenador da conta da sessão (vínculo + designação aberta); senão, FORBIDDEN. */
+/** Coordenador da conta da sessão (vínculo + designação em vigor hoje); senão, FORBIDDEN. */
 export async function getActorCoordinator(
   ctx: TenantContext,
   companyId: string,
@@ -440,11 +441,7 @@ export async function insertReportEvent(
           if (input.kind === "discussed" && !presentation)
             throw new ValidationError("Registre antes a apresentação do relatório.");
           const problem =
-            checkDate(
-              new Date(report.generatedAt.getTime() - 3 * 3600 * 1000)
-                .toISOString()
-                .slice(0, 10),
-            ) ??
+            checkDate(dateInSaoPaulo(report.generatedAt) ?? "") ??
             (input.kind === "presented"
               ? chronologyProblem(
                   "presented",

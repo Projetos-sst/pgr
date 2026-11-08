@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
+import { pathDescriber } from "@/shared/domains/medicine/form-feedback";
 import {
   PCMSO_CHANGE_KIND_LABELS,
   PCMSO_CHANGE_KINDS,
@@ -25,6 +25,33 @@ import {
   TextAreaField,
   TextField,
 } from "../../../_ui/form";
+import { useActionFeedback } from "../../../_ui/use-action-feedback";
+
+const describeSignedPcmsoPath = pathDescriber({
+  fields: {
+    origin: "Quem registra",
+    previewDocumentId: "Prévia assinada",
+    signatureMethod: "Método de assinatura",
+    verificationReference: "Conferência documental da assinatura",
+    signerName: "Médico que assinou",
+    signerRegistration: "CRM do signatário",
+    signerUf: "UF do CRM",
+    signedOn: "Data da assinatura",
+    replacesId: "Documento vigente substituído",
+    changeKind: "Tipo de mudança da nova versão",
+    replaceReason: "Motivo da substituição",
+  },
+});
+
+const SIGNED_PCMSO_SLOTS = [
+  "origin",
+  "signatureMethod",
+  "verificationReference",
+  "signerName",
+  "signerRegistration",
+  "signerUf",
+  "signedOn",
+] as const;
 
 /**
  * Registro do PCMSO assinado (NOB-166): PDF da prévia mais recente assinado pelo médico responsável
@@ -42,10 +69,10 @@ export function SignedPcmsoForm({
   coordinator: { name: string; crm: string; uf: string | null } | null;
   currentId: string | null;
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const { pending, feedback, run } = useActionFeedback({
+    describe: describeSignedPcmsoPath,
+  });
+  const fields = feedback.fields;
   const [method, setMethod] = useState<PcmsoSignatureMethodValue | "">("");
 
   if (!latestPreview)
@@ -62,24 +89,22 @@ export function SignedPcmsoForm({
     const data = new FormData(form);
     data.set("previewDocumentId", latestPreview!.id);
     if (currentId) data.set("replacesId", currentId);
-    startTransition(async () => {
-      const result = await registerSignedPcmsoAction(companyId, data);
-      if (result.ok) {
-        setError(null);
-        setFields({});
+    run(() => registerSignedPcmsoAction(companyId, data), {
+      // Tipo de mudança e motivo só estão na tela quando há documento vigente.
+      slots: currentId
+        ? [...SIGNED_PCMSO_SLOTS, "changeKind", "replaceReason"]
+        : SIGNED_PCMSO_SLOTS,
+      // Limpa só depois do sucesso confirmado; erro mantém o que foi digitado.
+      onOk: () => {
         form.reset();
         setMethod("");
-        router.refresh();
-      } else {
-        setFields(result.error.fields ?? {});
-        setError(result.error.fields ? null : result.error.message);
-      }
+      },
     });
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <p className="text-text-subtle">
         Prévia assinada: versão {latestPreview.version}.{" "}
         {coordinator
@@ -185,8 +210,7 @@ export function SignedPcmsoForm({
 
 /** Abre o PDF assinado por URL assinada curta. */
 export function DownloadSignedPcmsoButton({ id }: { id: string }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const { pending, feedback, run } = useActionFeedback();
   return (
     <span className="inline-flex items-center gap-2">
       <button
@@ -194,20 +218,18 @@ export function DownloadSignedPcmsoButton({ id }: { id: string }) {
         disabled={pending}
         className="text-primary text-xs font-semibold underline disabled:opacity-60"
         onClick={() =>
-          startTransition(async () => {
-            const result = await getSignedPcmsoDownloadAction(id);
-            if (result.ok) {
-              setError(null);
-              window.open(result.data.url, "_blank", "noopener,noreferrer");
-            } else setError(result.error.message);
+          run(() => getSignedPcmsoDownloadAction(id), {
+            refresh: false,
+            onOk: (result) =>
+              window.open(result.data.url, "_blank", "noopener,noreferrer"),
           })
         }
       >
         {pending ? "Abrindo…" : "Baixar PDF"}
       </button>
-      {error ? (
+      {feedback.formError ? (
         <span role="alert" className="text-xs text-red-700">
-          {error}
+          {feedback.formError}
         </span>
       ) : null}
     </span>

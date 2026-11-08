@@ -181,14 +181,26 @@ export type AsoFacts = {
     registrationUf: string | null;
   } | null;
   coordinator: { name: string; registration: string; rqe: string | null } | null;
+  /**
+   * Mais de uma designação de coordenador em vigor na data do exame (só alcançável fora do app).
+   * O sistema não escolhe uma delas: a conferência bloqueia até a regularização.
+   */
+  coordinatorOverlap?: boolean;
   risks: ReturnType<typeof employeeRisks>;
   /** Declaração de inexistência vigente para o GES/função do funcionário (NOB-156), ou `null`. */
   riskAbsence: ApplicableRiskAbsence | null;
   /**
-   * Funções de declarações vigentes do GES que não são exatamente a função cadastrada do
-   * funcionário (NOB-112): não valem; só explicam o bloqueio. Ausente = nenhuma.
+   * Funções (título atual) de declarações vigentes do GES feitas para outra função cadastrada,
+   * não a do funcionário (NOB-112): não valem; só explicam o bloqueio. Ausente = nenhuma.
    */
   riskAbsenceUnmatchedJobRoles?: string[];
+  /**
+   * Títulos de declarações vigentes do GES gravadas antes do vínculo com a função cadastrada e
+   * sem correspondência inequívoca: não valem até nova declaração (regularização).
+   */
+  riskAbsenceLegacyJobRoles?: string[];
+  /** Há declaração para a função do funcionário, mas a função não está mais vinculada ao GES. */
+  riskAbsenceJobRoleUnlinked?: boolean;
   procedures: {
     procedureCode: string;
     otherDescription: string | null;
@@ -268,10 +280,21 @@ export function asoReadiness(facts: AsoFacts): AsoReadinessItem[] {
       "MED-09",
     );
   else if (facts.risks.validated.length === 0) {
+    const quoted = (roles: string[]) => roles.map((r) => `"${r}"`).join(", ");
+    const employeeRole = facts.employee.jobRole ? ` ("${facts.employee.jobRole}")` : "";
     const unmatched = facts.riskAbsenceUnmatchedJobRoles ?? [];
-    const hint = unmatched.length
-      ? ` Há declaração neste GES para a função ${unmatched.map((r) => `"${r}"`).join(", ")}, que não é exatamente a função cadastrada do funcionário${facts.employee.jobRole ? ` ("${facts.employee.jobRole}")` : ""}: ela não vale. O profissional autorizado deve declarar escolhendo a função cadastrada do GES.`
-      : "";
+    const legacy = facts.riskAbsenceLegacyJobRoles ?? [];
+    const hint = [
+      facts.riskAbsenceJobRoleUnlinked
+        ? ` Há declaração neste GES para a função do funcionário${employeeRole}, mas a função não está mais vinculada a este GES no cadastro: enquanto não estiver, a declaração não vale.`
+        : "",
+      unmatched.length
+        ? ` Há declaração neste GES para a função ${quoted(unmatched)}, que não é a função cadastrada do funcionário${employeeRole}: ela não vale. O profissional autorizado deve declarar escolhendo a função cadastrada do GES.`
+        : "",
+      legacy.length
+        ? ` Há declaração antiga neste GES para a função ${quoted(legacy)}, gravada só como texto e sem vínculo inequívoco com uma função cadastrada: ela não vale para a função do funcionário${employeeRole}. Regularização: o profissional autorizado deve declarar de novo escolhendo a função cadastrada do GES.`
+        : "",
+    ].join("");
     block(
       "risks_absence_not_declared",
       "c",
@@ -333,7 +356,14 @@ export function asoReadiness(facts: AsoFacts): AsoReadinessItem[] {
       "NR-7 7.5.19.1 e; MED-01; MED-10; DT-21",
     );
 
-  if (!facts.coordinator)
+  if (facts.coordinatorOverlap)
+    block(
+      "coordinator_overlap",
+      "f",
+      "Há mais de uma designação de médico responsável pelo PCMSO em vigor na data do exame. O sistema não escolhe uma delas: regularize as designações da empresa antes de gerar o ASO.",
+      "NR-7 7.5.19.1 f; NOB-144",
+    );
+  else if (!facts.coordinator)
     warn(
       "coordinator_missing",
       "f",

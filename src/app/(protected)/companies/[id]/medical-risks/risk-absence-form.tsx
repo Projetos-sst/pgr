@@ -14,9 +14,10 @@ type GroupOption = Option & { jobRoles: { id: string; title: string }[] };
 /**
  * Declaração de inexistência de riscos (NOB-156, DT-12) pelo profissional autorizado: GES,
  * função (vazia = grupo todo), versão vigente da fonte e justificativa. A função é escolhida
- * entre as cadastradas e vinculadas ao GES, nunca digitada (NOB-112): texto livre com erro de
- * digitação era gravado e nunca valia no ASO. O servidor confere de novo a função, e recusa fonte
- * substituída e grupo/função com risco pendente ou validado.
+ * entre as cadastradas e vinculadas ao GES, nunca digitada (NOB-112), e vai pelo id: texto livre
+ * com erro de digitação nunca valia no ASO, e o título mudava ao renomear a função. O servidor
+ * confere de novo a função, e recusa fonte substituída e grupo/função com risco pendente ou
+ * validado.
  */
 export function RiskAbsenceForm({
   companyId,
@@ -32,7 +33,7 @@ export function RiskAbsenceForm({
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [gesId, setGesId] = useState("");
-  const [jobRole, setJobRole] = useState("");
+  const [jobRoleId, setJobRoleId] = useState("");
   const jobRoles = groups.find((g) => g.id === gesId)?.jobRoles ?? [];
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,14 +43,14 @@ export function RiskAbsenceForm({
       const result = await declareRiskAbsenceAction(companyId, {
         sourceId: fd.get("sourceId") ?? "",
         gesId: fd.get("gesId") ?? "",
-        jobRole,
+        jobRoleId,
         justification: fd.get("justification") ?? "",
       });
       if (result.ok) {
         setError(null);
         setFields({});
         setGesId("");
-        setJobRole("");
+        setJobRoleId("");
         form.reset();
         router.refresh();
       } else {
@@ -80,17 +81,17 @@ export function RiskAbsenceForm({
         onChange={(value) => {
           setGesId(value);
           // Função de outro GES não vale: troca de GES limpa a escolha.
-          setJobRole("");
+          setJobRoleId("");
         }}
       />
       <SelectField
         label="Função"
-        name="jobRole"
-        options={jobRoles.map((r) => ({ value: r.title, label: r.title }))}
+        name="jobRoleId"
+        options={jobRoles.map((r) => ({ value: r.id, label: r.title }))}
         emptyLabel="Grupo todo (todas as funções do GES)"
-        error={fields.jobRole}
-        value={jobRole}
-        onChange={setJobRole}
+        error={fields.jobRoleId}
+        value={jobRoleId}
+        onChange={setJobRoleId}
         disabled={!gesId}
       />
       {gesId && jobRoles.length === 0 ? (

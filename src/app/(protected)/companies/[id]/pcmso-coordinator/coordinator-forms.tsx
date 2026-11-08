@@ -1,16 +1,34 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 
+import { pathDescriber } from "@/shared/domains/medicine/form-feedback";
 import {
   closePcmsoCoordinatorAction,
   designatePcmsoCoordinatorAction,
 } from "@/shared/server/actions/medicine/pcmso-coordinators";
 
-import { FormError, SubmitButton, TextField, fieldClass } from "../../../_ui/form";
+import {
+  FieldError,
+  FormError,
+  SubmitButton,
+  TextField,
+  fieldClass,
+} from "../../../_ui/form";
+import { useActionFeedback } from "../../../_ui/use-action-feedback";
 
 type Option = { id: string; label: string; hasRqe: boolean; hasUf: boolean };
+
+const describeCoordinatorPath = pathDescriber({
+  fields: {
+    companyId: "Empresa",
+    medicoId: "Médico",
+    startsOn: "Início",
+    rqeExceptionReason: "Justificativa da exceção (NR-7, item 7.5.2)",
+    endsOn: "Fim",
+    endReason: "Motivo",
+  },
+});
 
 export function DesignateCoordinatorForm({
   companyId,
@@ -19,10 +37,12 @@ export function DesignateCoordinatorForm({
   companyId: string;
   options: Option[];
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const { pending, feedback, run } = useActionFeedback({
+    describe: describeCoordinatorPath,
+  });
+  const fields = feedback.fields;
+  const medicoErrorId = useId();
+  const reasonErrorId = useId();
   const [medicoId, setMedicoId] = useState("");
   const selected = options.find((o) => o.id === medicoId);
 
@@ -30,28 +50,31 @@ export function DesignateCoordinatorForm({
     event.preventDefault();
     const form = event.currentTarget;
     const fd = new FormData(form);
-    startTransition(async () => {
-      const result = await designatePcmsoCoordinatorAction(companyId, {
-        medicoId: fd.get("medicoId"),
-        startsOn: fd.get("startsOn"),
-        rqeExceptionReason: fd.get("rqeExceptionReason") ?? "",
-      });
-      if (result.ok) {
-        setError(null);
-        setFields({});
-        form.reset();
-        setMedicoId("");
-        router.refresh();
-      } else {
-        setFields(result.error.fields ?? {});
-        setError(result.error.fields ? null : result.error.message);
-      }
-    });
+    run(
+      () =>
+        designatePcmsoCoordinatorAction(companyId, {
+          medicoId: fd.get("medicoId"),
+          startsOn: fd.get("startsOn"),
+          rqeExceptionReason: fd.get("rqeExceptionReason") ?? "",
+        }),
+      {
+        // A justificativa só está na tela para médico sem RQE.
+        slots: [
+          "medicoId",
+          "startsOn",
+          ...(selected && !selected.hasRqe ? ["rqeExceptionReason"] : []),
+        ],
+        onOk: () => {
+          form.reset();
+          setMedicoId("");
+        },
+      },
+    );
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-text font-semibold">
           Médico <span className="text-danger">*</span>
@@ -62,7 +85,8 @@ export function DesignateCoordinatorForm({
           value={medicoId}
           onChange={(event) => setMedicoId(event.target.value)}
           className={fieldClass}
-          aria-invalid={Boolean(fields.medicoId)}
+          aria-invalid={fields.medicoId ? true : undefined}
+          aria-describedby={fields.medicoId ? medicoErrorId : undefined}
         >
           <option value="">
             {options.length ? "Selecione" : "Nenhum médico ativo cadastrado"}
@@ -73,7 +97,7 @@ export function DesignateCoordinatorForm({
             </option>
           ))}
         </select>
-        {fields.medicoId ? <span className="text-danger">{fields.medicoId}</span> : null}
+        <FieldError id={medicoErrorId} message={fields.medicoId} />
       </label>
       <TextField
         label="Início"
@@ -102,11 +126,10 @@ export function DesignateCoordinatorForm({
             rows={3}
             maxLength={1000}
             className={fieldClass}
-            aria-invalid={Boolean(fields.rqeExceptionReason)}
+            aria-invalid={fields.rqeExceptionReason ? true : undefined}
+            aria-describedby={fields.rqeExceptionReason ? reasonErrorId : undefined}
           />
-          {fields.rqeExceptionReason ? (
-            <span className="text-danger">{fields.rqeExceptionReason}</span>
-          ) : null}
+          <FieldError id={reasonErrorId} message={fields.rqeExceptionReason} />
         </label>
       ) : null}
       <SubmitButton pending={pending} label="Registrar designação" />
@@ -123,27 +146,21 @@ export function CloseCoordinatorForm({
   assignmentId: string;
   startsOn: string;
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const { pending, feedback, run } = useActionFeedback({
+    describe: describeCoordinatorPath,
+  });
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
-    startTransition(async () => {
-      const result = await closePcmsoCoordinatorAction(companyId, assignmentId, {
-        endsOn: fd.get("endsOn"),
-        endReason: fd.get("endReason"),
-      });
-      if (result.ok) {
-        setError(null);
-        router.refresh();
-      } else {
-        setFields(result.error.fields ?? {});
-        setError(result.error.fields ? null : result.error.message);
-      }
-    });
+    run(
+      () =>
+        closePcmsoCoordinatorAction(companyId, assignmentId, {
+          endsOn: fd.get("endsOn"),
+          endReason: fd.get("endReason"),
+        }),
+      { slots: ["endsOn", "endReason"] },
+    );
   }
 
   return (
@@ -152,14 +169,20 @@ export function CloseCoordinatorForm({
         Encerrar sem substituto (início em {startsOn})
       </summary>
       <form onSubmit={onSubmit} className="mt-3 flex flex-col gap-4">
-        <FormError message={error} />
-        <TextField label="Fim" name="endsOn" type="date" required error={fields.endsOn} />
+        <FormError message={feedback.formError} details={feedback.details} />
+        <TextField
+          label="Fim"
+          name="endsOn"
+          type="date"
+          required
+          error={feedback.fields.endsOn}
+        />
         <TextField
           label="Motivo"
           name="endReason"
           required
           isFullWidth
-          error={fields.endReason}
+          error={feedback.fields.endReason}
         />
         <SubmitButton pending={pending} label="Encerrar designação" />
       </form>
