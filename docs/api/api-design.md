@@ -383,9 +383,14 @@ DEV_ROLE=owner
 
 # produção
 APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sessão Clerk
+
+# APP_ENV ausente ou vazio  # DEV_API_AUTH_BYPASS também é IGNORADO (falha fechada)
 ```
 
-- Em produção, `isDevAuthBypassEnabled()` é sempre `false` (checa `APP_ENV !== "production"`),
+- O predicado é único (`src/shared/api/dev-bypass.ts`, usado pelo `proxy.ts` e pelo
+  `restHandler`): liga só com `APP_ENV` **definido e não vazio**, diferente de `production`
+  (sem diferenciar maiúsculas, ignorando espaços), **e** `DEV_API_AUTH_BYPASS=true` exato.
+- Em produção, ou com `APP_ENV` ausente/vazio, `isDevAuthBypassEnabled()` é sempre `false`,
   e o middleware (`proxy.ts`) **não** torna `/api/v1` público — Clerk protege normalmente.
 - Em local/homolog com a flag, o middleware libera `/api/v1` e o handler resolve o contexto pelos
   headers `x-dev-*` (ou envs `DEV_*`). Permite testar isolamento trocando `x-dev-tenant` e o gate
@@ -1970,7 +1975,7 @@ Roteiro reproduzível para validar endpoints **sem** UI. Regra: teste sempre o *
 ```bash
 npm run dev                 # sobe em http://localhost:3000 (lê .env.local)
 # jq opcional, só p/ ler o corpo bonito. Em .env.local (local/homolog):
-#   APP_ENV=local
+#   APP_ENV=local                 # obrigatório: sem APP_ENV o bypass fica desligado
 #   DEV_API_AUTH_BYPASS=true      # libera /api/v1 sem sessão Clerk
 #   DEV_TENANT_ID=<orgId de teste>
 export BASE=http://localhost:3000
