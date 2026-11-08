@@ -52,7 +52,17 @@ export function RiskAbsenceSection({
                 <p className="font-medium">
                   {d.exposureGroup}
                   {d.jobRole ? ` · Função: ${d.jobRole}` : " · Grupo todo"}
+                  {d.jobRoleId && d.currentJobRole && d.currentJobRole !== d.jobRole
+                    ? ` (hoje: ${d.currentJobRole})`
+                    : ""}
                 </p>
+                {d.jobRole && !d.jobRoleId ? (
+                  <p className="text-text-muted text-xs">
+                    Declaração sem vínculo com uma função cadastrada (antiga, ou a função foi
+                    excluída): não vale no ASO. Regularização: declarar de novo escolhendo a
+                    função do GES.
+                  </p>
+                ) : null}
                 <p className="text-text-muted">
                   {source ? `${source.title} — ${source.version}` : "Fonte"} ·{" "}
                   {live

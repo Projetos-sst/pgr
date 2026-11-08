@@ -185,10 +185,17 @@ export type AsoFacts = {
   /** Declaração de inexistência vigente para o GES/função do funcionário (NOB-156), ou `null`. */
   riskAbsence: ApplicableRiskAbsence | null;
   /**
-   * Funções de declarações vigentes do GES que não são exatamente a função cadastrada do
-   * funcionário (NOB-112): não valem; só explicam o bloqueio. Ausente = nenhuma.
+   * Funções (título atual) de declarações vigentes do GES feitas para outra função cadastrada,
+   * não a do funcionário (NOB-112): não valem; só explicam o bloqueio. Ausente = nenhuma.
    */
   riskAbsenceUnmatchedJobRoles?: string[];
+  /**
+   * Títulos de declarações vigentes do GES gravadas antes do vínculo com a função cadastrada e
+   * sem correspondência inequívoca: não valem até nova declaração (regularização).
+   */
+  riskAbsenceLegacyJobRoles?: string[];
+  /** Há declaração para a função do funcionário, mas a função não está mais vinculada ao GES. */
+  riskAbsenceJobRoleUnlinked?: boolean;
   procedures: {
     procedureCode: string;
     otherDescription: string | null;
@@ -268,10 +275,21 @@ export function asoReadiness(facts: AsoFacts): AsoReadinessItem[] {
       "MED-09",
     );
   else if (facts.risks.validated.length === 0) {
+    const quoted = (roles: string[]) => roles.map((r) => `"${r}"`).join(", ");
+    const employeeRole = facts.employee.jobRole ? ` ("${facts.employee.jobRole}")` : "";
     const unmatched = facts.riskAbsenceUnmatchedJobRoles ?? [];
-    const hint = unmatched.length
-      ? ` Há declaração neste GES para a função ${unmatched.map((r) => `"${r}"`).join(", ")}, que não é exatamente a função cadastrada do funcionário${facts.employee.jobRole ? ` ("${facts.employee.jobRole}")` : ""}: ela não vale. O profissional autorizado deve declarar escolhendo a função cadastrada do GES.`
-      : "";
+    const legacy = facts.riskAbsenceLegacyJobRoles ?? [];
+    const hint = [
+      facts.riskAbsenceJobRoleUnlinked
+        ? ` Há declaração neste GES para a função do funcionário${employeeRole}, mas a função não está mais vinculada a este GES no cadastro: enquanto não estiver, a declaração não vale.`
+        : "",
+      unmatched.length
+        ? ` Há declaração neste GES para a função ${quoted(unmatched)}, que não é a função cadastrada do funcionário${employeeRole}: ela não vale. O profissional autorizado deve declarar escolhendo a função cadastrada do GES.`
+        : "",
+      legacy.length
+        ? ` Há declaração antiga neste GES para a função ${quoted(legacy)}, gravada só como texto e sem vínculo inequívoco com uma função cadastrada: ela não vale para a função do funcionário${employeeRole}. Regularização: o profissional autorizado deve declarar de novo escolhendo a função cadastrada do GES.`
+        : "",
+    ].join("");
     block(
       "risks_absence_not_declared",
       "c",

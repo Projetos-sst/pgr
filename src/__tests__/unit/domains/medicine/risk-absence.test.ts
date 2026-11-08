@@ -7,15 +7,19 @@ import {
   declarationBlocker,
   riskAbsenceInputSchema,
   riskAbsenceJobRoleSchema,
+  riskAbsenceMismatch,
   riskMatchesScope,
   sourceIsLive,
-  unmatchedRiskAbsenceJobRoles,
   type DeclarableSource,
   type RiskAbsenceDeclarationView,
+  type RiskAbsenceEmployee,
 } from "@/shared/domains/medicine/risk-absence";
 
 const G = "11111111-1111-4111-8111-111111111111";
 const S = "22222222-2222-4222-8222-222222222222";
+// Funções cadastradas (ids estáveis) fictícias.
+const R_AUX = "33333333-3333-4333-8333-333333333331";
+const R_SOLD = "33333333-3333-4333-8333-333333333332";
 const scope = { gesId: G, gesName: "Administrativo", jobRole: "" };
 
 function source(overrides: Partial<DeclarableSource> = {}): DeclarableSource {
@@ -29,7 +33,7 @@ describe("riskAbsenceInputSchema", () => {
       gesId: G,
       justification: "  Justificativa técnica fictícia suficiente.  ",
     });
-    expect(parsed.jobRole).toBe("");
+    expect(parsed.jobRoleId).toBeUndefined();
     expect(parsed.justification).toBe("Justificativa técnica fictícia suficiente.");
     expect(
       riskAbsenceInputSchema.safeParse({ sourceId: S, gesId: G, justification: "curta" })
@@ -44,43 +48,67 @@ describe("riskAbsenceInputSchema", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("função vai pelo id (NOB-112): vazio = grupo todo; id inválido ou texto livre → erro no campo", () => {
+    const base = {
+      sourceId: S,
+      gesId: G,
+      justification: "Justificativa técnica fictícia suficiente.",
+    };
+    expect(riskAbsenceInputSchema.parse({ ...base, jobRoleId: "" }).jobRoleId).toBe(
+      undefined,
+    );
+    expect(riskAbsenceInputSchema.parse({ ...base, jobRoleId: R_AUX }).jobRoleId).toBe(
+      R_AUX,
+    );
+    const fieldOf = (input: Record<string, unknown>) => {
+      const result = riskAbsenceInputSchema.safeParse({ ...base, ...input });
+      return result.success ? null : result.error.issues.map((i) => i.path.join("."));
+    };
+    expect(fieldOf({ jobRoleId: "Auxiliar" })).toEqual(["jobRoleId"]);
+    // O texto da função não é mais aceito: renomear a função quebrava a declaração.
+    const text = riskAbsenceInputSchema.safeParse({ ...base, jobRole: "Auxiliar" });
+    expect(text.success).toBe(false);
+    expect(text.error?.issues[0]).toMatchObject({
+      path: ["jobRole"],
+      message: expect.stringMatching(/jobRoleId/),
+    });
+  });
 });
 
 describe("riskAbsenceJobRoleSchema (NOB-112)", () => {
-  const titles = ["Operador de empilhadeira", "OPERADOR DE EMPILHADEIRA", "Auxiliar"];
-  const fieldError = (jobRole: string, list: string[] = titles) => {
-    const result = riskAbsenceJobRoleSchema(list).safeParse({ jobRole });
-    return result.success
-      ? null
-      : result.error.issues.find((i) => i.path.join(".") === "jobRole")?.message;
-  };
+  // Títulos que só mudam a caixa são funções diferentes no cadastro: o id distingue.
+  const linked = [
+    { jobRoleId: R_AUX, title: "Operador de empilhadeira" },
+    { jobRoleId: R_SOLD, title: "OPERADOR DE EMPILHADEIRA" },
+  ];
+  const parse = (jobRoleId: string | undefined, list = linked) =>
+    riskAbsenceJobRoleSchema(list).safeParse({ jobRoleId });
 
-  it("vazio = grupo todo, sem conferência", () => {
-    expect(fieldError("")).toBeNull();
-    expect(fieldError("", [])).toBeNull();
+  it("sem id = grupo todo, sem conferência", () => {
+    expect(parse(undefined).data).toEqual({ jobRoleId: null, jobRole: "" });
+    expect(parse(undefined, []).data).toEqual({ jobRoleId: null, jobRole: "" });
   });
 
-  it("aceita só o título exato de uma função vinculada ao GES", () => {
-    expect(fieldError("Operador de empilhadeira")).toBeNull();
-    expect(fieldError("OPERADOR DE EMPILHADEIRA")).toBeNull();
-    expect(fieldError("Auxiliar")).toBeNull();
+  it("id de função vinculada ao GES → id e título atual (texto histórico)", () => {
+    expect(parse(R_AUX).data).toEqual({
+      jobRoleId: R_AUX,
+      jobRole: "Operador de empilhadeira",
+    });
+    expect(parse(R_SOLD).data).toEqual({
+      jobRoleId: R_SOLD,
+      jobRole: "OPERADOR DE EMPILHADEIRA",
+    });
   });
 
-  it("abreviação, erro de digitação, outra caixa ou função fora do GES → erro no campo", () => {
-    for (const typo of [
-      "Op. empilhadeira",
-      "Operador de empilhadera",
-      "operador de empilhadeira",
-      "Soldador",
-    ])
-      expect(fieldError(typo)).toMatch(/não encontrada entre as funções/);
-    expect(fieldError("Auxiliar", [])).toMatch(/não encontrada/);
-  });
-
-  it("título repetido entre as funções do GES → ambíguo, recusa", () => {
-    expect(fieldError("Auxiliar", ["Auxiliar", "Auxiliar"])).toMatch(
-      /mais de uma função/,
-    );
+  it("id fora das funções do GES (outro GES, empresa ou tenant) → erro no campo jobRoleId", () => {
+    const result = parse("33333333-3333-4333-8333-333333333399");
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]).toMatchObject({
+      path: ["jobRoleId"],
+      message: expect.stringMatching(/não encontrada entre as funções/),
+    });
+    expect(parse(R_AUX, []).success).toBe(false);
   });
 });
 
@@ -148,7 +176,7 @@ describe("declarationBlocker", () => {
   });
 });
 
-describe("applicableRiskAbsence", () => {
+describe("applicableRiskAbsence (id da função, NOB-112)", () => {
   const decl = (
     overrides: Partial<RiskAbsenceDeclarationView> = {},
   ): RiskAbsenceDeclarationView => ({
@@ -157,12 +185,15 @@ describe("applicableRiskAbsence", () => {
     gesId: G,
     exposureGroup: "Administrativo",
     jobRole: "",
+    jobRoleId: null,
+    currentJobRole: null,
     justification: "x",
     declaredBy: "prof",
     declaredByName: "Profissional Fictícia",
     declaredAt: "2026-10-01T10:00:00.000Z",
     ...overrides,
   });
+  const auxiliar = { jobRole: "Auxiliar", jobRoleId: R_AUX, currentJobRole: "Auxiliar" };
   const live = {
     id: S,
     title: "PGR",
@@ -170,37 +201,79 @@ describe("applicableRiskAbsence", () => {
     superseded: false,
     freshness: "current" as const,
   };
-  const employee = { gesId: G, jobRole: "Auxiliar" };
+  const employee: RiskAbsenceEmployee = {
+    gesId: G,
+    jobRoleId: R_AUX,
+    gesJobRoleIds: [R_AUX, R_SOLD],
+  };
 
-  it("vale para o GES do funcionário, na fonte vigente, para a função dele ou o grupo todo", () => {
+  it("grupo todo vale para o GES do funcionário, na fonte vigente", () => {
     expect(applicableRiskAbsence([decl()], [live], employee)).toMatchObject({
       declarationId: "d1",
       source: { id: S, title: "PGR", version: "1" },
     });
-    // Identidade exata do título (NOB-112): outra caixa é outra função no cadastro.
-    expect(
-      applicableRiskAbsence([decl({ jobRole: "auxiliar" })], [live], employee),
-    ).toBeNull();
-    expect(
-      applicableRiskAbsence([decl({ jobRole: "Auxiliar" })], [live], employee),
-    ).not.toBeNull();
-    expect(
-      applicableRiskAbsence([decl({ jobRole: "Soldador" })], [live], employee),
-    ).toBeNull();
     expect(
       applicableRiskAbsence([decl({ gesId: "outro" })], [live], employee),
     ).toBeNull();
     expect(
-      applicableRiskAbsence([decl()], [live], { gesId: null, jobRole: null }),
+      applicableRiskAbsence([decl()], [live], { ...employee, gesId: null }),
+    ).toBeNull();
+  });
+
+  it("função casa pelo id: renomeada depois da declaração continua valendo, com o título declarado", () => {
+    const renamed = decl({ ...auxiliar, currentJobRole: "Auxiliar de escritório" });
+    expect(applicableRiskAbsence([renamed], [live], employee)).toMatchObject({
+      declarationId: "d1",
+      jobRole: "Auxiliar",
+    });
+  });
+
+  it("outra função, funcionário trocado de função ou função desvinculada do GES → não vale", () => {
+    expect(
+      applicableRiskAbsence(
+        [decl({ jobRole: "Soldador", jobRoleId: R_SOLD })],
+        [live],
+        employee,
+      ),
+    ).toBeNull();
+    // Mesmo título, outra função cadastrada (id diferente) → não vale.
+    expect(
+      applicableRiskAbsence(
+        [decl({ ...auxiliar, jobRoleId: "33333333-3333-4333-8333-333333333398" })],
+        [live],
+        employee,
+      ),
+    ).toBeNull();
+    expect(
+      applicableRiskAbsence([decl(auxiliar)], [live], { ...employee, jobRoleId: R_SOLD }),
+    ).toBeNull();
+    expect(
+      applicableRiskAbsence([decl(auxiliar)], [live], { ...employee, jobRoleId: null }),
+    ).toBeNull();
+    expect(
+      applicableRiskAbsence([decl(auxiliar)], [live], {
+        ...employee,
+        gesJobRoleIds: [R_SOLD],
+      }),
+    ).toBeNull();
+  });
+
+  it("declaração antiga só com texto (sem id) nunca vale, nem com o título idêntico (fail closed)", () => {
+    expect(
+      applicableRiskAbsence([decl({ jobRole: "Auxiliar" })], [live], employee),
     ).toBeNull();
   });
 
   it("fonte substituída ou desatualizada → não vale; sem declaração → null (nunca presumida)", () => {
     expect(
-      applicableRiskAbsence([decl()], [{ ...live, superseded: true }], employee),
+      applicableRiskAbsence([decl(auxiliar)], [{ ...live, superseded: true }], employee),
     ).toBeNull();
     expect(
-      applicableRiskAbsence([decl()], [{ ...live, freshness: "changed" }], employee),
+      applicableRiskAbsence(
+        [decl(auxiliar)],
+        [{ ...live, freshness: "changed" }],
+        employee,
+      ),
     ).toBeNull();
     expect(applicableRiskAbsence([], [live], employee)).toBeNull();
     expect(sourceIsLive({ superseded: false, freshness: "external_reference" })).toBe(
@@ -212,7 +285,7 @@ describe("applicableRiskAbsence", () => {
     const result = applicableRiskAbsence(
       [
         decl({ id: "old" }),
-        decl({ id: "new", jobRole: "Auxiliar", declaredAt: "2026-10-05T10:00:00.000Z" }),
+        decl({ id: "new", ...auxiliar, declaredAt: "2026-10-05T10:00:00.000Z" }),
       ],
       [live],
       employee,
@@ -221,54 +294,75 @@ describe("applicableRiskAbsence", () => {
   });
 });
 
-describe("unmatchedRiskAbsenceJobRoles (NOB-112)", () => {
+describe("riskAbsenceMismatch (NOB-112)", () => {
   const live = { id: S, superseded: false, freshness: "current" as const };
   const decl = (
-    jobRole: string,
-    overrides: Partial<RiskAbsenceDeclarationView> = {},
+    overrides: Partial<RiskAbsenceDeclarationView>,
   ): RiskAbsenceDeclarationView => ({
-    id: jobRole,
+    id: "d",
     sourceId: S,
     gesId: G,
     exposureGroup: "Administrativo",
-    jobRole,
+    jobRole: "",
+    jobRoleId: null,
+    currentJobRole: null,
     justification: "x",
     declaredBy: "prof",
     declaredByName: null,
     declaredAt: "2026-10-01T10:00:00.000Z",
     ...overrides,
   });
-  const employee = { gesId: G, jobRole: "Operador de empilhadeira" };
+  const employee: RiskAbsenceEmployee = {
+    gesId: G,
+    jobRoleId: R_AUX,
+    gesJobRoleIds: [R_AUX, R_SOLD],
+  };
 
-  it("lista as funções declaradas no GES que não são a função do funcionário (só explicação)", () => {
+  it("separa outra função (título atual), legado só com texto e função desvinculada do GES", () => {
     expect(
-      unmatchedRiskAbsenceJobRoles(
+      riskAbsenceMismatch(
         [
-          decl("Op. empilhadeira"),
-          decl("operador de empilhadeira"),
-          decl("Op. empilhadeira", { id: "dup" }),
+          decl({ jobRole: "Soldador", jobRoleId: R_SOLD, currentJobRole: "Soldador II" }),
+          decl({ jobRole: "Op. auxiliar" }),
+          decl({ jobRole: "auxiliar" }),
+          decl({ jobRole: "Op. auxiliar", id: "dup" }),
         ],
         [live],
         employee,
       ),
-    ).toEqual(["Op. empilhadeira", "operador de empilhadeira"]);
+    ).toEqual({
+      otherJobRoles: ["Soldador II"],
+      legacyJobRoles: ["Op. auxiliar", "auxiliar"],
+      jobRoleUnlinked: false,
+    });
+    expect(
+      riskAbsenceMismatch(
+        [decl({ jobRole: "Auxiliar", jobRoleId: R_AUX, currentJobRole: "Auxiliar" })],
+        [live],
+        { ...employee, gesJobRoleIds: [R_SOLD] },
+      ),
+    ).toEqual({ otherJobRoles: [], legacyJobRoles: [], jobRoleUnlinked: true });
   });
 
-  it("ignora grupo todo, função exata, outro GES, fonte não vigente e funcionário sem GES", () => {
+  it("ignora o que vale (grupo todo, função do funcionário), outro GES, fonte não vigente e funcionário sem GES", () => {
+    const none = { otherJobRoles: [], legacyJobRoles: [], jobRoleUnlinked: false };
     expect(
-      unmatchedRiskAbsenceJobRoles(
+      riskAbsenceMismatch(
         [
-          decl(""),
-          decl("Operador de empilhadeira"),
-          decl("Outra", { gesId: "outro" }),
-          decl("Antiga", { sourceId: "substituida" }),
+          decl({}),
+          decl({ jobRole: "Auxiliar", jobRoleId: R_AUX, currentJobRole: "Auxiliar" }),
+          decl({ jobRole: "Outra", gesId: "outro" }),
+          decl({ jobRole: "Antiga", sourceId: "substituida" }),
         ],
         [live, { id: "substituida", superseded: true, freshness: "current" }],
         employee,
       ),
-    ).toEqual([]);
+    ).toEqual(none);
     expect(
-      unmatchedRiskAbsenceJobRoles([decl("Op.")], [live], { gesId: null, jobRole: "X" }),
-    ).toEqual([]);
+      riskAbsenceMismatch([decl({ jobRole: "Op." })], [live], {
+        ...employee,
+        gesId: null,
+      }),
+    ).toEqual(none);
   });
 });

@@ -45,8 +45,9 @@ export async function listRiskAbsence(ctx: TenantContext, companyId: string) {
  * O profissional com autorização ativa declara a inexistência de riscos do GES/função na versão
  * vigente da fonte. Recusa fonte substituída ou desatualizada e escopo com risco pendente ou
  * validado: o sistema nunca transforma cadastro vazio em inexistência. A função, quando
- * informada, precisa ser o título exato de uma função vinculada ao GES; senão, VALIDATION no
- * campo `jobRole` e nada é gravado.
+ * informada, é o id (`jobRoleId`) de uma função cadastrada e vinculada a este GES, desta empresa e
+ * deste tenant; senão, VALIDATION no campo `jobRoleId` e nada é gravado. Grava o id e o título
+ * atual (texto histórico): o ASO casa pelo id, então renomear a função não invalida a declaração.
  */
 export async function declareRiskAbsence(
   ctx: TenantContext,
@@ -61,13 +62,10 @@ export async function declareRiskAbsence(
       "A declaração de inexistência de riscos exige autorização profissional ativa de validação de riscos nesta empresa.",
     );
   const group = await repo.getCompanyGes(ctx, id, values.gesId);
-  // Função informada = exatamente uma função cadastrada e vinculada a este GES (NOB-112).
-  if (values.jobRole) {
-    const linked = await repo.listCompanyGesJobRoles(ctx, id, group.id);
-    riskAbsenceJobRoleSchema(linked.map((r) => r.title)).parse({
-      jobRole: values.jobRole,
-    });
-  }
+  // Função informada = uma função cadastrada e vinculada a este GES, pelo id (NOB-112).
+  const role = riskAbsenceJobRoleSchema(
+    values.jobRoleId ? await repo.listCompanyGesJobRoles(ctx, id, group.id) : [],
+  ).parse({ jobRoleId: values.jobRoleId });
   const source = (await loadProposalSources(ctx, id)).find(
     (s) => s.id === values.sourceId,
   );
@@ -75,8 +73,19 @@ export async function declareRiskAbsence(
   const blocker = declarationBlocker(source, {
     gesId: group.id,
     gesName: group.name,
-    jobRole: values.jobRole,
+    jobRole: role.jobRole,
   });
   if (blocker) throw new ValidationError(blocker);
-  return repo.insertRiskAbsenceDeclaration(ctx, id, values, group.name);
+  return repo.insertRiskAbsenceDeclaration(
+    ctx,
+    id,
+    {
+      sourceId: values.sourceId,
+      gesId: group.id,
+      jobRoleId: role.jobRoleId,
+      jobRole: role.jobRole,
+      justification: values.justification,
+    },
+    group.name,
+  );
 }

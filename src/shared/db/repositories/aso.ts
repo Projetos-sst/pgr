@@ -103,6 +103,8 @@ export type AsoExamFacts = {
     gesId: string | null;
     gesName: string | null;
     jobRole: string | null;
+    /** Função cadastrada (id estável): a declaração de inexistência de riscos casa por ele. */
+    jobRoleId: string | null;
   };
   company: { razaoSocial: string; cnpj: string | null };
   examiner: Medico | null;
@@ -126,6 +128,7 @@ export async function loadAsoExamFacts(
         gesId: employees.gesId,
         gesName: ges.name,
         jobRole: jobRoles.title,
+        jobRoleId: jobRoles.id,
       })
       .from(employees)
       .leftJoin(ges, and(eq(ges.id, employees.gesId), eq(ges.orgId, employees.orgId)))
