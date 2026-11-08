@@ -20,7 +20,8 @@ jest.mock("@/shared/server/actions/pgr/medicos", () => ({
 const remove = deleteMedicoAction as jest.Mock;
 const MEDICO = "c1111111-1111-4111-8111-111111111111";
 
-const click = () => fireEvent.click(screen.getByRole("button", { name: "Remover médico" }));
+const click = () =>
+  fireEvent.click(screen.getByRole("button", { name: "Remover médico" }));
 
 beforeEach(() => {
   jest.clearAllMocks();

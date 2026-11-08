@@ -221,9 +221,9 @@ describe("riskBasisProblems (base de riscos do documento × vigente)", () => {
     ).toEqual(["preview_risks_mismatch"]);
   });
   it("conjunto de riscos do plano aprovado × vigente; plano legado só pelas fontes", () => {
-    expect(
-      riskBasisProblems({ ...ok, planRiskIds: ["a"], liveRiskIds: ["a"] }),
-    ).toEqual([]);
+    expect(riskBasisProblems({ ...ok, planRiskIds: ["a"], liveRiskIds: ["a"] })).toEqual(
+      [],
+    );
     expect(
       riskBasisProblems({ ...ok, planRiskIds: ["a"], liveRiskIds: ["a", "b"] }),
     ).toEqual(["plan_risks_mismatch"]);

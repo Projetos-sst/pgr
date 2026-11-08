@@ -360,7 +360,10 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
   it("banco: duplicata antiga segue editável por SQL direto sem mudar o registro; mudar para equivalente → 23505", async () => {
     const a = await legacy("45.678", "MA", "Dr. Legado A");
     const b = await legacy("45678", "MA", "Dr. Legado B");
-    const runtimeUpdate = (id: string, set: { name?: string; crm?: string; uf?: string }) =>
+    const runtimeUpdate = (
+      id: string,
+      set: { name?: string; crm?: string; uf?: string },
+    ) =>
       withOrgTx(
         runtime,
         "org_a",
@@ -414,17 +417,19 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
       fields: { crm: MEDICO_REGISTRATION_DUPLICATE_MESSAGE },
     });
     await legacy("82.345", null);
-    await expect(blind.createMedico("org_a", values("82345", "SP"))).rejects.toMatchObject({
+    await expect(
+      blind.createMedico("org_a", values("82345", "SP")),
+    ).rejects.toMatchObject({
       code: "DUPLICATE",
       fields: { crm: MEDICO_REGISTRATION_MISSING_UF_DUPLICATE_MESSAGE },
     });
     const other = await blind.createMedico("org_a", values("83456"));
-    await expect(blind.updateMedico("org_a", other.id, values("8.1234"))).rejects.toMatchObject(
-      {
-        code: "DUPLICATE",
-        fields: { crm: MEDICO_REGISTRATION_DUPLICATE_MESSAGE },
-      },
-    );
+    await expect(
+      blind.updateMedico("org_a", other.id, values("8.1234")),
+    ).rejects.toMatchObject({
+      code: "DUPLICATE",
+      fields: { crm: MEDICO_REGISTRATION_DUPLICATE_MESSAGE },
+    });
     expect(await countMedicos()).toBe(3);
   });
 

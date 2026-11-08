@@ -303,7 +303,12 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
     const v2 = await generateDocument(staff, exam.id);
     for (const conclusion of ["unfit", "fit"])
       await expect(
-        registerSignedAso(examiner, exam.id, examinerFields(v1.id, { conclusion }), pdf()),
+        registerSignedAso(
+          examiner,
+          exam.id,
+          examinerFields(v1.id, { conclusion }),
+          pdf(),
+        ),
       ).rejects.toMatchObject(stale);
 
     // Examinador trocado para a coordenadora (verificada): ela não registra a partir da v2, que

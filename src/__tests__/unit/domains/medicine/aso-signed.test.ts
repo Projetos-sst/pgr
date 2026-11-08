@@ -127,12 +127,12 @@ describe("signedAsoOutdated (MED-11)", () => {
   const current = { currentSha256: "a".repeat(64), conclusion: "fit" as const };
   it("fluxo A: diverge quando a prévia assinada não é mais a composição atual", () => {
     const signed = { origin: "examiner" as const, conclusion: "fit" as const };
-    expect(
-      signedAsoOutdated(signed, { ...current, previewSha256: "a".repeat(64) }),
-    ).toBe(false);
-    expect(
-      signedAsoOutdated(signed, { ...current, previewSha256: "b".repeat(64) }),
-    ).toBe(true);
+    expect(signedAsoOutdated(signed, { ...current, previewSha256: "a".repeat(64) })).toBe(
+      false,
+    );
+    expect(signedAsoOutdated(signed, { ...current, previewSha256: "b".repeat(64) })).toBe(
+      true,
+    );
     // Conferência com bloqueio hoje: não há composição igual à assinada.
     expect(
       signedAsoOutdated(signed, {

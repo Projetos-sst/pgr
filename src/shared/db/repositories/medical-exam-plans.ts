@@ -220,7 +220,9 @@ export async function createExamPlanDraft(
         );
       await logEvent(tx, ctx, plan, "draft_created", {
         items: draft.items.length,
-        ...(open && openBasis !== "current" ? { replacesDraftVersion: open.version } : {}),
+        ...(open && openBasis !== "current"
+          ? { replacesDraftVersion: open.version }
+          : {}),
       });
       return plan;
     }),

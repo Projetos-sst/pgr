@@ -210,7 +210,9 @@ describe("conjunto de riscos validados do plano (lote 3)", () => {
     // Antes da correção, só id e versão da fonte eram comparados: o plano parecia atual.
     const after = buildExamProposal([external("validated")]);
     expect(planBasisStatus(basedOn, live(after))).toBe("outdated");
-    expect(planBasisStatus(basedOn, { sources: [], riskIds: ["calor"] })).toBe("outdated");
+    expect(planBasisStatus(basedOn, { sources: [], riskIds: ["calor"] })).toBe(
+      "outdated",
+    );
   });
 
   it("plano legado (sem riskIds): só fontes; formato inválido do conjunto também é legado", () => {

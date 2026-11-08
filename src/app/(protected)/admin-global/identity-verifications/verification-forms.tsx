@@ -148,8 +148,8 @@ export function ApproveForm({
         error={fields.method}
       />
       <p className="text-text-subtle text-sm">
-        Cadastro informa: CRM {crm}/{uf ?? "UF não informada"}. Consulte a fonte oficial
-        e digite abaixo o CRM e a UF que você conferiu nela, sem copiar do cadastro.
+        Cadastro informa: CRM {crm}/{uf ?? "UF não informada"}. Consulte a fonte oficial e
+        digite abaixo o CRM e a UF que você conferiu nela, sem copiar do cadastro.
       </p>
       <TextField
         label="CRM conferido"
