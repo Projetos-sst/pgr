@@ -334,6 +334,22 @@ describe("asoReadiness", () => {
   });
 });
 
+describe("coordenador sobreposto na data do exame", () => {
+  it("bloqueia sem escolher; sem sobreposição e sem coordenador é só aviso", () => {
+    const overlap = asoReadiness(facts({ coordinator: null, coordinatorOverlap: true }));
+    expect(overlap.find((i) => i.code === "coordinator_overlap")).toMatchObject({
+      severity: "blocking",
+      item: "f",
+    });
+    expect(overlap.map((i) => i.code)).not.toContain("coordinator_missing");
+    const missing = asoReadiness(facts({ coordinator: null }));
+    expect(missing.find((i) => i.code === "coordinator_missing")?.severity).toBe(
+      "warning",
+    );
+    expect(missing.map((i) => i.code)).not.toContain("coordinator_overlap");
+  });
+});
+
 describe("composeAso", () => {
   it("apto com restrição: nunca converte; usa só a confirmação do examinador", () => {
     const restricted = { ...facts().exam, aptitude: "fit_with_restrictions" as const };

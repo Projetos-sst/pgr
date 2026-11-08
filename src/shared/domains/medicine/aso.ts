@@ -181,6 +181,11 @@ export type AsoFacts = {
     registrationUf: string | null;
   } | null;
   coordinator: { name: string; registration: string; rqe: string | null } | null;
+  /**
+   * Mais de uma designação de coordenador em vigor na data do exame (só alcançável fora do app).
+   * O sistema não escolhe uma delas: a conferência bloqueia até a regularização.
+   */
+  coordinatorOverlap?: boolean;
   risks: ReturnType<typeof employeeRisks>;
   /** Declaração de inexistência vigente para o GES/função do funcionário (NOB-156), ou `null`. */
   riskAbsence: ApplicableRiskAbsence | null;
@@ -351,7 +356,14 @@ export function asoReadiness(facts: AsoFacts): AsoReadinessItem[] {
       "NR-7 7.5.19.1 e; MED-01; MED-10; DT-21",
     );
 
-  if (!facts.coordinator)
+  if (facts.coordinatorOverlap)
+    block(
+      "coordinator_overlap",
+      "f",
+      "Há mais de uma designação de médico responsável pelo PCMSO em vigor na data do exame. O sistema não escolhe uma delas: regularize as designações da empresa antes de gerar o ASO.",
+      "NR-7 7.5.19.1 f; NOB-144",
+    );
+  else if (!facts.coordinator)
     warn(
       "coordinator_missing",
       "f",

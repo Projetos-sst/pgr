@@ -13,6 +13,7 @@ import {
   examProcedureInputSchema,
   type AsoFacts,
 } from "@/shared/domains/medicine/aso";
+import { coordinatorInForceOn } from "@/shared/domains/medicine/pcmso-coordinators";
 import { formatProfessionalRegistration } from "@/shared/domains/pgr/medicos";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import { z } from "zod";
@@ -63,10 +64,10 @@ async function loadFacts(ctx: TenantContext, examId: string): Promise<AsoFacts> 
     absenceEmployee,
   );
   const performedAt = data.exam.performedAt;
-  const coordinator = coordinators.find(
-    (row) =>
-      row.startsOn <= performedAt && (row.endsOn === null || row.endsOn >= performedAt),
-  );
+  // Responsável pelo PCMSO na data HISTÓRICA do exame (conteúdo do ASO), não quem age hoje.
+  // Duas designações em vigor nessa data: o sistema não escolhe; a conferência bloqueia.
+  const inForce = coordinatorInForceOn(coordinators, performedAt);
+  const coordinator = inForce.kind === "in_force" ? inForce.assignment : null;
   const approved = plans.find((plan) => plan.status === "approved");
   const plan = approved ? await getExamPlan(ctx, approved.id) : null;
   const examiner = data.examiner;
@@ -94,6 +95,7 @@ async function loadFacts(ctx: TenantContext, examId: string): Promise<AsoFacts> 
           registrationUf: examiner.registrationUf,
         }
       : null,
+    coordinatorOverlap: inForce.kind === "overlap",
     coordinator: coordinator
       ? {
           name: coordinator.medicoName,
