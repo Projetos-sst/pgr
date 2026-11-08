@@ -53,21 +53,14 @@ const GES_EMPTY = "cccccccc-0000-4000-8000-000000000061";
 const JUSTIFICATION =
   "Atividade administrativa fictícia, sem agentes físicos, químicos ou biológicos no posto.";
 
-/**
- * Backfill de `job_role_id` das declarações antigas, lido da migração 0080 (ou, antes da
- * integração, do SQL pendente da etapa B): o teste roda o mesmo SQL que a migração.
- */
+/** Backfill de `job_role_id` das declarações antigas, lido da migração 0080: o teste roda o mesmo SQL. */
 function backfillSql(): string {
   const dir = path.resolve(process.cwd(), "src/shared/db/migrations");
-  const files = [
-    ...fs
-      .readdirSync(dir)
-      .filter((f) => /^0080_.*\.sql$/.test(f))
-      .map((f) => path.join(dir, f)),
-    path.join(dir, "_pending", "0080-stage-b.sql"),
-  ];
+  const files = fs
+    .readdirSync(dir)
+    .filter((f) => /^0080_.*\.sql$/.test(f))
+    .map((f) => path.join(dir, f));
   for (const file of files) {
-    if (!fs.existsSync(file)) continue;
     const statement = fs
       .readFileSync(file, "utf8")
       .split(/--> statement-breakpoint/g)
