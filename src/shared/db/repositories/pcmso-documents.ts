@@ -1,10 +1,10 @@
 import "server-only";
 
-import { and, asc, desc, eq, inArray, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, max, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
-import { canUseMedicalRisk } from "@/shared/domains/medicine/risk-sources";
+import { planRiskIds } from "@/shared/domains/medicine/exam-plan";
 import {
   previewCoordinator,
   PREVIEW_NAMES_OTHER_COORDINATOR_MESSAGE,
@@ -15,7 +15,6 @@ import {
   type PcmsoSignedInput,
   type RiskBasisProblem,
 } from "@/shared/domains/medicine/pcmso-signed";
-import { medicalSourceFingerprint } from "@/shared/domains/medicine/source-fingerprint";
 import {
   compareProfessionalRegistration,
   registeredNotCanonicalMessage,
@@ -32,15 +31,12 @@ import {
   type PcmsoSignedDocument,
 } from "../schema/pcmso-documents";
 import { medicalExamPlans as plans } from "../schema/medical-exam-plans";
-import { medicalRiskEntries, medicalRiskSources } from "../schema/medical-risk-sources";
 import { medicos } from "../schema/medicos";
 import { assertCompanyModuleTx } from "./company-modules";
 import { auditedTenantWrite } from "./audited-write";
 import { actorClinicalMedicoIdsTx } from "./clinical-actor";
-import {
-  getInternalMedicalSources,
-  lockMedicalRiskBasisTx,
-} from "./medical-risk-sources";
+import { liveMedicalRiskBasisTx } from "./medical-risk-basis";
+import { lockMedicalRiskBasisTx } from "./medical-risk-sources";
 import { assignmentInForceTodayTx } from "./pcmso-coordinator-in-force";
 import { dateInSaoPaulo } from "@/shared/dates";
 
@@ -241,78 +237,22 @@ async function riskBasisProblemsTx(
   { lock = false } = {},
 ): Promise<RiskBasisProblem[]> {
   if (lock) await lockMedicalRiskBasisTx(tx, orgId, companyId);
-  const all = await tx
-    .select()
-    .from(medicalRiskSources)
-    .where(
-      and(
-        eq(medicalRiskSources.orgId, orgId),
-        eq(medicalRiskSources.companyId, companyId),
-      ),
-    );
-  const superseded = new Set(all.map((row) => row.supersedesSourceId).filter(Boolean));
-  const live = all.filter((row) => !superseded.has(row.id));
-  const entryQuery = live.length
-    ? tx
-        .select()
-        .from(medicalRiskEntries)
-        .where(
-          and(
-            eq(medicalRiskEntries.orgId, orgId),
-            eq(medicalRiskEntries.companyId, companyId),
-            inArray(
-              medicalRiskEntries.sourceId,
-              live.map((row) => row.id),
-            ),
-          ),
-        )
-    : null;
-  const entries = entryQuery ? await entryQuery : [];
-  const internal = live.filter((row) => row.originPgrId);
-  const current = await getInternalMedicalSources(
-    orgId,
-    companyId,
-    internal.map((row) => row.originPgrId!),
-    tx,
-  );
-  const fresh = new Set(
-    internal
-      .filter((row) => {
-        const pgr = current.find((c) => c.pgrId === row.originPgrId);
-        return pgr && medicalSourceFingerprint(pgr) === row.fingerprint;
-      })
-      .map((row) => row.id),
-  );
-  const freshness = (row: (typeof live)[number]) =>
-    row.kind === "external"
-      ? ("external_reference" as const)
-      : fresh.has(row.id)
-        ? ("current" as const)
-        : ("changed" as const);
-  const liveRisks = live.flatMap((row) =>
-    entries
-      .filter((e) => e.sourceId === row.id && canUseMedicalRisk(e.status, freshness(row)))
-      .map((e) => ({
-        exposureGroup: e.content.exposureGroup,
-        jobRole: e.content.jobRole?.trim() ?? "",
-        description: e.content.description,
-        agentType: e.content.agentType,
-        possibleInjuries: e.content.possibleInjuries?.trim() || null,
-      })),
-  );
+  const live = await liveMedicalRiskBasisTx(tx, orgId, companyId);
   const [digest] = (await tx.execute(
     sql`select public.medical_risk_basis_digest(${orgId}, ${companyId}::uuid) as digest`,
   )) as unknown as { digest: string | null }[];
   return riskBasisProblems({
     previewDigest: basis.previewDigest,
     currentDigest: digest?.digest ?? null,
-    live: live.map((row) => ({ id: row.id, version: row.version })),
-    liveFresh: internal.every((row) => fresh.has(row.id)),
-    liveRisks,
+    live: live.sources,
+    liveFresh: live.fresh,
+    liveRisks: live.risks,
+    liveRiskIds: live.riskIds,
     previewSources: snapshotSources(
       (basis.previewContent as { riskBasis?: { sources?: unknown } })?.riskBasis?.sources,
     ),
     planSources: snapshotSources((basis.planBasedOn as { sources?: unknown })?.sources),
+    planRiskIds: planRiskIds(basis.planBasedOn),
     previewRisks: previewRisks(basis.previewContent),
   });
 }

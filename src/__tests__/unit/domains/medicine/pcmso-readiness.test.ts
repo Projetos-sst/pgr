@@ -54,8 +54,12 @@ function input(overrides: Partial<PcmsoReadinessInput> = {}): PcmsoReadinessInpu
     coordinator: { medicoName: "Dra. Fictícia", rqe: "6789", rqeExceptionReason: null },
     proposal: buildExamProposal([source()]),
     usableRisks: [{ description: "Ruído fictício", possibleInjuries: "Perda auditiva" }],
+    usableRiskIds: ["r1"],
     activePhysicians: 2,
-    examPlan: { approved: { version: 1, sourceIds: ["s1"] }, draftVersion: null },
+    examPlan: {
+      approved: { version: 1, sourceIds: ["s1"], riskIds: ["r1"] },
+      draftVersion: null,
+    },
     interpretationCriteriaMissing: [],
     analyticalReport: { version: 1, periodStart: "2025-11-01", periodEnd: "2026-10-31" },
     ...overrides,
@@ -86,11 +90,57 @@ describe("checkPcmsoReadiness", () => {
     expect(codes(outdated, "blocking")).toEqual(["exam_plan_outdated"]);
     const newer = checkPcmsoReadiness(
       input({
-        examPlan: { approved: { version: 1, sourceIds: ["s1"] }, draftVersion: 2 },
+        examPlan: {
+          approved: { version: 1, sourceIds: ["s1"], riskIds: ["r1"] },
+          draftVersion: 2,
+        },
       }),
     );
     expect(codes(newer, "blocking")).toEqual([]);
     expect(codes(newer, "warning")).toEqual(["exam_plan_draft"]);
+  });
+
+  it("mesma fonte, outro conjunto de riscos validados: o plano aprovado fica desatualizado (bloqueia)", () => {
+    // Calor validado na aprovação; Poeira validada depois, na MESMA fonte (mesmo id e versão).
+    const changed = checkPcmsoReadiness(input({ usableRiskIds: ["r1", "r2"] }));
+    expect(codes(changed, "blocking")).toEqual(["exam_plan_outdated"]);
+    expect(changed.items.find((i) => i.code === "exam_plan_outdated")?.message).toMatch(
+      /riscos validados mudaram desde o plano/,
+    );
+    // Risco rejeitado depois da aprovação também muda o conjunto.
+    expect(codes(checkPcmsoReadiness(input({ usableRiskIds: [] })), "blocking")).toEqual([
+      "exam_plan_outdated",
+    ]);
+    // Ordem e repetição não importam.
+    const same = checkPcmsoReadiness(
+      input({
+        usableRiskIds: ["r2", "r1", "r1"],
+        examPlan: {
+          approved: { version: 1, sourceIds: ["s1"], riskIds: ["r1", "r2"] },
+          draftVersion: null,
+        },
+      }),
+    );
+    expect(codes(same, "blocking")).toEqual([]);
+  });
+
+  it("plano legado (sem o conjunto de riscos): só as fontes são conferidas, com aviso", () => {
+    const legacy = checkPcmsoReadiness(
+      input({
+        usableRiskIds: ["r1", "r2"],
+        examPlan: { approved: { version: 1, sourceIds: ["s1"] }, draftVersion: null },
+      }),
+    );
+    expect(codes(legacy, "blocking")).toEqual([]);
+    expect(codes(legacy, "warning")).toEqual(["exam_plan_legacy_basis"]);
+    // Fonte diferente continua bloqueando o legado.
+    const otherSource = checkPcmsoReadiness(
+      input({
+        examPlan: { approved: { version: 1, sourceIds: ["antiga"] }, draftVersion: null },
+      }),
+    );
+    expect(codes(otherSource, "blocking")).toEqual(["exam_plan_outdated"]);
+    expect(codes(otherSource, "warning")).toEqual([]);
   });
 
   it("com todos os dados existentes, só restam as etapas inexistentes, e nunca está pronto", () => {

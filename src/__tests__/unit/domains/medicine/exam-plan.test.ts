@@ -8,6 +8,9 @@ import {
   basedOnFromProposal,
   draftItemsFromProposal,
   itemDecisionSchema,
+  planBasisStatus,
+  planRiskIds,
+  proposalUsableRiskIds,
 } from "@/shared/domains/medicine/exam-plan";
 import {
   buildExamProposal,
@@ -152,5 +155,73 @@ describe("draftItemsFromProposal", () => {
       sources: [{ id: "s1", kind: "internal", version: "Revisão 3" }],
       withoutRule: 1,
     });
+  });
+});
+
+describe("conjunto de riscos validados do plano (lote 3)", () => {
+  // Fonte externa: Calor validado, Poeira pendente (mesma fonte, mesma versão).
+  const external = (poeira: "pending" | "validated"): ProposalSource => ({
+    id: "ext",
+    kind: "external",
+    title: "PGR externo fictício",
+    version: "2026.1",
+    reference: "Documento fictício",
+    freshness: "external_reference",
+    superseded: false,
+    risks: [
+      {
+        id: "calor",
+        status: "validated",
+        content: { agentType: "physical", description: "Calor", exposureGroup: "GES A" },
+      },
+      {
+        id: "poeira",
+        status: poeira,
+        content: {
+          agentType: "chemical",
+          description: "Poeira mineral",
+          exposureGroup: "GES A",
+        },
+      },
+    ],
+  });
+  const live = (proposal: ReturnType<typeof buildExamProposal>) => ({
+    sources: proposal.basis,
+    riskIds: proposalUsableRiskIds(proposal),
+  });
+
+  it("a proveniência grava os ids dos riscos utilizáveis (com e sem regra), ordenados", () => {
+    const proposal = buildExamProposal([external("validated"), source("01.18.001")]);
+    expect(proposalUsableRiskIds(proposal)).toEqual(["calor", "poeira", "r-01.18.001"]);
+    expect(basedOnFromProposal(proposal).riskIds).toEqual([
+      "calor",
+      "poeira",
+      "r-01.18.001",
+    ]);
+    // Pendente não entra.
+    const pending = buildExamProposal([external("pending")]);
+    expect(basedOnFromProposal(pending).riskIds).toEqual(["calor"]);
+  });
+
+  it("risco validado depois do plano na mesma fonte desatualiza o plano; sem mudança, atual", () => {
+    const before = buildExamProposal([external("pending")]);
+    const basedOn = basedOnFromProposal(before);
+    expect(planBasisStatus(basedOn, live(before))).toBe("current");
+    // Antes da correção, só id e versão da fonte eram comparados: o plano parecia atual.
+    const after = buildExamProposal([external("validated")]);
+    expect(planBasisStatus(basedOn, live(after))).toBe("outdated");
+    expect(planBasisStatus(basedOn, { sources: [], riskIds: ["calor"] })).toBe("outdated");
+  });
+
+  it("plano legado (sem riskIds): só fontes; formato inválido do conjunto também é legado", () => {
+    const proposal = buildExamProposal([external("validated")]);
+    const legacy = { sources: [{ id: "ext", version: "2026.1" }] };
+    expect(planRiskIds(legacy)).toBeNull();
+    expect(planRiskIds({ ...legacy, riskIds: [1] })).toBeNull();
+    expect(planRiskIds({ riskIds: ["b", "a", "a"] })).toEqual(["a", "b"]);
+    expect(planBasisStatus(legacy, live(proposal))).toBe("legacy");
+    expect(
+      planBasisStatus({ sources: [{ id: "ext", version: "2025.9" }] }, live(proposal)),
+    ).toBe("outdated");
   });
 });

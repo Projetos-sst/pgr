@@ -63,10 +63,17 @@ const gate = (tenantId = "org_a") =>
     return created.data.id;
   }
 
-  /** Plano aprovado por fixture (o fluxo de aprovação é coberto em `exam-plans.test.ts`). */
+  /**
+   * Plano aprovado por fixture (o fluxo de aprovação é coberto em `exam-plans.test.ts`), com o
+   * conjunto de riscos validados da fonte (`riskIds`, lote 3) como o app grava.
+   */
   const approvedPlan = (sourceId: string, version = 1) =>
     admin`insert into medical_exam_plans (org_id, company_id, version, status, based_on, rules_version, catalog_version, prepared_by, approved_by_user, approved_by_medico_id, approved_at)
-      values ('org_a', ${I.companyA}, ${version}, 'approved', ${admin.json({ sources: [{ id: sourceId }] })}, 'regras', 'catalogo', 'registrador', 'medica', ${MEDICO}, now())`;
+      values ('org_a', ${I.companyA}, ${version}, 'approved',
+        jsonb_build_object('sources', jsonb_build_array(jsonb_build_object('id', ${sourceId}::text)),
+          'riskIds', (select coalesce(jsonb_agg(e.id::text order by e.id), '[]'::jsonb) from medical_risk_entries e
+            where e.source_id::text = ${sourceId}::text and e.status = 'validated')),
+        'regras', 'catalogo', 'registrador', 'medica', ${MEDICO}, now())`;
 
   const codes = (items: { code: string; severity: string }[], severity: string) =>
     items.filter((i) => i.severity === severity).map((i) => i.code);

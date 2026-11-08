@@ -1,6 +1,8 @@
 -- Lote 3 do PCMSO — SQL que o drizzle-kit não emite. Acrescentar AO FINAL da 0081 gerada a partir
 -- do schema (depois dos ALTER POLICY de "exam_plans_coordinator_transition" e
--- "pcmso_signed_documents_insert"). Roda como owner (conexão direta).
+-- "pcmso_signed_documents_insert" e do DROP/ADD do CHECK "ck_exam_plans_approval", que o
+-- drizzle-kit emite). Roda como owner (conexão direta). Sem backfill: planos antigos sem
+-- `based_on.riskIds` seguem como legados (conferidos só pelas fontes, com aviso).
 --
 -- 1) Transições do plano de exames (NOB-150; MED-15). A policy de UPDATE só vê a linha nova; este
 --    gatilho vê a antiga e impõe:

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { ExamProposal } from "./exam-proposal";
+import { snapshotSources, type RiskBasisSource } from "./pcmso-signed";
 import { OTHER_PROCEDURE_CODE, procedureSelectionSchema } from "./procedure-catalog";
 
 /**
@@ -100,7 +101,26 @@ export function draftItemsFromProposal(proposal: ExamProposal): DraftItem[] {
   );
 }
 
-/** Proveniência gravada no plano: de quais fontes e versões a proposta saiu. */
+/**
+ * Riscos utilizáveis da proposta (validados, de fonte vigente e conferível): os que geram sugestão
+ * e os sem regra automática. Ids ordenados, sem repetição — o conjunto sobre o qual o médico
+ * decide os exames.
+ */
+export function proposalUsableRiskIds(proposal: ExamProposal): string[] {
+  const ids = new Set<string>();
+  for (const group of proposal.groups) {
+    for (const suggestion of group.suggestions)
+      for (const ref of suggestion.triggeredBy) ids.add(ref.riskId);
+    for (const ref of group.withoutRule) ids.add(ref.riskId);
+  }
+  return [...ids].sort();
+}
+
+/**
+ * Proveniência gravada no plano: de quais fontes e versões a proposta saiu e o conjunto exato de
+ * riscos validados (`riskIds`) sobre o qual o médico decidiu. Validar ou rejeitar um risco na
+ * mesma fonte (mesmo id e versão) muda o conjunto e desatualiza o plano.
+ */
 export function basedOnFromProposal(proposal: ExamProposal) {
   return {
     sources: proposal.basis.map(({ id, kind, title, version, freshness }) => ({
@@ -110,6 +130,7 @@ export function basedOnFromProposal(proposal: ExamProposal) {
       version,
       freshness,
     })),
+    riskIds: proposalUsableRiskIds(proposal),
     excluded: {
       pending: proposal.excluded.pending.length,
       rejected: proposal.excluded.rejected.length,
@@ -118,5 +139,50 @@ export function basedOnFromProposal(proposal: ExamProposal) {
     withoutRule: proposal.groups.reduce((n, g) => n + g.withoutRule.length, 0),
   };
 }
+
+/**
+ * Conjunto de riscos gravado no plano (`based_on.riskIds`), ordenado. `null` = plano anterior a
+ * esse controle (legado): só as fontes podem ser conferidas.
+ */
+export function planRiskIds(basedOn: unknown): string[] | null {
+  const ids = (basedOn as { riskIds?: unknown } | null)?.riskIds;
+  if (!Array.isArray(ids) || !ids.every((id) => typeof id === "string")) return null;
+  return [...new Set(ids as string[])].sort();
+}
+
+export const sameRiskIds = (a: readonly string[], b: readonly string[]) =>
+  [...new Set(a)].sort().join("|") === [...new Set(b)].sort().join("|");
+
+/**
+ * Plano × base de riscos vigente:
+ * - `current`: mesmas fontes e versões e mesmo conjunto de riscos validados;
+ * - `outdated`: fonte, versão ou conjunto de riscos mudou desde o plano;
+ * - `legacy`: fontes conferem, mas o plano não gravou o conjunto de riscos (anterior ao controle).
+ */
+export type PlanBasisStatus = "current" | "outdated" | "legacy";
+
+export function planBasisStatus(
+  basedOn: unknown,
+  live: { sources: readonly RiskBasisSource[]; riskIds: readonly string[] },
+): PlanBasisStatus {
+  const sources = snapshotSources((basedOn as { sources?: unknown } | null)?.sources);
+  const key = (list: readonly RiskBasisSource[]) =>
+    list
+      .map((s) => `${s.id}@${s.version}`)
+      .sort()
+      .join("|");
+  if (!sources || key(sources) !== key(live.sources)) return "outdated";
+  const riskIds = planRiskIds(basedOn);
+  if (riskIds === null) return "legacy";
+  return sameRiskIds(riskIds, live.riskIds) ? "current" : "outdated";
+}
+
+export type StalePlanBasis = Exclude<PlanBasisStatus, "current">;
+export const EXAM_PLAN_BASIS_MESSAGES: Record<StalePlanBasis, string> = {
+  outdated:
+    "Os riscos validados mudaram desde que este rascunho foi preparado (fonte, versão ou validação de risco): ele não pode ser aprovado. Prepare novo rascunho a partir dos riscos atuais; o desatualizado é arquivado.",
+  legacy:
+    "Este rascunho é anterior ao controle do conjunto de riscos validados e não pode ser aprovado. Prepare novo rascunho a partir dos riscos atuais; o anterior é arquivado.",
+};
 
 export const isOtherProcedure = (code: string) => code === OTHER_PROCEDURE_CODE;

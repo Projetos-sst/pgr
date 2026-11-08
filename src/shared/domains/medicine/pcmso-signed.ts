@@ -262,6 +262,7 @@ export type RiskBasisProblem =
   | "source_changed"
   | "preview_sources_mismatch"
   | "plan_sources_mismatch"
+  | "plan_risks_mismatch"
   | "preview_risks_mismatch"
   | "basis_changed_since_preview";
 
@@ -274,6 +275,8 @@ export const RISK_BASIS_PROBLEM_MESSAGES: Record<RiskBasisProblem, string> = {
     "A prévia foi composta sobre outra fonte ou versão de riscos: gere nova prévia a partir das fontes vigentes.",
   plan_sources_mismatch:
     "O plano de exames aprovado foi feito sobre outra fonte ou versão de riscos: revalide o plano com o médico responsável e gere nova prévia.",
+  plan_risks_mismatch:
+    "Os riscos validados mudaram desde o plano de exames aprovado (risco validado ou rejeitado depois da aprovação): revalide o plano com o médico responsável e gere nova prévia.",
   preview_risks_mismatch:
     "Os riscos validados da empresa mudaram depois da prévia: gere nova prévia (e revalide o plano, se necessário).",
   basis_changed_since_preview:
@@ -336,6 +339,8 @@ const riskKey = (list: RiskBasisRisk[]) =>
     .sort()
     .join("\n");
 
+const idSetKey = (ids: readonly string[]) => [...new Set(ids)].sort().join("|");
+
 /**
  * Compara a base de riscos que fundamentou o documento (prévia e plano) com a vigente. Falha
  * fechada: snapshot ilegível, nenhuma fonte vigente ou fonte não conferível contam como problema.
@@ -348,6 +353,12 @@ export function riskBasisProblems(input: {
   previewSources: RiskBasisSource[] | null;
   planSources: RiskBasisSource[] | null;
   previewRisks: RiskBasisRisk[] | null;
+  /**
+   * Conjunto de riscos validados gravado no plano aprovado (`based_on.riskIds`) e o vigente.
+   * Plano legado (sem o conjunto, `null`) só é conferido pelas fontes.
+   */
+  planRiskIds?: string[] | null;
+  liveRiskIds?: string[];
   /** Resumo da base calculado no banco: o gravado na prévia e o atual (nulo = sem controle). */
   previewDigest?: string | null;
   currentDigest?: string | null;
@@ -360,6 +371,12 @@ export function riskBasisProblems(input: {
     out.push("preview_sources_mismatch");
   if (!input.planSources || sourceKey(input.planSources) !== live)
     out.push("plan_sources_mismatch");
+  if (
+    Array.isArray(input.planRiskIds) &&
+    input.liveRiskIds !== undefined &&
+    idSetKey(input.planRiskIds) !== idSetKey(input.liveRiskIds)
+  )
+    out.push("plan_risks_mismatch");
   if (!input.previewRisks || riskKey(input.previewRisks) !== riskKey(input.liveRisks))
     out.push("preview_risks_mismatch");
   if (

@@ -895,13 +895,13 @@ Plano de exames por grupo de exposição (NOB-150, MED-15). Migration `0062_medi
 - **`medical_exam_plans`:**
   - versões por empresa; status `draft` → `approved` → `superseded`;
   - um rascunho aberto e um aprovado por empresa (índices parciais → `DUPLICATE`);
-  - proveniência em `based_on` (fontes e versões), mais `rules_version` e `catalog_version`.
+  - proveniência em `based_on` (fontes e versões e, desde o lote 3, `riskIds`: o conjunto exato de riscos validados utilizáveis sobre o qual o médico decidiu), mais `rules_version` e `catalog_version`.
 - **`medical_exam_plan_items`:**
   - procedimento da Tabela 27 (`CHECK ^[0-9]{4}$`; `9999` exige descrição);
   - origem `suggested` (com `rule_id`) ou `added`;
   - decisão `kept` ou `removed`; retirar e acrescentar exigem justificativa (`CHECK`);
   - periodicidade em texto, definida pelo médico.
-- **`medical_exam_plan_events`:** trilha append-only (`draft_created`, `item_decided`, `item_added`, `approved`, `superseded`).
+- **`medical_exam_plan_events`:** trilha append-only (`draft_created`, `item_decided`, `item_added`, `approved`, `superseded`, `draft_discarded`).
 
 | Regra                                                      | App                                         | Banco (RLS e grants)                                                                                                            |
 | ---------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -911,6 +911,13 @@ Plano de exames por grupo de exposição (NOB-150, MED-15). Migration `0062_medi
 | Nada é apagado                                             | sem rota DELETE                             | `REVOKE DELETE` nas três tabelas; eventos sem UPDATE                                                                            |
 
 Ao aprovar, o aprovado anterior vira `superseded` na mesma transação. Para mudar um plano aprovado, prepara-se nova versão; nada é atualizado em silêncio.
+
+**Plano preso ao conjunto de riscos validados (lote 3).** Validar ou rejeitar um risco na mesma fonte (mesmo id e versão) muda o conjunto e desatualiza o plano.
+
+- `GET /exam-plans/{id}` devolve `basis`: `current` (mesmas fontes, versões e `riskIds` de hoje), `outdated` ou `legacy` (plano anterior ao controle, sem `riskIds`).
+- **Aprovar** (sob a trava da base de riscos) só aceita rascunho `current`; `outdated`/`legacy` → `422 VALIDATION` **antes** de substituir o aprovado vigente, que fica intacto.
+- **Preparar rascunho** com um rascunho aberto `outdated`/`legacy` arquiva o antigo como `superseded` **sem aprovação** (evento `draft_discarded`; na tela, "Rascunho descartado") e cria o novo; rascunho aberto `current` continua `DUPLICATE`. Se a base mudar durante a preparação → `422`. A RLS permite à equipe só esse descarte (rascunho → substituído sem nenhum dado de aprovação); o `CHECK ck_exam_plans_approval` passou a admitir substituído sem aprovação.
+- Plano **aprovado legado** não é bloqueado só por isso: a conferência confere as fontes e avisa (`exam_plan_legacy_basis`).
 
 **Aprovação presa ao ator e imutável (lote 3).** A policy `exam_plans_coordinator_transition` exige, para `approved`, `approved_by_user` = ator **e** `approved_by_medico_id` = o médico da conta verificada do ator que é o coordenador em vigor hoje da empresa (`actorMedicoCoordinatesCompany`) — aprovar em nome de outro médico → `42501`. O gatilho `medical_exam_plans_transition_guard` (SQL custom da 0081) vê a linha antiga e só admite rascunho → aprovado, aprovado → substituído **sem alterar** `approved_by_user`, `approved_by_medico_id`, `approved_at` e `approval_note`, e nada a partir de substituído; identificação e proveniência (`based_on`, versões) nunca mudam (`42501`).
 
@@ -957,8 +964,8 @@ Tabela `pcmso_documents` (migration `0063_pcmso_documents`):
 A geração exige a conferência (NOB-148) **sem bloqueios**: inclui coordenador, riscos validados e plano aprovado sobre a fonte atual. O coordenador da prévia é o vigente na data da geração, a mesma data usada na conferência (NOB-109). Prévias já arquivadas não são recompostas. A conferência passa a bloquear quando:
 
 - não há plano aprovado (`exam_plan`);
-- o plano aprovado foi feito sobre outra fonte de riscos (`exam_plan_outdated`);
-- e avisa quando existe nova versão em rascunho (`exam_plan_draft`).
+- o plano aprovado foi feito sobre outra fonte de riscos ou sobre outro conjunto de riscos validados — "riscos validados mudaram desde o plano" (`exam_plan_outdated`);
+- e avisa quando existe nova versão em rascunho (`exam_plan_draft`) ou quando o plano aprovado é legado, sem o conjunto de riscos (`exam_plan_legacy_basis`: só as fontes são conferidas).
 
 | Action                        | Entrada                      | Retorno (`data`)                       |
 | ----------------------------- | ---------------------------- | -------------------------------------- |
@@ -980,6 +987,7 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
 - **Base de riscos (NR-7 7.5.1 e 7.5.5; SEG-21):** a prévia (`content.riskBasis.sources`) e o plano aprovado (`based_on.sources`) precisam ter exatamente as **fontes de riscos vigentes** da empresa (não substituídas), com as mesmas versões. O registro é recusado, falhando fechado, quando:
   - o PGR interno de origem mudou ou ficou indisponível (impressão digital recalculada na transação);
   - os riscos validados mudaram depois da prévia (validação ou rejeição na mesma fonte);
+  - os riscos validados mudaram depois da aprovação do plano (`based_on.riskIds` ≠ conjunto vigente; plano legado sem `riskIds` só é conferido pelas fontes);
   - a fonte foi substituída ou removida;
   - não há fonte conferível.
   - Nenhuma classificação clínica automática: qualquer divergência exige nova conferência, novo plano (se for o caso) e nova prévia. Não existe justificativa livre que libere o bloqueio.

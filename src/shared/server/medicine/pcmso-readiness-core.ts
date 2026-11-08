@@ -8,6 +8,7 @@ import { listMedicos } from "@/shared/db/repositories/medicos";
 import { listCoordinatorAssignments } from "@/shared/db/repositories/pcmso-coordinators";
 import { buildExamProposal } from "@/shared/domains/medicine/exam-proposal";
 import { criteriaCoverage } from "@/shared/domains/medicine/interpretation-criteria";
+import { planRiskIds } from "@/shared/domains/medicine/exam-plan";
 import { checkPcmsoReadiness } from "@/shared/domains/medicine/pcmso-readiness";
 import { coordinatorInForceOn } from "@/shared/domains/medicine/pcmso-coordinators";
 import { canUseMedicalRisk } from "@/shared/domains/medicine/risk-sources";
@@ -63,16 +64,15 @@ export async function getPcmsoReadinessOn(
   const draft = plans.find((plan) => plan.status === "draft") ?? null;
   const inForce = coordinatorInForceOn(history, referenceDay);
   const current = inForce.kind === "in_force" ? inForce.assignment : null;
-  const usableRisks = sources
+  const usable = sources
     .filter((source) => !source.superseded)
     .flatMap((source) =>
-      source.risks
-        .filter((risk) => canUseMedicalRisk(risk.status, source.freshness))
-        .map((risk) => ({
-          description: risk.content.description,
-          possibleInjuries: risk.content.possibleInjuries ?? null,
-        })),
+      source.risks.filter((risk) => canUseMedicalRisk(risk.status, source.freshness)),
     );
+  const usableRisks = usable.map((risk) => ({
+    description: risk.content.description,
+    possibleInjuries: risk.content.possibleInjuries ?? null,
+  }));
   return checkPcmsoReadiness({
     companyId: id,
     company: {
@@ -93,10 +93,15 @@ export async function getPcmsoReadinessOn(
     coordinatorOverlap: inForce.kind === "overlap",
     proposal: buildExamProposal(sources),
     usableRisks,
+    usableRiskIds: usable.map((risk) => risk.id),
     activePhysicians: medicos.rows.filter((m) => m.profession === "physician").length,
     examPlan: {
       approved: approved
-        ? { version: approved.version, sourceIds: planSourceIds(approved.basedOn) }
+        ? {
+            version: approved.version,
+            sourceIds: planSourceIds(approved.basedOn),
+            riskIds: planRiskIds(approved.basedOn),
+          }
         : null,
       draftVersion: draft?.version ?? null,
     },

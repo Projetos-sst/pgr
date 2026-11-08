@@ -220,6 +220,20 @@ describe("riskBasisProblems (base de riscos do documento × vigente)", () => {
       riskBasisProblems({ ...ok, liveRisks: [risk, { ...risk, description: "Calor" }] }),
     ).toEqual(["preview_risks_mismatch"]);
   });
+  it("conjunto de riscos do plano aprovado × vigente; plano legado só pelas fontes", () => {
+    expect(
+      riskBasisProblems({ ...ok, planRiskIds: ["a"], liveRiskIds: ["a"] }),
+    ).toEqual([]);
+    expect(
+      riskBasisProblems({ ...ok, planRiskIds: ["a"], liveRiskIds: ["a", "b"] }),
+    ).toEqual(["plan_risks_mismatch"]);
+    expect(
+      riskBasisProblems({ ...ok, planRiskIds: ["b", "a"], liveRiskIds: ["a", "b"] }),
+    ).toEqual([]);
+    expect(
+      riskBasisProblems({ ...ok, planRiskIds: null, liveRiskIds: ["a", "b"] }),
+    ).toEqual([]);
+  });
   it("resumo do banco: igual passa; diferente ou ausente na prévia falha fechado", () => {
     expect(
       riskBasisProblems({ ...ok, previewDigest: "d1", currentDigest: "d1" }),
