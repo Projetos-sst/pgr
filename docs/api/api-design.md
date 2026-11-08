@@ -912,6 +912,8 @@ Plano de exames por grupo de exposição (NOB-150, MED-15). Migration `0062_medi
 
 Ao aprovar, o aprovado anterior vira `superseded` na mesma transação. Para mudar um plano aprovado, prepara-se nova versão; nada é atualizado em silêncio.
 
+**Aprovação presa ao ator e imutável (lote 3).** A policy `exam_plans_coordinator_transition` exige, para `approved`, `approved_by_user` = ator **e** `approved_by_medico_id` = o médico da conta verificada do ator que é o coordenador em vigor hoje da empresa (`actorMedicoCoordinatesCompany`) — aprovar em nome de outro médico → `42501`. O gatilho `medical_exam_plans_transition_guard` (SQL custom da 0081) vê a linha antiga e só admite rascunho → aprovado, aprovado → substituído **sem alterar** `approved_by_user`, `approved_by_medico_id`, `approved_at` e `approval_note`, e nada a partir de substituído; identificação e proveniência (`based_on`, versões) nunca mudam (`42501`).
+
 | Action                      | Entrada                                                                                        | Retorno (`data`)                         |
 | --------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `listExamPlansAction`       | `companyId`                                                                                    | `MedicalExamPlan[]` (versões)            |

@@ -58,6 +58,7 @@ const ownerB: TenantContext = {
   plan: "pro",
 };
 const MEDICO = "aaaaaaaa-0000-4000-8000-000000000021";
+const OTHER_MEDICO = "aaaaaaaa-0000-4000-8000-000000000022";
 const WHY = "Justificativa clínica fictícia suficiente.";
 
 const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
@@ -201,6 +202,83 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     expect(
       (await admin`select status from medical_exam_plans where id=${plan.id}`)[0].status,
     ).toBe("draft");
+  });
+
+  it("RLS e gatilho: ninguém aprova em nome de outro médico e a aprovação gravada não é reescrita", async () => {
+    await admin`insert into medicos (id, org_id, name, crm, profession, registration_uf, rqe, affiliation, status)
+      values (${OTHER_MEDICO}, 'org_a', 'Dr. Outro Médico Fictício', '50002', 'physician', 'MA', '952', 'external', 'active')`;
+    const asDoctor = (fn: (tx: postgres.TransactionSql) => Promise<unknown>) =>
+      runtime.begin(async (tx) => {
+        await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', 'doctor', true)`;
+        return fn(tx);
+      });
+    const row = async (id: string) =>
+      (
+        await admin`select status, approved_by_user, approved_by_medico_id, approved_at, approval_note
+          from medical_exam_plans where id=${id}`
+      )[0];
+    const v1 = await createDraft(staff, I.companyA);
+    // A coordenadora em vigor aprovando em nome de outro médico: recusado (antes, aceito).
+    await expect(
+      asDoctor(
+        (tx) =>
+          tx`update medical_exam_plans set status='approved', approved_by_user='doctor', approved_by_medico_id=${OTHER_MEDICO}, approved_at=now() where id=${v1.id}`,
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+    expect((await row(v1.id)).status).toBe("draft");
+
+    const approved = await approve(doctor, v1.id, { note: "Aprovação fictícia." });
+    const before = await row(v1.id);
+    expect(before).toMatchObject({
+      status: "approved",
+      approved_by_user: "doctor",
+      approved_by_medico_id: MEDICO,
+      approval_note: "Aprovação fictícia.",
+    });
+    // Reescrever a aprovação já gravada, pela própria coordenadora: recusado (antes, aceito).
+    const rewrites = [
+      (tx: postgres.TransactionSql) =>
+        tx`update medical_exam_plans set approved_by_medico_id=${OTHER_MEDICO}, approved_at='2020-01-01' where id=${v1.id}`,
+      (tx: postgres.TransactionSql) =>
+        tx`update medical_exam_plans set approved_at='2020-01-01' where id=${v1.id}`,
+      (tx: postgres.TransactionSql) =>
+        tx`update medical_exam_plans set approval_note='Nota reescrita fictícia.' where id=${v1.id}`,
+      (tx: postgres.TransactionSql) =>
+        tx`update medical_exam_plans set status='superseded', approved_at='2020-01-01' where id=${v1.id}`,
+      (tx: postgres.TransactionSql) =>
+        tx`update medical_exam_plans set status='draft', approved_by_user=null, approved_by_medico_id=null, approved_at=null where id=${v1.id}`,
+    ];
+    for (const rewrite of rewrites)
+      await expect(asDoctor(rewrite)).rejects.toMatchObject({ code: "42501" });
+    const kept = await row(v1.id);
+    expect(kept).toMatchObject({
+      status: "approved",
+      approved_by_medico_id: MEDICO,
+      approval_note: "Aprovação fictícia.",
+    });
+    expect(new Date(kept.approved_at as string).getTime()).toBe(
+      new Date(approved.approvedAt!).getTime(),
+    );
+
+    // Fluxo do app segue: a nova versão substitui a anterior sem tocar na aprovação dela.
+    const v2 = await createDraft(staff, I.companyA);
+    await approve(doctor, v2.id, {});
+    expect(await row(v1.id)).toMatchObject({
+      status: "superseded",
+      approved_by_user: "doctor",
+      approved_by_medico_id: MEDICO,
+      approval_note: "Aprovação fictícia.",
+    });
+    expect(new Date((await row(v1.id)).approved_at as string).getTime()).toBe(
+      new Date(approved.approvedAt!).getTime(),
+    );
+    // Substituído não volta a aprovado.
+    expect(
+      await asDoctor(
+        (tx) =>
+          tx`update medical_exam_plans set status='approved' where id=${v1.id} returning id`,
+      ),
+    ).toHaveLength(0);
   });
 
   it("decisões exigem justificativa; código fora da Tabela 27 é recusado", async () => {
