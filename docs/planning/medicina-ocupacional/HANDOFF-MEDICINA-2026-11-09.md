@@ -18,7 +18,7 @@
 
   Tudo tem testes unitários e de integração em Postgres real com RLS.
 
-- **Testes e CI:** a última PR integrada (#168) teve o CI oficial verde, com 2346 testes unitários e 1629 de integração. O lote 3 (seção 3) traz suas próprias evidências.
+- **Testes e CI:** a #168 (integrada) e a #169 (lote 3, aguardando merge) tiveram o CI oficial verde. Na #169: 2388 testes unitários e 1646 de integração, nenhuma falha.
 - **Não homologado:** nenhuma jornada foi validada em navegador autenticado nem no banco de homologação. O CD aplica as migrations, mas o banco nunca foi lido diretamente (NOB-162).
 - **Não pronto para produção:** os gates NOB-158/159 (identidade médica independente) e NOB-162 (infra de homologação) seguem abertos. O modelo documental final (NOB-93) não foi entregue.
 
@@ -39,15 +39,15 @@
 
 PRs mergeadas na `develop`: #136, #138–#148, #150–#161, #163–#168. As principais da reta final são:
 
-| PR     | Merge     | Conteúdo                                                                                                                                                                  | CI                      |
-| ------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| #165   | `4325803` | PGR externo em empresa só com Medicina (migration 0079)                                                                                                                   | verde                   |
-| #166   | `07ab5ca` | Plano de exames: justificativa retomada                                                                                                                                   | verde                   |
-| #167   | `1db7d45` | Lote 1: função/GES, coordenador vigente, CRM, erros aninhados, inclusão de exame, datas de documento                                                                      | verde (run 42437454046) |
-| #168   | `d150ffe` | Lote 2: permissões do coordenador pela vigência, id da função, datas nas telas, CRM duplicado, 23 formulários, ASO com coordenador sobreposto, fuso IANA (migration 0080) | verde (run 42498719530) |
-| Lote 3 | —         | LOTE3_PR                                                                                                                                                                  | LOTE3_CI                |
+| PR   | Merge                    | Conteúdo                                                                                                                                                                                                                                                   | CI                                                           |
+| ---- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| #165 | `4325803`                | PGR externo em empresa só com Medicina (migration 0079)                                                                                                                                                                                                    | verde                                                        |
+| #166 | `07ab5ca`                | Plano de exames: justificativa retomada                                                                                                                                                                                                                    | verde                                                        |
+| #167 | `1db7d45`                | Lote 1: função/GES, coordenador vigente, CRM, erros aninhados, inclusão de exame, datas de documento                                                                                                                                                       | verde (run 42437454046)                                      |
+| #168 | `d150ffe`                | Lote 2: permissões do coordenador pela vigência, id da função, datas nas telas, CRM duplicado, 23 formulários, ASO com coordenador sobreposto, fuso IANA (migration 0080)                                                                                  | verde (run 42498719530)                                      |
+| #169 | aberta (merge do Carlos) | Lote 3: PCMSO assinado pelo coordenador da prévia, aprovação do plano imutável, plano preso aos riscos, ASO assinado só da prévia atual, examinador preservado, verificação de identidade sem pré-preenchimento, bypass dev, CRM no banco (migration 0081) | verde (run 42508402270, 2388 unitários e 1646 de integração) |
 
-**Migrations:** a última na `develop` é a `0080_batch2_coordinator_in_force_and_job_role`, com journal de 81 registros. Foi validada no migrator real local: base, upgrade, rerun, banco limpo idêntico e sem drift. O CD pós-#168 (run 42500934905) registrou `migrations applied successfully`. **O banco de homologação não foi lido diretamente.**
+**Migrations:** a última na `develop` é a `0080_batch2_coordinator_in_force_and_job_role`, com journal de 81 registros. A #169 traz a `0081_lote3_signed_coordinator_plan_guard_crm_trigger`, com journal de 82 registros, validada no migrator real local da mesma forma. Foi validada no migrator real local: base, upgrade, rerun, banco limpo idêntico e sem drift. O CD pós-#168 (run 42500934905) registrou `migrations applied successfully`. **O banco de homologação não foi lido diretamente.**
 
 ## 4. Matriz de aceite
 
@@ -233,7 +233,7 @@ O estado item a item está em `geral/12-MATRIZ-DE-ADERENCIA.md`, atualizado até
 ## 11. Estado para apresentação
 
 - **Código:** concluído para o escopo definido (jornadas de PCMSO e ASO); parcial onde depende de modelo, decisão clínica ou provedor.
-- **Testes locais e CI:** verdes até a #168; lote 3 na seção 3.
+- **Testes locais e CI:** verdes até a #169 (run 42508402270).
 - **Homologação:** não realizada (NOB-162).
 - **Pendências externas:** NOB-93 (modelo), provedor de assinatura, verificador independente, credenciais de homologação e decisões clínicas.
 - **Produção:** **não está pronta.** Os gates NOB-158, NOB-159 e NOB-162 continuam bloqueando, e o documento sai como **prévia**, não como emissão válida.
