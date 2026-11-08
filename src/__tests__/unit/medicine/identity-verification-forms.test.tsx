@@ -10,6 +10,7 @@ import {
   ApproveForm,
   DecisionForm,
 } from "@/app/(protected)/admin-global/identity-verifications/verification-forms";
+import { identityApprovalSchema } from "@/shared/domains/medicine/professional-identity";
 import {
   approveIdentityVerificationAction,
   rejectIdentityRequestAction,
@@ -39,6 +40,32 @@ const submit = () =>
   fireEvent.click(screen.getByRole("button", { name: "Registrar verificação" }));
 
 describe("ApproveForm", () => {
+  it("CRM e UF conferidos começam vazios; o cadastro aparece só como contexto (NOB-158)", async () => {
+    approve.mockResolvedValue({ ok: true, data: {} });
+    render(<ApproveForm requestId={REQUEST} crm="12.345" uf="MA" />);
+
+    const crm = screen.getByRole("textbox", { name: /CRM conferido/ });
+    const uf = screen.getByRole("textbox", { name: /UF conferida/ });
+    expect(crm).toHaveValue("");
+    expect(uf).toHaveValue("");
+    expect(screen.getByText(/Cadastro informa: CRM 12\.345\/MA/)).toBeInTheDocument();
+
+    submit();
+    await waitFor(() => expect(approve).toHaveBeenCalled());
+    const sent = approve.mock.calls[0][0];
+    expect(sent.crm).toBe("");
+    expect(sent.registrationUf).toBe("");
+    // Sem digitar, o próprio schema da aprovação recusa CRM e UF.
+    const parsed = identityApprovalSchema.safeParse(sent);
+    expect(parsed.success).toBe(false);
+    const paths = parsed.error!.issues.map((i) => i.path.join("."));
+    expect(paths).toEqual(expect.arrayContaining(["crm", "registrationUf"]));
+    const messages = parsed.error!.issues.map((i) => i.message);
+    expect(messages).toEqual(
+      expect.arrayContaining(["Informe o CRM conferido.", "UF do CRM inválida."]),
+    );
+  });
+
   it("itens do checklist não marcados: mensagem junto de cada item", async () => {
     approve.mockResolvedValue({
       ok: false,

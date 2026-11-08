@@ -844,6 +844,7 @@ Todas as policies clínicas e as checagens do servidor (`repositories/clinical-a
    - Limites de códigos errados: 5 por pedido, no total (depois só resta recusar o pedido, e o profissional abre outro); 10 por conta do profissional em 24 h, somando pedidos e operadores; 10 por operador em 1 h. Esgotado, nem o código certo é conferido (`VALIDATION`).
    - Pedido já aprovado ou recusado não aceita conferência.
 4. O operador registra método, fonte e referência (sem documento bruto). A validade é configurável (padrão 12 meses, teto 36).
+   - Na tela do operador, **CRM conferido** e **UF conferida** começam vazios: o cadastro aparece só como contexto ("Cadastro informa: …") e o operador digita o que encontrou na fonte oficial. Campo vazio → `VALIDATION` pelo schema da aprovação; divergente do cadastro → o banco recusa.
 5. Recusa e revogação ficam em `professional_identity_review_events`, só inclusão. A revogação corta o acesso na hora.
 
 **NOB-159.** O vínculo legado (sem convite) só dá acesso com verificação **e** a reconfirmação explícita da própria conta (`medico_link_reconfirmations`). Nenhum vínculo é alterado ou revogado pela migration.
