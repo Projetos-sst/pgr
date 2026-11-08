@@ -11,7 +11,10 @@ import {
   getEmployeeAction,
   listEmployeesAction,
 } from "@/shared/server/actions/pgr/employees";
-import { listMedicoOptionsAction } from "@/shared/server/actions/pgr/medicos";
+import {
+  getMedicoAction,
+  listMedicoOptionsAction,
+} from "@/shared/server/actions/pgr/medicos";
 import { getHealthExamAction } from "@/shared/server/actions/pgr/health-exams";
 import {
   getClinicalAccessAction,
@@ -54,7 +57,24 @@ export default async function EditHealthExamPage({
         fullName: `${e.fullName} — ${e.companyName}`,
       }))
     : [];
-  const doctors = doctorsResult.ok ? doctorsResult.data : [];
+  const doctors = doctorsResult.ok ? [...doctorsResult.data] : [];
+  // As opções trazem só médicos ativos. O médico gravado no exame (inativo, por exemplo) entra
+  // como opção própria: sem ela, o select mostraria "sem médico" e salvar apagaria o examinador.
+  if (exam.doctorId && !doctors.some((d) => d.id === exam.doctorId)) {
+    const stored = await getMedicoAction(exam.doctorId);
+    doctors.push(
+      stored.ok
+        ? {
+            id: stored.data.id,
+            name: stored.data.name,
+            crm:
+              stored.data.status === "inactive"
+                ? `${stored.data.crm} (inativo)`
+                : stored.data.crm,
+          }
+        : { id: exam.doctorId, name: "Médico registrado no exame", crm: "—" },
+    );
+  }
   // O funcionário do exame é fixo na edição; a lista tem teto de 200, então ele
   // é buscado direto quando não está nela (mesmo tenant, já validado pelo exame).
   let lockedEmployee = employees.find((e) => e.id === exam.employeeId);

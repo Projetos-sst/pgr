@@ -38,7 +38,11 @@ import {
   updateHealthExam,
 } from "@/shared/db/repositories/health-exams";
 import { registerMedicalRiskSource } from "@/shared/server/medicine/risk-source-core";
-import { addProcedure, generateDocument } from "@/shared/server/medicine/aso-core";
+import {
+  addProcedure,
+  confirmExaminerConclusion,
+  generateDocument,
+} from "@/shared/server/medicine/aso-core";
 import {
   listSignedAsos,
   registerSignedAso,
@@ -410,6 +414,53 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
       aptitude: "unfit",
     } as Parameters<typeof updateHealthExam>[2]);
     expect(await vigente(external.id)).toMatchObject({ outdated: true });
+  });
+
+  it("examinador não é apagado de exame com prévia ou confirmação; troca por outro médico segue permitida", async () => {
+    const examInput = (doctorId: string | undefined, aptitude = "unfit") =>
+      ({
+        employeeId: I.employeeA,
+        doctorId,
+        examType: "periodic",
+        performedAt: "2026-10-20",
+        aptitude,
+      }) as Parameters<typeof updateHealthExam>[2];
+    const cleared = {
+      code: "VALIDATION",
+      message: expect.stringMatching(/não pode ser removido/),
+    };
+
+    // Com prévia arquivada: limpar o médico é recusado e nada muda.
+    const { exam } = await examWithPreview();
+    await expect(
+      updateHealthExam("org_a", exam.id, examInput(undefined)),
+    ).rejects.toMatchObject(cleared);
+    const [row] = await admin`select doctor_id from health_exams where id=${exam.id}`;
+    expect(row).toEqual({ doctor_id: EXAMINER });
+    // Trocar por outro médico ativo continua permitido.
+    await expect(
+      updateHealthExam("org_a", exam.id, examInput(COORDINATOR)),
+    ).resolves.toMatchObject({ doctorId: COORDINATOR });
+
+    // Só a confirmação do examinador ("apto com restrição"), sem prévia: também recusado.
+    const restricted = await createHealthExam(
+      "org_a",
+      examInput(EXAMINER, "fit_with_restrictions"),
+    );
+    await confirmExaminerConclusion(examiner, restricted.id, { conclusion: "fit" });
+    await expect(
+      updateHealthExam(
+        "org_a",
+        restricted.id,
+        examInput(undefined, "fit_with_restrictions"),
+      ),
+    ).rejects.toMatchObject(cleared);
+
+    // Exame sem prévia, ASO assinado ou confirmação: o médico pode ficar em branco.
+    const plain = await createHealthExam("org_a", examInput(EXAMINER));
+    await expect(
+      updateHealthExam("org_a", plain.id, examInput(undefined)),
+    ).resolves.toMatchObject({ doctorId: null });
   });
 
   it("NOB-110: CRM do cadastro com pontuação confere pela forma canônica; identidade e autoria intactas", async () => {

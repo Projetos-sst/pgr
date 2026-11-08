@@ -1148,6 +1148,12 @@ sessão: ID de outro tenant → lista vazia; ID malformado → `VALIDATION` (`42
 Janela de "a vencer": `EXAM_DUE_WINDOW_DAYS = 30` (`domains/pgr/health-exams.ts`). REST espelho em
 `/api/v1/health-exams` (GET, POST) · `/api/v1/health-exams/{id}` (GET, PUT, DELETE).
 
+**Médico responsável na edição:** o `PUT` (e a Action) recusa **apagar** o médico (`doctorId`
+ausente) de exame que já tem prévia de ASO, ASO assinado ou confirmação do examinador → `422
+VALIDATION`; trocar por outro médico continua permitido. A tela de edição lista só médicos ativos e
+acrescenta o médico gravado no exame quando ele não está na lista (rótulo "· CRM (inativo)"), para
+que salvar não apague o examinador.
+
 **Validações de entrada (Lote 02A, NOB-112; mesmas regras na Action e no REST, `422 VALIDATION`):**
 `validUntil` (opcional) não pode ser anterior a `performedAt` (igual é permitido; datas comparadas
 como calendário, sem fuso) → `fields.validUntil = "Vencimento anterior à realização."`; `examType`
