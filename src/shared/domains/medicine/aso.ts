@@ -184,6 +184,11 @@ export type AsoFacts = {
   risks: ReturnType<typeof employeeRisks>;
   /** Declaração de inexistência vigente para o GES/função do funcionário (NOB-156), ou `null`. */
   riskAbsence: ApplicableRiskAbsence | null;
+  /**
+   * Funções de declarações vigentes do GES que não são exatamente a função cadastrada do
+   * funcionário (NOB-112): não valem; só explicam o bloqueio. Ausente = nenhuma.
+   */
+  riskAbsenceUnmatchedJobRoles?: string[];
   procedures: {
     procedureCode: string;
     otherDescription: string | null;
@@ -262,13 +267,18 @@ export function asoReadiness(facts: AsoFacts): AsoReadinessItem[] {
       "Nenhuma fonte de riscos vigente com riscos validados para esta empresa.",
       "MED-09",
     );
-  else if (facts.risks.validated.length === 0)
+  else if (facts.risks.validated.length === 0) {
+    const unmatched = facts.riskAbsenceUnmatchedJobRoles ?? [];
+    const hint = unmatched.length
+      ? ` Há declaração neste GES para a função ${unmatched.map((r) => `"${r}"`).join(", ")}, que não é exatamente a função cadastrada do funcionário${facts.employee.jobRole ? ` ("${facts.employee.jobRole}")` : ""}: ela não vale. O profissional autorizado deve declarar escolhendo a função cadastrada do GES.`
+      : "";
     block(
       "risks_absence_not_declared",
       "c",
-      "Nenhum risco validado para o grupo e a função, e não há declaração de inexistência de riscos na versão vigente da fonte. Ausência de cadastro não comprova ausência de risco: só o profissional autorizado pode declarar.",
+      `Nenhum risco validado para o grupo e a função, e não há declaração de inexistência de riscos na versão vigente da fonte. Ausência de cadastro não comprova ausência de risco: só o profissional autorizado pode declarar.${hint}`,
       "MED-09, DT-12",
     );
+  }
   if (facts.riskAbsence && facts.risks.validated.length > 0)
     warn(
       "risk_absence_conflict",

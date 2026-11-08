@@ -6,8 +6,10 @@ import {
   applicableRiskAbsence,
   declarationBlocker,
   riskAbsenceInputSchema,
+  riskAbsenceJobRoleSchema,
   riskMatchesScope,
   sourceIsLive,
+  unmatchedRiskAbsenceJobRoles,
   type DeclarableSource,
   type RiskAbsenceDeclarationView,
 } from "@/shared/domains/medicine/risk-absence";
@@ -41,6 +43,42 @@ describe("riskAbsenceInputSchema", () => {
         declaredBy: "x",
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("riskAbsenceJobRoleSchema (NOB-112)", () => {
+  const titles = ["Operador de empilhadeira", "OPERADOR DE EMPILHADEIRA", "Auxiliar"];
+  const fieldError = (jobRole: string, list: string[] = titles) => {
+    const result = riskAbsenceJobRoleSchema(list).safeParse({ jobRole });
+    return result.success
+      ? null
+      : result.error.issues.find((i) => i.path.join(".") === "jobRole")?.message;
+  };
+
+  it("vazio = grupo todo, sem conferência", () => {
+    expect(fieldError("")).toBeNull();
+    expect(fieldError("", [])).toBeNull();
+  });
+
+  it("aceita só o título exato de uma função vinculada ao GES", () => {
+    expect(fieldError("Operador de empilhadeira")).toBeNull();
+    expect(fieldError("OPERADOR DE EMPILHADEIRA")).toBeNull();
+    expect(fieldError("Auxiliar")).toBeNull();
+  });
+
+  it("abreviação, erro de digitação, outra caixa ou função fora do GES → erro no campo", () => {
+    for (const typo of [
+      "Op. empilhadeira",
+      "Operador de empilhadera",
+      "operador de empilhadeira",
+      "Soldador",
+    ])
+      expect(fieldError(typo)).toMatch(/não encontrada entre as funções/);
+    expect(fieldError("Auxiliar", [])).toMatch(/não encontrada/);
+  });
+
+  it("título repetido entre as funções do GES → ambíguo, recusa", () => {
+    expect(fieldError("Auxiliar", ["Auxiliar", "Auxiliar"])).toMatch(/mais de uma função/);
   });
 });
 
@@ -137,8 +175,12 @@ describe("applicableRiskAbsence", () => {
       declarationId: "d1",
       source: { id: S, title: "PGR", version: "1" },
     });
+    // Identidade exata do título (NOB-112): outra caixa é outra função no cadastro.
     expect(
       applicableRiskAbsence([decl({ jobRole: "auxiliar" })], [live], employee),
+    ).toBeNull();
+    expect(
+      applicableRiskAbsence([decl({ jobRole: "Auxiliar" })], [live], employee),
     ).not.toBeNull();
     expect(
       applicableRiskAbsence([decl({ jobRole: "Soldador" })], [live], employee),
@@ -174,5 +216,57 @@ describe("applicableRiskAbsence", () => {
       employee,
     );
     expect(result?.declarationId).toBe("new");
+  });
+});
+
+describe("unmatchedRiskAbsenceJobRoles (NOB-112)", () => {
+  const live = { id: S, superseded: false, freshness: "current" as const };
+  const decl = (
+    jobRole: string,
+    overrides: Partial<RiskAbsenceDeclarationView> = {},
+  ): RiskAbsenceDeclarationView => ({
+    id: jobRole,
+    sourceId: S,
+    gesId: G,
+    exposureGroup: "Administrativo",
+    jobRole,
+    justification: "x",
+    declaredBy: "prof",
+    declaredByName: null,
+    declaredAt: "2026-10-01T10:00:00.000Z",
+    ...overrides,
+  });
+  const employee = { gesId: G, jobRole: "Operador de empilhadeira" };
+
+  it("lista as funções declaradas no GES que não são a função do funcionário (só explicação)", () => {
+    expect(
+      unmatchedRiskAbsenceJobRoles(
+        [
+          decl("Op. empilhadeira"),
+          decl("operador de empilhadeira"),
+          decl("Op. empilhadeira", { id: "dup" }),
+        ],
+        [live],
+        employee,
+      ),
+    ).toEqual(["Op. empilhadeira", "operador de empilhadeira"]);
+  });
+
+  it("ignora grupo todo, função exata, outro GES, fonte não vigente e funcionário sem GES", () => {
+    expect(
+      unmatchedRiskAbsenceJobRoles(
+        [
+          decl(""),
+          decl("Operador de empilhadeira"),
+          decl("Outra", { gesId: "outro" }),
+          decl("Antiga", { sourceId: "substituida" }),
+        ],
+        [live, { id: "substituida", superseded: true, freshness: "current" }],
+        employee,
+      ),
+    ).toEqual([]);
+    expect(
+      unmatchedRiskAbsenceJobRoles([decl("Op.")], [live], { gesId: null, jobRole: "X" }),
+    ).toEqual([]);
   });
 });

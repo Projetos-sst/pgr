@@ -260,6 +260,25 @@ describe("asoReadiness", () => {
     expect(composeAso(facts()).risksAbsence).toBeNull();
   });
 
+  it("NOB-112: declaração com função que não é a do funcionário não libera e é explicada", () => {
+    const noRisks = { validated: [], pending: 0, usableSources: 1 };
+    const mismatch = facts({
+      risks: noRisks,
+      riskAbsenceUnmatchedJobRoles: ["Op. soldador"],
+    });
+    expect(blocking(mismatch)).toEqual(["risks_absence_not_declared"]);
+    const item = asoReadiness(mismatch).find(
+      (i) => i.code === "risks_absence_not_declared",
+    );
+    expect(item?.message).toMatch(/"Op\. soldador"/);
+    expect(item?.message).toMatch(/\("Soldador"\): ela não vale/);
+    // Sem divergência, a mensagem é a de sempre.
+    const plain = asoReadiness(facts({ risks: noRisks })).find(
+      (i) => i.code === "risks_absence_not_declared",
+    );
+    expect(plain?.message).not.toMatch(/não é exatamente a função/);
+  });
+
   it("exame de outra empresa ou com origem não comprovada não serve ao ASO (MED-07)", () => {
     expect(blocking(facts({ exam: { ...facts().exam, companyId: "c2" } }))).toEqual([
       "exam_other_company",

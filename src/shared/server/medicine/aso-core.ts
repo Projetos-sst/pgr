@@ -21,7 +21,10 @@ import { ValidationError } from "@/shared/errors/validation-error";
 
 import { loadProposalSources } from "./exam-proposal-core";
 import { listRiskAbsenceDeclarations } from "@/shared/db/repositories/risk-absence-declarations";
-import { applicableRiskAbsence } from "@/shared/domains/medicine/risk-absence";
+import {
+  applicableRiskAbsence,
+  unmatchedRiskAbsenceJobRoles,
+} from "@/shared/domains/medicine/risk-absence";
 
 const examUuid = (id: string) => requiredUuid("Exame inválido.").parse(id);
 const norm = (value: string | null | undefined) =>
@@ -87,6 +90,11 @@ async function loadFacts(ctx: TenantContext, examId: string): Promise<AsoFacts> 
     risks: employeeRisks(sources, data.employee),
     // Só declaração explícita na versão vigente da fonte (NOB-156, DT-12); nunca presumida.
     riskAbsence: applicableRiskAbsence(absenceDeclarations, sources, data.employee),
+    riskAbsenceUnmatchedJobRoles: unmatchedRiskAbsenceJobRoles(
+      absenceDeclarations,
+      sources,
+      data.employee,
+    ),
     procedures: data.procedures.map((p) => ({
       procedureCode: p.procedureCode,
       otherDescription: p.otherDescription,

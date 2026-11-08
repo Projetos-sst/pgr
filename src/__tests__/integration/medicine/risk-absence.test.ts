@@ -287,5 +287,148 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       expect((await LIST(req(outsider), params)).status).toBe(403);
       expect((await LIST(req(ownerB), params)).status).not.toBe(200);
     });
+
+    describe("função = função cadastrada e vinculada ao GES (NOB-112)", () => {
+      // GES_EMPTY: "Pedreiro" (seed) e "PEDREIRO" (outra função, mesma empresa, só a caixa muda).
+      // "Soldador" só no GES A.
+      const JR_UPPER = "cccccccc-0000-4000-8000-000000000071";
+      const JR_OTHER_GES = "cccccccc-0000-4000-8000-000000000072";
+      const typoFieldError = {
+        issues: [
+          expect.objectContaining({
+            path: ["jobRole"],
+            message: expect.stringMatching(/não encontrada entre as funções/),
+          }),
+        ],
+      };
+      const count = async () => {
+        const rows = (await admin`select count(*)::int as n from medical_risk_absence_declarations`) as unknown as {
+          n: number;
+        }[];
+        return rows[0].n;
+      };
+      let examId: string;
+      const blockingCodes = async () =>
+        (await getAsoReadiness(staff, examId)).items
+          .filter((i) => i.severity === "blocking")
+          .map((i) => i.code);
+
+      beforeEach(async () => {
+        await admin`insert into job_roles (id, org_id, company_id, title) values
+          (${JR_UPPER}, 'org_a', ${I.companyA}, 'PEDREIRO'),
+          (${JR_OTHER_GES}, 'org_a', ${I.companyA}, 'Soldador')`;
+        await admin`insert into ges_job_roles (org_id, ges_id, job_role_id, worker_count) values
+          ('org_a', ${GES_EMPTY}, ${I.jobRoleA}, 2),
+          ('org_a', ${GES_EMPTY}, ${JR_UPPER}, 1),
+          ('org_a', ${I.gesA}, ${JR_OTHER_GES}, 1)`;
+        await validateRisks();
+        await admin`update employees set ges_id=${GES_EMPTY} where id=${I.employeeA}`;
+        const exam = await createHealthExam("org_a", {
+          employeeId: I.employeeA,
+          examType: "periodic",
+          performedAt: "2026-10-20",
+          aptitude: "fit",
+        });
+        examId = exam.id;
+      });
+
+      it("lista as funções vinculadas a cada GES para quem pode declarar", async () => {
+        const { groups } = await listRiskAbsence(prof, I.companyA);
+        const byId = new Map(groups.map((g) => [g.id, g]));
+        expect(byId.get(GES_EMPTY)?.jobRoles.map((r) => r.title).sort()).toEqual(
+          ["PEDREIRO", "Pedreiro"].sort(),
+        );
+        expect(byId.get(I.gesA)?.jobRoles.map((r) => r.title).sort()).toEqual(
+          ["Pedreiro", "Soldador"].sort(),
+        );
+        // Função de outro tenant nunca aparece.
+        expect(
+          groups.flatMap((g) => g.jobRoles.map((r) => r.title)),
+        ).not.toContain("Eletricista");
+      });
+
+      it("erro de digitação ou abreviação → VALIDATION no campo jobRole e nada gravado", async () => {
+        for (const typo of ["Pedreir", "Op. pedreiro", "pedreiro"])
+          await expect(
+            declareRiskAbsence(prof, I.companyA, declaration({ jobRole: typo })),
+          ).rejects.toMatchObject(typoFieldError);
+        expect(await count()).toBe(0);
+        // REST: 422 com a mensagem no campo.
+        const params = { params: Promise.resolve({ id: I.companyA }) };
+        const res = await DECLARE(
+          req(prof, "POST", declaration({ jobRole: "Pedreir" })),
+          params,
+        );
+        expect(res.status).toBe(422);
+        const body = await res.json();
+        expect(body.error.code).toBe("VALIDATION");
+        expect(body.error.fields.jobRole).toMatch(/não encontrada entre as funções/);
+        expect(await count()).toBe(0);
+        expect(await blockingCodes()).toContain("risks_absence_not_declared");
+      });
+
+      it("função de outro GES da empresa → VALIDATION no campo, nada gravado", async () => {
+        await expect(
+          declareRiskAbsence(prof, I.companyA, declaration({ jobRole: "Soldador" })),
+        ).rejects.toMatchObject(typoFieldError);
+        expect(await count()).toBe(0);
+      });
+
+      it("função exata aceita e libera o item c do ASO do funcionário com aquela função", async () => {
+        expect(await blockingCodes()).toContain("risks_absence_not_declared");
+        await declareRiskAbsence(prof, I.companyA, declaration({ jobRole: "Pedreiro" }));
+        const after = await blockingCodes();
+        expect(after).not.toContain("risks_absence_not_declared");
+        expect(after).not.toContain("risk_source");
+        const { declarations } = await listRiskAbsence(staff, I.companyA);
+        expect(declarations).toEqual([
+          expect.objectContaining({ gesId: GES_EMPTY, jobRole: "Pedreiro" }),
+        ]);
+      });
+
+      it('variação de caixa é outra função: declaração de "Pedreiro" não vale para "PEDREIRO"', async () => {
+        await declareRiskAbsence(prof, I.companyA, declaration({ jobRole: "Pedreiro" }));
+        await admin`update employees set job_role_id=${JR_UPPER} where id=${I.employeeA}`;
+        expect(await blockingCodes()).toContain("risks_absence_not_declared");
+        // A própria "PEDREIRO", vinculada ao GES, pode ser declarada e então vale.
+        await declareRiskAbsence(prof, I.companyA, declaration({ jobRole: "PEDREIRO" }));
+        expect(await blockingCodes()).not.toContain("risks_absence_not_declared");
+      });
+
+      it("declaração antiga com texto que não é exatamente a função continua bloqueando (fail closed) e é explicada", async () => {
+        // Gravada como antes da conferência (texto livre), direto pelo profissional autorizado.
+        for (const legacy of ["pedreiro", "Pedreir"])
+          await asRuntime(
+            "prof",
+            (tx) =>
+              tx`insert into medical_risk_absence_declarations (org_id, company_id, source_id, ges_id, exposure_group, job_role, justification, declared_by)
+              values ('org_a', ${I.companyA}, ${sourceId}, ${GES_EMPTY}, 'GES Administrativo Fictício', ${legacy}, ${JUSTIFICATION}, 'prof')`,
+          );
+        const readiness = await getAsoReadiness(staff, examId);
+        const item = readiness.items.find((i) => i.code === "risks_absence_not_declared");
+        expect(item?.severity).toBe("blocking");
+        expect(item?.message).toContain('"pedreiro"');
+        expect(item?.message).toContain('"Pedreir"');
+        expect(item?.message).toContain('("Pedreiro")');
+        // Nada é apagado nem reassociado.
+        expect(await count()).toBe(2);
+      });
+
+      it("autorização e tenant intactos: sem autorização → 403 antes de conferir a função; outro tenant barrado", async () => {
+        for (const ctx of [owner, staff, outsider])
+          for (const jobRole of ["Pedreiro", "Pedreir"])
+            await expect(
+              declareRiskAbsence(ctx, I.companyA, declaration({ jobRole })),
+            ).rejects.toMatchObject({ code: "FORBIDDEN" });
+        await expect(
+          declareRiskAbsence(ownerB, I.companyA, declaration({ jobRole: "Pedreiro" })),
+        ).rejects.toMatchObject({ code: expect.stringMatching(/FORBIDDEN|NOT_FOUND/) });
+        // Função de outro tenant, no GES deste tenant → recusada no campo.
+        await expect(
+          declareRiskAbsence(prof, I.companyA, declaration({ jobRole: "Eletricista" })),
+        ).rejects.toMatchObject(typoFieldError);
+        expect(await count()).toBe(0);
+      });
+    });
   },
 );

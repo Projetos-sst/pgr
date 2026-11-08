@@ -28,7 +28,7 @@ export function RiskAbsenceSection({
   data: {
     declarations: RiskAbsenceDeclarationView[];
     canDeclare: boolean;
-    groups: { id: string; name: string }[];
+    groups: { id: string; name: string; jobRoles: { id: string; title: string }[] }[];
   };
   sources: SourceRow[];
 }) {
@@ -73,7 +73,11 @@ export function RiskAbsenceSection({
           sources={sources
             .filter(sourceIsLive)
             .map((s) => ({ id: s.id, label: `${s.title} — ${s.version}` }))}
-          groups={data.groups.map((g) => ({ id: g.id, label: g.name }))}
+          groups={data.groups.map((g) => ({
+            id: g.id,
+            label: g.name,
+            jobRoles: g.jobRoles,
+          }))}
         />
       ) : null}
     </section>

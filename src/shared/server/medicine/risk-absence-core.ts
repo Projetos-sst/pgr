@@ -6,6 +6,7 @@ import * as repo from "@/shared/db/repositories/risk-absence-declarations";
 import {
   declarationBlocker,
   riskAbsenceInputSchema,
+  riskAbsenceJobRoleSchema,
 } from "@/shared/domains/medicine/risk-absence";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import { NotFoundError } from "@/shared/errors/not-found-error";
@@ -25,17 +26,27 @@ export async function listRiskAbsence(ctx: TenantContext, companyId: string) {
   const canDeclare = await repo.canDeclareRiskAbsence(ctx, id);
   if (ctx.role === "client" && !canDeclare)
     throw new ForbiddenError("Sem autorização profissional ativa nesta empresa.");
-  const [declarations, groups] = await Promise.all([
+  const [declarations, ges, gesJobRoles] = await Promise.all([
     repo.listRiskAbsenceDeclarations(ctx, id),
     canDeclare ? repo.listCompanyGes(ctx, id) : Promise.resolve([]),
+    canDeclare ? repo.listCompanyGesJobRoles(ctx, id) : Promise.resolve([]),
   ]);
+  // Cada GES com as funções vinculadas: o formulário escolhe, não digita (NOB-112).
+  const groups = ges.map((g) => ({
+    ...g,
+    jobRoles: gesJobRoles
+      .filter((r) => r.gesId === g.id)
+      .map((r) => ({ id: r.jobRoleId, title: r.title })),
+  }));
   return { declarations, canDeclare, groups };
 }
 
 /**
  * O profissional com autorização ativa declara a inexistência de riscos do GES/função na versão
  * vigente da fonte. Recusa fonte substituída ou desatualizada e escopo com risco pendente ou
- * validado: o sistema nunca transforma cadastro vazio em inexistência.
+ * validado: o sistema nunca transforma cadastro vazio em inexistência. A função, quando
+ * informada, precisa ser o título exato de uma função vinculada ao GES; senão, VALIDATION no
+ * campo `jobRole` e nada é gravado.
  */
 export async function declareRiskAbsence(
   ctx: TenantContext,
@@ -50,6 +61,11 @@ export async function declareRiskAbsence(
       "A declaração de inexistência de riscos exige autorização profissional ativa de validação de riscos nesta empresa.",
     );
   const group = await repo.getCompanyGes(ctx, id, values.gesId);
+  // Função informada = exatamente uma função cadastrada e vinculada a este GES (NOB-112).
+  if (values.jobRole) {
+    const linked = await repo.listCompanyGesJobRoles(ctx, id, group.id);
+    riskAbsenceJobRoleSchema(linked.map((r) => r.title)).parse({ jobRole: values.jobRole });
+  }
   const source = (await loadProposalSources(ctx, id)).find(
     (s) => s.id === values.sourceId,
   );

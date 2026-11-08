@@ -13,6 +13,8 @@ import { ValidationError } from "@/shared/errors/validation-error";
 
 import { withOrg, type TenantTransaction } from "../with-org";
 import { ges } from "../schema/ges";
+import { gesJobRoles } from "../schema/ges-job-roles";
+import { jobRoles } from "../schema/job-roles";
 import { professionalRiskAuthorizations as grants } from "../schema/medical-risk-authorizations";
 import { medicalRiskAbsenceDeclarations as declarations } from "../schema/medical-risk-absence";
 import { orgMemberships } from "../schema/org-memberships";
@@ -125,6 +127,44 @@ export async function listCompanyGes(
       .from(ges)
       .where(and(eq(ges.orgId, ctx.tenantId), eq(ges.companyId, companyId)))
       .orderBy(ges.name),
+  );
+}
+
+/**
+ * Funções cadastradas vinculadas a cada GES da empresa (`ges_job_roles`), para a declaração
+ * escolher a função em vez de digitar (NOB-112). Só GES e funções desta empresa, neste tenant.
+ * Com `gesId`, só as daquele GES.
+ */
+export async function listCompanyGesJobRoles(
+  ctx: TenantContext,
+  companyId: string,
+  gesId?: string,
+): Promise<{ gesId: string; jobRoleId: string; title: string }[]> {
+  return withOrg(ctx.tenantId, (tx) =>
+    tx
+      .select({
+        gesId: gesJobRoles.gesId,
+        jobRoleId: jobRoles.id,
+        title: jobRoles.title,
+      })
+      .from(gesJobRoles)
+      .innerJoin(
+        ges,
+        and(eq(ges.id, gesJobRoles.gesId), eq(ges.orgId, gesJobRoles.orgId)),
+      )
+      .innerJoin(
+        jobRoles,
+        and(eq(jobRoles.id, gesJobRoles.jobRoleId), eq(jobRoles.orgId, gesJobRoles.orgId)),
+      )
+      .where(
+        and(
+          eq(gesJobRoles.orgId, ctx.tenantId),
+          eq(ges.companyId, companyId),
+          eq(jobRoles.companyId, companyId),
+          gesId ? eq(gesJobRoles.gesId, gesId) : undefined,
+        ),
+      )
+      .orderBy(jobRoles.title),
   );
 }
 
