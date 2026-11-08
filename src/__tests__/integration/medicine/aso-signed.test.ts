@@ -505,11 +505,14 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
       });
     expect(await admin`select id from aso_signed_documents`).toHaveLength(0);
 
+    // A prévia antiga imprime o registro anterior ("70002"): com o cadastro reformatado ela não é
+    // mais a composição atual (lote 3). Nova prévia, assinada pelo examinador.
+    const fresh = await generateDocument(staff, exam.id);
     // Só números e UF minúscula: confere; o signatário fica gravado como está no cadastro.
     const created = await registerSignedAso(
       examiner,
       exam.id,
-      examinerFields(preview.id, { signerRegistration: "70002", signerUf: "ma" }),
+      examinerFields(fresh.id, { signerRegistration: "70002", signerUf: "ma" }),
       pdf(),
     );
     expect(created).toMatchObject({
