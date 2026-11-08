@@ -568,6 +568,13 @@
       "when": 1794106395063,
       "tag": "0080_batch2_coordinator_in_force_and_job_role",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1794159670061,
+      "tag": "0081_lote3_signed_coordinator_plan_guard_crm_trigger",
+      "breakpoints": true
     }
   ]
 }
