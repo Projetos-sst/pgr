@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { formatInstantDate } from "@/shared/dates";
 import {
   CLINICAL_ACCESS_ACTION_LABELS,
   CLINICAL_ACCESS_BASIS_LABELS,
@@ -100,7 +101,7 @@ export default async function EditHealthExamPage({
         {currentRestriction?.kind === "restriction" ? (
           <p role="status">
             {currentRestriction.restriction} · comunicada em{" "}
-            {currentRestriction.recordedAt.slice(0, 10)}
+            {formatInstantDate(currentRestriction.recordedAt)}
             {currentRestriction.authorName ? ` por ${currentRestriction.authorName}` : ""}
           </p>
         ) : (
@@ -128,7 +129,7 @@ export default async function EditHealthExamPage({
             <ul className="text-text-subtle list-disc pl-5">
               {eventRows.map((event) => (
                 <li key={event.id}>
-                  {event.occurredAt.slice(0, 10)} ·{" "}
+                  {formatInstantDate(event.occurredAt)} ·{" "}
                   {CLINICAL_ACCESS_ACTION_LABELS[event.action]} ·{" "}
                   {event.medicoName ?? "Profissional"} (
                   {CLINICAL_ACCESS_BASIS_LABELS[event.basis].toLowerCase()})

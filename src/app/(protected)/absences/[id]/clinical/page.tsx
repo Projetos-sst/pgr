@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { formatCivilDate, formatInstantDate } from "@/shared/dates";
 import { ABSENCE_CAUSE_LABELS } from "@/shared/domains/medicine/absences";
 import {
   getAbsenceAction,
@@ -11,8 +12,6 @@ import { PageHeader } from "../../../_ui/list";
 import { AbsenceClinicalNoteForm } from "./clinical-note-form";
 
 export const dynamic = "force-dynamic";
-
-const fmt = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 
 /**
  * Área clínica do afastamento (NOB-139, MED-17): atestado e CID, só para a conta vinculada ao
@@ -30,7 +29,7 @@ export default async function AbsenceClinicalPage({
   if (!absence.ok) notFound();
   const header = (
     <PageHeader
-      title={`Área clínica do afastamento — ${ABSENCE_CAUSE_LABELS[absence.data.cause]} desde ${fmt(absence.data.startsOn)}`}
+      title={`Área clínica do afastamento — ${ABSENCE_CAUSE_LABELS[absence.data.cause]} desde ${formatCivilDate(absence.data.startsOn, "br")}`}
       backHref={`/employees/${absence.data.employeeId}`}
       description="Atestado e CID do afastamento, separados do registro administrativo e visíveis só ao coordenador do PCMSO."
     />
@@ -62,7 +61,7 @@ export default async function AbsenceClinicalPage({
             {notes.data.map((n) => (
               <li key={n.id} className="border-border rounded-lg border p-3">
                 <p className="text-text-subtle text-xs">
-                  {fmt(n.recordedAt)}
+                  {formatInstantDate(n.recordedAt, "br")}
                   {n.authorName ? ` · ${n.authorName}` : ""}
                 </p>
                 {n.cid ? (

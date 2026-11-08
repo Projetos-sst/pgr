@@ -1477,6 +1477,16 @@ Regras: status = validade **informada** (`valid_until`), **sem periodicidade cal
 clínico livre (`notes`/`certificatePath`) nem CPF nos contratos; leituras não emitem auditoria
 (`officeAction` só registra operação/resultado em caso de erro, sem payload).
 
+**Datas exibidas (civil × instante, NOB-112/109/110).** Os contratos não mudam: data civil (coluna
+`date`, `YYYY-MM-DD` — realização e validade do exame, assinatura, ciclo, período, afastamento) e
+instante (`timestamptz`, ISO com hora — registro, geração, aprovação, confirmação, declaração,
+autoria, trilhas). Nas telas, a data civil aparece **como está** (`formatCivilDate`, sem passar por
+`Date`/UTC) e o instante aparece pelo **dia de Brasília** (`formatInstantDate` /
+`formatInstantDateTime`, `America/Sao_Paulo` via `Intl`, mesmo texto no servidor e no navegador) — nunca
+por `iso.slice(0, 10)`, que entre 21h e 23h59 de Brasília mostraria o dia seguinte. Instantes guardados
+no `content` arquivado (ex.: `examPlan.approvedAt` do PCMSO) seguem a mesma regra na exibição, sem
+alterar o conteúdo nem o hash. Helpers em `src/shared/dates.ts`.
+
 ---
 
 ## Controle de formulário (ISO) — `actions/documents/form-controls.ts`

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { formatInstantDate, formatInstantDateTime } from "@/shared/dates";
 import { getProcedure } from "@/shared/domains/medicine/procedure-catalog";
 import { getCompanyAction } from "@/shared/server/actions/pgr/companies";
 import {
@@ -85,7 +86,7 @@ export default async function ExamPlanPage({
           ) : null}
           {plan.approvedAt ? (
             <p className="text-text-subtle text-sm">
-              Aprovado em {new Date(plan.approvedAt).toISOString().slice(0, 10)}
+              Aprovado em {formatInstantDate(plan.approvedAt)}
               {plan.approvalNote ? ` · ${plan.approvalNote}` : ""}
             </p>
           ) : null}
@@ -149,8 +150,7 @@ export default async function ExamPlanPage({
             <ul className="text-text-subtle list-disc pl-5 text-xs">
               {plan.events.map((event) => (
                 <li key={event.id}>
-                  {new Date(event.createdAt).toISOString().slice(0, 16).replace("T", " ")}{" "}
-                  · {event.event} · {event.actor}
+                  {formatInstantDateTime(event.createdAt)} · {event.event} · {event.actor}
                 </li>
               ))}
             </ul>

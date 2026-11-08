@@ -1,3 +1,4 @@
+import { formatInstantDate } from "@/shared/dates";
 import {
   sourceIsLive,
   type RiskAbsenceDeclarationView,
@@ -57,7 +58,8 @@ export function RiskAbsenceSection({
                   {live
                     ? "versão vigente"
                     : "fonte substituída ou desatualizada: não vale mais"}{" "}
-                  · {d.declaredByName ?? d.declaredBy} em {d.declaredAt.slice(0, 10)}
+                  · {d.declaredByName ?? d.declaredBy} em{" "}
+                  {formatInstantDate(d.declaredAt)}
                 </p>
                 <p>{d.justification}</p>
               </li>

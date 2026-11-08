@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { formatInstantDate } from "@/shared/dates";
 import { procedureLabel, type AsoContent } from "@/shared/domains/medicine/aso";
 import {
   ASO_DELIVERY_EVIDENCE_LABELS,
@@ -102,7 +103,7 @@ function Preview({
                 {content.risksAbsence.declaredBy
                   ? ` · declarada por ${content.risksAbsence.declaredBy}`
                   : ""}{" "}
-                em {content.risksAbsence.declaredAt.slice(0, 10)}.
+                em {formatInstantDate(content.risksAbsence.declaredAt)}.
               </p>
             ) : null}
           </dd>
@@ -253,7 +254,7 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
               {conclusionRows.map((row) => (
                 <li key={row.id}>
                   {row.conclusion === "fit" ? "Apto" : "Inapto"} para a função ·
-                  confirmado em {new Date(row.confirmedAt).toISOString().slice(0, 10)}
+                  confirmado em {formatInstantDate(row.confirmedAt)}
                 </li>
               ))}
             </ul>
@@ -321,7 +322,8 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
                 {doc.replaceReason ? <span>Motivo: {doc.replaceReason}</span> : null}
                 <span className="text-xs">
                   SHA-256 {doc.fileSha256.slice(0, 16)}… · registrado em{" "}
-                  {doc.registeredAt.slice(0, 10)} <DownloadSignedAsoButton id={doc.id} />
+                  {formatInstantDate(doc.registeredAt)}{" "}
+                  <DownloadSignedAsoButton id={doc.id} />
                 </span>
               </li>
             ))}
@@ -450,7 +452,7 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
             {docRows.map((doc) => (
               <li key={doc.id}>
                 Versão {doc.version} · prévia · gerada em{" "}
-                {new Date(doc.generatedAt).toISOString().slice(0, 10)} · SHA-256{" "}
+                {formatInstantDate(doc.generatedAt)} · SHA-256{" "}
                 {doc.contentSha256.slice(0, 12)}…
               </li>
             ))}

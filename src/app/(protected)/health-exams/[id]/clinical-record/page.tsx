@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { formatInstantDate } from "@/shared/dates";
 import {
   CLINICAL_ACCESS_BASIS_LABELS,
   CLINICAL_NOTE_ORIGIN_LABELS,
@@ -16,8 +17,6 @@ import { PageHeader } from "../../../_ui/list";
 import { ClinicalNoteForm, WorkRestrictionForm } from "./clinical-record-controls";
 
 export const dynamic = "force-dynamic";
-
-const day = (iso: string) => iso.slice(0, 10);
 
 /**
  * Prontuário segregado do exame (NOB-155, DT-21). Só a conta vinculada ao médico examinador ou ao
@@ -71,7 +70,8 @@ export default async function ClinicalRecordPage({
             {record.data.notes.map((note) => (
               <li key={note.id} className="border-border rounded-lg border p-3">
                 <p className="text-text-subtle text-xs">
-                  {day(note.recordedAt)} · {CLINICAL_NOTE_ORIGIN_LABELS[note.origin]}
+                  {formatInstantDate(note.recordedAt)} ·{" "}
+                  {CLINICAL_NOTE_ORIGIN_LABELS[note.origin]}
                   {note.authorName
                     ? ` · ${note.authorName} (${note.authorRegistration})`
                     : ""}
@@ -98,7 +98,7 @@ export default async function ClinicalRecordPage({
             {current.kind === "restriction"
               ? current.restriction
               : "sem restrições (retiradas)"}{" "}
-            · {day(current.recordedAt)}
+            · {formatInstantDate(current.recordedAt)}
           </p>
         ) : (
           <p className="text-text-subtle">Nenhuma restrição comunicada.</p>

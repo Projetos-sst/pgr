@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { formatInstantDate } from "@/shared/dates";
 import { getCompanyAction } from "@/shared/server/actions/pgr/companies";
 import { listInterpretationCriteriaAction } from "@/shared/server/actions/medicine/interpretation-criteria";
 
@@ -69,7 +70,7 @@ export default async function InterpretationCriteriaPage({
             <p className="text-text-subtle text-xs">
               {row.inApprovedPlan ? "No plano aprovado" : "Fora do plano aprovado atual"}
               {row.current
-                ? ` · versão ${row.current.version} · ${row.current.authorName} · ${row.current.authoredAt.slice(0, 10)}`
+                ? ` · versão ${row.current.version} · ${row.current.authorName} · ${formatInstantDate(row.current.authoredAt)}`
                 : " · pendente de definição pelo médico coordenador"}
             </p>
           </header>
