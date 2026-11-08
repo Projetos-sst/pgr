@@ -17,6 +17,7 @@ import {
 
 import { appRuntimeRole } from "../roles";
 import { companies } from "./companies";
+import { coordinatorAssignmentInForceToday } from "./coordinator-in-force";
 import { medicalExamPlans } from "./medical-exam-plans";
 import { companyModuleScope } from "./module-policy";
 import { orgs } from "./orgs";
@@ -224,9 +225,8 @@ export const pcmsoSignedDocuments = pgTable(
     }),
     // Ator como autor; prévia da mesma empresa com o mesmo hash e o mesmo plano, aprovado; prévia e
     // plano fundamentados exatamente nas fontes de riscos vigentes (não substituídas, mesma versão);
-    // signatário
-    // = coordenador designado vigente; fluxo A só pela conta verificada desse coordenador, fluxo B
-    // só pela equipe do escritório.
+    // signatário = coordenador com designação em vigor hoje, única (America/Sao_Paulo; NOB-109);
+    // fluxo A só pela conta verificada desse coordenador, fluxo B só pela equipe do escritório.
     pgPolicy("pcmso_signed_documents_insert", {
       as: "restrictive",
       for: "insert",
@@ -248,7 +248,8 @@ export const pcmsoSignedDocuments = pgTable(
           and not exists (select 1 from public.medical_risk_sources ms where ms.org_id = ${t.orgId} and ms.company_id = ${t.companyId} and not exists (select 1 from public.medical_risk_sources nx where nx.org_id = ms.org_id and nx.company_id = ms.company_id and nx.supersedes_source_id = ms.id)
             and not exists (select 1 from jsonb_array_elements(p.based_on->'sources') sx where sx->>'id' = ms.id::text)))
         and exists (select 1 from public.pcmso_coordinator_assignments a join public.medicos m on m.id = a.medico_id and m.org_id = a.org_id
-          where a.org_id = ${t.orgId} and a.company_id = ${t.companyId} and a.ends_on is null
+          where a.org_id = ${t.orgId} and a.company_id = ${t.companyId}
+            and ${coordinatorAssignmentInForceToday("a")}
             and m.crm = ${t.signerRegistration} and m.registration_uf = ${t.signerUf}
             and (${t.origin} <> 'coordinator' or a.medico_id in (select public.actor_clinical_medico_ids(a.org_id))))
         and (${t.origin} <> 'office_received' or exists (select 1 from public.org_memberships om where om.org_id = ${t.orgId}

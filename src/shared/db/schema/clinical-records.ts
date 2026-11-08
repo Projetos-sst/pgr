@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { appRuntimeRole } from "../roles";
+import { coordinatorAssignmentInForceToday } from "./coordinator-in-force";
 import { healthExams } from "./health-exams";
 import { orgs } from "./orgs";
 
@@ -22,9 +23,9 @@ const actorIsOwner = sql`exists (select 1 from public.org_memberships m where m.
 /**
  * Conta da sessão autorizada a acessar o prontuário do exame (NOB-155, DT-21): vínculo aberto
  * (NOB-149) com médico ativo e associação viva ao escritório, e esse médico é o examinador do
- * exame ou o coordenador com designação aberta da empresa onde o exame foi realizado (MED-07).
- * Papel no escritório (owner, colaborador) não substitui o vínculo. Com `medico`, exige também que
- * o médico registrado na linha seja o da conta.
+ * exame ou o coordenador com designação em vigor hoje (única; NOB-109) da empresa onde o exame foi
+ * realizado (MED-07). Papel no escritório (owner, colaborador) não substitui o vínculo. Com
+ * `medico`, exige também que o médico registrado na linha seja o da conta.
  */
 function clinicianFor(orgId: SQLWrapper, examId: SQLWrapper, medico?: SQLWrapper): SQL {
   const sameMedico = medico ? sql` and c.medico_id = ${medico}` : sql``;
@@ -33,7 +34,8 @@ function clinicianFor(orgId: SQLWrapper, examId: SQLWrapper, medico?: SQLWrapper
         join lateral public.actor_clinical_medico_ids(h.org_id) c(medico_id) on true
         where h.id = ${examId} and h.org_id = ${orgId}${sameMedico}
           and (h.doctor_id = c.medico_id or exists (select 1 from public.pcmso_coordinator_assignments a
-            where a.org_id = h.org_id and a.company_id = h.company_id and a.medico_id = c.medico_id and a.ends_on is null)))`;
+            where a.org_id = h.org_id and a.company_id = h.company_id and a.medico_id = c.medico_id
+              and ${coordinatorAssignmentInForceToday("a")})))`;
 }
 
 /**

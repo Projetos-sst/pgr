@@ -97,7 +97,7 @@ export async function listCriteriaHistory(
 
 /**
  * Nova versão do critério de um procedimento. Só a conta vinculada ao coordenador com designação
- * aberta (NOB-149), em nome desse médico; a RLS repete a regra.
+ * em vigor hoje (NOB-149/NOB-109), em nome desse médico; a RLS repete a regra.
  */
 export async function insertCriterion(
   ctx: TenantContext,

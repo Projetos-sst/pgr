@@ -741,7 +741,9 @@ Regras (`domains/medicine/pcmso-coordinators.ts`): só médico ativo, com UF do 
 Trabalho, exige `rqeExceptionReason` (exceção do NR-7 item 7.5.2: inexistência de médico do trabalho na
 localidade). Trocar de coordenador encerra a designação aberta na véspera do início da nova, na mesma transação.
 
-**Aberta × vigente (NOB-109):** designação aberta (`ends_on` nulo) não é o mesmo que designação vigente. A data de início pode ser futura (sucessor agendado) e o encerramento pode ser agendado. A conferência e a prévia do PCMSO usam o coordenador **vigente hoje** (`coordinatorInForceOn`, America/Sao_Paulo). Os atos do coordenador (plano, critérios, relatório, PCMSO assinado) continuam exigindo a designação **aberta**, no app e na RLS.
+**Aberta × vigente (NOB-109):** designação aberta (`ends_on` nulo) não é o mesmo que designação vigente. A data de início pode ser futura (sucessor agendado) e o encerramento pode ser agendado. A conferência e a prévia do PCMSO usam o coordenador **vigente hoje** (`coordinatorInForceOn`, America/Sao_Paulo).
+
+**Permissão = designação vigente hoje (America/Sao_Paulo); sobreposição nega.** Os atos do coordenador (decidir e aprovar o plano de exames, critérios de interpretação, relatório analítico e sua finalização, PCMSO assinado, prontuário e área clínica do afastamento como coordenador) exigem a designação **em vigor hoje** (`starts_on <= hoje` e `ends_on` nulo ou `>= hoje`, fim inclusivo), não a "aberta": encerramento agendado mantém o poder até o fim; sucessor agendado só o tem a partir do início; no dia da troca só a nova vale (a anterior termina na véspera). Duas designações em vigor no mesmo dia (só alcançável fora do app) → ninguém age (`403`/`422`), sem escolher uma. Mesma regra no app (`coordinatorInForceTodayTx`, `repositories/pcmso-coordinator-in-force.ts`) e na RLS (fragmento único `coordinatorAssignmentInForceToday`, `schema/coordinator-in-force.ts`). Vínculo aberto, identidade verificada (NOB-158), profissional ativo, associação viva e módulo seguem exigidos; owner sem identidade médica não substitui o coordenador. Quem era o coordenador na data de um documento (prévia, ASO) é conteúdo do documento, não permissão.
 
 | Action                            | Entrada                                                    | Retorno (`data`)             |
 | --------------------------------- | ---------------------------------------------------------- | ---------------------------- |
@@ -766,7 +768,7 @@ Dá ao profissional cadastrado uma identidade autenticada (NOB-149, critério de
 
 A conta precisa ser membro do escritório e o profissional precisa estar ativo (`VALIDATION`). Não há FK para `org_memberships`: a saída da conta não apaga o histórico, e a autorização exige a associação viva no uso.
 
-**Autorização por vínculo:** `assertActorIsCompanyCoordinator(tx, ctx, companyId)` (`repositories/medico-user-links.ts`) só aceita a conta da sessão vinculada ao profissional da designação **aberta** de coordenador da empresa (NOB-144), com profissional ativo e associação viva. O papel no escritório (owner, colaborador) não substitui o vínculo. É a base para os atos do coordenador (revisão do plano de exames).
+**Autorização por vínculo:** `assertActorIsCompanyCoordinator(tx, ctx, companyId)` (`repositories/medico-user-links.ts`) só aceita a conta da sessão vinculada ao profissional da designação de coordenador da empresa **em vigor hoje** e única (NOB-144/NOB-109), com profissional ativo e associação viva. O papel no escritório (owner, colaborador) não substitui o vínculo. É a base para os atos do coordenador (revisão do plano de exames).
 
 | Action                           | Entrada                          | Retorno (`data`)                                               |
 | -------------------------------- | -------------------------------- | -------------------------------------------------------------- |
@@ -886,7 +888,7 @@ Plano de exames por grupo de exposição (NOB-150, MED-15). Migration `0062_medi
 | Regra                                                      | App                                         | Banco (RLS e grants)                                                                                                            |
 | ---------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | A equipe prepara o rascunho a partir da proposta (NOB-147) | `createDraft`                               | insert só com `status='draft'` e `prepared_by` = ator                                                                           |
-| Só a coordenadora vinculada decide, acrescenta e aprova    | `assertActorIsCompanyCoordinator` (NOB-149) | `actorCoordinatesCompany`: designação aberta + vínculo aberto + profissional ativo + associação viva; `approved_by_user` = ator |
+| Só a coordenadora vinculada decide, acrescenta e aprova    | `assertActorIsCompanyCoordinator` (NOB-149) | `actorCoordinatesCompany`: designação vigente hoje + vínculo aberto + médico ativo + associação viva; `approved_by_user` = ator |
 | Aprovado e substituído não mudam                           | `assertDraft`                               | itens só mudam com plano em rascunho; UPDATE só nas colunas de decisão e aprovação                                              |
 | Nada é apagado                                             | sem rota DELETE                             | `REVOKE DELETE` nas três tabelas; eventos sem UPDATE                                                                            |
 
@@ -1008,7 +1010,7 @@ Critérios de interpretação dos achados e planejamento das condutas por exame 
 **Autoria médica.**
 
 - O texto é do médico coordenador. O sistema não gera, não sugere e não completa texto clínico (DT-23, MED-19/20).
-- Só a conta vinculada (NOB-149) ao coordenador com designação aberta registra, e a versão fica em nome desse médico (`authored_by_medico_id`).
+- Só a conta vinculada (NOB-149) ao coordenador com designação em vigor hoje (NOB-109) registra, e a versão fica em nome desse médico (`authored_by_medico_id`).
 - Equipe, owner, vínculo revogado ou designação encerrada → `403`. A RLS repete a regra.
 
 **Versões (`pcmso_interpretation_criteria`).**
@@ -1037,7 +1039,7 @@ Relatório analítico anual do PCMSO (NOB-154, NR-7 7.6.2 a 7.6.6), em `domains/
 
 **Elaboração (7.6.2).**
 
-- Só a conta vinculada (NOB-149) ao coordenador com designação aberta elabora, e a versão fica em nome desse médico.
+- Só a conta vinculada (NOB-149) ao coordenador com designação em vigor hoje (NOB-109) elabora, e a versão fica em nome desse médico.
 - Owner, colaborador, cliente e vínculo revogado → `403`. A RLS repete a regra.
 
 **Período.**
@@ -1206,7 +1208,7 @@ Afastamentos e alertas de exame de retorno (NOB-139, MED-23), em `domains/medici
 
 **Área clínica** (`employee_absence_clinical_notes`):
 
-- Atestado e CID; só a conta vinculada ao coordenador do PCMSO com designação aberta lê e grava (servidor e RLS).
+- Atestado e CID; só a conta vinculada ao coordenador do PCMSO com designação em vigor hoje (NOB-109) lê e grava (servidor e RLS).
 - O CID exige a autorização do trabalhador registrada (referência do termo); o formato CID-10 é conferido também no banco.
 - Só inclusão. Funcionário com área clínica de afastamento não é excluído (`409`).
 - Cada leitura e gravação vai para `absence_clinical_access_events`, sem conteúdo.
@@ -1240,7 +1242,7 @@ Prontuário clínico do exame (NOB-155, DT-21, MED-10/17), em `domains/medicine/
 
 - Só a conta vinculada (NOB-149) ao médico ativo que é:
   - o examinador do exame; ou
-  - o coordenador com designação aberta da empresa onde o exame foi realizado (MED-07). Exame sem origem comprovada → só o examinador.
+  - o coordenador com designação em vigor hoje (NOB-109) da empresa onde o exame foi realizado (MED-07). Exame sem origem comprovada → só o examinador.
 - Owner, colaborador, médico sem relação com o exame, vínculo revogado, designação encerrada, profissional inativo e conta fora do escritório → `403`. Cliente → `403`; outro tenant → `404`.
 - As policies da 0067 repetem a regra no banco, para o papel `app_runtime`, com o ator da sessão.
 

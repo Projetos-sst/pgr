@@ -54,7 +54,7 @@ export default async function InterpretationCriteriaPage({
           </p>
         )}
         <p className="text-text-subtle text-xs">
-          Só a conta vinculada ao médico coordenador com designação aberta registra
+          Só a conta vinculada ao médico coordenador com designação em vigor hoje registra
           critérios. Cada registro é uma nova versão; as anteriores ficam no histórico.
         </p>
       </section>

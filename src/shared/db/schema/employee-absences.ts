@@ -14,6 +14,7 @@ import {
 
 import { appRuntimeRole } from "../roles";
 import { companies } from "./companies";
+import { coordinatorAssignmentInForceToday } from "./coordinator-in-force";
 import { employees } from "./employees";
 import { companyModuleScope } from "./module-policy";
 import { orgs } from "./orgs";
@@ -184,13 +185,15 @@ export type EmployeeAbsenceEvent = InferSelectModel<typeof employeeAbsenceEvents
 
 /**
  * Conta da sessão é o coordenador do PCMSO da empresa: vínculo aberto (NOB-149/157), médico ativo,
- * associação viva e designação aberta. Papel no escritório não substitui o vínculo.
+ * associação viva e designação em vigor hoje, única (NOB-109). Papel no escritório não substitui o
+ * vínculo.
  */
 const coordinatorFor = (orgId: unknown, companyId: unknown, medico?: unknown) => {
   const sameMedico = medico ? sql` and a.medico_id = ${medico}` : sql``;
   // NOB-158: coordenador com identidade verificada (função central), nunca o vínculo sozinho.
   return sql`exists (select 1 from public.pcmso_coordinator_assignments a
-        where a.org_id = ${orgId} and a.company_id = ${companyId} and a.ends_on is null${sameMedico}
+        where a.org_id = ${orgId} and a.company_id = ${companyId}${sameMedico}
+          and ${coordinatorAssignmentInForceToday("a")}
           and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id)))`;
 };
 

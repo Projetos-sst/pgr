@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
@@ -24,10 +24,11 @@ import {
 } from "../schema/employee-absences";
 import { employees } from "../schema/employees";
 import { healthExams } from "../schema/health-exams";
-import { medicos, pcmsoCoordinatorAssignments as assignments } from "../schema/medicos";
+import { medicos } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
 import { actorClinicalMedicoIdsTx } from "./clinical-actor";
 import { assertCompanyModuleTx } from "./company-modules";
+import { assignmentInForceTodayTx } from "./pcmso-coordinator-in-force";
 
 /** Transação com o ator da sessão: as policies conferem autoria e, na área clínica, o vínculo. */
 async function actorTx<T>(ctx: TenantContext, fn: (tx: TenantTransaction) => Promise<T>) {
@@ -370,19 +371,9 @@ async function coordinatorTx(
   // NOB-158: coordenador com identidade verificada (função central do banco).
   const clinical = await actorClinicalMedicoIdsTx(tx, ctx.tenantId);
   if (clinical.length === 0) throw new ForbiddenError(DENIED);
-  const [row] = await tx
-    .select({ medicoId: assignments.medicoId })
-    .from(assignments)
-    .where(
-      and(
-        eq(assignments.orgId, ctx.tenantId),
-        eq(assignments.companyId, companyId),
-        isNull(assignments.endsOn),
-        inArray(assignments.medicoId, clinical),
-      ),
-    )
-    .limit(1);
-  if (!row) throw new ForbiddenError(DENIED);
+  // Coordenador = designação em vigor hoje e única (NOB-109), não a "aberta".
+  const row = await assignmentInForceTodayTx(tx, ctx.tenantId, companyId);
+  if (!row || !clinical.includes(row.medicoId)) throw new ForbiddenError(DENIED);
   return row.medicoId;
 }
 

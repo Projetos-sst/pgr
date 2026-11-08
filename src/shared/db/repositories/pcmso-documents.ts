@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, inArray, isNull, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, max, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
@@ -31,7 +31,7 @@ import {
 } from "../schema/pcmso-documents";
 import { medicalExamPlans as plans } from "../schema/medical-exam-plans";
 import { medicalRiskEntries, medicalRiskSources } from "../schema/medical-risk-sources";
-import { medicos, pcmsoCoordinatorAssignments as assignments } from "../schema/medicos";
+import { medicos } from "../schema/medicos";
 import { assertCompanyModuleTx } from "./company-modules";
 import { auditedTenantWrite } from "./audited-write";
 import { actorClinicalMedicoIdsTx } from "./clinical-actor";
@@ -39,6 +39,7 @@ import {
   getInternalMedicalSources,
   lockMedicalRiskBasisTx,
 } from "./medical-risk-sources";
+import { assignmentInForceTodayTx } from "./pcmso-coordinator-in-force";
 
 export type PcmsoDocumentSummary = Omit<PcmsoDocument, "content">;
 
@@ -196,33 +197,30 @@ function toSignedItems(
   });
 }
 
-/** Coordenador designado vigente da empresa, com CRM/UF do cadastro. */
+/**
+ * Coordenador da empresa com designação em vigor hoje e única (America/Sao_Paulo; NOB-109), com
+ * CRM/UF do cadastro. Sem designação vigente ou com sobreposição → `null` (quem usa nega).
+ */
 async function currentCoordinatorTx(
   tx: TenantTransaction,
   orgId: string,
   companyId: string,
 ) {
-  const [row] = await tx
-    .select({
-      medicoId: assignments.medicoId,
-      startsOn: assignments.startsOn,
-      crm: medicos.crm,
-      uf: medicos.registrationUf,
-    })
-    .from(assignments)
-    .innerJoin(
-      medicos,
-      and(eq(medicos.id, assignments.medicoId), eq(medicos.orgId, assignments.orgId)),
-    )
-    .where(
-      and(
-        eq(assignments.orgId, orgId),
-        eq(assignments.companyId, companyId),
-        isNull(assignments.endsOn),
-      ),
-    )
+  const assignment = await assignmentInForceTodayTx(tx, orgId, companyId);
+  if (!assignment) return null;
+  const [medico] = await tx
+    .select({ crm: medicos.crm, uf: medicos.registrationUf })
+    .from(medicos)
+    .where(and(eq(medicos.orgId, orgId), eq(medicos.id, assignment.medicoId)))
     .limit(1);
-  return row ?? null;
+  return medico
+    ? {
+        medicoId: assignment.medicoId,
+        startsOn: assignment.startsOn,
+        crm: medico.crm,
+        uf: medico.uf,
+      }
+    : null;
 }
 
 /**
@@ -398,7 +396,7 @@ export type SignedPcmsoFile = {
 /**
  * Registra o PCMSO assinado já gravado no storage. Confere no servidor (e a RLS de novo):
  * - prévia da empresa, a mais recente, com o plano aprovado vigente;
- * - signatário = coordenador designado vigente (CRM/UF do cadastro);
+ * - signatário = coordenador com designação em vigor hoje e única (CRM/UF do cadastro; NOB-109);
  * - fluxo do coordenador: só a conta vinculada e verificada dele; fluxo do escritório: equipe;
  * - datas coerentes; um PCMSO assinado vigente por empresa (novo = substituição, com motivo).
  */
@@ -475,23 +473,26 @@ export async function insertSignedPcmso(
         throw new ValidationError(
           problems.map((code) => RISK_BASIS_PROBLEM_MESSAGES[code]).join(" "),
         );
+      // Signatário e autoria = coordenador em vigor HOJE (NOB-109), não a designação "aberta".
       const coordinator = await currentCoordinatorTx(tx, ctx.tenantId, companyId);
+      if (!coordinator)
+        throw new ValidationError(
+          "A empresa não tem médico responsável pelo PCMSO em vigor hoje (designação futura, encerrada ou sobreposta): o PCMSO assinado não pode ser registrado.",
+        );
       // Conferência de consistência, tolerante só à formatação do número (NOB-110); no fluxo do
       // coordenador, quem registra continua decidido pelo vínculo verificado logo abaixo.
-      const match = coordinator
-        ? compareProfessionalRegistration(coordinator, {
-            registration: input.signerRegistration,
-            uf: input.signerUf,
-          })
-        : "mismatch";
-      if (coordinator && match === "registered_not_canonical")
+      const match = compareProfessionalRegistration(coordinator, {
+        registration: input.signerRegistration,
+        uf: input.signerUf,
+      });
+      if (match === "registered_not_canonical")
         throw new ValidationError(
           registeredNotCanonicalMessage(
             "do médico responsável designado",
             coordinator.crm,
           ),
         );
-      if (!coordinator || match !== "match")
+      if (match !== "match")
         throw new ValidationError(
           "O signatário não é o médico responsável designado para a empresa (CRM/UF do cadastro).",
         );

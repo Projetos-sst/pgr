@@ -14,6 +14,7 @@ import {
 
 import { appRuntimeRole } from "../roles";
 import { companies } from "./companies";
+import { coordinatorAssignmentInForceToday } from "./coordinator-in-force";
 import { companyModuleScope } from "./module-policy";
 import { orgs } from "./orgs";
 
@@ -83,14 +84,16 @@ export const pcmsoInterpretationCriteria = pgTable(
       using: companyModuleScope(t.orgId, t.companyId, "medicine"),
       withCheck: companyModuleScope(t.orgId, t.companyId, "medicine"),
     }),
-    // Só a conta vinculada ao coordenador com designação aberta, em nome desse médico.
+    // Só a conta vinculada ao coordenador com designação em vigor hoje (única; NOB-109), em nome
+    // desse médico.
     pgPolicy("pcmso_interpretation_criteria_insert", {
       as: "restrictive",
       for: "insert",
       to: appRuntimeRole,
       // NOB-158: coordenador com identidade verificada (função central).
       withCheck: sql`${t.authoredByUser} = ${actor} and exists (select 1 from public.pcmso_coordinator_assignments a
-        where a.org_id = ${t.orgId} and a.company_id = ${t.companyId} and a.ends_on is null
+        where a.org_id = ${t.orgId} and a.company_id = ${t.companyId}
+          and ${coordinatorAssignmentInForceToday("a")}
           and a.medico_id = ${t.authoredByMedicoId}
           and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id)))`,
     }),

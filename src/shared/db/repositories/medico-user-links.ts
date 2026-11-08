@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
@@ -18,6 +18,7 @@ import {
 import { orgMemberships } from "../schema/org-memberships";
 import { auditedTenantWrite } from "./audited-write";
 import { actorClinicalMedicoIdsTx } from "./clinical-actor";
+import { assignmentInForceTodayTx } from "./pcmso-coordinator-in-force";
 
 /** Transação com o ator da sessão (as policies de escrita conferem owner + autoria). */
 async function actorTx<T>(ctx: TenantContext, fn: (tx: TenantTransaction) => Promise<T>) {
@@ -146,12 +147,13 @@ export async function getActorProfessionalProfile(
       )
       .limit(1);
     if (!row) return null;
-    // A RLS de módulo de `pcmso_coordinator_assignments` já oculta empresas sem Medicina.
-    const coordinated = await tx
-      .select({
+    // Empresas em que o profissional coordena HOJE (designação em vigor e única; NOB-109): a mesma
+    // regra da permissão. A RLS de módulo de `pcmso_coordinator_assignments` já oculta empresas
+    // sem Medicina.
+    const candidates = await tx
+      .selectDistinct({
         companyId: assignments.companyId,
         razaoSocial: companies.razaoSocial,
-        startsOn: assignments.startsOn,
       })
       .from(assignments)
       .innerJoin(
@@ -162,21 +164,25 @@ export async function getActorProfessionalProfile(
         ),
       )
       .where(
-        and(
-          eq(assignments.orgId, ctx.tenantId),
-          eq(assignments.medicoId, row.medicoId),
-          isNull(assignments.endsOn),
-        ),
+        and(eq(assignments.orgId, ctx.tenantId), eq(assignments.medicoId, row.medicoId)),
       )
       .orderBy(companies.razaoSocial);
+    const coordinated: ProfessionalProfile["coordinatedCompanies"] = [];
+    for (const company of candidates) {
+      const inForce = await assignmentInForceTodayTx(tx, ctx.tenantId, company.companyId);
+      if (inForce?.medicoId === row.medicoId)
+        coordinated.push({ ...company, startsOn: inForce.startsOn });
+    }
     return { ...row, coordinatedCompanies: coordinated };
   });
 }
 
 /**
  * Autorização por vínculo (NOB-121): a conta da sessão só age como coordenadora da empresa se
- * estiver vinculada ao profissional da designação ABERTA. Papel no escritório (owner,
- * colaborador) não substitui o vínculo. Usada pelas próximas etapas (revisão do plano de exames).
+ * estiver vinculada ao profissional da designação EM VIGOR HOJE (America/Sao_Paulo; NOB-109),
+ * não a "aberta": encerramento agendado mantém o poder até o fim, sucessor agendado só o tem a
+ * partir do início, e sobreposição nega a todos. Papel no escritório (owner, colaborador) não
+ * substitui o vínculo. Mesma regra de `actorCoordinatesCompany` nas policies.
  */
 export async function assertActorIsCompanyCoordinator(
   tx: TenantTransaction,
@@ -185,33 +191,27 @@ export async function assertActorIsCompanyCoordinator(
 ): Promise<{ medicoId: string; linkId: string }> {
   // NOB-158: coordenador com identidade verificada (função central do banco), nunca o vínculo sozinho.
   const clinical = await actorClinicalMedicoIdsTx(tx, ctx.tenantId);
-  const [row] = clinical.length
-    ? await tx
-        .select({ medicoId: assignments.medicoId, linkId: links.id })
-        .from(assignments)
-        .innerJoin(
-          links,
-          and(
-            eq(links.orgId, assignments.orgId),
-            eq(links.medicoId, assignments.medicoId),
-            eq(links.userId, ctx.userId),
-            isNull(links.revokedAt),
-          ),
-        )
-        .where(
-          and(
-            eq(assignments.orgId, ctx.tenantId),
-            eq(assignments.companyId, companyId),
-            isNull(assignments.endsOn),
-            inArray(assignments.medicoId, clinical),
-          ),
-        )
-        .limit(1)
-    : [];
-  if (!row)
-    throw new ForbiddenError(
+  const denied = () =>
+    new ForbiddenError(
       "Somente o médico coordenador do PCMSO desta empresa, com acesso vinculado e identidade verificada, pode executar esta ação.",
     );
+  if (clinical.length === 0) throw denied();
+  // Sem designação em vigor hoje, ou com sobreposição, ninguém coordena (falha fechada).
+  const inForce = await assignmentInForceTodayTx(tx, ctx.tenantId, companyId);
+  if (!inForce || !clinical.includes(inForce.medicoId)) throw denied();
+  const [row] = await tx
+    .select({ medicoId: links.medicoId, linkId: links.id })
+    .from(links)
+    .where(
+      and(
+        eq(links.orgId, ctx.tenantId),
+        eq(links.medicoId, inForce.medicoId),
+        eq(links.userId, ctx.userId),
+        isNull(links.revokedAt),
+      ),
+    )
+    .limit(1);
+  if (!row) throw denied();
   return row;
 }
 

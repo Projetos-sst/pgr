@@ -177,7 +177,7 @@ export async function loadAnalyticalReportData(
   });
 }
 
-/** Médico coordenador da conta da sessão (vínculo + designação aberta); senão, FORBIDDEN. */
+/** Coordenador da conta da sessão (vínculo + designação em vigor hoje); senão, FORBIDDEN. */
 export async function getActorCoordinator(
   ctx: TenantContext,
   companyId: string,

@@ -111,9 +111,9 @@ export async function getReportContext(
 }
 
 /**
- * Elaboração pelo médico coordenador (7.6.2): só a conta vinculada à designação aberta. Período
- * contíguo ao último relatório; simplificação só se enquadrada (7.6.6); com relatório anterior, a
- * discussão das variações é obrigatória (texto do médico). Arquiva uma prévia imutável.
+ * Elaboração pelo médico coordenador (7.6.2): só a conta vinculada à designação em vigor hoje.
+ * Período contíguo ao último relatório; simplificação só se enquadrada (7.6.6); com relatório
+ * anterior, a discussão das variações é obrigatória (texto do médico). Arquiva uma prévia imutável.
  */
 export async function generateReport(
   ctx: TenantContext,

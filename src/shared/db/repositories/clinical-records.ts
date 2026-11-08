@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
@@ -21,9 +21,10 @@ import {
   healthExamWorkRestrictions as workRestrictions,
 } from "../schema/clinical-records";
 import { healthExams } from "../schema/health-exams";
-import { medicos, pcmsoCoordinatorAssignments as assignments } from "../schema/medicos";
+import { medicos } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
 import { actorClinicalMedicoIdsTx } from "./clinical-actor";
+import { assignmentInForceTodayTx } from "./pcmso-coordinator-in-force";
 
 /** Transação com o ator da sessão: as policies do prontuário conferem o vínculo da conta. */
 async function actorTx<T>(ctx: TenantContext, fn: (tx: TenantTransaction) => Promise<T>) {
@@ -83,9 +84,9 @@ async function examTx(tx: TenantTransaction, orgId: string, examId: string) {
 
 /**
  * Base do acesso clínico da conta da sessão ao exame: vínculo aberto (NOB-149), médico ativo,
- * associação viva, e o médico é o examinador do exame ou o coordenador com designação aberta da
- * empresa onde o exame foi realizado (MED-07). Exame sem origem comprovada → só o examinador.
- * Mesma regra das policies da 0067.
+ * associação viva, e o médico é o examinador do exame ou o coordenador com designação em vigor
+ * hoje, única (NOB-109), da empresa onde o exame foi realizado (MED-07). Exame sem origem
+ * comprovada → só o examinador. Mesma regra das policies (`clinicianFor`).
  */
 async function clinicalAccessTx(
   tx: TenantTransaction,
@@ -97,19 +98,11 @@ async function clinicalAccessTx(
   if (exam.doctorId && clinical.includes(exam.doctorId))
     return { medicoId: exam.doctorId, basis: "examiner" };
   if (!exam.companyId || clinical.length === 0) return null;
-  const [assignment] = await tx
-    .select({ medicoId: assignments.medicoId })
-    .from(assignments)
-    .where(
-      and(
-        eq(assignments.orgId, ctx.tenantId),
-        eq(assignments.companyId, exam.companyId),
-        inArray(assignments.medicoId, clinical),
-        isNull(assignments.endsOn),
-      ),
-    )
-    .limit(1);
-  return assignment ? { medicoId: assignment.medicoId, basis: "coordinator" } : null;
+  // Coordenador = designação em vigor hoje e única (NOB-109), não a "aberta".
+  const assignment = await assignmentInForceTodayTx(tx, ctx.tenantId, exam.companyId);
+  return assignment && clinical.includes(assignment.medicoId)
+    ? { medicoId: assignment.medicoId, basis: "coordinator" }
+    : null;
 }
 
 const DENIED =

@@ -17,6 +17,7 @@ import {
 
 import { appRuntimeRole } from "../roles";
 import { companies } from "./companies";
+import { coordinatorAssignmentInForceToday } from "./coordinator-in-force";
 import { companyModuleScope } from "./module-policy";
 import { orgs } from "./orgs";
 
@@ -25,9 +26,10 @@ const actor = sql`current_setting('app.current_actor', true)`;
 
 /**
  * Relatório analítico anual do PCMSO (NR-7 7.6.2 a 7.6.6; NOB-154). Elaborado pelo médico
- * coordenador: só a conta vinculada a ele, com designação aberta, gera a versão. Cada versão é um
- * arquivo imutável (JSON com SHA-256), só com dados consolidados, nunca individuais. Só existe o
- * status `preview` (sem assinatura verificável, MED-12). Sem UPDATE nem DELETE para o `app_runtime`.
+ * coordenador: só a conta vinculada a ele, com designação em vigor hoje, gera a versão. Cada
+ * versão é um arquivo imutável (JSON com SHA-256), só com dados consolidados, nunca individuais.
+ * Só existe o status `preview` (sem assinatura verificável, MED-12). Sem UPDATE nem DELETE para o
+ * `app_runtime`.
  */
 export const pcmsoAnalyticalReports = pgTable(
   "pcmso_analytical_reports",
@@ -78,14 +80,16 @@ export const pcmsoAnalyticalReports = pgTable(
       using: companyModuleScope(t.orgId, t.companyId, "medicine"),
       withCheck: companyModuleScope(t.orgId, t.companyId, "medicine"),
     }),
-    // Elaboração pelo médico coordenador (7.6.2): conta vinculada à designação aberta, em nome dele.
+    // Elaboração pelo médico coordenador (7.6.2): conta vinculada à designação em vigor hoje
+    // (única; NOB-109), em nome dele.
     pgPolicy("pcmso_analytical_reports_insert", {
       as: "restrictive",
       for: "insert",
       to: appRuntimeRole,
       // NOB-158: coordenador com identidade verificada (função central).
       withCheck: sql`${t.generatedBy} = ${actor} and exists (select 1 from public.pcmso_coordinator_assignments a
-        where a.org_id = ${t.orgId} and a.company_id = ${t.companyId} and a.ends_on is null
+        where a.org_id = ${t.orgId} and a.company_id = ${t.companyId}
+          and ${coordinatorAssignmentInForceToday("a")}
           and a.medico_id = ${t.authoredByMedicoId}
           and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id)))`,
     }),
@@ -240,7 +244,7 @@ export const pcmsoAnalyticalReportEvents = pgTable(
         and (
           (${t.kind} = 'finalized' and exists (select 1 from public.pcmso_analytical_reports r
             join public.pcmso_coordinator_assignments a on a.org_id = r.org_id and a.company_id = r.company_id
-              and a.medico_id = r.authored_by_medico_id and a.ends_on is null
+              and a.medico_id = r.authored_by_medico_id and ${coordinatorAssignmentInForceToday("a")}
             where r.id = ${t.reportId} and r.org_id = ${t.orgId}
               and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id))))
           or (${t.kind} <> 'finalized' and exists (select 1 from public.org_memberships om where om.org_id = ${t.orgId}

@@ -225,8 +225,8 @@ export default async function AnalyticalReportPage({
             : "Nenhum relatório analítico anterior registrado: informe o período do primeiro relatório (até 12 meses)."}
         </p>
         <p className="text-text-subtle text-xs">
-          Só a conta vinculada ao médico coordenador com designação aberta elabora o
-          relatório. Resultados de exames e diagnósticos não são registrados no sistema;
+          Só a conta vinculada ao médico coordenador com designação em vigor hoje elabora
+          o relatório. Resultados de exames e diagnósticos não são registrados no sistema;
           essas alíneas saem como informação insuficiente.
         </p>
         <ReportForm
