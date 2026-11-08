@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  compareProfessionalRegistration,
+  signerRegistrationSchema,
+} from "@/shared/domains/pgr/medicos";
+
 /**
  * PCMSO assinado arquivado (NOB-166; MED-02, MED-11, MED-12, MED-14).
  *
@@ -78,10 +83,8 @@ export const pcmsoSignedInputSchema = z
       .trim()
       .min(3, "Informe o nome do médico que assinou.")
       .max(200, "Máximo de 200 caracteres."),
-    signerRegistration: z
-      .string()
-      .trim()
-      .regex(/^\d{1,10}$/, "CRM do signatário: só números."),
+    // Separadores tolerados; a conferência com o cadastro usa a forma canônica (NOB-110).
+    signerRegistration: signerRegistrationSchema,
     signerUf: z
       .string()
       .trim()
@@ -185,10 +188,14 @@ export function pcmsoSignedWarnings(input: {
   )
     out.push("newer_preview");
   if (input.approvedPlanId !== c.examPlanId) out.push("plan_changed");
+  // Mesma conferência tolerante a formatação do registro (NOB-110): reformatar o CRM no cadastro
+  // não é troca de coordenador.
   if (
     !input.coordinator ||
-    input.coordinator.crm !== c.signerRegistration ||
-    input.coordinator.uf !== c.signerUf
+    compareProfessionalRegistration(input.coordinator, {
+      registration: c.signerRegistration,
+      uf: c.signerUf,
+    }) !== "match"
   )
     out.push("coordinator_changed");
   if (input.today > c.cycleEnd) out.push("cycle_ended");

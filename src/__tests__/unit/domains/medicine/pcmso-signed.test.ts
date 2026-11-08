@@ -119,6 +119,26 @@ describe("pcmsoSignedWarnings", () => {
       }),
     ).toEqual(["newer_preview", "plan_changed", "coordinator_changed", "cycle_ended"]);
   });
+  it("CRM do cadastro só reformatado não é troca de coordenador (NOB-110)", () => {
+    expect(
+      pcmsoSignedWarnings({ ...ctx, coordinator: { crm: "61.001", uf: "ma" } }),
+    ).toEqual([]);
+    expect(
+      pcmsoSignedWarnings({ ...ctx, coordinator: { crm: "061001", uf: "MA" } }),
+    ).toEqual(["coordinator_changed"]);
+  });
+});
+
+describe("pcmsoSignedInputSchema — CRM do signatário (NOB-110)", () => {
+  it("aceita o CRM do cadastro com separadores; recusa letras", () => {
+    expect(
+      pcmsoSignedInputSchema.parse({ ...base, signerRegistration: "61.001" })
+        .signerRegistration,
+    ).toBe("61.001");
+    expect(() =>
+      pcmsoSignedInputSchema.parse({ ...base, signerRegistration: "61001-MA" }),
+    ).toThrow(/só números/);
+  });
 });
 
 describe("riskBasisProblems (base de riscos do documento × vigente)", () => {

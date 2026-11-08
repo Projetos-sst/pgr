@@ -77,6 +77,20 @@ describe("asoSignedInputSchema", () => {
   });
 });
 
+describe("asoSignedInputSchema — CRM do signatário (NOB-110)", () => {
+  it("aceita separadores (ponto, hífen, barra, espaço) e guarda o valor aparado", () => {
+    expect(
+      asoSignedInputSchema.parse({ ...base, signerRegistration: " 12.345 " })
+        .signerRegistration,
+    ).toBe("12.345");
+  });
+  it("recusa letras no CRM (a UF vai no campo próprio)", () => {
+    expect(() =>
+      asoSignedInputSchema.parse({ ...base, signerRegistration: "12345-MA" }),
+    ).toThrow(/só números/);
+  });
+});
+
 describe("checkSignedPdf", () => {
   it("exige cabeçalho de PDF, conteúdo e o limite de tamanho", () => {
     expect(checkSignedPdf(enc("%PDF-1.7 ..."))).toEqual({ ok: true });

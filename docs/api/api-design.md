@@ -957,6 +957,7 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
   - `coordinator`: o próprio médico responsável, pela conta vinculada e com identidade verificada (`actor_clinical_medico_ids`, NOB-158);
   - `office_received`: a equipe do escritório arquiva o documento que o médico responsável assinou.
   - O owner não vira signatário por escolher um nome. Colaborador e coordenador de outra empresa são barrados.
+- **Signatário (NOB-110):** o CRM/UF informado é conferido com o coordenador designado vigente pela forma canônica do número (só separadores `.`, `-`, `/` e espaço são ignorados; zeros à esquerda contam; UF sem diferenciar maiúsculas). É conferência de consistência: no fluxo `coordinator`, quem registra continua decidido pela conta vinculada e verificada. O documento grava o CRM/UF como estão no cadastro; CRM do cadastro com letras é recusado até a correção do cadastro. O alerta de médico responsável trocado usa a mesma conferência (reformatar o CRM não é troca).
 - **Conferência:** só **documental**:
   - `verificationKind = 'documentary'`, o único valor que o CHECK aceita;
   - `verificationReference`: relatório do validador, código da plataforma ou guarda do original físico.
@@ -1357,8 +1358,14 @@ O ASO oficial é o PDF **assinado pelo médico examinador** (NR-7 7.5.19.1 g). O
 
 - **Fluxo A (`examiner`):**
   - só a conta do médico examinador do exame, com identidade verificada (`actor_clinical_medico_ids`, NOB-158);
-  - CRM/UF do signatário iguais ao cadastro do examinador;
+  - CRM/UF do signatário iguais ao cadastro do examinador — conferência de **consistência**, que nunca autoriza sozinha (quem registra vem do `doctorId` do exame + conta vinculada e verificada);
   - prévia (`previewDocumentId`) do mesmo exame, com a mesma conclusão.
+- **Formato do CRM (NOB-110):**
+  - `signerRegistration` aceita dígitos com ponto, hífen, barra ou espaço (até 10 dígitos); letras são recusadas (a UF vai em `signerUf`, sem diferenciar maiúsculas);
+  - a conferência com o cadastro usa a forma canônica (`canonicalRegistrationNumber` em `domains/pgr/medicos.ts`): tira só os separadores e mantém os dígitos como estão — `12.345` = `12345`, mas `012345` ≠ `12345`;
+  - no fluxo A, o documento grava o CRM/UF **como estão no cadastro** do examinador (o que a prévia imprime e o que a RLS confere por igualdade exata). O cadastro nunca é reescrito;
+  - cadastro com letras ou outros caracteres no CRM (ex.: `12345-MA`, `CRM 12.345/MA`) não é adivinhado: o registro é recusado (`VALIDATION`) até o escritório corrigir o cadastro — o que, pela NOB-158, exige nova verificação de identidade;
+  - a verificação de identidade (NOB-158) continua comparando o CRM conferido com o cadastro por igualdade exata.
 - **Fluxo B (`external_clinic`):** a equipe do escritório (owner ou colaborador) arquiva o ASO assinado entregue pela clínica, com o signatário como consta no documento. Sem prévia.
 - **Conferência obrigatória (`verificationReference`):**
   - ICP-Brasil ou plataforma: referência do validador (ex.: Verificador ITI);

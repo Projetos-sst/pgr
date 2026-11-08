@@ -6,6 +6,10 @@ import { ForbiddenError } from "@/shared/auth/errors";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import type { ExamProcedureValues } from "@/shared/domains/medicine/aso";
 import type { AsoSignedInput, AsoSignedItem } from "@/shared/domains/medicine/aso-signed";
+import {
+  compareProfessionalRegistration,
+  registeredNotCanonicalMessage,
+} from "@/shared/domains/pgr/medicos";
 import type {
   AsoDeliveryEvidenceKindValue,
   AsoDeliveryEvidenceType,
@@ -568,6 +572,8 @@ export async function insertSignedAso(
       const dateProblem = checkSignedOn(exam.performedAt);
       if (dateProblem) throw new ValidationError(dateProblem);
 
+      // Fluxo B: o signatário como consta no documento da clínica externa.
+      let signer = { registration: input.signerRegistration, uf: input.signerUf };
       if (input.origin === "examiner") {
         if (!exam.doctorId)
           throw new ValidationError("O exame não tem médico examinador informado.");
@@ -581,14 +587,25 @@ export async function insertSignedAso(
           .from(medicos)
           .where(and(eq(medicos.orgId, ctx.tenantId), eq(medicos.id, exam.doctorId)))
           .limit(1);
-        if (
-          !examiner ||
-          examiner.crm !== input.signerRegistration ||
-          examiner.uf !== input.signerUf
-        )
+        // Conferência de consistência, tolerante só à formatação do número (NOB-110): quem
+        // registra já foi decidido acima pelo vínculo verificado; o CRM nunca autoriza sozinho.
+        const match = examiner
+          ? compareProfessionalRegistration(examiner, {
+              registration: input.signerRegistration,
+              uf: input.signerUf,
+            })
+          : "mismatch";
+        if (examiner && match === "registered_not_canonical")
+          throw new ValidationError(
+            registeredNotCanonicalMessage("do médico examinador", examiner.crm),
+          );
+        if (!examiner || match !== "match")
           throw new ValidationError(
             "O CRM/UF do signatário não é o do médico examinador do exame.",
           );
+        // Grava o signatário como está no cadastro (é o que a prévia assinada imprime e o que a
+        // RLS confere, por igualdade exata, contra `medicos`).
+        signer = { registration: examiner.crm, uf: examiner.uf ?? input.signerUf };
         const [preview] = await tx
           .select({ content: docs.content })
           .from(docs)
@@ -635,8 +652,8 @@ export async function insertSignedAso(
             signatureMethod: input.signatureMethod,
             verificationReference: input.verificationReference,
             signerName: input.signerName,
-            signerRegistration: input.signerRegistration,
-            signerUf: input.signerUf,
+            signerRegistration: signer.registration,
+            signerUf: signer.uf,
             conclusion: input.conclusion,
             signedOn: input.signedOn,
             storagePath: file.storagePath,

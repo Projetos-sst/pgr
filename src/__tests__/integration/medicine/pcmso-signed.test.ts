@@ -402,6 +402,68 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
     });
   });
 
+  it("NOB-110: CRM do coordenador com pontuação confere pela forma canônica; identidade e autoria intactas", async () => {
+    // Cadastro legado com pontuação, verificado com o CRM como está no cadastro (simula o operador
+    // independente; a verificação continua exigindo igualdade exata com o cadastro — NOB-158).
+    await admin`update medicos set crm='61.001' where id=${MEDICO}`;
+    await admin`update professional_identity_verifications set crm='61.001' where medico_id=${MEDICO} and user_id='doctor'`;
+    await approvedPlan();
+    const v1 = await preview();
+    // O CRM certo não autoriza ninguém além do coordenador verificado.
+    for (const ctx of [owner, staff, doctor2])
+      await expect(
+        registerSignedPcmso(ctx, I.companyA, fields(v1.id), pdf()),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    // Número diferente, UF diferente e zero à esquerda a mais: não é o coordenador designado.
+    const bads: Record<string, string>[] = [
+      { signerRegistration: "61002" },
+      { signerUf: "PI" },
+      { signerRegistration: "061001" },
+    ];
+    for (const bad of bads)
+      await expect(
+        registerSignedPcmso(doctor, I.companyA, fields(v1.id, bad), pdf()),
+      ).rejects.toMatchObject({
+        code: "VALIDATION",
+        message: expect.stringMatching(/médico responsável/),
+      });
+    expect(await admin`select * from pcmso_signed_documents`).toHaveLength(0);
+
+    // Só números e UF minúscula: confere; o signatário fica gravado como está no cadastro.
+    const created = await registerSignedPcmso(
+      doctor,
+      I.companyA,
+      fields(v1.id, { signerRegistration: "61001", signerUf: "ma" }),
+      pdf(),
+    );
+    expect(created).toMatchObject({ origin: "coordinator", registeredBy: "doctor" });
+    const [stored] =
+      await admin`select signer_registration, signer_uf from pcmso_signed_documents where id=${created.id}`;
+    expect(stored).toEqual({ signer_registration: "61.001", signer_uf: "MA" });
+    expect((await listSignedPcmsos(staff, I.companyA)).warnings).not.toContain(
+      "coordinator_changed",
+    );
+    // Reformatar o CRM no cadastro (mesmo número) não é troca de coordenador.
+    await admin`update medicos set crm='61001' where id=${MEDICO}`;
+    expect((await listSignedPcmsos(staff, I.companyA)).warnings).not.toContain(
+      "coordinator_changed",
+    );
+  });
+
+  it("NOB-110: CRM do coordenador com letras não é adivinhado; pede a correção do cadastro", async () => {
+    await approvedPlan();
+    const v1 = await preview();
+    await admin`update medicos set crm='61001-MA' where id=${MEDICO}`;
+    await admin`update professional_identity_verifications set crm='61001-MA' where medico_id=${MEDICO} and user_id='doctor'`;
+    await expect(
+      registerSignedPcmso(doctor, I.companyA, fields(v1.id), pdf()),
+    ).rejects.toMatchObject({
+      code: "VALIDATION",
+      message: expect.stringMatching(/corrigir o cadastro/),
+    });
+    expect(await admin`select * from pcmso_signed_documents`).toHaveLength(0);
+  });
+
   it("SQL direto: autoria forjada, empresa divergente, plano não aprovado, UPDATE/DELETE e operador de identidade", async () => {
     const plan = await approvedPlan();
     const v1 = await preview();

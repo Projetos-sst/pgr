@@ -6182,7 +6182,8 @@
                 {
                   "key": "signerRegistration",
                   "value": "12345",
-                  "type": "text"
+                  "type": "text",
+                  "description": "Numero do CRM; ponto, hifen, barra e espaco sao aceitos e ignorados na conferencia (NOB-110). No fluxo examiner, confere com o cadastro do examinador pela forma canonica (zeros a esquerda contam) e o documento grava o CRM/UF como estao no cadastro; cadastro com letras no CRM (ex.: 12345-MA) e recusado ate o escritorio corrigir o cadastro. Letras aqui sao recusadas (a UF vai em signerUf)."
                 },
                 {
                   "key": "signerUf",

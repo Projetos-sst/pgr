@@ -14,6 +14,10 @@ import {
   type RiskBasisProblem,
 } from "@/shared/domains/medicine/pcmso-signed";
 import { medicalSourceFingerprint } from "@/shared/domains/medicine/source-fingerprint";
+import {
+  compareProfessionalRegistration,
+  registeredNotCanonicalMessage,
+} from "@/shared/domains/pgr/medicos";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
@@ -472,11 +476,22 @@ export async function insertSignedPcmso(
           problems.map((code) => RISK_BASIS_PROBLEM_MESSAGES[code]).join(" "),
         );
       const coordinator = await currentCoordinatorTx(tx, ctx.tenantId, companyId);
-      if (
-        !coordinator ||
-        coordinator.crm !== input.signerRegistration ||
-        coordinator.uf !== input.signerUf
-      )
+      // Conferência de consistência, tolerante só à formatação do número (NOB-110); no fluxo do
+      // coordenador, quem registra continua decidido pelo vínculo verificado logo abaixo.
+      const match = coordinator
+        ? compareProfessionalRegistration(coordinator, {
+            registration: input.signerRegistration,
+            uf: input.signerUf,
+          })
+        : "mismatch";
+      if (coordinator && match === "registered_not_canonical")
+        throw new ValidationError(
+          registeredNotCanonicalMessage(
+            "do médico responsável designado",
+            coordinator.crm,
+          ),
+        );
+      if (!coordinator || match !== "match")
         throw new ValidationError(
           "O signatário não é o médico responsável designado para a empresa (CRM/UF do cadastro).",
         );
@@ -519,8 +534,10 @@ export async function insertSignedPcmso(
           origin: input.origin,
           signatureMethod: input.signatureMethod,
           signerName: input.signerName,
-          signerRegistration: input.signerRegistration,
-          signerUf: input.signerUf,
+          // Signatário como está no cadastro do coordenador (o que a prévia imprime e o que a RLS
+          // confere, por igualdade exata, contra `medicos`).
+          signerRegistration: coordinator.crm,
+          signerUf: coordinator.uf ?? input.signerUf,
           signedOn: input.signedOn,
           verificationReference: input.verificationReference,
           storagePath: file.storagePath,
