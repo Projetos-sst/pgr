@@ -78,7 +78,9 @@ describe("riskAbsenceJobRoleSchema (NOB-112)", () => {
   });
 
   it("título repetido entre as funções do GES → ambíguo, recusa", () => {
-    expect(fieldError("Auxiliar", ["Auxiliar", "Auxiliar"])).toMatch(/mais de uma função/);
+    expect(fieldError("Auxiliar", ["Auxiliar", "Auxiliar"])).toMatch(
+      /mais de uma função/,
+    );
   });
 });
 

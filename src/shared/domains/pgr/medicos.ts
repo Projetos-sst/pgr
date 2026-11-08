@@ -137,13 +137,10 @@ export const signerRegistrationSchema = z
   .string()
   .trim()
   .max(20, "CRM do signatário com no máximo 20 caracteres.")
-  .refine(
-    (value) => {
-      const canonical = canonicalRegistrationNumber(value);
-      return canonical !== null && canonical.length <= 10;
-    },
-    "CRM do signatário: só números (ponto, hífen, barra e espaço são aceitos como separadores; a UF vai no campo próprio).",
-  );
+  .refine((value) => {
+    const canonical = canonicalRegistrationNumber(value);
+    return canonical !== null && canonical.length <= 10;
+  }, "CRM do signatário: só números (ponto, hífen, barra e espaço são aceitos como separadores; a UF vai no campo próprio).");
 
 /** UF comparável: sem espaços nas pontas, maiúscula; vazia → `null`. */
 function canonicalUf(value: string | null | undefined): string | null {
@@ -188,10 +185,7 @@ export function compareProfessionalRegistration(
  * decisão conservadora da NOB-110 — o sistema não remove sufixo de UF nem adivinha o número; o
  * escritório corrige o cadastro (o que, pela NOB-158, exige nova verificação de identidade).
  */
-export function registeredNotCanonicalMessage(
-  whose: string,
-  registered: string,
-): string {
+export function registeredNotCanonicalMessage(whose: string, registered: string): string {
   return `O CRM no cadastro ${whose} ("${registered}") tem letras ou caracteres além de ponto, hífen, barra e espaço. O escritório precisa corrigir o cadastro (só o número do CRM; a UF vai no campo próprio) antes de registrar o documento assinado.`;
 }
 

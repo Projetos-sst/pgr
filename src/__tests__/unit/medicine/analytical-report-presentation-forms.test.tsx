@@ -51,7 +51,9 @@ describe("PresentationForm", () => {
       invalid({ participants: "Informe ao menos uma função representada." }),
     );
     render(<PresentationForm companyId={COMPANY} reportId={REPORT} />);
-    fireEvent.click(screen.getByRole("button", { name: "Registrar apresentação realizada" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar apresentação realizada" }),
+    );
 
     await waitFor(() => expect(register).toHaveBeenCalled());
     // A linha vazia padrão não é enviada.
@@ -80,7 +82,9 @@ describe("PresentationForm", () => {
     fireEvent.change(screen.getByRole("combobox", { name: /^Função/ }), {
       target: { value: "employer" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Registrar apresentação realizada" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar apresentação realizada" }),
+    );
 
     expect(
       await within(participantsGroup()).findByText(
@@ -105,7 +109,9 @@ describe("PresentationForm", () => {
     const names = () => screen.getAllByRole("textbox", { name: /^Nome \(opcional\)/ });
     fireEvent.change(roles()[1], { target: { value: "cipa" } });
     fireEvent.change(names()[2], { target: { value: "Pessoa Fictícia" } });
-    fireEvent.click(screen.getByRole("button", { name: "Registrar apresentação realizada" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar apresentação realizada" }),
+    );
 
     await waitFor(() => expect(register).toHaveBeenCalled());
     expect(register.mock.calls[0][2].participants).toEqual([
@@ -128,7 +134,9 @@ describe("PresentationForm", () => {
       },
     });
     render(<PresentationForm companyId={COMPANY} reportId={REPORT} />);
-    fireEvent.click(screen.getByRole("button", { name: "Registrar apresentação realizada" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar apresentação realizada" }),
+    );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Você não tem permissão para registrar a apresentação.",
@@ -139,7 +147,9 @@ describe("PresentationForm", () => {
   it("falha inesperada vira mensagem segura, sem detalhe técnico", async () => {
     register.mockRejectedValue(new Error('relation "x" does not exist at /srv/app.js'));
     render(<PresentationForm companyId={COMPANY} reportId={REPORT} />);
-    fireEvent.click(screen.getByRole("button", { name: "Registrar apresentação realizada" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar apresentação realizada" }),
+    );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Não foi possível concluir a operação. Tente novamente.",
@@ -159,10 +169,15 @@ describe("DiscussionForm", () => {
     );
     render(<DiscussionForm companyId={COMPANY} reportId={REPORT} />);
     fireEvent.click(screen.getByRole("button", { name: "Adicionar medida" }));
-    fireEvent.change(screen.getByRole("textbox", { name: /^Responsável \(se definido\)/ }), {
-      target: { value: "Gestor Fictício" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Registrar discussão realizada" }));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: /^Responsável \(se definido\)/ }),
+      {
+        target: { value: "Gestor Fictício" },
+      },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar discussão realizada" }),
+    );
 
     await waitFor(() => expect(register).toHaveBeenCalled());
     expect(register.mock.calls[0][2].measures).toEqual([
@@ -182,7 +197,9 @@ describe("DiscussionForm", () => {
     register.mockResolvedValue({ ok: true, data: {} });
     render(<DiscussionForm companyId={COMPANY} reportId={REPORT} />);
     fireEvent.click(screen.getByRole("button", { name: "Adicionar medida" }));
-    fireEvent.click(screen.getByRole("button", { name: "Registrar discussão realizada" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar discussão realizada" }),
+    );
 
     await waitFor(() => expect(mockRefresh).toHaveBeenCalled());
     expect(register.mock.calls[0][2].measures).toEqual([]);
@@ -205,7 +222,9 @@ describe("DiscussionForm", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /^Medida ou encaminhamento/ }), {
       target: { value: "abc" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Registrar discussão realizada" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar discussão realizada" }),
+    );
 
     expect(await screen.findByText("Data inválida.")).toBeInTheDocument();
     expect(
@@ -232,7 +251,9 @@ describe("DiscussionForm", () => {
       invalid({ summary: "Too small: expected string to have >=10 characters" }),
     );
     render(<DiscussionForm companyId={COMPANY} reportId={REPORT} />);
-    fireEvent.click(screen.getByRole("button", { name: "Registrar discussão realizada" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar discussão realizada" }),
+    );
 
     expect(await screen.findByText("Valor inválido.")).toBeInTheDocument();
     expect(screen.queryByText(/Too small/)).not.toBeInTheDocument();
@@ -266,8 +287,8 @@ describe("VoidReportEventForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Você não tem permissão para corrigir.",
     );
-    expect(screen.getByRole("textbox", { name: /Motivo da correção/ })).not.toHaveAttribute(
-      "aria-invalid",
-    );
+    expect(
+      screen.getByRole("textbox", { name: /Motivo da correção/ }),
+    ).not.toHaveAttribute("aria-invalid");
   });
 });

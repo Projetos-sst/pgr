@@ -57,7 +57,9 @@ const optionValues = (select: HTMLSelectElement) =>
 const change = (label: RegExp, value: string) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 const submit = () =>
-  fireEvent.click(screen.getByRole("button", { name: /Declarar inexistência de riscos/ }));
+  fireEvent.click(
+    screen.getByRole("button", { name: /Declarar inexistência de riscos/ }),
+  );
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -134,7 +136,11 @@ describe("RiskAbsenceForm", () => {
       "Função não encontrada entre as funções cadastradas e vinculadas a este GES. Escolha uma função do GES ou deixe em branco para o grupo todo.";
     declare.mockResolvedValue({
       ok: false,
-      error: { code: "VALIDATION", message: "Dados inválidos.", fields: { jobRole: message } },
+      error: {
+        code: "VALIDATION",
+        message: "Dados inválidos.",
+        fields: { jobRole: message },
+      },
     });
     renderForm();
     change(/^GES/, GES_PROD);

@@ -64,7 +64,11 @@ describe("formFeedback", () => {
 
   it("só erros sem lugar: resumo pede para revisar os pontos listados", () => {
     const fb = formFeedback(
-      { code: "VALIDATION", message: "Dados inválidos.", fields: { _: "Entrada inválida." } },
+      {
+        code: "VALIDATION",
+        message: "Dados inválidos.",
+        fields: { _: "Entrada inválida." },
+      },
       { slots: [] },
     );
     expect(fb.formError).toBe("Revise os pontos abaixo.");
@@ -102,9 +106,9 @@ describe("formFeedback", () => {
   });
 
   it("mensagem que é só código troca pelo texto do código; código desconhecido → genérico", () => {
-    expect(formFeedback({ code: "FORBIDDEN", message: "FORBIDDEN" }, { slots: [] }).formError).toBe(
-      "Você não tem permissão para esta operação.",
-    );
+    expect(
+      formFeedback({ code: "FORBIDDEN", message: "FORBIDDEN" }, { slots: [] }).formError,
+    ).toBe("Você não tem permissão para esta operação.");
     expect(formFeedback({ code: "BOOM", message: "" }, { slots: [] }).formError).toBe(
       "Não foi possível concluir a operação. Tente novamente.",
     );
@@ -146,7 +150,12 @@ describe("caminhos e listas", () => {
         "participants",
         [1, 3],
       ),
-    ).toEqual({ "participants.1.role": "A", "participants.3": "B", participants: "C", x: "D" });
+    ).toEqual({
+      "participants.1.role": "A",
+      "participants.3": "B",
+      participants: "C",
+      x: "D",
+    });
     expect(remapListIndexes(undefined, "participants", [])).toBeUndefined();
   });
 

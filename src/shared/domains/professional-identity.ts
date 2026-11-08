@@ -28,7 +28,10 @@ export const professionalIdentitySchema = z
         z
           .object({
             kind: z.literal("not_applicable"),
-            reason: text(1000, "Justifique por que o registro profissional não se aplica."),
+            reason: text(
+              1000,
+              "Justifique por que o registro profissional não se aplica.",
+            ),
           })
           .strict(),
       ],

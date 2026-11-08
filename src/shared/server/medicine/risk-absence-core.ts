@@ -64,7 +64,9 @@ export async function declareRiskAbsence(
   // Função informada = exatamente uma função cadastrada e vinculada a este GES (NOB-112).
   if (values.jobRole) {
     const linked = await repo.listCompanyGesJobRoles(ctx, id, group.id);
-    riskAbsenceJobRoleSchema(linked.map((r) => r.title)).parse({ jobRole: values.jobRole });
+    riskAbsenceJobRoleSchema(linked.map((r) => r.title)).parse({
+      jobRole: values.jobRole,
+    });
   }
   const source = (await loadProposalSources(ctx, id)).find(
     (s) => s.id === values.sourceId,

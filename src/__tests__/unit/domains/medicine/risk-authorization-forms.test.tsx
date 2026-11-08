@@ -154,10 +154,9 @@ it("appoint: each server field error is shown next to its own field", async () =
   expect(
     screen.getByText("Informe o motivo do registro ou da substituição."),
   ).toBeInTheDocument();
-  expect(screen.getByRole("textbox", { name: /^Evidência da indicação/ })).toHaveAttribute(
-    "aria-invalid",
-    "true",
-  );
+  expect(
+    screen.getByRole("textbox", { name: /^Evidência da indicação/ }),
+  ).toHaveAttribute("aria-invalid", "true");
   expect(screen.getByRole("textbox", { name: /^Motivo do registro/ })).toHaveAttribute(
     "aria-invalid",
     "true",
@@ -241,7 +240,9 @@ it("decision: several errors at once, each in place; stale token stays readable"
   );
   fireEvent.click(screen.getByRole("button", { name: "Registrar decisão" }));
   expect(await screen.findByText("Selecione a decisão técnica.")).toBeInTheDocument();
-  expect(screen.getByText("Registre o parecer e o motivo da decisão.")).toBeInTheDocument();
+  expect(
+    screen.getByText("Registre o parecer e o motivo da decisão."),
+  ).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: /^Decisão técnica/ })).toHaveAttribute(
     "aria-invalid",
     "true",

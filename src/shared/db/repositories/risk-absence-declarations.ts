@@ -154,7 +154,10 @@ export async function listCompanyGesJobRoles(
       )
       .innerJoin(
         jobRoles,
-        and(eq(jobRoles.id, gesJobRoles.jobRoleId), eq(jobRoles.orgId, gesJobRoles.orgId)),
+        and(
+          eq(jobRoles.id, gesJobRoles.jobRoleId),
+          eq(jobRoles.orgId, gesJobRoles.orgId),
+        ),
       )
       .where(
         and(

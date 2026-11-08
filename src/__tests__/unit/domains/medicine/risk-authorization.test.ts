@@ -121,7 +121,8 @@ describe("mensagens em português (sem texto padrão do Zod)", () => {
       "identity.registration.council": "Informe o conselho ou órgão de registro.",
       "identity.registration.number": "Informe o número do registro.",
     });
-    for (const message of Object.values(messages)) expect(message).not.toMatch(ZOD_ENGLISH);
+    for (const message of Object.values(messages))
+      expect(message).not.toMatch(ZOD_ENGLISH);
   });
 
   it("decisão: sem decisão, sem parecer e token de concorrência inválido", () => {

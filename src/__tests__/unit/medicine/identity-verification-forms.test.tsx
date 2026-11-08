@@ -46,7 +46,8 @@ describe("ApproveForm", () => {
         code: "VALIDATION",
         message: "Dados inválidos.",
         fields: {
-          "checklist.registryStatus": "Confirme: situação do CRM/UF ativa na fonte oficial.",
+          "checklist.registryStatus":
+            "Confirme: situação do CRM/UF ativa na fonte oficial.",
           "checklist.accountControl":
             "Confirme: controle da conta autenticada comprovado.",
         },

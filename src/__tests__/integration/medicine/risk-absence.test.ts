@@ -302,9 +302,10 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
         ],
       };
       const count = async () => {
-        const rows = (await admin`select count(*)::int as n from medical_risk_absence_declarations`) as unknown as {
-          n: number;
-        }[];
+        const rows =
+          (await admin`select count(*)::int as n from medical_risk_absence_declarations`) as unknown as {
+            n: number;
+          }[];
         return rows[0].n;
       };
       let examId: string;
@@ -335,16 +336,22 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       it("lista as funções vinculadas a cada GES para quem pode declarar", async () => {
         const { groups } = await listRiskAbsence(prof, I.companyA);
         const byId = new Map(groups.map((g) => [g.id, g]));
-        expect(byId.get(GES_EMPTY)?.jobRoles.map((r) => r.title).sort()).toEqual(
-          ["PEDREIRO", "Pedreiro"].sort(),
-        );
-        expect(byId.get(I.gesA)?.jobRoles.map((r) => r.title).sort()).toEqual(
-          ["Pedreiro", "Soldador"].sort(),
-        );
-        // Função de outro tenant nunca aparece.
         expect(
-          groups.flatMap((g) => g.jobRoles.map((r) => r.title)),
-        ).not.toContain("Eletricista");
+          byId
+            .get(GES_EMPTY)
+            ?.jobRoles.map((r) => r.title)
+            .sort(),
+        ).toEqual(["PEDREIRO", "Pedreiro"].sort());
+        expect(
+          byId
+            .get(I.gesA)
+            ?.jobRoles.map((r) => r.title)
+            .sort(),
+        ).toEqual(["Pedreiro", "Soldador"].sort());
+        // Função de outro tenant nunca aparece.
+        expect(groups.flatMap((g) => g.jobRoles.map((r) => r.title))).not.toContain(
+          "Eletricista",
+        );
       });
 
       it("erro de digitação ou abreviação → VALIDATION no campo jobRole e nada gravado", async () => {
