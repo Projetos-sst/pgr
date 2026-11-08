@@ -28,6 +28,17 @@ import {
   voidAsoDeliveryAction,
 } from "@/shared/server/actions/medicine/aso";
 
+/**
+ * Envia o formulário do botão de envio sem a validação nativa do navegador (o jsdom, como o
+ * navegador, não envia com campo `required` vazio): estes testes conferem a exibição do erro que o
+ * servidor devolve. Botão comum (abrir painel, baixar) continua sendo clique.
+ */
+function press(element: HTMLElement) {
+  const button = element as HTMLButtonElement;
+  if (button.type === "submit" && button.form) fireEvent.submit(button.form);
+  else fireEvent.click(element);
+}
+
 const mockRefresh = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh: mockRefresh }),
@@ -71,7 +82,7 @@ describe("exame complementar realizado", () => {
       }),
     );
     render(<ProcedureForm examId={EXAM} />);
-    fireEvent.click(screen.getByRole("button", { name: "Registrar exame realizado" }));
+    press(screen.getByRole("button", { name: "Registrar exame realizado" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Este procedimento já foi registrado para o exame.",
@@ -88,7 +99,7 @@ describe("exame complementar realizado", () => {
     fireEvent.change(screen.getByLabelText(/^Código do procedimento/), {
       target: { value: "0281" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Registrar exame realizado" }));
+    press(screen.getByRole("button", { name: "Registrar exame realizado" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(GENERIC);
     expect(screen.queryByText(/Failed query/)).not.toBeInTheDocument();
@@ -105,7 +116,7 @@ describe("empresa de origem e conclusão do examinador", () => {
       forbidden("FORBIDDEN"),
     );
     render(<CompanyOriginForm examId={EXAM} />);
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar empresa de origem" }));
+    press(screen.getByRole("button", { name: "Confirmar empresa de origem" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Você não tem permissão para esta operação.",
@@ -123,9 +134,7 @@ describe("empresa de origem e conclusão do examinador", () => {
       }),
     );
     render(<ExaminerConclusionForm examId={EXAM} />);
-    fireEvent.click(
-      screen.getByRole("button", { name: "Confirmar como médico examinador" }),
-    );
+    press(screen.getByRole("button", { name: "Confirmar como médico examinador" }));
 
     expect(await screen.findByText("Informe apto ou inapto.")).toBeInTheDocument();
     const group = screen.getByRole("group", { name: "Conclusão para o ASO" });
@@ -145,7 +154,7 @@ describe("ASO assinado", () => {
       }),
     );
     render(<SignedAsoForm examId={EXAM} previews={[]} currentId={null} />);
-    fireEvent.click(screen.getByRole("button", { name: "Registrar ASO assinado" }));
+    press(screen.getByRole("button", { name: "Registrar ASO assinado" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(
@@ -169,7 +178,7 @@ describe("ASO assinado", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /^Médico que assinou/ }), {
       target: { value: "Dr. Fictício" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Registrar ASO assinado" }));
+    press(screen.getByRole("button", { name: "Registrar ASO assinado" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(GENERIC);
     expect(screen.getByRole("textbox", { name: /^Médico que assinou/ })).toHaveValue(
@@ -188,7 +197,7 @@ describe("entrega do ASO", () => {
       }),
     );
     render(<AsoDeliveryForm examId={EXAM} />);
-    fireEvent.click(screen.getByRole("button", { name: "Registrar" }));
+    press(screen.getByRole("button", { name: "Registrar" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Método: Informe o método da entrega.",
@@ -201,11 +210,11 @@ describe("entrega do ASO", () => {
       forbidden("Você não tem permissão para corrigir este registro."),
     );
     render(<VoidAsoDeliveryForm examId={EXAM} deliveryId={DELIVERY} />);
-    fireEvent.click(screen.getByRole("button", { name: "Corrigir registro" }));
+    press(screen.getByRole("button", { name: "Corrigir registro" }));
     fireEvent.change(screen.getByRole("textbox", { name: /^Motivo da correção/ }), {
       target: { value: "Data registrada errada." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Registrar correção" }));
+    press(screen.getByRole("button", { name: "Registrar correção" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Você não tem permissão para corrigir este registro.",
@@ -218,11 +227,11 @@ describe("entrega do ASO", () => {
   it("correção: promessa rejeitada vira mensagem genérica e o motivo fica", async () => {
     (voidAsoDeliveryAction as jest.Mock).mockRejectedValue(new Error("timeout"));
     render(<VoidAsoDeliveryForm examId={EXAM} deliveryId={DELIVERY} />);
-    fireEvent.click(screen.getByRole("button", { name: "Corrigir registro" }));
+    press(screen.getByRole("button", { name: "Corrigir registro" }));
     fireEvent.change(screen.getByRole("textbox", { name: /^Motivo da correção/ }), {
       target: { value: "Data registrada errada." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Registrar correção" }));
+    press(screen.getByRole("button", { name: "Registrar correção" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(GENERIC);
     expect(screen.getByRole("textbox", { name: /^Motivo da correção/ })).toHaveValue(
@@ -240,8 +249,8 @@ describe("entrega do ASO", () => {
     render(
       <ReviewAsoEvidenceForm examId={EXAM} deliveryId={DELIVERY} signedReceipt={false} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Conferir comprovante" }));
-    fireEvent.click(screen.getByRole("button", { name: "Registrar conferência" }));
+    press(screen.getByRole("button", { name: "Conferir comprovante" }));
+    press(screen.getByRole("button", { name: "Registrar conferência" }));
 
     expect(
       await screen.findByText("Informe o resultado da conferência."),

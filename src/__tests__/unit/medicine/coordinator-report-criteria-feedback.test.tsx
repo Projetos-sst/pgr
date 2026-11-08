@@ -20,6 +20,17 @@ import {
   designatePcmsoCoordinatorAction,
 } from "@/shared/server/actions/medicine/pcmso-coordinators";
 
+/**
+ * Envia o formulário do botão de envio sem a validação nativa do navegador (o jsdom, como o
+ * navegador, não envia com campo `required` vazio): estes testes conferem a exibição do erro que o
+ * servidor devolve. Botão comum (abrir painel, baixar) continua sendo clique.
+ */
+function press(element: HTMLElement) {
+  const button = element as HTMLButtonElement;
+  if (button.type === "submit" && button.form) fireEvent.submit(button.form);
+  else fireEvent.click(element);
+}
+
 const mockRefresh = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh: mockRefresh }),
@@ -60,7 +71,7 @@ describe("relatório analítico (elaboração)", () => {
         canSimplify={false}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Elaborar prévia do relatório" }));
+    press(screen.getByRole("button", { name: "Elaborar prévia do relatório" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Discussão sobre as variações: Discuta as variações em relação ao relatório anterior.",
@@ -80,7 +91,7 @@ describe("relatório analítico (elaboração)", () => {
     fireEvent.change(note, {
       target: { value: "Prontuários de outubro não recebidos." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Elaborar prévia do relatório" }));
+    press(screen.getByRole("button", { name: "Elaborar prévia do relatório" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(GENERIC);
     expect(note).toHaveValue("Prontuários de outubro não recebidos.");
@@ -103,7 +114,7 @@ describe("critérios de interpretação", () => {
         current={null}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Registrar critérios" }));
+    press(screen.getByRole("button", { name: "Registrar critérios" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Descrição do procedimento: Descreva o procedimento do código 9999.",
@@ -128,7 +139,7 @@ describe("critérios de interpretação", () => {
         current={{ criteria: "Critério fictício vigente.", conduct: "Conduta fictícia." }}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Registrar nova versão" }));
+    press(screen.getByRole("button", { name: "Registrar nova versão" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Você não tem permissão para esta operação.",
@@ -145,7 +156,7 @@ describe("coordenador do PCMSO", () => {
       invalid({ companyId: "Empresa inválida.", medicoId: "Selecione o médico." }),
     );
     render(<DesignateCoordinatorForm companyId={COMPANY} options={[]} />);
-    fireEvent.click(screen.getByRole("button", { name: "Registrar designação" }));
+    press(screen.getByRole("button", { name: "Registrar designação" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Empresa: Empresa inválida.",
@@ -167,7 +178,7 @@ describe("coordenador do PCMSO", () => {
     fireEvent.change(screen.getByLabelText(/^Motivo/), {
       target: { value: "Encerramento do contrato." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Encerrar designação" }));
+    press(screen.getByRole("button", { name: "Encerrar designação" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(GENERIC);
     expect(screen.getByLabelText(/^Motivo/)).toHaveValue("Encerramento do contrato.");

@@ -17,6 +17,17 @@ import {
   registerSignedPcmsoAction,
 } from "@/shared/server/actions/medicine/pcmso-documents";
 
+/**
+ * Envia o formulário do botão de envio sem a validação nativa do navegador (o jsdom, como o
+ * navegador, não envia com campo `required` vazio): estes testes conferem a exibição do erro que o
+ * servidor devolve. Botão comum (abrir painel, baixar) continua sendo clique.
+ */
+function press(element: HTMLElement) {
+  const button = element as HTMLButtonElement;
+  if (button.type === "submit" && button.form) fireEvent.submit(button.form);
+  else fireEvent.click(element);
+}
+
 const mockRefresh = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh: mockRefresh }),
@@ -70,7 +81,7 @@ describe("gerar prévia do PCMSO", () => {
       invalid({ companyId: "Empresa inválida.", cycleStart: "Data inválida." }),
     );
     render(<GeneratePcmsoForm companyId={COMPANY} />);
-    fireEvent.click(screen.getByRole("button", { name: "Gerar prévia do PCMSO" }));
+    press(screen.getByRole("button", { name: "Gerar prévia do PCMSO" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Empresa inválida.");
@@ -91,7 +102,7 @@ describe("gerar prévia do PCMSO", () => {
       error: { code: "FORBIDDEN", message: "FORBIDDEN" },
     });
     render(<GeneratePcmsoForm companyId={COMPANY} />);
-    fireEvent.click(screen.getByRole("button", { name: "Gerar prévia do PCMSO" }));
+    press(screen.getByRole("button", { name: "Gerar prévia do PCMSO" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Você não tem permissão para esta operação.",
@@ -108,7 +119,7 @@ describe("gerar prévia do PCMSO", () => {
     fireEvent.change(screen.getByLabelText(/^Data-base do ciclo/), {
       target: { value: "2026-01-01" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Gerar prévia do PCMSO" }));
+    press(screen.getByRole("button", { name: "Gerar prévia do PCMSO" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(GENERIC);
     expect(screen.queryByText(/ECONNREFUSED/)).not.toBeInTheDocument();
@@ -128,7 +139,7 @@ describe("registrar PCMSO assinado", () => {
         signedOn: "Data da assinatura inválida.",
       }),
     );
-    fireEvent.click(renderSigned());
+    press(renderSigned());
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(
@@ -153,7 +164,7 @@ describe("registrar PCMSO assinado", () => {
           "Explique em pelo menos 10 caracteres por que o documento é substituído.",
       }),
     );
-    fireEvent.click(renderSigned(CURRENT));
+    press(renderSigned(CURRENT));
 
     expect(
       await screen.findByText("Informe o tipo de mudança da nova versão."),
@@ -176,7 +187,7 @@ describe("registrar PCMSO assinado", () => {
         origin: 'Invalid option: expected one of "coordinator"|"office_received"',
       }),
     );
-    fireEvent.click(renderSigned());
+    press(renderSigned());
 
     expect(await screen.findAllByText("Valor inválido.")).toHaveLength(2);
     expect(document.body).not.toHaveTextContent(ENGLISH);
@@ -191,7 +202,7 @@ describe("registrar PCMSO assinado", () => {
         message: "Somente o médico responsável ou a equipe do escritório registra.",
       },
     });
-    fireEvent.click(renderSigned());
+    press(renderSigned());
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Somente o médico responsável ou a equipe do escritório registra.",
@@ -208,7 +219,7 @@ describe("registrar PCMSO assinado", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /^Conferência documental/ }), {
       target: { value: "Relatório do validador fictício" },
     });
-    fireEvent.click(button);
+    press(button);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(GENERIC);
     expect(screen.queryByText(/bucket|org_a/)).not.toBeInTheDocument();
@@ -229,7 +240,7 @@ describe("baixar PCMSO assinado", () => {
       error: { code: "FORBIDDEN", message: "FORBIDDEN" },
     });
     render(<DownloadSignedPcmsoButton id={CURRENT} />);
-    fireEvent.click(screen.getByRole("button", { name: "Baixar PDF" }));
+    press(screen.getByRole("button", { name: "Baixar PDF" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Você não tem permissão para esta operação.",
@@ -240,12 +251,12 @@ describe("baixar PCMSO assinado", () => {
   it("promessa rejeitada vira mensagem genérica; sucesso abre a URL assinada", async () => {
     download.mockRejectedValueOnce(new Error("signed url failed: token=abc"));
     render(<DownloadSignedPcmsoButton id={CURRENT} />);
-    fireEvent.click(screen.getByRole("button", { name: "Baixar PDF" }));
+    press(screen.getByRole("button", { name: "Baixar PDF" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(GENERIC);
     expect(screen.queryByText(/token=/)).not.toBeInTheDocument();
 
     download.mockResolvedValueOnce({ ok: true, data: { url: "https://example.test/f" } });
-    fireEvent.click(await screen.findByRole("button", { name: "Baixar PDF" }));
+    press(await screen.findByRole("button", { name: "Baixar PDF" }));
     await waitFor(() =>
       expect(openSpy).toHaveBeenCalledWith(
         "https://example.test/f",

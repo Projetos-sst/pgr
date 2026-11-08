@@ -10,6 +10,17 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { SourceForm } from "@/app/(protected)/companies/[id]/medical-risks/source-form";
 import { registerMedicalRiskSourceAction } from "@/shared/server/actions/medicine/risk-sources";
 
+/**
+ * Envia o formulário do botão de envio sem a validação nativa do navegador (o jsdom, como o
+ * navegador, não envia com campo `required` vazio): estes testes conferem a exibição do erro que o
+ * servidor devolve. Botão comum (abrir painel, baixar) continua sendo clique.
+ */
+function press(element: HTMLElement) {
+  const button = element as HTMLButtonElement;
+  if (button.type === "submit" && button.form) fireEvent.submit(button.form);
+  else fireEvent.click(element);
+}
+
 const mockRefresh = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh: mockRefresh }),
@@ -45,7 +56,7 @@ function fillRisk() {
   fireEvent.change(textbox(/^Grupo \/ contexto/), { target: { value: "Produção" } });
 }
 const submit = () =>
-  fireEvent.click(screen.getByRole("button", { name: "Registrar para revisão" }));
+  press(screen.getByRole("button", { name: "Registrar para revisão" }));
 
 describe("fonte de riscos", () => {
   it("validação local: todos os erros na linha do risco, em português, sem enviar", async () => {

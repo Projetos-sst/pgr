@@ -19,6 +19,17 @@ import {
   revokeMedicoUserLinkAction,
 } from "@/shared/server/actions/medicine/professional-links";
 
+/**
+ * Envia o formulário do botão de envio sem a validação nativa do navegador (o jsdom, como o
+ * navegador, não envia com campo `required` vazio): estes testes conferem a exibição do erro que o
+ * servidor devolve. Botão comum (abrir painel, baixar) continua sendo clique.
+ */
+function press(element: HTMLElement) {
+  const button = element as HTMLButtonElement;
+  if (button.type === "submit" && button.form) fireEvent.submit(button.form);
+  else fireEvent.click(element);
+}
+
 const mockRefresh = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh: mockRefresh }),
@@ -79,7 +90,7 @@ describe("acesso do profissional", () => {
       },
     });
     render(<ProfessionalAccess {...base} canManage members={MEMBERS} links={[]} />);
-    fireEvent.click(screen.getByRole("button", { name: "Convidar conta" }));
+    press(screen.getByRole("button", { name: "Convidar conta" }));
 
     expect(await screen.findByText("Selecione a conta.")).toBeInTheDocument();
     const select = screen.getByRole("combobox", { name: /^Conta convidada/ });
@@ -102,7 +113,7 @@ describe("acesso do profissional", () => {
     fireEvent.change(screen.getByLabelText(/Motivo da revogação/), {
       target: { value: "Saída" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Revogar acesso" }));
+    press(screen.getByRole("button", { name: "Revogar acesso" }));
     expect(await screen.findByText("Valor inválido.")).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/Too small/);
 
@@ -110,7 +121,7 @@ describe("acesso do profissional", () => {
       ok: false,
       error: { code: "FORBIDDEN", message: "FORBIDDEN" },
     });
-    fireEvent.click(await screen.findByRole("button", { name: "Revogar acesso" }));
+    press(await screen.findByRole("button", { name: "Revogar acesso" }));
     expect(
       await screen.findByText("Você não tem permissão para esta operação."),
     ).toBeInTheDocument();
@@ -125,7 +136,7 @@ describe("acesso do profissional", () => {
     fireEvent.change(screen.getByLabelText(/^Motivo/), {
       target: { value: "Profissional da equipe." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Convidar conta" }));
+    press(screen.getByRole("button", { name: "Convidar conta" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(GENERIC);
     expect(screen.queryByText(/u-secret/)).not.toBeInTheDocument();
@@ -145,9 +156,7 @@ describe("minha identidade profissional", () => {
       },
     });
     render(<IdentityControls item={ITEM} />);
-    fireEvent.click(
-      screen.getByRole("button", { name: "Pedir verificação de identidade" }),
-    );
+    press(screen.getByRole("button", { name: "Pedir verificação de identidade" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Cadastro do profissional: Cadastro de médico inválido.",
@@ -161,13 +170,13 @@ describe("minha identidade profissional", () => {
     });
     render(<IdentityControls item={ITEM} />);
     const name = /^Reconfirmar/;
-    fireEvent.click(screen.getByRole("button", { name }));
+    press(screen.getByRole("button", { name }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Você não tem permissão para esta operação.",
     );
 
     reconfirm.mockRejectedValueOnce(new Error("row-level security policy"));
-    fireEvent.click(await screen.findByRole("button", { name }));
+    press(await screen.findByRole("button", { name }));
     expect(await screen.findByText(GENERIC)).toBeInTheDocument();
     expect(screen.queryByText(/row-level/)).not.toBeInTheDocument();
     expect(await screen.findByRole("button", { name })).toBeEnabled();
