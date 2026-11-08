@@ -6,7 +6,6 @@ import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import * as repo from "@/shared/db/repositories/aso";
 import { todayInSaoPaulo } from "@/shared/dates";
 import {
-  ASO_SIGNED_PREVIEW_STALE_MESSAGE,
   asoSignedInputSchema,
   checkSignedPdf,
   currentSignedAso,
@@ -71,20 +70,13 @@ export async function registerSignedAso(
   const today = todayInSaoPaulo();
 
   // Fluxo A: a prévia assinada precisa ser a mais recente e ainda a composição atual do exame.
-  // Conferido ANTES do upload (nada vai ao storage) e de novo no registro, com o exame travado.
-  let currentPreviewSha256: string | null = null;
-  if (input.origin === "examiner") {
-    currentPreviewSha256 = (await currentAsoComposition(ctx, id)).contentSha256;
-    const previews = await repo.listAsoDocuments(ctx, id);
-    const chosen = previews.find((p) => p.id === input.previewDocumentId);
-    if (!chosen) throw new ValidationError("A prévia informada não é deste exame.");
-    if (
-      chosen.id !== previews[0].id ||
-      !currentPreviewSha256 ||
-      chosen.contentSha256 !== currentPreviewSha256
-    )
-      throw new ValidationError(ASO_SIGNED_PREVIEW_STALE_MESSAGE);
-  }
+  // A conferência roda no registro, com o exame travado e DEPOIS da autorização do examinador
+  // (quem não pode registrar recebe FORBIDDEN, não um erro de validação); se falhar, o arquivo
+  // enviado é removido pela compensação abaixo.
+  const currentPreviewSha256 =
+    input.origin === "examiner"
+      ? (await currentAsoComposition(ctx, id)).contentSha256
+      : null;
 
   await putSignedAsoObject(storagePath, bytes);
   try {

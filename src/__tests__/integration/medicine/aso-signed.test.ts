@@ -318,10 +318,17 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
       registerSignedAso(doctor, exam.id, examinerFields(v2.id, asCoordinator), pdf()),
     ).rejects.toMatchObject(stale);
 
-    // Recusado antes do upload: nenhum arquivo no storage, nenhum registro.
-    expect(putSignedAsoObject).not.toHaveBeenCalled();
-    expect(removeDocumentObject).not.toHaveBeenCalled();
+    // A conferência roda depois da autorização, no registro: cada arquivo enviado é removido
+    // (compensação) e nenhum registro fica.
+    const uploaded = (putSignedAsoObject as jest.Mock).mock.calls.map(([path]) => path);
+    expect(uploaded.length).toBeGreaterThan(0);
+    expect((removeDocumentObject as jest.Mock).mock.calls.map(([path]) => path)).toEqual(
+      uploaded,
+    );
     expect(await admin`select id from aso_signed_documents`).toHaveLength(0);
+    jest.clearAllMocks();
+    (putSignedAsoObject as jest.Mock).mockResolvedValue(undefined);
+    (removeDocumentObject as jest.Mock).mockResolvedValue(undefined);
 
     // Prévia mais recente, gerada dos dados atuais: aceita.
     const v3 = await generateDocument(staff, exam.id);
