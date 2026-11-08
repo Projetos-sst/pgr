@@ -38,7 +38,7 @@ import {
   updateHealthExam,
 } from "@/shared/db/repositories/health-exams";
 import { registerMedicalRiskSource } from "@/shared/server/medicine/risk-source-core";
-import { generateDocument } from "@/shared/server/medicine/aso-core";
+import { addProcedure, generateDocument } from "@/shared/server/medicine/aso-core";
 import {
   listSignedAsos,
   registerSignedAso,
@@ -336,6 +336,80 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
     });
     expect(putSignedAsoObject).toHaveBeenCalledTimes(1);
     expect(removeDocumentObject).not.toHaveBeenCalled();
+  });
+
+  it("MED-11: exame editado depois do ASO assinado vigente fica sinalizado; sem edição, sem aviso", async () => {
+    const vigente = async (examId: string) =>
+      (await listSignedAsos(staff, examId)).find((d) => d.replacedById === null);
+    const examInput = {
+      employeeId: I.employeeA,
+      doctorId: EXAMINER,
+      examType: "periodic",
+      performedAt: "2026-10-20",
+      aptitude: "unfit",
+    };
+
+    // Fluxo A: sem edição, sem aviso.
+    const { exam, preview } = await examWithPreview();
+    const created = await registerSignedAso(
+      examiner,
+      exam.id,
+      examinerFields(preview.id),
+      pdf(),
+    );
+    expect(await vigente(exam.id)).toMatchObject({ id: created.id, outdated: false });
+    // A edição não é bloqueada (a correção exige nova prévia), mas o vigente passa a divergir.
+    await updateHealthExam("org_a", exam.id, {
+      ...examInput,
+      aptitude: "fit",
+    } as Parameters<typeof updateHealthExam>[2]);
+    expect(await vigente(exam.id)).toMatchObject({ id: created.id, outdated: true });
+    // O documento assinado continua como estava.
+    const [stored] =
+      await admin`select conclusion from aso_signed_documents where id=${created.id}`;
+    expect(stored).toEqual({ conclusion: "unfit" });
+    // Correção por substituição a partir de nova prévia: o novo vigente não diverge.
+    const v2 = await generateDocument(staff, exam.id);
+    const replacement = await registerSignedAso(
+      examiner,
+      exam.id,
+      {
+        ...examinerFields(v2.id, { conclusion: "fit" }),
+        replacesId: created.id,
+        replaceReason: "Aptidão corrigida no exame fictício.",
+      },
+      pdf("v2"),
+    );
+    expect(await vigente(exam.id)).toMatchObject({
+      id: replacement.id,
+      outdated: false,
+    });
+    // Exame complementar incluído depois da assinatura também diverge.
+    await addProcedure(staff, exam.id, { code: "0281", performedAt: "2026-10-19" });
+    expect(await vigente(exam.id)).toMatchObject({
+      id: replacement.id,
+      outdated: true,
+    });
+    // O substituído não leva o aviso (só o vigente).
+    const list = await listSignedAsos(staff, exam.id);
+    expect(list.find((d) => d.id === created.id)?.outdated).toBeUndefined();
+
+    // Fluxo B: só a conclusão é comparável.
+    const external = await createHealthExam("org_a", {
+      employeeId: I.employeeA,
+      examType: "admissional",
+      performedAt: "2026-10-20",
+      aptitude: "fit",
+    } as Parameters<typeof createHealthExam>[1]);
+    await registerSignedAso(staff, external.id, externalFields(), pdf("b1"));
+    expect(await vigente(external.id)).toMatchObject({ outdated: false });
+    await updateHealthExam("org_a", external.id, {
+      employeeId: I.employeeA,
+      examType: "admissional",
+      performedAt: "2026-10-20",
+      aptitude: "unfit",
+    } as Parameters<typeof updateHealthExam>[2]);
+    expect(await vigente(external.id)).toMatchObject({ outdated: true });
   });
 
   it("NOB-110: CRM do cadastro com pontuação confere pela forma canônica; identidade e autoria intactas", async () => {

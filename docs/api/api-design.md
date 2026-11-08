@@ -1394,14 +1394,18 @@ O ASO oficial é o PDF **assinado pelo médico examinador** (NR-7 7.5.19.1 g). O
   - cada documento é substituído no máximo uma vez (índice único);
   - a substituição fica no mesmo exame (FK composta);
   - o anterior continua acessível.
+- **ASO vigente divergente do exame (MED-11):** a edição do exame (aptidão, data, tipo, examinador) e dos exames complementares continua livre — bloquear impediria a própria correção, que exige nova prévia. Em vez disso, `listSignedAsos` marca o **vigente** com `outdated` (`signedAsoOutdated` em `domains/medicine/aso-signed.ts`):
+  - fluxo A: `true` quando o SHA-256 da prévia assinada difere da composição atual (ou a conferência tem bloqueio hoje);
+  - fluxo B (sem prévia): `true` só quando o exame tem apto/inapto efetivo (registrado ou confirmado pelo examinador) diferente da conclusão do documento; "apto com restrição" sem confirmação não é comparado;
+  - os substituídos não levam o campo. A tela mostra "Os dados do exame mudaram depois do ASO assinado vigente. Gere nova prévia, colha a assinatura e registre a substituição." O documento assinado nunca é alterado.
 - **Só inclusão:** sem UPDATE ou DELETE para o `app_runtime`. Conclusão só `fit` ou `unfit`. O histórico bloqueia a exclusão do exame e do funcionário (`IN_USE`).
 - **RLS:** isolamento por tenant, módulo Medicina da empresa e policy de inclusão por fluxo (a mesma regra do servidor).
 
-| Action                       | Entrada                                    | Retorno                                |
-| ---------------------------- | ------------------------------------------ | -------------------------------------- |
-| `listSignedAsosAction`       | `examId`                                   | documentos com `replacedById` (cadeia) |
-| `registerSignedAsoAction`    | `examId, FormData` (`file` + campos acima) | documento registrado                   |
-| `getSignedAsoDownloadAction` | `id`                                       | `{ url, expiresInSeconds, sha256 }`    |
+| Action                       | Entrada                                    | Retorno                                                        |
+| ---------------------------- | ------------------------------------------ | -------------------------------------------------------------- |
+| `listSignedAsosAction`       | `examId`                                   | documentos com `replacedById` (cadeia) e `outdated` no vigente |
+| `registerSignedAsoAction`    | `examId, FormData` (`file` + campos acima) | documento registrado                                           |
+| `getSignedAsoDownloadAction` | `id`                                       | `{ url, expiresInSeconds, sha256 }`                            |
 
 REST:
 

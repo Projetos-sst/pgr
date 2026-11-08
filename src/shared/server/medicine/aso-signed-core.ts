@@ -9,6 +9,8 @@ import {
   ASO_SIGNED_PREVIEW_STALE_MESSAGE,
   asoSignedInputSchema,
   checkSignedPdf,
+  currentSignedAso,
+  signedAsoOutdated,
   signedOnProblem,
 } from "@/shared/domains/medicine/aso-signed";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
@@ -104,8 +106,25 @@ export async function registerSignedAso(
   }
 }
 
-export function listSignedAsos(ctx: TenantContext, examId: string) {
-  return repo.listSignedAsos(ctx, examUuid(examId));
+/**
+ * ASOs assinados do exame. O vigente leva `outdated` (MED-11): o exame mudou depois da assinatura
+ * (fluxo A: prévia assinada ≠ composição atual; fluxo B: conclusão ≠ a do exame). Só avisa: a
+ * edição do exame segue livre, e a correção é a substituição a partir de nova prévia.
+ */
+export async function listSignedAsos(ctx: TenantContext, examId: string) {
+  const id = examUuid(examId);
+  const items = await repo.listSignedAsos(ctx, id);
+  const current = currentSignedAso(items);
+  if (!current) return items;
+  const composition = await currentAsoComposition(ctx, id);
+  const previews = current.previewDocumentId ? await repo.listAsoDocuments(ctx, id) : [];
+  const signedPreview = previews.find((doc) => doc.id === current.previewDocumentId);
+  const outdated = signedAsoOutdated(current, {
+    previewSha256: signedPreview?.contentSha256 ?? null,
+    currentSha256: composition.contentSha256,
+    conclusion: composition.conclusion,
+  });
+  return items.map((item) => (item.id === current.id ? { ...item, outdated } : item));
 }
 
 /** URL assinada curta para baixar o PDF; o caminho sai do registro do tenant, nunca do cliente. */
