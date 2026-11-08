@@ -117,3 +117,13 @@ Pendências após o lote 2 (08/11/2026):
 - `aso-core` usa a primeira designação quando há sobreposição na data do exame (conteúdo do documento; sobreposição só fora do app).
 - Três cálculos de dia usam deslocamento fixo de −3h (`aso-delivery`, `pcmso-documents`, `pcmso-analytical-reports`); correto enquanto Brasília não tiver horário de verão.
 - Formulários fora da Medicina (~35) e os públicos ainda não usam o helper de erros.
+
+Correções do lote 3 (fechamento funcional, 09/11/2026; migration 0081):
+
+- **MED-12 / MED-14 (PCMSO assinado):** só pelo médico responsável nomeado na prévia (app e RLS). O plano de exames fica preso ao conjunto de riscos validados (`based_on.riskIds`). A aprovação é imutável no banco (gatilho de transição).
+- **MED-01 / MED-11 (ASO assinado):** o examinador só assina a prévia mais recente e fiel ao exame. O ASO vigente que diverge do exame editado depois é sinalizado (`outdated`).
+- **MED-01 (examinador):** editar exame com médico inativo preserva o examinador. Excluir médico examinador é recusado (FK NO ACTION + `IN_USE`).
+- **NOB-158:** a verificação independente não vem mais preenchida com o CRM do cadastro.
+- **CRM:** gatilho no banco barra registro equivalente em gravações novas, inclusive por SQL direto; duplicatas antigas ficam para regularização.
+- **Segurança:** o bypass de autenticação de desenvolvimento exige `APP_ENV` definido.
+- Pendências: `HANDOFF-MEDICINA-2026-11-09.md`, seção 9.
