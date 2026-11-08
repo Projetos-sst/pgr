@@ -2,6 +2,7 @@
 
 import { useId, type FormEvent } from "react";
 
+import { formatInstantDate } from "@/shared/dates";
 import { pathDescriber } from "@/shared/domains/medicine/form-feedback";
 import {
   INVITATION_STATUS_LABELS,
@@ -114,7 +115,7 @@ export function ProfessionalAccess({
       {open ? (
         <p role="status" className="text-text text-sm">
           Vinculado a <strong>{label(open.userId)}</strong> desde{" "}
-          {open.linkedAt.slice(0, 10)}
+          {formatInstantDate(open.linkedAt)}
           {open.legacy ? " (vínculo anterior ao convite com aceite)" : ""}.
         </p>
       ) : (
@@ -128,7 +129,7 @@ export function ProfessionalAccess({
           <p>
             Convite para <strong>{label(active.userId)}</strong>:{" "}
             {INVITATION_STATUS_LABELS[active.status]} · válido até{" "}
-            {active.expiresAt.slice(0, 10)}.
+            {formatInstantDate(active.expiresAt)}.
           </p>
           <div className="flex flex-wrap gap-3">
             {isInvitee && active.status === "pending_acceptance" ? (
@@ -230,9 +231,9 @@ export function ProfessionalAccess({
         <ul className="text-text-subtle list-disc pl-5 text-sm">
           {links.map((l) => (
             <li key={l.id}>
-              {label(l.userId)} · {l.linkedAt.slice(0, 10)}
+              {label(l.userId)} · {formatInstantDate(l.linkedAt)}
               {l.revokedAt
-                ? ` → ${l.revokedAt.slice(0, 10)} (revogado: ${l.revokeReason})`
+                ? ` → ${formatInstantDate(l.revokedAt)} (revogado: ${l.revokeReason})`
                 : " → vigente"}
               {l.legacy ? " · anterior ao convite com aceite" : ""}
             </li>
@@ -243,7 +244,7 @@ export function ProfessionalAccess({
         <ul className="text-text-subtle list-disc pl-5 text-sm">
           {invitations.map((i) => (
             <li key={i.id}>
-              Convite {i.invitedAt.slice(0, 10)} para {label(i.userId)}
+              Convite {formatInstantDate(i.invitedAt)} para {label(i.userId)}
               {i.selfInvitation ? " (autovínculo)" : ""}:{" "}
               {INVITATION_STATUS_LABELS[i.status]}
             </li>
