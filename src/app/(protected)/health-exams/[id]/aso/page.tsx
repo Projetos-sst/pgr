@@ -335,7 +335,9 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
         )}
         <SignedAsoForm
           examId={id}
-          previews={docRows.map((doc) => ({ id: doc.id, version: doc.version }))}
+          previews={docRows
+            .slice(0, 1)
+            .map((doc) => ({ id: doc.id, version: doc.version }))}
           currentId={currentSigned?.id ?? null}
         />
       </section>

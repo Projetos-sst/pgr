@@ -63,6 +63,12 @@ export function SignedAsoForm({
     describe: describeSignedAsoPath,
   });
   const fields = feedback.fields;
+  // Só a prévia mais recente vira ASO oficial (o servidor confere de novo, com o SHA-256 da
+  // composição atual); as anteriores ficam no histórico de versões arquivadas.
+  const latest = previews.reduce<PreviewOption | null>(
+    (best, p) => (best && best.version >= p.version ? best : p),
+    null,
+  );
   const [origin, setOrigin] = useState<AsoSignedOriginValue | "">("");
   const [method, setMethod] = useState<AsoSignatureMethodValue | "">("");
 
@@ -110,17 +116,29 @@ export function SignedAsoForm({
         error={fields.origin}
       />
       {origin === "examiner" ? (
-        <SelectField
-          label="Prévia do sistema que foi assinada"
-          name="previewDocumentId"
-          required
-          options={previews.map((p) => ({
-            value: p.id,
-            label: `Prévia versão ${p.version}`,
-          }))}
-          emptyLabel={previews.length ? undefined : "Gere uma prévia antes"}
-          error={fields.previewDocumentId}
-        />
+        <>
+          <SelectField
+            label="Prévia do sistema que foi assinada"
+            name="previewDocumentId"
+            required
+            options={
+              latest
+                ? [
+                    {
+                      value: latest.id,
+                      label: `Prévia versão ${latest.version} (a mais recente)`,
+                    },
+                  ]
+                : []
+            }
+            emptyLabel={latest ? undefined : "Gere uma prévia antes"}
+            error={fields.previewDocumentId}
+          />
+          <p className="text-text-subtle text-xs">
+            Só a prévia mais recente, ainda igual aos dados do exame, pode ser registrada
+            como assinada. Se o exame mudou depois dela, gere uma nova prévia e assine-a.
+          </p>
+        </>
       ) : null}
       <SelectField
         label="Método de assinatura"

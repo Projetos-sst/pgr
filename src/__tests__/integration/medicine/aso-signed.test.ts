@@ -35,6 +35,7 @@ import {
 import {
   createHealthExam,
   deleteHealthExam,
+  updateHealthExam,
 } from "@/shared/db/repositories/health-exams";
 import { registerMedicalRiskSource } from "@/shared/server/medicine/risk-source-core";
 import { generateDocument } from "@/shared/server/medicine/aso-core";
@@ -267,6 +268,74 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
         pdf(),
       ),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("fluxo A: prévia antiga ou desatualizada não vira ASO oficial; nada é gravado nem enviado", async () => {
+    const { exam, preview: v1 } = await examWithPreview();
+    const examInput = {
+      employeeId: I.employeeA,
+      doctorId: EXAMINER,
+      examType: "periodic",
+      performedAt: "2026-10-20",
+      aptitude: "unfit",
+    };
+    const edit = (overrides: Record<string, string>) =>
+      updateHealthExam("org_a", exam.id, {
+        ...examInput,
+        ...overrides,
+      } as Parameters<typeof updateHealthExam>[2]);
+    const stale = {
+      code: "VALIDATION",
+      message: expect.stringMatching(/não corresponde mais ao exame/),
+    };
+
+    // Exame corrigido para apto depois da v1 (inapto): a v1 ainda é a mais recente, mas não é
+    // mais a composição do exame.
+    await edit({ aptitude: "fit" });
+    await expect(
+      registerSignedAso(examiner, exam.id, examinerFields(v1.id), pdf()),
+    ).rejects.toMatchObject(stale);
+    // Com a v2 gerada, a v1 também não é a mais recente (com qualquer conclusão).
+    const v2 = await generateDocument(staff, exam.id);
+    for (const conclusion of ["unfit", "fit"])
+      await expect(
+        registerSignedAso(examiner, exam.id, examinerFields(v1.id, { conclusion }), pdf()),
+      ).rejects.toMatchObject(stale);
+
+    // Examinador trocado para a coordenadora (verificada): ela não registra a partir da v2, que
+    // nomeia o examinador anterior, mesmo com o CRM dela e a conclusão da prévia.
+    await edit({ aptitude: "fit", doctorId: COORDINATOR });
+    const asCoordinator = {
+      conclusion: "fit",
+      signerName: "Dra. Coordenadora Fictícia",
+      signerRegistration: "70001",
+    };
+    await expect(
+      registerSignedAso(doctor, exam.id, examinerFields(v2.id, asCoordinator), pdf()),
+    ).rejects.toMatchObject(stale);
+
+    // Recusado antes do upload: nenhum arquivo no storage, nenhum registro.
+    expect(putSignedAsoObject).not.toHaveBeenCalled();
+    expect(removeDocumentObject).not.toHaveBeenCalled();
+    expect(await admin`select id from aso_signed_documents`).toHaveLength(0);
+
+    // Prévia mais recente, gerada dos dados atuais: aceita.
+    const v3 = await generateDocument(staff, exam.id);
+    const created = await registerSignedAso(
+      doctor,
+      exam.id,
+      examinerFields(v3.id, asCoordinator),
+      pdf(),
+    );
+    expect(created).toMatchObject({
+      origin: "examiner",
+      previewDocumentId: v3.id,
+      conclusion: "fit",
+      registeredBy: "doctor",
+      signerRegistration: "70001",
+    });
+    expect(putSignedAsoObject).toHaveBeenCalledTimes(1);
+    expect(removeDocumentObject).not.toHaveBeenCalled();
   });
 
   it("NOB-110: CRM do cadastro com pontuação confere pela forma canônica; identidade e autoria intactas", async () => {

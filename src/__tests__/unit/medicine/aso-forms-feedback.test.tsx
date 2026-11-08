@@ -5,7 +5,7 @@
  * segue como mensagem de permissão (a correção da entrega punha a recusa no campo "motivo") e
  * promessa rejeitada vira mensagem genérica, mantendo o que foi digitado. Dados fictícios.
  */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 import {
   CompanyOriginForm,
@@ -168,6 +168,32 @@ describe("ASO assinado", () => {
       "true",
     );
     expect(document.body).not.toHaveTextContent(/previewDocumentId|replaceReason/);
+  });
+
+  it("fluxo do examinador: só a prévia mais recente é oferecida (as antigas ficam no histórico)", () => {
+    render(
+      <SignedAsoForm
+        examId={EXAM}
+        previews={[
+          { id: "p1111111-1111-4111-8111-111111111111", version: 1 },
+          { id: "p2222222-2222-4222-8222-222222222222", version: 2 },
+        ]}
+        currentId={null}
+      />,
+    );
+    fireEvent.change(
+      screen.getByRole("combobox", { name: /^Origem do documento assinado/ }),
+      { target: { value: "examiner" } },
+    );
+    const select = screen.getByRole("combobox", {
+      name: /^Prévia do sistema que foi assinada/,
+    });
+    expect(
+      within(select).getByRole("option", { name: "Prévia versão 2 (a mais recente)" }),
+    ).toBeInTheDocument();
+    expect(
+      within(select).queryByRole("option", { name: /Prévia versão 1/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("promessa rejeitada: mensagem genérica e o que foi digitado fica", async () => {

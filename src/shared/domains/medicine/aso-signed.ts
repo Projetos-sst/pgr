@@ -44,6 +44,13 @@ export const ASO_SIGNED_CONCLUSION_LABELS = {
   unfit: "Inapto para a função",
 } as const;
 
+/**
+ * Fluxo A: a prévia assinada precisa ser a mais recente do exame e ainda corresponder à composição
+ * atual (mesmo SHA-256, sem bloqueio na conferência). Espelha a regra do PCMSO assinado.
+ */
+export const ASO_SIGNED_PREVIEW_STALE_MESSAGE =
+  "A prévia escolhida não corresponde mais ao exame (ou não é a mais recente). Gere uma nova prévia e assine-a.";
+
 /** Limite do PDF (mesmo teto do GED). */
 export const ASO_SIGNED_MAX_BYTES = 25 * 1024 * 1024;
 

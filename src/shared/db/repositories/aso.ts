@@ -5,7 +5,11 @@ import { and, asc, desc, eq, isNull, max, sql } from "drizzle-orm";
 import { ForbiddenError } from "@/shared/auth/errors";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import type { ExamProcedureValues } from "@/shared/domains/medicine/aso";
-import type { AsoSignedInput, AsoSignedItem } from "@/shared/domains/medicine/aso-signed";
+import {
+  ASO_SIGNED_PREVIEW_STALE_MESSAGE,
+  type AsoSignedInput,
+  type AsoSignedItem,
+} from "@/shared/domains/medicine/aso-signed";
 import {
   compareProfessionalRegistration,
   registeredNotCanonicalMessage,
@@ -557,7 +561,8 @@ export type SignedAsoFile = {
 /**
  * Registra o ASO assinado já gravado no storage. Confere no servidor (e a RLS confere de novo):
  * - fluxo A: examinador do exame com identidade verificada, CRM/UF do cadastro dele, prévia do
- *   mesmo exame e conclusão igual à da prévia;
+ *   mesmo exame, a mais recente, com o SHA-256 da composição atual (`currentPreviewSha256`,
+ *   calculado pelo núcleo; `null` = conferência com bloqueio) e conclusão igual à da prévia;
  * - fluxo B: equipe do escritório (o portão do escritório já barrou cliente);
  * - um ASO vigente por exame: com vigente, o novo precisa substituí-lo, com motivo.
  */
@@ -567,6 +572,7 @@ export async function insertSignedAso(
   input: AsoSignedInput,
   file: SignedAsoFile,
   checkSignedOn: (performedAt: string) => string | null,
+  currentPreviewSha256: string | null,
 ): Promise<AsoSignedItem> {
   return auditedTenantWrite(ctx.tenantId, "medicine.aso_signed.register_rejected", () =>
     actorTx(ctx, async (tx) => {
@@ -610,7 +616,11 @@ export async function insertSignedAso(
         // RLS confere, por igualdade exata, contra `medicos`).
         signer = { registration: examiner.crm, uf: examiner.uf ?? input.signerUf };
         const [preview] = await tx
-          .select({ content: docs.content })
+          .select({
+            content: docs.content,
+            version: docs.version,
+            contentSha256: docs.contentSha256,
+          })
           .from(docs)
           .where(
             and(
@@ -621,6 +631,20 @@ export async function insertSignedAso(
           )
           .limit(1);
         if (!preview) throw new ValidationError("A prévia informada não é deste exame.");
+        // A prévia assinada é a mais recente do exame e ainda é a composição atual dos dados
+        // (mesma regra do PCMSO): prévia antiga ou desatualizada não vira ASO oficial. A geração
+        // de prévia lê o exame com FOR SHARE; aqui ele está com FOR UPDATE, então não há prévia
+        // nova entre esta conferência e o registro.
+        const [{ last }] = await tx
+          .select({ last: max(docs.version) })
+          .from(docs)
+          .where(and(eq(docs.orgId, ctx.tenantId), eq(docs.healthExamId, exam.id)));
+        if (
+          preview.version !== last ||
+          !currentPreviewSha256 ||
+          preview.contentSha256 !== currentPreviewSha256
+        )
+          throw new ValidationError(ASO_SIGNED_PREVIEW_STALE_MESSAGE);
         const previewConclusion = (
           preview.content as { conclusion?: { result?: string } }
         ).conclusion?.result;

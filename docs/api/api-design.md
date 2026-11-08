@@ -1376,7 +1376,8 @@ O ASO oficial é o PDF **assinado pelo médico examinador** (NR-7 7.5.19.1 g). O
 - **Fluxo A (`examiner`):**
   - só a conta do médico examinador do exame, com identidade verificada (`actor_clinical_medico_ids`, NOB-158);
   - CRM/UF do signatário iguais ao cadastro do examinador — conferência de **consistência**, que nunca autoriza sozinha (quem registra vem do `doctorId` do exame + conta vinculada e verificada);
-  - prévia (`previewDocumentId`) do mesmo exame, com a mesma conclusão.
+  - prévia (`previewDocumentId`) do mesmo exame, com a mesma conclusão;
+  - a prévia precisa ser a **mais recente** do exame **e** ainda a composição atual: o `content_sha256` dela tem de ser igual ao SHA-256 de `composeAso` sobre os dados de hoje (mesma montagem de `generateDocument`), sem bloqueio na conferência (espelho da regra do PCMSO assinado). Prévia antiga, exame editado depois da prévia (aptidão, data, tipo, examinador, exames complementares) ou conferência com bloqueio → `VALIDATION` "A prévia escolhida não corresponde mais ao exame (ou não é a mais recente). Gere uma nova prévia e assine-a." A conferência roda **antes do upload** (nada vai ao storage) e de novo no registro, com o exame travado (`FOR UPDATE`). A tela oferece só a prévia mais recente; as anteriores ficam em "Versões arquivadas".
 - **Formato do CRM (NOB-110):**
   - `signerRegistration` aceita dígitos com ponto, hífen, barra ou espaço (até 10 dígitos); letras são recusadas (a UF vai em `signerUf`, sem diferenciar maiúsculas);
   - a conferência com o cadastro usa a forma canônica (`canonicalRegistrationNumber` em `domains/pgr/medicos.ts`): tira só os separadores e mantém os dígitos como estão — `12.345` = `12345`, mas `012345` ≠ `12345`;

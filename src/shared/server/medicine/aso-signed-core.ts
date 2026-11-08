@@ -6,6 +6,7 @@ import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import * as repo from "@/shared/db/repositories/aso";
 import { todayInSaoPaulo } from "@/shared/dates";
 import {
+  ASO_SIGNED_PREVIEW_STALE_MESSAGE,
   asoSignedInputSchema,
   checkSignedPdf,
   signedOnProblem,
@@ -19,6 +20,8 @@ import {
   SIGNED_DOWNLOAD_URL_TTL_SECONDS,
   signedAsoPath,
 } from "@/shared/integrations/storage/documents-storage";
+
+import { currentAsoComposition } from "./aso-core";
 
 const examUuid = (id: string) => requiredUuid("Exame inválido.").parse(id);
 
@@ -65,6 +68,22 @@ export async function registerSignedAso(
   const storagePath = signedAsoPath(ctx.tenantId, id, recordId);
   const today = todayInSaoPaulo();
 
+  // Fluxo A: a prévia assinada precisa ser a mais recente e ainda a composição atual do exame.
+  // Conferido ANTES do upload (nada vai ao storage) e de novo no registro, com o exame travado.
+  let currentPreviewSha256: string | null = null;
+  if (input.origin === "examiner") {
+    currentPreviewSha256 = (await currentAsoComposition(ctx, id)).contentSha256;
+    const previews = await repo.listAsoDocuments(ctx, id);
+    const chosen = previews.find((p) => p.id === input.previewDocumentId);
+    if (!chosen) throw new ValidationError("A prévia informada não é deste exame.");
+    if (
+      chosen.id !== previews[0].id ||
+      !currentPreviewSha256 ||
+      chosen.contentSha256 !== currentPreviewSha256
+    )
+      throw new ValidationError(ASO_SIGNED_PREVIEW_STALE_MESSAGE);
+  }
+
   await putSignedAsoObject(storagePath, bytes);
   try {
     return await repo.insertSignedAso(
@@ -73,6 +92,7 @@ export async function registerSignedAso(
       input,
       { id: recordId, storagePath, sha256, sizeBytes: bytes.byteLength },
       (performedAt) => signedOnProblem(input.signedOn, performedAt, today),
+      currentPreviewSha256,
     );
   } catch (error) {
     try {
