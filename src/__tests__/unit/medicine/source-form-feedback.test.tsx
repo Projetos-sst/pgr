@@ -57,7 +57,9 @@ describe("fonte de riscos", () => {
     const category = await screen.findByRole("combobox", { name: /^Categoria/ });
     expect(category).toHaveAttribute("aria-invalid", "true");
     expect(category).toHaveAccessibleDescription("Selecione a categoria do risco.");
-    expect(textbox(/^Descrição do risco/)).toHaveAccessibleDescription("Descreva o risco.");
+    expect(textbox(/^Descrição do risco/)).toHaveAccessibleDescription(
+      "Descreva o risco.",
+    );
     expect(textbox(/^Grupo \/ contexto/)).toHaveAccessibleDescription(
       "Informe o grupo ou contexto de exposição.",
     );
@@ -111,7 +113,9 @@ describe("fonte de riscos", () => {
   });
 
   it("promessa rejeitada: mensagem segura e o que foi digitado fica", async () => {
-    register.mockRejectedValue(new Error("value too long for type character varying(200)"));
+    register.mockRejectedValue(
+      new Error("value too long for type character varying(200)"),
+    );
     renderForm();
     fillSource();
     fillRisk();

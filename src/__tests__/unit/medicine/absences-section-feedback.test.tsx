@@ -89,7 +89,9 @@ describe("registrar afastamento", () => {
       error: {
         code: "VALIDATION",
         message: "Dados inválidos.",
-        fields: { workRelation: "Para outro motivo, a relação com o trabalho não se aplica." },
+        fields: {
+          workRelation: "Para outro motivo, a relação com o trabalho não se aplica.",
+        },
       },
     });
     render(<AbsencesSection employeeId={EMPLOYEE} items={[]} loadError={null} />);

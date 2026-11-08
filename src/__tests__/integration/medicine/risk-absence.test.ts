@@ -296,9 +296,7 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       const params = { params: Promise.resolve({ id: I.companyA }) };
       const created = await DECLARE(req(prof, "POST", declaration()), params);
       expect(created.status).toBe(201);
-      expect(
-        (await DECLARE(req(owner, "POST", declaration()), params)).status,
-      ).toBe(403);
+      expect((await DECLARE(req(owner, "POST", declaration()), params)).status).toBe(403);
       expect(
         (await DECLARE(req(prof, "POST", { ...declaration(), extra: 1 }), params)).status,
       ).toBe(422);
@@ -401,7 +399,11 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
 
       it("grava o id e o título do momento; renomear a função não invalida a declaração no ASO", async () => {
         expect(await blockingCodes()).toContain("risks_absence_not_declared");
-        await declareRiskAbsence(prof, I.companyA, declaration({ jobRoleId: I.jobRoleA }));
+        await declareRiskAbsence(
+          prof,
+          I.companyA,
+          declaration({ jobRoleId: I.jobRoleA }),
+        );
         expect(await blockingCodes()).not.toContain("risks_absence_not_declared");
         await admin`update job_roles set title='Pedreiro de obra' where id=${I.jobRoleA}`;
         const after = await blockingCodes();
@@ -424,7 +426,11 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       });
 
       it('funcionário trocado de função não fica coberto: "Pedreiro" não vale para "PEDREIRO"', async () => {
-        await declareRiskAbsence(prof, I.companyA, declaration({ jobRoleId: I.jobRoleA }));
+        await declareRiskAbsence(
+          prof,
+          I.companyA,
+          declaration({ jobRoleId: I.jobRoleA }),
+        );
         await admin`update employees set job_role_id=${JR_UPPER} where id=${I.employeeA}`;
         expect(await blockingCodes()).toContain("risks_absence_not_declared");
         expect((await readinessItem())?.message).toContain(
@@ -436,7 +442,11 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       });
 
       it("mesma função em outro GES: a declaração de um GES não vale no outro", async () => {
-        await declareRiskAbsence(prof, I.companyA, declaration({ jobRoleId: I.jobRoleA }));
+        await declareRiskAbsence(
+          prof,
+          I.companyA,
+          declaration({ jobRoleId: I.jobRoleA }),
+        );
         await admin`update employees set ges_id=${GES_EMPTY_2} where id=${I.employeeA}`;
         expect(await blockingCodes()).toContain("risks_absence_not_declared");
         await declareRiskAbsence(
@@ -448,7 +458,11 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       });
 
       it("função desvinculada do GES depois da declaração → não vale e é explicada; revinculada, volta a valer", async () => {
-        await declareRiskAbsence(prof, I.companyA, declaration({ jobRoleId: I.jobRoleA }));
+        await declareRiskAbsence(
+          prof,
+          I.companyA,
+          declaration({ jobRoleId: I.jobRoleA }),
+        );
         await admin`delete from ges_job_roles where ges_id=${GES_EMPTY} and job_role_id=${I.jobRoleA}`;
         const item = await readinessItem();
         expect(item?.severity).toBe("blocking");
@@ -459,7 +473,11 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
       });
 
       it("nova versão da fonte: a declaração pelo id deixa de valer (regra da versão inalterada)", async () => {
-        await declareRiskAbsence(prof, I.companyA, declaration({ jobRoleId: I.jobRoleA }));
+        await declareRiskAbsence(
+          prof,
+          I.companyA,
+          declaration({ jobRoleId: I.jobRoleA }),
+        );
         expect(await blockingCodes()).not.toContain("risks_absence_not_declared");
         await admin`insert into medical_risk_sources (org_id, company_id, kind, title, version, reference, fingerprint, supersedes_source_id, registered_by)
         values ('org_a', ${I.companyA}, 'external', 'PGR externo fictício', '2', 'Referência fictícia', 'fx-successor', ${sourceId}, 'owner')`;
@@ -567,7 +585,9 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
         // Antes do backfill: só texto, não vale (fail closed), com a explicação de regularização.
         const item = await readinessItem();
         expect(item?.severity).toBe("blocking");
-        expect(item?.message).toMatch(/declaração antiga neste GES para a função "Pedreiro"/);
+        expect(item?.message).toMatch(
+          /declaração antiga neste GES para a função "Pedreiro"/,
+        );
         const [before] = await rowsByTitle();
         // Empresa A2 tem outra "Pedreiro": não conta (mesma empresa da declaração).
         await admin.unsafe(backfillSql());
@@ -580,7 +600,8 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
 
       it("legado ambíguo ou sem correspondência fica sem id, não vale e é explicado; nada é apagado", async () => {
         // Outra caixa, digitação, e função da empresa que não está vinculada a este GES.
-        for (const legacy of ["pedreiro", "Pedreir", "Soldador"]) await insertLegacy(legacy);
+        for (const legacy of ["pedreiro", "Pedreir", "Soldador"])
+          await insertLegacy(legacy);
         await admin.unsafe(backfillSql());
         const rows = await rowsByTitle();
         expect(rows.map((r) => r.job_role_id)).toEqual([null, null, null]);
@@ -593,7 +614,11 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
         expect(item?.message).toMatch(/Regularização/);
         expect(await count()).toBe(3);
         // Regularização: o profissional declara escolhendo a função do GES.
-        await declareRiskAbsence(prof, I.companyA, declaration({ jobRoleId: I.jobRoleA }));
+        await declareRiskAbsence(
+          prof,
+          I.companyA,
+          declaration({ jobRoleId: I.jobRoleA }),
+        );
         expect(await blockingCodes()).not.toContain("risks_absence_not_declared");
       });
     });

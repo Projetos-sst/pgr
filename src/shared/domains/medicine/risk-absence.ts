@@ -195,7 +195,9 @@ function declarationCoversEmployee(
 ) {
   if (d.jobRole === "" && !d.jobRoleId) return true;
   if (!d.jobRoleId) return false;
-  return d.jobRoleId === employee.jobRoleId && employee.gesJobRoleIds.includes(d.jobRoleId);
+  return (
+    d.jobRoleId === employee.jobRoleId && employee.gesJobRoleIds.includes(d.jobRoleId)
+  );
 }
 
 type LiveSource = { id: string; superseded: boolean; freshness: SourceFreshness };

@@ -19,7 +19,10 @@ jest.mock("@/shared/server/actions/pgr/health-exams", () => ({
   updateHealthExamAction: jest.fn(),
 }));
 
-const EMPLOYEE = { id: "a1111111-1111-4111-8111-111111111111", fullName: "Beltrana Fictícia" };
+const EMPLOYEE = {
+  id: "a1111111-1111-4111-8111-111111111111",
+  fullName: "Beltrana Fictícia",
+};
 
 beforeEach(() => jest.clearAllMocks());
 
@@ -28,7 +31,11 @@ const field = (name: string) =>
   form().querySelector(`[name="${name}"]`) as HTMLInputElement;
 function renderNew() {
   render(
-    <HealthExamForm employees={[EMPLOYEE]} doctors={[]} defaultEmployeeId={EMPLOYEE.id} />,
+    <HealthExamForm
+      employees={[EMPLOYEE]}
+      doctors={[]}
+      defaultEmployeeId={EMPLOYEE.id}
+    />,
   );
 }
 
@@ -41,7 +48,7 @@ describe("HealthExamForm: retorno de erro", () => {
         message: "Dados inválidos.",
         fields: {
           clinicalNotes: "Observações clínicas não ficam mais no cadastro do exame.",
-          aptitude: "Invalid option: expected one of \"fit\"|\"unfit\"",
+          aptitude: 'Invalid option: expected one of "fit"|"unfit"',
         },
       },
     });
@@ -56,7 +63,9 @@ describe("HealthExamForm: retorno de erro", () => {
   });
 
   it("promessa rejeitada: mensagem genérica, valores mantidos e sem navegar", async () => {
-    jest.mocked(createHealthExamAction).mockRejectedValue(new Error("Failed query: insert"));
+    jest
+      .mocked(createHealthExamAction)
+      .mockRejectedValue(new Error("Failed query: insert"));
     renderNew();
     fireEvent.change(field("certificatePath"), { target: { value: "/docs/aso.pdf" } });
     fireEvent.submit(form());

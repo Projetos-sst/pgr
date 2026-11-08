@@ -285,7 +285,9 @@ describe("asoReadiness", () => {
       asoReadiness(f).find((i) => i.code === "risks_absence_not_declared")?.message;
     const legacy = facts({ risks: noRisks, riskAbsenceLegacyJobRoles: ["Soldador"] });
     expect(blocking(legacy)).toEqual(["risks_absence_not_declared"]);
-    expect(message(legacy)).toMatch(/declaração antiga neste GES para a função "Soldador"/);
+    expect(message(legacy)).toMatch(
+      /declaração antiga neste GES para a função "Soldador"/,
+    );
     expect(message(legacy)).toMatch(/Regularização: o profissional autorizado/);
     const unlinked = facts({ risks: noRisks, riskAbsenceJobRoleUnlinked: true });
     expect(blocking(unlinked)).toEqual(["risks_absence_not_declared"]);

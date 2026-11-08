@@ -169,7 +169,11 @@ describe("caminhos e listas", () => {
         risks: z.array(z.object({ description: z.string().min(1, "Descreva o risco.") })),
       })
       .strict()
-      .safeParse({ title: "", risks: [{ description: "ok" }, { description: "" }], x: 1 });
+      .safeParse({
+        title: "",
+        risks: [{ description: "ok" }, { description: "" }],
+        x: 1,
+      });
     expect(parsed.success).toBe(false);
     if (parsed.success) return;
     const fields = fieldsFromIssues(parsed.error.issues);

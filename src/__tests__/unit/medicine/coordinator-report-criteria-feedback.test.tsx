@@ -77,7 +77,9 @@ describe("relatório analítico (elaboração)", () => {
       <ReportForm companyId={COMPANY} suggested={null} hasPrevious canSimplify={false} />,
     );
     const note = screen.getByRole("textbox", { name: /^Informações insuficientes/ });
-    fireEvent.change(note, { target: { value: "Prontuários de outubro não recebidos." } });
+    fireEvent.change(note, {
+      target: { value: "Prontuários de outubro não recebidos." },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Elaborar prévia do relatório" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(GENERIC);
@@ -106,10 +108,9 @@ describe("critérios de interpretação", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Descrição do procedimento: Descreva o procedimento do código 9999.",
     );
-    expect(screen.getByRole("textbox", { name: /^Critérios de interpretação/ })).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    );
+    expect(
+      screen.getByRole("textbox", { name: /^Critérios de interpretação/ }),
+    ).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText("Valor inválido.")).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/Too small|otherDescription/);
   });
@@ -132,9 +133,9 @@ describe("critérios de interpretação", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Você não tem permissão para esta operação.",
     );
-    expect(screen.getByRole("textbox", { name: /^Planejamento das condutas/ })).toHaveValue(
-      "Conduta fictícia.",
-    );
+    expect(
+      screen.getByRole("textbox", { name: /^Planejamento das condutas/ }),
+    ).toHaveValue("Conduta fictícia.");
   });
 });
 

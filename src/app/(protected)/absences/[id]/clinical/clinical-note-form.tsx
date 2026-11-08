@@ -49,7 +49,12 @@ export function AbsenceClinicalNoteForm({ absenceId }: { absenceId: string }) {
         rows={3}
         error={feedback.fields.content}
       />
-      <TextField label="CID-10 (opcional)" name="cid" isMono error={feedback.fields.cid} />
+      <TextField
+        label="CID-10 (opcional)"
+        name="cid"
+        isMono
+        error={feedback.fields.cid}
+      />
       <TextField
         label="Autorização do trabalhador para o CID (referência do termo)"
         name="workerAuthorization"

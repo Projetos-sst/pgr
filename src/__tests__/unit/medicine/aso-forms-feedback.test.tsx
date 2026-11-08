@@ -110,9 +110,9 @@ describe("empresa de origem e conclusão do examinador", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Você não tem permissão para esta operação.",
     );
-    expect(screen.getByRole("textbox", { name: /^Como foi comprovado/ })).not.toHaveAttribute(
-      "aria-invalid",
-    );
+    expect(
+      screen.getByRole("textbox", { name: /^Como foi comprovado/ }),
+    ).not.toHaveAttribute("aria-invalid");
   });
 
   it("conclusão: erro do campo fica no grupo de opções; chave extra vai ao resumo", async () => {
@@ -162,7 +162,9 @@ describe("ASO assinado", () => {
   });
 
   it("promessa rejeitada: mensagem genérica e o que foi digitado fica", async () => {
-    (registerSignedAsoAction as jest.Mock).mockRejectedValue(new Error("payload too large"));
+    (registerSignedAsoAction as jest.Mock).mockRejectedValue(
+      new Error("payload too large"),
+    );
     render(<SignedAsoForm examId={EXAM} previews={[]} currentId={null} />);
     fireEvent.change(screen.getByRole("textbox", { name: /^Médico que assinou/ }), {
       target: { value: "Dr. Fictício" },

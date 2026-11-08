@@ -26,7 +26,11 @@ export const medicalRiskContentSchema = z
       .min(1, "Informe o grupo ou contexto de exposição.")
       .max(500, "Máximo de 500 caracteres."),
     jobRole: z.string().trim().max(500, "Máximo de 500 caracteres.").optional(),
-    possibleInjuries: z.string().trim().max(5000, "Máximo de 5.000 caracteres.").optional(),
+    possibleInjuries: z
+      .string()
+      .trim()
+      .max(5000, "Máximo de 5.000 caracteres.")
+      .optional(),
     exposureDescription: z
       .string()
       .trim()

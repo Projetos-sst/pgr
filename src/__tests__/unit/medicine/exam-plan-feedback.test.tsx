@@ -57,7 +57,7 @@ describe("decisão do item", () => {
         message: "Dados inválidos.",
         fields: {
           decision: "Escolha manter ou retirar o exame.",
-          _: "Unrecognized key: \"approvedBy\"",
+          _: 'Unrecognized key: "approvedBy"',
           itemId: "Item do plano inválido.",
         },
       },

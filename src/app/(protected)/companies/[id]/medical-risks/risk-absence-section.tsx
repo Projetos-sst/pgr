@@ -58,9 +58,9 @@ export function RiskAbsenceSection({
                 </p>
                 {d.jobRole && !d.jobRoleId ? (
                   <p className="text-text-muted text-xs">
-                    Declaração sem vínculo com uma função cadastrada (antiga, ou a função foi
-                    excluída): não vale no ASO. Regularização: declarar de novo escolhendo a
-                    função do GES.
+                    Declaração sem vínculo com uma função cadastrada (antiga, ou a função
+                    foi excluída): não vale no ASO. Regularização: declarar de novo
+                    escolhendo a função do GES.
                   </p>
                 ) : null}
                 <p className="text-text-muted">

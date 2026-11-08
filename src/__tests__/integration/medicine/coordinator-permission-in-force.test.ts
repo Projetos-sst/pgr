@@ -442,9 +442,9 @@ const DENIED_CORE = { code: expect.stringMatching(/^(FORBIDDEN|VALIDATION)$/) };
       expect(await planStatus(v2.id)).toBe("draft");
 
       // Atual (encerramento hoje, véspera do sucessor): aceita nas duas superfícies.
-      expect(
-        (await REGISTER(formReq(doctor, signedForm(MEDICO)), company)).status,
-      ).toBe(201);
+      expect((await REGISTER(formReq(doctor, signedForm(MEDICO)), company)).status).toBe(
+        201,
+      );
       expect((await DEFINE(jsonReq(doctor, CRITERIA), company)).status).toBe(201);
       (requireOfficeStaff as jest.Mock).mockResolvedValue(doctor);
       const approved = await approveExamPlanAction(v2.id, { note: "Via Server Action." });

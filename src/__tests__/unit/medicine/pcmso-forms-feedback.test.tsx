@@ -162,10 +162,9 @@ describe("registrar PCMSO assinado", () => {
       "aria-invalid",
       "true",
     );
-    expect(screen.getByRole("textbox", { name: /^Motivo da substituição/ })).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    );
+    expect(
+      screen.getByRole("textbox", { name: /^Motivo da substituição/ }),
+    ).toHaveAttribute("aria-invalid", "true");
     await waitFor(() => expect(register).toHaveBeenCalledTimes(1));
     expect((register.mock.calls[0][1] as FormData).get("replacesId")).toBe(CURRENT);
   });
@@ -174,7 +173,7 @@ describe("registrar PCMSO assinado", () => {
     register.mockResolvedValue(
       invalid({
         signerUf: "Invalid input: expected string, received undefined",
-        origin: "Invalid option: expected one of \"coordinator\"|\"office_received\"",
+        origin: 'Invalid option: expected one of "coordinator"|"office_received"',
       }),
     );
     fireEvent.click(renderSigned());
@@ -198,9 +197,9 @@ describe("registrar PCMSO assinado", () => {
       "Somente o médico responsável ou a equipe do escritório registra.",
     );
     expect(screen.queryByText(/Revise os campos/)).not.toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: /^Médico que assinou/ })).not.toHaveAttribute(
-      "aria-invalid",
-    );
+    expect(
+      screen.getByRole("textbox", { name: /^Médico que assinou/ }),
+    ).not.toHaveAttribute("aria-invalid");
   });
 
   it("promessa rejeitada: mensagem genérica e o que foi digitado fica", async () => {

@@ -114,9 +114,9 @@ describe("acesso do profissional", () => {
     expect(
       await screen.findByText("Você não tem permissão para esta operação."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: /^Motivo da revogação/ })).not.toHaveAttribute(
-      "aria-invalid",
-    );
+    expect(
+      screen.getByRole("textbox", { name: /^Motivo da revogação/ }),
+    ).not.toHaveAttribute("aria-invalid");
   });
 
   it("promessa rejeitada: mensagem genérica e motivo mantido", async () => {
@@ -145,7 +145,9 @@ describe("minha identidade profissional", () => {
       },
     });
     render(<IdentityControls item={ITEM} />);
-    fireEvent.click(screen.getByRole("button", { name: "Pedir verificação de identidade" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Pedir verificação de identidade" }),
+    );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Cadastro do profissional: Cadastro de médico inválido.",

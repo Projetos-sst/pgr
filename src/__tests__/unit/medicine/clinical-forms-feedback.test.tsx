@@ -99,7 +99,9 @@ describe("prontuário do exame", () => {
       error: {
         code: "VALIDATION",
         message: "Dados inválidos.",
-        fields: { kind: "Informe se registra uma restrição ou a retirada das restrições." },
+        fields: {
+          kind: "Informe se registra uma restrição ou a retirada das restrições.",
+        },
       },
     });
     fireEvent.click(
