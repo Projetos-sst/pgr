@@ -718,12 +718,21 @@ espaços; zeros à esquerda contam, `012345` ≠ `12345`; número com letras fic
 categoria diferente ou outro escritório **não** são duplicata. Cadastro antigo **sem UF** com o mesmo número e
 categoria bloqueia um novo (mensagem pede completar a UF dele). A conferência roda na mesma transação da
 gravação com `pg_advisory_xact_lock` por (escritório, categoria, UF, número canônico) — duas gravações
-concorrentes: só uma passa. **Sem índice canônico nem migration** (duplicatas antigas da homologação fariam a
+concorrentes: só uma passa. **Sem índice canônico** (duplicatas antigas da homologação fariam a
 migration falhar): o legado não é juntado, apagado nem corrigido; editar um cadastro antigo sem mudar o registro
 (número canônico, categoria, UF já informada — completar UF nula não conta como mudança) continua permitido.
 Texto de registro idêntico (índice bruto `uq_medicos_org_crm`, mesmo em outra UF/categoria) → `DUPLICATE` com
 `fields.crm`. Leitura operacional: `countMedicoRegistrationDuplicateGroups(orgId)` (repositório, só a contagem
-de grupos, sem dado pessoal; não exposto em HTTP). **Limite:** a equivalência é garantida só nos caminhos da aplicação (Server Action e REST, mesmo repositório); o banco impõe apenas o índice bruto, então um INSERT/UPDATE direto por SQL (inclusive como `app_runtime`) ainda consegue gravar um registro equivalente. O CRM nunca autoriza nada (NOB-158).
+de grupos, sem dado pessoal; não exposto em HTTP). **Backstop no banco (migration 0081):** o trigger
+`medicos_registration_guard` (BEFORE INSERT OR UPDATE OF `crm`, `profession`, `registration_uf`; SECURITY INVOKER)
+aplica a mesma regra a **gravações novas por qualquer caminho**, inclusive INSERT/UPDATE direto por SQL como
+`app_runtime`: forma canônica em `public.medico_registration_canonical(text)` (mesma do TS: ponto, hífen, barra e
+os espaços do `\s` do JavaScript; teste de paridade), mesma chave de `pg_advisory_xact_lock` da aplicação
+(reentrante na mesma transação) e recusa `23505` com constraint `medicos_registration_equivalent` e DETAIL
+`same_uf`/`missing_uf` — o repositório traduz para `DUPLICATE` com `fields.crm` e a mensagem correspondente.
+Edição que não muda o registro (mesma regra de `registrationIdentityChanged`) não é conferida. **Limites:** as
+duplicatas antigas continuam no banco (não há índice canônico); número com letras ou cadastro sem UF não é
+conferido (como na aplicação); o owner do banco ainda pode desligar o trigger. O CRM nunca autoriza nada (NOB-158).
 
 **`CategoryInput`**: `type*` (`epi`|`machine`|`supply`), `name*`, `note?`, `isActive` (default `true`).
 Unicidade por `UNIQUE(org_id, type, name)` → duplicidade no mesmo escritório+tipo vira `DUPLICATE`; o
