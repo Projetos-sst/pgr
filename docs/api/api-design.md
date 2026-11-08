@@ -995,6 +995,7 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
   - `office_received`: a equipe do escritório arquiva o documento que o médico responsável assinou.
   - O owner não vira signatário por escolher um nome. Colaborador e coordenador de outra empresa são barrados.
 - **Signatário (NOB-110):** o CRM/UF informado é conferido com o coordenador designado vigente pela forma canônica do número (só separadores `.`, `-`, `/` e espaço são ignorados; zeros à esquerda contam; UF sem diferenciar maiúsculas). É conferência de consistência: no fluxo `coordinator`, quem registra continua decidido pela conta vinculada e verificada. O documento grava o CRM/UF como estão no cadastro; CRM do cadastro com letras é recusado até a correção do cadastro. O alerta de médico responsável trocado usa a mesma conferência (reformatar o CRM não é troca).
+- **Prévia nomeia quem assina:** o médico responsável impresso na prévia (`content.coordinator`, CRM/UF) precisa ser o coordenador em vigor hoje, pela mesma forma canônica. Depois de uma troca, a prévia antiga (que nomeia o anterior) é recusada (`422`: "a prévia nomeia outro médico responsável; gere nova prévia"); a policy de inclusão repete a regra (INSERT direto → `42501`). A data mínima da assinatura é o início mais recente entre a designação impressa na prévia e a vigente. Documento já registrado nessa situação ganha o alerta `preview_coordinator_mismatch`.
 - **Conferência:** só **documental**:
   - `verificationKind = 'documentary'`, o único valor que o CHECK aceita;
   - `verificationReference`: relatório do validador, código da plataforma ou guarda do original físico.
@@ -1006,7 +1007,7 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
   - substituição só dentro da mesma empresa e tenant (FK composta);
   - cada documento é substituído no máximo uma vez;
   - registros concorrentes da mesma empresa são serializados.
-- **Alertas** (derivados, sem reescrever nada): base de riscos alterada, prévia mais recente que a assinada, plano aprovado trocado, médico responsável trocado e ciclo encerrado.
+- **Alertas** (derivados, sem reescrever nada): base de riscos alterada, prévia mais recente que a assinada, plano aprovado trocado, médico responsável trocado, prévia que nomeia outro médico que o signatário (`preview_coordinator_mismatch`) e ciclo encerrado.
 - **Arquivo:**
   - PDF conferido pelo cabeçalho, até 25 MB;
   - SHA-256 no servidor;

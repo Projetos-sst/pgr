@@ -147,11 +147,38 @@ export function pcmsoSignedOnProblem(input: {
   return null;
 }
 
+/**
+ * Médico responsável impresso na prévia (`content.coordinator`): CRM e UF como estavam no cadastro
+ * na geração e início da designação. `null` se a prévia não traz o bloco legível.
+ */
+export type PreviewCoordinator = {
+  crm: string;
+  registrationUf: string | null;
+  startsOn: string | null;
+};
+export function previewCoordinator(content: unknown): PreviewCoordinator | null {
+  const c = (content as { coordinator?: unknown } | null)?.coordinator as
+    | Record<string, unknown>
+    | null
+    | undefined;
+  if (!c || typeof c.crm !== "string" || c.crm.trim() === "") return null;
+  return {
+    crm: c.crm,
+    registrationUf: typeof c.registrationUf === "string" ? c.registrationUf : null,
+    startsOn: typeof c.startsOn === "string" ? c.startsOn : null,
+  };
+}
+
+/** A prévia nomeia um médico responsável e outro assina: nunca vira o PCMSO vigente. */
+export const PREVIEW_NAMES_OTHER_COORDINATOR_MESSAGE =
+  "A prévia nomeia outro médico responsável; gere nova prévia com o médico responsável em vigor e colha a assinatura dele.";
+
 export type PcmsoSignedWarning =
   | "risk_basis_changed"
   | "newer_preview"
   | "plan_changed"
   | "coordinator_changed"
+  | "preview_coordinator_mismatch"
   | "cycle_ended";
 export const PCMSO_SIGNED_WARNING_LABELS: Record<PcmsoSignedWarning, string> = {
   risk_basis_changed:
@@ -162,6 +189,8 @@ export const PCMSO_SIGNED_WARNING_LABELS: Record<PcmsoSignedWarning, string> = {
     "O plano de exames aprovado mudou depois da assinatura: o programa precisa de nova versão assinada.",
   coordinator_changed:
     "O médico responsável designado mudou: registre a nova versão (alteração administrativa).",
+  preview_coordinator_mismatch:
+    "A prévia assinada nomeia outro médico responsável que não o signatário: gere nova prévia com o médico responsável em vigor e registre a nova versão assinada por ele.",
   cycle_ended: "O ciclo do PCMSO assinado terminou.",
 };
 
@@ -173,6 +202,11 @@ export function pcmsoSignedWarnings(input: {
     signerRegistration: string;
     signerUf: string;
     cycleEnd: string;
+    /**
+     * Médico responsável impresso na prévia assinada. Ausente = não conferido; `null` = prévia sem
+     * o bloco legível (conta como divergente).
+     */
+    previewCoordinator?: { crm: string; registrationUf: string | null } | null;
   } | null;
   latestPreviewVersion: number | null;
   approvedPlanId: string | null;
@@ -198,6 +232,16 @@ export function pcmsoSignedWarnings(input: {
     }) !== "match"
   )
     out.push("coordinator_changed");
+  // Documento registrado antes da conferência "prévia nomeia quem assina": sinaliza, sem reescrever.
+  if (
+    c.previewCoordinator !== undefined &&
+    (!c.previewCoordinator ||
+      compareProfessionalRegistration(
+        { crm: c.previewCoordinator.crm, uf: c.previewCoordinator.registrationUf },
+        { registration: c.signerRegistration, uf: c.signerUf },
+      ) !== "match")
+  )
+    out.push("preview_coordinator_mismatch");
   if (input.today > c.cycleEnd) out.push("cycle_ended");
   return out;
 }

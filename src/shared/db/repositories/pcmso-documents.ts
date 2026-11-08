@@ -6,6 +6,8 @@ import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
 import { canUseMedicalRisk } from "@/shared/domains/medicine/risk-sources";
 import {
+  previewCoordinator,
+  PREVIEW_NAMES_OTHER_COORDINATOR_MESSAGE,
   previewRisks,
   RISK_BASIS_PROBLEM_MESSAGES,
   riskBasisProblems,
@@ -339,6 +341,7 @@ export async function listSignedPcmsos(ctx: TenantContext, companyId: string) {
     const items = toSignedItems(rows);
     const currentItem = items.find((item) => item.replacedById === null) ?? null;
     let riskBasisChanged = false;
+    let currentPreviewCoordinator: ReturnType<typeof previewCoordinator> = null;
     if (currentItem) {
       const [preview] = await tx
         .select({ content: docs.content, riskBasisDigest: docs.riskBasisDigest })
@@ -347,6 +350,7 @@ export async function listSignedPcmsos(ctx: TenantContext, companyId: string) {
           and(eq(docs.orgId, ctx.tenantId), eq(docs.id, currentItem.previewDocumentId)),
         )
         .limit(1);
+      currentPreviewCoordinator = previewCoordinator(preview?.content);
       const [plan] = await tx
         .select({ basedOn: plans.basedOn })
         .from(plans)
@@ -363,6 +367,7 @@ export async function listSignedPcmsos(ctx: TenantContext, companyId: string) {
     }
     return {
       riskBasisChanged,
+      currentPreviewCoordinator,
       items,
       latestPreviewVersion: last ?? null,
       approvedPlanId: approved?.id ?? null,
@@ -497,6 +502,19 @@ export async function insertSignedPcmso(
         throw new ValidationError(
           "O signatário não é o médico responsável designado para a empresa (CRM/UF do cadastro).",
         );
+      // A prévia assinada tem de nomear o MESMO médico que assina (o coordenador em vigor hoje):
+      // depois de uma troca, a prévia antiga imprime o coordenador anterior como responsável e não
+      // vira o PCMSO vigente assinado por outro (NR-7 7.4.1 c; MED-12). Mesma conferência tolerante
+      // só à formatação do número (NOB-110); a RLS repete a regra.
+      const named = previewCoordinator(preview.content);
+      if (
+        !named ||
+        compareProfessionalRegistration(coordinator, {
+          registration: named.crm,
+          uf: named.registrationUf ?? "",
+        }) !== "match"
+      )
+        throw new ValidationError(PREVIEW_NAMES_OTHER_COORDINATOR_MESSAGE);
       if (input.origin === "coordinator") {
         const allowed = await actorClinicalMedicoIdsTx(tx, ctx.tenantId);
         if (!allowed.includes(coordinator.medicoId))
@@ -504,9 +522,13 @@ export async function insertSignedPcmso(
             "Só o médico responsável designado, pela conta vinculada e com identidade verificada, registra o PCMSO assinado por ele.",
           );
       }
+      // Início da designação: a do médico nomeado na prévia e a vigente hoje (o mesmo médico, mas
+      // pode ser outra designação dele); vale a mais recente, para a assinatura nunca anteceder
+      // nenhuma das duas.
+      const startsOn = [coordinator.startsOn, named.startsOn ?? ""].sort().at(-1)!;
       const dateProblem = checkDates({
         previewGeneratedOn: dateInSaoPaulo(preview.generatedAt) ?? "",
-        coordinatorStartsOn: coordinator.startsOn,
+        coordinatorStartsOn: startsOn,
         cycleEnd: preview.cycleEnd,
       });
       if (dateProblem) throw new ValidationError(dateProblem);

@@ -4,6 +4,8 @@
  */
 import {
   PCMSO_VERIFICATION_LABEL,
+  PREVIEW_NAMES_OTHER_COORDINATOR_MESSAGE,
+  previewCoordinator,
   previewRisks,
   riskBasisProblems,
   snapshotSources,
@@ -126,6 +128,36 @@ describe("pcmsoSignedWarnings", () => {
     expect(
       pcmsoSignedWarnings({ ...ctx, coordinator: { crm: "061001", uf: "MA" } }),
     ).toEqual(["coordinator_changed"]);
+  });
+  it("prévia assinada que nomeia outro médico responsável é sinalizada", () => {
+    const named = (crm: string, registrationUf: string | null = "MA") => ({
+      ...ctx,
+      current: { ...current, previewCoordinator: { crm, registrationUf } },
+    });
+    expect(pcmsoSignedWarnings(named("61.001", "ma"))).toEqual([]);
+    expect(pcmsoSignedWarnings(named("61002"))).toEqual(["preview_coordinator_mismatch"]);
+    expect(pcmsoSignedWarnings(named("61001", "PI"))).toEqual([
+      "preview_coordinator_mismatch",
+    ]);
+    expect(
+      pcmsoSignedWarnings({ ...ctx, current: { ...current, previewCoordinator: null } }),
+    ).toEqual(["preview_coordinator_mismatch"]);
+  });
+});
+
+describe("previewCoordinator", () => {
+  it("lê o médico responsável da prévia; bloco ausente ou ilegível vira null", () => {
+    expect(
+      previewCoordinator({
+        coordinator: { crm: "61001", registrationUf: "MA", startsOn: "2026-01-01" },
+      }),
+    ).toEqual({ crm: "61001", registrationUf: "MA", startsOn: "2026-01-01" });
+    expect(previewCoordinator({ coordinator: { crm: "" } })).toBeNull();
+    expect(previewCoordinator({})).toBeNull();
+    expect(previewCoordinator(null)).toBeNull();
+    expect(PREVIEW_NAMES_OTHER_COORDINATOR_MESSAGE).toMatch(
+      /prévia nomeia outro médico responsável; gere nova prévia/,
+    );
   });
 });
 
