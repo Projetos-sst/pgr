@@ -726,6 +726,8 @@ Regras (`domains/medicine/pcmso-coordinators.ts`): só médico ativo, com UF do 
 Trabalho, exige `rqeExceptionReason` (exceção do NR-7 item 7.5.2: inexistência de médico do trabalho na
 localidade). Trocar de coordenador encerra a designação aberta na véspera do início da nova, na mesma transação.
 
+**Aberta × vigente (NOB-109):** designação aberta (`ends_on` nulo) não é o mesmo que designação vigente. A data de início pode ser futura (sucessor agendado) e o encerramento pode ser agendado. A conferência e a prévia do PCMSO usam o coordenador **vigente hoje** (`coordinatorInForceOn`, America/Sao_Paulo). Os atos do coordenador (plano, critérios, relatório, PCMSO assinado) continuam exigindo a designação **aberta**, no app e na RLS.
+
 | Action                            | Entrada                                                    | Retorno (`data`)             |
 | --------------------------------- | ---------------------------------------------------------- | ---------------------------- |
 | `listPcmsoCoordinatorsAction`     | `companyId`                                                | `CoordinatorAssignmentRow[]` |
@@ -915,7 +917,7 @@ Tabela `pcmso_documents` (migration `0063_pcmso_documents`):
 - `CHECK status = 'preview'`: sem assinatura médica verificável (MED-12) não há emissão oficial;
 - `app_runtime` só com SELECT e INSERT.
 
-A geração exige a conferência (NOB-148) **sem bloqueios**: inclui coordenador, riscos validados e plano aprovado sobre a fonte atual. A conferência passa a bloquear quando:
+A geração exige a conferência (NOB-148) **sem bloqueios**: inclui coordenador, riscos validados e plano aprovado sobre a fonte atual. O coordenador da prévia é o vigente na data da geração, a mesma data usada na conferência (NOB-109). Prévias já arquivadas não são recompostas. A conferência passa a bloquear quando:
 
 - não há plano aprovado (`exam_plan`);
 - o plano aprovado foi feito sobre outra fonte de riscos (`exam_plan_outdated`);
@@ -2179,15 +2181,22 @@ Fora desta fatia: revisão/aprovação do plano pelo médico coordenador (persis
 
 Fatia da NOB-109, **sem migration**. `checkPcmsoReadiness` (`domains/medicine/pcmso-readiness.ts`) confere o que falta para o PCMSO de uma empresa poder ser gerado, nos moldes da conferência do PGR (NOB-105). Ela não gera, não aprova e não assina.
 
-| Situação        | Itens                                                                                                                                                                                                                                                                                                                  |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blocking`      | razão social/CNPJ, CNAE, ramo de atividade e grau de risco da empresa (MED-08); coordenador do PCMSO aberto (NR-7 7.4.1 c); fonte de riscos (7.5.1); nenhum risco validado em fonte vigente (7.5.1; não comprova ausência de riscos); risco validado em fonte que mudou (7.5.5); nenhum médico ativo (MED-08; 7.5.4 d) |
-| `warning`       | sem funcionário ativo (cronograma vazio); coordenador sem RQE (exceção 7.5.2, mostra a justificativa); riscos pendentes; risco sem possível agravo (7.5.4 a); risco sem regra de exame (7.5.4 b)                                                                                                                       |
-| `not_available` | plano de exames aprovado pelo coordenador (7.5.4 b; MED-15), critérios de interpretação e condutas (7.5.4 c), clínicas (MED-08), campanhas de saúde (MED-08), relatório analítico (7.5.4 e; 7.6.2). São etapas que o sistema ainda não tem; nunca são simuladas                                                        |
+| Situação        | Itens                                                                                                                                                                                                                                                                                                                                                     |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blocking`      | razão social/CNPJ, CNAE, ramo de atividade e grau de risco da empresa (MED-08); coordenador do PCMSO vigente hoje, e sem sobreposição (NR-7 7.4.1 c; NOB-109); fonte de riscos (7.5.1); nenhum risco validado em fonte vigente (7.5.1; não comprova ausência de riscos); risco validado em fonte que mudou (7.5.5); nenhum médico ativo (MED-08; 7.5.4 d) |
+| `warning`       | sem funcionário ativo (cronograma vazio); coordenador sem RQE (exceção 7.5.2, mostra a justificativa); riscos pendentes; risco sem possível agravo (7.5.4 a); risco sem regra de exame (7.5.4 b)                                                                                                                                                          |
+| `not_available` | plano de exames aprovado pelo coordenador (7.5.4 b; MED-15), critérios de interpretação e condutas (7.5.4 c), clínicas (MED-08), campanhas de saúde (MED-08), relatório analítico (7.5.4 e; 7.6.2). São etapas que o sistema ainda não tem; nunca são simuladas                                                                                           |
 
 Retorno: `{ ready, items[{ code, severity, message, reference, href }], counts }`. `ready` só fica `true` sem `blocking` e sem `not_available`.
 
 O core reúne empresa, inventário (`loadProposalSources`, da NOB-147), coordenador (NOB-144), funcionários ativos ou afastados e médicos ativos. Empresa de outro tenant → `NOT_FOUND`; sem Medicina → `FORBIDDEN`.
+
+**Coordenador conferido (NOB-109):** é o **vigente na data da conferência** (hoje em America/Sao_Paulo, calculado no servidor, nunca vindo do cliente), pelo período `starts_on ≤ hoje ≤ ends_on` (ou `ends_on` nulo):
+
+- designação que só começa no futuro não conta (`coordinator`, bloqueio);
+- designação encerrada antes de hoje não conta;
+- encerramento agendado mantém a coordenadora vigente até a data final;
+- mais de uma designação vigente no mesmo dia → `coordinator_overlap` (bloqueio), sem escolher uma. O app impede períodos sobrepostos; a sobreposição só surge por escrita fora do app.
 
 | Action                    | Entrada     | Retorno (`data`) |
 | ------------------------- | ----------- | ---------------- |

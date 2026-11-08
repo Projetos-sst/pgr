@@ -121,5 +121,29 @@ export function coordinatorOn<T extends Period>(history: T[], isoDay: string): T
   );
 }
 
+export type CoordinatorInForce<T> =
+  | { kind: "in_force"; assignment: T }
+  | { kind: "none" }
+  | { kind: "overlap"; assignments: T[] };
+
+/**
+ * Coordenador em vigor numa data de referência (NOB-109/NOB-144), para a conferência e a prévia
+ * do PCMSO. "Designação aberta" (`ends_on` nulo) não é o mesmo que "em vigor": a designação pode
+ * começar no futuro (sucessor agendado) ou ter encerramento agendado e seguir vigente até lá.
+ * Mais de uma designação vigente no mesmo dia (só alcançável fora do app, que impede períodos
+ * sobrepostos) é devolvida como `overlap`, sem escolha arbitrária: quem usa bloqueia.
+ */
+export function coordinatorInForceOn<T extends Period>(
+  history: readonly T[],
+  isoDay: string,
+): CoordinatorInForce<T> {
+  const matches = history.filter(
+    (p) => p.startsOn <= isoDay && (p.endsOn === null || isoDay <= p.endsOn),
+  );
+  if (matches.length === 0) return { kind: "none" };
+  if (matches.length > 1) return { kind: "overlap", assignments: matches };
+  return { kind: "in_force", assignment: matches[0] };
+}
+
 export const SWITCH_END_REASON =
   "Substituído por nova designação de coordenador do PCMSO.";

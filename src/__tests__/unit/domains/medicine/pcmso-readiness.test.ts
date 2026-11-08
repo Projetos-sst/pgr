@@ -185,6 +185,19 @@ describe("checkPcmsoReadiness", () => {
     expect(item?.message).toMatch(/Sem médico do trabalho na localidade/);
   });
 
+  it("sobreposição de designações vigentes bloqueia sem escolher uma (NOB-109)", () => {
+    const overlap = checkPcmsoReadiness(
+      input({ coordinator: null, coordinatorOverlap: true }),
+    );
+    expect(codes(overlap, "blocking")).toEqual(["coordinator_overlap"]);
+    expect(overlap.items.find((i) => i.code === "coordinator_overlap")).toMatchObject({
+      reference: "NR-7 7.4.1 c",
+      href: `/companies/${COMPANY}/pcmso-coordinator`,
+    });
+    const single = checkPcmsoReadiness(input({ coordinatorOverlap: false }));
+    expect(codes(single, "blocking")).toEqual([]);
+  });
+
   it("sem fonte de riscos bloqueia; fonte sem risco validado também, sem presumir ausência", () => {
     const noSource = checkPcmsoReadiness(
       input({ proposal: buildExamProposal([]), usableRisks: [] }),

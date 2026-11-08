@@ -33,6 +33,11 @@ export type PcmsoReadinessInput = {
     rqe: string | null;
     rqeExceptionReason: string | null;
   } | null;
+  /**
+   * Mais de uma designação de coordenador vigente na data de referência (NOB-109): bloqueia sem
+   * escolher uma delas. Ausente/`false` = sem sobreposição.
+   */
+  coordinatorOverlap?: boolean;
   proposal: ExamProposal;
   /** Riscos utilizáveis no PCMSO (validados, fonte vigente), com o possível agravo do PGR. */
   usableRisks: { description: string; possibleInjuries: string | null }[];
@@ -107,7 +112,15 @@ export function checkPcmsoReadiness(input: PcmsoReadinessInput): PcmsoReadiness 
       "/employees",
     );
 
-  if (!input.coordinator)
+  if (input.coordinatorOverlap)
+    add(
+      "coordinator_overlap",
+      "blocking",
+      "Há mais de uma designação de médico responsável pelo PCMSO vigente hoje. Corrija o histórico de designações antes de gerar o PCMSO.",
+      "NR-7 7.4.1 c",
+      coordinator,
+    );
+  else if (!input.coordinator)
     add(
       "coordinator",
       "blocking",
