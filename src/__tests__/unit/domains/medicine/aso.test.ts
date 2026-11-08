@@ -340,6 +340,21 @@ describe("composeAso", () => {
     expect(JSON.stringify(confirmed)).not.toMatch(/restri/i);
   });
 
+  it("data da confirmação do examinador é a de Brasília, não o dia UTC do carimbo", () => {
+    const restricted = { ...facts().exam, aptitude: "fit_with_restrictions" as const };
+    const night = composeAso(
+      facts({
+        exam: restricted,
+        // 22h30 de 21/10 em Brasília = 01h30 de 22/10 em UTC.
+        examinerConclusion: {
+          conclusion: "fit",
+          confirmedAt: "2026-10-22T01:30:00.000Z",
+        },
+      }),
+    );
+    expect(night.conclusion.basis).toMatch(/em 2026-10-21 \(MED-01\)/);
+  });
+
   it("apto e inapto registrados valem como estão; o sistema não conclui", () => {
     const fit = composeAso(facts());
     expect(fit.conclusion).toMatchObject({ result: "fit", label: "Apto para a função" });

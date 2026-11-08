@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { z } from "zod";
 
-import { todayInSaoPaulo } from "@/shared/dates";
+import { dateInSaoPaulo, todayInSaoPaulo } from "@/shared/dates";
 import { EXAM_TYPE_LABELS, type ExamAptitude, type ExamType } from "../pgr/health-exams";
 import { stableStringify } from "./pcmso-composition";
 import {
@@ -380,7 +380,7 @@ function asoConclusion(facts: AsoFacts) {
     return {
       result: confirmed.conclusion,
       label: CONCLUSION_LABELS[confirmed.conclusion],
-      basis: `Confirmada pelo médico examinador, pela conta vinculada, em ${confirmed.confirmedAt.slice(0, 10)} (MED-01). O registro original do exame é preservado e os detalhes clínicos ficam fora do ASO.`,
+      basis: `Confirmada pelo médico examinador, pela conta vinculada, em ${dateInSaoPaulo(confirmed.confirmedAt) ?? confirmed.confirmedAt.slice(0, 10)} (MED-01). O registro original do exame é preservado e os detalhes clínicos ficam fora do ASO.`,
     };
   }
   const result = facts.exam.aptitude;
