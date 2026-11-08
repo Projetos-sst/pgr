@@ -17,6 +17,7 @@ import {
   countRegistrationDuplicateGroups,
   findRegistrationDuplicate,
   MEDICO_CRM_TAKEN_MESSAGE,
+  MEDICO_EXAMINER_IN_USE_MESSAGE,
   registrationDuplicateMessage,
   registrationIdentityChanged,
   registrationLockKey,
@@ -31,6 +32,8 @@ import { DuplicateError } from "@/shared/errors/duplicate-error";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 
 import { withOrg, type TenantTransaction } from "../with-org";
+import { asoExaminerConclusions } from "../schema/aso-documents";
+import { healthExams } from "../schema/health-exams";
 import { medicos, type Medico } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
 
@@ -297,27 +300,57 @@ export async function countMedicoRegistrationDuplicateGroups(
 
 /**
  * Walks the `cause` chain (postgres-js errors surfaced via Drizzle wrap the real
- * SQLSTATE on `error.cause.code`) looking for a foreign-key violation (23503).
+ * SQLSTATE on `error.cause.code`) looking for a foreign-key violation (23503);
+ * returns the constraint name ("" when absent) or `null`.
  */
-function isForeignKeyViolation(error: unknown): boolean {
+function foreignKeyViolation(error: unknown): string | null {
   let current: unknown = error;
   for (let depth = 0; depth <= 5 && current; depth += 1) {
     if (typeof current === "object" && current !== null && "code" in current) {
-      if ((current as { code: unknown }).code === "23503") return true;
+      const pg = current as { code: unknown; constraint_name?: unknown };
+      if (pg.code === "23503")
+        return typeof pg.constraint_name === "string" ? pg.constraint_name : "";
     }
     current = (current as { cause?: unknown }).cause;
   }
-  return false;
+  return null;
 }
 
+/** FK `health_exams.doctor_id → medicos.id` (NO ACTION desde a 0081). */
+const HEALTH_EXAM_DOCTOR_FK = "health_exams_doctor_id_medicos_id_fk";
+
+const MEDICO_COORDINATION_IN_USE_MESSAGE =
+  "Este médico tem histórico de coordenação do PCMSO e não pode ser excluído. Inative o cadastro.";
+
 /**
- * Exames apontam para o médico com SET NULL e não bloqueiam. A designação de
- * coordenador do PCMSO (histórico) usa RESTRICT: 23503 → IN_USE, para o
- * profissional ser inativado em vez de apagado.
+ * Excluir não pode apagar em silêncio quem examinou: exame (e ASO/assinado, que dependem do
+ * exame) ou confirmação de conclusão do ASO que apontem para o profissional → IN_USE, para ele
+ * ser inativado. A conferência roda antes (mensagem exata nas linhas que o tenant enxerga) e a FK
+ * `health_exams.doctor_id` (NO ACTION) é o backstop para exame que a RLS esconde (empresa sem o
+ * módulo de Medicina) ou gravado em paralelo. A designação de coordenador do PCMSO (histórico)
+ * usa RESTRICT: 23503 → IN_USE.
  */
 export async function deleteMedico(orgId: string, id: string): Promise<boolean> {
   return auditedTenantWrite(orgId, "pgr.medicos.write_rejected", () =>
     withOrg(orgId, async (tx) => {
+      const [exam] = await tx
+        .select({ id: healthExams.id })
+        .from(healthExams)
+        .where(and(eq(healthExams.orgId, orgId), eq(healthExams.doctorId, id)))
+        .limit(1);
+      const [conclusion] = exam
+        ? []
+        : await tx
+            .select({ id: asoExaminerConclusions.id })
+            .from(asoExaminerConclusions)
+            .where(
+              and(
+                eq(asoExaminerConclusions.orgId, orgId),
+                eq(asoExaminerConclusions.examinerMedicoId, id),
+              ),
+            )
+            .limit(1);
+      if (exam || conclusion) throw new EntityInUseError(MEDICO_EXAMINER_IN_USE_MESSAGE);
       try {
         const rows = await tx
           .delete(medicos)
@@ -325,9 +358,12 @@ export async function deleteMedico(orgId: string, id: string): Promise<boolean> 
           .returning({ id: medicos.id });
         return rows.length > 0;
       } catch (error) {
-        if (isForeignKeyViolation(error))
+        const constraint = foreignKeyViolation(error);
+        if (constraint !== null)
           throw new EntityInUseError(
-            "Este médico tem histórico de coordenação do PCMSO e não pode ser excluído. Inative o cadastro.",
+            constraint === HEALTH_EXAM_DOCTOR_FK
+              ? MEDICO_EXAMINER_IN_USE_MESSAGE
+              : MEDICO_COORDINATION_IN_USE_MESSAGE,
           );
         throw error;
       }

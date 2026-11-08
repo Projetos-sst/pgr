@@ -1,6 +1,10 @@
 -- PENDENTE (lote 3, segurança): o integrador anexa este conteúdo ao final da 0081 gerada pelo
 -- drizzle-kit, mantendo os separadores `--> statement-breakpoint`. Não é aplicado sozinho.
 --
+-- ATENÇÃO (lote 3, exclusão de examinador): a 0081 gerada também precisa conter a troca da FK
+-- `health_exams_doctor_id_medicos_id_fk` de ON DELETE SET NULL para NO ACTION, que vem do schema
+-- (`schema/health-exams.ts`) pelo `db:generate` — não está escrita aqui para não duplicar.
+--
 -- Custom (NOB-110/NOB-112): registro profissional equivalente ("12.345" × "12345") também é
 -- recusado pelo banco nas gravações NOVAS, inclusive por SQL direto como app_runtime. Sem índice
 -- único canônico: duplicatas antigas da homologação fariam a migration falhar e continuam

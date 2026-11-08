@@ -685,9 +685,12 @@ de entrada). REST espelho em `/api/v1/categories` (GET, POST) · `/api/v1/catego
 
 Cadastro de profissionais de saúde — médicos (CRM) e psicólogos (CRP), da equipe ou externos (NOB-121) —
 responsáveis por exames/ASO e pelo PCMSO (catálogo do escritório, isolado por tenant). `clinic` ("Empresa" na listagem) é a clínica/empregador do médico — **texto livre**, não a
-empresa-cliente do tenant. CRM único por org (`UNIQUE(org_id, crm)` → `DUPLICATE`). Sem `/dependents`
-(o vínculo de exames/ASO usa `ON DELETE SET NULL`, não bloqueia a exclusão; quem tem histórico de
-coordenação do PCMSO não pode ser excluído → `IN_USE` (409), deve ser inativado). REST espelho em
+empresa-cliente do tenant. CRM único por org (`UNIQUE(org_id, crm)` → `DUPLICATE`). Sem `/dependents`.
+Exclusão recusada → `IN_USE` (409), o cadastro deve ser inativado: **examinador de exames registrados**
+(`health_exams.doctor_id`, inclusive ASO/ASO assinado do exame, ou `aso_examiner_conclusions.examiner_medico_id`
+— conferido antes da exclusão; a FK `health_exams.doctor_id` passou de `SET NULL` para `NO ACTION` na 0081 e
+segura também exame que a RLS esconde, ex.: empresa sem o módulo de Medicina) ou histórico de coordenação do
+PCMSO (FK `RESTRICT`). Antes, excluir o médico apagava em silêncio o examinador dos exames. REST espelho em
 `/api/v1/medicos` (GET, POST) · `/api/v1/medicos/{id}` (GET, PUT, DELETE).
 
 | Action                    | Entrada                                           | Retorno (`data`)                            |
@@ -1152,7 +1155,8 @@ Tela: `/companies/{id}/analytical-report`.
 
 Exames ocupacionais/ASO por funcionário (fatia 027). Cada exame liga-se a um **funcionário**
 (`ON DELETE CASCADE`) e, opcionalmente, ao **médico responsável** (FK → `medicos`,
-`ON DELETE SET NULL` — excluir o médico não apaga nem bloqueia o exame). O status de **validade**
+`ON DELETE NO ACTION` desde a 0081, antes `SET NULL` — excluir o médico examinador é recusado com `IN_USE`;
+o exame mantém quem examinou). O status de **validade**
 (vigente/a vencer/vencido) é **derivado na leitura** de `valid_until` (nullable), via
 `classifyDocumentValidity`; o badge da tela combina validade + **aptidão** (apto / apto c/ restrição /
 inapto — `examBadge`). Sem `/dependents`. **`GET`** aceita `?search=` (nome do funcionário **ou**
