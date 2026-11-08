@@ -718,7 +718,7 @@ migration falhar): o legado não é juntado, apagado nem corrigido; editar um ca
 (número canônico, categoria, UF já informada — completar UF nula não conta como mudança) continua permitido.
 Texto de registro idêntico (índice bruto `uq_medicos_org_crm`, mesmo em outra UF/categoria) → `DUPLICATE` com
 `fields.crm`. Leitura operacional: `countMedicoRegistrationDuplicateGroups(orgId)` (repositório, só a contagem
-de grupos, sem dado pessoal; não exposto em HTTP).
+de grupos, sem dado pessoal; não exposto em HTTP). **Limite:** a equivalência é garantida só nos caminhos da aplicação (Server Action e REST, mesmo repositório); o banco impõe apenas o índice bruto, então um INSERT/UPDATE direto por SQL (inclusive como `app_runtime`) ainda consegue gravar um registro equivalente. O CRM nunca autoriza nada (NOB-158).
 
 **`CategoryInput`**: `type*` (`epi`|`machine`|`supply`), `name*`, `note?`, `isActive` (default `true`).
 Unicidade por `UNIQUE(org_id, type, name)` → duplicidade no mesmo escritório+tipo vira `DUPLICATE`; o
