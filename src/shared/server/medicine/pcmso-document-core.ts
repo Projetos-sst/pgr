@@ -17,7 +17,7 @@ import {
   canUseMedicalRisk,
   riskOriginLabel,
 } from "@/shared/domains/medicine/risk-sources";
-import { todayInSaoPaulo } from "@/shared/dates";
+import { dateInSaoPaulo, todayInSaoPaulo } from "@/shared/dates";
 import { formatProfessionalRegistration } from "@/shared/domains/pgr/medicos";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import { NotFoundError } from "@/shared/errors/not-found-error";
@@ -110,12 +110,13 @@ export async function generateDocument(
       const used = source.risks.filter((risk) =>
         canUseMedicalRisk(risk.status, source.freshness),
       );
-      const lastValidatedOn =
-        used
-          .map((risk) => risk.reviewedAt ?? "")
-          .sort()
-          .at(-1)
-          ?.slice(0, 10) || null;
+      // Data da última validação no fuso do negócio, não o dia UTC do carimbo.
+      const lastReviewedAt = used
+        .map((risk) => risk.reviewedAt ?? "")
+        .filter(Boolean)
+        .sort()
+        .at(-1);
+      const lastValidatedOn = lastReviewedAt ? dateInSaoPaulo(lastReviewedAt) : null;
       return {
         id: source.id,
         kind: source.kind,
