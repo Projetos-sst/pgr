@@ -30,30 +30,41 @@ export const identityApprovalSchema = z
   .object({
     requestId: requiredUuid("Pedido inválido."),
     method: z.enum(IDENTITY_METHODS, { error: "Informe o método da conferência." }),
-    crm: z.string().trim().min(1, "Informe o CRM conferido.").max(30),
+    crm: z
+      .string({ error: "Informe o CRM conferido." })
+      .trim()
+      .min(1, "Informe o CRM conferido.")
+      .max(30, "Máximo de 30 caracteres."),
     registrationUf: z
-      .string()
+      .string({ error: "UF do CRM inválida." })
       .trim()
       .toUpperCase()
       .regex(/^[A-Z]{2}$/, "UF do CRM inválida."),
     registrySource: z
-      .string()
+      .string({ error: "Informe a fonte oficial consultada." })
       .trim()
       .min(3, "Informe a fonte oficial consultada.")
-      .max(300),
-    evidenceRef: z.string().trim().max(500).optional(),
+      .max(300, "Máximo de 300 caracteres."),
+    evidenceRef: z
+      .string({ error: "Referência de auditoria inválida." })
+      .trim()
+      .max(500, "Máximo de 500 caracteres.")
+      .optional(),
     challengeCode: z
-      .string()
+      .string({ error: "Código de controle da conta inválido." })
       .trim()
       .regex(/^\d{6}$/, "Código de controle da conta inválido."),
     checklist: z
-      .object({
-        identityDocument: confirmed("documento oficial de identidade conferido"),
-        professionalDocument: confirmed("documento ou registro profissional conferido"),
-        registryStatus: confirmed("situação do CRM/UF ativa na fonte oficial"),
-        personMatches: confirmed("pessoa, documentos e cadastro correspondem"),
-        accountControl: confirmed("controle da conta autenticada comprovado"),
-      })
+      .object(
+        {
+          identityDocument: confirmed("documento oficial de identidade conferido"),
+          professionalDocument: confirmed("documento ou registro profissional conferido"),
+          registryStatus: confirmed("situação do CRM/UF ativa na fonte oficial"),
+          personMatches: confirmed("pessoa, documentos e cadastro correspondem"),
+          accountControl: confirmed("controle da conta autenticada comprovado"),
+        },
+        { error: "Confirme todos os itens do checklist da conferência." },
+      )
       .strict(),
   })
   .strict();
@@ -65,7 +76,7 @@ export const identityDecisionReasonSchema = z
       .string({ error: "Descreva o motivo." })
       .trim()
       .min(10, "Descreva o motivo (mínimo de 10 caracteres).")
-      .max(1000),
+      .max(1000, "Máximo de 1.000 caracteres."),
   })
   .strict();
 

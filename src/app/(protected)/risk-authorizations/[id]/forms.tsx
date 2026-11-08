@@ -2,6 +2,13 @@
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
+  EMPTY_FORM_FEEDBACK,
+  formFeedback,
+  pathDescriber,
+  unexpectedFormFeedback,
+  type FormFeedback,
+} from "@/shared/domains/medicine/form-feedback";
+import {
   appointCompanyAuthorizerAction,
   authorizeCompanyProfessionalAction,
   decideCompanyRiskAction,
@@ -14,7 +21,63 @@ import {
   SubmitButton,
 } from "../../_ui/form";
 type Candidate = { userId: string; label: string; email: string | null };
+type Result =
+  | { ok: true }
+  | {
+      ok: false;
+      error: { code: string; message: string; fields?: Record<string, string> };
+    };
 const text = (fd: FormData, name: string) => String(fd.get(name) ?? "");
+
+const describeAuthorizationPath = pathDescriber({
+  fields: {
+    userId: "Conta",
+    evidence: "Evidência da indicação",
+    reason: "Motivo",
+    active: "Operação",
+    identity: "Identificação do profissional",
+    "identity.fullName": "Nome completo do profissional",
+    "identity.profession": "Profissão",
+    "identity.registration": "Registro profissional",
+    "identity.registration.kind": "Registro profissional",
+    "identity.registration.council": "Conselho ou órgão de registro",
+    "identity.registration.number": "Número do registro",
+    "identity.registration.region": "Região/UF do registro",
+    "identity.registration.reason": "Justificativa de não aplicação",
+    status: "Decisão técnica",
+  },
+});
+
+/**
+ * Envio com retorno por campo: erro de validação vai ao campo (ou ao resumo, com
+ * rótulo legível, quando a tela não tem lugar para ele); permissão e regra do
+ * servidor ficam no resumo; falha inesperada vira mensagem segura.
+ */
+function useFeedbackSubmit() {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [feedback, setFeedback] = useState<FormFeedback>(EMPTY_FORM_FEEDBACK);
+  const run = (fn: () => Promise<Result>, slots: readonly string[]) => {
+    setFeedback(EMPTY_FORM_FEEDBACK);
+    start(async () => {
+      let result: Result;
+      try {
+        result = await fn();
+      } catch {
+        setFeedback(unexpectedFormFeedback());
+        return;
+      }
+      if (result.ok) router.refresh();
+      else
+        setFeedback(
+          formFeedback(result.error, { slots, describe: describeAuthorizationPath }),
+        );
+    });
+  };
+  const fail = (message: string) =>
+    setFeedback({ formError: message, details: [], fields: {} });
+  return { pending, feedback, run, fail };
+}
 
 export function AuthorizationForms({
   companyId,
@@ -29,9 +92,11 @@ export function AuthorizationForms({
   candidates: Candidate[];
   currentAuthorizer: string | null;
 }) {
-  const router = useRouter();
-  const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const appointSubmit = useFeedbackSubmit();
+  const grantSubmit = useFeedbackSubmit();
+  const pending = appointSubmit.pending || grantSubmit.pending;
+  const appointFields = appointSubmit.feedback.fields;
+  const grantFields = grantSubmit.feedback.fields;
   const [selected, setSelected] = useState(currentAuthorizer ?? "");
   const [professional, setProfessional] = useState("");
   const [active, setActive] = useState("true");
@@ -43,28 +108,21 @@ export function AuthorizationForms({
   function appoint(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
-    setError(null);
-    start(async () => {
-      const result = await appointCompanyAuthorizerAction(companyId, {
-        userId: selected || null,
-        evidence: text(fd, "evidence"),
-        reason: text(fd, "reason"),
-      });
-      if (!result.ok)
-        setError(
-          result.error.fields
-            ? Object.values(result.error.fields).join(" · ")
-            : result.error.message,
-        );
-      else router.refresh();
-    });
+    appointSubmit.run(
+      () =>
+        appointCompanyAuthorizerAction(companyId, {
+          userId: selected || null,
+          evidence: text(fd, "evidence"),
+          reason: text(fd, "reason"),
+        }),
+      ["userId", "evidence", "reason"],
+    );
   }
   function grant(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
-    setError(null);
     if (active !== "true" && active !== "false") {
-      setError("Selecione a operação de autorização ou revogação.");
+      grantSubmit.fail("Selecione a operação de autorização ou revogação.");
       return;
     }
     if (
@@ -72,7 +130,7 @@ export function AuthorizationForms({
       registration !== "registered" &&
       registration !== "not_applicable"
     ) {
-      setError("Informe se o registro profissional é aplicável.");
+      grantSubmit.fail("Informe se o registro profissional é aplicável.");
       return;
     }
     const identity = {
@@ -88,27 +146,43 @@ export function AuthorizationForms({
             }
           : { kind: "not_applicable", reason: text(fd, "registrationReason") },
     };
-    start(async () => {
-      const result = await authorizeCompanyProfessionalAction(
-        companyId,
-        active === "true"
-          ? { userId: professional, active: true, identity, reason: text(fd, "reason") }
-          : { userId: professional, active: false, reason: text(fd, "reason") },
-      );
-      if (!result.ok)
-        setError(
-          result.error.fields
-            ? Object.values(result.error.fields).join(" · ")
-            : result.error.message,
-        );
-      else router.refresh();
-    });
+    // Só os campos que estão na tela recebem o erro no próprio campo.
+    const slots = [
+      "userId",
+      "reason",
+      ...(active === "true"
+        ? [
+            "identity.fullName",
+            "identity.profession",
+            ...(registration === "registered"
+              ? [
+                  "identity.registration.council",
+                  "identity.registration.number",
+                  "identity.registration.region",
+                ]
+              : ["identity.registration.reason"]),
+          ]
+        : []),
+    ];
+    grantSubmit.run(
+      () =>
+        authorizeCompanyProfessionalAction(
+          companyId,
+          active === "true"
+            ? { userId: professional, active: true, identity, reason: text(fd, "reason") }
+            : { userId: professional, active: false, reason: text(fd, "reason") },
+        ),
+      slots,
+    );
   }
   return (
     <div className="flex flex-col gap-6">
-      <FormError message={error} />
       {canAppoint && (
         <form onSubmit={appoint} className="flex flex-col gap-4">
+          <FormError
+            message={appointSubmit.feedback.formError}
+            details={appointSubmit.feedback.details}
+          />
           <FormSection title="Registrar indicação da empresa-cliente">
             <p className="text-sm">
               Registre a pessoa indicada pela empresa. Isso não concede autorização para
@@ -122,16 +196,19 @@ export function AuthorizationForms({
               onChange={setSelected}
               options={options}
               emptyLabel="Sem autorizador (revogar indicação)"
+              error={appointFields.userId}
             />
             <TextField
               name="evidence"
               label="Evidência da indicação da empresa (documento ou referência)"
               required
+              error={appointFields.evidence}
             />
             <TextField
               name="reason"
               label="Motivo do registro ou substituição"
               required
+              error={appointFields.reason}
             />
             <p className="text-sm">
               Substituir ou revogar a indicação retira o poder do autorizador anterior.
@@ -143,6 +220,10 @@ export function AuthorizationForms({
       )}
       {canAuthorize && (
         <form onSubmit={grant} className="flex flex-col gap-4">
+          <FormError
+            message={grantSubmit.feedback.formError}
+            details={grantSubmit.feedback.details}
+          />
           <FormSection title="Autorizar ou revogar profissional">
             <SelectField
               name="professional"
@@ -151,6 +232,7 @@ export function AuthorizationForms({
               value={professional}
               onChange={setProfessional}
               options={options}
+              error={grantFields.userId}
             />
             <SelectField
               name="active"
@@ -168,8 +250,14 @@ export function AuthorizationForms({
                   name="fullName"
                   label="Nome completo do profissional"
                   required
+                  error={grantFields["identity.fullName"]}
                 />
-                <TextField name="profession" label="Profissão" required />
+                <TextField
+                  name="profession"
+                  label="Profissão"
+                  required
+                  error={grantFields["identity.profession"]}
+                />
                 <SelectField
                   name="registrationKind"
                   label="Registro profissional"
@@ -186,11 +274,18 @@ export function AuthorizationForms({
                       name="council"
                       label="Conselho ou órgão de registro"
                       required
+                      error={grantFields["identity.registration.council"]}
                     />
-                    <TextField name="number" label="Número do registro" required />
+                    <TextField
+                      name="number"
+                      label="Número do registro"
+                      required
+                      error={grantFields["identity.registration.number"]}
+                    />
                     <TextField
                       name="region"
                       label="Região/UF do registro, quando aplicável"
+                      error={grantFields["identity.registration.region"]}
                     />
                   </>
                 ) : (
@@ -198,6 +293,7 @@ export function AuthorizationForms({
                     name="registrationReason"
                     label="Justificativa de não aplicação"
                     required
+                    error={grantFields["identity.registration.reason"]}
                   />
                 )}
                 <p className="text-sm">
@@ -210,6 +306,7 @@ export function AuthorizationForms({
               name="reason"
               label="Motivo da autorização ou revogação"
               required
+              error={grantFields.reason}
             />
           </FormSection>
           <SubmitButton pending={pending} label="Registrar autorização" />
@@ -230,33 +327,25 @@ export function RiskDecisionForm({
   status: string;
   reviewedAt: string | null;
 }) {
-  const router = useRouter();
-  const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const { pending, feedback, run } = useFeedbackSubmit();
   const [decision, setDecision] = useState("");
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
-    setError(null);
-    start(async () => {
-      const result = await decideCompanyRiskAction(companyId, entryId, {
-        status: decision,
-        reason: text(fd, "reason"),
-        expectedStatus: status,
-        expectedReviewedAt: reviewedAt,
-      });
-      if (!result.ok)
-        setError(
-          result.error.fields
-            ? Object.values(result.error.fields).join(" · ")
-            : result.error.message,
-        );
-      else router.refresh();
-    });
+    run(
+      () =>
+        decideCompanyRiskAction(companyId, entryId, {
+          status: decision,
+          reason: text(fd, "reason"),
+          expectedStatus: status,
+          expectedReviewedAt: reviewedAt,
+        }),
+      ["status", "reason"],
+    );
   }
   return (
     <form onSubmit={submit} className="mt-3 flex flex-col gap-3">
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <SelectField
         name="decision"
         label="Decisão técnica"
@@ -267,8 +356,14 @@ export function RiskDecisionForm({
           { value: "validated", label: "Validar" },
           { value: "rejected", label: "Rejeitar" },
         ]}
+        error={feedback.fields.status}
       />
-      <TextField name="reason" label="Parecer e motivo da decisão" required />
+      <TextField
+        name="reason"
+        label="Parecer e motivo da decisão"
+        required
+        error={feedback.fields.reason}
+      />
       <SubmitButton pending={pending} label="Registrar decisão" />
     </form>
   );

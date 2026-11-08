@@ -80,3 +80,75 @@ describe("company risk authorization input", () => {
     ).toBe(false);
   });
 });
+
+// NOB-112: sem mensagem própria, o texto padrão do Zod em inglês chegava à tela.
+const ZOD_ENGLISH = /^(Invalid\b|Too (small|big)\b|Unrecognized key)/;
+type IssuesLike = { error?: { issues: { path: PropertyKey[]; message: string }[] } };
+const messagesOf = (result: IssuesLike) =>
+  Object.fromEntries(
+    (result.error?.issues ?? []).map((issue) => [issue.path.join("."), issue.message]),
+  );
+
+describe("mensagens em português (sem texto padrão do Zod)", () => {
+  it("indicação: evidência e motivo em branco", () => {
+    const messages = messagesOf(
+      companyAuthorizerSchema.safeParse({ userId: null, evidence: "", reason: " " }),
+    );
+    expect(messages).toEqual({
+      evidence: "Informe a evidência da indicação da empresa.",
+      reason: "Informe o motivo do registro ou da substituição.",
+    });
+  });
+
+  it("autorização: identidade aninhada em branco e conta não selecionada", () => {
+    const messages = messagesOf(
+      professionalAuthorizationSchema.safeParse({
+        userId: "",
+        active: true,
+        reason: "",
+        identity: {
+          fullName: "",
+          profession: "",
+          registration: { kind: "registered", council: "", number: "" },
+        },
+      }),
+    );
+    expect(messages).toMatchObject({
+      userId: "Selecione a conta do profissional.",
+      reason: "Informe o motivo da autorização ou da revogação.",
+      "identity.fullName": "Informe o nome completo do profissional.",
+      "identity.profession": "Informe a profissão.",
+      "identity.registration.council": "Informe o conselho ou órgão de registro.",
+      "identity.registration.number": "Informe o número do registro.",
+    });
+    for (const message of Object.values(messages)) expect(message).not.toMatch(ZOD_ENGLISH);
+  });
+
+  it("decisão: sem decisão, sem parecer e token de concorrência inválido", () => {
+    const messages = messagesOf(
+      medicalRiskDecisionSchema.safeParse({
+        status: "",
+        reason: "",
+        expectedStatus: "x",
+        expectedReviewedAt: "ontem",
+      }),
+    );
+    expect(messages).toEqual({
+      status: "Selecione a decisão técnica.",
+      reason: "Registre o parecer e o motivo da decisão.",
+      expectedStatus: "Atualize a página e tente novamente.",
+      expectedReviewedAt: "Atualize a página e tente novamente.",
+    });
+  });
+
+  it("limite de tamanho também em português", () => {
+    const messages = messagesOf(
+      companyAuthorizerSchema.safeParse({
+        userId: null,
+        evidence: "x".repeat(2001),
+        reason: "ok",
+      }),
+    );
+    expect(messages.evidence).toBe("Máximo de 2.000 caracteres.");
+  });
+});
