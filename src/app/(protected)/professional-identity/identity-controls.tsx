@@ -1,9 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-
 import type { ProfessionalIdentityItem } from "@/shared/domains/medicine/professional-identity";
+import { pathDescriber } from "@/shared/domains/medicine/form-feedback";
 import { actOnMedicoLinkInvitationAction } from "@/shared/server/actions/medicine/professional-links";
 import {
   reconfirmLegacyLinkAction,
@@ -11,29 +9,25 @@ import {
 } from "@/shared/server/actions/medicine/professional-identity";
 
 import { FormError } from "../_ui/form";
+import { useActionFeedback } from "../_ui/use-action-feedback";
 
-type Result = { ok: true } | { ok: false; error: { message: string } };
+// Os botões não têm campos: qualquer erro de campo vira linha legível no resumo.
+const describeIdentityPath = pathDescriber({
+  fields: { medicoId: "Cadastro do profissional", linkId: "Vínculo" },
+});
 
 /** Ações da própria conta: pedir verificação, reconfirmar vínculo legado, concluir autovínculo. */
 export function IdentityControls({ item }: { item: ProfessionalIdentityItem }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const run = (fn: () => Promise<Result>) =>
-    startTransition(async () => {
-      const result = await fn();
-      if (result.ok) {
-        setError(null);
-        router.refresh();
-      } else setError(result.error.message);
-    });
+  const { pending, feedback, run } = useActionFeedback({
+    describe: describeIdentityPath,
+  });
   const canRequest = ["not_requested", "rejected", "expired", "revoked"].includes(
     item.status,
   );
   const button = "text-primary self-start font-semibold underline disabled:opacity-60";
   return (
     <div className="flex flex-col gap-2">
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <div className="flex flex-wrap gap-4">
         {canRequest ? (
           <button

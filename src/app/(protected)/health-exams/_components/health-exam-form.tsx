@@ -15,6 +15,11 @@ import {
 } from "@/shared/domains/pgr/health-exams";
 import { healthExamFormFeedback } from "@/shared/domains/medicine/error-messages";
 import {
+  UNEXPECTED_FORM_ERROR,
+  formFeedback,
+  pathDescriber,
+} from "@/shared/domains/medicine/form-feedback";
+import {
   createHealthExamAction,
   updateHealthExamAction,
 } from "@/shared/server/actions/pgr/health-exams";
@@ -37,6 +42,29 @@ const APTITUDE_OPTIONS = EXAM_APTITUDES.map((value) => ({
   value,
   label: EXAM_APTITUDE_LABELS[value],
 }));
+
+/** Campos com lugar na tela; erro de outra chave vira linha legível no resumo (NOB-112). */
+const HEALTH_EXAM_SLOTS = [
+  "employeeId",
+  "examType",
+  "doctorId",
+  "aptitude",
+  "performedAt",
+  "validUntil",
+  "certificatePath",
+] as const;
+const describeHealthExamPath = pathDescriber({
+  fields: {
+    employeeId: "Funcionário",
+    examType: "Tipo de exame",
+    doctorId: "Médico responsável",
+    aptitude: "Aptidão",
+    performedAt: "Data de realização",
+    validUntil: "Validade",
+    certificatePath: "Caminho do ASO",
+    clinicalNotes: "Observações clínicas",
+  },
+});
 
 export type EmployeeOption = { id: string; fullName: string };
 export type DoctorOption = { id: string; name: string; crm: string };
@@ -95,6 +123,7 @@ export function HealthExamForm({
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [details, setDetails] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -113,22 +142,42 @@ export function HealthExamForm({
     const localErrors = clientFieldErrors(input);
     if (Object.keys(localErrors).length > 0) {
       setErrors(localErrors);
+      setDetails([]);
       setFormError("Revise os campos destacados.");
       return;
     }
     startTransition(async () => {
-      const result = id
-        ? await updateHealthExamAction(id, input)
-        : await createHealthExamAction(input);
+      let result: Awaited<ReturnType<typeof createHealthExamAction>>;
+      try {
+        result = id
+          ? await updateHealthExamAction(id, input)
+          : await createHealthExamAction(input);
+      } catch {
+        // Falha sem resposta tratável (rede, erro não mapeado): mensagem segura, valores mantidos.
+        setErrors({});
+        setDetails([]);
+        setFormError(UNEXPECTED_FORM_ERROR);
+        return;
+      }
       if (result.ok) {
         setErrors({});
+        setDetails([]);
         setFormError(null);
         setSaved(true);
         router.push(backHref);
         router.refresh();
+      } else if (Object.keys(result.error.fields ?? {}).length > 0) {
+        const feedback = formFeedback(result.error, {
+          slots: HEALTH_EXAM_SLOTS,
+          describe: describeHealthExamPath,
+        });
+        setErrors(feedback.fields);
+        setDetails(feedback.details);
+        setFormError(feedback.formError);
       } else {
         const feedback = healthExamFormFeedback(result.error);
         setErrors(feedback.fields);
+        setDetails([]);
         setFormError(feedback.formError);
       }
     });
@@ -136,7 +185,7 @@ export function HealthExamForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
-      <FormError message={formError} />
+      <FormError message={formError} details={details} />
       {saved ? (
         <p
           role="status"

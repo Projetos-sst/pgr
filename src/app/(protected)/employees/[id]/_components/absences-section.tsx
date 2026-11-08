@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, useTransition, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import {
   ABSENCE_CAUSE_LABELS,
@@ -14,6 +13,7 @@ import {
   type AbsenceCause,
   type WorkRelation,
 } from "@/shared/domains/medicine/absences";
+import { pathDescriber } from "@/shared/domains/medicine/form-feedback";
 import {
   cancelAbsenceAction,
   confirmAbsenceReturnAction,
@@ -22,6 +22,7 @@ import {
 } from "@/shared/server/actions/medicine/absences";
 
 import { FormError, SelectField, SubmitButton, TextField } from "../../../_ui/form";
+import { useActionFeedback } from "../../../_ui/use-action-feedback";
 
 export type AbsenceItem = {
   id: string;
@@ -35,46 +36,38 @@ export type AbsenceItem = {
   assessment: AbsenceAssessment;
 };
 
-type Result =
-  | { ok: true }
-  | { ok: false; error: { message: string; fields?: Record<string, string> } };
-
 const fmt = (iso: string | null) => (iso ? iso.split("-").reverse().join("/") : "—");
 
-function useRun() {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string>>({});
-  const run = (fn: () => Promise<Result>, onOk?: () => void) =>
-    startTransition(async () => {
-      const result = await fn();
-      if (result.ok) {
-        setError(null);
-        setFields({});
-        onOk?.();
-        router.refresh();
-      } else {
-        setFields(result.error.fields ?? {});
-        setError(result.error.fields ? null : result.error.message);
-      }
-    });
-  return { pending, error, fields, run };
-}
+const describeAbsencePath = pathDescriber({
+  fields: {
+    employeeId: "Funcionário",
+    cause: "Causa",
+    workRelation: "Relação com o trabalho",
+    startsOn: "Início",
+    endsOn: "Último dia",
+    returnedOn: "Retorno confirmado em",
+    reason: "Motivo do cancelamento",
+  },
+});
+
+const useRun = () => useActionFeedback({ describe: describeAbsencePath });
 
 function AbsenceActions({ item }: { item: AbsenceItem }) {
-  const { pending, error, fields, run } = useRun();
+  const { pending, feedback, run } = useRun();
+  const fields = feedback.fields;
   if (item.cancelledAt || item.returnedOn) return null;
   return (
     <div className="flex flex-col gap-2">
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <form
         className="flex flex-wrap items-end gap-2"
         onSubmit={(e: FormEvent<HTMLFormElement>) => {
           e.preventDefault();
           const fd = new FormData(e.currentTarget);
-          run(() =>
-            confirmAbsenceReturnAction(item.id, { returnedOn: fd.get("returnedOn") }),
+          run(
+            () =>
+              confirmAbsenceReturnAction(item.id, { returnedOn: fd.get("returnedOn") }),
+            { slots: ["returnedOn"] },
           );
         }}
       >
@@ -93,7 +86,9 @@ function AbsenceActions({ item }: { item: AbsenceItem }) {
           e.preventDefault();
           const fd = new FormData(e.currentTarget);
           const value = (fd.get("endsOn") as string) || null;
-          run(() => updateAbsenceEndAction(item.id, { endsOn: value }));
+          run(() => updateAbsenceEndAction(item.id, { endsOn: value }), {
+            slots: ["endsOn"],
+          });
         }}
       >
         <TextField
@@ -110,7 +105,9 @@ function AbsenceActions({ item }: { item: AbsenceItem }) {
         onSubmit={(e: FormEvent<HTMLFormElement>) => {
           e.preventDefault();
           const fd = new FormData(e.currentTarget);
-          run(() => cancelAbsenceAction(item.id, { reason: fd.get("reason") }));
+          run(() => cancelAbsenceAction(item.id, { reason: fd.get("reason") }), {
+            slots: ["reason"],
+          });
         }}
       >
         <TextField label="Motivo do cancelamento" name="reason" error={fields.reason} />
@@ -134,7 +131,8 @@ export function AbsencesSection({
   items: AbsenceItem[];
   loadError: string | null;
 }) {
-  const { pending, error, fields, run } = useRun();
+  const { pending, feedback, run } = useRun();
+  const fields = feedback.fields;
   const [cause, setCause] = useState<AbsenceCause | "">("");
 
   return (
@@ -220,15 +218,24 @@ export function AbsencesSection({
                 startsOn: fd.get("startsOn"),
                 endsOn: (fd.get("endsOn") as string) || undefined,
               }),
-            () => {
-              form.reset();
-              setCause("");
+            {
+              // A relação com o trabalho só está na tela quando a causa não é "outro".
+              slots: [
+                "cause",
+                "startsOn",
+                "endsOn",
+                ...(cause && cause !== "other" ? ["workRelation"] : []),
+              ],
+              onOk: () => {
+                form.reset();
+                setCause("");
+              },
             },
           );
         }}
       >
         <h3 className="text-text font-semibold">Registrar afastamento</h3>
-        <FormError message={error} />
+        <FormError message={feedback.formError} details={feedback.details} />
         <SelectField
           label="Causa"
           name="cause"

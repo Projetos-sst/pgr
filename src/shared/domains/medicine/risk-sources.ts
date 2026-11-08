@@ -11,12 +11,27 @@ export type MedicalRiskStatus = keyof typeof MEDICAL_RISK_STATUS_LABELS;
 
 export const medicalRiskContentSchema = z
   .object({
-    agentType: riskAgentTypeSchema,
-    description: z.string().trim().min(1).max(5000),
-    exposureGroup: z.string().trim().min(1).max(500),
-    jobRole: z.string().trim().max(500).optional(),
-    possibleInjuries: z.string().trim().max(5000).optional(),
-    exposureDescription: z.string().trim().max(5000).optional(),
+    // Mesmas regras de antes; só as mensagens em português (o padrão do Zod vazava em inglês).
+    agentType: z.enum(riskAgentTypeSchema.options, {
+      error: "Selecione a categoria do risco.",
+    }),
+    description: z
+      .string()
+      .trim()
+      .min(1, "Descreva o risco.")
+      .max(5000, "Máximo de 5.000 caracteres."),
+    exposureGroup: z
+      .string()
+      .trim()
+      .min(1, "Informe o grupo ou contexto de exposição.")
+      .max(500, "Máximo de 500 caracteres."),
+    jobRole: z.string().trim().max(500, "Máximo de 500 caracteres.").optional(),
+    possibleInjuries: z.string().trim().max(5000, "Máximo de 5.000 caracteres.").optional(),
+    exposureDescription: z
+      .string()
+      .trim()
+      .max(5000, "Máximo de 5.000 caracteres.")
+      .optional(),
     /**
      * Código do agente nocivo (Tabela 24 do eSocial) **como informado no PGR externo** (NOB-111).
      * Só formato; fica pendente de validação como o resto do risco. Ausente → o coordenador define
@@ -33,7 +48,9 @@ export const medicalRiskContentSchema = z
   })
   .strict();
 export type MedicalRiskContent = z.infer<typeof medicalRiskContentSchema>;
-export const medicalRiskListSchema = z.array(medicalRiskContentSchema).max(500);
+export const medicalRiskListSchema = z
+  .array(medicalRiskContentSchema)
+  .max(500, "Máximo de 500 riscos por fonte.");
 export type MedicalRiskSnapshot = MedicalRiskContent & {
   originRiskId?: string;
   originGesId?: string;
@@ -42,20 +59,33 @@ export type MedicalRiskSnapshot = MedicalRiskContent & {
 };
 
 const commonSource = {
-  title: z.string().trim().min(1).max(200),
-  version: z.string().trim().min(1).max(100),
+  title: z
+    .string({ error: "Informe o título da fonte." })
+    .trim()
+    .min(1, "Informe o título da fonte.")
+    .max(200, "Máximo de 200 caracteres."),
+  version: z
+    .string({ error: "Informe a versão do documento." })
+    .trim()
+    .min(1, "Informe a versão do documento.")
+    .max(100, "Máximo de 100 caracteres."),
   reference: z
-    .string()
+    .string({ error: "Identifique o documento: título, revisão e onde está arquivado." })
     .trim()
     .min(5, "Identifique o documento: título, revisão e onde está arquivado.")
-    .max(2000),
+    .max(2000, "Máximo de 2.000 caracteres."),
   supersedesSourceId: requiredUuid("Fonte anterior inválida.").optional(),
 };
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida.");
 /** Proveniência do PGR externo (NOB-111), só o que o documento informa. */
 const externalProvenance = {
   documentDate: isoDate.optional(),
-  preparedBy: z.string().trim().min(1).max(300).optional(),
+  preparedBy: z
+    .string()
+    .trim()
+    .min(1, "Informe o responsável pela elaboração.")
+    .max(300, "Máximo de 300 caracteres.")
+    .optional(),
   reviewDueOn: isoDate.optional(),
 };
 export const medicalSourceInputSchema = z.discriminatedUnion("kind", [

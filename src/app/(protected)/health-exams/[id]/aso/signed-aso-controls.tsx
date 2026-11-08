@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
+import { pathDescriber } from "@/shared/domains/medicine/form-feedback";
 import {
   ASO_SIGNATURE_METHOD_LABELS,
   ASO_SIGNATURE_METHODS,
@@ -25,8 +25,25 @@ import {
   TextAreaField,
   TextField,
 } from "../../../_ui/form";
+import { useActionFeedback } from "../../../_ui/use-action-feedback";
 
 export type PreviewOption = { id: string; version: number };
+
+const describeSignedAsoPath = pathDescriber({
+  fields: {
+    origin: "Origem do documento assinado",
+    previewDocumentId: "Prévia do sistema que foi assinada",
+    signatureMethod: "Método de assinatura",
+    verificationReference: "Conferência da assinatura",
+    signerName: "Médico que assinou",
+    signerRegistration: "CRM do signatário",
+    signerUf: "UF do CRM",
+    conclusion: "Conclusão no documento",
+    signedOn: "Data da assinatura",
+    replacesId: "Documento vigente substituído",
+    replaceReason: "Motivo da substituição",
+  },
+});
 
 /**
  * Registro do ASO assinado (NOB-163). O sistema não assina: guarda o PDF assinado, o método e a
@@ -42,10 +59,10 @@ export function SignedAsoForm({
   previews: PreviewOption[];
   currentId: string | null;
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const { pending, feedback, run } = useActionFeedback({
+    describe: describeSignedAsoPath,
+  });
+  const fields = feedback.fields;
   const [origin, setOrigin] = useState<AsoSignedOriginValue | "">("");
   const [method, setMethod] = useState<AsoSignatureMethodValue | "">("");
 
@@ -54,25 +71,32 @@ export function SignedAsoForm({
     const form = event.currentTarget;
     const data = new FormData(form);
     if (currentId) data.set("replacesId", currentId);
-    startTransition(async () => {
-      const result = await registerSignedAsoAction(examId, data);
-      if (result.ok) {
-        setError(null);
-        setFields({});
+    // Só os campos visíveis recebem o erro no próprio campo; os demais vão ao resumo.
+    const slots = [
+      "origin",
+      "signatureMethod",
+      "verificationReference",
+      "signerName",
+      "signerRegistration",
+      "signerUf",
+      "conclusion",
+      "signedOn",
+      ...(origin === "examiner" ? ["previewDocumentId"] : []),
+      ...(currentId ? ["replaceReason"] : []),
+    ];
+    run(() => registerSignedAsoAction(examId, data), {
+      slots,
+      onOk: () => {
         form.reset();
         setOrigin("");
         setMethod("");
-        router.refresh();
-      } else {
-        setFields(result.error.fields ?? {});
-        setError(result.error.fields ? null : result.error.message);
-      }
+      },
     });
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <FormError message={error} />
+      <FormError message={feedback.formError} details={feedback.details} />
       <SelectField
         label="Origem do documento assinado"
         name="origin"
@@ -183,8 +207,7 @@ export function SignedAsoForm({
 
 /** Abre o PDF por URL assinada curta. */
 export function DownloadSignedAsoButton({ id }: { id: string }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const { pending, feedback, run } = useActionFeedback();
   return (
     <span className="inline-flex items-center gap-2">
       <button
@@ -192,20 +215,18 @@ export function DownloadSignedAsoButton({ id }: { id: string }) {
         disabled={pending}
         className="text-primary text-xs font-semibold underline disabled:opacity-60"
         onClick={() =>
-          startTransition(async () => {
-            const result = await getSignedAsoDownloadAction(id);
-            if (result.ok) {
-              setError(null);
-              window.open(result.data.url, "_blank", "noopener,noreferrer");
-            } else setError(result.error.message);
+          run(() => getSignedAsoDownloadAction(id), {
+            refresh: false,
+            onOk: (result) =>
+              window.open(result.data.url, "_blank", "noopener,noreferrer"),
           })
         }
       >
         {pending ? "Abrindo…" : "Baixar PDF"}
       </button>
-      {error ? (
+      {feedback.formError ? (
         <span role="alert" className="text-xs text-red-700">
-          {error}
+          {feedback.formError}
         </span>
       ) : null}
     </span>

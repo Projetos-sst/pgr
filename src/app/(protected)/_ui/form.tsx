@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 /**
  * Classe única de campo do sistema (altura, raio, tipografia, foco). Exportada
@@ -267,6 +267,7 @@ export function TextField({
 }) {
   const controlled = value !== undefined;
   const listId = suggestions ? `${name}-suggestions` : undefined;
+  const errorId = useId();
   return (
     <label className={`block ${isFullWidth ? "sm:col-span-full" : ""}`}>
       <FieldLabel label={label} required={required} />
@@ -275,6 +276,7 @@ export function TextField({
         type={type}
         placeholder={placeholder}
         aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
         className={`${fieldClass} ${isMono ? "font-mono" : ""}`}
         readOnly={readOnly}
         list={listId}
@@ -290,7 +292,7 @@ export function TextField({
           ))}
         </datalist>
       ) : null}
-      <FieldError message={error} />
+      <FieldError id={errorId} message={error} />
     </label>
   );
 }
@@ -321,6 +323,7 @@ export function TextAreaField({
   isFullWidth?: boolean;
 }) {
   const controlled = value !== undefined;
+  const errorId = useId();
   return (
     <label className={`block ${isFullWidth ? "sm:col-span-full" : ""}`}>
       <FieldLabel label={label} required={required} />
@@ -330,12 +333,13 @@ export function TextAreaField({
         placeholder={placeholder}
         readOnly={readOnly}
         aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
         className="glass-input text-text placeholder:text-text-subtle rounded-field min-h-[88px] w-full resize-y px-3.5 py-3 text-[13px] outline-none"
         {...(controlled
           ? { value, onChange: (e) => onChange?.(e.target.value) }
           : { defaultValue: defaultValue ?? "" })}
       />
-      <FieldError message={error} />
+      <FieldError id={errorId} message={error} />
     </label>
   );
 }
@@ -366,6 +370,7 @@ export function SelectField({
   isFullWidth?: boolean;
 }) {
   const controlled = value !== undefined;
+  const errorId = useId();
   return (
     <label className={`block ${isFullWidth ? "sm:col-span-full" : ""}`}>
       <FieldLabel label={label} required={required} />
@@ -374,6 +379,7 @@ export function SelectField({
           name={name}
           disabled={disabled}
           aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           className={`${fieldClass} appearance-none pr-9 font-semibold disabled:opacity-60`}
           {...(controlled
             ? { value, onChange: (e) => onChange?.(e.target.value) }
@@ -393,7 +399,7 @@ export function SelectField({
           ▾
         </span>
       </span>
-      <FieldError message={error} />
+      <FieldError id={errorId} message={error} />
     </label>
   );
 }

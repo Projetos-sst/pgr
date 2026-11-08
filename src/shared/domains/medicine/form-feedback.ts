@@ -122,6 +122,22 @@ export function formFeedback(
   return { formError, details, fields };
 }
 
+/**
+ * Erros de uma validação Zod feita no próprio formulário, no mesmo formato de `fields` do
+ * `ActionResult` (caminho unido por ".", raiz = `_`, primeiro erro de cada caminho vence), para
+ * que o retorno local e o do servidor apareçam do mesmo jeito.
+ */
+export function fieldsFromIssues(
+  issues: readonly { path: readonly PropertyKey[]; message: string }[],
+): Record<string, string> {
+  const fields: Record<string, string> = {};
+  for (const issue of issues) {
+    const key = issue.path.length > 0 ? issue.path.map(String).join(".") : "_";
+    if (!Object.hasOwn(fields, key)) fields[key] = issue.message;
+  }
+  return fields;
+}
+
 /** Falha inesperada (ex.: rede, erro não mapeado no servidor): mensagem segura, sem detalhe. */
 export function unexpectedFormFeedback(): FormFeedback {
   return { formError: UNEXPECTED_FORM_ERROR, details: [], fields: {} };

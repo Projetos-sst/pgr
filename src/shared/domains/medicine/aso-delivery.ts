@@ -123,7 +123,7 @@ export const asoDeliveryInputSchema = z
     kind: z.enum(["made_available", "physical_copy_requested"], {
       error: "Informe se é uma entrega ou um pedido de via física.",
     }),
-    method: z.enum(ASO_DELIVERY_METHODS).optional(),
+    method: z.enum(ASO_DELIVERY_METHODS, { error: "Método de entrega inválido." }).optional(),
     channelDescription: trimmedOptional(300),
     occurredAt: localDateTime,
     evidenceReference: trimmedOptional(500),
