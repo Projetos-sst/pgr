@@ -888,6 +888,8 @@ REST: `GET|POST /api/v1/companies/{id}/exam-plans` · `GET /api/v1/exam-plans/{i
 
 **Decisão do item é retomada sem perda (NOB-112, lote 02B).** `PUT .../items/{itemId}` grava a decisão inteira: `justification` ausente vira `null`.
 
+**Exame repetido ao acrescentar (NOB-112).** O mesmo procedimento no mesmo grupo de exposição e função (índice único `uq_exam_plan_items_procedure`, inclusive item retirado) é recusado com `DUPLICATE` (409 no `POST .../items`) e a mensagem "Este exame já está no plano para este grupo de exposição e função…"; nada é inserido. Para mudar o item existente, use a decisão (`PUT .../items/{itemId}`). Na tela, o formulário só é limpo após o sucesso confirmado; erro e falha de rede mantêm o que foi digitado.
+
 - A tela abre cada item com a decisão, a periodicidade e a **justificativa já registradas**. Mudar só a periodicidade reenvia a justificativa salva; apagá-la é um ato deliberado.
 - Exame **acrescentado** pelo médico (`origin = 'added'`) sem justificativa → `VALIDATION` (`422`) com a mensagem "Exame acrescentado pelo médico exige justificativa…", conferida antes do `CHECK` (antes da correção, a tela só mostrava "Valor fora do permitido."). Nada é alterado.
 - Retirada sem justificativa continua → `VALIDATION` no campo `justification`. Item sugerido e mantido: justificativa opcional.

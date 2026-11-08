@@ -6,11 +6,13 @@ import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
 import {
   ADDED_ITEM_JUSTIFICATION_MESSAGE,
+  EXAM_PLAN_ITEM_DUPLICATE_MESSAGE,
   type AddItemValues,
   type ApprovePlanValues,
   type DraftItem,
   type ItemDecisionValues,
 } from "@/shared/domains/medicine/exam-plan";
+import { DuplicateError } from "@/shared/errors/duplicate-error";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
@@ -225,42 +227,68 @@ export async function decideExamPlanItem(
   );
 }
 
+const DUPLICATE_PROCEDURE_INDEX = "uq_exam_plan_items_procedure";
+
+function isDuplicateProcedureViolation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth <= 5 && current; depth += 1) {
+    if (typeof current !== "object") return false;
+    const pg = current as { code?: unknown; constraint_name?: unknown; cause?: unknown };
+    if (pg.code === "23505" && pg.constraint_name === DUPLICATE_PROCEDURE_INDEX)
+      return true;
+    current = pg.cause;
+  }
+  return false;
+}
+
 export async function addExamPlanItem(
   ctx: TenantContext,
   planId: string,
   input: AddItemValues,
 ): Promise<MedicalExamPlanItem> {
-  return auditedTenantWrite(ctx.tenantId, "medicine.exam_plans.add_rejected", () =>
-    actorTx(ctx, async (tx) => {
-      const plan = await planTx(tx, ctx.tenantId, planId);
-      assertDraft(plan);
-      await assertActorIsCompanyCoordinator(tx, ctx, plan.companyId);
-      const [created] = await tx
-        .insert(items)
-        .values({
-          orgId: ctx.tenantId,
-          companyId: plan.companyId,
-          planId,
-          exposureGroup: input.exposureGroup,
-          jobRole: input.jobRole,
-          procedureCode: input.code,
-          otherDescription:
-            input.code === "9999" ? (input.otherDescription ?? null) : null,
-          origin: "added",
-          periodicity: input.periodicity,
-          justification: input.justification,
-          createdBy: ctx.userId,
-          updatedBy: ctx.userId,
-        })
-        .returning();
-      await logEvent(tx, ctx, plan, "item_added", {
-        itemId: created.id,
-        procedureCode: input.code,
-        exposureGroup: input.exposureGroup,
-        justification: input.justification,
-      });
-      return created;
-    }),
+  return auditedTenantWrite(
+    ctx.tenantId,
+    "medicine.exam_plans.add_rejected",
+    async () => {
+      try {
+        return await actorTx(ctx, async (tx) => {
+          const plan = await planTx(tx, ctx.tenantId, planId);
+          assertDraft(plan);
+          await assertActorIsCompanyCoordinator(tx, ctx, plan.companyId);
+          const [created] = await tx
+            .insert(items)
+            .values({
+              orgId: ctx.tenantId,
+              companyId: plan.companyId,
+              planId,
+              exposureGroup: input.exposureGroup,
+              jobRole: input.jobRole,
+              procedureCode: input.code,
+              otherDescription:
+                input.code === "9999" ? (input.otherDescription ?? null) : null,
+              origin: "added",
+              periodicity: input.periodicity,
+              justification: input.justification,
+              createdBy: ctx.userId,
+              updatedBy: ctx.userId,
+            })
+            .returning();
+          await logEvent(tx, ctx, plan, "item_added", {
+            itemId: created.id,
+            procedureCode: input.code,
+            exposureGroup: input.exposureGroup,
+            justification: input.justification,
+          });
+          return created;
+        });
+      } catch (error) {
+        // NOB-112: mesmo exame, grupo e função já no plano (inclusive retirado). A regra
+        // segue no índice único; aqui só se troca a mensagem genérica do 23505.
+        if (isDuplicateProcedureViolation(error))
+          throw new DuplicateError(EXAM_PLAN_ITEM_DUPLICATE_MESSAGE);
+        throw error;
+      }
+    },
   );
 }
 

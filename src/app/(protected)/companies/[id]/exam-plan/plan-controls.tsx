@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition, type FormEvent } from "react";
+import { useRef, useState, useTransition, type FormEvent } from "react";
 
 import {
   addExamPlanItemAction,
@@ -16,24 +16,48 @@ type Result =
   | { ok: true }
   | { ok: false; error: { message: string; fields?: Record<string, string> } };
 
+/** Falha sem resposta do servidor (rede, erro inesperado): nada se perde do que foi digitado. */
+const UNEXPECTED_ERROR_MESSAGE =
+  "Não foi possível concluir agora. Verifique a conexão e tente de novo; o que você digitou foi mantido.";
+
+/**
+ * Envio dos formulários do plano. Só limpa o formulário depois do sucesso confirmado pelo
+ * servidor (`onSuccess`); erro de campo, erro do servidor ou falha de rede mantêm os valores.
+ * Um segundo envio enquanto o primeiro está pendente é ignorado (NOB-112).
+ */
 function useSubmit() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const submitting = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
-  const run = (fn: () => Promise<Result>) =>
+  const [succeeded, setSucceeded] = useState(false);
+  const run = (fn: () => Promise<Result>, onSuccess?: () => void) => {
+    if (submitting.current) return;
+    submitting.current = true;
+    setSucceeded(false);
     startTransition(async () => {
-      const result = await fn();
-      if (result.ok) {
-        setError(null);
+      try {
+        const result = await fn();
+        if (result.ok) {
+          setError(null);
+          setFields({});
+          setSucceeded(true);
+          onSuccess?.();
+          router.refresh();
+        } else {
+          setFields(result.error.fields ?? {});
+          setError(result.error.fields ? null : result.error.message);
+        }
+      } catch {
         setFields({});
-        router.refresh();
-      } else {
-        setFields(result.error.fields ?? {});
-        setError(result.error.fields ? null : result.error.message);
+        setError(UNEXPECTED_ERROR_MESSAGE);
+      } finally {
+        submitting.current = false;
       }
     });
-  return { pending, error, fields, run };
+  };
+  return { pending, error, fields, succeeded, run };
 }
 
 /** A equipe prepara o rascunho a partir da proposta atual (riscos validados). */
@@ -121,23 +145,35 @@ export function ItemDecisionForm({
 
 /** Exame acrescentado pela coordenadora (código da Tabela 27, com justificativa). */
 export function AddItemForm({ planId }: { planId: string }) {
-  const { pending, error, fields, run } = useSubmit();
+  const { pending, error, fields, succeeded, run } = useSubmit();
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const fd = new FormData(event.currentTarget);
-    run(() =>
-      addExamPlanItemAction(planId, {
-        exposureGroup: fd.get("exposureGroup"),
-        jobRole: fd.get("jobRole") ?? "",
-        code: fd.get("code"),
-        otherDescription: (fd.get("otherDescription") as string) || undefined,
-        periodicity: fd.get("periodicity"),
-        justification: fd.get("justification"),
-      }),
+    const form = event.currentTarget;
+    const fd = new FormData(form);
+    run(
+      () =>
+        addExamPlanItemAction(planId, {
+          exposureGroup: fd.get("exposureGroup"),
+          jobRole: fd.get("jobRole") ?? "",
+          code: fd.get("code"),
+          otherDescription: (fd.get("otherDescription") as string) || undefined,
+          periodicity: fd.get("periodicity"),
+          justification: fd.get("justification"),
+        }),
+      // Limpa só depois do sucesso: um novo clique não reenvia o mesmo exame.
+      () => form.reset(),
     );
   }
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      {succeeded ? (
+        <p
+          role="status"
+          className="rounded-field border border-emerald-300 bg-emerald-50/80 px-3.5 py-2.5 text-[13px] text-emerald-800"
+        >
+          Exame acrescentado ao plano. O formulário foi limpo para o próximo.
+        </p>
+      ) : null}
       <FormError message={error} />
       <TextField
         label="Grupo de exposição"

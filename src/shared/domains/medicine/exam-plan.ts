@@ -24,6 +24,10 @@ const periodicity = z
 export const ADDED_ITEM_JUSTIFICATION_MESSAGE =
   "Exame acrescentado pelo médico exige justificativa (mínimo de 10 caracteres). Ela não pode ficar em branco ao alterar a decisão ou a periodicidade.";
 
+/** Mesmo exame no mesmo grupo de exposição e função (índice único `uq_exam_plan_items_procedure`). */
+export const EXAM_PLAN_ITEM_DUPLICATE_MESSAGE =
+  "Este exame já está no plano para este grupo de exposição e função. Altere a decisão do item existente em vez de acrescentá-lo de novo.";
+
 export const itemDecisionSchema = z
   .object({
     decision: z.enum(["kept", "removed"]),
