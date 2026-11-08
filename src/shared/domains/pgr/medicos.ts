@@ -189,6 +189,119 @@ export function registeredNotCanonicalMessage(whose: string, registered: string)
   return `O CRM no cadastro ${whose} ("${registered}") tem letras ou caracteres além de ponto, hífen, barra e espaço. O escritório precisa corrigir o cadastro (só o número do CRM; a UF vai no campo próprio) antes de registrar o documento assinado.`;
 }
 
+/**
+ * Prevenção de cadastro duplicado por formatação (NOB-110/NOB-112). Um registro é o MESMO quando
+ * coincidem escritório, categoria profissional (CRM ≠ CRP), UF do conselho (sem diferenciar
+ * maiúsculas) e número na forma canônica. UF diferente, categoria diferente ou zero à esquerda a
+ * mais são registros DIFERENTES. Cadastro antigo sem UF (anterior à 0060) com o mesmo número e
+ * categoria conta como possível duplicata de qualquer UF: o escritório completa a UF dele antes de
+ * cadastrar outro. Nada aqui junta, apaga ou corrige cadastro: só impede criar um novo igual.
+ */
+export type RegistrationScope = {
+  profession: MedicalProfession;
+  uf: string;
+  number: string;
+};
+
+type RegistrationFields = {
+  crm: string;
+  profession: MedicalProfession;
+  registrationUf: string | null | undefined;
+};
+
+/** Escopo comparável do registro; `null` quando o número não é canônico ou falta a UF. */
+export function registrationScope(fields: RegistrationFields): RegistrationScope | null {
+  const number = canonicalRegistrationNumber(fields.crm);
+  const uf = canonicalUf(fields.registrationUf);
+  if (number === null || uf === null) return null;
+  return { profession: fields.profession, uf, number };
+}
+
+/** Chave do lock transacional que serializa gravações concorrentes do mesmo registro. */
+export function registrationLockKey(orgId: string, scope: RegistrationScope): string {
+  return `medico-registration:${orgId}:${scope.profession}:${scope.uf}:${scope.number}`;
+}
+
+/**
+ * Na edição, a conferência de duplicidade só roda se o registro mudar: outro número canônico,
+ * outra categoria ou troca de UF já informada. Completar a UF de cadastro antigo (nula → UF) ou só
+ * reformatar o número não é mudança — assim duplicatas antigas continuam editáveis (nome, status,
+ * clínica…) sem ficarem presas, e nenhuma duplicata nova nasce por edição.
+ */
+export function registrationIdentityChanged(
+  stored: RegistrationFields,
+  next: RegistrationFields,
+): boolean {
+  if (stored.profession !== next.profession) return true;
+  if (canonicalRegistrationNumber(stored.crm) !== canonicalRegistrationNumber(next.crm))
+    return true;
+  const storedUf = canonicalUf(stored.registrationUf);
+  return storedUf !== null && storedUf !== canonicalUf(next.registrationUf);
+}
+
+export type RegistrationDuplicate = "same_uf" | "missing_uf";
+
+/**
+ * Procura, entre outros cadastros do escritório, um com o mesmo registro do escopo: mesma
+ * categoria, mesmo número canônico e mesma UF (`same_uf`) ou UF não informada (`missing_uf`).
+ * Cadastro com número não canônico (letras etc.) nunca é considerado: o sistema não adivinha.
+ */
+export function findRegistrationDuplicate(
+  others: readonly RegistrationFields[],
+  scope: RegistrationScope,
+): RegistrationDuplicate | null {
+  let missingUf = false;
+  for (const other of others) {
+    if (other.profession !== scope.profession) continue;
+    if (canonicalRegistrationNumber(other.crm) !== scope.number) continue;
+    const uf = canonicalUf(other.registrationUf);
+    if (uf === scope.uf) return "same_uf";
+    if (uf === null) missingUf = true;
+  }
+  return missingUf ? "missing_uf" : null;
+}
+
+export const MEDICO_REGISTRATION_DUPLICATE_MESSAGE =
+  "Já existe outro profissional com este registro neste escritório (mesma categoria, mesma UF e mesmo número; ponto, hífen, barra e espaço não diferenciam registros). Use o cadastro existente.";
+
+export const MEDICO_REGISTRATION_MISSING_UF_DUPLICATE_MESSAGE =
+  "Já existe outro profissional com este número de registro e categoria sem UF informada neste escritório. Se for o mesmo profissional, use o cadastro existente; se não for, complete a UF daquele cadastro antes.";
+
+export const MEDICO_CRM_TAKEN_MESSAGE =
+  "Este número de registro já está cadastrado neste escritório.";
+
+export function registrationDuplicateMessage(kind: RegistrationDuplicate): string {
+  return kind === "same_uf"
+    ? MEDICO_REGISTRATION_DUPLICATE_MESSAGE
+    : MEDICO_REGISTRATION_MISSING_UF_DUPLICATE_MESSAGE;
+}
+
+/**
+ * Conta (sem expor dados pessoais) os grupos de possíveis duplicatas já gravadas no escritório:
+ * mesma categoria e mesmo número canônico com UF repetida, ou com algum cadastro sem UF. Uso
+ * operacional, só leitura: o sistema não junta nem corrige nada sozinho.
+ */
+export function countRegistrationDuplicateGroups(
+  rows: readonly RegistrationFields[],
+): number {
+  const buckets = new Map<string, Array<string | null>>();
+  for (const row of rows) {
+    const number = canonicalRegistrationNumber(row.crm);
+    if (number === null) continue;
+    const key = `${row.profession}:${number}`;
+    const ufs = buckets.get(key) ?? [];
+    ufs.push(canonicalUf(row.registrationUf));
+    buckets.set(key, ufs);
+  }
+  let groups = 0;
+  for (const ufs of buckets.values()) {
+    if (ufs.length < 2) continue;
+    const known = ufs.filter((uf): uf is string => uf !== null);
+    if (known.length < ufs.length || new Set(known).size < known.length) groups += 1;
+  }
+  return groups;
+}
+
 /** "CRM 12345/SP" — identificação do registro para listas e documentos. */
 export function formatProfessionalRegistration(
   medico: Pick<Medico, "crm" | "profession" | "registrationUf">,

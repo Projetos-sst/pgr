@@ -3366,6 +3366,7 @@
           "name": "POST /medicos (create)",
           "request": {
             "method": "POST",
+            "description": "Cria o profissional (201). Registro equivalente a outro do escritorio (mesma categoria CRM/CRP + mesma UF + mesmo numero ignorando ponto, hifen, barra e espaco; ex.: 12.345 = 12345, mas 012345 != 12345) -> 409 DUPLICATE com fields.crm. Cadastro antigo sem UF com o mesmo numero tambem bloqueia (complete a UF dele). Vale igual para o PUT.",
             "header": [
               {
                 "key": "Content-Type",

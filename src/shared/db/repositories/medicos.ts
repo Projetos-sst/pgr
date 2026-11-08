@@ -1,17 +1,36 @@
 import "server-only";
 
-import { and, asc, eq, ilike, isNotNull, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  ilike,
+  isNotNull,
+  isNull,
+  ne,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 
-import type {
-  MedicoStatus,
-  MedicoValues,
-  MedicoOption,
+import {
+  countRegistrationDuplicateGroups,
+  findRegistrationDuplicate,
+  MEDICO_CRM_TAKEN_MESSAGE,
+  registrationDuplicateMessage,
+  registrationIdentityChanged,
+  registrationLockKey,
+  registrationScope,
+  type MedicoStatus,
+  type MedicoValues,
+  type MedicoOption,
 } from "@/shared/domains/pgr/medicos";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
+import { DuplicateError } from "@/shared/errors/duplicate-error";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 
-import { withOrg } from "../with-org";
+import { withOrg, type TenantTransaction } from "../with-org";
 import { medicos, type Medico } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
 
@@ -89,25 +108,96 @@ export async function getMedicoById(orgId: string, id: string): Promise<Medico |
   });
 }
 
+/**
+ * Violação do índice único bruto `uq_medicos_org_crm` (mesmo texto de registro no escritório),
+ * percorrendo a cadeia `cause` do erro do postgres-js embrulhado pelo Drizzle.
+ */
+function isRawCrmUniqueViolation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth <= 5 && current; depth += 1) {
+    if (typeof current !== "object") return false;
+    const pg = current as { code?: unknown; constraint_name?: unknown; cause?: unknown };
+    if (pg.code === "23505" && pg.constraint_name === "uq_medicos_org_crm") return true;
+    current = pg.cause;
+  }
+  return false;
+}
+
+async function withCrmFieldOnRawDuplicate<T>(write: () => Promise<T>): Promise<T> {
+  try {
+    return await write();
+  } catch (error) {
+    if (isRawCrmUniqueViolation(error))
+      throw new DuplicateError(MEDICO_CRM_TAKEN_MESSAGE, { field: "crm" });
+    throw error;
+  }
+}
+
+/**
+ * NOB-110/NOB-112: impede gravar um registro equivalente a outro do escritório quando a diferença
+ * é só de formatação ("12.345" × "12345"). O índice único bruto continua; não há índice canônico
+ * porque duplicatas antigas da homologação fariam a migration falhar — a regra vive aqui, na
+ * mesma transação da gravação. O lock transacional por (escritório, categoria, UF, número
+ * canônico) serializa gravações concorrentes do mesmo registro: a segunda só consulta depois do
+ * commit da primeira e enxerga a linha. O filtro SQL só pelos dígitos é um superconjunto; a
+ * decisão final usa a MESMA forma canônica do TS (`canonicalRegistrationNumber`).
+ */
+async function assertNoEquivalentRegistration(
+  tx: TenantTransaction,
+  orgId: string,
+  input: MedicoValues,
+  excludeId?: string,
+): Promise<void> {
+  const scope = registrationScope(input);
+  if (!scope) return;
+  await tx.execute(
+    sql`select pg_advisory_xact_lock(hashtextextended(${registrationLockKey(orgId, scope)}, 0))`,
+  );
+  const filters: SQL[] = [
+    eq(medicos.orgId, orgId),
+    eq(medicos.profession, scope.profession),
+    or(
+      isNull(medicos.registrationUf),
+      sql`upper(${medicos.registrationUf}) = ${scope.uf}`,
+    ) as SQL,
+    sql`regexp_replace(${medicos.crm}, '[^0-9]', '', 'g') = ${scope.number}`,
+  ];
+  if (excludeId) filters.push(ne(medicos.id, excludeId));
+  const others = await tx
+    .select({
+      crm: medicos.crm,
+      profession: medicos.profession,
+      registrationUf: medicos.registrationUf,
+    })
+    .from(medicos)
+    .where(and(...filters));
+  const duplicate = findRegistrationDuplicate(others, scope);
+  if (duplicate)
+    throw new DuplicateError(registrationDuplicateMessage(duplicate), { field: "crm" });
+}
+
 export async function createMedico(orgId: string, input: MedicoValues): Promise<Medico> {
   return auditedTenantWrite(orgId, "pgr.medicos.write_rejected", () =>
     withOrg(orgId, async (tx) => {
-      const [row] = await tx
-        .insert(medicos)
-        .values({
-          orgId,
-          name: input.name,
-          crm: input.crm,
-          profession: input.profession,
-          registrationUf: input.registrationUf,
-          rqe: input.rqe ?? null,
-          affiliation: input.affiliation,
-          specialty: input.specialty ?? null,
-          clinic: input.clinic ?? null,
-          phone: input.phone ?? null,
-          status: input.status,
-        })
-        .returning();
+      await assertNoEquivalentRegistration(tx, orgId, input);
+      const [row] = await withCrmFieldOnRawDuplicate(() =>
+        tx
+          .insert(medicos)
+          .values({
+            orgId,
+            name: input.name,
+            crm: input.crm,
+            profession: input.profession,
+            registrationUf: input.registrationUf,
+            rqe: input.rqe ?? null,
+            affiliation: input.affiliation,
+            specialty: input.specialty ?? null,
+            clinic: input.clinic ?? null,
+            phone: input.phone ?? null,
+            status: input.status,
+          })
+          .returning(),
+      );
       return row;
     }),
   );
@@ -120,26 +210,63 @@ export async function updateMedico(
 ): Promise<Medico | null> {
   return auditedTenantWrite(orgId, "pgr.medicos.write_rejected", () =>
     withOrg(orgId, async (tx) => {
-      const [row] = await tx
-        .update(medicos)
-        .set({
-          name: input.name,
-          crm: input.crm,
-          profession: input.profession,
-          registrationUf: input.registrationUf,
-          rqe: input.rqe ?? null,
-          affiliation: input.affiliation,
-          specialty: input.specialty ?? null,
-          clinic: input.clinic ?? null,
-          phone: input.phone ?? null,
-          status: input.status,
-          updatedAt: new Date(),
+      const [stored] = await tx
+        .select({
+          crm: medicos.crm,
+          profession: medicos.profession,
+          registrationUf: medicos.registrationUf,
         })
+        .from(medicos)
         .where(and(eq(medicos.orgId, orgId), eq(medicos.id, id)))
-        .returning();
+        .for("update")
+        .limit(1);
+      if (!stored) return null;
+      // Duplicata antiga continua editável enquanto o registro não muda (sem prender o cadastro).
+      if (registrationIdentityChanged(stored, input))
+        await assertNoEquivalentRegistration(tx, orgId, input, id);
+      const [row] = await withCrmFieldOnRawDuplicate(() =>
+        tx
+          .update(medicos)
+          .set({
+            name: input.name,
+            crm: input.crm,
+            profession: input.profession,
+            registrationUf: input.registrationUf,
+            rqe: input.rqe ?? null,
+            affiliation: input.affiliation,
+            specialty: input.specialty ?? null,
+            clinic: input.clinic ?? null,
+            phone: input.phone ?? null,
+            status: input.status,
+            updatedAt: new Date(),
+          })
+          .where(and(eq(medicos.orgId, orgId), eq(medicos.id, id)))
+          .returning(),
+      );
       return row ?? null;
     }),
   );
+}
+
+/**
+ * Quantos grupos de possíveis duplicatas de registro já existem no escritório (mesma categoria e
+ * número canônico com UF repetida ou sem UF). Só leitura e só o número: nenhum nome, registro ou
+ * id sai daqui — serve para o operador saber se há legado a revisar manualmente.
+ */
+export async function countMedicoRegistrationDuplicateGroups(
+  orgId: string,
+): Promise<number> {
+  return withOrg(orgId, async (tx) => {
+    const rows = await tx
+      .select({
+        crm: medicos.crm,
+        profession: medicos.profession,
+        registrationUf: medicos.registrationUf,
+      })
+      .from(medicos)
+      .where(eq(medicos.orgId, orgId));
+    return countRegistrationDuplicateGroups(rows);
+  });
 }
 
 /**

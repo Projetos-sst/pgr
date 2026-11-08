@@ -61,7 +61,9 @@ export function toActionError(error: unknown): ActionError | null {
   }
 
   if (error instanceof AppError) {
-    return { code: error.code, message: error.message };
+    return error.fields
+      ? { code: error.code, message: error.message, fields: { ...error.fields } }
+      : { code: error.code, message: error.message };
   }
 
   const pgCode = postgresErrorCode(error);
