@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dateInSaoPaulo, saoPauloLocalToInstant } from "@/shared/dates";
 
 /**
  * Disponibilização e entrega do ASO ao trabalhador (NOB-165; MED-13; NR-7 7.5.19: "o ASO deve ser
@@ -110,12 +111,12 @@ const trimmedOptional = (max: number) =>
     .optional()
     .transform((v) => (v ? v : null));
 
-/** Data e hora local (America/Sao_Paulo, sem horário de verão desde 2019) → ISO com fuso. */
+/** Data e hora local de São Paulo → instante, pela regra IANA de America/Sao_Paulo. */
 const localDateTime = z
   .string()
   .trim()
   .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Informe data e hora.")
-  .transform((v) => new Date(`${v}:00-03:00`))
+  .transform((v) => saoPauloLocalToInstant(v) ?? new Date(Number.NaN))
   .refine((d) => !Number.isNaN(d.getTime()), "Data e hora inválidas.");
 
 export const asoDeliveryInputSchema = z
@@ -240,9 +241,7 @@ export function occurredAtProblem(
 ): string | null {
   if (occurredAt.getTime() > now.getTime() + 5 * 60 * 1000)
     return "A data da entrega não pode ser futura.";
-  const localDate = new Date(occurredAt.getTime() - 3 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const localDate = dateInSaoPaulo(occurredAt) ?? "";
   if (localDate < signedOn) return "A entrega não pode ser anterior à assinatura do ASO.";
   return null;
 }

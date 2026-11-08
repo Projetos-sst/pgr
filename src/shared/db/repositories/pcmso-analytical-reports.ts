@@ -32,6 +32,7 @@ import {
 import { assertCompanyModuleTx } from "./company-modules";
 import { auditedTenantWrite } from "./audited-write";
 import { assertActorIsCompanyCoordinator } from "./medico-user-links";
+import { dateInSaoPaulo } from "@/shared/dates";
 
 export type AnalyticalReportSummary = Omit<PcmsoAnalyticalReport, "content">;
 
@@ -440,11 +441,7 @@ export async function insertReportEvent(
           if (input.kind === "discussed" && !presentation)
             throw new ValidationError("Registre antes a apresentação do relatório.");
           const problem =
-            checkDate(
-              new Date(report.generatedAt.getTime() - 3 * 3600 * 1000)
-                .toISOString()
-                .slice(0, 10),
-            ) ??
+            checkDate(dateInSaoPaulo(report.generatedAt) ?? "") ??
             (input.kind === "presented"
               ? chronologyProblem(
                   "presented",

@@ -85,6 +85,28 @@ describe("occurredAtProblem", () => {
   });
 });
 
+describe("regra de fuso IANA, não −3h fixo (lote 2, risco B)", () => {
+  it("hora local em data com horário de verão (2018, UTC−2) vira o instante certo", () => {
+    expect(
+      asoDeliveryInputSchema
+        .parse({
+          kind: "made_available",
+          method: "physical_copy",
+          occurredAt: "2018-12-15T22:00",
+          evidenceReference: "Entregue em mãos",
+        })
+        .occurredAt.toISOString(),
+    ).toBe("2018-12-16T00:00:00.000Z");
+  });
+
+  it("dia local da entrega pela regra do fuso: 16/12/2018 02:30Z era 00:30 do dia 16", () => {
+    const now = new Date("2019-01-10T12:00:00Z");
+    expect(
+      occurredAtProblem(new Date("2018-12-16T02:30:00Z"), "2018-12-16", now),
+    ).toBeNull();
+  });
+});
+
 describe("summarizeDelivery", () => {
   const ev = (o: Partial<AsoDeliveryEvent>): AsoDeliveryEvent => ({
     id: Math.random().toString(36),

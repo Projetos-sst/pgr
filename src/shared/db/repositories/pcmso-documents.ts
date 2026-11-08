@@ -40,6 +40,7 @@ import {
   lockMedicalRiskBasisTx,
 } from "./medical-risk-sources";
 import { assignmentInForceTodayTx } from "./pcmso-coordinator-in-force";
+import { dateInSaoPaulo } from "@/shared/dates";
 
 export type PcmsoDocumentSummary = Omit<PcmsoDocument, "content">;
 
@@ -504,9 +505,7 @@ export async function insertSignedPcmso(
           );
       }
       const dateProblem = checkDates({
-        previewGeneratedOn: new Date(preview.generatedAt.getTime() - 3 * 3600 * 1000)
-          .toISOString()
-          .slice(0, 10),
+        previewGeneratedOn: dateInSaoPaulo(preview.generatedAt) ?? "",
         coordinatorStartsOn: coordinator.startsOn,
         cycleEnd: preview.cycleEnd,
       });

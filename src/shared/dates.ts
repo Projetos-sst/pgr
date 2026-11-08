@@ -91,6 +91,52 @@ export function formatInstantDateTime(instant: string | Date | null | undefined)
   return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
+const SAO_PAULO_PARTS = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Sao_Paulo",
+  hourCycle: "h23",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+/** Deslocamento (ms) de America/Sao_Paulo em relação a UTC no instante dado, pela base IANA. */
+function saoPauloOffsetMs(instant: number): number {
+  const parts = Object.fromEntries(
+    SAO_PAULO_PARTS.formatToParts(new Date(instant)).map((p) => [p.type, p.value]),
+  );
+  const asUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second),
+  );
+  return asUtc - Math.floor(instant / 1000) * 1000;
+}
+
+/**
+ * Hora local de São Paulo ("AAAA-MM-DDTHH:MM", sem fuso) → instante, pela regra IANA de
+ * America/Sao_Paulo — não por deslocamento fixo de −3h, que erraria se o horário de verão
+ * voltasse ou para datas históricas com outra regra. Formato ou data inválidos → `null`.
+ */
+export function saoPauloLocalToInstant(local: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local);
+  if (!match) return null;
+  const [y, mo, d, h, mi] = match.slice(1).map(Number);
+  const wall = Date.UTC(y, mo - 1, d, h, mi);
+  const check = new Date(wall);
+  if (check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d || h > 23 || mi > 59)
+    return null;
+  // Duas iterações resolvem o deslocamento na própria data (inclusive perto de uma mudança de regra).
+  let instant = wall - saoPauloOffsetMs(wall);
+  instant = wall - saoPauloOffsetMs(instant);
+  return new Date(instant);
+}
+
 /** Janelas de vencimento aceitas pelos filtros de "a vencer" (treinamentos, documentos). */
 export const DUE_WINDOW_DAYS_OPTIONS = [30, 60, 90] as const;
 

@@ -7,6 +7,7 @@ import {
   formatCivilDate,
   formatInstantDate,
   formatInstantDateTime,
+  saoPauloLocalToInstant,
 } from "@/shared/dates";
 
 describe("dateInSaoPaulo", () => {
@@ -112,5 +113,59 @@ describe("formatCivilDate", () => {
     expect(formatCivilDate("2026-03-10T00:00:00.000Z")).toBe("—");
     expect(formatCivilDate("2026-13-01")).toBe("—");
     expect(formatCivilDate("2026-04-31")).toBe("—");
+  });
+});
+
+/**
+ * Regra IANA de America/Sao_Paulo, não deslocamento fixo de −3h (lote 2, risco B). Em 2018 havia
+ * horário de verão (UTC−2 de 04/11/2018 a 17/02/2019): é onde o −3h fixo erra.
+ */
+describe("saoPauloLocalToInstant", () => {
+  it("hora local de hoje → instante UTC−3 (20:59, 21:00, 23:59, 00:00)", () => {
+    expect(saoPauloLocalToInstant("2026-11-07T20:59")?.toISOString()).toBe(
+      "2026-11-07T23:59:00.000Z",
+    );
+    expect(saoPauloLocalToInstant("2026-11-07T21:00")?.toISOString()).toBe(
+      "2026-11-08T00:00:00.000Z",
+    );
+    expect(saoPauloLocalToInstant("2026-11-07T23:59")?.toISOString()).toBe(
+      "2026-11-08T02:59:00.000Z",
+    );
+    expect(saoPauloLocalToInstant("2026-11-08T00:00")?.toISOString()).toBe(
+      "2026-11-08T03:00:00.000Z",
+    );
+  });
+
+  it("virada de mês e de ano", () => {
+    expect(saoPauloLocalToInstant("2026-11-30T22:00")?.toISOString()).toBe(
+      "2026-12-01T01:00:00.000Z",
+    );
+    expect(saoPauloLocalToInstant("2026-12-31T23:30")?.toISOString()).toBe(
+      "2027-01-01T02:30:00.000Z",
+    );
+  });
+
+  it("data histórica com horário de verão usa UTC−2 (o −3h fixo daria 1h a mais)", () => {
+    expect(saoPauloLocalToInstant("2018-12-15T22:00")?.toISOString()).toBe(
+      "2018-12-16T00:00:00.000Z",
+    );
+  });
+
+  it("ida e volta com dateInSaoPaulo fecha no mesmo dia, inclusive na data histórica", () => {
+    for (const local of ["2026-11-07T23:59", "2018-12-15T23:30", "2027-01-01T00:00"])
+      expect(dateInSaoPaulo(saoPauloLocalToInstant(local)!)).toBe(local.slice(0, 10));
+    // 02:30Z de 16/12/2018 era 00:30 do dia 16 em Brasília (UTC−2); o −3h fixo diria dia 15.
+    expect(dateInSaoPaulo("2018-12-16T02:30:00.000Z")).toBe("2018-12-16");
+  });
+
+  it("formato ou data inválidos → null", () => {
+    for (const bad of [
+      "2026-11-07 21:00",
+      "2026-11-07T21:00:00",
+      "2026-02-30T10:00",
+      "2026-11-07T24:00",
+      "x",
+    ])
+      expect(saoPauloLocalToInstant(bad)).toBeNull();
   });
 });
