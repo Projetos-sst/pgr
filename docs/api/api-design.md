@@ -964,6 +964,8 @@ A geração exige a conferência (NOB-148) **sem bloqueios**: inclui coordenador
 | `getPcmsoDocumentAction`      | `id`                         | versão com `content` e `contentSha256` |
 | `generatePcmsoDocumentAction` | `companyId, { cycleStart* }` | versão arquivada (`preview`)           |
 
+`cycleStart` é uma data de calendário real (`AAAA-MM-DD`, dia existente no mês; `2026-02-31` → `422 VALIDATION`, não `500`).
+
 REST: `GET|POST /api/v1/companies/{id}/pcmso-documents` · `GET /api/v1/pcmso-documents/{id}`. Tela: `/companies/{id}/pcmso`. O leiaute final (DOCX/PDF) depende do modelo do Dr. Alcides (MED-08), ainda não recebido.
 
 ### PCMSO assinado (versão oficial) — NOB-166

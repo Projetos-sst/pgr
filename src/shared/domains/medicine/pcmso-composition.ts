@@ -46,12 +46,14 @@ export const PCMSO_CONTENT_SCHEMA_VERSION = 3;
 export const PCMSO_PREVIEW_NOTICE =
   "PRÉVIA — documento sem assinatura do médico responsável e sem validade legal (MED-12).";
 
+// Data de calendário real (dia que existe no mês, inclusive ano bissexto). `Date.parse` aceitava
+// "2026-02-31" (rola para março) e o banco recusava com SQLSTATE 22008, virando erro 500.
 export const pcmsoGenerationSchema = z
   .object({
     cycleStart: z
-      .string()
+      .string({ error: "Informe a data-base (AAAA-MM-DD)." })
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Informe a data-base (AAAA-MM-DD).")
-      .refine((v) => !Number.isNaN(Date.parse(`${v}T00:00:00Z`)), "Data-base inválida."),
+      .pipe(z.iso.date("Data-base inválida: informe um dia que exista no calendário.")),
   })
   .strict();
 export type PcmsoGenerationValues = z.infer<typeof pcmsoGenerationSchema>;
