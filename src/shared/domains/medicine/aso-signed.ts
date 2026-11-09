@@ -203,13 +203,32 @@ export function signedAsoOutdated(
   return now.conclusion !== null && now.conclusion !== signed.conclusion;
 }
 
+/** Documento assinado vigente já existe: o novo registro precisa ser a substituição dele. */
+export const SIGNED_CURRENT_EXISTS_MESSAGE =
+  "Já existe um documento assinado vigente para este contexto. Registre a nova versão como substituição do vigente, com motivo.";
+
 /**
- * O ASO vigente do exame: o documento que ninguém substituiu. O registro garante uma cadeia só por
- * exame (novo documento com vigente existente precisa substituí-lo).
+ * Legado com mais de uma versão vigente (anterior à regra de vigência única, migration 0082): o
+ * sistema não escolhe uma delas. Substituição e entrega ficam bloqueadas até a regularização.
+ */
+export const SIGNED_CURRENT_AMBIGUOUS_MESSAGE =
+  "Há mais de um documento assinado vigente neste contexto (registro anterior à regra de vigência única). O sistema não escolhe um deles: a regularização precisa ser feita por pessoa autorizada antes de nova substituição ou entrega.";
+
+/** Documentos assinados que ninguém substituiu (vigentes). Com a cadeia íntegra, no máximo um. */
+export function signedCurrentRows<T extends { id: string; replacesId: string | null }>(
+  items: readonly T[],
+): T[] {
+  const replaced = new Set(items.map((i) => i.replacesId).filter(Boolean));
+  return items.filter((i) => !replaced.has(i.id));
+}
+
+/**
+ * O ASO vigente do exame: o único documento que ninguém substituiu. O banco garante uma cadeia só
+ * por exame (lote 4); legado com mais de uma vigente devolve `null` (falha fechada, sem escolher).
  */
 export function currentSignedAso<T extends { id: string; replacesId: string | null }>(
   items: T[],
 ): T | null {
-  const replaced = new Set(items.map((i) => i.replacesId).filter(Boolean));
-  return items.find((i) => !replaced.has(i.id)) ?? null;
+  const current = signedCurrentRows(items);
+  return current.length === 1 ? current[0] : null;
 }

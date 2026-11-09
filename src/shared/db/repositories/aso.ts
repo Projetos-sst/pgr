@@ -9,6 +9,8 @@ import {
   ASO_SIGNED_PREVIEW_STALE_MESSAGE,
   type AsoSignedInput,
   type AsoSignedItem,
+  signedCurrentRows,
+  SIGNED_CURRENT_AMBIGUOUS_MESSAGE,
 } from "@/shared/domains/medicine/aso-signed";
 import {
   compareProfessionalRegistration,
@@ -20,7 +22,9 @@ import type {
   AsoDeliveryInput,
   AsoEvidenceReviewInput,
 } from "@/shared/domains/medicine/aso-delivery";
+import { DuplicateError } from "@/shared/errors/duplicate-error";
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { signedCurrentConflict } from "./signed-current";
 import { ValidationError } from "@/shared/errors/validation-error";
 
 import { withOrg, type TenantTransaction } from "../with-org";
@@ -655,8 +659,9 @@ export async function insertSignedAso(
       }
 
       const existing = await signedOfExamTx(tx, ctx.tenantId, exam.id);
-      const replacedIds = new Set(existing.map((r) => r.replacesId).filter(Boolean));
-      const current = existing.find((r) => !replacedIds.has(r.id)) ?? null;
+      const currents = signedCurrentRows(existing);
+      if (currents.length > 1) throw new DuplicateError(SIGNED_CURRENT_AMBIGUOUS_MESSAGE);
+      const current = currents[0] ?? null;
       if (current && input.replacesId !== current.id)
         throw new ValidationError(
           "O exame já tem ASO assinado vigente. Para corrigir, registre a substituição do documento vigente, com motivo.",
@@ -698,6 +703,8 @@ export async function insertSignedAso(
           throw new ForbiddenError(
             "Registro recusado pelo banco: confira se você é o examinador verificado do exame (fluxo A) ou da equipe do escritório (fluxo B).",
           );
+        const currentConflict = signedCurrentConflict(error, "aso_signed_current_unique");
+        if (currentConflict) throw currentConflict;
         if (code === "23505")
           throw new ValidationError("Este documento já foi substituído.");
         throw error;
@@ -802,8 +809,9 @@ export async function insertAsoDelivery(
       const exam = await findExam(tx, ctx.tenantId, examId, { lock: true });
       const companyId = originCompany(exam);
       const signedRows = await signedOfExamTx(tx, ctx.tenantId, exam.id);
-      const replaced = new Set(signedRows.map((r) => r.replacesId).filter(Boolean));
-      const current = signedRows.find((r) => !replaced.has(r.id));
+      const currents = signedCurrentRows(signedRows);
+      if (currents.length > 1) throw new DuplicateError(SIGNED_CURRENT_AMBIGUOUS_MESSAGE);
+      const current = currents[0];
       if (!current)
         throw new ValidationError(
           "O exame não tem ASO assinado registrado. A prévia não é ASO e não pode ser entregue.",

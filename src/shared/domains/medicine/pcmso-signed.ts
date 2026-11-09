@@ -174,6 +174,7 @@ export const PREVIEW_NAMES_OTHER_COORDINATOR_MESSAGE =
   "A prévia nomeia outro médico responsável; gere nova prévia com o médico responsável em vigor e colha a assinatura dele.";
 
 export type PcmsoSignedWarning =
+  | "signed_current_ambiguous"
   | "risk_basis_changed"
   | "newer_preview"
   | "plan_changed"
@@ -181,6 +182,8 @@ export type PcmsoSignedWarning =
   | "preview_coordinator_mismatch"
   | "cycle_ended";
 export const PCMSO_SIGNED_WARNING_LABELS: Record<PcmsoSignedWarning, string> = {
+  signed_current_ambiguous:
+    "Há mais de um PCMSO assinado vigente (registro anterior à regra de vigência única). O sistema não escolhe um deles: nova versão fica bloqueada até a regularização por pessoa autorizada.",
   risk_basis_changed:
     "Os riscos ou as fontes de riscos mudaram depois da prévia assinada: o programa precisa de nova conferência, nova prévia e nova versão assinada.",
   newer_preview:

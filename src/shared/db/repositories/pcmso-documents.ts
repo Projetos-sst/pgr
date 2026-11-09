@@ -19,7 +19,13 @@ import {
   compareProfessionalRegistration,
   registeredNotCanonicalMessage,
 } from "@/shared/domains/pgr/medicos";
+import {
+  SIGNED_CURRENT_AMBIGUOUS_MESSAGE,
+  signedCurrentRows,
+} from "@/shared/domains/medicine/aso-signed";
+import { DuplicateError } from "@/shared/errors/duplicate-error";
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { signedCurrentConflict } from "./signed-current";
 import { ValidationError } from "@/shared/errors/validation-error";
 
 import { withOrg, type TenantTransaction } from "../with-org";
@@ -474,8 +480,9 @@ export async function insertSignedPcmso(
       if (dateProblem) throw new ValidationError(dateProblem);
 
       const existing = await signedOfCompanyTx(tx, ctx.tenantId, companyId);
-      const replaced = new Set(existing.map((r) => r.row.replacesId).filter(Boolean));
-      const current = existing.find((r) => !replaced.has(r.row.id))?.row ?? null;
+      const currents = signedCurrentRows(existing.map((r) => r.row));
+      if (currents.length > 1) throw new DuplicateError(SIGNED_CURRENT_AMBIGUOUS_MESSAGE);
+      const current = currents[0] ?? null;
       if (current && input.replacesId !== current.id)
         throw new ValidationError(
           "A empresa já tem PCMSO assinado vigente. Registre a nova versão como substituição do vigente, com tipo de mudança e motivo.",
@@ -516,6 +523,11 @@ export async function insertSignedPcmso(
           throw new ForbiddenError(
             "Registro recusado pelo banco: confira se você é o médico responsável verificado (fluxo do coordenador) ou da equipe do escritório.",
           );
+        const currentConflict = signedCurrentConflict(
+          error,
+          "pcmso_signed_current_unique",
+        );
+        if (currentConflict) throw currentConflict;
         if (code === "23505")
           throw new ValidationError("Este documento já foi substituído.");
         throw error;
