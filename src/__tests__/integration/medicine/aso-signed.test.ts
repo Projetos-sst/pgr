@@ -53,6 +53,7 @@ import {
   POST as REGISTER,
 } from "@/app/api/v1/health-exams/[id]/signed-asos/route";
 import { GET as DOWNLOAD } from "@/app/api/v1/signed-asos/[id]/download/route";
+import { registerDelivery } from "@/shared/server/medicine/aso-delivery-core";
 import { linkByInvitation as link } from "../_helpers/professional-link";
 import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS as I } from "../_helpers/pgr-seed";
@@ -697,6 +698,168 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
     ).toBe(403);
     await expect(listSignedAsos(ownerB, exam.id)).rejects.toMatchObject({
       code: "NOT_FOUND",
+    });
+  });
+
+  /**
+   * Lote 4 — vigência única do ASO assinado. Vigente = registro que nenhum outro substitui, por exame.
+   * Com `replaces_id` único e a FK composta (substituição só no mesmo exame), as versões formam
+   * cadeias, e o número de vigentes é o número de raízes (`replaces_id` nulo). O banco passa a recusar
+   * uma segunda raiz (e qualquer inclusão quando já há mais de uma vigente), inclusive por SQL direto e
+   * sob concorrência; o app não escolhe uma vigente quando o legado tem mais de uma.
+   */
+  describe("vigência única do ASO assinado (lote 4)", () => {
+    const insertRoot = (
+      client: postgres.Sql,
+      actor: string,
+      examId: string,
+      { replacesId = null as string | null, holdMs = 0 } = {},
+    ) =>
+      client.begin(async (tx) => {
+        await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', ${actor}, true)`;
+        await tx`insert into aso_signed_documents (id, org_id, company_id, health_exam_id, origin, preview_document_id,
+          signature_method, verification_reference, signer_name, signer_registration, signer_uf, conclusion, signed_on,
+          storage_path, file_sha256, size_bytes, registered_by, replaces_id, replace_reason)
+        values (gen_random_uuid(), 'org_a', ${I.companyA}, ${examId}, 'external_clinic', null, 'handwritten',
+          'Conferência fictícia da clínica', 'Dra. Clínica Fictícia', '80001', 'MA', 'unfit', '2026-10-21',
+          ${"org_a/x/" + Math.random()}, ${"b".repeat(64)}, 10, ${actor}, ${replacesId},
+          ${replacesId ? "Substituição fictícia por SQL." : null})`;
+        if (holdMs) await tx`select pg_sleep(${holdMs / 1000})`;
+      });
+    const count = async (examId: string) =>
+      Number(
+        (
+          await admin`select count(*)::int as n from aso_signed_documents where health_exam_id=${examId}`
+        )[0].n,
+      );
+    /** Semeia legado sem a regra (como registros anteriores à 0082): gatilho desligado só no seed. */
+    const toggleGuard = (on: boolean) =>
+      admin.unsafe(
+        `do $do$ begin
+          if exists (select 1 from pg_trigger where tgname = 'aso_signed_current_guard')
+          then alter table public.aso_signed_documents ${on ? "enable" : "disable"} trigger aso_signed_current_guard;
+          end if; end $do$`,
+      );
+    const seedLegacyRoot = async (examId: string) => {
+      await toggleGuard(false);
+      try {
+        await admin`insert into aso_signed_documents (id, org_id, company_id, health_exam_id, origin, preview_document_id,
+          signature_method, verification_reference, signer_name, signer_registration, signer_uf, conclusion, signed_on,
+          storage_path, file_sha256, size_bytes, registered_by)
+        values (gen_random_uuid(), 'org_a', ${I.companyA}, ${examId}, 'external_clinic', null, 'handwritten',
+          'Legado fictício', 'Dra. Clínica Fictícia', '80001', 'MA', 'unfit', '2026-10-21',
+          ${"org_a/legado/" + Math.random()}, ${"c".repeat(64)}, 10, 'staff')`;
+      } finally {
+        await toggleGuard(true);
+      }
+    };
+
+    it("SQL direto: segunda versão raiz com um ASO vigente é recusada; nada é gravado", async () => {
+      const { exam, preview } = await examWithPreview();
+      await registerSignedAso(examiner, exam.id, examinerFields(preview.id), pdf());
+      await expect(insertRoot(runtime, "staff", exam.id)).rejects.toMatchObject({
+        code: "23505",
+        constraint_name: "aso_signed_current_unique",
+      });
+      expect(await count(exam.id)).toBe(1);
+    });
+
+    it("concorrência: duas versões raiz simultâneas, em conexões separadas → só uma é gravada", async () => {
+      const { exam } = await examWithPreview();
+      const url = process.env.INTEGRATION_APP_RUNTIME_URL!;
+      const pg = (await import("postgres")).default;
+      const a = pg(url, { max: 1, prepare: false });
+      const b = pg(url, { max: 1, prepare: false });
+      try {
+        const results = await Promise.allSettled([
+          insertRoot(a, "staff", exam.id, { holdMs: 400 }),
+          insertRoot(b, "staff", exam.id, { holdMs: 400 }),
+        ]);
+        expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+        expect(await count(exam.id)).toBe(1);
+      } finally {
+        await a.end({ timeout: 5 });
+        await b.end({ timeout: 5 });
+      }
+    });
+
+    it("substituição da vigente segue valendo; substituir versão já substituída é recusado; histórico preservado", async () => {
+      const { exam } = await examWithPreview();
+      await insertRoot(runtime, "staff", exam.id);
+      const [first] =
+        await admin`select id from aso_signed_documents where health_exam_id=${exam.id}`;
+      await insertRoot(runtime, "staff", exam.id, { replacesId: first.id });
+      // Reativar/forkar a versão antiga: substituí-la de novo é recusado.
+      await expect(
+        insertRoot(runtime, "staff", exam.id, { replacesId: first.id }),
+      ).rejects.toMatchObject({ code: "23505" });
+      expect(await count(exam.id)).toBe(2);
+      const current = (await listSignedAsos(staff, exam.id)).filter(
+        (d) => d.replacedById === null,
+      );
+      expect(current).toHaveLength(1);
+    });
+
+    it("outro exame do mesmo trabalhador não compete pela vigência", async () => {
+      const { exam } = await examWithPreview();
+      const { exam: other } = await examWithPreview();
+      await insertRoot(runtime, "staff", exam.id);
+      await insertRoot(runtime, "staff", other.id);
+      expect(await count(exam.id)).toBe(1);
+      expect(await count(other.id)).toBe(1);
+    });
+
+    it("legado com duas vigentes: nenhuma é escolhida; substituição e entrega falham fechado; nada é apagado", async () => {
+      const { exam } = await examWithPreview();
+      await seedLegacyRoot(exam.id);
+      await seedLegacyRoot(exam.id);
+      const items = await listSignedAsos(staff, exam.id);
+      expect(items).toHaveLength(2);
+      expect(items.some((d) => "outdated" in d)).toBe(false);
+      const [one] =
+        await admin`select id from aso_signed_documents where health_exam_id=${exam.id} limit 1`;
+      const replacement = {
+        origin: "external_clinic",
+        signatureMethod: "handwritten",
+        verificationReference: "Conferência fictícia da clínica",
+        signerName: "Dra. Clínica Fictícia",
+        signerRegistration: "80001",
+        signerUf: "MA",
+        conclusion: "unfit",
+        signedOn: "2026-10-21",
+        replacesId: one.id,
+        replaceReason: "Substituição fictícia de legado.",
+      };
+      await expect(
+        registerSignedAso(staff, exam.id, replacement, pdf()),
+      ).rejects.toMatchObject({
+        code: "DUPLICATE",
+        message: expect.stringMatching(/mais de um documento assinado vigente/),
+      });
+      // SQL direto também não "resolve" substituindo uma delas.
+      await expect(
+        insertRoot(runtime, "staff", exam.id, { replacesId: one.id }),
+      ).rejects.toMatchObject({
+        code: "23505",
+        constraint_name: "aso_signed_current_unique",
+      });
+      await expect(
+        registerDelivery(
+          staff,
+          exam.id,
+          {
+            kind: "made_available",
+            method: "physical_copy",
+            occurredAt: "2026-10-22T10:30",
+            evidenceReference: "Entregue em mãos (fictício)",
+          },
+          null,
+        ),
+      ).rejects.toMatchObject({
+        code: "DUPLICATE",
+        message: expect.stringMatching(/mais de um documento assinado vigente/),
+      });
+      expect(await count(exam.id)).toBe(2);
     });
   });
 });

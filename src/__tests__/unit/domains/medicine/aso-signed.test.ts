@@ -7,6 +7,7 @@ import {
   asoSignedInputSchema,
   checkSignedPdf,
   currentSignedAso,
+  signedCurrentRows,
   signedAsoOutdated,
   signedOnProblem,
 } from "@/shared/domains/medicine/aso-signed";
@@ -150,5 +151,19 @@ describe("signedAsoOutdated (MED-11)", () => {
     expect(signedAsoOutdated(signed, { ...now, conclusion: "fit" })).toBe(false);
     expect(signedAsoOutdated(signed, { ...now, conclusion: "unfit" })).toBe(true);
     expect(signedAsoOutdated(signed, { ...now, conclusion: null })).toBe(false);
+  });
+});
+
+describe("vigência única (lote 4)", () => {
+  const doc = (id: string, replacesId: string | null = null) => ({ id, replacesId });
+  it("cadeia íntegra: a vigente é a única não substituída", () => {
+    expect(currentSignedAso([doc("a"), doc("b", "a"), doc("c", "b")])?.id).toBe("c");
+  });
+
+  it("legado com duas vigentes: nenhuma é escolhida (falha fechada)", () => {
+    const legacy = [doc("a"), doc("b")];
+    expect(signedCurrentRows(legacy).map((d) => d.id)).toEqual(["a", "b"]);
+    expect(currentSignedAso(legacy)).toBeNull();
+    expect(currentSignedAso([...legacy, doc("c", "a")])).toBeNull();
   });
 });
