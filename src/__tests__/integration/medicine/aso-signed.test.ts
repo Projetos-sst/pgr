@@ -35,9 +35,14 @@ import {
 import {
   createHealthExam,
   deleteHealthExam,
+  updateHealthExam,
 } from "@/shared/db/repositories/health-exams";
 import { registerMedicalRiskSource } from "@/shared/server/medicine/risk-source-core";
-import { generateDocument } from "@/shared/server/medicine/aso-core";
+import {
+  addProcedure,
+  confirmExaminerConclusion,
+  generateDocument,
+} from "@/shared/server/medicine/aso-core";
 import {
   listSignedAsos,
   registerSignedAso,
@@ -269,6 +274,207 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("fluxo A: prévia antiga ou desatualizada não vira ASO oficial; nada é gravado nem enviado", async () => {
+    const { exam, preview: v1 } = await examWithPreview();
+    const examInput = {
+      employeeId: I.employeeA,
+      doctorId: EXAMINER,
+      examType: "periodic",
+      performedAt: "2026-10-20",
+      aptitude: "unfit",
+    };
+    const edit = (overrides: Record<string, string>) =>
+      updateHealthExam("org_a", exam.id, {
+        ...examInput,
+        ...overrides,
+      } as Parameters<typeof updateHealthExam>[2]);
+    const stale = {
+      code: "VALIDATION",
+      message: expect.stringMatching(/não corresponde mais ao exame/),
+    };
+
+    // Exame corrigido para apto depois da v1 (inapto): a v1 ainda é a mais recente, mas não é
+    // mais a composição do exame.
+    await edit({ aptitude: "fit" });
+    await expect(
+      registerSignedAso(examiner, exam.id, examinerFields(v1.id), pdf()),
+    ).rejects.toMatchObject(stale);
+    // Com a v2 gerada, a v1 também não é a mais recente (com qualquer conclusão).
+    const v2 = await generateDocument(staff, exam.id);
+    for (const conclusion of ["unfit", "fit"])
+      await expect(
+        registerSignedAso(
+          examiner,
+          exam.id,
+          examinerFields(v1.id, { conclusion }),
+          pdf(),
+        ),
+      ).rejects.toMatchObject(stale);
+
+    // Examinador trocado para a coordenadora (verificada): ela não registra a partir da v2, que
+    // nomeia o examinador anterior, mesmo com o CRM dela e a conclusão da prévia.
+    await edit({ aptitude: "fit", doctorId: COORDINATOR });
+    const asCoordinator = {
+      conclusion: "fit",
+      signerName: "Dra. Coordenadora Fictícia",
+      signerRegistration: "70001",
+    };
+    await expect(
+      registerSignedAso(doctor, exam.id, examinerFields(v2.id, asCoordinator), pdf()),
+    ).rejects.toMatchObject(stale);
+
+    // A conferência roda depois da autorização, no registro: cada arquivo enviado é removido
+    // (compensação) e nenhum registro fica.
+    const uploaded = (putSignedAsoObject as jest.Mock).mock.calls.map(([path]) => path);
+    expect(uploaded.length).toBeGreaterThan(0);
+    expect((removeDocumentObject as jest.Mock).mock.calls.map(([path]) => path)).toEqual(
+      uploaded,
+    );
+    expect(await admin`select id from aso_signed_documents`).toHaveLength(0);
+    jest.clearAllMocks();
+    (putSignedAsoObject as jest.Mock).mockResolvedValue(undefined);
+    (removeDocumentObject as jest.Mock).mockResolvedValue(undefined);
+
+    // Prévia mais recente, gerada dos dados atuais: aceita.
+    const v3 = await generateDocument(staff, exam.id);
+    const created = await registerSignedAso(
+      doctor,
+      exam.id,
+      examinerFields(v3.id, asCoordinator),
+      pdf(),
+    );
+    expect(created).toMatchObject({
+      origin: "examiner",
+      previewDocumentId: v3.id,
+      conclusion: "fit",
+      registeredBy: "doctor",
+      signerRegistration: "70001",
+    });
+    expect(putSignedAsoObject).toHaveBeenCalledTimes(1);
+    expect(removeDocumentObject).not.toHaveBeenCalled();
+  });
+
+  it("MED-11: exame editado depois do ASO assinado vigente fica sinalizado; sem edição, sem aviso", async () => {
+    const vigente = async (examId: string) =>
+      (await listSignedAsos(staff, examId)).find((d) => d.replacedById === null);
+    const examInput = {
+      employeeId: I.employeeA,
+      doctorId: EXAMINER,
+      examType: "periodic",
+      performedAt: "2026-10-20",
+      aptitude: "unfit",
+    };
+
+    // Fluxo A: sem edição, sem aviso.
+    const { exam, preview } = await examWithPreview();
+    const created = await registerSignedAso(
+      examiner,
+      exam.id,
+      examinerFields(preview.id),
+      pdf(),
+    );
+    expect(await vigente(exam.id)).toMatchObject({ id: created.id, outdated: false });
+    // A edição não é bloqueada (a correção exige nova prévia), mas o vigente passa a divergir.
+    await updateHealthExam("org_a", exam.id, {
+      ...examInput,
+      aptitude: "fit",
+    } as Parameters<typeof updateHealthExam>[2]);
+    expect(await vigente(exam.id)).toMatchObject({ id: created.id, outdated: true });
+    // O documento assinado continua como estava.
+    const [stored] =
+      await admin`select conclusion from aso_signed_documents where id=${created.id}`;
+    expect(stored).toEqual({ conclusion: "unfit" });
+    // Correção por substituição a partir de nova prévia: o novo vigente não diverge.
+    const v2 = await generateDocument(staff, exam.id);
+    const replacement = await registerSignedAso(
+      examiner,
+      exam.id,
+      {
+        ...examinerFields(v2.id, { conclusion: "fit" }),
+        replacesId: created.id,
+        replaceReason: "Aptidão corrigida no exame fictício.",
+      },
+      pdf("v2"),
+    );
+    expect(await vigente(exam.id)).toMatchObject({
+      id: replacement.id,
+      outdated: false,
+    });
+    // Exame complementar incluído depois da assinatura também diverge.
+    await addProcedure(staff, exam.id, { code: "0281", performedAt: "2026-10-19" });
+    expect(await vigente(exam.id)).toMatchObject({
+      id: replacement.id,
+      outdated: true,
+    });
+    // O substituído não leva o aviso (só o vigente).
+    const list = await listSignedAsos(staff, exam.id);
+    expect(list.find((d) => d.id === created.id)?.outdated).toBeUndefined();
+
+    // Fluxo B: só a conclusão é comparável.
+    const external = await createHealthExam("org_a", {
+      employeeId: I.employeeA,
+      examType: "admissional",
+      performedAt: "2026-10-20",
+      aptitude: "fit",
+    } as Parameters<typeof createHealthExam>[1]);
+    await registerSignedAso(staff, external.id, externalFields(), pdf("b1"));
+    expect(await vigente(external.id)).toMatchObject({ outdated: false });
+    await updateHealthExam("org_a", external.id, {
+      employeeId: I.employeeA,
+      examType: "admissional",
+      performedAt: "2026-10-20",
+      aptitude: "unfit",
+    } as Parameters<typeof updateHealthExam>[2]);
+    expect(await vigente(external.id)).toMatchObject({ outdated: true });
+  });
+
+  it("examinador não é apagado de exame com prévia ou confirmação; troca por outro médico segue permitida", async () => {
+    const examInput = (doctorId: string | undefined, aptitude = "unfit") =>
+      ({
+        employeeId: I.employeeA,
+        doctorId,
+        examType: "periodic",
+        performedAt: "2026-10-20",
+        aptitude,
+      }) as Parameters<typeof updateHealthExam>[2];
+    const cleared = {
+      code: "VALIDATION",
+      message: expect.stringMatching(/não pode ser removido/),
+    };
+
+    // Com prévia arquivada: limpar o médico é recusado e nada muda.
+    const { exam } = await examWithPreview();
+    await expect(
+      updateHealthExam("org_a", exam.id, examInput(undefined)),
+    ).rejects.toMatchObject(cleared);
+    const [row] = await admin`select doctor_id from health_exams where id=${exam.id}`;
+    expect(row).toEqual({ doctor_id: EXAMINER });
+    // Trocar por outro médico ativo continua permitido.
+    await expect(
+      updateHealthExam("org_a", exam.id, examInput(COORDINATOR)),
+    ).resolves.toMatchObject({ doctorId: COORDINATOR });
+
+    // Só a confirmação do examinador ("apto com restrição"), sem prévia: também recusado.
+    const restricted = await createHealthExam(
+      "org_a",
+      examInput(EXAMINER, "fit_with_restrictions"),
+    );
+    await confirmExaminerConclusion(examiner, restricted.id, { conclusion: "fit" });
+    await expect(
+      updateHealthExam(
+        "org_a",
+        restricted.id,
+        examInput(undefined, "fit_with_restrictions"),
+      ),
+    ).rejects.toMatchObject(cleared);
+
+    // Exame sem prévia, ASO assinado ou confirmação: o médico pode ficar em branco.
+    const plain = await createHealthExam("org_a", examInput(EXAMINER));
+    await expect(
+      updateHealthExam("org_a", plain.id, examInput(undefined)),
+    ).resolves.toMatchObject({ doctorId: null });
+  });
+
   it("NOB-110: CRM do cadastro com pontuação confere pela forma canônica; identidade e autoria intactas", async () => {
     const { exam, preview } = await examWithPreview();
     // Cadastro legado com pontuação. Alterar o cadastro invalida a verificação (comparação exata
@@ -299,11 +505,14 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
       });
     expect(await admin`select id from aso_signed_documents`).toHaveLength(0);
 
+    // A prévia antiga imprime o registro anterior ("70002"): com o cadastro reformatado ela não é
+    // mais a composição atual (lote 3). Nova prévia, assinada pelo examinador.
+    const fresh = await generateDocument(staff, exam.id);
     // Só números e UF minúscula: confere; o signatário fica gravado como está no cadastro.
     const created = await registerSignedAso(
       examiner,
       exam.id,
-      examinerFields(preview.id, { signerRegistration: "70002", signerUf: "ma" }),
+      examinerFields(fresh.id, { signerRegistration: "70002", signerUf: "ma" }),
       pdf(),
     );
     expect(created).toMatchObject({

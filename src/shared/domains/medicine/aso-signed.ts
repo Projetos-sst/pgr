@@ -44,6 +44,17 @@ export const ASO_SIGNED_CONCLUSION_LABELS = {
   unfit: "Inapto para a função",
 } as const;
 
+/**
+ * Fluxo A: a prévia assinada precisa ser a mais recente do exame e ainda corresponder à composição
+ * atual (mesmo SHA-256, sem bloqueio na conferência). Espelha a regra do PCMSO assinado.
+ */
+export const ASO_SIGNED_PREVIEW_STALE_MESSAGE =
+  "A prévia escolhida não corresponde mais ao exame (ou não é a mais recente). Gere uma nova prévia e assine-a.";
+
+/** O ASO assinado vigente não corresponde mais ao exame (correção por substituição, MED-11). */
+export const ASO_SIGNED_OUTDATED_MESSAGE =
+  "Os dados do exame mudaram depois do ASO assinado vigente. Gere nova prévia, colha a assinatura e registre a substituição.";
+
 /** Limite do PDF (mesmo teto do GED). */
 export const ASO_SIGNED_MAX_BYTES = 25 * 1024 * 1024;
 
@@ -163,7 +174,34 @@ export type AsoSignedItem = {
   registeredAt: string;
   /** Substituído por outro documento (não é mais o ASO vigente do exame). */
   replacedById: string | null;
+  /**
+   * Só no vigente, na listagem do exame: os dados do exame mudaram depois da assinatura (ver
+   * `signedAsoOutdated`). Aviso; não bloqueia edição nem substituição (MED-11).
+   */
+  outdated?: boolean;
 };
+
+/**
+ * O ASO assinado vigente ainda corresponde ao exame? Fluxo A: a prévia assinada precisa ter o
+ * SHA-256 da composição atual (sem prévia possível hoje = divergente). Fluxo B (sem prévia): só a
+ * conclusão é comparável; diverge quando o exame tem apto/inapto efetivo diferente do documento.
+ * "Apto com restrição" sem confirmação do examinador não tem conclusão efetiva: nada é inferido.
+ */
+export function signedAsoOutdated(
+  signed: Pick<AsoSignedItem, "origin" | "conclusion">,
+  now: {
+    /** SHA-256 da prévia assinada (fluxo A). */
+    previewSha256: string | null;
+    /** SHA-256 da composição atual; `null` com bloqueio na conferência. */
+    currentSha256: string | null;
+    /** Apto/inapto efetivo do exame hoje; `null` sem conclusão. */
+    conclusion: "fit" | "unfit" | null;
+  },
+): boolean {
+  if (signed.origin === "examiner")
+    return !now.previewSha256 || now.previewSha256 !== now.currentSha256;
+  return now.conclusion !== null && now.conclusion !== signed.conclusion;
+}
 
 /**
  * O ASO vigente do exame: o documento que ninguém substituiu. O registro garante uma cadeia só por

@@ -59,6 +59,27 @@ export function actorCoordinatesCompany(
       and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id)))`;
 }
 
+/**
+ * O médico `medico` é o coordenador em vigor hoje (designação única) da empresa E é da conta da
+ * sessão com identidade verificada (NOB-158). Usado para amarrar `approved_by_medico_id` ao ator.
+ */
+export function actorMedicoCoordinatesCompany(
+  org: AnyPgColumn | SQL,
+  company: AnyPgColumn | SQL,
+  medico: AnyPgColumn | SQL,
+) {
+  return sql`exists (select 1 from public.pcmso_coordinator_assignments a
+    where a.org_id = ${org} and a.company_id = ${company} and a.medico_id = ${medico}
+      and ${coordinatorAssignmentInForceToday("a")}
+      and a.medico_id in (select public.actor_clinical_medico_ids(a.org_id)))`;
+}
+
+/** A conta da sessão é da equipe do escritório (owner ou colaborador; nunca o perfil cliente). */
+function actorIsOfficeStaff(org: AnyPgColumn | SQL) {
+  return sql`exists (select 1 from public.org_memberships om where om.org_id = ${org}
+    and om.user_id = ${actor} and om.role in ('owner','collaborator','org:admin','org:member'))`;
+}
+
 export const medicalExamPlans = pgTable(
   "medical_exam_plans",
   {
@@ -102,7 +123,9 @@ export const medicalExamPlans = pgTable(
     check("ck_exam_plans_version", sql`${t.version} > 0`),
     check(
       "ck_exam_plans_approval",
-      sql`(${t.status} = 'draft') = (${t.approvedAt} is null) and (${t.approvedAt} is null) = (${t.approvedByUser} is null) and (${t.approvedAt} is null) = (${t.approvedByMedicoId} is null)`,
+      // Rascunho nunca tem aprovação; aprovado sempre tem. Substituído tem aprovação (aprovado
+      // anterior) ou não tem (rascunho descartado por ter ficado desatualizado).
+      sql`(${t.status} <> 'draft' or ${t.approvedAt} is null) and (${t.status} <> 'approved' or ${t.approvedAt} is not null) and (${t.approvedAt} is null) = (${t.approvedByUser} is null) and (${t.approvedAt} is null) = (${t.approvedByMedicoId} is null)`,
     ),
     pgPolicy("exam_plans_isolation", {
       for: "all",
@@ -124,13 +147,27 @@ export const medicalExamPlans = pgTable(
       to: appRuntimeRole,
       withCheck: sql`${t.status} = 'draft' and ${t.preparedBy} = ${actor}`,
     }),
-    // Só a coordenadora aprova (approved_by_user = ator) ou substitui o aprovado anterior.
+    // Só a coordenadora aprova ou substitui o aprovado anterior. Aprovar grava a própria conta
+    // (approved_by_user = ator) E o próprio médico, que é o coordenador em vigor hoje da empresa
+    // pela conta verificada (approved_by_medico_id ∈ actor_clinical_medico_ids) — não dá para
+    // aprovar em nome de outro médico. A equipe do escritório (ou a coordenadora) só pode arquivar
+    // um RASCUNHO como substituído sem nenhum dado de aprovação (rascunho desatualizado descartado
+    // ao preparar o novo). A policy não vê a linha antiga: reescrever aprovação já gravada
+    // (approved_* e nota), dar aprovação a rascunho descartado e sair de "superseded" é barrado
+    // pelo gatilho `medical_exam_plans_transition_guard` (SQL custom da migration).
     pgPolicy("exam_plans_coordinator_transition", {
       as: "restrictive",
       for: "update",
       to: appRuntimeRole,
-      using: sql`${t.status} in ('draft','approved') and ${actorCoordinatesCompany(t.orgId, t.companyId)}`,
-      withCheck: sql`(${t.status} = 'approved' and ${t.approvedByUser} = ${actor}) or ${t.status} = 'superseded'`,
+      using: sql`(${t.status} in ('draft','approved') and ${actorCoordinatesCompany(t.orgId, t.companyId)})
+        or (${t.status} = 'draft' and ${actorIsOfficeStaff(t.orgId)})`,
+      withCheck: sql`(${t.status} = 'approved' and ${t.approvedByUser} = ${actor}
+          and ${actorMedicoCoordinatesCompany(t.orgId, t.companyId, t.approvedByMedicoId)})
+        or (${t.status} = 'superseded' and ${t.approvedAt} is not null
+          and ${actorCoordinatesCompany(t.orgId, t.companyId)})
+        or (${t.status} = 'superseded' and ${t.approvedAt} is null and ${t.approvedByUser} is null
+          and ${t.approvedByMedicoId} is null and ${t.approvalNote} is null
+          and (${actorIsOfficeStaff(t.orgId)} or ${actorCoordinatesCompany(t.orgId, t.companyId)}))`,
     }),
   ],
 ).enableRLS();

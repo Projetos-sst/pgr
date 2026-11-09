@@ -8,6 +8,8 @@ import { todayInSaoPaulo } from "@/shared/dates";
 import {
   asoSignedInputSchema,
   checkSignedPdf,
+  currentSignedAso,
+  signedAsoOutdated,
   signedOnProblem,
 } from "@/shared/domains/medicine/aso-signed";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
@@ -19,6 +21,8 @@ import {
   SIGNED_DOWNLOAD_URL_TTL_SECONDS,
   signedAsoPath,
 } from "@/shared/integrations/storage/documents-storage";
+
+import { currentAsoComposition } from "./aso-core";
 
 const examUuid = (id: string) => requiredUuid("Exame inválido.").parse(id);
 
@@ -65,6 +69,15 @@ export async function registerSignedAso(
   const storagePath = signedAsoPath(ctx.tenantId, id, recordId);
   const today = todayInSaoPaulo();
 
+  // Fluxo A: a prévia assinada precisa ser a mais recente e ainda a composição atual do exame.
+  // A conferência roda no registro, com o exame travado e DEPOIS da autorização do examinador
+  // (quem não pode registrar recebe FORBIDDEN, não um erro de validação); se falhar, o arquivo
+  // enviado é removido pela compensação abaixo.
+  const currentPreviewSha256 =
+    input.origin === "examiner"
+      ? (await currentAsoComposition(ctx, id)).contentSha256
+      : null;
+
   await putSignedAsoObject(storagePath, bytes);
   try {
     return await repo.insertSignedAso(
@@ -73,6 +86,7 @@ export async function registerSignedAso(
       input,
       { id: recordId, storagePath, sha256, sizeBytes: bytes.byteLength },
       (performedAt) => signedOnProblem(input.signedOn, performedAt, today),
+      currentPreviewSha256,
     );
   } catch (error) {
     try {
@@ -84,8 +98,25 @@ export async function registerSignedAso(
   }
 }
 
-export function listSignedAsos(ctx: TenantContext, examId: string) {
-  return repo.listSignedAsos(ctx, examUuid(examId));
+/**
+ * ASOs assinados do exame. O vigente leva `outdated` (MED-11): o exame mudou depois da assinatura
+ * (fluxo A: prévia assinada ≠ composição atual; fluxo B: conclusão ≠ a do exame). Só avisa: a
+ * edição do exame segue livre, e a correção é a substituição a partir de nova prévia.
+ */
+export async function listSignedAsos(ctx: TenantContext, examId: string) {
+  const id = examUuid(examId);
+  const items = await repo.listSignedAsos(ctx, id);
+  const current = currentSignedAso(items);
+  if (!current) return items;
+  const composition = await currentAsoComposition(ctx, id);
+  const previews = current.previewDocumentId ? await repo.listAsoDocuments(ctx, id) : [];
+  const signedPreview = previews.find((doc) => doc.id === current.previewDocumentId);
+  const outdated = signedAsoOutdated(current, {
+    previewSha256: signedPreview?.contentSha256 ?? null,
+    currentSha256: composition.contentSha256,
+    conclusion: composition.conclusion,
+  });
+  return items.map((item) => (item.id === current.id ? { ...item, outdated } : item));
 }
 
 /** URL assinada curta para baixar o PDF; o caminho sai do registro do tenant, nunca do cliente. */

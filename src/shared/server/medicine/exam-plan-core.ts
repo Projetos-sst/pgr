@@ -9,6 +9,8 @@ import {
   basedOnFromProposal,
   draftItemsFromProposal,
   itemDecisionSchema,
+  planBasisStatus,
+  proposalUsableRiskIds,
 } from "@/shared/domains/medicine/exam-plan";
 import { PROCEDURE_CATALOG_SOURCE } from "@/shared/domains/medicine/procedure-catalog";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
@@ -22,10 +24,22 @@ export function listPlans(ctx: TenantContext, companyId: string) {
   return repo.listExamPlans(ctx, companyUuid(companyId));
 }
 
-/** Detalhe do plano + se a conta da sessão pode decidir (coordenadora vinculada). */
+/**
+ * Detalhe do plano + se a conta da sessão pode decidir (coordenadora vinculada) + a situação da
+ * proveniência frente aos riscos validados de hoje (`basis`: `current`, `outdated` ou `legacy`;
+ * só leitura — a aprovação confere de novo, na transação e sob a trava da base de riscos).
+ */
 export async function getPlan(ctx: TenantContext, planId: string) {
   const plan = await repo.getExamPlan(ctx, planUuid(planId));
-  return { ...plan, canDecide: await isActorCompanyCoordinator(ctx, plan.companyId) };
+  const [canDecide, proposal] = await Promise.all([
+    isActorCompanyCoordinator(ctx, plan.companyId),
+    getExamProposal(ctx, plan.companyId),
+  ]);
+  const basis = planBasisStatus(plan.basedOn, {
+    sources: proposal.basis,
+    riskIds: proposalUsableRiskIds(proposal),
+  });
+  return { ...plan, canDecide, basis };
 }
 
 /** Rascunho a partir da proposta atual (riscos validados de fonte vigente, NOB-147). */

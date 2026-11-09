@@ -54,7 +54,9 @@ export async function listSignedPcmsos(ctx: TenantContext, companyId: string) {
     warnings: [
       ...(data.riskBasisChanged ? (["risk_basis_changed"] as const) : []),
       ...pcmsoSignedWarnings({
-        current,
+        current: current
+          ? { ...current, previewCoordinator: data.currentPreviewCoordinator }
+          : null,
         latestPreviewVersion: data.latestPreviewVersion,
         approvedPlanId: data.approvedPlanId,
         coordinator: data.coordinator,

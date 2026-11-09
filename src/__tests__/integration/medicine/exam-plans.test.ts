@@ -58,6 +58,7 @@ const ownerB: TenantContext = {
   plan: "pro",
 };
 const MEDICO = "aaaaaaaa-0000-4000-8000-000000000021";
+const OTHER_MEDICO = "aaaaaaaa-0000-4000-8000-000000000022";
 const WHY = "Justificativa clínica fictícia suficiente.";
 
 const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
@@ -177,13 +178,15 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
           tx`update medical_exam_plan_items set decision='removed', justification='forjado por SQL', updated_by='owner' where plan_id=${plan.id} returning id`,
       ),
     ).toHaveLength(0);
-    expect(
-      await asActor(
+    // A equipe enxerga o rascunho para o UPDATE (só pode descartá-lo, sem aprovação; lote 3), mas
+    // aprovar é recusado pela policy.
+    await expect(
+      asActor(
         "owner",
         (tx) =>
           tx`update medical_exam_plans set status='approved', approved_by_user='owner', approved_by_medico_id=${MEDICO}, approved_at=now() where id=${plan.id} returning id`,
       ),
-    ).toHaveLength(0);
+    ).rejects.toMatchObject({ code: "42501" });
     // Coordenadora não pode aprovar em nome de outra conta.
     await expect(
       asActor(
@@ -201,6 +204,144 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     expect(
       (await admin`select status from medical_exam_plans where id=${plan.id}`)[0].status,
     ).toBe("draft");
+  });
+
+  it("RLS e gatilho: ninguém aprova em nome de outro médico e a aprovação gravada não é reescrita", async () => {
+    await admin`insert into medicos (id, org_id, name, crm, profession, registration_uf, rqe, affiliation, status)
+      values (${OTHER_MEDICO}, 'org_a', 'Dr. Outro Médico Fictício', '50002', 'physician', 'MA', '952', 'external', 'active')`;
+    const asDoctor = (fn: (tx: postgres.TransactionSql) => Promise<unknown>) =>
+      runtime.begin(async (tx) => {
+        await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', 'doctor', true)`;
+        return fn(tx);
+      });
+    const row = async (id: string) =>
+      (
+        await admin`select status, approved_by_user, approved_by_medico_id, approved_at, approval_note
+          from medical_exam_plans where id=${id}`
+      )[0];
+    const v1 = await createDraft(staff, I.companyA);
+    // A coordenadora em vigor aprovando em nome de outro médico: recusado (antes, aceito).
+    await expect(
+      asDoctor(
+        (tx) =>
+          tx`update medical_exam_plans set status='approved', approved_by_user='doctor', approved_by_medico_id=${OTHER_MEDICO}, approved_at=now() where id=${v1.id}`,
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+    expect((await row(v1.id)).status).toBe("draft");
+
+    const approved = await approve(doctor, v1.id, { note: "Aprovação fictícia." });
+    const before = await row(v1.id);
+    expect(before).toMatchObject({
+      status: "approved",
+      approved_by_user: "doctor",
+      approved_by_medico_id: MEDICO,
+      approval_note: "Aprovação fictícia.",
+    });
+    // Reescrever a aprovação já gravada, pela própria coordenadora: recusado (antes, aceito).
+    const rewrites = [
+      (tx: postgres.TransactionSql) =>
+        tx`update medical_exam_plans set approved_by_medico_id=${OTHER_MEDICO}, approved_at='2020-01-01' where id=${v1.id}`,
+      (tx: postgres.TransactionSql) =>
+        tx`update medical_exam_plans set approved_at='2020-01-01' where id=${v1.id}`,
+      (tx: postgres.TransactionSql) =>
+        tx`update medical_exam_plans set approval_note='Nota reescrita fictícia.' where id=${v1.id}`,
+      (tx: postgres.TransactionSql) =>
+        tx`update medical_exam_plans set status='superseded', approved_at='2020-01-01' where id=${v1.id}`,
+      (tx: postgres.TransactionSql) =>
+        tx`update medical_exam_plans set status='draft', approved_by_user=null, approved_by_medico_id=null, approved_at=null where id=${v1.id}`,
+    ];
+    for (const rewrite of rewrites)
+      await expect(asDoctor(rewrite)).rejects.toMatchObject({ code: "42501" });
+    const kept = await row(v1.id);
+    expect(kept).toMatchObject({
+      status: "approved",
+      approved_by_medico_id: MEDICO,
+      approval_note: "Aprovação fictícia.",
+    });
+    expect(new Date(kept.approved_at as string).getTime()).toBe(
+      new Date(approved.approvedAt!).getTime(),
+    );
+
+    // Fluxo do app segue: a nova versão substitui a anterior sem tocar na aprovação dela.
+    const v2 = await createDraft(staff, I.companyA);
+    await approve(doctor, v2.id, {});
+    expect(await row(v1.id)).toMatchObject({
+      status: "superseded",
+      approved_by_user: "doctor",
+      approved_by_medico_id: MEDICO,
+      approval_note: "Aprovação fictícia.",
+    });
+    expect(new Date((await row(v1.id)).approved_at as string).getTime()).toBe(
+      new Date(approved.approvedAt!).getTime(),
+    );
+    // Substituído não volta a aprovado.
+    expect(
+      await asDoctor(
+        (tx) =>
+          tx`update medical_exam_plans set status='approved' where id=${v1.id} returning id`,
+      ),
+    ).toHaveLength(0);
+  });
+
+  it("rascunho sobre outro conjunto de riscos validados não é aprovado e não substitui o aprovado vigente; novo rascunho o arquiva", async () => {
+    // Fonte externa: Calor validado; Poeira pendente.
+    const ext = await registerMedicalRiskSource(owner, I.companyA, {
+      kind: "external",
+      title: "PGR externo fictício",
+      version: "2026.1",
+      reference: "Documento externo fictício",
+      risks: [
+        { agentType: "physical", description: "Calor", exposureGroup: "GES A" },
+        { agentType: "chemical", description: "Poeira mineral", exposureGroup: "GES A" },
+      ],
+    });
+    const setPoeira = (status: "validated" | "pending") =>
+      status === "validated"
+        ? admin`update medical_risk_entries set status='validated', reviewed_by='prof', reviewed_at=now()
+            where source_id=${ext.id} and content->>'description' = 'Poeira mineral'`
+        : admin`update medical_risk_entries set status='pending', reviewed_by=null, reviewed_at=null
+            where source_id=${ext.id} and content->>'description' = 'Poeira mineral'`;
+    await admin`update medical_risk_entries set status='validated', reviewed_by='prof', reviewed_at=now()
+      where source_id=${ext.id} and content->>'description' = 'Calor'`;
+    const v1 = await createDraft(staff, I.companyA);
+    expect((await getPlan(staff, v1.id)).basis).toBe("current");
+    await approve(doctor, v1.id, { note: "Aprovação fictícia (Calor)." });
+    // Poeira validada: o rascunho v2 é preparado sobre {Calor, Poeira}.
+    await setPoeira("validated");
+    const v2 = await createDraft(staff, I.companyA);
+    expect(v2.basedOn).toMatchObject({ riskIds: expect.any(Array) });
+    // Poeira volta a pendente: o v1 (só Calor) volta a ser o vigente correto; o v2 ficou velho.
+    await setPoeira("pending");
+    expect((await getPlan(doctor, v2.id)).basis).toBe("outdated");
+    // Antes da correção: aprovado, e o v1 válido virava "superseded".
+    await expect(approve(doctor, v2.id, {})).rejects.toMatchObject({
+      code: "VALIDATION",
+      message: expect.stringMatching(/riscos validados mudaram/),
+    });
+    const statuses = async () =>
+      Object.fromEntries(
+        (await listPlans(staff, I.companyA)).map((p) => [p.version, p.status]),
+      );
+    expect(await statuses()).toEqual({ 1: "approved", 2: "draft" });
+    // Preparar de novo: o v2 desatualizado é arquivado (sem aprovação) e o v3 nasce atual.
+    const v3 = await createDraft(staff, I.companyA);
+    expect(v3.version).toBe(3);
+    expect(await statuses()).toEqual({ 1: "approved", 2: "superseded", 3: "draft" });
+    const [discarded] =
+      await admin`select approved_at, approved_by_user, approved_by_medico_id from medical_exam_plans where id=${v2.id}`;
+    expect(discarded).toEqual({
+      approved_at: null,
+      approved_by_user: null,
+      approved_by_medico_id: null,
+    });
+    expect((await getPlan(staff, v2.id)).events.map((e) => e.event)).toContain(
+      "draft_discarded",
+    );
+    // Rascunho atual não é arquivado: segue DUPLICATE.
+    const dup = await createExamPlanDraftAction(I.companyA);
+    expect(!dup.ok && dup.error.code).toBe("DUPLICATE");
+    await approve(doctor, v3.id, {});
+    expect(await statuses()).toEqual({ 1: "superseded", 2: "superseded", 3: "approved" });
   });
 
   it("decisões exigem justificativa; código fora da Tabela 27 é recusado", async () => {

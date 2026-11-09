@@ -270,6 +270,10 @@ export const MEDICO_REGISTRATION_MISSING_UF_DUPLICATE_MESSAGE =
 export const MEDICO_CRM_TAKEN_MESSAGE =
   "Este número de registro já está cadastrado neste escritório.";
 
+/** Exclusão recusada (IN_USE): o profissional examinou exames registrados; inativar. */
+export const MEDICO_EXAMINER_IN_USE_MESSAGE =
+  "Este profissional é examinador de exames registrados e não pode ser excluído. Inative o cadastro.";
+
 export function registrationDuplicateMessage(kind: RegistrationDuplicate): string {
   return kind === "same_uf"
     ? MEDICO_REGISTRATION_DUPLICATE_MESSAGE

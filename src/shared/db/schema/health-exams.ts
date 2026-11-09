@@ -40,7 +40,8 @@ const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
  * Exames ocupacionais / ASO por funcionário (Gestão de Saúde Ocupacional). A
  * validade (vigente/a vencer/vencido) é DERIVADA na leitura a partir de
  * `valid_until` (nullable — ex.: demissional pode não ter validade). `doctor_id`
- * usa ON DELETE SET NULL: excluir um médico não bloqueia nem apaga o exame.
+ * usa ON DELETE NO ACTION (0081; antes SET NULL): excluir o médico examinador não pode
+ * apagar em silêncio quem examinou — a exclusão é recusada (IN_USE) e o cadastro é inativado.
  * `company_id` (NOB-152, MED-07) é a empresa onde o exame foi realizado:
  * - `registered`: gravada pelo servidor na criação, a partir do vínculo do funcionário;
  * - `confirmed`: exame antigo cuja origem o responsável confirmou, com justificativa e autoria;
@@ -65,7 +66,7 @@ export const healthExams = pgTable(
       withTimezone: true,
     }),
     companyOriginNote: text("company_origin_note"),
-    doctorId: uuid("doctor_id").references(() => medicos.id, { onDelete: "set null" }),
+    doctorId: uuid("doctor_id").references(() => medicos.id, { onDelete: "no action" }),
     examType: examType("exam_type").notNull(),
     performedAt: date("performed_at").notNull(),
     validUntil: date("valid_until"),

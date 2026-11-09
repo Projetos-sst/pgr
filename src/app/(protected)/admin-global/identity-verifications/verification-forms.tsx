@@ -94,7 +94,12 @@ const APPROVE_SLOTS = [
   ...CHECKS.map(([key]) => `checklist.${key}`),
 ];
 
-/** Aprovação com checklist completo, CRM/UF conferidos e código mostrado pela própria conta. */
+/**
+ * Aprovação com checklist completo, CRM/UF conferidos e código mostrado pela própria conta.
+ * CRM e UF começam vazios (NOB-158): o operador digita o que conferiu na fonte oficial; o
+ * cadastro aparece só como contexto, para a comparação do banco não virar cópia do próprio
+ * cadastro.
+ */
 export function ApproveForm({
   requestId,
   crm,
@@ -142,18 +147,22 @@ export function ApproveForm({
         emptyLabel="— selecione —"
         error={fields.method}
       />
+      <p className="text-text-subtle text-sm">
+        Cadastro informa: CRM {crm}/{uf ?? "UF não informada"}. Consulte a fonte oficial e
+        digite abaixo o CRM e a UF que você conferiu nela, sem copiar do cadastro.
+      </p>
       <TextField
         label="CRM conferido"
         name="crm"
         required
-        defaultValue={crm}
+        placeholder="Digite o CRM encontrado na fonte oficial"
         error={fields.crm}
       />
       <TextField
         label="UF conferida"
         name="registrationUf"
         required
-        defaultValue={uf ?? undefined}
+        placeholder="Ex.: SP"
         error={fields.registrationUf}
       />
       <TextField

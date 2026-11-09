@@ -7,6 +7,7 @@ import {
   asoSignedInputSchema,
   checkSignedPdf,
   currentSignedAso,
+  signedAsoOutdated,
   signedOnProblem,
 } from "@/shared/domains/medicine/aso-signed";
 
@@ -119,5 +120,35 @@ describe("currentSignedAso", () => {
       { id: "c", replacesId: "b" },
     ];
     expect(currentSignedAso(chain)?.id).toBe("c");
+  });
+});
+
+describe("signedAsoOutdated (MED-11)", () => {
+  const current = { currentSha256: "a".repeat(64), conclusion: "fit" as const };
+  it("fluxo A: diverge quando a prévia assinada não é mais a composição atual", () => {
+    const signed = { origin: "examiner" as const, conclusion: "fit" as const };
+    expect(signedAsoOutdated(signed, { ...current, previewSha256: "a".repeat(64) })).toBe(
+      false,
+    );
+    expect(signedAsoOutdated(signed, { ...current, previewSha256: "b".repeat(64) })).toBe(
+      true,
+    );
+    // Conferência com bloqueio hoje: não há composição igual à assinada.
+    expect(
+      signedAsoOutdated(signed, {
+        ...current,
+        currentSha256: null,
+        previewSha256: "a".repeat(64),
+      }),
+    ).toBe(true);
+    expect(signedAsoOutdated(signed, { ...current, previewSha256: null })).toBe(true);
+  });
+
+  it("fluxo B: só a conclusão é comparada; sem conclusão efetiva nada é inferido", () => {
+    const signed = { origin: "external_clinic" as const, conclusion: "fit" as const };
+    const now = { previewSha256: null, currentSha256: null };
+    expect(signedAsoOutdated(signed, { ...now, conclusion: "fit" })).toBe(false);
+    expect(signedAsoOutdated(signed, { ...now, conclusion: "unfit" })).toBe(true);
+    expect(signedAsoOutdated(signed, { ...now, conclusion: null })).toBe(false);
   });
 });

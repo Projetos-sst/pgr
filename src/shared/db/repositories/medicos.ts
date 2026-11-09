@@ -17,6 +17,7 @@ import {
   countRegistrationDuplicateGroups,
   findRegistrationDuplicate,
   MEDICO_CRM_TAKEN_MESSAGE,
+  MEDICO_EXAMINER_IN_USE_MESSAGE,
   registrationDuplicateMessage,
   registrationIdentityChanged,
   registrationLockKey,
@@ -31,6 +32,8 @@ import { DuplicateError } from "@/shared/errors/duplicate-error";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 
 import { withOrg, type TenantTransaction } from "../with-org";
+import { asoExaminerConclusions } from "../schema/aso-documents";
+import { healthExams } from "../schema/health-exams";
 import { medicos, type Medico } from "../schema/medicos";
 import { auditedTenantWrite } from "./audited-write";
 
@@ -108,27 +111,52 @@ export async function getMedicoById(orgId: string, id: string): Promise<Medico |
   });
 }
 
+/** Constraint levantada pelo trigger `medicos_registration_guard` (registro equivalente). */
+const EQUIVALENT_REGISTRATION_CONSTRAINT = "medicos_registration_equivalent";
+
+type PgUniqueViolation = { constraint: string; detail: unknown };
+
 /**
- * Violação do índice único bruto `uq_medicos_org_crm` (mesmo texto de registro no escritório),
- * percorrendo a cadeia `cause` do erro do postgres-js embrulhado pelo Drizzle.
+ * Violação de unicidade (23505) na cadeia `cause` do erro do postgres-js embrulhado pelo
+ * Drizzle: devolve a constraint e o DETAIL, ou `null`.
  */
-function isRawCrmUniqueViolation(error: unknown): boolean {
+function findUniqueViolation(error: unknown): PgUniqueViolation | null {
   let current: unknown = error;
   for (let depth = 0; depth <= 5 && current; depth += 1) {
-    if (typeof current !== "object") return false;
-    const pg = current as { code?: unknown; constraint_name?: unknown; cause?: unknown };
-    if (pg.code === "23505" && pg.constraint_name === "uq_medicos_org_crm") return true;
+    if (typeof current !== "object") return null;
+    const pg = current as {
+      code?: unknown;
+      constraint_name?: unknown;
+      detail?: unknown;
+      cause?: unknown;
+    };
+    if (pg.code === "23505" && typeof pg.constraint_name === "string")
+      return { constraint: pg.constraint_name, detail: pg.detail };
     current = pg.cause;
   }
-  return false;
+  return null;
 }
 
+/**
+ * Traduz as duas recusas de registro do banco para `DUPLICATE` no campo `crm`: o índice único
+ * bruto `uq_medicos_org_crm` (mesmo texto) e o trigger de registro equivalente (mesmo número
+ * canônico; o DETAIL diz se a outra linha tem a mesma UF ou está sem UF). O trigger é o backstop
+ * do lock + conferência da aplicação para gravações novas por qualquer caminho.
+ */
 async function withCrmFieldOnRawDuplicate<T>(write: () => Promise<T>): Promise<T> {
   try {
     return await write();
   } catch (error) {
-    if (isRawCrmUniqueViolation(error))
+    const violation = findUniqueViolation(error);
+    if (violation?.constraint === "uq_medicos_org_crm")
       throw new DuplicateError(MEDICO_CRM_TAKEN_MESSAGE, { field: "crm" });
+    if (violation?.constraint === EQUIVALENT_REGISTRATION_CONSTRAINT)
+      throw new DuplicateError(
+        registrationDuplicateMessage(
+          violation.detail === "missing_uf" ? "missing_uf" : "same_uf",
+        ),
+        { field: "crm" },
+      );
     throw error;
   }
 }
@@ -137,7 +165,8 @@ async function withCrmFieldOnRawDuplicate<T>(write: () => Promise<T>): Promise<T
  * NOB-110/NOB-112: impede gravar um registro equivalente a outro do escritório quando a diferença
  * é só de formatação ("12.345" × "12345"). O índice único bruto continua; não há índice canônico
  * porque duplicatas antigas da homologação fariam a migration falhar — a regra vive aqui, na
- * mesma transação da gravação. O lock transacional por (escritório, categoria, UF, número
+ * mesma transação da gravação, e no trigger `medicos_registration_guard` (backstop do banco para
+ * gravações novas, mesma chave de lock — reentrante na mesma transação, sem deadlock). O lock transacional por (escritório, categoria, UF, número
  * canônico) serializa gravações concorrentes do mesmo registro: a segunda só consulta depois do
  * commit da primeira e enxerga a linha. O filtro SQL só pelos dígitos é um superconjunto; a
  * decisão final usa a MESMA forma canônica do TS (`canonicalRegistrationNumber`).
@@ -271,27 +300,57 @@ export async function countMedicoRegistrationDuplicateGroups(
 
 /**
  * Walks the `cause` chain (postgres-js errors surfaced via Drizzle wrap the real
- * SQLSTATE on `error.cause.code`) looking for a foreign-key violation (23503).
+ * SQLSTATE on `error.cause.code`) looking for a foreign-key violation (23503);
+ * returns the constraint name ("" when absent) or `null`.
  */
-function isForeignKeyViolation(error: unknown): boolean {
+function foreignKeyViolation(error: unknown): string | null {
   let current: unknown = error;
   for (let depth = 0; depth <= 5 && current; depth += 1) {
     if (typeof current === "object" && current !== null && "code" in current) {
-      if ((current as { code: unknown }).code === "23503") return true;
+      const pg = current as { code: unknown; constraint_name?: unknown };
+      if (pg.code === "23503")
+        return typeof pg.constraint_name === "string" ? pg.constraint_name : "";
     }
     current = (current as { cause?: unknown }).cause;
   }
-  return false;
+  return null;
 }
 
+/** FK `health_exams.doctor_id → medicos.id` (NO ACTION desde a 0081). */
+const HEALTH_EXAM_DOCTOR_FK = "health_exams_doctor_id_medicos_id_fk";
+
+const MEDICO_COORDINATION_IN_USE_MESSAGE =
+  "Este médico tem histórico de coordenação do PCMSO e não pode ser excluído. Inative o cadastro.";
+
 /**
- * Exames apontam para o médico com SET NULL e não bloqueiam. A designação de
- * coordenador do PCMSO (histórico) usa RESTRICT: 23503 → IN_USE, para o
- * profissional ser inativado em vez de apagado.
+ * Excluir não pode apagar em silêncio quem examinou: exame (e ASO/assinado, que dependem do
+ * exame) ou confirmação de conclusão do ASO que apontem para o profissional → IN_USE, para ele
+ * ser inativado. A conferência roda antes (mensagem exata nas linhas que o tenant enxerga) e a FK
+ * `health_exams.doctor_id` (NO ACTION) é o backstop para exame que a RLS esconde (empresa sem o
+ * módulo de Medicina) ou gravado em paralelo. A designação de coordenador do PCMSO (histórico)
+ * usa RESTRICT: 23503 → IN_USE.
  */
 export async function deleteMedico(orgId: string, id: string): Promise<boolean> {
   return auditedTenantWrite(orgId, "pgr.medicos.write_rejected", () =>
     withOrg(orgId, async (tx) => {
+      const [exam] = await tx
+        .select({ id: healthExams.id })
+        .from(healthExams)
+        .where(and(eq(healthExams.orgId, orgId), eq(healthExams.doctorId, id)))
+        .limit(1);
+      const [conclusion] = exam
+        ? []
+        : await tx
+            .select({ id: asoExaminerConclusions.id })
+            .from(asoExaminerConclusions)
+            .where(
+              and(
+                eq(asoExaminerConclusions.orgId, orgId),
+                eq(asoExaminerConclusions.examinerMedicoId, id),
+              ),
+            )
+            .limit(1);
+      if (exam || conclusion) throw new EntityInUseError(MEDICO_EXAMINER_IN_USE_MESSAGE);
       try {
         const rows = await tx
           .delete(medicos)
@@ -299,9 +358,12 @@ export async function deleteMedico(orgId: string, id: string): Promise<boolean> 
           .returning({ id: medicos.id });
         return rows.length > 0;
       } catch (error) {
-        if (isForeignKeyViolation(error))
+        const constraint = foreignKeyViolation(error);
+        if (constraint !== null)
           throw new EntityInUseError(
-            "Este médico tem histórico de coordenação do PCMSO e não pode ser excluído. Inative o cadastro.",
+            constraint === HEALTH_EXAM_DOCTOR_FK
+              ? MEDICO_EXAMINER_IN_USE_MESSAGE
+              : MEDICO_COORDINATION_IN_USE_MESSAGE,
           );
         throw error;
       }

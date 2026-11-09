@@ -2,6 +2,7 @@ import "server-only";
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { isDevAuthBypassEnabled } from "@/shared/api/dev-bypass";
 import {
   requireOfficeStaff,
   OFFICE_STAFF_ROLES,
@@ -46,15 +47,12 @@ export function restStatusForCode(code: string): number {
 
 /**
  * Dev-only auth bypass para testar /api/v1 sem token Clerk (local/homolog).
- * IMPOSSÍVEL em produção: exige `APP_ENV !== "production"` E `DEV_API_AUTH_BYPASS === "true"`.
+ * IMPOSSÍVEL em produção e sem `APP_ENV`: exige `APP_ENV` definido e diferente de
+ * `production` E `DEV_API_AUTH_BYPASS === "true"` (predicado em `./dev-bypass`).
  * O tenant/papel vêm dos headers `x-dev-tenant`/`x-dev-role`/`x-dev-user` (ou das envs
  * `DEV_TENANT_ID`/`DEV_ROLE`/`DEV_USER_ID`).
  */
-export function isDevAuthBypassEnabled(): boolean {
-  return (
-    process.env.APP_ENV !== "production" && process.env.DEV_API_AUTH_BYPASS === "true"
-  );
-}
+export { isDevAuthBypassEnabled };
 
 function devContextFrom(req: NextRequest): TenantContext | null {
   const tenantId = req.headers.get("x-dev-tenant") ?? process.env.DEV_TENANT_ID ?? null;

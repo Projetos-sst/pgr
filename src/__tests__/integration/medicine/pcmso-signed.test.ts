@@ -356,21 +356,42 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
     expect((await listSignedPcmsos(staff, I.companyA)).warnings).toContain(
       "coordinator_changed",
     );
+    const asSuccessor = (previewDocumentId: string) => ({
+      ...fields(previewDocumentId, {
+        signerName: "Dr. Coordenador da Empresa C",
+        signerRegistration: "61002",
+      }),
+      replacesId: first.id,
+      changeKind: "administrative",
+      replaceReason: "Troca do médico responsável pela empresa.",
+    });
+    // A v1 nomeia a coordenadora anterior: o sucessor não a registra como PCMSO vigente dele.
+    // Antes da correção esta chamada era aceita (só se conferia o coordenador em vigor hoje).
+    await expect(
+      registerSignedPcmso(doctor2, I.companyA, asSuccessor(v1.id), pdf("v2")),
+    ).rejects.toMatchObject({
+      code: "VALIDATION",
+      message: expect.stringMatching(
+        /prévia nomeia outro médico responsável; gere nova prévia/,
+      ),
+    });
+    expect(await admin`select * from pcmso_signed_documents`).toHaveLength(1);
+    // Nova prévia, que nomeia o sucessor: a substituição administrativa é aceita.
+    const v2 = await preview();
+    const [named] =
+      await admin`select content->'coordinator'->>'crm' as crm from pcmso_documents where id=${v2.id}`;
+    expect(named.crm).toBe("61002");
     const second = await registerSignedPcmso(
       doctor2,
       I.companyA,
-      {
-        ...fields(v1.id, {
-          signerName: "Dr. Coordenador da Empresa C",
-          signerRegistration: "61002",
-        }),
-        replacesId: first.id,
-        changeKind: "administrative",
-        replaceReason: "Troca do médico responsável pela empresa.",
-      },
+      asSuccessor(v2.id),
       pdf("v2"),
     );
-    expect(second).toMatchObject({ replacesId: first.id, changeKind: "administrative" });
+    expect(second).toMatchObject({
+      replacesId: first.id,
+      changeKind: "administrative",
+      previewDocumentId: v2.id,
+    });
     const listed = await listSignedPcmsos(staff, I.companyA);
     expect(listed.currentId).toBe(second.id);
     expect(listed.items.map((i) => [i.id, i.replacedById])).toEqual([
@@ -384,7 +405,7 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
         doctor2,
         I.companyA,
         {
-          ...fields(v1.id, { signerRegistration: "61002" }),
+          ...fields(v2.id, { signerRegistration: "61002" }),
           replacesId: first.id,
           changeKind: "correction",
           replaceReason: "Tentativa de nova cadeia fictícia.",
@@ -400,6 +421,60 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
     await expect(signedPcmsoDownload(staff, first.id)).resolves.toMatchObject({
       url: expect.any(String),
     });
+  });
+
+  it("prévia nomeia o coordenador anterior: o sucessor em vigor não a registra (servidor e SQL); com nova prévia, registra", async () => {
+    await approvedPlan();
+    const v1 = await preview();
+    // Troca: a coordenadora da prévia encerrou ontem; o sucessor começa hoje.
+    const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86400000)
+      .toISOString()
+      .slice(0, 10);
+    await admin`update pcmso_coordinator_assignments set ends_on = ${yesterday}, end_reason = 'Troca fictícia do médico responsável.' where company_id = ${I.companyA}`;
+    await admin`insert into pcmso_coordinator_assignments (org_id, company_id, medico_id, starts_on, created_by)
+      values ('org_a', ${I.companyA}, ${MEDICO_C}, ${today}, 'owner')`;
+    const bySuccessor = (previewDocumentId: string) =>
+      fields(previewDocumentId, {
+        signerName: "Dr. Coordenador da Empresa C",
+        signerRegistration: "61002",
+      });
+    // Antes da correção: aceito, porque só o coordenador em vigor hoje era conferido.
+    await expect(
+      registerSignedPcmso(doctor2, I.companyA, bySuccessor(v1.id), pdf()),
+    ).rejects.toMatchObject({
+      code: "VALIDATION",
+      message: expect.stringMatching(
+        /prévia nomeia outro médico responsável; gere nova prévia/,
+      ),
+    });
+    expect(await admin`select * from pcmso_signed_documents`).toHaveLength(0);
+    // SQL direto como app_runtime, conta verificada do sucessor em vigor: a RLS recusa a v1.
+    const forged = runtime.begin(async (tx) => {
+      await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', 'doctor2', true)`;
+      return tx`insert into pcmso_signed_documents (id, org_id, company_id, preview_document_id, preview_sha256, exam_plan_id,
+          origin, signature_method, signer_name, signer_registration, signer_uf, signed_on, verification_reference,
+          storage_path, file_sha256, size_bytes, registered_by)
+        values (gen_random_uuid(), 'org_a', ${I.companyA}, ${v1.id}, ${v1.contentSha256}, ${v1.examPlanId}, 'coordinator',
+          'icp_brasil', 'Dr. Coordenador da Empresa C', '61002', 'MA', ${today}, 'Forjado fictício',
+          ${"org_a/x/" + Math.random()}, ${"a".repeat(64)}, 10, 'doctor2')`;
+    });
+    await expect(forged).rejects.toMatchObject({ code: "42501" });
+    expect(await admin`select * from pcmso_signed_documents`).toHaveLength(0);
+    // Nova prévia, que nomeia o sucessor: aceita.
+    const v2 = await preview();
+    const created = await registerSignedPcmso(
+      doctor2,
+      I.companyA,
+      bySuccessor(v2.id),
+      pdf(),
+    );
+    expect(created).toMatchObject({
+      origin: "coordinator",
+      previewDocumentId: v2.id,
+      signerRegistration: "61002",
+      registeredBy: "doctor2",
+    });
+    expect((await listSignedPcmsos(staff, I.companyA)).warnings).toEqual([]);
   });
 
   it("NOB-110: CRM do coordenador com pontuação confere pela forma canônica; identidade e autoria intactas", async () => {

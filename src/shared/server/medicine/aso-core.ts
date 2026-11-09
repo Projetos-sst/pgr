@@ -140,6 +140,39 @@ export async function getAsoReadiness(ctx: TenantContext, examId: string) {
   return { items, checklist: asoChecklist(items) };
 }
 
+export type AsoCurrentComposition = {
+  /**
+   * SHA-256 da prévia que o exame geraria agora, montada pela mesma regra de `generateDocument`;
+   * `null` quando a conferência tem bloqueio (nenhuma prévia poderia ser gerada hoje).
+   */
+  contentSha256: string | null;
+  /**
+   * Apto ou inapto do exame hoje: o registrado, ou a confirmação vigente do examinador para "apto
+   * com restrição"; `null` quando ainda não há conclusão apto/inapto. O sistema não conclui nada.
+   */
+  conclusion: "fit" | "unfit" | null;
+};
+
+/**
+ * Composição atual do ASO do exame, sem gravar nada. Serve para conferir se a prévia assinada (ou
+ * o ASO assinado vigente) ainda corresponde aos dados cadastrados (MED-11).
+ */
+export async function currentAsoComposition(
+  ctx: TenantContext,
+  examId: string,
+): Promise<AsoCurrentComposition> {
+  const facts = await loadFacts(ctx, examId);
+  const blocked = asoReadiness(facts).some((item) => item.severity === "blocking");
+  const conclusion =
+    facts.exam.aptitude === "fit_with_restrictions"
+      ? (facts.examinerConclusion?.conclusion ?? null)
+      : facts.exam.aptitude;
+  return {
+    contentSha256: blocked ? null : asoContentHash(composeAso(facts)),
+    conclusion,
+  };
+}
+
 export function listProcedures(ctx: TenantContext, examId: string) {
   return repo.listExamProcedures(ctx, examUuid(examId));
 }

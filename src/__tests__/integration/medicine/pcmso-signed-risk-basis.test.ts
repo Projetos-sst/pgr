@@ -36,6 +36,7 @@ import {
   getPlan,
 } from "@/shared/server/medicine/exam-plan-core";
 import { generateDocument } from "@/shared/server/medicine/pcmso-document-core";
+import { getPcmsoReadiness } from "@/shared/server/medicine/pcmso-readiness-core";
 import {
   listSignedPcmsos,
   registerSignedPcmso,
@@ -332,6 +333,42 @@ const sha = (text: string) => createHash("sha256").update(pdfBytes(text)).digest
       code: "VALIDATION",
     });
     expect(await signed()).toHaveLength(0);
+  });
+
+  it("risco validado depois da APROVAÇÃO do plano (mesma fonte): conferência bloqueia e não há prévia; novo plano libera", async () => {
+    const ext = await registerMedicalRiskSource(owner, I.companyA, {
+      kind: "external",
+      title: "PGR externo fictício",
+      version: "2026.1",
+      reference: "Documento externo fictício",
+      risks: [
+        { agentType: "physical", description: "Calor", exposureGroup: "GES A" },
+        { agentType: "chemical", description: "Poeira mineral", exposureGroup: "GES A" },
+      ],
+    });
+    await admin`update medical_risk_entries set status='validated', reviewed_by='prof', reviewed_at=now()
+      where source_id=${ext.id} and content->>'description' = 'Calor'`;
+    // Plano aprovado com exames decididos para os riscos validados até aqui (sem a Poeira).
+    await approvedPlan();
+    await admin`update medical_risk_entries set status='validated', reviewed_by='prof', reviewed_at=now()
+      where source_id=${ext.id} and content->>'description' = 'Poeira mineral'`;
+    // Antes da correção: nenhum bloqueio (mesma fonte, mesma versão) e a prévia saía com a Poeira
+    // sem decisão de exame do coordenador — e era registrável como PCMSO assinado.
+    const readiness = await getPcmsoReadiness(staff, I.companyA);
+    const blocking = readiness.items.filter((i) => i.severity === "blocking");
+    expect(blocking.map((i) => i.code)).toEqual(["exam_plan_outdated"]);
+    expect(blocking[0].message).toMatch(/riscos validados mudaram desde o plano/);
+    await expect(preview()).rejects.toMatchObject({ code: "VALIDATION" });
+    expect(
+      await admin`select id from pcmso_documents where company_id = ${I.companyA}`,
+    ).toHaveLength(0);
+    // Plano revalidado sobre o conjunto atual: conferência limpa, prévia e registro aceitos.
+    await approvedPlan();
+    const v1 = await preview();
+    await expect(
+      registerSignedPcmso(doctor, I.companyA, fields(v1.id), pdf("ok")),
+    ).resolves.toMatchObject({ previewDocumentId: v1.id });
+    expect(await signed()).toHaveLength(1);
   });
 
   it("documento vigente fica marcado quando a base muda depois; histórico preservado e nova emissão coerente", async () => {

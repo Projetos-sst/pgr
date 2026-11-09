@@ -245,4 +245,20 @@ describe("pcmsoGenerationSchema", () => {
         .success,
     ).toBe(false);
   });
+
+  it("recusa dia que não existe no mês (antes passava e o banco devolvia 22008 → 500)", () => {
+    for (const cycleStart of ["2026-02-31", "2026-02-29", "2026-04-31", "2026-00-10"]) {
+      const parsed = pcmsoGenerationSchema.safeParse({ cycleStart });
+      expect(parsed.success).toBe(false);
+      expect(parsed.error?.issues[0]?.message).toMatch(/Data-base inválida/);
+    }
+    // Ano bissexto: 29 de fevereiro existe.
+    expect(pcmsoGenerationSchema.safeParse({ cycleStart: "2028-02-29" }).success).toBe(
+      true,
+    );
+    expect(
+      pcmsoGenerationSchema.safeParse({ cycleStart: "2026-2-1" }).error?.issues[0]
+        ?.message,
+    ).toBe("Informe a data-base (AAAA-MM-DD).");
+  });
 });

@@ -119,6 +119,32 @@ describe("ExamPlanPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("rascunho sobre riscos que mudaram: sem aprovação, com aviso e novo rascunho; descartado na lista", async () => {
+    const discarded = {
+      ...PLAN,
+      id: "p0000000-0000-4000-8000-000000000000",
+      version: 1,
+      status: "superseded" as const,
+    };
+    const stale = { ...PLAN, version: 2 };
+    list.mockResolvedValue({ ok: true, data: [stale, discarded] });
+    get.mockResolvedValue({
+      ok: true,
+      data: { ...stale, canDecide: true, basis: "outdated" },
+    });
+    await renderPage();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /riscos validados mudaram desde que este rascunho foi preparado/,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Aprovar plano" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Preparar rascunho a partir da proposta" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Versão 1 · Rascunho descartado/)).toBeInTheDocument();
+  });
+
   it("sem plano, oferece preparar o rascunho; erro do servidor aparece", async () => {
     list.mockResolvedValue({ ok: true, data: [] });
     await renderPage();

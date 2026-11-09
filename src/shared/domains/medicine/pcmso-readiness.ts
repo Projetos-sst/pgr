@@ -42,11 +42,20 @@ export type PcmsoReadinessInput = {
   /** Riscos utilizáveis no PCMSO (validados, fonte vigente), com o possível agravo do PGR. */
   usableRisks: { description: string; possibleInjuries: string | null }[];
   activePhysicians: number;
-  /** Plano de exames (NOB-150): aprovado vigente e rascunho aberto, com as fontes da aprovação. */
+  /**
+   * Plano de exames (NOB-150): aprovado vigente e rascunho aberto, com as fontes e o conjunto de
+   * riscos validados da aprovação (`riskIds`; ausente/`null` = plano legado, sem esse controle).
+   */
   examPlan: {
-    approved: { version: number; sourceIds: string[] } | null;
+    approved: {
+      version: number;
+      sourceIds: string[];
+      riskIds?: string[] | null;
+    } | null;
     draftVersion: number | null;
   };
+  /** Ids dos riscos utilizáveis hoje (mesmo conjunto de `usableRisks`). */
+  usableRiskIds?: string[];
   /**
    * Exames do plano aprovado sem critério de interpretação e conduta (NR-7 7.5.4 c; NOB-153);
    * `null` sem plano aprovado.
@@ -214,6 +223,8 @@ export function checkPcmsoReadiness(input: PcmsoReadinessInput): PcmsoReadiness 
   else {
     const current = [...p.basis.map((b) => b.id)].sort().join(",");
     const approvedOn = [...plan.approved.sourceIds].sort().join(",");
+    const riskIds = plan.approved.riskIds ?? null;
+    const idSet = (ids: readonly string[]) => [...new Set(ids)].sort().join(",");
     // Sem fonte vigente, o bloqueio `risk_source` já explica; não duplicar.
     if (p.basis.length && current !== approvedOn)
       add(
@@ -221,6 +232,29 @@ export function checkPcmsoReadiness(input: PcmsoReadinessInput): PcmsoReadiness 
         "blocking",
         `O plano aprovado (versão ${plan.approved.version}) foi feito sobre outra fonte de riscos. Prepare nova versão e submeta ao coordenador.`,
         "NR-7 7.5.1; MED-14; SEG-21",
+        planHref,
+      );
+    // Mesma fonte, outro conjunto: risco validado (ou rejeitado) depois da aprovação ficaria no
+    // PCMSO sem decisão de exame do coordenador.
+    else if (
+      p.basis.length &&
+      riskIds &&
+      idSet(riskIds) !== idSet(input.usableRiskIds ?? [])
+    )
+      add(
+        "exam_plan_outdated",
+        "blocking",
+        `O plano aprovado (versão ${plan.approved.version}) foi feito sobre outros riscos validados: os riscos validados mudaram desde o plano. Prepare nova versão e submeta ao coordenador.`,
+        "NR-7 7.5.1; 7.5.4 b; MED-14; SEG-21",
+        planHref,
+      );
+    // Plano legado: só as fontes podem ser conferidas; não bloqueia, mas o responsável precisa saber.
+    else if (p.basis.length && !riskIds)
+      add(
+        "exam_plan_legacy_basis",
+        "warning",
+        `O plano aprovado (versão ${plan.approved.version}) é anterior ao controle do conjunto de riscos validados: só as fontes são conferidas. Se algum risco foi validado ou rejeitado depois da aprovação, prepare nova versão e submeta ao coordenador.`,
+        "NR-7 7.5.1; 7.5.4 b; MED-15",
         planHref,
       );
     if (plan.draftVersion)

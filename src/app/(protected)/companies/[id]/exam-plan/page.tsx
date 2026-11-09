@@ -26,6 +26,10 @@ const STATUS = {
   superseded: "Substituído",
 } as const;
 
+/** Substituído sem aprovação = rascunho arquivado por ter ficado desatualizado. */
+const statusLabel = (p: { status: keyof typeof STATUS; approvedAt: Date | null }) =>
+  p.status === "superseded" && !p.approvedAt ? "Rascunho descartado" : STATUS[p.status];
+
 /**
  * Plano de exames (NOB-150): a equipe prepara o rascunho; só a coordenadora do PCMSO com
  * acesso vinculado decide e aprova (regra no servidor e na RLS — os formulários só refletem).
@@ -52,6 +56,9 @@ export default async function ExamPlanPage({
   const detail = current ? await getExamPlanAction(current.id) : null;
   const plan = detail?.ok ? detail.data : null;
   const editable = plan?.status === "draft" && plan.canDecide;
+  // Rascunho sobre riscos que já mudaram não se aprova; um novo rascunho o arquiva.
+  const staleDraft =
+    plan?.status === "draft" && (plan.basis === "outdated" || plan.basis === "legacy");
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
@@ -83,6 +90,18 @@ export default async function ExamPlanPage({
               pode decidir e aprovar. Vincule a conta em Médicos → editar → Acesso do
               profissional.
             </p>
+          ) : null}
+          {staleDraft ? (
+            <div role="alert" className="flex flex-col gap-2 text-sm text-amber-900">
+              <p>
+                {plan.basis === "legacy"
+                  ? "Este rascunho é anterior ao controle do conjunto de riscos validados e não pode ser aprovado."
+                  : "Os riscos validados mudaram desde que este rascunho foi preparado: ele não pode ser aprovado."}{" "}
+                Prepare novo rascunho a partir dos riscos atuais; este é arquivado e a
+                trilha de decisões fica preservada.
+              </p>
+              <CreateDraftButton companyId={id} />
+            </div>
           ) : null}
           {plan.approvedAt ? (
             <p className="text-text-subtle text-sm">
@@ -139,8 +158,12 @@ export default async function ExamPlanPage({
             <>
               <h3 className="text-text text-sm font-semibold">Acrescentar exame</h3>
               <AddItemForm planId={plan.id} />
-              <h3 className="text-text text-sm font-semibold">Aprovação</h3>
-              <ApproveForm planId={plan.id} />
+              {staleDraft ? null : (
+                <>
+                  <h3 className="text-text text-sm font-semibold">Aprovação</h3>
+                  <ApproveForm planId={plan.id} />
+                </>
+              )}
             </>
           ) : null}
           <details>
@@ -164,7 +187,7 @@ export default async function ExamPlanPage({
           <ul className="text-text-subtle list-disc pl-5 text-sm">
             {list.data.map((p) => (
               <li key={p.id}>
-                Versão {p.version} · {STATUS[p.status]}
+                Versão {p.version} · {statusLabel(p)}
               </li>
             ))}
           </ul>

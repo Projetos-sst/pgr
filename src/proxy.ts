@@ -1,12 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
+import { isDevAuthBypassEnabled } from "@/shared/api/dev-bypass";
 import { NO_STORE_HEADERS } from "@/shared/http/no-store";
 
-// Bypass dev da REST API: libera /api/v1 sem sessao Clerk APENAS fora de producao
-// e com flag explicita. Em producao (APP_ENV=production) nunca e publico.
-const devApiBypass =
-  process.env.APP_ENV !== "production" && process.env.DEV_API_AUTH_BYPASS === "true";
+// Bypass dev da REST API: libera /api/v1 sem sessao Clerk APENAS com APP_ENV definido,
+// diferente de producao, e com flag explicita. APP_ENV ausente/vazio ou "production"
+// nunca e publico (predicado unico em `shared/api/dev-bypass.ts`).
+const devApiBypass = isDevAuthBypassEnabled();
 
 // Basic auth de sandbox: quando APP_ENV=sandbox, protege o ambiente inteiro (antes
 // de qualquer logica do Clerk) com um prompt HTTP Basic nativo do navegador, para

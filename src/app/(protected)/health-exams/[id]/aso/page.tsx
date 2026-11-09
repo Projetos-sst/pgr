@@ -13,6 +13,7 @@ import {
 import {
   ASO_SIGNATURE_METHOD_LABELS,
   ASO_SIGNED_CONCLUSION_LABELS,
+  ASO_SIGNED_OUTDATED_MESSAGE,
   ASO_SIGNED_ORIGIN_LABELS,
   currentSignedAso,
 } from "@/shared/domains/medicine/aso-signed";
@@ -304,6 +305,11 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
           conferida. Correções substituem o documento vigente, com motivo, e o anterior é
           preservado.
         </p>
+        {currentSigned?.outdated ? (
+          <p className="rounded-lg bg-amber-50 p-3 font-semibold text-amber-900">
+            {ASO_SIGNED_OUTDATED_MESSAGE}
+          </p>
+        ) : null}
         {signedRows.length ? (
           <ul className="flex flex-col gap-2">
             {signedRows.map((doc) => (
@@ -335,7 +341,9 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
         )}
         <SignedAsoForm
           examId={id}
-          previews={docRows.map((doc) => ({ id: doc.id, version: doc.version }))}
+          previews={docRows
+            .slice(0, 1)
+            .map((doc) => ({ id: doc.id, version: doc.version }))}
           currentId={currentSigned?.id ?? null}
         />
       </section>

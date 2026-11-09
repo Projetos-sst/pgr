@@ -232,6 +232,51 @@ describe("AsoPage", () => {
       screen.getByRole("button", { name: "Registrar substituição" }),
     ).toBeInTheDocument();
   });
+  it("ASO assinado vigente divergente do exame (MED-11): aviso de substituição; sem divergência, sem aviso", async () => {
+    (getAsoReadinessAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { items: [], checklist: asoChecklist([]) },
+    });
+    (listAsoDocumentsAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+    const signed = {
+      id: "s1",
+      origin: "examiner",
+      previewDocumentId: "d1",
+      signatureMethod: "icp_brasil",
+      verificationReference: "Verificador ITI 001",
+      signerName: "Dr. Examinador",
+      signerRegistration: "1",
+      signerUf: "MA",
+      conclusion: "unfit",
+      signedOn: "2026-10-21",
+      fileSha256: "c".repeat(64),
+      sizeBytes: 10,
+      replacesId: null,
+      replaceReason: null,
+      registeredBy: "examiner",
+      registeredAt: "2026-10-22T10:00:00.000Z",
+      replacedById: null,
+    };
+    const warning = /Os dados do exame mudaram depois do ASO assinado vigente/;
+    (listSignedAsosAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: [{ ...signed, outdated: true }],
+    });
+    const { unmount } = render(await AsoPage({ params: Promise.resolve({ id: EXAM }) }));
+    expect(screen.getByText(warning)).toHaveTextContent(
+      "Gere nova prévia, colha a assinatura e registre a substituição.",
+    );
+    unmount();
+
+    (listSignedAsosAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: [{ ...signed, outdated: false }],
+    });
+    await renderPage();
+    expect(screen.getByText(/^Vigente/)).toBeInTheDocument();
+    expect(screen.queryByText(warning)).not.toBeInTheDocument();
+  });
+
   it("entrega: sem ASO assinado não oferece registro; com ASO, mostra a situação, avisos e histórico", async () => {
     (getAsoReadinessAction as jest.Mock).mockResolvedValue({
       ok: true,

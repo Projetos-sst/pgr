@@ -383,9 +383,14 @@ DEV_ROLE=owner
 
 # produção
 APP_ENV=production         # DEV_API_AUTH_BYPASS é IGNORADO; /api/v1 exige sessão Clerk
+
+# APP_ENV ausente ou vazio  # DEV_API_AUTH_BYPASS também é IGNORADO (falha fechada)
 ```
 
-- Em produção, `isDevAuthBypassEnabled()` é sempre `false` (checa `APP_ENV !== "production"`),
+- O predicado é único (`src/shared/api/dev-bypass.ts`, usado pelo `proxy.ts` e pelo
+  `restHandler`): liga só com `APP_ENV` **definido e não vazio**, diferente de `production`
+  (sem diferenciar maiúsculas, ignorando espaços), **e** `DEV_API_AUTH_BYPASS=true` exato.
+- Em produção, ou com `APP_ENV` ausente/vazio, `isDevAuthBypassEnabled()` é sempre `false`,
   e o middleware (`proxy.ts`) **não** torna `/api/v1` público — Clerk protege normalmente.
 - Em local/homolog com a flag, o middleware libera `/api/v1` e o handler resolve o contexto pelos
   headers `x-dev-*` (ou envs `DEV_*`). Permite testar isolamento trocando `x-dev-tenant` e o gate
@@ -680,9 +685,12 @@ de entrada). REST espelho em `/api/v1/categories` (GET, POST) · `/api/v1/catego
 
 Cadastro de profissionais de saúde — médicos (CRM) e psicólogos (CRP), da equipe ou externos (NOB-121) —
 responsáveis por exames/ASO e pelo PCMSO (catálogo do escritório, isolado por tenant). `clinic` ("Empresa" na listagem) é a clínica/empregador do médico — **texto livre**, não a
-empresa-cliente do tenant. CRM único por org (`UNIQUE(org_id, crm)` → `DUPLICATE`). Sem `/dependents`
-(o vínculo de exames/ASO usa `ON DELETE SET NULL`, não bloqueia a exclusão; quem tem histórico de
-coordenação do PCMSO não pode ser excluído → `IN_USE` (409), deve ser inativado). REST espelho em
+empresa-cliente do tenant. CRM único por org (`UNIQUE(org_id, crm)` → `DUPLICATE`). Sem `/dependents`.
+Exclusão recusada → `IN_USE` (409), o cadastro deve ser inativado: **examinador de exames registrados**
+(`health_exams.doctor_id`, inclusive ASO/ASO assinado do exame, ou `aso_examiner_conclusions.examiner_medico_id`
+— conferido antes da exclusão; a FK `health_exams.doctor_id` passou de `SET NULL` para `NO ACTION` na 0081 e
+segura também exame que a RLS esconde, ex.: empresa sem o módulo de Medicina) ou histórico de coordenação do
+PCMSO (FK `RESTRICT`). Antes, excluir o médico apagava em silêncio o examinador dos exames. REST espelho em
 `/api/v1/medicos` (GET, POST) · `/api/v1/medicos/{id}` (GET, PUT, DELETE).
 
 | Action                    | Entrada                                           | Retorno (`data`)                            |
@@ -713,12 +721,21 @@ espaços; zeros à esquerda contam, `012345` ≠ `12345`; número com letras fic
 categoria diferente ou outro escritório **não** são duplicata. Cadastro antigo **sem UF** com o mesmo número e
 categoria bloqueia um novo (mensagem pede completar a UF dele). A conferência roda na mesma transação da
 gravação com `pg_advisory_xact_lock` por (escritório, categoria, UF, número canônico) — duas gravações
-concorrentes: só uma passa. **Sem índice canônico nem migration** (duplicatas antigas da homologação fariam a
+concorrentes: só uma passa. **Sem índice canônico** (duplicatas antigas da homologação fariam a
 migration falhar): o legado não é juntado, apagado nem corrigido; editar um cadastro antigo sem mudar o registro
 (número canônico, categoria, UF já informada — completar UF nula não conta como mudança) continua permitido.
 Texto de registro idêntico (índice bruto `uq_medicos_org_crm`, mesmo em outra UF/categoria) → `DUPLICATE` com
 `fields.crm`. Leitura operacional: `countMedicoRegistrationDuplicateGroups(orgId)` (repositório, só a contagem
-de grupos, sem dado pessoal; não exposto em HTTP). **Limite:** a equivalência é garantida só nos caminhos da aplicação (Server Action e REST, mesmo repositório); o banco impõe apenas o índice bruto, então um INSERT/UPDATE direto por SQL (inclusive como `app_runtime`) ainda consegue gravar um registro equivalente. O CRM nunca autoriza nada (NOB-158).
+de grupos, sem dado pessoal; não exposto em HTTP). **Backstop no banco (migration 0081):** o trigger
+`medicos_registration_guard` (BEFORE INSERT OR UPDATE OF `crm`, `profession`, `registration_uf`; SECURITY INVOKER)
+aplica a mesma regra a **gravações novas por qualquer caminho**, inclusive INSERT/UPDATE direto por SQL como
+`app_runtime`: forma canônica em `public.medico_registration_canonical(text)` (mesma do TS: ponto, hífen, barra e
+os espaços do `\s` do JavaScript; teste de paridade), mesma chave de `pg_advisory_xact_lock` da aplicação
+(reentrante na mesma transação) e recusa `23505` com constraint `medicos_registration_equivalent` e DETAIL
+`same_uf`/`missing_uf` — o repositório traduz para `DUPLICATE` com `fields.crm` e a mensagem correspondente.
+Edição que não muda o registro (mesma regra de `registrationIdentityChanged`) não é conferida. **Limites:** as
+duplicatas antigas continuam no banco (não há índice canônico); número com letras ou cadastro sem UF não é
+conferido (como na aplicação); o owner do banco ainda pode desligar o trigger. O CRM nunca autoriza nada (NOB-158).
 
 **`CategoryInput`**: `type*` (`epi`|`machine`|`supply`), `name*`, `note?`, `isActive` (default `true`).
 Unicidade por `UNIQUE(org_id, type, name)` → duplicidade no mesmo escritório+tipo vira `DUPLICATE`; o
@@ -844,6 +861,7 @@ Todas as policies clínicas e as checagens do servidor (`repositories/clinical-a
    - Limites de códigos errados: 5 por pedido, no total (depois só resta recusar o pedido, e o profissional abre outro); 10 por conta do profissional em 24 h, somando pedidos e operadores; 10 por operador em 1 h. Esgotado, nem o código certo é conferido (`VALIDATION`).
    - Pedido já aprovado ou recusado não aceita conferência.
 4. O operador registra método, fonte e referência (sem documento bruto). A validade é configurável (padrão 12 meses, teto 36).
+   - Na tela do operador, **CRM conferido** e **UF conferida** começam vazios: o cadastro aparece só como contexto ("Cadastro informa: …") e o operador digita o que encontrou na fonte oficial. Campo vazio → `VALIDATION` pelo schema da aprovação; divergente do cadastro → o banco recusa.
 5. Recusa e revogação ficam em `professional_identity_review_events`, só inclusão. A revogação corta o acesso na hora.
 
 **NOB-159.** O vínculo legado (sem convite) só dá acesso com verificação **e** a reconfirmação explícita da própria conta (`medico_link_reconfirmations`). Nenhum vínculo é alterado ou revogado pela migration.
@@ -877,13 +895,13 @@ Plano de exames por grupo de exposição (NOB-150, MED-15). Migration `0062_medi
 - **`medical_exam_plans`:**
   - versões por empresa; status `draft` → `approved` → `superseded`;
   - um rascunho aberto e um aprovado por empresa (índices parciais → `DUPLICATE`);
-  - proveniência em `based_on` (fontes e versões), mais `rules_version` e `catalog_version`.
+  - proveniência em `based_on` (fontes e versões e, desde o lote 3, `riskIds`: o conjunto exato de riscos validados utilizáveis sobre o qual o médico decidiu), mais `rules_version` e `catalog_version`.
 - **`medical_exam_plan_items`:**
   - procedimento da Tabela 27 (`CHECK ^[0-9]{4}$`; `9999` exige descrição);
   - origem `suggested` (com `rule_id`) ou `added`;
   - decisão `kept` ou `removed`; retirar e acrescentar exigem justificativa (`CHECK`);
   - periodicidade em texto, definida pelo médico.
-- **`medical_exam_plan_events`:** trilha append-only (`draft_created`, `item_decided`, `item_added`, `approved`, `superseded`).
+- **`medical_exam_plan_events`:** trilha append-only (`draft_created`, `item_decided`, `item_added`, `approved`, `superseded`, `draft_discarded`).
 
 | Regra                                                      | App                                         | Banco (RLS e grants)                                                                                                            |
 | ---------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -893,6 +911,15 @@ Plano de exames por grupo de exposição (NOB-150, MED-15). Migration `0062_medi
 | Nada é apagado                                             | sem rota DELETE                             | `REVOKE DELETE` nas três tabelas; eventos sem UPDATE                                                                            |
 
 Ao aprovar, o aprovado anterior vira `superseded` na mesma transação. Para mudar um plano aprovado, prepara-se nova versão; nada é atualizado em silêncio.
+
+**Plano preso ao conjunto de riscos validados (lote 3).** Validar ou rejeitar um risco na mesma fonte (mesmo id e versão) muda o conjunto e desatualiza o plano.
+
+- `GET /exam-plans/{id}` devolve `basis`: `current` (mesmas fontes, versões e `riskIds` de hoje), `outdated` ou `legacy` (plano anterior ao controle, sem `riskIds`).
+- **Aprovar** (sob a trava da base de riscos) só aceita rascunho `current`; `outdated`/`legacy` → `422 VALIDATION` **antes** de substituir o aprovado vigente, que fica intacto.
+- **Preparar rascunho** com um rascunho aberto `outdated`/`legacy` arquiva o antigo como `superseded` **sem aprovação** (evento `draft_discarded`; na tela, "Rascunho descartado") e cria o novo; rascunho aberto `current` continua `DUPLICATE`. Se a base mudar durante a preparação → `422`. A RLS permite à equipe só esse descarte (rascunho → substituído sem nenhum dado de aprovação); o `CHECK ck_exam_plans_approval` passou a admitir substituído sem aprovação.
+- Plano **aprovado legado** não é bloqueado só por isso: a conferência confere as fontes e avisa (`exam_plan_legacy_basis`).
+
+**Aprovação presa ao ator e imutável (lote 3).** A policy `exam_plans_coordinator_transition` exige, para `approved`, `approved_by_user` = ator **e** `approved_by_medico_id` = o médico da conta verificada do ator que é o coordenador em vigor hoje da empresa (`actorMedicoCoordinatesCompany`) — aprovar em nome de outro médico → `42501`. O gatilho `medical_exam_plans_transition_guard` (SQL custom da 0081) vê a linha antiga e só admite rascunho → aprovado, aprovado → substituído **sem alterar** `approved_by_user`, `approved_by_medico_id`, `approved_at` e `approval_note`, e nada a partir de substituído; identificação e proveniência (`based_on`, versões) nunca mudam (`42501`).
 
 | Action                      | Entrada                                                                                        | Retorno (`data`)                         |
 | --------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------- |
@@ -937,14 +964,16 @@ Tabela `pcmso_documents` (migration `0063_pcmso_documents`):
 A geração exige a conferência (NOB-148) **sem bloqueios**: inclui coordenador, riscos validados e plano aprovado sobre a fonte atual. O coordenador da prévia é o vigente na data da geração, a mesma data usada na conferência (NOB-109). Prévias já arquivadas não são recompostas. A conferência passa a bloquear quando:
 
 - não há plano aprovado (`exam_plan`);
-- o plano aprovado foi feito sobre outra fonte de riscos (`exam_plan_outdated`);
-- e avisa quando existe nova versão em rascunho (`exam_plan_draft`).
+- o plano aprovado foi feito sobre outra fonte de riscos ou sobre outro conjunto de riscos validados — "riscos validados mudaram desde o plano" (`exam_plan_outdated`);
+- e avisa quando existe nova versão em rascunho (`exam_plan_draft`) ou quando o plano aprovado é legado, sem o conjunto de riscos (`exam_plan_legacy_basis`: só as fontes são conferidas).
 
 | Action                        | Entrada                      | Retorno (`data`)                       |
 | ----------------------------- | ---------------------------- | -------------------------------------- |
 | `listPcmsoDocumentsAction`    | `companyId`                  | versões sem conteúdo                   |
 | `getPcmsoDocumentAction`      | `id`                         | versão com `content` e `contentSha256` |
 | `generatePcmsoDocumentAction` | `companyId, { cycleStart* }` | versão arquivada (`preview`)           |
+
+`cycleStart` é uma data de calendário real (`AAAA-MM-DD`, dia existente no mês; `2026-02-31` → `422 VALIDATION`, não `500`).
 
 REST: `GET|POST /api/v1/companies/{id}/pcmso-documents` · `GET /api/v1/pcmso-documents/{id}`. Tela: `/companies/{id}/pcmso`. O leiaute final (DOCX/PDF) depende do modelo do Dr. Alcides (MED-08), ainda não recebido.
 
@@ -958,6 +987,7 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
 - **Base de riscos (NR-7 7.5.1 e 7.5.5; SEG-21):** a prévia (`content.riskBasis.sources`) e o plano aprovado (`based_on.sources`) precisam ter exatamente as **fontes de riscos vigentes** da empresa (não substituídas), com as mesmas versões. O registro é recusado, falhando fechado, quando:
   - o PGR interno de origem mudou ou ficou indisponível (impressão digital recalculada na transação);
   - os riscos validados mudaram depois da prévia (validação ou rejeição na mesma fonte);
+  - os riscos validados mudaram depois da aprovação do plano (`based_on.riskIds` ≠ conjunto vigente; plano legado sem `riskIds` só é conferido pelas fontes);
   - a fonte foi substituída ou removida;
   - não há fonte conferível.
   - Nenhuma classificação clínica automática: qualquer divergência exige nova conferência, novo plano (se for o caso) e nova prévia. Não existe justificativa livre que libere o bloqueio.
@@ -975,6 +1005,7 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
   - `office_received`: a equipe do escritório arquiva o documento que o médico responsável assinou.
   - O owner não vira signatário por escolher um nome. Colaborador e coordenador de outra empresa são barrados.
 - **Signatário (NOB-110):** o CRM/UF informado é conferido com o coordenador designado vigente pela forma canônica do número (só separadores `.`, `-`, `/` e espaço são ignorados; zeros à esquerda contam; UF sem diferenciar maiúsculas). É conferência de consistência: no fluxo `coordinator`, quem registra continua decidido pela conta vinculada e verificada. O documento grava o CRM/UF como estão no cadastro; CRM do cadastro com letras é recusado até a correção do cadastro. O alerta de médico responsável trocado usa a mesma conferência (reformatar o CRM não é troca).
+- **Prévia nomeia quem assina:** o médico responsável impresso na prévia (`content.coordinator`, CRM/UF) precisa ser o coordenador em vigor hoje, pela mesma forma canônica. Depois de uma troca, a prévia antiga (que nomeia o anterior) é recusada (`422`: "a prévia nomeia outro médico responsável; gere nova prévia"); a policy de inclusão repete a regra (INSERT direto → `42501`). A data mínima da assinatura é o início mais recente entre a designação impressa na prévia e a vigente. Documento já registrado nessa situação ganha o alerta `preview_coordinator_mismatch`.
 - **Conferência:** só **documental**:
   - `verificationKind = 'documentary'`, o único valor que o CHECK aceita;
   - `verificationReference`: relatório do validador, código da plataforma ou guarda do original físico.
@@ -986,7 +1017,7 @@ O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4).
   - substituição só dentro da mesma empresa e tenant (FK composta);
   - cada documento é substituído no máximo uma vez;
   - registros concorrentes da mesma empresa são serializados.
-- **Alertas** (derivados, sem reescrever nada): base de riscos alterada, prévia mais recente que a assinada, plano aprovado trocado, médico responsável trocado e ciclo encerrado.
+- **Alertas** (derivados, sem reescrever nada): base de riscos alterada, prévia mais recente que a assinada, plano aprovado trocado, médico responsável trocado, prévia que nomeia outro médico que o signatário (`preview_coordinator_mismatch`) e ciclo encerrado.
 - **Arquivo:**
   - PDF conferido pelo cabeçalho, até 25 MB;
   - SHA-256 no servidor;
@@ -1137,7 +1168,8 @@ Tela: `/companies/{id}/analytical-report`.
 
 Exames ocupacionais/ASO por funcionário (fatia 027). Cada exame liga-se a um **funcionário**
 (`ON DELETE CASCADE`) e, opcionalmente, ao **médico responsável** (FK → `medicos`,
-`ON DELETE SET NULL` — excluir o médico não apaga nem bloqueia o exame). O status de **validade**
+`ON DELETE NO ACTION` desde a 0081, antes `SET NULL` — excluir o médico examinador é recusado com `IN_USE`;
+o exame mantém quem examinou). O status de **validade**
 (vigente/a vencer/vencido) é **derivado na leitura** de `valid_until` (nullable), via
 `classifyDocumentValidity`; o badge da tela combina validade + **aptidão** (apto / apto c/ restrição /
 inapto — `examBadge`). Sem `/dependents`. **`GET`** aceita `?search=` (nome do funcionário **ou**
@@ -1147,6 +1179,12 @@ guarda também a empresa onde foi realizado (`health_exams.company_id`, MED-07),
 sessão: ID de outro tenant → lista vazia; ID malformado → `VALIDATION` (`422`), nunca lista vazia.
 Janela de "a vencer": `EXAM_DUE_WINDOW_DAYS = 30` (`domains/pgr/health-exams.ts`). REST espelho em
 `/api/v1/health-exams` (GET, POST) · `/api/v1/health-exams/{id}` (GET, PUT, DELETE).
+
+**Médico responsável na edição:** o `PUT` (e a Action) recusa **apagar** o médico (`doctorId`
+ausente) de exame que já tem prévia de ASO, ASO assinado ou confirmação do examinador → `422
+VALIDATION`; trocar por outro médico continua permitido. A tela de edição lista só médicos ativos e
+acrescenta o médico gravado no exame quando ele não está na lista (rótulo "· CRM (inativo)"), para
+que salvar não apague o examinador.
 
 **Validações de entrada (Lote 02A, NOB-112; mesmas regras na Action e no REST, `422 VALIDATION`):**
 `validUntil` (opcional) não pode ser anterior a `performedAt` (igual é permitido; datas comparadas
@@ -1376,7 +1414,8 @@ O ASO oficial é o PDF **assinado pelo médico examinador** (NR-7 7.5.19.1 g). O
 - **Fluxo A (`examiner`):**
   - só a conta do médico examinador do exame, com identidade verificada (`actor_clinical_medico_ids`, NOB-158);
   - CRM/UF do signatário iguais ao cadastro do examinador — conferência de **consistência**, que nunca autoriza sozinha (quem registra vem do `doctorId` do exame + conta vinculada e verificada);
-  - prévia (`previewDocumentId`) do mesmo exame, com a mesma conclusão.
+  - prévia (`previewDocumentId`) do mesmo exame, com a mesma conclusão;
+  - a prévia precisa ser a **mais recente** do exame **e** ainda a composição atual: o `content_sha256` dela tem de ser igual ao SHA-256 de `composeAso` sobre os dados de hoje (mesma montagem de `generateDocument`), sem bloqueio na conferência (espelho da regra do PCMSO assinado). Prévia antiga, exame editado depois da prévia (aptidão, data, tipo, examinador, exames complementares) ou conferência com bloqueio → `VALIDATION` "A prévia escolhida não corresponde mais ao exame (ou não é a mais recente). Gere uma nova prévia e assine-a." A conferência roda **antes do upload** (nada vai ao storage) e de novo no registro, com o exame travado (`FOR UPDATE`). A tela oferece só a prévia mais recente; as anteriores ficam em "Versões arquivadas".
 - **Formato do CRM (NOB-110):**
   - `signerRegistration` aceita dígitos com ponto, hífen, barra ou espaço (até 10 dígitos); letras são recusadas (a UF vai em `signerUf`, sem diferenciar maiúsculas);
   - a conferência com o cadastro usa a forma canônica (`canonicalRegistrationNumber` em `domains/pgr/medicos.ts`): tira só os separadores e mantém os dígitos como estão — `12.345` = `12345`, mas `012345` ≠ `12345`;
@@ -1393,14 +1432,18 @@ O ASO oficial é o PDF **assinado pelo médico examinador** (NR-7 7.5.19.1 g). O
   - cada documento é substituído no máximo uma vez (índice único);
   - a substituição fica no mesmo exame (FK composta);
   - o anterior continua acessível.
+- **ASO vigente divergente do exame (MED-11):** a edição do exame (aptidão, data, tipo, examinador) e dos exames complementares continua livre — bloquear impediria a própria correção, que exige nova prévia. Em vez disso, `listSignedAsos` marca o **vigente** com `outdated` (`signedAsoOutdated` em `domains/medicine/aso-signed.ts`):
+  - fluxo A: `true` quando o SHA-256 da prévia assinada difere da composição atual (ou a conferência tem bloqueio hoje);
+  - fluxo B (sem prévia): `true` só quando o exame tem apto/inapto efetivo (registrado ou confirmado pelo examinador) diferente da conclusão do documento; "apto com restrição" sem confirmação não é comparado;
+  - os substituídos não levam o campo. A tela mostra "Os dados do exame mudaram depois do ASO assinado vigente. Gere nova prévia, colha a assinatura e registre a substituição." O documento assinado nunca é alterado.
 - **Só inclusão:** sem UPDATE ou DELETE para o `app_runtime`. Conclusão só `fit` ou `unfit`. O histórico bloqueia a exclusão do exame e do funcionário (`IN_USE`).
 - **RLS:** isolamento por tenant, módulo Medicina da empresa e policy de inclusão por fluxo (a mesma regra do servidor).
 
-| Action                       | Entrada                                    | Retorno                                |
-| ---------------------------- | ------------------------------------------ | -------------------------------------- |
-| `listSignedAsosAction`       | `examId`                                   | documentos com `replacedById` (cadeia) |
-| `registerSignedAsoAction`    | `examId, FormData` (`file` + campos acima) | documento registrado                   |
-| `getSignedAsoDownloadAction` | `id`                                       | `{ url, expiresInSeconds, sha256 }`    |
+| Action                       | Entrada                                    | Retorno                                                        |
+| ---------------------------- | ------------------------------------------ | -------------------------------------------------------------- |
+| `listSignedAsosAction`       | `examId`                                   | documentos com `replacedById` (cadeia) e `outdated` no vigente |
+| `registerSignedAsoAction`    | `examId, FormData` (`file` + campos acima) | documento registrado                                           |
+| `getSignedAsoDownloadAction` | `id`                                       | `{ url, expiresInSeconds, sha256 }`                            |
 
 REST:
 
@@ -1958,7 +2001,7 @@ Roteiro reproduzível para validar endpoints **sem** UI. Regra: teste sempre o *
 ```bash
 npm run dev                 # sobe em http://localhost:3000 (lê .env.local)
 # jq opcional, só p/ ler o corpo bonito. Em .env.local (local/homolog):
-#   APP_ENV=local
+#   APP_ENV=local                 # obrigatório: sem APP_ENV o bypass fica desligado
 #   DEV_API_AUTH_BYPASS=true      # libera /api/v1 sem sessão Clerk
 #   DEV_TENANT_ID=<orgId de teste>
 export BASE=http://localhost:3000

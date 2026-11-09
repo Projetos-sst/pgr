@@ -17,7 +17,8 @@ import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
-import { withOrg } from "../with-org";
+import { withOrg, type TenantTransaction } from "../with-org";
+import { asoExaminerConclusions } from "../schema/aso-documents";
 import { healthExams, type HealthExamRecord } from "../schema/health-exams";
 import { employees } from "../schema/employees";
 import { medicos } from "../schema/medicos";
@@ -82,6 +83,29 @@ export const EXAM_WITH_CLINICAL_HISTORY_MESSAGE =
 
 export const EXAM_WITH_ASO_MESSAGE =
   "Exame com prévia de ASO arquivada não pode ser excluído: o histórico do ASO é preservado.";
+
+export const EXAMINER_REQUIRED_MESSAGE =
+  "O exame já tem prévia de ASO, ASO assinado ou confirmação do médico examinador: o médico responsável não pode ser removido. Para corrigir, escolha o médico certo.";
+
+/** Exame com prévia ou ASO assinado arquivado, ou com confirmação do examinador registrada. */
+async function hasExaminerRecordsTx(
+  tx: TenantTransaction,
+  orgId: string,
+  examId: string,
+): Promise<boolean> {
+  if (await hasAsoDocumentsTx(tx, orgId, { examId })) return true;
+  const rows = await tx
+    .select({ id: asoExaminerConclusions.id })
+    .from(asoExaminerConclusions)
+    .where(
+      and(
+        eq(asoExaminerConclusions.orgId, orgId),
+        eq(asoExaminerConclusions.healthExamId, examId),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
 
 export type ListHealthExamsParams = PageParams & {
   search?: string;
@@ -238,7 +262,7 @@ export async function updateHealthExam(
       // RLS: empresa sem Medicina → invisível → NOT_FOUND) antes de olhar o
       // funcionário pedido, para não revelar nada sobre ele.
       const [current] = await tx
-        .select({ employeeId: healthExams.employeeId })
+        .select({ employeeId: healthExams.employeeId, doctorId: healthExams.doctorId })
         .from(healthExams)
         .where(and(eq(healthExams.orgId, orgId), eq(healthExams.id, id)))
         .limit(1)
@@ -247,6 +271,14 @@ export async function updateHealthExam(
       if (current.employeeId !== input.employeeId) {
         throw new ValidationError(EMPLOYEE_CHANGE_MESSAGE);
       }
+      // Apagar o examinador de exame com prévia, ASO assinado ou confirmação do examinador
+      // desfaz a autoria do que já foi documentado. Trocar por outro médico continua permitido.
+      if (
+        current.doctorId &&
+        !input.doctorId &&
+        (await hasExaminerRecordsTx(tx, orgId, id))
+      )
+        throw new ValidationError(EXAMINER_REQUIRED_MESSAGE);
       await assertRefsInTenant(tx, orgId, input);
       const [row] = await tx
         .update(healthExams)

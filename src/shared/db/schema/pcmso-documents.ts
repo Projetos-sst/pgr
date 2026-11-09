@@ -1,4 +1,4 @@
-import { sql, type InferSelectModel } from "drizzle-orm";
+import { sql, type InferSelectModel, type SQL } from "drizzle-orm";
 import {
   check,
   date,
@@ -23,6 +23,14 @@ import { companyModuleScope } from "./module-policy";
 import { orgs } from "./orgs";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
+
+/**
+ * Número de registro profissional na forma canônica, no banco: sem ponto, hífen, barra e espaços
+ * (mesmos separadores de `canonicalRegistrationNumber`, NOB-110). Quem usa confere `~ '^[0-9]+$'`.
+ */
+function canonicalRegistration(value: SQL): SQL {
+  return sql`regexp_replace(${value}, '[-./[:space:]]', '', 'g')`;
+}
 
 /**
  * Versões do PCMSO composto (NOB-151). Cada versão é um arquivo imutável: conteúdo JSON com hash
@@ -225,7 +233,10 @@ export const pcmsoSignedDocuments = pgTable(
     }),
     // Ator como autor; prévia da mesma empresa com o mesmo hash e o mesmo plano, aprovado; prévia e
     // plano fundamentados exatamente nas fontes de riscos vigentes (não substituídas, mesma versão);
-    // signatário = coordenador com designação em vigor hoje, única (America/Sao_Paulo; NOB-109);
+    // signatário = coordenador com designação em vigor hoje, única (America/Sao_Paulo; NOB-109), e
+    // é o MESMO médico que a prévia nomeia em `content.coordinator` (CRM na forma canônica, mesma
+    // regra de `compareProfessionalRegistration`, e UF) — prévia de antes de uma troca não vira o
+    // PCMSO vigente assinado pelo sucessor;
     // fluxo A só pela conta verificada desse coordenador, fluxo B só pela equipe do escritório.
     pgPolicy("pcmso_signed_documents_insert", {
       as: "restrictive",
@@ -251,6 +262,11 @@ export const pcmsoSignedDocuments = pgTable(
           where a.org_id = ${t.orgId} and a.company_id = ${t.companyId}
             and ${coordinatorAssignmentInForceToday("a")}
             and m.crm = ${t.signerRegistration} and m.registration_uf = ${t.signerUf}
+            and exists (select 1 from public.pcmso_documents dc where dc.id = ${t.previewDocumentId} and dc.org_id = ${t.orgId}
+              and dc.company_id = ${t.companyId}
+              and ${canonicalRegistration(sql`dc.content->'coordinator'->>'crm'`)} ~ '^[0-9]+$'
+              and ${canonicalRegistration(sql`dc.content->'coordinator'->>'crm'`)} = ${canonicalRegistration(sql`m.crm`)}
+              and upper(btrim(dc.content->'coordinator'->>'registrationUf')) = m.registration_uf)
             and (${t.origin} <> 'coordinator' or a.medico_id in (select public.actor_clinical_medico_ids(a.org_id))))
         and (${t.origin} <> 'office_received' or exists (select 1 from public.org_memberships om where om.org_id = ${t.orgId}
           and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','collaborator','org:admin','org:member')))`,

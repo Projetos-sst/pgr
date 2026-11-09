@@ -6,7 +6,9 @@ import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ForbiddenError } from "@/shared/auth/errors";
 import {
   ADDED_ITEM_JUSTIFICATION_MESSAGE,
+  EXAM_PLAN_BASIS_MESSAGES,
   EXAM_PLAN_ITEM_DUPLICATE_MESSAGE,
+  planBasisStatus,
   type AddItemValues,
   type ApprovePlanValues,
   type DraftItem,
@@ -28,6 +30,8 @@ import {
 } from "../schema/medical-exam-plans";
 import { assertCompanyModuleTx } from "./company-modules";
 import { auditedTenantWrite } from "./audited-write";
+import { liveMedicalRiskBasisTx } from "./medical-risk-basis";
+import { lockMedicalRiskBasisTx } from "./medical-risk-sources";
 import { assertActorIsCompanyCoordinator } from "./medico-user-links";
 
 export type ExamPlanDetail = MedicalExamPlan & {
@@ -123,7 +127,14 @@ export async function getExamPlan(
   });
 }
 
-/** Rascunho preparado pela equipe a partir da proposta; um rascunho aberto por empresa. */
+/**
+ * Rascunho preparado pela equipe a partir da proposta; um rascunho aberto por empresa. Sob a trava
+ * da base de riscos, a proveniência do rascunho novo tem de ser a vigente (senão a base mudou
+ * durante a preparação). Rascunho aberto ainda atual → `DUPLICATE` (índice único). Rascunho aberto
+ * DESATUALIZADO (riscos validados mudaram, ou anterior ao controle do conjunto de riscos) não pode
+ * mais ser aprovado: é arquivado como substituído, sem aprovação, com o evento `draft_discarded`, e
+ * o novo toma o lugar — sem isso a empresa ficaria presa a um rascunho que nunca se aprova.
+ */
 export async function createExamPlanDraft(
   ctx: TenantContext,
   companyId: string,
@@ -137,16 +148,53 @@ export async function createExamPlanDraft(
   return auditedTenantWrite(ctx.tenantId, "medicine.exam_plans.draft_rejected", () =>
     actorTx(ctx, async (tx) => {
       await assertCompany(tx, ctx.tenantId, companyId);
+      await lockMedicalRiskBasisTx(tx, ctx.tenantId, companyId);
+      const live = await liveMedicalRiskBasisTx(tx, ctx.tenantId, companyId);
+      if (planBasisStatus(draft.basedOn, live) !== "current")
+        throw new ValidationError(
+          "A base de riscos da empresa mudou enquanto o rascunho era preparado: prepare o rascunho de novo.",
+        );
       const [{ last }] = await tx
         .select({ last: max(plans.version) })
         .from(plans)
         .where(and(eq(plans.orgId, ctx.tenantId), eq(plans.companyId, companyId)));
+      const version = (last ?? 0) + 1;
+      const [open] = await tx
+        .select()
+        .from(plans)
+        .where(
+          and(
+            eq(plans.orgId, ctx.tenantId),
+            eq(plans.companyId, companyId),
+            eq(plans.status, "draft"),
+          ),
+        )
+        .limit(1);
+      const openBasis = open ? planBasisStatus(open.basedOn, live) : null;
+      if (open && openBasis !== "current") {
+        const [discarded] = await tx
+          .update(plans)
+          .set({ status: "superseded", updatedAt: new Date() })
+          .where(
+            and(
+              eq(plans.orgId, ctx.tenantId),
+              eq(plans.id, open.id),
+              eq(plans.status, "draft"),
+            ),
+          )
+          .returning({ id: plans.id });
+        if (!discarded) throw new ForbiddenError();
+        await logEvent(tx, ctx, open, "draft_discarded", {
+          reason: openBasis === "legacy" ? "legacy_basis" : "risk_basis_changed",
+          byVersion: version,
+        });
+      }
       const [plan] = await tx
         .insert(plans)
         .values({
           orgId: ctx.tenantId,
           companyId,
-          version: (last ?? 0) + 1,
+          version,
           basedOn: draft.basedOn,
           rulesVersion: draft.rulesVersion,
           catalogVersion: draft.catalogVersion,
@@ -170,7 +218,12 @@ export async function createExamPlanDraft(
             updatedBy: ctx.userId,
           })),
         );
-      await logEvent(tx, ctx, plan, "draft_created", { items: draft.items.length });
+      await logEvent(tx, ctx, plan, "draft_created", {
+        items: draft.items.length,
+        ...(open && openBasis !== "current"
+          ? { replacesDraftVersion: open.version }
+          : {}),
+      });
       return plan;
     }),
   );
@@ -292,7 +345,12 @@ export async function addExamPlanItem(
   );
 }
 
-/** Aprovação pela coordenadora vinculada; o aprovado anterior vira "superseded" na mesma transação. */
+/**
+ * Aprovação pela coordenadora vinculada; o aprovado anterior vira "superseded" na mesma transação.
+ * Sob a trava da base de riscos, o rascunho só é aprovado se foi preparado sobre a base vigente:
+ * mesmas fontes e versões e mesmo conjunto de riscos validados. Rascunho desatualizado (ou legado,
+ * sem o conjunto) é recusado ANTES de substituir o aprovado vigente, que fica intacto.
+ */
 export async function approveExamPlan(
   ctx: TenantContext,
   planId: string,
@@ -303,6 +361,10 @@ export async function approveExamPlan(
       const plan = await planTx(tx, ctx.tenantId, planId);
       assertDraft(plan);
       const { medicoId } = await assertActorIsCompanyCoordinator(tx, ctx, plan.companyId);
+      await lockMedicalRiskBasisTx(tx, ctx.tenantId, plan.companyId);
+      const live = await liveMedicalRiskBasisTx(tx, ctx.tenantId, plan.companyId);
+      const basis = planBasisStatus(plan.basedOn, live);
+      if (basis !== "current") throw new ValidationError(EXAM_PLAN_BASIS_MESSAGES[basis]);
       const superseded = await tx
         .update(plans)
         .set({ status: "superseded", updatedAt: new Date() })

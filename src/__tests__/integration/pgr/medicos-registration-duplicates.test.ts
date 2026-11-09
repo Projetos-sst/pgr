@@ -6,10 +6,17 @@
  * - cadastro antigo sem UF com o mesmo número bloqueia um novo; completar a UF dele é permitido;
  * - duplicatas antigas continuam editáveis sem mudar o registro (nada é juntado nem apagado);
  * - duas gravações concorrentes de números equivalentes, em conexões separadas: só uma passa;
- * - contagem só-leitura de grupos de possíveis duplicatas, sem dado pessoal.
+ * - contagem só-leitura de grupos de possíveis duplicatas, sem dado pessoal;
+ * - backstop do banco (trigger `medicos_registration_guard`): SQL direto como app_runtime também é
+ *   recusado (23505, constraint `medicos_registration_equivalent`, DETAIL `same_uf`/`missing_uf`)
+ *   para gravações novas; duplicata antiga segue editável sem mudar o registro; a recusa do banco
+ *   chega à aplicação como DUPLICATE no campo `crm`;
+ * - paridade da forma canônica entre o TS (`canonicalRegistrationNumber`) e o SQL
+ *   (`medico_registration_canonical`), inclusive espaço, NBSP e tab.
+ * Duplicatas antigas são semeadas como owner com o trigger desligado (como as anteriores à regra).
  * Dados fictícios.
  */
-import type postgres from "postgres";
+import postgres from "postgres";
 import { NextRequest } from "next/server";
 
 jest.mock("@/shared/db/env", () => ({
@@ -29,6 +36,7 @@ import {
 } from "@/shared/server/actions/pgr/medicos";
 import * as repo from "@/shared/db/repositories/medicos";
 import {
+  canonicalRegistrationNumber,
   medicoInputSchema,
   MEDICO_CRM_TAKEN_MESSAGE,
   MEDICO_REGISTRATION_DUPLICATE_MESSAGE,
@@ -38,7 +46,7 @@ import {
 import { POST as CREATE } from "@/app/api/v1/medicos/route";
 import { PUT as UPDATE } from "@/app/api/v1/medicos/[id]/route";
 
-import { adminClient, applyMigrations } from "../_helpers/db";
+import { adminClient, applyMigrations, withOrgTx } from "../_helpers/db";
 import { seedPgrBase } from "../_helpers/pgr-seed";
 
 const APP_RUNTIME_URL = process.env.INTEGRATION_APP_RUNTIME_URL;
@@ -72,14 +80,17 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
 
 (shouldRun ? describe : describe.skip)("Médicos — registro duplicado", () => {
   let admin: ReturnType<typeof postgres>;
+  let runtime: ReturnType<typeof postgres>;
   const originalEnv = { ...process.env };
 
   beforeAll(async () => {
     admin = adminClient();
     await applyMigrations(admin);
+    runtime = postgres(APP_RUNTIME_URL!, { max: 1, prepare: false });
   });
   afterAll(async () => {
     process.env = originalEnv;
+    await runtime.end({ timeout: 5 });
     await admin.end({ timeout: 5 });
   });
   beforeEach(async () => {
@@ -96,13 +107,41 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
     return total;
   };
 
-  /** Cadastro antigo gravado direto no banco (owner), como os anteriores à regra. */
+  /**
+   * Cadastro antigo gravado direto no banco (owner), como os anteriores à regra: o trigger de
+   * registro equivalente fica desligado só dentro desta transação (duplicata legada).
+   */
   const legacy = async (crm: string, uf: string | null, name = "Dr. Legado") => {
-    const [row] = await admin<{ id: string }[]>`
-      insert into medicos (org_id, name, crm, profession, registration_uf)
-      values ('org_a', ${name}, ${crm}, 'physician', ${uf}) returning id`;
-    return row.id;
+    const id = await admin.begin(async (tx) => {
+      await tx`alter table medicos disable trigger medicos_registration_guard`;
+      const [row] = await tx<{ id: string }[]>`
+        insert into medicos (org_id, name, crm, profession, registration_uf)
+        values ('org_a', ${name}, ${crm}, 'physician', ${uf}) returning id`;
+      await tx`alter table medicos enable trigger medicos_registration_guard`;
+      return row.id;
+    });
+    return id as string;
   };
+
+  /** INSERT direto por SQL como app_runtime, com o tenant da sessão (fora da aplicação). */
+  const runtimeInsert = (
+    crm: string,
+    uf: string | null,
+    { org = "org_a", profession = "physician" } = {},
+  ) =>
+    withOrgTx(
+      runtime,
+      org,
+      (tx) => tx`
+        insert into medicos (org_id, name, crm, profession, registration_uf)
+        values (${org}, 'Dr. SQL Direto Fictício', ${crm}, ${profession}, ${uf})`,
+    );
+
+  const equivalentViolation = (detail: "same_uf" | "missing_uf") => ({
+    code: "23505",
+    constraint_name: "medicos_registration_equivalent",
+    detail,
+  });
 
   it("mesmo número com outra formatação, mesma categoria e UF → DUPLICATE no campo crm, nada gravado", async () => {
     expect((await createMedicoAction(medico("12.345"))).ok).toBe(true);
@@ -286,5 +325,148 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
     await legacy("90.000", "MA");
     expect(await repo.countMedicoRegistrationDuplicateGroups("org_a")).toBe(2);
     expect(await repo.countMedicoRegistrationDuplicateGroups("org_b")).toBe(0);
+  });
+
+  it("banco: INSERT direto como app_runtime de número equivalente (mesma categoria e UF) → 23505", async () => {
+    expect((await createMedicoAction(medico("12.345"))).ok).toBe(true);
+    for (const crm of ["12345", "12 345", "12 345", "12\t345", " 1-2/345 "]) {
+      await expect(runtimeInsert(crm, "MA")).rejects.toMatchObject(
+        equivalentViolation("same_uf"),
+      );
+    }
+    expect(await countMedicos()).toBe(1);
+  });
+
+  it("banco: SQL direto com outra UF, outra categoria, zero à esquerda ou outro escritório → permitido", async () => {
+    expect((await createMedicoAction(medico("12.345"))).ok).toBe(true);
+    await expect(runtimeInsert("12345", "PI")).resolves.toBeDefined();
+    await expect(runtimeInsert("012345", "MA")).resolves.toBeDefined();
+    await expect(
+      runtimeInsert("12 345", "MA", { profession: "psychologist" }),
+    ).resolves.toBeDefined();
+    await expect(runtimeInsert("12-345", "MA", { org: "org_b" })).resolves.toBeDefined();
+    expect(await countMedicos()).toBe(4);
+    expect(await countMedicos("org_b")).toBe(1);
+  });
+
+  it("banco: cadastro antigo sem UF com o mesmo número bloqueia SQL direto (DETAIL missing_uf)", async () => {
+    await legacy("56.789", null);
+    await expect(runtimeInsert("56789", "SP")).rejects.toMatchObject(
+      equivalentViolation("missing_uf"),
+    );
+    expect(await countMedicos()).toBe(1);
+  });
+
+  it("banco: duplicata antiga segue editável por SQL direto sem mudar o registro; mudar para equivalente → 23505", async () => {
+    const a = await legacy("45.678", "MA", "Dr. Legado A");
+    const b = await legacy("45678", "MA", "Dr. Legado B");
+    const runtimeUpdate = (
+      id: string,
+      set: { name?: string; crm?: string; uf?: string },
+    ) =>
+      withOrgTx(
+        runtime,
+        "org_a",
+        (tx) => tx`
+          update medicos set
+            name = coalesce(${set.name ?? null}, name),
+            crm = coalesce(${set.crm ?? null}, crm),
+            registration_uf = coalesce(${set.uf ?? null}, registration_uf)
+          where id = ${id}`,
+      );
+
+    // Mesmo registro (nome, reformatação, UF igual): o trigger não confere.
+    await expect(
+      runtimeUpdate(b, { name: "Dr. Legado B (revisado)", crm: "45678", uf: "MA" }),
+    ).resolves.toBeDefined();
+    await expect(runtimeUpdate(a, { crm: "45 678" })).resolves.toBeDefined();
+    // Outra UF é outro registro; voltar para a UF do outro cadastro é equivalente.
+    await expect(runtimeUpdate(b, { uf: "PI" })).resolves.toBeDefined();
+    await expect(runtimeUpdate(b, { uf: "MA" })).rejects.toMatchObject(
+      equivalentViolation("same_uf"),
+    );
+    const rows = await admin<{ name: string; crm: string; registration_uf: string }[]>`
+      select name, crm, registration_uf from medicos where org_id = 'org_a' order by name`;
+    expect(rows).toEqual([
+      { name: "Dr. Legado A", crm: "45 678", registration_uf: "MA" },
+      { name: "Dr. Legado B (revisado)", crm: "45678", registration_uf: "PI" },
+    ]);
+  });
+
+  it("recusa do banco (sem a conferência da aplicação) chega como DUPLICATE no campo crm", async () => {
+    // Cópia do repositório em que a conferência da aplicação não acha nada: só o trigger recusa.
+    const holder: { repo?: typeof repo } = {};
+    await jest.isolateModulesAsync(async () => {
+      jest.doMock("@/shared/domains/pgr/medicos", () => ({
+        ...jest.requireActual("@/shared/domains/pgr/medicos"),
+        findRegistrationDuplicate: () => null,
+      }));
+      holder.repo = await import("@/shared/db/repositories/medicos");
+    });
+    jest.dontMock("@/shared/domains/pgr/medicos");
+    const blind = holder.repo;
+    expect(blind).toBeDefined();
+    if (!blind) return;
+    const values = (crm: string, uf = "MA") =>
+      medicoInputSchema.parse(medico(crm, { registrationUf: uf }));
+
+    await legacy("81.234", "MA");
+    await expect(blind.createMedico("org_a", values("81234"))).rejects.toMatchObject({
+      code: "DUPLICATE",
+      message: MEDICO_REGISTRATION_DUPLICATE_MESSAGE,
+      fields: { crm: MEDICO_REGISTRATION_DUPLICATE_MESSAGE },
+    });
+    await legacy("82.345", null);
+    await expect(
+      blind.createMedico("org_a", values("82345", "SP")),
+    ).rejects.toMatchObject({
+      code: "DUPLICATE",
+      fields: { crm: MEDICO_REGISTRATION_MISSING_UF_DUPLICATE_MESSAGE },
+    });
+    const other = await blind.createMedico("org_a", values("83456"));
+    await expect(
+      blind.updateMedico("org_a", other.id, values("8.1234")),
+    ).rejects.toMatchObject({
+      code: "DUPLICATE",
+      fields: { crm: MEDICO_REGISTRATION_DUPLICATE_MESSAGE },
+    });
+    expect(await countMedicos()).toBe(3);
+  });
+
+  it("paridade da forma canônica: TS canonicalRegistrationNumber = SQL medico_registration_canonical", async () => {
+    const fixtures = [
+      "12345",
+      "12.345",
+      " 12 345 ",
+      "12-345",
+      "1/2345",
+      "012345",
+      "12 345",
+      "12\t345",
+      "\n12\r345\v\f",
+      "  12   345  ",
+      " 12 345　﻿",
+      // Espaço de largura zero e separador mongol não são `\s`: o número não é comparável.
+      "12​345",
+      "12᠎345",
+      "12345-MA",
+      "CRM 12345",
+      // Dígitos arábico-índicos: o `\d` do JS é só ASCII.
+      "١٢٣",
+      "",
+      "   ",
+      ".-/",
+    ];
+    for (const value of fixtures) {
+      const [{ canonical }] = await admin<{ canonical: string | null }[]>`
+        select public.medico_registration_canonical(${value}::text) as canonical`;
+      expect({ value, canonical }).toEqual({
+        value,
+        canonical: canonicalRegistrationNumber(value),
+      });
+    }
+    const [{ canonical }] = await admin<{ canonical: string | null }[]>`
+      select public.medico_registration_canonical(null::text) as canonical`;
+    expect(canonical).toBeNull();
   });
 });
