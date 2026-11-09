@@ -18,7 +18,7 @@
 
   Tudo tem testes unitários e de integração em Postgres real com RLS.
 
-- **Testes e CI:** a #168 (integrada) e a #169 (lote 3, aguardando merge) tiveram o CI oficial verde. Na #169: 2388 testes unitários e 1646 de integração, nenhuma falha.
+- **Testes e CI:** a #168 e a #169 foram integradas à `develop` com o CI oficial verde (run 42509538010 na #169: 2388 testes unitários e 1646 de integração, nenhuma falha). O lote 4 (vigência única dos documentos assinados) está em PR **pendente de merge**; veja a seção 3.
 - **Não homologado:** nenhuma jornada foi validada em navegador autenticado nem no banco de homologação. O CD aplica as migrations, mas o banco nunca foi lido diretamente (NOB-162).
 - **Não pronto para produção:** os gates NOB-158/159 (identidade médica independente) e NOB-162 (infra de homologação) seguem abertos. O modelo documental final (NOB-93) não foi entregue.
 
@@ -39,15 +39,16 @@
 
 PRs mergeadas na `develop`: #136, #138–#148, #150–#161, #163–#168. As principais da reta final são:
 
-| PR   | Merge                    | Conteúdo                                                                                                                                                                                                                                                   | CI                                                           |
-| ---- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| #165 | `4325803`                | PGR externo em empresa só com Medicina (migration 0079)                                                                                                                                                                                                    | verde                                                        |
-| #166 | `07ab5ca`                | Plano de exames: justificativa retomada                                                                                                                                                                                                                    | verde                                                        |
-| #167 | `1db7d45`                | Lote 1: função/GES, coordenador vigente, CRM, erros aninhados, inclusão de exame, datas de documento                                                                                                                                                       | verde (run 42437454046)                                      |
-| #168 | `d150ffe`                | Lote 2: permissões do coordenador pela vigência, id da função, datas nas telas, CRM duplicado, 23 formulários, ASO com coordenador sobreposto, fuso IANA (migration 0080)                                                                                  | verde (run 42498719530)                                      |
-| #169 | aberta (merge do Carlos) | Lote 3: PCMSO assinado pelo coordenador da prévia, aprovação do plano imutável, plano preso aos riscos, ASO assinado só da prévia atual, examinador preservado, verificação de identidade sem pré-preenchimento, bypass dev, CRM no banco (migration 0081) | verde (run 42508402270, 2388 unitários e 1646 de integração) |
+| PR   | Merge                 | Conteúdo                                                                                                                                                                                                                                                   | CI                                                |
+| ---- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| #165 | `4325803`             | PGR externo em empresa só com Medicina (migration 0079)                                                                                                                                                                                                    | verde                                             |
+| #166 | `07ab5ca`             | Plano de exames: justificativa retomada                                                                                                                                                                                                                    | verde                                             |
+| #167 | `1db7d45`             | Lote 1: função/GES, coordenador vigente, CRM, erros aninhados, inclusão de exame, datas de documento                                                                                                                                                       | verde (run 42437454046)                           |
+| #168 | `d150ffe`             | Lote 2: permissões do coordenador pela vigência, id da função, datas nas telas, CRM duplicado, 23 formulários, ASO com coordenador sobreposto, fuso IANA (migration 0080)                                                                                  | verde (run 42498719530)                           |
+| #169 | `4434ed4`             | Lote 3: PCMSO assinado pelo coordenador da prévia, aprovação do plano imutável, plano preso aos riscos, ASO assinado só da prévia atual, examinador preservado, verificação de identidade sem pré-preenchimento, bypass dev, CRM no banco (migration 0081) | verde (run 42509538010)                           |
+| #170 | **pendente de merge** | Lote 4: vigência única de ASO e PCMSO assinados no banco (gatilho com trava do contexto, inclusive por SQL direto e sob concorrência); app falha fechado com legado ambíguo (migration 0082)                                                               | ver checks da #170 (verde exigido antes do merge) |
 
-**Migrations:** a última na `develop` é a `0080_batch2_coordinator_in_force_and_job_role`, com journal de 81 registros. A #169 traz a `0081_lote3_signed_coordinator_plan_guard_crm_trigger`, com journal de 82 registros, validada no migrator real local da mesma forma. Foi validada no migrator real local: base, upgrade, rerun, banco limpo idêntico e sem drift. O CD pós-#168 (run 42500934905) registrou `migrations applied successfully`. **O banco de homologação não foi lido diretamente.**
+**Migrations:** a última na `develop` é a `0081_lote3_signed_coordinator_plan_guard_crm_trigger`, com journal de 82 registros. O CD pós-#169 (run 42551678504) registrou `migrations applied successfully`. A PR do lote 4 traz a `0082_signed_documents_current_integrity` (journal de 83 registros), **pendente de merge**. As duas foram validadas no migrator real local: base, upgrade, rerun, banco limpo idêntico e sem drift. **O banco de homologação não foi lido diretamente.**
 
 ## 4. Matriz de aceite
 
@@ -92,17 +93,53 @@ Legenda:
 | Preenchimento salvo e recuperado sem perda | **A**                                               | #166 (justificativa), #167, #168 e lote 3 (examinador inativo preservado)                         |
 | Dados válidos chegam à geração documental  | **A**                                               | Composições testadas (ASO e PCMSO); a declaração de inexistência só chega com id de função válido |
 
-### MED-01 a MED-23
+### MED-01 a MED-23 (reconciliado no lote 4)
 
-O estado item a item está em `geral/12-MATRIZ-DE-ADERENCIA.md`, atualizado até o lote 3. Resumo:
+Fonte: `geral/12-MATRIZ-DE-ADERENCIA.md`, estado atual. Legenda:
 
-- **IMP:** MED-02, 03, 05, 07, 09, 15, 16, 19 e 22.
-- **PAR:**
-  - MED-01, 06, 08, 10, 11, 14, 17, 18, 20 e 23;
-  - MED-12 também é **FOR** (assinatura);
-  - MED-13: falta o canal digital do portal.
-- **PRO:** MED-04 (clínicas e portal).
-- **NOR:** MED-21.
+- **IMP:** implementado e testado;
+- **PAR:** parcial;
+- **PRO:** só no protótipo;
+- **NOR:** depende de requisito normativo ou clínico;
+- **FOR:** depende de fornecedor.
+
+Um item pode ter dois marcadores (por exemplo, IMP + NOR). A categoria principal é a primeira.
+
+| MED | Categoria | Evidência / pendência                                                                                                 |
+| --- | --------- | --------------------------------------------------------------------------------------------------------------------- |
+| 01  | IMP       | ASO assinado nos fluxos A e B, substituição e vigência única (`aso-signed.test.ts`). Assinatura pelo sistema: MED-12  |
+| 02  | IMP       | Coordenador por empresa e período, vigência (`pcmso-coordinators.test.ts`, `coordinator-permission-in-force.test.ts`) |
+| 03  | IMP + NOR | Riscos validados de PGR interno ou externo; conciliação de nomenclatura pendente                                      |
+| 04  | PRO       | Clínicas e status do exame: NOB-122                                                                                   |
+| 05  | IMP       | Tabela 27 e procedimentos do exame                                                                                    |
+| 06  | PAR       | Estados explícitos do exame e do documento                                                                            |
+| 07  | IMP       | Exame preso à empresa de origem                                                                                       |
+| 08  | PAR + NOR | Conteúdo mínimo coberto; modelos reais (NOB-93) ausentes                                                              |
+| 09  | IMP       | Inexistência de riscos por GES e função (id estável)                                                                  |
+| 10  | IMP + NOR | Apto ou inapto; restrição no prontuário; comunicação de adaptação pendente                                            |
+| 11  | IMP       | Imutabilidade, substituição e vigência única no banco (0082)                                                          |
+| 12  | PAR + FOR | Registro de documento assinado; assinatura e validação por provedor sem contrato                                      |
+| 13  | PAR       | Entrega comprovada; canal digital do portal (NOB-122)                                                                 |
+| 14  | PAR + FOR | Ciclo, relatório analítico e PCMSO assinado; emissão definitiva por provedor                                          |
+| 15  | IMP       | Proposta e plano aprovado pelo coordenador                                                                            |
+| 16  | IMP       | Lista C oficial (NTEP, informativa)                                                                                   |
+| 17  | PAR       | Segregação clínica; portal e perfil do RH (NOB-122)                                                                   |
+| 18  | PAR       | Sem exclusão automática; política de guarda e transferência                                                           |
+| 19  | IMP       | Prazos do demissional (NR-7 7.5.11)                                                                                   |
+| 20  | PAR + NOR | Regras 7.5.8–7.5.11; audiometria, espirometria e psicossocial dependem do médico                                      |
+| 21  | NOR       | Aceite e IA (NOB-130)                                                                                                 |
+| 22  | IMP       | Somente dados fictícios                                                                                               |
+| 23  | PAR       | Complementares: afastamentos implementados; PPP, fadiga, crônicos, teleconsulta, IA e portal ausentes                 |
+
+**Totais:** IMP 12 · PAR 9 · PRO 1 · NOR 1 = **23**.
+
+**Correção do resumo do lote 3:** ele contava 9 + 10 + 1 + 1 = 21.
+
+- MED-12 e MED-13 (ambas PAR) foram citadas à parte e ficaram fora da soma.
+- MED-10 (IMP + NOR) foi contada como parcial.
+- Pela matriz da época, o total certo era IMP 10 · PAR 11 · PRO 1 · NOR 1.
+
+No lote 4, MED-01 e MED-11 passaram de PAR para IMP. A pendência registrada nelas era a fatia NOB-163 (ASO assinado), que está entregue e testada; a vigência única no banco veio no lote 4.
 
 ## 5. O que funciona em código (não confundir com homologação)
 
@@ -211,7 +248,7 @@ O estado item a item está em `geral/12-MATRIZ-DE-ADERENCIA.md`, atualizado até
 | Prioridade | Item | Bloqueio |
 |---|---|---|
 | P1 | ASO de clínica externa (fluxo B) sem conferência contra a conclusão do exame | Decisão de produto e jurídica |
-| P1 | Backstop no banco para "um único documento assinado vigente" (ASO e PCMSO); hoje só o app garante | Implementável; ficou fora do lote |
+| ~~P1~~ | Backstop no banco para "um único documento assinado vigente" (ASO e PCMSO) | **Corrigido no lote 4 (0082), pendente de merge**. O legado com mais de uma vigente falha fechado e depende de regularização autorizada |
 | P1 | ASO pode sair sem os complementares do plano aprovado (hoje é aviso) | Decisão clínica |
 | P1 | Regularização de dados legados (declarações sem `job_role_id`, CRMs equivalentes, vínculos anteriores à 0069) | Acesso de leitura à homologação (NOB-162) |
 | P1 | Modelo documental final | NOB-93 |
@@ -233,7 +270,7 @@ O estado item a item está em `geral/12-MATRIZ-DE-ADERENCIA.md`, atualizado até
 ## 11. Estado para apresentação
 
 - **Código:** concluído para o escopo definido (jornadas de PCMSO e ASO); parcial onde depende de modelo, decisão clínica ou provedor.
-- **Testes locais e CI:** verdes até a #169 (run 42508402270).
+- **Testes locais e CI:** verdes até a #169 (run 42509538010). Lote 4: PR #170, pendente de merge (CI nos checks da PR).
 - **Homologação:** não realizada (NOB-162).
 - **Pendências externas:** NOB-93 (modelo), provedor de assinatura, verificador independente, credenciais de homologação e decisões clínicas.
 - **Produção:** **não está pronta.** Os gates NOB-158, NOB-159 e NOB-162 continuam bloqueando, e o documento sai como **prévia**, não como emissão válida.

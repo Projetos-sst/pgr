@@ -47,12 +47,16 @@ export function signedPcmsoFields(form: FormData) {
 /** PCMSOs assinados da empresa, o vigente e os alertas de desatualização. */
 export async function listSignedPcmsos(ctx: TenantContext, companyId: string) {
   const data = await repo.listSignedPcmsos(ctx, companyUuid(companyId));
-  const current = data.items.find((item) => item.replacedById === null) ?? null;
+  // Legado com mais de uma vigente (anterior à 0082): nenhuma é escolhida (falha fechada).
+  const currents = data.items.filter((item) => item.replacedById === null);
+  const ambiguous = currents.length > 1;
+  const current = currents.length === 1 ? currents[0] : null;
   return {
     items: data.items,
     currentId: current?.id ?? null,
     warnings: [
-      ...(data.riskBasisChanged ? (["risk_basis_changed"] as const) : []),
+      ...(ambiguous ? (["signed_current_ambiguous"] as const) : []),
+      ...(data.riskBasisChanged && current ? (["risk_basis_changed"] as const) : []),
       ...pcmsoSignedWarnings({
         current: current
           ? { ...current, previewCoordinator: data.currentPreviewCoordinator }

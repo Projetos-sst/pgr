@@ -979,6 +979,8 @@ REST: `GET|POST /api/v1/companies/{id}/pcmso-documents` · `GET /api/v1/pcmso-do
 
 ### PCMSO assinado (versão oficial) — NOB-166
 
+> **Vigência única (lote 4, migration 0082):** por empresa há no máximo **um** PCMSO assinado vigente; nova versão (inclusive de novo ciclo) é sempre substituição. Gatilho `pcmso_signed_current_guard` (AFTER INSERT, mesma trava do app). Conflito → `DUPLICATE` (409). Legado ambíguo → `currentId: null`, aviso `signed_current_ambiguous` e nova versão bloqueada até a regularização.
+
 O médico responsável pelo PCMSO (NR-7 7.4.1 c) responde pelo programa (7.5.4). A NR-7 **não** traz, para o PCMSO, uma exigência de assinatura documental idêntica à do ASO (7.5.19.1 g): o fluxo de assinatura e arquivo vem do requisito aprovado em MED-12. Migration `0075_pcmso_signed_documents`; core `server/medicine/pcmso-signed-core.ts`; regras puras em `domains/medicine/pcmso-signed.ts`.
 
 - **O que vira oficial:** o PDF da **prévia mais recente** da empresa (com o mesmo hash), ligada ao **plano de exames aprovado vigente**, assinado pelo **coordenador designado vigente** (CRM/UF do cadastro).
@@ -1408,6 +1410,8 @@ Ficam fora (NOB-110):
 - entrega digital pelo portal do trabalhador (NOB-122).
 
 ### ASO assinado (documento oficial) — NOB-163
+
+> **Vigência única (lote 4, migration 0082):** por exame há no máximo **um** ASO assinado vigente (o que nenhum outro substitui). O banco impõe a regra também para SQL direto da role da aplicação e sob concorrência: gatilho `aso_signed_current_guard` (AFTER INSERT, depois da RLS, com `pg_advisory_xact_lock` do exame). Nova raiz com vigente existente → `DUPLICATE` (409) "Já existe um documento assinado vigente…"; use a substituição. Legado com mais de uma vigente (anterior à 0082) → nenhuma é escolhida: listagem sem vigente, substituição e entrega → `DUPLICATE` (409) pedindo regularização autorizada. Quem não pode gravar continua recebendo `FORBIDDEN` antes do conflito.
 
 O ASO oficial é o PDF **assinado pelo médico examinador** (NR-7 7.5.19.1 g). O sistema **não assina** e não presume assinatura: registra o documento, o método e a conferência. Migration `0073_aso_signed_documents`; core `server/medicine/aso-signed-core.ts`; regras puras em `domains/medicine/aso-signed.ts`.
 

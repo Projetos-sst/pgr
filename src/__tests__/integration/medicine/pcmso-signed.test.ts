@@ -624,4 +624,112 @@ const restReq = (ctx: TenantContext, method = "GET", body?: FormData) =>
       code: "NOT_FOUND",
     });
   });
+
+  /**
+   * Lote 4 — vigência única do PCMSO assinado. Vigente = registro que nenhum outro substitui, por
+   * empresa (a cadeia é da empresa: nova versão, inclusive de novo ciclo, substitui a anterior com
+   * tipo de mudança). Como no ASO, o banco recusa uma segunda raiz, inclusive por SQL direto e sob
+   * concorrência; com legado de duas vigentes, o app não escolhe uma.
+   */
+  describe("vigência única do PCMSO assinado (lote 4)", () => {
+    const forgeRoot = (
+      client: postgres.Sql,
+      v: { id: string; contentSha256: string; examPlanId: string },
+      holdMs = 0,
+    ) =>
+      client.begin(async (tx) => {
+        await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', 'doctor', true)`;
+        await tx`insert into pcmso_signed_documents (id, org_id, company_id, preview_document_id, preview_sha256, exam_plan_id,
+            origin, signature_method, signer_name, signer_registration, signer_uf, signed_on, verification_reference,
+            storage_path, file_sha256, size_bytes, registered_by)
+          values (gen_random_uuid(), 'org_a', ${I.companyA}, ${v.id}, ${v.contentSha256}, ${v.examPlanId}, 'coordinator',
+            'icp_brasil', 'Dra. Coordenadora Fictícia', '61001', 'MA', ${today}, 'Forjado fictício',
+            ${"org_a/x/" + Math.random()}, ${"a".repeat(64)}, 10, 'doctor')`;
+        if (holdMs) await tx`select pg_sleep(${holdMs / 1000})`;
+      });
+    const count = async () =>
+      Number(
+        (
+          await admin`select count(*)::int as n from pcmso_signed_documents where company_id=${I.companyA}`
+        )[0].n,
+      );
+    const toggleGuard = (on: boolean) =>
+      admin.unsafe(
+        `do $do$ begin
+          if exists (select 1 from pg_trigger where tgname = 'pcmso_signed_current_guard')
+          then alter table public.pcmso_signed_documents ${on ? "enable" : "disable"} trigger pcmso_signed_current_guard;
+          end if; end $do$`,
+      );
+
+    it("SQL direto: o coordenador não cria segunda versão raiz quando já há PCMSO vigente", async () => {
+      await approvedPlan();
+      const v1 = await preview();
+      await registerSignedPcmso(doctor, I.companyA, fields(v1.id), pdf());
+      await expect(forgeRoot(runtime, v1)).rejects.toMatchObject({
+        code: "23505",
+        constraint_name: "pcmso_signed_current_unique",
+      });
+      expect(await count()).toBe(1);
+    });
+
+    it("concorrência: duas versões raiz simultâneas, em conexões separadas → só uma é gravada", async () => {
+      await approvedPlan();
+      const v1 = await preview();
+      const url = process.env.INTEGRATION_APP_RUNTIME_URL!;
+      const pg = (await import("postgres")).default;
+      const a = pg(url, { max: 1, prepare: false });
+      const b = pg(url, { max: 1, prepare: false });
+      try {
+        const results = await Promise.allSettled([
+          forgeRoot(a, v1, 400),
+          forgeRoot(b, v1, 400),
+        ]);
+        expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+        expect(await count()).toBe(1);
+      } finally {
+        await a.end({ timeout: 5 });
+        await b.end({ timeout: 5 });
+      }
+    });
+
+    it("legado com duas vigentes: nenhuma é escolhida e a substituição falha fechado; nada é apagado", async () => {
+      await approvedPlan();
+      const v1 = await preview();
+      await toggleGuard(false);
+      try {
+        for (let i = 0; i < 2; i++)
+          await admin`insert into pcmso_signed_documents (id, org_id, company_id, preview_document_id, preview_sha256, exam_plan_id,
+              origin, signature_method, signer_name, signer_registration, signer_uf, signed_on, verification_reference,
+              storage_path, file_sha256, size_bytes, registered_by)
+            values (gen_random_uuid(), 'org_a', ${I.companyA}, ${v1.id}, ${v1.contentSha256}, ${v1.examPlanId}, 'coordinator',
+              'icp_brasil', 'Dra. Coordenadora Fictícia', '61001', 'MA', ${today}, 'Legado fictício',
+              ${"org_a/legado/" + Math.random()}, ${"d".repeat(64)}, 10, 'doctor')`;
+      } finally {
+        await toggleGuard(true);
+      }
+      const list = await listSignedPcmsos(staff, I.companyA);
+      expect(list.items).toHaveLength(2);
+      expect(list.currentId).toBeNull();
+      expect(list.warnings).toContain("signed_current_ambiguous");
+      const [one] =
+        await admin`select id from pcmso_signed_documents where company_id=${I.companyA} limit 1`;
+      await expect(
+        registerSignedPcmso(
+          doctor,
+          I.companyA,
+          {
+            ...fields(v1.id),
+            replacesId: one.id,
+            changeKind: "correction",
+            replaceReason: "Correção fictícia de legado.",
+          },
+          pdf("v2"),
+        ),
+      ).rejects.toMatchObject({
+        code: "DUPLICATE",
+        message: expect.stringMatching(/mais de um documento assinado vigente/),
+      });
+      expect(await count()).toBe(2);
+    });
+  });
 });
