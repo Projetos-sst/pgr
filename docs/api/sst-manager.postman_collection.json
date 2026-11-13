@@ -389,6 +389,21 @@
     {
       "key": "pgrFinalIssueId",
       "value": ""
+    },
+    {
+      "key": "commercialOfferVersionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "commercialCustomerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "commercialContractId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -13738,6 +13753,242 @@
             ],
             "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/retention-exports",
             "description": "Histórico só de inserção, incluindo tentativas com falha."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial — clientes, catálogo e contratação (NOB-114)",
+      "description": "Desligado por padrão: exige COMMERCIAL_CATALOG_ENABLED=true no servidor. Catálogo fictício (código ficticio-*) só fora de produção, semeado por `npx tsx scripts/commercial-catalog.ts seed-fictitious`. Nenhuma requisição cobra, chama o Stripe ou altera licença.",
+      "item": [
+        {
+          "name": "Listar catálogo à venda",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-offers",
+            "description": "Versão vigente por código, com itens e preço em centavos. Copie um `id` para {{commercialOfferVersionId}}."
+          }
+        },
+        {
+          "name": "Cadastrar consultoria como pagadora",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"office\",\n  \"legalName\": \"Consultoria de Teste Ltda\",\n  \"taxId\": \"11444777000161\",\n  \"billingEmail\": \"financeiro@consultoria.test\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-customers",
+            "description": "201. Uma consultoria por escritório; repetir → 409."
+          }
+        },
+        {
+          "name": "Cadastrar cliente direto (empresa pagadora)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"company\",\n  \"companyId\": \"{{companyId}}\",\n  \"billingEmail\": \"financeiro@empresa.test\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-customers",
+            "description": "201. Razão social e CNPJ vêm do cadastro da empresa. Copie o `id` para {{commercialCustomerId}}."
+          }
+        },
+        {
+          "name": "Listar clientes comerciais",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-customers?kind=company&status=active&page=1&pageSize=20",
+            "description": "{rows,total}. Filtros opcionais kind e status."
+          }
+        },
+        {
+          "name": "Consultar cliente comercial",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-customers/{{commercialCustomerId}}",
+            "description": "404 para cliente de outro escritório."
+          }
+        },
+        {
+          "name": "Alterar e-mail de cobrança e situação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"billingEmail\": \"cobranca@empresa.test\",\n  \"status\": \"active\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-customers/{{commercialCustomerId}}",
+            "description": "Sem DELETE: use status inactive."
+          }
+        },
+        {
+          "name": "Registrar contratação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{commercialCustomerId}}\",\n  \"offerVersionId\": \"{{commercialOfferVersionId}}\",\n  \"companyIds\": [\n    \"{{companyId}}\"\n  ],\n  \"termStart\": \"2026-11-13\",\n  \"termEnd\": null\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-contracts",
+            "description": "201. O preço é copiado da versão vigente; versão fora de venda → 422. Copie o `id` para {{commercialContractId}}."
+          }
+        },
+        {
+          "name": "Listar contratações",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-contracts?customerId={{commercialCustomerId}}",
+            "description": "{rows,total}, da mais nova para a mais antiga."
+          }
+        },
+        {
+          "name": "Consultar contratação",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-contracts/{{commercialContractId}}",
+            "description": "Cabeçalho, items[] e companyIds[] do momento da contratação."
           }
         }
       ]
