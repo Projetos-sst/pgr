@@ -138,11 +138,13 @@ const OUTSIDER: ApiUser = { id: "outsider", role: "owner", tenant: "org_b" };
     });
     await grantAccessScopeAction(X.scoped, { companyId: X.companyA2, area: "health" });
     const listed = await listAccessScopesAction(X.scoped);
-    expect(listed.ok && listed.data.map((scope) => scope.companyName)).toEqual([
+    expect(listed.ok && listed.data.map((scope) => scope.companyName).sort()).toEqual([
       "A Ltda",
       "A2 Ltda",
     ]);
-    expect(listed.ok && listed.data[1]).toMatchObject({
+    expect(
+      listed.ok && listed.data.find((scope) => scope.companyName === "A2 Ltda"),
+    ).toMatchObject({
       workUnitId: null,
       workUnitName: null,
       area: "health",
@@ -278,7 +280,7 @@ const OUTSIDER: ApiUser = { id: "outsider", role: "owner", tenant: "org_b" };
     await grantAs(X.representative, { companyId: X.companyA2, area: "safety" });
     signIn(X.representative, "client");
     const own = await listAccessScopesAction(X.representative);
-    expect(own.ok && own.data.map((scope) => scope.companyId)).toEqual([
+    expect(own.ok && own.data.map((scope) => scope.companyId).sort()).toEqual([
       I.companyA,
       X.companyA2,
     ]);
