@@ -49,7 +49,15 @@ Entregue nesta etapa (migration `0090_commercial_catalog_and_contracts`):
 
 **Fonte da cobrança (alvo).** O provedor. O banco guarda o espelho, nunca decide se algo foi pago.
 
-Tabelas previstas para as próximas etapas (nomes propostos, nenhuma criada):
+**Etapa 2 entregue** (migration `0091_commercial_billing`; detalhe em `nob-132-133-116-checkout-eventos-licencas.md`). As tabelas das NOB-132, 133 e 116 abaixo foram criadas com os nomes previstos. O que saiu diferente do previsto, e por quê:
+
+- **`billing_checkout_sessions` guarda o pagador e os direitos de uso do contrato** (`customer_id`, `targets`). As tabelas de contrato da etapa 1 só são lidas por administrador com sessão, e o webhook não tem sessão. Copiar no checkout evitou afrouxar a policy da etapa 1.
+- **Espelhos só aceitam escrita sem usuário na sessão.** Nem o owner grava pagamento, assinatura, direito de uso ou fatura. O plano previa RLS por escritório; a restrição a mais impede forjar estado de pagamento.
+- **`commercial_entitlements.applied`** registra se a licença foi ligada pela contratação. É o que separa licença concedida de legado ou cortesia.
+- **Função `SECURITY DEFINER` `commercial_reconcile_grant`.** É a única porta que escreve em `company_modules` e `orgs.plan` pelo fluxo comercial. Foi a alternativa a alterar policies existentes e `with-org.ts`, que o plano mandava não trazer sem revisão.
+- **`billing_invoice_items` não copia os itens do contrato.** Guarda as linhas que o provedor cobrou, classificadas pelo preço do provedor de cada linha. O que foi cobrado pode diferir do contrato (quantidade, crédito, imposto).
+
+Tabelas previstas (as das NOB-132, 133 e 116 já criadas; as demais, nomes propostos):
 
 | Etapa   | Tabela ou coluna                                                             | Para quê                                                                                              |
 | ------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -88,7 +96,7 @@ Nenhuma PR do simulador entra por cherry-pick: as migrations 0060 a 0068 delas c
 ## Ordem de implementação
 
 1. **NOB-131 e NOB-114.** Feito nesta etapa: contratos de domínio, catálogo versionado, clientes e contratação com cópia imutável.
-2. **NOB-132, NOB-133, NOB-116.** Checkout por contrato, caixa de eventos, assinatura espelhada, direito de uso e cobrança separada por serviço. Só em modo de teste do provedor.
+2. **NOB-132, NOB-133, NOB-116.** Feito, sem validação contra o provedor (não há credencial de teste). Checkout por contrato, caixa de eventos, assinatura espelhada, direito de uso e cobrança separada por serviço. Só em modo de teste do provedor.
 3. **NOB-117, NOB-118, NOB-119.** Avulsos, teste e interesse. Pode avançar com catálogo fictício.
 4. **NOB-134 a NOB-137.** Telas de contratação, assinatura, faturas e administração.
 5. **NOB-138 e NOB-115.** Homologação no ambiente de teste e aceite integrado.
@@ -100,7 +108,8 @@ Do comercial (detalhe em `nob-131-oferta-e-provedor.md`): catálogo e valores, p
 Técnicas, para as próximas etapas:
 
 1. Quem é o operador da plataforma que publica preço e vê assinaturas de todos os escritórios (NOB-137). Hoje é quem tem a conexão owner.
-2. Como tratar o Pro legado (`orgs.plan = 'pro'` sem contrato) e as empresas com serviço ligado à mão quando a reconciliação da NOB-133 entrar. Proposta: nunca revogar o que não tem direito de uso registrado.
-3. Como calcular o valor cobrado a partir de unidade e cota (por empresa, por funcionário, faixas). O contrato guarda valor unitário e empresas; não guarda quantidade nem total.
+2. Resolvido na NOB-133: Pro legado e serviço ligado à mão nunca são revogados (direito de uso com `applied = false`). Segue aberto como o Pro novo convive com a assinatura antiga do Pro no provedor.
+3. Como calcular o valor cobrado por funcionário, por documento e por faixa. A NOB-132 cobra 1 por escritório e 1 por empresa do contrato; as outras unidades são recusadas no checkout.
 4. Se o cadastro da empresa deve listar clientes e contratos comerciais em `/companies/{id}/dependents`. Hoje a exclusão de uma empresa com cliente ou contrato comercial é recusada pela chave estrangeira.
 5. Se colaborador pode ler contratos. Hoje só o owner lê e grava.
+6. Política de atraso: hoje sem carência (`past_due` suspende na hora). Carência exige decisão comercial e um job agendado.

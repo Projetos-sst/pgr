@@ -404,6 +404,11 @@
       "key": "commercialContractId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "commercialInvoiceId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -13989,6 +13994,108 @@
             ],
             "url": "{{baseUrl}}/api/v1/commercial-contracts/{{commercialContractId}}",
             "description": "Cabeçalho, items[] e companyIds[] do momento da contratação."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial — checkout, assinatura e faturas (NOB-132/133/116)",
+      "description": "Exige COMMERCIAL_CATALOG_ENABLED=true e owner. O checkout só chama o provedor com chave de teste (sk_test_); nenhuma cobrança real. Sem preço do provedor cadastrado para o item (comando map-price), o checkout responde 422.",
+      "item": [
+        {
+          "name": "Abrir checkout hospedado da contratação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotencyKey\": \"checkout-postman-0001\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-contracts/{{commercialContractId}}/checkout",
+            "description": "201 com {id, url, status, expiresAt}. Repetir a mesma chave devolve a mesma sessão. 422 item sem preço no provedor; 409 checkout aberto ou assinatura já registrada; 503 sem chave de teste do provedor."
+          }
+        },
+        {
+          "name": "Consultar assinatura e direitos de uso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-contracts/{{commercialContractId}}/billing",
+            "description": "Checkout, assinatura espelhada, entitlements[] com motivo e política de atraso."
+          }
+        },
+        {
+          "name": "Listar faturas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-invoices?contractId={{commercialContractId}}&page=1&pageSize=20",
+            "description": "{rows,total}; cada fatura traz totalsByService (pgr, medicine, pro, one_off, unclassified). Copie um `id` para {{commercialInvoiceId}}."
+          }
+        },
+        {
+          "name": "Consultar fatura com itens por serviço",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-invoices/{{commercialInvoiceId}}",
+            "description": "Cabeçalho, totalsByService e items[]. 404 para fatura de outro escritório."
           }
         }
       ]
