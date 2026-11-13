@@ -401,6 +401,11 @@
       "type": "string"
     },
     {
+      "key": "commercialInterestId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "commercialContractId",
       "value": "",
       "type": "string"
@@ -13994,6 +13999,86 @@
             ],
             "url": "{{baseUrl}}/api/v1/commercial-contracts/{{commercialContractId}}",
             "description": "Cabeçalho, items[] e companyIds[] do momento da contratação."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial — interesse por empresa (NOB-119)",
+      "description": "Exige COMMERCIAL_CATALOG_ENABLED=true. Registrar: owner e collaborator. Listar e marcar como visto: só owner. Caixa interna: nada é enviado por WhatsApp, e-mail ou SMS e o payload não aceita canal externo.",
+      "item": [
+        {
+          "name": "Registrar interesse comercial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"service\": \"pgr\",\n  \"message\": \"Quero contratar o PGR para a unidade nova.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-interests",
+            "description": "201 ao criar; 200 se já existe interesse aberto da empresa para o serviço (devolve o existente, mensagem original preservada). service: pgr|medicine|pro|one_off. Copie interest.id para {{commercialInterestId}}."
+          }
+        },
+        {
+          "name": "Listar interesses comerciais",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-interests?companyId={{companyId}}&status=open&page=1&pageSize=20",
+            "description": "{rows,total}. Filtros opcionais companyId e status (open|seen). Só owner."
+          }
+        },
+        {
+          "name": "Marcar interesse como visto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-interests/{{commercialInterestId}}/seen",
+            "description": "200, idempotente: seenAt e seenBy não mudam na segunda chamada. Só owner; interesse de outro escritório → 404."
           }
         }
       ]

@@ -9,6 +9,7 @@ import { db } from "@/shared/db";
 import { listPublishedOffers } from "@/shared/db/repositories/commercial-catalog";
 import * as contractsRepo from "@/shared/db/repositories/commercial-contracts";
 import * as customersRepo from "@/shared/db/repositories/commercial-customers";
+import * as interestsRepo from "@/shared/db/repositories/commercial-interests";
 import {
   contractInputSchema,
   customerInputSchema,
@@ -16,6 +17,11 @@ import {
   customerStatusSchema,
   customerUpdateSchema,
 } from "@/shared/domains/commercial/contract";
+import {
+  interestFiltersSchema,
+  interestIdSchema,
+  interestInputSchema,
+} from "@/shared/domains/commercial/interest";
 import {
   isCommercialCatalogEnabledFor,
   sellableOffers,
@@ -100,6 +106,25 @@ export async function listContracts(ctx: TenantContext, filters: unknown) {
 export async function getContract(ctx: TenantContext, id: string) {
   requireFinancialOwner(ctx);
   return contractsRepo.getContract(ctx, contractId.parse(id));
+}
+
+export async function registerInterest(ctx: TenantContext, input: unknown) {
+  requireCommercialSurface();
+  if (ctx.role !== "owner" && ctx.role !== "collaborator")
+    throw new ForbiddenError(
+      "Apenas a equipe do escritório registra interesse comercial.",
+    );
+  return interestsRepo.registerInterest(ctx, interestInputSchema.parse(input));
+}
+
+export async function listInterests(ctx: TenantContext, filters: unknown) {
+  requireFinancialOwner(ctx);
+  return interestsRepo.listInterests(ctx, interestFiltersSchema.parse(filters));
+}
+
+export async function markInterestSeen(ctx: TenantContext, id: string) {
+  requireFinancialOwner(ctx);
+  return interestsRepo.markInterestSeen(ctx, interestIdSchema.parse(id));
 }
 
 export async function registerContract(ctx: TenantContext, input: unknown) {

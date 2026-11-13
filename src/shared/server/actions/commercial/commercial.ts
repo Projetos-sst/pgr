@@ -36,6 +36,28 @@ export async function updateCommercialCustomerAction(id: string, input: unknown)
   );
 }
 
+export async function registerCommercialInterestAction(input: unknown) {
+  return officeAction(
+    "commercial.interest.create",
+    (ctx) => core.registerInterest(ctx, input),
+    { audit: true },
+  );
+}
+
+export async function listCommercialInterestsAction(filters: unknown = {}) {
+  return officeAction("commercial.interest.list", (ctx) =>
+    core.listInterests(ctx, filters),
+  );
+}
+
+export async function markCommercialInterestSeenAction(id: string) {
+  return officeAction(
+    "commercial.interest.seen",
+    (ctx) => core.markInterestSeen(ctx, id),
+    { audit: true },
+  );
+}
+
 export async function listCommercialContractsAction(filters: unknown = {}) {
   return officeAction("commercial.contract.list", (ctx) =>
     core.listContracts(ctx, filters),

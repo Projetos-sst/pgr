@@ -19,6 +19,10 @@ import {
 } from "drizzle-orm/pg-core";
 
 import type { CustomerKind, CustomerStatus } from "@/shared/domains/commercial/contract";
+import {
+  INTEREST_MESSAGE_MAX_LENGTH,
+  type InterestService,
+} from "@/shared/domains/commercial/interest";
 import type {
   BillingPeriod,
   CommercialService,
@@ -341,6 +345,65 @@ export const commercialContractCompanies = pgTable(
       for: "select",
       to: appRuntimeRole,
       using: actorCompanyScope(t.companyId),
+    }),
+  ],
+).enableRLS();
+
+export const commercialInterests = pgTable(
+  "commercial_interests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id").notNull(),
+    service: text("service").$type<InterestService>().notNull(),
+    message: text("message"),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    seenAt: timestamp("seen_at", { withTimezone: true }),
+    seenBy: text("seen_by"),
+  },
+  (t) => [
+    unique("uq_commercial_interests_id_org").on(t.id, t.orgId),
+    uniqueIndex("uq_commercial_interests_open")
+      .on(t.orgId, t.companyId, t.service)
+      .where(sql`${t.seenAt} is null`),
+    index("idx_commercial_interests_org_created").on(t.orgId, t.createdAt),
+    foreignKey({
+      name: "commercial_interests_company_fk",
+      columns: [t.companyId, t.orgId],
+      foreignColumns: [companies.id, companies.orgId],
+    }),
+    check(
+      "commercial_interests_service",
+      sql`${t.service} in ('pgr','medicine','pro','one_off')`,
+    ),
+    check(
+      "commercial_interests_message",
+      sql`${t.message} is null or (btrim(${t.message}) <> '' and char_length(${t.message}) <= ${sql.raw(String(INTEREST_MESSAGE_MAX_LENGTH))})`,
+    ),
+    check(
+      "commercial_interests_seen",
+      sql`(${t.seenAt} is null) = (${t.seenBy} is null)`,
+    ),
+    pgPolicy("commercial_interests_tenant", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenant,
+      withCheck: tenant,
+    }),
+    pgPolicy("commercial_interests_actor_scope", {
+      as: "restrictive",
+      for: "select",
+      to: appRuntimeRole,
+      using: actorCompanyScope(t.companyId),
+    }),
+    pgPolicy("commercial_interests_actor", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${t.createdBy}=${actor} and ${actorCompanyScope(t.companyId)}`,
     }),
   ],
 ).enableRLS();
