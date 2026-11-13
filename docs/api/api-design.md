@@ -244,6 +244,17 @@ description }] }` na voz imperativa, sem repetir os itens que a OS já tem. **N�
   regras de OS assinada (imutável) e estado terminal — um caminho de escrita próprio duplicaria essas
   guardas. O trabalhador designado entra apenas pelo **título da função**: nome, CPF e matrícula nunca
   saem do servidor.
+- **`/epi-stock/{id}/movements`** (NOB-180, regra **provisória** — aguarda o responsável de SST):
+  `POST` com `kind: "entry"` registra a compra (`quantity`, `movementDate`, `invoiceNumber?`,
+  `invoiceDate?`, `batch?`) e `kind: "exit"` registra ajuste ou descarte; `GET` devolve o histórico
+  do item com o lote e o saldo resultante. A **entrada por compra** só é aceita quando o EPI do
+  catálogo tem `ca` e `caValidUntil` informados e `caValidUntil >= hoje` (fuso `America/Sao_Paulo`,
+  o dia do vencimento ainda vale). CA vencido ou não informado → `422 VALIDATION` com o motivo e
+  **nada é gravado**; `movementDate` não entra na comparação. A mesma recusa vale para o
+  `initialQuantity` de `POST /epi-stock`. Itens `machine`/`supply` não exigem CA. Saída, entrega
+  (`/epi-deliveries`) e devolução **não** verificam o CA: o que já está no estoque segue disponível
+  (SEG-31). A regra lê só o cadastro do EPI, nunca a base CAEPI. Cenários em
+  `docs/planning/nob-180-epi-ca-vencido.md`.
 - **`/epi-deliveries`** (fatia 012): list filtra por `employeeId` + `search` (nome do funcionário).
   Create: `{ employeeId, deliveryDate, items: [{ stockId, quantity }] }` → `201` com a baixa
   aplicada por item; qualquer item sem saldo → `422 INSUFFICIENT_STOCK` com **rollback total**.

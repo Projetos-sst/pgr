@@ -7980,6 +7980,92 @@
       ]
     },
     {
+      "name": "Estoque de EPI — movimentos (NOB-180)",
+      "item": [
+        {
+          "name": "POST /epi-stock/:id/movements (entrada por compra; CA vencido -> 422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-stock/{{stockId}}/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-stock", "{{stockId}}", "movements"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"entry\",\n  \"quantity\": 10,\n  \"movementDate\": \"2026-11-13\",\n  \"invoiceNumber\": \"NF-100\",\n  \"invoiceDate\": \"2026-11-10\",\n  \"batch\": \"LOTE-01\"\n}"
+            },
+            "description": "Entrada por compra só é aceita quando o EPI do catálogo tem CA e validade do CA informados e a validade é hoje ou posterior (America/Sao_Paulo). CA vencido ou não informado -> 422 VALIDATION com o motivo. Máquina e insumo não exigem CA. Regra provisória, aguarda confirmação do responsável de SST (NOB-180)."
+          }
+        },
+        {
+          "name": "POST /epi-stock/:id/movements (saída: ajuste ou descarte)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-stock/{{stockId}}/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-stock", "{{stockId}}", "movements"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"exit\",\n  \"type\": \"discard\",\n  \"quantity\": 1,\n  \"movementDate\": \"2026-11-13\"\n}"
+            },
+            "description": "Saída não verifica o CA. Saldo insuficiente -> 422 INSUFFICIENT_STOCK."
+          }
+        },
+        {
+          "name": "GET /epi-stock/:id/movements (histórico por item, com lote)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-stock/{{stockId}}/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-stock", "{{stockId}}", "movements"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Entrega de EPI",
       "item": [
         {
