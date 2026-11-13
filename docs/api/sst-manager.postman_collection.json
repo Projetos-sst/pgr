@@ -364,6 +364,10 @@
     {
       "key": "analyticalReportEventId",
       "value": ""
+    },
+    {
+      "key": "accessScopeId",
+      "value": "<id retornado no POST de escopo>"
     }
   ],
   "item": [
@@ -12967,6 +12971,90 @@
               "query": []
             },
             "description": "Classe do CNAE cadastrado da empresa (Medicina habilitada). status: ok | missing_cnae | invalid_cnae."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Escopos de acesso (NOB-175)",
+      "item": [
+        {
+          "name": "Listar escopos do membro",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/team/{{memberUserId}}/access-scopes"
+          }
+        },
+        {
+          "name": "Conceder escopo (owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/team/{{memberUserId}}/access-scopes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"area\": \"safety\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Revogar escopo (owner)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/team/{{memberUserId}}/access-scopes/{{accessScopeId}}"
           }
         }
       ]
