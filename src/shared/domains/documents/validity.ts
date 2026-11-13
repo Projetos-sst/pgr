@@ -34,6 +34,7 @@ export const documentRelatedEntityTypeSchema = z.enum([
   "responsible_technician",
   "ges",
   "risk",
+  "machine_installation",
 ]);
 
 export type DocumentRelatedEntityType = z.infer<typeof documentRelatedEntityTypeSchema>;

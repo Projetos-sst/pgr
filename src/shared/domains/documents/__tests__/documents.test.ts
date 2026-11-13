@@ -1,6 +1,8 @@
 import {
+  MACHINE_ATTACHMENT_TYPES,
   documentMetadataSchema,
   downloadFileName,
+  isMachineAttachmentType,
   moveDocumentSchema,
   parseRelatedEntityFilter,
   toDocumentListItem,
@@ -211,5 +213,21 @@ describe("parseRelatedEntityFilter (filtro de listagem por vínculo)", () => {
   it("ignora id que não é UUID — evitaria 22P02 (500) na coluna uuid", () => {
     expect(parseRelatedEntityFilter("pgr", "abc")).toEqual({});
     expect(parseRelatedEntityFilter("pgr", "'; drop table documents; --")).toEqual({});
+  });
+});
+
+describe("anexos de máquina (SEG-22)", () => {
+  it("aceita o vínculo com máquina e reconhece só os tipos confirmados", () => {
+    const parsed = documentMetadataSchema.parse({
+      name: "Manual da betoneira",
+      docType: "Manual",
+      relatedEntityType: "machine_installation",
+      relatedEntityId: PGR_ID,
+    });
+    expect(parsed.relatedEntityType).toBe("machine_installation");
+    expect(MACHINE_ATTACHMENT_TYPES).toHaveLength(9);
+    expect(MACHINE_ATTACHMENT_TYPES.every(isMachineAttachmentType)).toBe(true);
+    expect(isMachineAttachmentType("Contrato")).toBe(false);
+    expect(isMachineAttachmentType("manual")).toBe(false);
   });
 });

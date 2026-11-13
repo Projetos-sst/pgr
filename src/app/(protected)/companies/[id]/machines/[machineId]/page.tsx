@@ -7,7 +7,18 @@ import { PageHeader } from "../../../../_ui/list";
 import { MachineForm, ArchiveMachine } from "../form";
 import Link from "next/link";
 import { resolvePageParams } from "@/shared/pagination";
+import { DocumentAttachmentsSection } from "../../../../documents/_components/document-attachments-section";
 export const dynamic = "force-dynamic";
+
+function machineAttachHref(companyId: string, machineId: string, name: string): string {
+  const query = new URLSearchParams({
+    relatedEntityType: "machine_installation",
+    relatedEntityId: machineId,
+    returnTo: `/companies/${companyId}/machines/${machineId}`,
+    returnLabel: name,
+  });
+  return `/documents/new?${query}`;
+}
 export default async function MachinePage({
   params,
   searchParams,
@@ -53,6 +64,13 @@ export default async function MachinePage({
       ) : (
         <p>Este vínculo foi retirado. Os dados anteriores permanecem no histórico.</p>
       )}
+      <DocumentAttachmentsSection
+        relatedEntityType="machine_installation"
+        relatedEntityId={machineId}
+        attachHref={machineAttachHref(id, machineId, installation.catalogName)}
+        title="Anexos da máquina"
+        description="Manual, laudo, ART, inspeções e documentos de manutenção desta máquina."
+      />
       <section>
         <h2 className="font-semibold">Histórico de alterações</h2>
         {history.rows.map((e) => (

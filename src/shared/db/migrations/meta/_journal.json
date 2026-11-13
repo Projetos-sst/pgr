@@ -617,6 +617,13 @@
       "when": 1794602920032,
       "tag": "0087_control_level_substitution",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1794603740060,
+      "tag": "0088_machine_attachment_scope",
+      "breakpoints": true
     }
   ]
 }

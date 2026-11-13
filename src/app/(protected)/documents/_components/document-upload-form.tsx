@@ -4,7 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 
 import type { FolderNode } from "@/shared/domains/documents/folders";
-import { SUGGESTED_DOC_TYPES } from "@/shared/domains/documents/documents";
+import {
+  MACHINE_ATTACHMENT_TYPES,
+  SUGGESTED_DOC_TYPES,
+} from "@/shared/domains/documents/documents";
 import { createDocumentAction } from "@/shared/server/actions/documents/documents";
 
 import {
@@ -23,7 +26,13 @@ const LINK_CHECKBOX_LABEL: Record<string, string> = {
   responsible_technician: "Vincular à ART do Responsável Técnico",
   ges: "Vincular a este GES",
   risk: "Vincular a este risco",
+  machine_installation: "Vincular a esta máquina",
 };
+
+const MACHINE_ATTACHMENT_OPTIONS: Option[] = MACHINE_ATTACHMENT_TYPES.map((type) => ({
+  value: type,
+  label: type,
+}));
 
 export function DocumentUploadForm({
   folders,
@@ -105,17 +114,27 @@ export function DocumentUploadForm({
       </label>
 
       <TextField label="Nome" name="name" required />
-      <TextField
-        label="Tipo do documento"
-        name="docType"
-        required
-        defaultValue={defaultDocType ?? ""}
-        suggestions={
-          defaultDocType && !SUGGESTED_DOC_TYPES.includes(defaultDocType as never)
-            ? [defaultDocType, ...SUGGESTED_DOC_TYPES]
-            : SUGGESTED_DOC_TYPES
-        }
-      />
+      {defaultRelatedEntityType === "machine_installation" ? (
+        <SelectField
+          label="Tipo do documento"
+          name="docType"
+          required
+          defaultValue={defaultDocType}
+          options={MACHINE_ATTACHMENT_OPTIONS}
+        />
+      ) : (
+        <TextField
+          label="Tipo do documento"
+          name="docType"
+          required
+          defaultValue={defaultDocType ?? ""}
+          suggestions={
+            defaultDocType && !SUGGESTED_DOC_TYPES.some((type) => type === defaultDocType)
+              ? [defaultDocType, ...SUGGESTED_DOC_TYPES]
+              : SUGGESTED_DOC_TYPES
+          }
+        />
+      )}
       <TextField label="Validade (opcional)" name="validUntil" type="date" />
 
       <SelectField
