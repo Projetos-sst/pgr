@@ -11,6 +11,7 @@ jest.mock("@/shared/db/env", () => ({
 }));
 
 import * as repo from "@/shared/db/repositories/psychosocial-campaigns";
+import { MIN_PSYCHOSOCIAL_GROUP_SIZE } from "@/shared/domains/psychosocial/anonymity";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 
@@ -184,12 +185,19 @@ async function tokenOf(id: string): Promise<string> {
     });
     await repo.setCampaignStatus("org_a", id, "active");
     const token = await tokenOf(id);
-    // 3 respostas altas (média 5 > threshold 3)
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < MIN_PSYCHOSOCIAL_GROUP_SIZE - 1; i++) {
       await repo.submitPublicResponse(id, token, {
         answers: [{ questionId: q.id, valueInt: 5, valueText: null }],
       });
     }
+
+    const hidden = await repo.getCampaignStats("org_a", id);
+    expect(hidden?.questions[0]).toMatchObject({ average: null, suppressed: true });
+    expect(await repo.deriveRisksForCampaign("org_a", id)).toEqual([]);
+
+    await repo.submitPublicResponse(id, token, {
+      answers: [{ questionId: q.id, valueInt: 5, valueText: null }],
+    });
 
     const derived = await repo.deriveRisksForCampaign("org_a", id);
     expect(derived.length).toBe(1);

@@ -16,6 +16,7 @@ import {
   listWorkUnitOptionsAction,
 } from "@/shared/server/actions/psychosocial/campaigns";
 
+import { MIN_PSYCHOSOCIAL_GROUP_SIZE } from "@/shared/domains/psychosocial/anonymity";
 import type { PsychosocialCampaign } from "@/shared/domains/psychosocial/campaigns";
 
 import { PageHeader } from "../../../_ui/list";
@@ -169,6 +170,10 @@ async function DashboardTab({ id }: { id: string }) {
       <p className="text-text-subtle text-sm">
         {responseCount} participante(s) · escala Likert 1–5 (maior = mais exposição)
       </p>
+      <p className="text-text-subtle text-xs">
+        Para preservar o anonimato, o resultado de uma pergunta só aparece a partir de{" "}
+        {MIN_PSYCHOSOCIAL_GROUP_SIZE} respostas.
+      </p>
       <ul className="flex flex-col gap-3">
         {questions.map((q) => (
           <li key={q.questionId} className="flex flex-col gap-1">
@@ -188,7 +193,9 @@ async function DashboardTab({ id }: { id: string }) {
               </div>
             ) : (
               <span className="text-text-subtle text-xs">
-                {questionTypeLabel(q.questionType)} · {q.responseCount} resposta(s)
+                {q.suppressed
+                  ? `Resultado oculto: menos de ${MIN_PSYCHOSOCIAL_GROUP_SIZE} respostas`
+                  : `${questionTypeLabel(q.questionType)} · ${q.responseCount} resposta(s)`}
               </span>
             )}
           </li>

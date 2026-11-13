@@ -17,8 +17,11 @@ import type { SubmitResponseValues } from "@/shared/domains/psychosocial/respons
 import {
   deriveRisks,
   DEFAULT_PSYCHOSOCIAL_THRESHOLD,
-  type QuestionStat,
 } from "@/shared/domains/psychosocial/derivation";
+import {
+  protectQuestionStat,
+  type ProtectedQuestionStat,
+} from "@/shared/domains/psychosocial/anonymity";
 import { generateToken } from "@/shared/domains/signatures/token";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
@@ -578,7 +581,7 @@ export async function submitPublicResponse(
 
 export type CampaignStats = {
   responseCount: number;
-  questions: QuestionStat[];
+  questions: ProtectedQuestionStat[];
 };
 
 export async function getCampaignStats(
@@ -609,7 +612,7 @@ export async function getCampaignStats(
       );
 
     const qs = await loadQuestions(tx, orgId, campaignId);
-    const stats: QuestionStat[] = [];
+    const stats: ProtectedQuestionStat[] = [];
     for (const q of qs) {
       const [agg] = await tx
         .select({
@@ -623,13 +626,15 @@ export async function getCampaignStats(
             eq(psychosocialAnswers.questionId, q.id),
           ),
         );
-      stats.push({
-        questionId: q.id,
-        text: q.text,
-        questionType: q.questionType,
-        average: agg.avg == null ? null : Number(agg.avg),
-        responseCount: agg.cnt,
-      });
+      stats.push(
+        protectQuestionStat({
+          questionId: q.id,
+          text: q.text,
+          questionType: q.questionType,
+          average: agg.avg == null ? null : Number(agg.avg),
+          responseCount: agg.cnt,
+        }),
+      );
     }
     return { responseCount, questions: stats };
   });
