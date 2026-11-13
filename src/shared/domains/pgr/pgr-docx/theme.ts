@@ -27,6 +27,12 @@ export const PGR_DOCX_COLORS = {
   white: "FFFFFF",
 } as const;
 
+export const PGR_DOCX_TABLE_HEAD = {
+  fill: PGR_DOCX_COLORS.primarySoft,
+  text: PGR_DOCX_COLORS.primaryStrong,
+  rule: PGR_DOCX_COLORS.primary,
+} as const;
+
 /** Tamanhos em meio-ponto (unidade do OOXML: 19 = 9,5pt). */
 export const PGR_DOCX_SIZES = {
   body: 18,

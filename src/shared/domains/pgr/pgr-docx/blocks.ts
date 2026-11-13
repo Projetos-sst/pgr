@@ -16,6 +16,7 @@ import {
   PGR_DOCX_RISK_CLASSES,
   PGR_DOCX_RISK_MATRIX,
   PGR_DOCX_SIZES,
+  PGR_DOCX_TABLE_HEAD,
   type PgrDocxRiskClass,
 } from "./theme";
 import { balancedLines, textWidth } from "./text-fit";
@@ -31,23 +32,23 @@ const header = (text: string, width: number, extra: { gridSpan?: number } = {}) 
   cell(
     cellParagraph(text, {
       bold: true,
-      color: PGR_DOCX_COLORS.white,
+      color: PGR_DOCX_TABLE_HEAD.text,
       size: PGR_DOCX_SIZES.tableSmall,
       align: "center",
       keepNext: true,
     }),
-    { width, fill: PGR_DOCX_COLORS.primary, ...extra },
+    { width, fill: PGR_DOCX_TABLE_HEAD.fill, ...extra },
   );
 
 const verticalHeader = (text: string, width: number) => {
   const label = cellParagraph(text, {
     bold: true,
-    color: PGR_DOCX_COLORS.white,
+    color: PGR_DOCX_TABLE_HEAD.text,
     size: PGR_DOCX_SIZES.tableSmall,
     align: "center",
     keepNext: true,
   });
-  return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${PGR_DOCX_COLORS.primary}"/><w:textDirection w:val="btLr"/><w:vAlign w:val="center"/></w:tcPr>${label}</w:tc>`;
+  return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${PGR_DOCX_TABLE_HEAD.fill}"/><w:textDirection w:val="btLr"/><w:vAlign w:val="center"/></w:tcPr>${label}</w:tc>`;
 };
 
 const TRAINING_MIN_MARK_WIDTH = 380;

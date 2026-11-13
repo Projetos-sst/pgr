@@ -249,4 +249,60 @@ describe("buildTemplateDocument", () => {
     expect(tail).toContain('w:line="20"');
     expect(tail).toContain('w:lineRule="exact"');
   });
+  it("cabeçalho de tabela usa fundo suave com texto e filete indigo, e repete na quebra", () => {
+    const markers = [
+      "{{labels.revisionNumber}}",
+      "{{labels.jobRoleName}}",
+      "Controle de risco e suas hierarquias",
+      "Risco (Ref.)",
+      "Responsável",
+    ];
+    for (const marker of markers) {
+      const row = rowOf(template.document, marker);
+      expect(row).toContain("<w:tblHeader");
+      expect(row).toContain('w:fill="EEF0FE"');
+      expect(row).not.toContain('w:fill="5B63F5"');
+      expect(row).toContain('<w:color w:val="4F46E5"/>');
+      expect(row).toMatch(/<w:bottom w:val="single" w:color="5B63F5" w:sz="12"\/>/);
+    }
+  });
+
+  it("títulos das tabelas de metodologia seguem o mesmo cabeçalho suave", () => {
+    const need = rowOf(template.document, "{{labels.controlNeedTable}}");
+    expect(need).not.toContain('w:fill="5B63F5"');
+    const probability = rowOf(template.document, "{{labels.probabilityQuantTable}}");
+    expect(probability).toContain('w:fill="EEF0FE"');
+    expect(probability).not.toContain('w:fill="5B63F5"');
+  });
+
+  it("capa é montada com elementos nativos, sem imagem de fundo", () => {
+    expect(template.document).not.toContain("pgr-cover-background");
+    const band = tableOf(template.document, "{{labels.documentTitle}}");
+    expect(band).toContain('w:fill="5B63F5"');
+    expect(band).toContain("{{labels.documentSubtitle}}");
+    expect(band.indexOf('w:fill="4F46E5"')).toBeGreaterThan(
+      band.indexOf("{{labels.documentSubtitle}}"),
+    );
+    expect(template.document.indexOf("{{@cover.validityXml}}")).toBeGreaterThan(
+      template.document.indexOf("{{labels.documentSubtitle}}"),
+    );
+  });
+
+  it("cartão de risco marca o agente por filete lateral e selo, sem faixa sólida", () => {
+    const chemical = rowOf(template.document, "{{#agent.chemical}}");
+    expect(chemical).toMatch(/<w:left w:val="single" w:color="8B5CF6" w:sz="48"\/>/);
+    expect(chemical).toContain('w:fill="F6F6F9"');
+    expect(chemical).not.toMatch(/<w:tcPr>(?:(?!<\/w:tcPr>).)*w:fill="8B5CF6"/);
+    expect(chemical).toMatch(/<w:rPr>(?:(?!<\/w:rPr>).)*w:fill="8B5CF6"/);
+    expect(chemical).toContain("{{agentType}}");
+    expect(chemical).toContain("{{/agent.chemical}}");
+  });
+
+  it("cada GES abre com barra indigo própria, diferente do título de seção", () => {
+    const inventory = template.document.slice(template.document.indexOf("{{#ges}}"));
+    const gesTitle = paragraphOf(inventory, "{{title}}");
+    expect(gesTitle).toContain('w:fill="5B63F5"');
+    expect(gesTitle).toContain('<w:color w:val="FFFFFF"/>');
+    expect(para("{{titles.introduction}}")).toContain('w:fill="EEF0FE"');
+  });
 });
