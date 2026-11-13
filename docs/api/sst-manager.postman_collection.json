@@ -2848,6 +2848,35 @@
           }
         },
         {
+          "name": "POST /risks/:riskId/control-measures (nível substituição, 201 — NOB-178)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"substitution\",\n  \"applicable\": true,\n  \"actionWhat\": \"Trocar o disco da serra por modelo de menor emissão sonora\",\n  \"actionHow\": \"Compra e instalação pela manutenção\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-12-15\"\n}"
+            }
+          }
+        },
+        {
           "name": "POST /risks/:riskId/control-measures (409 nível duplicado)",
           "request": {
             "method": "POST",
@@ -6855,6 +6884,37 @@
           }
         },
         {
+          "name": "GET /documents?relatedEntity (anexos de uma máquina — NOB-178)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents?relatedEntityType=machine_installation&relatedEntityId={{machineInstallationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"],
+              "query": [
+                {
+                  "key": "relatedEntityType",
+                  "value": "machine_installation"
+                },
+                {
+                  "key": "relatedEntityId",
+                  "value": "{{machineInstallationId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "POST /documents (create, multipart)",
           "request": {
             "method": "POST",
@@ -6900,6 +6960,59 @@
                   "key": "folderId",
                   "value": "",
                   "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /documents (anexo de máquina, multipart — NOB-178)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "name",
+                  "value": "Manual da betoneira",
+                  "type": "text"
+                },
+                {
+                  "key": "docType",
+                  "value": "Manual",
+                  "type": "text",
+                  "description": "Um de: Manual, Laudo, ART, Inspeção Inicial de Mobilização, Plano de Manutenção, Ordem de Serviço de Manutenção, Laudo NR 12 - Apreciação de Riscos, Inspeção Periódica, Inspeção Eventual. Outro valor → 422 VALIDATION."
+                },
+                {
+                  "key": "relatedEntityType",
+                  "value": "machine_installation",
+                  "type": "text"
+                },
+                {
+                  "key": "relatedEntityId",
+                  "value": "{{machineInstallationId}}",
+                  "type": "text",
+                  "description": "Máquina de outro escritório, de empresa fora do escopo ou inexistente → 422 FK_NOT_FOUND."
                 }
               ]
             }

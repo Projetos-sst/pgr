@@ -157,7 +157,10 @@ it("blocks missing assessments and incomplete quantitative readings", () => {
             {
               ...base,
               agentType: "physical",
-              assessment: { ...base.assessment!, criterion: "quantitative" },
+              assessment: base.assessment && {
+                ...base.assessment,
+                criterion: "quantitative",
+              },
             },
           ],
         },

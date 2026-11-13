@@ -1619,8 +1619,16 @@ PUT, DELETE) · `/api/v1/documents/{id}/versions` (GET, POST) · `/api/v1/docume
 
 **`DocumentMetadataInput`** (criação, multipart): `name*`, `docType*`, `validUntil?`
 (AAAA-MM-DD), `folderId?` (`null`/ausente = raiz), `relatedEntityType?`/`relatedEntityId?`
-(vínculo polimórfico — conjunto fechado `pgr`; **completo-ou-vazio**, refine espelha o CHECK do
-banco). Upload validado **antes** de tocar Storage/DB — PDF/PNG/JPG/DOC/DOCX/XLS/XLSX, máx.
+(vínculo polimórfico — conjunto fechado `pgr`/`responsible_technician`/`ges`/`risk`/
+`machine_installation`; **completo-ou-vazio**, refine espelha o CHECK do banco). **Anexo de máquina
+(NOB-178)**: com `relatedEntityType=machine_installation`, `relatedEntityId` é o id do vínculo de
+`/companies/{id}/machines` e `docType` tem de ser um dos tipos confirmados na SEG-22 (`Manual`,
+`Laudo`, `ART`, `Inspeção Inicial de Mobilização`, `Plano de Manutenção`, `Ordem de Serviço de
+Manutenção`, `Laudo NR 12 - Apreciação de Riscos`, `Inspeção Periódica`, `Inspeção Eventual`); outro
+tipo → `422 VALIDATION`; máquina de outro escritório, de empresa fora do escopo do membro ou
+inexistente → `422 FK_NOT_FOUND`, sem gravar arquivo. A leitura segue a visibilidade da máquina
+(policy `documents_machine_attachment_scope`, migration `0088`): quem não enxerga a máquina recebe
+`404 NOT_FOUND` no detalhe, nas versões e no download, e lista vazia no filtro por vínculo. Upload validado **antes** de tocar Storage/DB — PDF/PNG/JPG/DOC/DOCX/XLS/XLSX, máx.
 25 MB (`validateFile`) → `422 VALIDATION` se inválido, **nada é gravado**. Ordem de escrita:
 `putDocumentObject` (Storage, path `<org_id>/documentos/<group_id>/v<version>-<slug>`) → `INSERT`;
 falha do INSERT compensa removendo o objeto (nunca deixa órfão). **`UpdateDocumentInput`**: mesmos
@@ -1759,7 +1767,13 @@ toca `risk_assessments`/`control_measures`). REST espelho em `/api/v1/risks` (GE
 `description*`, `hazard?`, `sources?`, `propagation?`, `exposureTime?` (8 faixas), `possibleInjuries?`,
 `noxiousAgentCode?` (S-2240, texto), `measurementUnit?` (10 unidades, incl. `qualitative_na`),
 `concentrationIntensity?` (string decimal). **Regra `qualitative_na`**: concentração só é aceita com
-unidade **quantitativa** (com `qualitative_na` ou sem unidade → 422 `VALIDATION`). **`RiskListItem`**:
+unidade **quantitativa** (com `qualitative_na` ou sem unidade → 422 `VALIDATION`). **Catálogo por
+grupo (NOB-178)**: `hazard` continua texto livre e `measurementUnit` aceita qualquer uma das 10
+unidades; o catálogo de agentes e unidades usuais por grupo (`domains/pgr/risk-agent-catalog.ts`)
+só sugere na tela e gera o aviso `unit_outside_catalog` em `GET /pgr/{id}/readiness`, sem recusar a
+gravação nem alterar registro antigo. Na mesma conferência, `measurement_incomplete` só vale para
+os grupos que admitem avaliação quantitativa (`physical`, `chemical`, `biological`).
+**`RiskListItem`**:
 `{ id, gesId, gesName, agentType, description, exposureTime, measurementUnit }`. **Reutilização** é por
 **prefill de UI** (`/risks/new?from=<id>` → `getRiskAction` → `createRiskAction`; novo `id`), **sem**
 action de clone. **Erros REST**: 422 (validação/`qualitative_na`/FK `gesId`), 404
@@ -1871,11 +1885,13 @@ pré-preenchido.
 
 ## Medidas de controle (5W2H) — `actions/pgr/control-measures.ts`
 
-Plano de ação 5W2H por risco, uma medida por **nível da hierarquia NR-01** (`control_level`:
-`elimination`/`collective_protection`/`administrative`/`ppe`). Fatia 018, **zero-migration** (tabela
+Plano de ação 5W2H por risco, uma medida por **nível da hierarquia de controle** (`control_level`,
+nesta ordem: `elimination`/`substitution`/`collective_protection`/`administrative`/`ppe`; o valor
+`substitution` entrou na NOB-178, migration aditiva `0087`, e os registros anteriores não mudam). A
+listagem sai sempre nessa ordem. Fatia 018, **zero-migration** (tabela
 `control_measures` da migration `0012`; escopo restrito às suas colunas — **não** toca
 `risk_methodology`/`risk_assessments`, apenas **lidos** como contexto). A **UNIQUE
-`(org_id, risk_id, control_level)`** faz a duplicidade de nível virar **`DUPLICATE`/409** (no máx. 4
+`(org_id, risk_id, control_level)`** faz a duplicidade de nível virar **`DUPLICATE`/409** (no máx. 5
 medidas por risco). **Sem coluna de status**: `Sem plano`/`Planejada`/`Vencida` são **derivados** na
 leitura (vencida ⇔ `applicable` + `actionDeadline < hoje`, fuso America/Sao_Paulo). Responsável é
 **texto** (`action_responsible`; combobox de funcionários grava `fullName`, sem FK). O contexto do
@@ -2322,6 +2338,8 @@ Somente owner/colaborador; tenant e ator vêm da sessão. PGR deve estar habilit
 Entrada estrita: `{workUnitId,gesId:null|uuid,catalogId,mode:"individual"|"group",quantity,identifier?,description,operatingConditions?,safetyMeasures?,maintenanceNotes?,responsible?,reason}`. Individual exige quantidade 1 e identificação; grupo aceita quantidade inteira positiva. Campos de segurança são fatos declarados; não se presume certificação ou neutralização.
 
 PUT recebe `{expectedVersion,data}`; DELETE recebe `{expectedVersion,reason}`. Versão divergente retorna 422 VALIDATION. Referências devem ter mesmo tenant, empresa e obra; catálogo aceita apenas machine global ou da mesma empresa. EPI, GES divergente e referências cruzadas retornam 422 FK_NOT_FOUND. GET aceita page/pageSize; lista aceita includeInactive=true. Retirada preserva catálogo, vínculo e eventos; não há exclusão física pelo runtime.
+
+Anexos da máquina (NOB-178): arquivos do GED com `relatedEntityType=machine_installation`, listados na tela do vínculo e por `GET /documents?relatedEntityType=machine_installation&relatedEntityId={machineId}`. Tipos e regras de acesso em Documentos (GED). O DOCX do PGR ainda não lista esses arquivos.
 
 Estado e evento são transacionais, com snapshot antes/depois, ator, motivo e data. RLS reforça tenant, módulo e contexto; eventos não permitem UPDATE/DELETE. Migration 0057 aditiva, sem atribuição automática de máquinas legadas a ambientes. O DOCX inclui somente vínculos ativos da obra e dos GES selecionados para aquele PGR.
 

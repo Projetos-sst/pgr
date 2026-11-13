@@ -79,7 +79,7 @@ HOMOLOGAÇÃO DO MODELO". Nenhum dado de cliente entra nesses arquivos.
 | Caso                 | Arquivos em `templates/pgr/amostras/` | O que conferir                                                             | Páginas do PDF |
 | -------------------- | ------------------------------------- | -------------------------------------------------------------------------- | -------------- |
 | `empresa-pequena`    | `.docx` e `.pdf`                      | Documento mínimo: capa, identificação, um GES e um risco                   | 19             |
-| `inventario-extenso` | `.docx` e `.pdf`                      | 6 GES, 48 riscos e 36 funções: tabelas atravessando páginas                | 72             |
+| `inventario-extenso` | `.docx` e `.pdf`                      | 6 GES, 48 riscos e 36 funções: tabelas atravessando páginas                | 76             |
 | `campos-vazios`      | `.docx` e `.pdf`                      | Opcionais vazios somem ou mostram "Não informado"; listas vazias com aviso | 19             |
 | `com-anexos`         | `.docx` e `.pdf`                      | Anexo I, matriz de treinamento, campanhas e apêndice de máquinas           | 22             |
 
@@ -112,7 +112,7 @@ Conferência feita nos PDFs reais (Gotenberg/LibreOffice) desta entrega:
 - Manrope embutida nos quatro PDFs.
 - Nenhum "undefined", "null", "NaN" ou `{{` no texto extraído.
 - No `inventario-extenso`: cabeçalho do Anexo I repetido nas páginas 19 a 24; cabeçalho
-  das medidas em 18 páginas; cabeçalho dos EPIs em 6; quadro de funções nas páginas 6 e 7
+  das medidas em 18 páginas; cabeçalho dos EPIs em 9; quadro de funções nas páginas 6 e 7
   com cabeçalho nas duas.
 - Leitura visual por amostragem: capa, quadro de funções, matriz de treinamento, Anexo I,
   cartões de risco, medidas, EPIs, plano de ação, painel, campos vazios e apêndice de
