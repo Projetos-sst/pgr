@@ -42,6 +42,13 @@ jest.mock("@/shared/server/actions/platform/onboarding", () => ({
   })),
 }));
 
+jest.mock("@/shared/server/actions/platform/access-scopes", () => ({
+  getOwnAccessAreasAction: jest.fn(async () => ({
+    ok: true,
+    data: ["safety", "health"],
+  })),
+}));
+
 import { requireTenantContext } from "@/shared/auth/require-tenant-context";
 import { NoTenantContextError } from "@/shared/auth/errors";
 import ProtectedLayout from "@/app/(protected)/layout";
