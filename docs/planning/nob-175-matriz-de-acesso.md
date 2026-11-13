@@ -40,6 +40,7 @@ Legenda da coluna "Onde é garantido": **Banco** = policy RLS (vale para tela, A
 | Representante (`client`)        | Telas e Actions do escritório                                                             | Negado, como antes                          | Servidor                        |
 | Representante (`client`)        | Fluxos delegados já existentes                                                            | Uma empresa (`scopedCompanyId`), como antes | Servidor                        |
 | Representante (`client`)        | Várias empresas por escopo                                                                | Linhas aceitas e aplicadas no banco         | Banco; telas e fluxos: Pendente |
+| Representante (`client`)        | Indicar o autorizador de riscos (NOB-176)                                                 | Empresas do vínculo ou do escopo            | Banco + Servidor                |
 | Profissional externo            | Qualquer operação                                                                         | Perfil não existe                           | Pendente                        |
 | Qualquer papel                  | Dados de outro escritório                                                                 | Negado, como antes                          | Banco                           |
 

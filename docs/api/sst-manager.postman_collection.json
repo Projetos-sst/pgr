@@ -232,6 +232,11 @@
       "type": "string"
     },
     {
+      "key": "representativeUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "professionalUserId",
       "value": "",
       "type": "string"
@@ -12097,6 +12102,86 @@
               "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
             },
             "description": "Tenant e ator da sessão. Conta existente; indicação e autorização restritas à empresa. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Indicar autorizador (representante da empresa, NOB-176)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{representativeUserId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{authorizerUserId}}\",\n  \"evidence\": \"Ata fictícia de indicação da empresa\",\n  \"reason\": \"Indicação feita pela própria empresa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
+            },
+            "description": "Conta `client` vinculada à empresa (scoped_company_id ou escopo de acesso). 403 em outra empresa, ao indicar a própria conta, ou se a conta já é o autorizador ou profissional ativo. O histórico grava origin=company_representative. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Revogar indicação (representante da empresa, NOB-176)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{representativeUserId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": null,\n  \"evidence\": \"Comunicado fictício de revogação\",\n  \"reason\": \"Empresa retirou a indicação\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
+            },
+            "description": "Mesmas regras da indicação pelo representante. O autorizador anterior perde o poder na hora; autorizações profissionais vigentes exigem revogação explícita. Exemplos fictícios."
           },
           "response": []
         },
