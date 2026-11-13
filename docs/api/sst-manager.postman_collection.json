@@ -13587,6 +13587,160 @@
           }
         }
       ]
+    },
+    {
+      "name": "Guarda, exportação e descarte (NOB-182)",
+      "description": "Política de guarda (provisória até aprovação), simulação de prazos e pacote de guarda por PGR. Nenhuma requisição exclui dado.",
+      "item": [
+        {
+          "name": "Consultar política de guarda",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/retention-policy",
+            "description": "Estado (aprovada ou não aprovada), versão vigente, histórico e proposta."
+          }
+        },
+        {
+          "name": "Registrar versão proposta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"proposed\",\n  \"terms\": {\n    \"categories\": [\n      {\n        \"category\": \"pgr_documents\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"pgr_review_records\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"signature_evidence\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"sst_records\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"health_records\",\n        \"retentionMonths\": 240,\n        \"startingPoint\": \"employee_termination\"\n      }\n    ],\n    \"noticeDaysBefore\": [\n      90,\n      60,\n      30\n    ],\n    \"postClosureAccess\": \"Proposta: o escritório mantém consulta e exportação durante o prazo de guarda.\",\n    \"discardAuthorization\": \"Proposta: descarte só com autorização escrita do responsável pela política.\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/retention-policy",
+            "description": "Só owner. 201 com {id, version, status, termsSha256}. O estado continua não aprovada."
+          }
+        },
+        {
+          "name": "Registrar versão aprovada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"terms\": {\n    \"categories\": [\n      {\n        \"category\": \"pgr_documents\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"pgr_review_records\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"signature_evidence\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"sst_records\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"health_records\",\n        \"retentionMonths\": 240,\n        \"startingPoint\": \"employee_termination\"\n      }\n    ],\n    \"noticeDaysBefore\": [\n      90,\n      60,\n      30\n    ],\n    \"postClosureAccess\": \"Proposta: o escritório mantém consulta e exportação durante o prazo de guarda.\",\n    \"discardAuthorization\": \"Proposta: descarte só com autorização escrita do responsável pela política.\"\n  },\n  \"approval\": {\n    \"approverName\": \"Nome de quem aprovou\",\n    \"approverRole\": \"Cargo\",\n    \"approvedOn\": \"2026-11-10\",\n    \"reference\": \"Ata ou cláusula onde a aprovação está registrada\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/retention-policy",
+            "description": "Só owner. Exige quem aprovou, cargo, data não futura e referência."
+          }
+        },
+        {
+          "name": "Simular prazos e avisos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/retention-policy/simulation?contract_end=2027-01-31",
+            "description": "Só cálculo. Aceita contract_end, company_closure, document_issue e employee_termination (AAAA-MM-DD)."
+          }
+        },
+        {
+          "name": "Exportar pacote de guarda do PGR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/retention-exports",
+            "description": "Devolve o .zip com manifest.json, records/ e files/. Use Send and Download. Headers X-Retention-Export-Status e X-Retention-Export-Sha256."
+          }
+        },
+        {
+          "name": "Listar exportações do PGR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/retention-exports",
+            "description": "Histórico só de inserção, incluindo tentativas com falha."
+          }
+        }
+      ]
     }
   ]
 }
