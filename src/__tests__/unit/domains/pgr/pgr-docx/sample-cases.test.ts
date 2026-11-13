@@ -91,7 +91,7 @@ describe("amostras fictícias do PGR em DOCX", () => {
     expect(measures).toHaveLength(LARGE_GES_COUNT);
     expect(epis).toHaveLength(LARGE_GES_COUNT);
     for (const table of measures) {
-      expect(table.rows).toBe(LARGE_RISKS_PER_GES * 4 + 1);
+      expect(table.rows).toBe(LARGE_RISKS_PER_GES * 5 + 1);
       expect(table.repeatedHeaderRows).toBe(1);
     }
     for (const table of epis) {

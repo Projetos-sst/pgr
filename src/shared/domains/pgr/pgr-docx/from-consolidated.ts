@@ -143,6 +143,7 @@ const LEVELS: {
   key: keyof Omit<PgrDocxRiskMeasures, "riskLabel" | "riskName">;
 }[] = [
   { level: "elimination", key: "elimination" },
+  { level: "substitution", key: "substitution" },
   { level: "collective_protection", key: "collective" },
   { level: "administrative", key: "administrative" },
   { level: "ppe", key: "individual" },

@@ -34,9 +34,10 @@ describe("enums do módulo de Riscos & PGR", () => {
     expect(exposureTimeSchema.options).toHaveLength(8);
   });
 
-  it("control_level cobre os 4 níveis da hierarquia NR-01", () => {
+  it("control_level cobre os 5 níveis da hierarquia, na ordem de preferência", () => {
     expect(controlLevelSchema.options).toEqual([
       "elimination",
+      "substitution",
       "collective_protection",
       "administrative",
       "ppe",
@@ -90,7 +91,13 @@ describe("rótulos pt-BR", () => {
     expect(riskAgentTypeLabel("mechanical")).toBe("Mecânico");
     expect(riskAgentTypeLabel("accident")).toBe("Acidentes");
     expect(exposureTimeLabel("lt_1h")).toBe("< 1h/turno");
-    expect(controlLevelLabel("ppe")).toBe("IV — EPI");
+    expect(controlLevelSchema.options.map(controlLevelLabel)).toEqual([
+      "I — Eliminação",
+      "II — Substituição",
+      "III — Controles de Engenharia (Proteção Coletiva)",
+      "IV — Medidas Administrativas/Organização",
+      "V — EPI",
+    ]);
     expect(uncertaintyDegreeLabel(2)).toBe("Altamente Incerta");
     expect(pgrRegistrationTypeLabel("not_applicable")).toBe("Não aplicável");
   });

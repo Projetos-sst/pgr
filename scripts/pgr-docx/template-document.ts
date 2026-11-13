@@ -1261,14 +1261,18 @@ function riskCard(kit: Kit) {
 const HIERARCHY = [
   ["elimination", "I. É possível eliminação dos fatores de\u00A0risco?"],
   [
+    "substitution",
+    "II. É possível substituição por processo, material ou equipamento de menor\u00A0risco?",
+  ],
+  [
     "collective",
-    "II. Minimização e controle dos fatores de risco, com a adoção de medidas de proteção\u00A0coletiva?",
+    "III. Minimização e controle dos fatores de risco, com a adoção de controles de engenharia e medidas de proteção\u00A0coletiva?",
   ],
   [
     "administrative",
-    "III. Minimização e controle dos fatores de risco, com a adoção de medidas administrativas ou de organização do\u00A0trabalho?",
+    "IV. Minimização e controle dos fatores de risco, com a adoção de medidas administrativas ou de organização do\u00A0trabalho?",
   ],
-  ["individual", "IV. Adoção de medidas de proteção\u00A0individual?"],
+  ["individual", "V. Adoção de medidas de proteção\u00A0individual?"],
 ] as const;
 
 function measuresTable(kit: Kit) {

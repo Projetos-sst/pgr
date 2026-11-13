@@ -93,10 +93,6 @@ export function defaultRiskMethodology(): RiskMethodologyValues {
   return presetFor(DEFAULT_METHODOLOGY_BASE);
 }
 
-/**
- * Hierarquia de controle da NR-01 (4 níveis) — seção **read-only** da tela. Reusa
- * `controlLevelLabel` do domínio de riscos para o rótulo; a descrição é constante.
- */
 export const NR01_CONTROL_HIERARCHY: {
   level: ControlLevel;
   label: string;
@@ -108,9 +104,16 @@ export const NR01_CONTROL_HIERARCHY: {
     description: "Eliminar o risco ou o fator de risco (medida mais eficaz).",
   },
   {
+    level: "substitution",
+    label: controlLevelLabel("substitution"),
+    description:
+      "Substituir o processo, o material ou o equipamento por alternativa de menor risco.",
+  },
+  {
     level: "collective_protection",
     label: controlLevelLabel("collective_protection"),
-    description: "Medidas de proteção coletiva que reduzem a exposição de todos.",
+    description:
+      "Controles de engenharia e proteção coletiva que reduzem a exposição de todos.",
   },
   {
     level: "administrative",

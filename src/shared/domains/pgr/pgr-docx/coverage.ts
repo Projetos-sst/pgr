@@ -96,6 +96,7 @@ export const PGR_DOCX_COVERAGE: readonly PgrDocxCoverageBlock[] = [
     tags: [
       "#measures",
       "elimination.measures",
+      "substitution.measures",
       "collective.measures",
       "administrative.measures",
       "individual.measures",

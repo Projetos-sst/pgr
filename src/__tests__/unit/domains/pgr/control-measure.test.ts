@@ -15,9 +15,10 @@ function base(overrides: Record<string, unknown> = {}) {
 }
 
 describe("controlMeasureInputSchema", () => {
-  it("aceita os 4 níveis NR-01 válidos", () => {
+  it("aceita os 5 níveis da hierarquia de controle", () => {
     for (const level of [
       "elimination",
+      "substitution",
       "collective_protection",
       "administrative",
       "ppe",

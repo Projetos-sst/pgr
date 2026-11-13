@@ -92,9 +92,10 @@ function largeMeasures(risk: PgrDocxRisk): PgrDocxRiskMeasures {
     riskLabel: `RISCO ${risk.number}`,
     riskName: risk.risk,
     elimination: level("Não", 1),
-    collective: level("Sim", 2),
-    administrative: level("Sim", 3),
-    individual: level("Sim", 4),
+    substitution: level("Não", 2),
+    collective: level("Sim", 3),
+    administrative: level("Sim", 4),
+    individual: level("Sim", 5),
   };
 }
 

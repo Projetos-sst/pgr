@@ -481,12 +481,17 @@ describe("buildPgrDocxContent", () => {
     });
   });
 
-  it("medidas pelos 4 níveis da hierarquia, EPIs e plano de ação", () => {
+  it("medidas pelos 5 níveis da hierarquia, EPIs e plano de ação", () => {
     const [ges] = content.ges;
     expect(ges.measures[0]).toEqual({
       riskLabel: "RISCO 1",
       riskName: "Ruído de betoneira",
       elimination: { applies: "Não", measures: "Inviável", monitoring: "" },
+      substitution: {
+        applies: "—",
+        measures: "Não informado",
+        monitoring: "",
+      },
       collective: {
         applies: "Sim",
         measures: "Enclausurar a betoneira",

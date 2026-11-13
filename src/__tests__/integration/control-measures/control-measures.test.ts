@@ -23,6 +23,7 @@ import {
 } from "@/shared/server/actions/pgr/control-measures";
 import { createControlMeasure } from "@/shared/db/repositories/control-measures";
 import type {
+  ControlLevel,
   ControlMeasureInput,
   ControlMeasureWriteValues,
 } from "@/shared/domains/pgr/control-measure";
@@ -77,6 +78,24 @@ function createInput(overrides: Partial<ControlMeasureInput> = {}): ControlMeasu
       expect(result.data.rows[0].id).toBe(PGR_IDS.controlMeasureA);
       expect(result.data.rows[0].controlLevel).toBe("elimination");
     }
+  });
+
+  it("lista na ordem da hierarquia, com a substituição entre a eliminação já registrada e a engenharia", async () => {
+    const newLevels: ControlLevel[] = ["ppe", "collective_protection", "substitution"];
+    for (const controlLevel of newLevels) {
+      const created = await createControlMeasureAction(
+        PGR_IDS.riskA,
+        createInput({ controlLevel }),
+      );
+      expect(created.ok).toBe(true);
+    }
+    const result = await listControlMeasuresAction(PGR_IDS.riskA, {});
+    expect(result.ok && result.data.rows.map((row) => row.controlLevel)).toEqual([
+      "elimination",
+      "substitution",
+      "collective_protection",
+      "ppe",
+    ]);
   });
 
   it("get por id retorna a medida do tenant", async () => {

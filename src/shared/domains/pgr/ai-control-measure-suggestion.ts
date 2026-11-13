@@ -39,7 +39,9 @@ const optionalText = z.preprocess(
 const CONTROL_LEVEL_ALIASES: Record<string, ControlLevel> = {
   eliminacao: "elimination",
   eliminar: "elimination",
-  substituicao: "elimination",
+  substituicao: "substitution",
+  substituir: "substitution",
+  "reducao ou substituicao": "substitution",
   "protecao coletiva": "collective_protection",
   coletiva: "collective_protection",
   epc: "collective_protection",
@@ -143,13 +145,7 @@ export function parseModelMeasures(raw: unknown): SuggestedControlMeasure[] {
   return ordenarPelaHierarquia(out);
 }
 
-/** Ordem da NR-01: eliminar > coletiva > administrativa > EPI. */
-const HIERARCHY: ControlLevel[] = [
-  "elimination",
-  "collective_protection",
-  "administrative",
-  "ppe",
-];
+const HIERARCHY: readonly ControlLevel[] = controlLevelSchema.options;
 
 function ordenarPelaHierarquia(
   measures: SuggestedControlMeasure[],

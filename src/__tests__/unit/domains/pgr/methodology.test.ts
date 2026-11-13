@@ -148,10 +148,11 @@ describe("presets", () => {
     expect(() => methodologyInputSchema.parse(d)).not.toThrow();
   });
 
-  it("a hierarquia NR-01 tem 4 níveis", () => {
-    expect(NR01_CONTROL_HIERARCHY).toHaveLength(4);
+  it("a hierarquia de controle tem 5 níveis, com substituição depois da eliminação", () => {
+    expect(NR01_CONTROL_HIERARCHY).toHaveLength(5);
     expect(NR01_CONTROL_HIERARCHY.map((n) => n.level)).toEqual([
       "elimination",
+      "substitution",
       "collective_protection",
       "administrative",
       "ppe",

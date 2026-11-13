@@ -460,6 +460,7 @@ function buildGes(ges: PgrDocxGes) {
       riskLabel: upperRiskRef(measure.riskLabel),
       riskName: balanceTableText(measure.riskName, MEASURE_RISK_WIDTH),
       elimination: measureLevel(measure.elimination),
+      substitution: measureLevel(measure.substitution),
       collective: measureLevel(measure.collective),
       administrative: measureLevel(measure.administrative),
       individual: measureLevel(measure.individual),

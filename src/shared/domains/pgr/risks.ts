@@ -48,6 +48,7 @@ export const assessmentCriterionSchema = z.enum(["qualitative", "quantitative"])
 
 export const controlLevelSchema = z.enum([
   "elimination",
+  "substitution",
   "collective_protection",
   "administrative",
   "ppe",
@@ -138,9 +139,10 @@ const MEASUREMENT_UNIT_ESOCIAL_LABELS: Record<MeasurementUnit, string> = {
 
 const CONTROL_LEVEL_LABELS: Record<ControlLevel, string> = {
   elimination: "I — Eliminação",
-  collective_protection: "II — Proteção Coletiva",
-  administrative: "III — Medidas Administrativas/Organização",
-  ppe: "IV — EPI",
+  substitution: "II — Substituição",
+  collective_protection: "III — Controles de Engenharia (Proteção Coletiva)",
+  administrative: "IV — Medidas Administrativas/Organização",
+  ppe: "V — EPI",
 };
 
 const CRITERION_LABELS: Record<AssessmentCriterion, string> = {

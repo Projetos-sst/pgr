@@ -33,9 +33,9 @@ import {
 /** Cor padrão da capa (indigo do design system) — sobrescrita por parâmetro (fatia #40). */
 export const DEFAULT_COVER_COLOR = "#5b63f5";
 
-/** Ordem canônica da hierarquia de controles (eliminação → … → EPI). */
 const CONTROL_LEVEL_ORDER: ControlLevel[] = [
   "elimination",
+  "substitution",
   "collective_protection",
   "administrative",
   "ppe",

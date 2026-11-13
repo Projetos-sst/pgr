@@ -17,9 +17,9 @@ import { flexibleOptionalText, flexibleText } from "../core/flexible-text";
  * garantir que só o contexto permitido entra no prompt.
  */
 
-/** Ordem da hierarquia da NR-01, do mais eficaz para o menos. */
 const LEVELS: ControlLevel[] = [
   "elimination",
+  "substitution",
   "collective_protection",
   "administrative",
   "ppe",
@@ -66,7 +66,7 @@ export const CONTROL_MEASURE_INSTRUCTIONS = [
   "Regras:",
   `1. Respeite a hierarquia de controle da NR-01, nesta ordem de preferência: ${LEVELS.map((l) => `${l} (${controlLevelLabel(l)})`).join(" > ")}.`,
   "2. Comece SEMPRE pelo nível mais eficaz que for tecnicamente viável para este risco. EPI é o último recurso, nunca a primeira proposta.",
-  "3. No MÁXIMO uma medida por nível, e só proponha o nível que fizer sentido: três medidas boas valem mais que quatro para preencher a lista.",
+  "3. No MÁXIMO uma medida por nível, e só proponha o nível que fizer sentido: três medidas boas valem mais que cinco para preencher a lista.",
   "4. Não repita nível que já esteja cadastrado no risco — ele será rejeitado.",
   "5. 'Como' deve ser acionável: passos concretos e verificáveis, não intenção genérica.",
   "6. Em 'monitoramento', diga como verificar que a medida continua eficaz (inspeção, medição, checklist, periodicidade).",

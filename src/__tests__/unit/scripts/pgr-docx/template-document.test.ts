@@ -223,12 +223,21 @@ describe("buildTemplateDocument", () => {
     expect(rowOf(table, "{{riskRef}}")).toContain("{{occupationalRisk}}");
   });
 
-  it("medidas de controle mesclam a coluna do risco nas quatro linhas", async () => {
+  it("medidas de controle mesclam a coluna do risco nas cinco linhas da hierarquia", async () => {
     const { document } = await build("template");
     const table = tableOf(document, "{{#measures}}");
     expect(table.match(/<w:vMerge w:val="restart"\/>/g)).toHaveLength(1);
-    expect(table.match(/<w:vMerge w:val="continue"\/>/g)).toHaveLength(3);
+    expect(table.match(/<w:vMerge w:val="continue"\/>/g)).toHaveLength(4);
     expect(rowOf(table, "{{riskName}}")).toContain("{{elimination.measures}}");
+    const offsets = [
+      "elimination",
+      "substitution",
+      "collective",
+      "administrative",
+      "individual",
+    ].map((level) => table.indexOf(`{{${level}.measures}}`));
+    expect(offsets.every((offset) => offset >= 0)).toBe(true);
+    expect(offsets).toEqual([...offsets].sort((a, b) => a - b));
   });
 
   it("espaçador entre tabelas tem altura exata de 6 pt", async () => {

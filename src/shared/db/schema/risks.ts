@@ -88,12 +88,9 @@ export const nr09Conclusion = pgEnum("nr09_conclusion", [
   "not_applicable",
 ]);
 
-/**
- * Nível da hierarquia de controle (NR-01, 4 níveis): I Eliminação · II Proteção
- * Coletiva · III Medidas Administrativas/Organização · IV EPI.
- */
 export const controlLevel = pgEnum("control_level", [
   "elimination",
+  "substitution",
   "collective_protection",
   "administrative",
   "ppe",
@@ -238,12 +235,6 @@ export const riskAssessments = pgTable(
   ],
 ).enableRLS();
 
-/**
- * Medidas de controle — hierarquia NR-01 (4 níveis). Uma linha por (risco × nível);
- * `applicable` + justificativa/monitoramento; campos 5W2H do plano de ação são
- * preenchidos quando aplicável. `unique(org_id, risk_id, control_level)` impede
- * nível duplicado para o mesmo risco.
- */
 export const controlMeasures = pgTable(
   "control_measures",
   {

@@ -25,9 +25,8 @@ import { bridgeControlMeasureToActionPlanTx } from "./control-measure-bridge";
 
 export type ListControlMeasuresParams = PageParams;
 
-/** Ordem fixa da hierarquia NR-01 (estável). A lista tem ≤ 4 itens por risco. */
 const LEVEL_ORDER = sql`array_position(
-  ARRAY['elimination','collective_protection','administrative','ppe']::text[],
+  ARRAY['elimination','substitution','collective_protection','administrative','ppe']::text[],
   ${controlMeasures.controlLevel}::text
 )`;
 
