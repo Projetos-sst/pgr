@@ -107,8 +107,9 @@ function PgrPdfPanel({ pgrId }: { pgrId: string }) {
         <SectionHeading title="Geração do documento do PGR">
           Gere o documento com os dados cadastrados neste PGR (empresa, GES, riscos, plano
           de ação, EPIs e treinamentos). <strong>Baixar DOCX</strong> e{" "}
-          <strong>Baixar PDF</strong> geram na hora e não guardam cópia;{" "}
-          <strong>Arquivar no GED</strong> salva o PDF no acervo deste PGR.
+          <strong>Baixar PDF</strong> geram uma prévia na hora, sem guardar cópia e sem
+          valor de emissão; <strong>Arquivar no GED</strong> salva o PDF como versão no
+          acervo deste PGR. A emissão assinada é feita na etapa 5 (Assinatura).
         </SectionHeading>
       </div>
 

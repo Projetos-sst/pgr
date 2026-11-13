@@ -151,6 +151,17 @@ export function PgrEditorTabs({
 
   const progressPercent = Math.round((completedStepsCount / 4) * 100);
 
+  const documentsStep: StepItem = {
+    key: "documents",
+    label: "Documentos e PDF",
+    subtitle: `${linkedDocumentsTotal} ${linkedDocumentsTotal === 1 ? "anexo no GED" : "anexos no GED"}`,
+    stepNumber: 6,
+    completed: linkedDocumentsTotal > 0,
+    unlocked: isDocumentsUnlocked,
+    lockReason:
+      "Para gerar o PDF, preencha empresa, data de emissão e validade na etapa 1 (Identificação) e salve.",
+  };
+
   const steps: StepItem[] = [
     {
       key: "basic",
@@ -207,16 +218,7 @@ export function PgrEditorTabs({
       lockReason:
         "Conclua a Identificação, os Vínculos de GES e o Inventário de Riscos para liberar a assinatura.",
     },
-    {
-      key: "documents",
-      label: "Documentos e PDF",
-      subtitle: `${linkedDocumentsTotal} ${linkedDocumentsTotal === 1 ? "anexo no GED" : "anexos no GED"}`,
-      stepNumber: 6,
-      completed: linkedDocumentsTotal > 0,
-      unlocked: isDocumentsUnlocked,
-      lockReason:
-        "Preencha a etapa 1 (Identificação) para gerar o PDF e anexar documentos.",
-    },
+    documentsStep,
   ];
 
   function handlePublish() {
@@ -328,11 +330,33 @@ export function PgrEditorTabs({
             </div>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => handleSelectStep(documentsStep)}
+          className="btn-primary shadow-primary rounded-card flex w-fit shrink-0 items-center gap-2 px-4 py-2.5 text-xs font-bold text-white sm:text-sm"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <path d="M7 10l5 5 5-5M12 15V3" />
+          </svg>
+          Gerar PDF do PGR
+        </button>
       </div>
 
       {/* Alerta de Etapa Bloqueada */}
       {lockNotice ? (
-        <div className="glass-card flex items-center justify-between rounded-[16px] border border-amber-400/40 bg-amber-500/10 p-4 text-xs text-amber-900">
+        <div
+          role="alert"
+          className="glass-card flex items-center justify-between rounded-[16px] border border-amber-400/40 bg-amber-500/10 p-4 text-xs text-amber-900"
+        >
           <div className="flex items-center gap-2.5">
             <svg
               width="18"
