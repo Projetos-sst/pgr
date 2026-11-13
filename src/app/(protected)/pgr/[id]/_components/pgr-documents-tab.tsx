@@ -89,6 +89,9 @@ function PgrPdfPanel({ pgrId }: { pgrId: string }) {
       <Link href={`/pgr/${pgrId}/reviews`} className="text-primary underline">
         Amostras, pareceres recebidos e revalidação técnica
       </Link>
+      <Link href={`/pgr/${pgrId}/texts`} className="text-primary underline">
+        Textos padrão deste PGR
+      </Link>
       <div className="flex items-start gap-4">
         <div className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
           <svg

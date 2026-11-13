@@ -62,8 +62,8 @@ export default async function ReviewSamplesPage({
               : "Aguardando parecer"}{" "}
             ·{" "}
             {s.sourceChanged
-              ? "Dados atuais diferem da amostra"
-              : "Dados correspondem à amostra"}
+              ? "Dados ou textos atuais diferem da amostra"
+              : "Dados e textos correspondem à amostra"}
           </p>
           <DownloadDocumentButton documentId={s.documentId} />
         </article>

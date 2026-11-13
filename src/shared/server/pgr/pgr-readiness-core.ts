@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { getPgrGenerationSnapshot } from "@/shared/db/repositories/pgr-generation-snapshot";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import { checkPgrReadiness } from "@/shared/domains/pgr/pgr-readiness";
+import { pgrDocxTextsSha256 } from "@/shared/domains/pgr/pgr-docx/texts-hash";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 export function pgrSnapshotHash(
   snapshot: NonNullable<Awaited<ReturnType<typeof getPgrGenerationSnapshot>>>,
@@ -13,6 +14,7 @@ export function pgrSnapshotHash(
         consolidated: snapshot.consolidated,
         extras: snapshot.extras,
         classificationBands: snapshot.methodology.classificationBands,
+        textsSha256: pgrDocxTextsSha256(snapshot.textVersion?.overrides ?? {}),
       }),
     )
     .digest("hex");

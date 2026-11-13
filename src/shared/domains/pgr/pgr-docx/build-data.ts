@@ -366,7 +366,7 @@ function defined<T extends object>(value: T | undefined): Partial<T> {
   ) as Partial<T>;
 }
 
-function mapRecord<K extends string, V, R>(
+export function mapRecord<K extends string, V, R>(
   record: Record<K, V>,
   fn: (value: V, key: K) => R,
 ) {

@@ -13,11 +13,13 @@ import {
 } from "@/shared/domains/pgr/document-approval";
 import { checkPgrReadiness } from "@/shared/domains/pgr/pgr-readiness";
 import { pgrSnapshotHash } from "@/shared/server/pgr/pgr-readiness-core";
-import { ValidationError } from "@/shared/errors/validation-error";
+import { pgrDocxTextsSha256 } from "@/shared/domains/pgr/pgr-docx/texts-hash";
 import {
-  buildPgrDocxData,
-  type PgrDocxOverrides,
-} from "@/shared/domains/pgr/pgr-docx/build-data";
+  mergeOverrides,
+  type PgrDocxStoredOverrides,
+} from "@/shared/domains/pgr/pgr-docx/text-overrides";
+import { ValidationError } from "@/shared/errors/validation-error";
+import { buildPgrDocxData } from "@/shared/domains/pgr/pgr-docx/build-data";
 import { buildPgrDocxContent } from "@/shared/domains/pgr/pgr-docx/from-consolidated";
 import type { PgrDocxFormat } from "@/shared/domains/pgr/pgr-docx/request";
 import {
@@ -66,6 +68,7 @@ export type GeneratedPgrDocx = {
     pgrId: string;
     generatedAt: string;
     templateSha256: string;
+    textsSha256: string;
     sourceSha256: string;
     snapshotSha256?: string;
     fileSha256: string;
@@ -78,7 +81,7 @@ export type GeneratePgrDocxOptions = {
   purpose?: "preview" | "issue";
   expectedSourceSha256?: string;
   format?: PgrDocxFormat;
-  overrides?: PgrDocxOverrides;
+  overrides?: PgrDocxStoredOverrides;
 };
 
 export function getPgrDocxPdfProvider(): PgrDocxPdfProvider {
@@ -197,7 +200,13 @@ export async function generatePgrDocx(
 ): Promise<GeneratedPgrDocx> {
   const snapshot = await getPgrGenerationSnapshot(orgId, pgrId);
   if (!snapshot) throw new NotFoundError();
-  const { consolidated, extras, methodology } = snapshot;
+  const { consolidated, extras, methodology, textVersion } = snapshot;
+  const adHoc = mergeOverrides(null, options.overrides);
+  if (options.purpose === "issue" && Object.keys(adHoc).length > 0)
+    throw new ValidationError(
+      "A emissão final usa os textos salvos no PGR. Salve a alteração de texto antes de emitir.",
+    );
+  const overrides = mergeOverrides(textVersion?.overrides, adHoc);
   const readiness = checkPgrReadiness(
     consolidated,
     extras,
@@ -231,7 +240,7 @@ export async function generatePgrDocx(
     options.purpose === "issue"
       ? issueNotice(review)
       : "PRÉVIA PARA CONFERÊNCIA — não representa documento revisado ou assinado.";
-  const data = buildPgrDocxData(content, { overrides: options.overrides });
+  const data = buildPgrDocxData(content, { overrides });
 
   let template: Buffer;
   try {
@@ -269,6 +278,7 @@ export async function generatePgrDocx(
       pgrId,
       generatedAt: generatedAt.toISOString(),
       templateSha256: sha256(template),
+      textsSha256: pgrDocxTextsSha256(overrides),
       snapshotSha256: pgrSnapshotHash(snapshot),
       // Hash exactly the input snapshot used by this generation, without emitting it.
       // Database readers share a repeatable-read snapshot; logo bytes/overrides are also identified.
@@ -279,6 +289,7 @@ export async function generatePgrDocx(
           extras,
           classificationBands: methodology.classificationBands,
           overrides: options.overrides ?? null,
+          textVersionId: textVersion?.id,
           logoSha256: logo ? sha256(logo) : null,
         }),
       ),

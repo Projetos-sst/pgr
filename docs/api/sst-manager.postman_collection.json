@@ -13425,6 +13425,55 @@
           }
         }
       ]
+    },
+    {
+      "name": "Textos padrão do PGR (NOB-177)",
+      "item": [
+        {
+          "name": "Listar versões dos textos e textos vigentes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx-texts",
+            "description": "Devolve as versões salvas, os textos vigentes (currentOverrides) e o hash dos textos efetivos (currentTextsSha256)."
+          }
+        },
+        {
+          "name": "Salvar nova versão dos textos (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx-texts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Substituir pelo motivo da alteração\",\n  \"overrides\": {\n    \"titles\": { \"introduction\": \"1 - APRESENTAÇÃO\" }\n  }\n}"
+            },
+            "description": "Grava uma versão nova; overrides vazio volta ao padrão. A geração seguinte devolve o header X-Pgr-Texts-Sha256 com o hash desta versão."
+          }
+        }
+      ]
     }
   ]
 }

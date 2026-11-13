@@ -17,7 +17,8 @@ import { GET, POST } from "../../../app/api/v1/pgr/[id]/docx/route";
 const gate = jest.mocked(requireOfficeStaff);
 const generate = jest.mocked(generatePgrDocx);
 const originalEnv = { ...process.env };
-const context = { params: Promise.resolve({ id: "pgr-1" }) };
+const PGR_ID = "11111111-1111-4111-8111-111111111111";
+const context = { params: Promise.resolve({ id: PGR_ID }) };
 const headers = { "x-dev-tenant": "org_a", "x-dev-role": "owner" };
 const get = (query = "", customHeaders = headers) =>
   GET(
@@ -35,9 +36,10 @@ beforeEach(() => {
     title: "PGR",
     missingTags: [],
     provenance: {
-      pgrId: "pgr-1",
+      pgrId: PGR_ID,
       generatedAt: "2026-10-20T12:00:00.000Z",
       templateSha256: "a".repeat(64),
+      textsSha256: "d".repeat(64),
       sourceSha256: "b".repeat(64),
       fileSha256: "c".repeat(64),
     },
@@ -51,13 +53,14 @@ describe("exportação pelo template DOCX", () => {
   it("encaminha PDF, tenant e headers de download sem cache", async () => {
     const response = await get("?format=pdf");
     expect(response.status).toBe(200);
-    expect(generate).toHaveBeenCalledWith("org_a", "pgr-1", { format: "pdf" });
+    expect(generate).toHaveBeenCalledWith("org_a", PGR_ID, { format: "pdf" });
     expect(response.headers.get("content-type")).toBe("application/pdf");
     expect(response.headers.get("content-disposition")).toBe(
       'attachment; filename="pgr-1.pdf"',
     );
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("x-pgr-generated-at")).toBe("2026-10-20T12:00:00.000Z");
+    expect(response.headers.get("x-pgr-texts-sha256")).toBe("d".repeat(64));
     expect(response.headers.get("x-pgr-template-sha256")).toBe("a".repeat(64));
     expect(response.headers.get("x-pgr-source-sha256")).toBe("b".repeat(64));
     expect(response.headers.get("x-pgr-file-sha256")).toBe("c".repeat(64));
@@ -65,7 +68,7 @@ describe("exportação pelo template DOCX", () => {
 
   it("mantém download DOCX quando formato não é informado", async () => {
     expect((await get()).status).toBe(200);
-    expect(generate).toHaveBeenCalledWith("org_a", "pgr-1", { format: "docx" });
+    expect(generate).toHaveBeenCalledWith("org_a", PGR_ID, { format: "docx" });
   });
 
   it("produção ignora bypass e exige sessão real → 401", async () => {
@@ -111,7 +114,7 @@ describe("exportação pelo template DOCX", () => {
         )
       ).status,
     ).toBe(200);
-    expect(generate).toHaveBeenCalledWith("org_a", "pgr-1", { format: "pdf", overrides });
+    expect(generate).toHaveBeenCalledWith("org_a", PGR_ID, { format: "pdf", overrides });
   });
 
   it("PGR inexistente → 404; conversor indisponível → 503", async () => {

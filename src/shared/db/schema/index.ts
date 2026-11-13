@@ -3,6 +3,7 @@ export { orgs, type Org, type NewOrg } from "./orgs";
 export { machineInstallations, machineInstallationEvents } from "./machine-installations";
 export { pgrReviewSamples, pgrReviewDecisions } from "./pgr-document-reviews";
 export { pgrDocumentApprovals } from "./pgr-document-approvals";
+export { pgrDocxTextVersions } from "./pgr-docx-text-versions";
 export {
   pgrBasicOfferVersions,
   pgrBasicOfferPublication,
