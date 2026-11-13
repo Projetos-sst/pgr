@@ -12,15 +12,23 @@ import {
 } from "@/shared/db/repositories/stock-movements";
 import { InsufficientStockError } from "@/shared/errors/insufficient-stock-error";
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 
 type StockRow = { id: string; balance: number };
+type CatalogRow = {
+  type: "epi" | "machine";
+  ca: string | null;
+  caValidUntil: string | null;
+};
+
+const VALID_CATALOG: CatalogRow = { type: "epi", ca: "123", caValidUntil: "2099-12-31" };
 
 /**
  * Transação Drizzle falsa: reproduz só as cadeias usadas pelos helpers
  * (select→from→where→for→limit, insert→values→returning, update→set→where)
  * e registra o que foi inserido/atualizado para asserção.
  */
-function fakeTx(stockRow: StockRow | undefined) {
+function fakeTx(stockRow: StockRow | undefined, catalogRow: CatalogRow = VALID_CATALOG) {
   const inserted: Record<string, unknown>[] = [];
   const updated: Record<string, unknown>[] = [];
   const tx = {
@@ -28,6 +36,7 @@ function fakeTx(stockRow: StockRow | undefined) {
       from: () => ({
         where: () => ({
           for: () => ({ limit: async () => (stockRow ? [stockRow] : []) }),
+          limit: async () => [catalogRow],
         }),
       }),
     })),
@@ -144,6 +153,60 @@ describe("applyStockEntry", () => {
     await expect(applyStockEntry(tx, { ...BASE, type: "purchase" })).rejects.toThrow(
       NotFoundError,
     );
+  });
+});
+
+describe("applyStockEntry — CA do EPI na entrada por compra (NOB-180)", () => {
+  const STOCK = { id: "stock-1", balance: 10 };
+  const expiring = (caValidUntil: string | null): CatalogRow => ({
+    ...VALID_CATALOG,
+    caValidUntil,
+  });
+
+  afterEach(() => jest.useRealTimers());
+
+  it("recusa compra de EPI com CA vencido e não grava movimento nem saldo", async () => {
+    const { tx, inserted, updated } = fakeTx(STOCK, expiring("2020-01-01"));
+
+    await expect(applyStockEntry(tx, { ...BASE, type: "purchase" })).rejects.toThrow(
+      ValidationError,
+    );
+    expect(inserted).toHaveLength(0);
+    expect(updated).toHaveLength(0);
+  });
+
+  it("recusa compra de EPI sem validade do CA", async () => {
+    const { tx } = fakeTx(STOCK, expiring(null));
+
+    await expect(applyStockEntry(tx, { ...BASE, type: "purchase" })).rejects.toThrow(
+      "Informe o CA e a validade do CA",
+    );
+  });
+
+  it("usa o dia de Brasília: às 22h do dia do vencimento (já amanhã em UTC) a compra ainda entra", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-03-11T01:00:00Z"));
+    const { tx } = fakeTx(STOCK, expiring("2026-03-10"));
+
+    const result = await applyStockEntry(tx, { ...BASE, type: "purchase" });
+
+    expect(result.newBalance).toBe(14);
+  });
+
+  it("à 0h de Brasília do dia seguinte ao vencimento a compra é recusada", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-03-11T03:00:00Z"));
+    const { tx } = fakeTx(STOCK, expiring("2026-03-10"));
+
+    await expect(applyStockEntry(tx, { ...BASE, type: "purchase" })).rejects.toThrow(
+      "CA 123 vencido em 10/03/2026",
+    );
+  });
+
+  it("devolução de funcionário repõe o saldo mesmo com o CA vencido", async () => {
+    const { tx } = fakeTx(STOCK, expiring("2020-01-01"));
+
+    const result = await applyStockEntry(tx, { ...BASE, type: "employee_return" });
+
+    expect(result.newBalance).toBe(14);
   });
 });
 

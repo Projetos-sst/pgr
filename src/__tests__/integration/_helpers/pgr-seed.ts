@@ -89,9 +89,9 @@ export async function seedPgrBase(admin: ReturnType<typeof postgres>): Promise<v
       ('${I.gesJobRoleA}','org_a','${I.gesA}','${I.jobRoleA}',3),
       ('${I.gesJobRoleB}','org_b','${I.gesB}','${I.jobRoleB}',7);
 
-    insert into public.epi_catalog (id, org_id, type, category_id, name) values
-      ('${I.epiCatalogA}','org_a','epi','${I.categoryA}','Capacete CA-123'),
-      ('${I.epiCatalogB}','org_b','machine','${I.categoryB}','Betoneira 400L');
+    insert into public.epi_catalog (id, org_id, type, category_id, name, ca, ca_valid_until) values
+      ('${I.epiCatalogA}','org_a','epi','${I.categoryA}','Capacete CA-123','123','2099-12-31'),
+      ('${I.epiCatalogB}','org_b','machine','${I.categoryB}','Betoneira 400L',null,null);
 
     insert into public.epi_stock (id, org_id, catalog_id, balance, min_quantity) values
       ('${I.epiStockA}','org_a','${I.epiCatalogA}',10,2),

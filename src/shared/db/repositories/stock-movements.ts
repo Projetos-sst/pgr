@@ -10,12 +10,15 @@ import {
   type StockMovementResult,
   type StockMovementRow,
 } from "@/shared/domains/pgr/stock-movements";
+import { evaluateCaForStockEntry } from "@/shared/domains/pgr/epi-ca-entry";
+import { todayInSaoPaulo } from "@/shared/dates";
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 import { InsufficientStockError } from "@/shared/errors/insufficient-stock-error";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { withOrg, type TenantTransaction } from "../with-org";
-import { epiStock, stockMovements, epiDeliveries } from "../schema/epis";
+import { epiCatalog, epiStock, stockMovements, epiDeliveries } from "../schema/epis";
 import { employees } from "../schema/employees";
 import { auditedTenantWrite } from "./audited-write";
 
@@ -42,15 +45,38 @@ async function lockStockRow(
   tx: TenantTransaction,
   orgId: string,
   stockId: string,
-): Promise<{ id: string; balance: number }> {
+): Promise<{ id: string; balance: number; catalogId: string }> {
   const [stock] = await tx
-    .select({ id: epiStock.id, balance: epiStock.balance })
+    .select({
+      id: epiStock.id,
+      balance: epiStock.balance,
+      catalogId: epiStock.catalogId,
+    })
     .from(epiStock)
     .where(and(eq(epiStock.orgId, orgId), eq(epiStock.id, stockId)))
     .for("update")
     .limit(1);
   if (!stock) throw new NotFoundError();
   return stock;
+}
+
+async function assertCaAllowsPurchase(
+  tx: TenantTransaction,
+  orgId: string,
+  catalogId: string,
+): Promise<void> {
+  const [item] = await tx
+    .select({
+      type: epiCatalog.type,
+      ca: epiCatalog.ca,
+      caValidUntil: epiCatalog.caValidUntil,
+    })
+    .from(epiCatalog)
+    .where(and(eq(epiCatalog.orgId, orgId), eq(epiCatalog.id, catalogId)))
+    .limit(1);
+  if (!item) throw new NotFoundError();
+  const decision = evaluateCaForStockEntry(item, todayInSaoPaulo());
+  if (!decision.allowed) throw new ValidationError(decision.message);
 }
 
 async function persistMovement(
@@ -143,6 +169,8 @@ export async function applyStockEntry(
   params: ApplyStockMovementParams,
 ): Promise<StockMovementResult> {
   const stock = await lockStockRow(tx, params.orgId, params.stockId);
+  if (params.type === "purchase")
+    await assertCaAllowsPurchase(tx, params.orgId, stock.catalogId);
   return persistMovement(tx, params, stock.balance + params.quantity);
 }
 

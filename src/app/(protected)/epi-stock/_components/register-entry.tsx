@@ -62,7 +62,8 @@ export function RegisterEntry({ stockId }: { stockId: string }) {
           <div className="glass-card w-full max-w-md bg-white/90 p-6">
             <h2 className="text-text text-lg font-semibold">Registrar entrada</h2>
             <p className="text-text-subtle mt-1 text-sm">
-              Entrada por compra — incrementa o saldo do item.
+              Entrada por compra — incrementa o saldo do item. EPI com CA vencido ou sem
+              validade do CA informada não entra no estoque.
             </p>
             <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
               <FormError message={formError} />
