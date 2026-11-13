@@ -71,4 +71,34 @@ describe("NavMenu (NOB-172)", () => {
       ]),
     );
   });
+
+  it("só com a área de Saúde, o menu não oferece Gestão de Segurança (NOB-175)", () => {
+    render(<NavMenu areas={["health"]} />);
+    const desktop = screen.getByRole("navigation");
+
+    expect(
+      within(desktop).queryByRole("button", { name: /Gestão de Segurança/ }),
+    ).toBeNull();
+    fireEvent.click(
+      within(desktop).getByRole("button", { name: /Medicina do Trabalho/ }),
+    );
+    expect(hrefsIn(desktop)).toEqual(
+      expect.arrayContaining(["/health-exams", "/incidents"]),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir Menu de Navegação" }));
+    expect(screen.queryAllByRole("button", { name: /Gestão de Segurança/ })).toEqual([]);
+  });
+
+  it("só com a área de Segurança, o menu não oferece Medicina do Trabalho (NOB-175)", () => {
+    render(<NavMenu areas={["safety"]} />);
+    const desktop = screen.getByRole("navigation");
+
+    expect(
+      within(desktop).queryByRole("button", { name: /Medicina do Trabalho/ }),
+    ).toBeNull();
+    expect(
+      within(desktop).getByRole("button", { name: /Gestão de Segurança/ }),
+    ).toBeTruthy();
+  });
 });

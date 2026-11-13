@@ -59,6 +59,11 @@ jest.mock("@/shared/server/actions/platform/onboarding", () => ({
   })),
 }));
 
+jest.mock("@/shared/server/actions/platform/access-scopes", () => ({
+  getOwnAccessAreasAction: jest.fn(),
+}));
+
+import { getOwnAccessAreasAction } from "@/shared/server/actions/platform/access-scopes";
 import { requireTenantContext } from "@/shared/auth/require-tenant-context";
 import { NoTenantContextError, UnauthorizedError } from "@/shared/auth/errors";
 import ProtectedLayout from "@/app/(protected)/layout";
@@ -77,6 +82,9 @@ describe("ProtectedLayout (gate Modelo B via requireTenantContext)", () => {
   beforeEach(() => {
     mockedRequire.mockReset();
     mockedRedirect.mockClear();
+    jest
+      .mocked(getOwnAccessAreasAction)
+      .mockResolvedValue({ ok: true, data: ["safety", "health"] });
   });
 
   it("(a) sem sessão (UnauthorizedError) → redirect('/sign-in?redirect_url=...')", async () => {
@@ -108,5 +116,39 @@ describe("ProtectedLayout (gate Modelo B via requireTenantContext)", () => {
     expect(container.textContent).toContain("conteúdo");
     expect(screen.queryByTestId("org-switcher")).toBeNull();
     expect(mockedRedirect).not.toHaveBeenCalled();
+  });
+
+  it("(d) menu reflete as áreas permitidas do usuário (NOB-175)", async () => {
+    mockedRequire.mockResolvedValue({
+      userId: "user_2",
+      tenantId: "tenant_1",
+      plan: "pro",
+      role: "collaborator",
+    });
+    jest
+      .mocked(getOwnAccessAreasAction)
+      .mockResolvedValue({ ok: true, data: ["health"] });
+
+    await renderLayout();
+    expect(screen.queryByRole("button", { name: /Gestão de Segurança/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /Medicina do Trabalho/ })).toBeTruthy();
+  });
+
+  it("(e) sem conseguir ler as áreas, o menu não oferece nenhuma área restrita", async () => {
+    mockedRequire.mockResolvedValue({
+      userId: "user_2",
+      tenantId: "tenant_1",
+      plan: "pro",
+      role: "collaborator",
+    });
+    jest.mocked(getOwnAccessAreasAction).mockResolvedValue({
+      ok: false,
+      error: { code: "UNKNOWN", message: "falha" },
+    });
+
+    await renderLayout();
+    expect(screen.queryByRole("button", { name: /Gestão de Segurança/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Medicina do Trabalho/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /Cadastro/ })).toBeTruthy();
   });
 });

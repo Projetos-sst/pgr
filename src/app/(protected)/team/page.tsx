@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { ROLE_LABEL, type AssignableRole } from "@/shared/domains/platform/team";
 import { resolvePageParams } from "@/shared/pagination";
@@ -31,6 +33,7 @@ export default async function EquipePage({
   const { rows, total } = result.ok ? result.data : { rows: [], total: 0 };
 
   const headers = ["Membro", "E-mail", "Cargo", "Papel"];
+  if (isOwner) headers.push("Acessos");
   if (canManage) headers.push("");
 
   return (
@@ -66,6 +69,21 @@ export default async function EquipePage({
               <td className="px-4 py-2">
                 {ROLE_LABEL[member.role as AssignableRole] ?? member.roleLabel}
               </td>
+              {isOwner ? (
+                <td className="px-4 py-2">
+                  {member.role === "owner" ? (
+                    "Completo"
+                  ) : (
+                    <Link
+                      href={`/team/${encodeURIComponent(member.userId)}/access`}
+                      aria-label={`Acessos de ${member.name}`}
+                      className="text-primary font-semibold hover:underline"
+                    >
+                      Configurar
+                    </Link>
+                  )}
+                </td>
+              ) : null}
               {canManage ? (
                 <td className="px-4 py-2">
                   <MemberActions

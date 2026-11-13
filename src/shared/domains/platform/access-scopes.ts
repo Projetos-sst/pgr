@@ -28,6 +28,11 @@ export const accessScopeGrantSchema = z
   .strict();
 
 export type AccessScopeGrant = z.infer<typeof accessScopeGrantSchema>;
+export type AccessScopeGrantInput = {
+  companyId: string;
+  workUnitId?: string;
+  area: string;
+};
 
 export type AccessScopeView = {
   id: string;

@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
-import { NAV, type MenuItem, type NavEntry } from "./nav-config";
+import { ACCESS_AREAS, type AccessArea } from "@/shared/domains/platform/access-scopes";
+
+import { NAV, visibleNav, type MenuItem, type NavEntry } from "./nav-config";
 
 function NavIcon({ name, className = "w-4 h-4" }: { name?: string; className?: string }) {
   if (!name) return null;
@@ -323,10 +325,13 @@ function isGroupExpanded(
 
 export function NavMenu({
   showOnboardingBadge = false,
+  areas = ACCESS_AREAS,
 }: {
   showOnboardingBadge?: boolean;
+  areas?: readonly AccessArea[];
 }) {
   const pathname = usePathname();
+  const nav = visibleNav(areas);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -375,7 +380,7 @@ export function NavMenu({
   return (
     <div ref={containerRef} className="flex items-center">
       <nav className="hidden items-center gap-1 xl:flex">
-        {NAV.map((entry) => {
+        {nav.map((entry) => {
           if (entry.kind === "link") {
             const active = isActive(pathname, entry.href);
             return (
@@ -656,7 +661,7 @@ export function NavMenu({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      {NAV.map((entry) => {
+                      {nav.map((entry) => {
                         if (entry.kind === "link") {
                           const active = isActive(pathname, entry.href);
                           return (

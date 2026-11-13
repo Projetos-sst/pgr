@@ -1,7 +1,12 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-import { allNavHrefs, groupHrefs, NAV } from "@/app/(protected)/_components/nav-config";
+import {
+  allNavHrefs,
+  groupHrefs,
+  NAV,
+  visibleNav,
+} from "@/app/(protected)/_components/nav-config";
 
 const PROTECTED_DIR = join(process.cwd(), "src", "app", "(protected)");
 
@@ -76,5 +81,44 @@ describe("mapa de menus (NOB-172, SEG-06)", () => {
 
   it("expõe a emissão de relatórios em PDF no menu", () => {
     expect(groupHrefs("Módulos")).toContain("/reports");
+  });
+
+  it("mostra o menu inteiro para quem tem as duas áreas (NOB-175)", () => {
+    expect(visibleNav(["safety", "health"])).toEqual(NAV);
+  });
+
+  it("esconde Gestão de Segurança e o PGR de quem só tem a área de Saúde", () => {
+    const nav = visibleNav(["health"]);
+    const hrefs = allNavHrefs(nav);
+
+    expect(nav.map((entry) => entry.label)).not.toContain("Gestão de Segurança");
+    expect(nav.map((entry) => entry.label)).toContain("Medicina do Trabalho");
+    expect(hrefs).toEqual(expect.arrayContaining([...SHORTCUTS_IN_BOTH_AREAS]));
+    expect(hrefs).toEqual(expect.arrayContaining(SHARED_MASTER_DATA));
+    expect(hrefs.filter((href) => ["/pgr", "/risks"].includes(href))).toEqual([]);
+    expect(SAFETY_ONLY.filter((href) => hrefs.includes(href))).toEqual([]);
+  });
+
+  it("esconde Medicina do Trabalho de quem só tem a área de Segurança", () => {
+    const nav = visibleNav(["safety"]);
+    const hrefs = allNavHrefs(nav);
+
+    expect(nav.map((entry) => entry.label)).not.toContain("Medicina do Trabalho");
+    expect(hrefs).toEqual(
+      expect.arrayContaining(["/pgr", "/risks", ...SHORTCUTS_IN_BOTH_AREAS]),
+    );
+    expect(
+      hrefs.filter((href) => ["/health-exams", "/medicos", "/medicine"].includes(href)),
+    ).toEqual([]);
+  });
+
+  it("sem área nenhuma deixa só o que não pertence a uma área", () => {
+    expect(visibleNav([]).map((entry) => entry.label)).toEqual([
+      "Dashboard",
+      "Módulos",
+      "Cadastro",
+      "Qualidade",
+    ]);
+    expect(allNavHrefs(visibleNav([]))).not.toContain("/pgr");
   });
 });

@@ -150,7 +150,7 @@ const OUTSIDER: ApiUser = { id: "outsider", role: "owner", tenant: "org_b" };
     const scopeId = granted.ok ? granted.data.id : "";
     expect(await revokeAccessScopeAction(X.scoped, scopeId)).toEqual({
       ok: true,
-      data: { revoked: true },
+      data: { id: scopeId },
     });
     expect(await revokeAccessScopeAction(X.scoped, scopeId)).toMatchObject({
       ok: false,

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import type {
   AccessArea,
-  AccessScopeGrant,
+  AccessScopeGrantInput,
   AccessScopeView,
 } from "@/shared/domains/platform/access-scopes";
 import { officeAction } from "@/shared/server/office-action";
@@ -34,7 +34,7 @@ export async function getOwnAccessAreasAction(): Promise<ActionResult<AccessArea
 
 export async function grantAccessScopeAction(
   userId: string,
-  input: AccessScopeGrant,
+  input: AccessScopeGrantInput,
 ): Promise<ActionResult<AccessScopeView>> {
   return officeAction(
     "platform.access_scopes.grant",
@@ -50,14 +50,13 @@ export async function grantAccessScopeAction(
 export async function revokeAccessScopeAction(
   userId: string,
   scopeId: string,
-): Promise<ActionResult<{ revoked: true }>> {
+): Promise<ActionResult<{ id: string }>> {
   return officeAction(
     "platform.access_scopes.revoke",
     async (ctx) => {
       await revokeAccessScope(ctx, userId, scopeId);
       revalidatePath("/", "layout");
-      const revoked: { revoked: true } = { revoked: true };
-      return revoked;
+      return { id: scopeId };
     },
     { audit: true },
   );

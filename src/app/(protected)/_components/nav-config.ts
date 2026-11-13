@@ -1,3 +1,5 @@
+import type { AccessArea } from "@/shared/domains/platform/access-scopes";
+
 export type SubMenuItem = {
   href: string;
   label: string;
@@ -8,12 +10,19 @@ export type MenuItem = {
   href?: string;
   label: string;
   iconName?: string;
+  area?: AccessArea;
   children?: SubMenuItem[];
 };
 
 export type NavEntry =
   | { kind: "link"; href: string; label: string; iconName?: string }
-  | { kind: "group"; label: string; iconName?: string; items: MenuItem[] };
+  | {
+      kind: "group";
+      label: string;
+      iconName?: string;
+      area?: AccessArea;
+      items: MenuItem[];
+    };
 
 export const NAV: NavEntry[] = [
   { kind: "link", href: "/dashboard", label: "Dashboard" },
@@ -22,7 +31,7 @@ export const NAV: NavEntry[] = [
     label: "Módulos",
     iconName: "folder",
     items: [
-      { href: "/pgr", label: "PGR", iconName: "alert-triangle" },
+      { href: "/pgr", label: "PGR", iconName: "alert-triangle", area: "safety" },
       { href: "/pgr-basic-offer", label: "Oferta de PGR básico", iconName: "file-text" },
       { href: "/esocial", label: "eSocial (SST)", iconName: "file-text" },
       { href: "/reports", label: "Relatórios em PDF", iconName: "file-check" },
@@ -51,6 +60,7 @@ export const NAV: NavEntry[] = [
     kind: "group",
     label: "Gestão de Segurança",
     iconName: "shield",
+    area: "safety",
     items: [
       { href: "/risks", label: "Riscos", iconName: "alert-triangle" },
       { href: "/risk-methodology", label: "Metodologia de Risco", iconName: "sliders" },
@@ -125,6 +135,7 @@ export const NAV: NavEntry[] = [
     kind: "group",
     label: "Medicina do Trabalho",
     iconName: "activity",
+    area: "health",
     items: [
       { href: "/medicine", label: "Painel", iconName: "clipboard-list" },
       {
@@ -175,8 +186,20 @@ export function groupHrefs(label: string): string[] {
   );
 }
 
-export function allNavHrefs(): string[] {
-  return NAV.flatMap((entry) =>
+export function allNavHrefs(nav: NavEntry[] = NAV): string[] {
+  return nav.flatMap((entry) =>
     entry.kind === "link" ? [entry.href] : entry.items.flatMap(menuItemHrefs),
   );
+}
+
+function inAreas(areas: readonly AccessArea[], area?: AccessArea): boolean {
+  return area === undefined || areas.includes(area);
+}
+
+export function visibleNav(areas: readonly AccessArea[]): NavEntry[] {
+  return NAV.flatMap((entry): NavEntry[] => {
+    if (entry.kind === "link") return [entry];
+    if (!inAreas(areas, entry.area)) return [];
+    return [{ ...entry, items: entry.items.filter((item) => inAreas(areas, item.area)) }];
+  });
 }
