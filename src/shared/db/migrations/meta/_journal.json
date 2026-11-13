@@ -631,6 +631,13 @@
       "when": 1794607030530,
       "tag": "0089_retention_policy_and_exports",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1794609833282,
+      "tag": "0090_commercial_catalog_and_contracts",
+      "breakpoints": true
     }
   ]
 }

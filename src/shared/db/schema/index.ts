@@ -390,3 +390,11 @@ export {
   type MedicoLinkReconfirmation,
   type IdentityChallengeAttempt,
 } from "./professional-identity";
+export {
+  commercialOfferVersions,
+  commercialOfferItems,
+  commercialCustomers,
+  commercialContracts,
+  commercialContractItems,
+  commercialContractCompanies,
+} from "./commercial";
