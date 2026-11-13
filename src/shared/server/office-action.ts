@@ -2,6 +2,7 @@ import "server-only";
 
 import { requireOfficeStaff } from "@/shared/auth/require-office-staff";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
+import { runAsActor } from "@/shared/db/session-actor";
 import { logTenantEvent } from "@/shared/tenant/audit-log";
 
 import { toActionError } from "./action-error";
@@ -27,7 +28,8 @@ export async function officeAction<T>(
           await import("@/shared/auth/require-tenant-context")
         ).requireTenantContext()
       : await requireOfficeStaff();
-    const data = await fn(ctx);
+    const resolved = ctx;
+    const data = await runAsActor(resolved.userId, () => fn(resolved));
     if (opts.audit) {
       logTenantEvent("info", {
         operation,

@@ -9,6 +9,7 @@ import {
 } from "@/shared/auth/require-office-staff";
 import { ForbiddenError, NoTenantContextError } from "@/shared/auth/errors";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
+import { runAsActor } from "@/shared/db/session-actor";
 import { toActionError } from "@/shared/server/action-error";
 import { logTenantEvent, safeErrorMessage } from "@/shared/tenant/audit-log";
 
@@ -109,8 +110,11 @@ export async function restHandler<T>(
 ): Promise<NextResponse> {
   let ctx: TenantContext | null = null;
   try {
-    ctx = opts.tenantAccess ? await resolveTenantContext(req) : await resolveContext(req);
-    const data = await fn(ctx);
+    const resolved = opts.tenantAccess
+      ? await resolveTenantContext(req)
+      : await resolveContext(req);
+    ctx = resolved;
+    const data = await runAsActor(resolved.userId, () => fn(resolved));
     auditWrite(req, "ok", ctx);
     const status = opts.status ?? 200;
     if (status === 204) return new NextResponse(null, { status: 204 });

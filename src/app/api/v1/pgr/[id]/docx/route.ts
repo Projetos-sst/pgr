@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { resolveContext, restStatusForCode } from "@/shared/api/rest";
+import { runAsActor } from "@/shared/db/session-actor";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import {
   pgrDocxFormatSchema,
@@ -34,11 +35,14 @@ async function respond(
 ) {
   let ctx: TenantContext | null = null;
   try {
-    ctx = await resolveContext(req);
+    const resolved = await resolveContext(req);
+    ctx = resolved;
     const { id } = await params;
     const options = await read();
-    const { fileName, contentType, file, missingTags, provenance } =
-      await generatePgrDocx(ctx.tenantId, id, options);
+    const { fileName, contentType, file, missingTags, provenance } = await runAsActor(
+      resolved.userId,
+      () => generatePgrDocx(resolved.tenantId, id, options),
+    );
     return new NextResponse(new Uint8Array(file), {
       status: 200,
       headers: {

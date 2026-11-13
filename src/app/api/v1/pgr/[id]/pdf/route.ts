@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { resolveContext, restStatusForCode } from "@/shared/api/rest";
+import { runAsActor } from "@/shared/db/session-actor";
 import { toActionError } from "@/shared/server/action-error";
 import { generatePgrPdf } from "@/shared/server/platform/pgr-pdf-core";
 
@@ -22,9 +23,9 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     const { id } = await params;
     const color = req.nextUrl.searchParams.get("color") ?? undefined;
 
-    const { fileName, pdf } = await generatePgrPdf(ctx.tenantId, id, {
-      coverColor: color,
-    });
+    const { fileName, pdf } = await runAsActor(ctx.userId, () =>
+      generatePgrPdf(ctx.tenantId, id, { coverColor: color }),
+    );
 
     return new NextResponse(new Uint8Array(pdf), {
       status: 200,
