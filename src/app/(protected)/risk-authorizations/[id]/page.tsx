@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireTenantContext } from "@/shared/auth/require-tenant-context";
 import { getRiskAuthorizationWorkspaceAction } from "@/shared/server/actions/medicine/risk-authorizations";
+import { appointmentOriginLabel } from "@/shared/domains/medicine/risk-authorization";
 import { MEDICAL_RISK_STATUS_LABELS } from "@/shared/domains/medicine/risk-sources";
 import { riskAgentTypeLabel } from "@/shared/domains/pgr/risks";
 import { resolvePageParams } from "@/shared/pagination";
@@ -54,7 +55,7 @@ export default async function RiskAuthorizationPage({
       {view.candidatesNotice && <p role="status">{view.candidatesNotice}</p>}
       <AuthorizationForms
         companyId={id}
-        canAppoint={view.canAppoint}
+        appointmentOrigin={view.appointmentOrigin}
         canAuthorize={view.canAuthorize}
         candidates={view.candidates}
         currentAuthorizer={view.authorizer?.userId ?? null}
@@ -161,6 +162,11 @@ export default async function RiskAuthorizationPage({
                     : "Revogação profissional"}
               {event.subjectUserId ? ` · ${label(event.subjectUserId)}` : ""}
             </p>
+            {appointmentOriginLabel(event.details.origin) && (
+              <p className="text-sm">
+                Origem: {appointmentOriginLabel(event.details.origin)}
+              </p>
+            )}
             <details>
               <summary>Motivo e evidência registrados</summary>
               <p className="text-sm">

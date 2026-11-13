@@ -6,6 +6,7 @@ import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ValidationError } from "@/shared/errors/validation-error";
 import { toDomainRole } from "@/shared/tenant/roles";
 import type {
+  AppointmentOrigin,
   CompanyAuthorizerInput,
   ProfessionalAuthorizationInput,
   MedicalRiskDecisionInput,
@@ -14,6 +15,7 @@ import { withOrg, type TenantTransaction } from "../with-org";
 import { companies } from "../schema/companies";
 import { orgMemberships } from "../schema/org-memberships";
 import {
+  companyRepresentativeBinding,
   companyRiskAuthorizers as authorizers,
   professionalRiskAuthorizations as grants,
   riskAuthorizationEvents as events,
@@ -56,6 +58,17 @@ async function membership(
     throw new ForbiddenError("A conta não possui vínculo permitido com esta empresa.");
   return row;
 }
+function appointmentOrigin(
+  ctx: TenantContext,
+  memberRole: string,
+  representative: boolean,
+  delegated: boolean,
+): AppointmentOrigin | null {
+  if (ctx.role === "owner" && toDomainRole(memberRole) === "owner") return "office_owner";
+  if (ctx.role === "client" && representative && !delegated)
+    return "company_representative";
+  return null;
+}
 async function context(
   tx: TenantTransaction,
   ctx: TenantContext,
@@ -63,12 +76,21 @@ async function context(
   lock = false,
 ) {
   const query = tx
-    .select({ id: companies.id, name: companies.razaoSocial })
+    .select({
+      id: companies.id,
+      name: companies.razaoSocial,
+      representative: companyRepresentativeBinding(
+        sql`${ctx.tenantId}`,
+        sql`${companyId}::uuid`,
+        sql`${ctx.userId}`,
+      ),
+    })
     .from(companies)
     .where(and(eq(companies.id, companyId), eq(companies.orgId, ctx.tenantId)))
     .limit(1);
-  const [company] = await (lock ? query.for("update") : query);
-  if (!company) throw new NotFoundError();
+  const [found] = await (lock ? query.for("update") : query);
+  if (!found) throw new NotFoundError();
+  const { representative, ...company } = found;
   const member = await membership(tx, ctx.tenantId, ctx.userId, companyId);
   const [authorizer] = await tx
     .select()
@@ -86,13 +108,22 @@ async function context(
       ),
     )
     .limit(1);
+  const canAuthorize = authorizer?.userId === ctx.userId;
+  const canReview = grant?.active === true;
+  const origin = appointmentOrigin(
+    ctx,
+    member.role,
+    representative,
+    canAuthorize || canReview,
+  );
   return {
     company,
     authorizer: authorizer ?? null,
     grant: grant ?? null,
-    canAppoint: ctx.role === "owner" && toDomainRole(member.role) === "owner",
-    canAuthorize: authorizer?.userId === ctx.userId,
-    canReview: grant?.active === true,
+    appointmentOrigin: origin,
+    canAppoint: origin !== null,
+    canAuthorize,
+    canReview,
   };
 }
 function requireWorkspace(access: {
@@ -112,9 +143,16 @@ export async function setCompanyRiskAuthorizer(
   return auditedTenantWrite(ctx.tenantId, "medicine.authorizer.change", () =>
     actorTx(ctx, async (tx) => {
       const access = await context(tx, ctx, companyId, true);
-      if (!access.canAppoint)
+      if (!access.appointmentOrigin)
         throw new ForbiddenError(
-          "Somente o owner pode registrar a indicação da empresa-cliente.",
+          "Somente o administrador do escritório ou o representante da própria empresa pode registrar a indicação.",
+        );
+      if (
+        access.appointmentOrigin === "company_representative" &&
+        input.userId === ctx.userId
+      )
+        throw new ForbiddenError(
+          "O representante da empresa não pode indicar a própria conta como autorizador.",
         );
       if (input.userId) await membership(tx, ctx.tenantId, input.userId, companyId);
       await tx
@@ -143,7 +181,11 @@ export async function setCompanyRiskAuthorizer(
         actor: ctx.userId,
         subjectUserId: input.userId,
         event: input.userId ? "authorizer_appointed" : "authorizer_revoked",
-        details: { previous: access.authorizer, next: input },
+        details: {
+          previous: access.authorizer,
+          next: input,
+          origin: access.appointmentOrigin,
+        },
       });
     }),
   );
@@ -374,6 +416,7 @@ export async function getRiskAuthorizationWorkspace(
       .where(reviewScope);
     return {
       company: access.company,
+      appointmentOrigin: access.appointmentOrigin,
       canAppoint: access.canAppoint,
       canAuthorize: access.canAuthorize,
       canReview: access.canReview,
@@ -403,7 +446,12 @@ export async function listRiskAuthorizationCompanies(
       .limit(1);
     if (!actor[0]) throw new ForbiddenError();
     const owner = ctx.role === "owner" && toDomainRole(actor[0].role) === "owner";
-    const eligibility = sql`(${owner} or exists (select 1 from public.company_risk_authorizers a where a.org_id=${companies.orgId} and a.company_id=${companies.id} and a.user_id=${ctx.userId}) or exists (select 1 from public.professional_risk_authorizations p where p.org_id=${companies.orgId} and p.company_id=${companies.id} and p.user_id=${ctx.userId} and p.active=true))`;
+    const representative = companyRepresentativeBinding(
+      companies.orgId,
+      companies.id,
+      sql`${ctx.userId}`,
+    );
+    const eligibility = sql`(${owner} or ${representative} or exists (select 1 from public.company_risk_authorizers a where a.org_id=${companies.orgId} and a.company_id=${companies.id} and a.user_id=${ctx.userId}) or exists (select 1 from public.professional_risk_authorizations p where p.org_id=${companies.orgId} and p.company_id=${companies.id} and p.user_id=${ctx.userId} and p.active=true))`;
     const where = and(
       eq(companies.orgId, ctx.tenantId),
       eligibility,

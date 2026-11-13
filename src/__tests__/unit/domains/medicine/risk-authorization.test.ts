@@ -1,4 +1,5 @@
 import {
+  appointmentOriginLabel,
   companyAuthorizerSchema,
   professionalAuthorizationSchema,
   medicalRiskDecisionSchema,
@@ -151,5 +152,16 @@ describe("mensagens em português (sem texto padrão do Zod)", () => {
       }),
     );
     expect(messages.evidence).toBe("Máximo de 2.000 caracteres.");
+  });
+});
+
+describe("origem da indicação no histórico", () => {
+  it("nomeia quem fez a indicação e ignora registro antigo sem origem", () => {
+    expect(appointmentOriginLabel("company_representative")).toBe(
+      "Indicação feita pelo representante da empresa",
+    );
+    expect(appointmentOriginLabel("office_owner")).toBe("Registro feito pelo escritório");
+    expect(appointmentOriginLabel(undefined)).toBeNull();
+    expect(appointmentOriginLabel("forged")).toBeNull();
   });
 });

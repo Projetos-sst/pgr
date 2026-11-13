@@ -589,6 +589,13 @@
       "when": 1794591744832,
       "tag": "0083_member_access_scopes",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1794596993625,
+      "tag": "0084_representative_appoints_risk_authorizer",
+      "breakpoints": true
     }
   ]
 }

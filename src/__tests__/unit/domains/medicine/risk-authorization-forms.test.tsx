@@ -33,7 +33,7 @@ it("owner records client nomination and evidence without exposing professional-g
   render(
     <AuthorizationForms
       companyId="company"
-      canAppoint
+      appointmentOrigin="office_owner"
       canAuthorize={false}
       candidates={candidates}
       currentAuthorizer={null}
@@ -62,11 +62,45 @@ it("owner records client nomination and evidence without exposing professional-g
   expect(authorizeCompanyProfessionalAction).not.toHaveBeenCalled();
 });
 
+it("company representative appoints with own-company wording and without professional-grant controls", async () => {
+  render(
+    <AuthorizationForms
+      companyId="company"
+      appointmentOrigin="company_representative"
+      canAuthorize={false}
+      candidates={candidates}
+      currentAuthorizer={null}
+    />,
+  );
+  expect(screen.getByText("Indicar o autorizador da empresa")).toBeInTheDocument();
+  expect(screen.getByText(/não pode indicar a própria conta/)).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Registrar autorização" }),
+  ).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText(/Autorizador indicado/), {
+    target: { value: "delegate" },
+  });
+  fireEvent.change(screen.getByLabelText(/Evidência da indicação/), {
+    target: { value: "Ata da diretoria" },
+  });
+  fireEvent.change(screen.getByLabelText(/Motivo do registro/), {
+    target: { value: "Indicação da empresa" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Registrar indicação" }));
+  await waitFor(() =>
+    expect(appointCompanyAuthorizerAction).toHaveBeenCalledWith("company", {
+      userId: "delegate",
+      evidence: "Ata da diretoria",
+      reason: "Indicação da empresa",
+    }),
+  );
+});
+
 it("authorizer can revoke a professional without entering new identity information", async () => {
   render(
     <AuthorizationForms
       companyId="company"
-      canAppoint={false}
+      appointmentOrigin={null}
       canAuthorize
       candidates={candidates}
       currentAuthorizer="delegate"
@@ -141,7 +175,7 @@ it("appoint: each server field error is shown next to its own field", async () =
   render(
     <AuthorizationForms
       companyId="company"
-      canAppoint
+      appointmentOrigin="office_owner"
       canAuthorize={false}
       candidates={candidates}
       currentAuthorizer={null}
@@ -177,7 +211,7 @@ it("grant: nested identity errors reach the identity fields; unslotted keys are 
   render(
     <AuthorizationForms
       companyId="company"
-      canAppoint={false}
+      appointmentOrigin={null}
       canAuthorize
       candidates={candidates}
       currentAuthorizer="delegate"
