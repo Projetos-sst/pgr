@@ -125,3 +125,23 @@ describe("riskInputSchema — regra qualitative_na (US1)", () => {
     ).toThrow();
   });
 });
+
+describe("riskInputSchema — catálogo de agentes não bloqueia a gravação", () => {
+  it("aceita agente livre e unidade fora do usual do grupo, como nos registros antigos", () => {
+    const parsed = riskInputSchema.parse({
+      ...baseValues,
+      agentType: "chemical",
+      hazard: "Agente não previsto na tabela",
+      measurementUnit: "lux",
+      concentrationIntensity: "320",
+    });
+    expect(parsed.hazard).toBe("Agente não previsto na tabela");
+    expect(parsed.measurementUnit).toBe("lux");
+  });
+
+  it("grupo sem medição usual não exige unidade nem concentração", () => {
+    const parsed = riskInputSchema.parse({ ...baseValues, agentType: "accident" });
+    expect(parsed.measurementUnit).toBeUndefined();
+    expect(parsed.concentrationIntensity).toBeUndefined();
+  });
+});

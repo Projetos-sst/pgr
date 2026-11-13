@@ -9,11 +9,13 @@ import { listGesAction } from "@/shared/server/actions/pgr/ges";
 import {
   riskAgentTypeSchema,
   exposureTimeSchema,
-  measurementUnitSchema,
   riskAgentTypeLabel,
   exposureTimeLabel,
-  measurementUnitLabel,
 } from "@/shared/domains/pgr/risks";
+import {
+  catalogAgentNames,
+  unitOptionsFor,
+} from "@/shared/domains/pgr/risk-agent-catalog";
 import type { RiskInput } from "@/shared/domains/pgr/risk";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 import type { ActionError } from "@/shared/server/result";
@@ -38,10 +40,6 @@ const AGENT_TYPE_OPTIONS = riskAgentTypeSchema.options.map((v) => ({
 const EXPOSURE_TIME_OPTIONS = exposureTimeSchema.options.map((v) => ({
   value: v,
   label: exposureTimeLabel(v),
-}));
-const MEASUREMENT_UNIT_OPTIONS = measurementUnitSchema.options.map((v) => ({
-  value: v,
-  label: measurementUnitLabel(v),
 }));
 
 type Option = { id: string; name: string };
@@ -79,6 +77,7 @@ export function RiskForm({
   const [companyId, setCompanyId] = useState(initial?.companyId ?? "");
   const [workUnitId, setWorkUnitId] = useState(initial?.workUnitId ?? "");
   const [gesId, setGesId] = useState(initial?.gesId ?? "");
+  const [agentType, setAgentType] = useState(initial?.agentType ?? "");
   const [workUnitOptions, setWorkUnitOptions] = useState<Option[]>([]);
   const [gesOptions, setGesOptions] = useState<Option[]>([]);
 
@@ -211,7 +210,8 @@ export function RiskForm({
           label="Grupo do agente"
           name="agentType"
           required
-          defaultValue={initial?.agentType ?? ""}
+          value={agentType}
+          onChange={setAgentType}
           options={AGENT_TYPE_OPTIONS}
           error={errors.agentType}
         />
@@ -227,6 +227,7 @@ export function RiskForm({
           label="Perigo"
           name="hazard"
           defaultValue={initial?.hazard ?? ""}
+          suggestions={catalogAgentNames(agentType)}
           error={errors.hazard}
         />
         <TextField
@@ -279,7 +280,7 @@ export function RiskForm({
           label="Unidade de medida"
           name="measurementUnit"
           defaultValue={initial?.measurementUnit ?? ""}
-          options={MEASUREMENT_UNIT_OPTIONS}
+          options={unitOptionsFor(agentType)}
           emptyLabel="— não informado —"
           error={errors.measurementUnit}
         />

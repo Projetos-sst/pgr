@@ -453,6 +453,29 @@ describe("buildPgrDocxContent", () => {
     expect(ges.risks[3].result).toBe("1,25 m/s²");
   });
 
+  it("registro antigo com unidade fora do catálogo do grupo sai no documento como foi gravado", () => {
+    const legacy: ConsolidatedRisk = {
+      ...noise,
+      id: "r7",
+      agentType: "chemical",
+      hazard: "Tinta",
+      measurementUnit: "lux",
+      concentrationIntensity: "320",
+      assessment: null,
+    };
+    const [ges] = buildPgrDocxContent(
+      { ...data, ges: [{ id: "g1", name: "X", risks: [legacy] }] },
+      extras,
+      { emittedAt: "x" },
+    ).ges;
+    expect(ges.risks[0]).toMatchObject({
+      agentType: "Químico",
+      hazard: "Tinta",
+      unitValue: "13 - lux (lx)",
+      result: "320 lux",
+    });
+  });
+
   it("faixas da metodologia da organização no selo e no plano de ação", () => {
     const withBands = buildPgrDocxContent(data, extras, {
       emittedAt: "x",

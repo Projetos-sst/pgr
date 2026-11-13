@@ -154,10 +154,59 @@ it("blocks missing assessments and incomplete quantitative readings", () => {
         {
           ...data.ges[0],
           risks: [
-            { ...base, assessment: { ...base.assessment!, criterion: "quantitative" } },
+            {
+              ...base,
+              agentType: "physical",
+              assessment: { ...base.assessment!, criterion: "quantitative" },
+            },
           ],
         },
       ],
     }).issues.map((i) => i.code),
   ).toContain("measurement_incomplete");
+});
+
+const withRisk = (overrides: Partial<ConsolidatedRisk>) =>
+  run({ ...data, ges: [{ ...data.ges[0], risks: [{ ...risk(), ...overrides }] }] });
+
+it.each<ConsolidatedRisk["agentType"]>([
+  "ergonomic",
+  "mechanical",
+  "accident",
+  "psychosocial",
+])(
+  "does not require quantitative fields for the %s group, which admits no measurement",
+  (agentType) => {
+    const base = risk();
+    const codes = withRisk({
+      agentType,
+      assessment: base.assessment && { ...base.assessment, criterion: "quantitative" },
+    }).issues.map((i) => i.code);
+    expect(codes).not.toContain("measurement_incomplete");
+  },
+);
+
+it("keeps a legacy unit outside the catalog valid and readable, with a warning only", () => {
+  const legacy = withRisk({
+    agentType: "chemical",
+    hazard: "Tinta",
+    measurementUnit: "lux",
+  });
+  const usual = withRisk({
+    agentType: "chemical",
+    hazard: "Tinta",
+    measurementUnit: "ppm",
+  });
+  const notice = legacy.issues.filter((i) => i.code === "unit_outside_catalog");
+  expect(notice).toEqual([
+    expect.objectContaining({
+      severity: "warning",
+      href: "/risks/risk/edit",
+      message: expect.stringContaining(
+        "A unidade lux não está entre as usuais do grupo Químico",
+      ),
+    }),
+  ]);
+  expect(legacy.blockingCount).toBe(usual.blockingCount);
+  expect(usual.issues.map((i) => i.code)).not.toContain("unit_outside_catalog");
 });
