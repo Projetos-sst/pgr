@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import {
@@ -11,9 +11,16 @@ import {
   entitlementChanges,
   type EntitlementState,
 } from "@/shared/domains/commercial/entitlement";
+import {
+  applyInvoiceSnapshot,
+  classifyInvoiceLines,
+  withUndetailedRemainder,
+} from "@/shared/domains/commercial/invoice";
 import type {
   CheckoutCompletedEvent,
   CheckoutExpiredEvent,
+  InvoiceEvent,
+  InvoiceSnapshot,
   ProviderEvent,
   ProviderEventReference,
   SubscriptionEvent,
@@ -30,16 +37,21 @@ import { db } from "../index";
 import {
   billingCheckoutSessions,
   billingEvents,
+  billingInvoiceItems,
+  billingInvoices,
   billingProviderCustomers,
+  billingProviderPrices,
   billingSubscriptions,
   commercialEntitlements,
 } from "../schema/billing";
-import { commercialContracts } from "../schema/commercial";
+import { commercialContracts, commercialOfferItems } from "../schema/commercial";
 import { withOrg, type TenantTransaction } from "../with-org";
 
 const sessions = billingCheckoutSessions;
 const subscriptions = billingSubscriptions;
 const entitlements = commercialEntitlements;
+const invoices = billingInvoices;
+const prices = billingProviderPrices;
 
 const NOT_YET_PAID: EntitlementState = {
   status: "inactive",
@@ -275,6 +287,74 @@ async function mirrorSubscription(
   return { outcome: "applied", detail: decision.next.status };
 }
 
+async function invoiceItems(tx: TenantTransaction, invoice: InvoiceSnapshot) {
+  const lines = withUndetailedRemainder(invoice.lines, invoice.totalCents);
+  const priceIds = lines.flatMap((line) => line.providerPriceId ?? []);
+  const known = await tx
+    .select({
+      providerPriceId: prices.providerPriceId,
+      service: commercialOfferItems.service,
+    })
+    .from(prices)
+    .innerJoin(commercialOfferItems, eq(commercialOfferItems.id, prices.offerItemId))
+    .where(
+      and(
+        eq(prices.provider, BILLING_PROVIDER),
+        inArray(prices.providerPriceId, priceIds),
+      ),
+    );
+  return classifyInvoiceLines(lines, known);
+}
+
+async function createInvoice({ tx, link }: EventContext, event: InvoiceEvent) {
+  const { lines: _lines, ...header } = event.invoice;
+  const [created] = await tx
+    .insert(invoices)
+    .values({
+      ...header,
+      ...link,
+      provider: BILLING_PROVIDER,
+      lastEventAt: event.occurredAt,
+    })
+    .returning({ id: invoices.id });
+  const items = await invoiceItems(tx, event.invoice);
+  if (items.length === 0) return;
+  await tx
+    .insert(billingInvoiceItems)
+    .values(items.map((item) => ({ ...item, orgId: link.orgId, invoiceId: created.id })));
+}
+
+async function mirrorInvoice(
+  context: EventContext,
+  event: InvoiceEvent,
+): Promise<EventResult> {
+  const { tx, link } = context;
+  const { status, totalCents, dueAt, paidAt, providerInvoiceId } = event.invoice;
+  const [current] = await tx
+    .select({
+      id: invoices.id,
+      status: invoices.status,
+      lastEventAt: invoices.lastEventAt,
+    })
+    .from(invoices)
+    .where(
+      and(
+        eq(invoices.orgId, link.orgId),
+        eq(invoices.provider, BILLING_PROVIDER),
+        eq(invoices.providerInvoiceId, providerInvoiceId),
+      ),
+    );
+  if (applyInvoiceSnapshot(current ?? null, status, event.occurredAt) === "stale")
+    return { outcome: "stale", detail: `invoice_kept:${current?.status}` };
+  if (!current) await createInvoice(context, event);
+  if (current)
+    await tx
+      .update(invoices)
+      .set({ status, totalCents, dueAt, paidAt, lastEventAt: event.occurredAt })
+      .where(and(eq(invoices.orgId, link.orgId), eq(invoices.id, current.id)));
+  return { outcome: "applied", detail: `invoice_${status}` };
+}
+
 function applyEvent(context: EventContext, event: ProviderEvent): Promise<EventResult> {
   switch (event.kind) {
     case "checkout_completed":
@@ -283,6 +363,8 @@ function applyEvent(context: EventContext, event: ProviderEvent): Promise<EventR
       return expireCheckout(context, event);
     case "subscription":
       return mirrorSubscription(context, event);
+    case "invoice":
+      return mirrorInvoice(context, event);
   }
 }
 

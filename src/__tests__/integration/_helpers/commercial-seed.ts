@@ -257,3 +257,47 @@ export const subscriptionEvent = (
     },
     overrides,
   );
+
+export type InvoiceLineSeed = { price: string | null; amount: number; quantity?: number };
+
+export const invoiceEvent = (
+  checkout: CheckoutRef,
+  type: string,
+  invoice: {
+    id?: string;
+    status?: string;
+    total?: number;
+    lines: InvoiceLineSeed[];
+    object?: Record<string, unknown>;
+  },
+  overrides: Parameters<typeof providerEvent>[2] = {},
+) =>
+  providerEvent(
+    type,
+    {
+      id: invoice.id ?? `in_${checkout.id.slice(0, 8)}`,
+      status: invoice.status ?? "paid",
+      currency: "brl",
+      total: invoice.total ?? invoice.lines.reduce((sum, line) => sum + line.amount, 0),
+      due_date: null,
+      period_start: T0,
+      period_end: T0 + 2_592_000,
+      status_transitions: { finalized_at: T0, paid_at: T0 + 60 },
+      parent: {
+        subscription_details: {
+          subscription: providerIds(checkout).subscription,
+          metadata: { commercialCheckoutId: checkout.id },
+        },
+      },
+      lines: {
+        data: invoice.lines.map((line) => ({
+          description: line.price ? "Linha do provedor" : "Ajuste",
+          amount: line.amount,
+          quantity: line.quantity ?? 1,
+          pricing: { price_details: { price: line.price } },
+        })),
+      },
+      ...invoice.object,
+    },
+    overrides,
+  );

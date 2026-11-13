@@ -1,3 +1,5 @@
+import type { InvoiceStatus } from "./billing-model";
+import type { InvoiceLine } from "./invoice";
 import type { SubscriptionSnapshot } from "./subscription";
 
 export type ProviderEventReference = {
@@ -26,8 +28,24 @@ export type SubscriptionEvent = ProviderEventBase & {
   kind: "subscription";
   snapshot: SubscriptionSnapshot;
 };
+export type InvoiceSnapshot = {
+  providerInvoiceId: string;
+  status: InvoiceStatus;
+  currency: string;
+  totalCents: number;
+  dueAt: Date | null;
+  paidAt: Date | null;
+  periodStart: Date | null;
+  periodEnd: Date | null;
+  lines: InvoiceLine[];
+};
+export type InvoiceEvent = ProviderEventBase & {
+  kind: "invoice";
+  invoice: InvoiceSnapshot;
+};
 
 export type ProviderEvent =
   | CheckoutCompletedEvent
   | CheckoutExpiredEvent
-  | SubscriptionEvent;
+  | SubscriptionEvent
+  | InvoiceEvent;

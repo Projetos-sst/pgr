@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { subscriptionStatusSchema } from "@/shared/domains/commercial/billing-model";
+import {
+  invoiceStatusSchema,
+  subscriptionStatusSchema,
+} from "@/shared/domains/commercial/billing-model";
 import { CHECKOUT_REFERENCE_KEY } from "@/shared/domains/commercial/checkout";
 import type {
   ProviderEvent,
@@ -56,6 +59,40 @@ const subscriptionSchema = periodSchema.extend({
     .object({ data: z.array(periodSchema) })
     .nullish()
     .transform((items) => items?.data[0] ?? null),
+});
+const invoiceLineSchema = z.object({
+  description: z.string().nullish(),
+  amount: z.number().int(),
+  quantity: z.number().int().positive().nullish(),
+  pricing: z
+    .object({ price_details: z.object({ price: expandable }).nullish() })
+    .nullish(),
+  price: expandable,
+});
+const invoiceSchema = z.object({
+  id: providerId,
+  status: invoiceStatusSchema,
+  currency: z
+    .string()
+    .length(3)
+    .transform((currency) => currency.toUpperCase()),
+  total: z.number().int(),
+  due_date: optionalInstant,
+  period_start: optionalInstant,
+  period_end: optionalInstant,
+  status_transitions: z
+    .object({ finalized_at: optionalInstant, paid_at: optionalInstant })
+    .nullish(),
+  parent: z
+    .object({
+      subscription_details: z
+        .object({ subscription: expandable, metadata: checkoutReference })
+        .nullish(),
+    })
+    .nullish(),
+  subscription: expandable,
+  subscription_details: z.object({ metadata: checkoutReference }).nullish(),
+  lines: z.object({ data: z.array(invoiceLineSchema) }),
 });
 
 type Normalized<T> = T extends ProviderEvent
@@ -121,12 +158,49 @@ const subscriptionChanged: Normalizer = (object) => {
   };
 };
 
+const invoiceChanged: Normalizer = (object) => {
+  const parsed = invoiceSchema.safeParse(object);
+  if (!parsed.success) return null;
+  const invoice = parsed.data;
+  const details = invoice.parent?.subscription_details;
+  const reference: ProviderEventReference = {
+    checkoutId: details?.metadata ?? invoice.subscription_details?.metadata ?? null,
+    providerSubscriptionId: details?.subscription ?? invoice.subscription,
+  };
+  if (!reference.checkoutId && !reference.providerSubscriptionId) return null;
+  return {
+    kind: "invoice",
+    reference,
+    invoice: {
+      providerInvoiceId: invoice.id,
+      status: invoice.status,
+      currency: invoice.currency,
+      totalCents: invoice.total,
+      dueAt: invoice.due_date ?? invoice.status_transitions?.finalized_at ?? null,
+      paidAt: invoice.status_transitions?.paid_at ?? null,
+      periodStart: invoice.period_start,
+      periodEnd: invoice.period_end,
+      lines: invoice.lines.data.map((line) => ({
+        providerPriceId: line.pricing?.price_details?.price ?? line.price,
+        label: line.description ?? "",
+        quantity: line.quantity ?? 1,
+        amountCents: line.amount,
+      })),
+    },
+  };
+};
+
 export const STRIPE_EVENT_NORMALIZERS: Record<string, Normalizer> = {
   "checkout.session.completed": checkoutCompleted,
   "checkout.session.expired": checkoutExpired,
   "customer.subscription.created": subscriptionChanged,
   "customer.subscription.updated": subscriptionChanged,
   "customer.subscription.deleted": subscriptionChanged,
+  "invoice.finalized": invoiceChanged,
+  "invoice.paid": invoiceChanged,
+  "invoice.payment_failed": invoiceChanged,
+  "invoice.voided": invoiceChanged,
+  "invoice.marked_uncollectible": invoiceChanged,
 };
 
 function normalize(envelope: Envelope): ProviderEvent | null {

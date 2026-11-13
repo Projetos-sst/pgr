@@ -4,6 +4,7 @@ import { officeAction } from "@/shared/server/office-action";
 import { getContractBilling } from "@/shared/server/commercial/billing-events-core";
 import { startContractCheckout } from "@/shared/server/commercial/checkout-core";
 import * as core from "@/shared/server/commercial/commercial-core";
+import { getInvoice, listInvoices } from "@/shared/server/commercial/invoices-core";
 
 export async function listCommercialOffersAction() {
   return officeAction("commercial.offer.list", (ctx) => core.listSellableOffers(ctx));
@@ -65,4 +66,12 @@ export async function getCommercialBillingAction(contractId: string) {
   return officeAction("commercial.billing.get", (ctx) =>
     getContractBilling(ctx, contractId),
   );
+}
+
+export async function listCommercialInvoicesAction(filters: unknown = {}) {
+  return officeAction("commercial.invoice.list", (ctx) => listInvoices(ctx, filters));
+}
+
+export async function getCommercialInvoiceAction(id: string) {
+  return officeAction("commercial.invoice.get", (ctx) => getInvoice(ctx, id));
 }
