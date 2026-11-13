@@ -6,6 +6,7 @@ import {
   date,
   timestamp,
   index,
+  uniqueIndex,
   pgPolicy,
 } from "drizzle-orm/pg-core";
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
@@ -14,6 +15,7 @@ import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { companies } from "./companies";
 import { addressColumns } from "./address-columns";
+import { actorWorkUnitScope } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -55,11 +57,18 @@ export const workUnits = pgTable(
   (table) => [
     index("idx_work_units_org_id").on(table.orgId),
     index("idx_work_units_company_id").on(table.companyId),
+    uniqueIndex("uq_work_units_id_company").on(table.id, table.companyId),
     pgPolicy("work_units_isolation", {
       for: "all",
       to: appRuntimeRole,
       using: tenantScope,
       withCheck: tenantScope,
+    }),
+    pgPolicy("work_units_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorWorkUnitScope(table.companyId, table.id),
     }),
   ],
 ).enableRLS();

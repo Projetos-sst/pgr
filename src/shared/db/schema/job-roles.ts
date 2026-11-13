@@ -14,6 +14,7 @@ import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { companies } from "./companies";
+import { actorCompanyScope } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -38,6 +39,12 @@ export const jobRoles = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("job_roles_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorCompanyScope(table.companyId),
+    }),
     index("idx_job_roles_org_id").on(table.orgId),
     index("idx_job_roles_company_id").on(table.companyId),
     uniqueIndex("uq_job_roles_org_company_title").on(

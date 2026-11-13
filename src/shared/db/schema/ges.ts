@@ -13,6 +13,7 @@ import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { companies } from "./companies";
 import { workUnits } from "./work-units";
+import { actorWorkUnitScope } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -42,6 +43,12 @@ export const ges = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("ges_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorWorkUnitScope(table.companyId, table.workUnitId),
+    }),
     index("idx_ges_org_id").on(table.orgId),
     index("idx_ges_company_id").on(table.companyId),
     index("idx_ges_work_unit_id").on(table.workUnitId),

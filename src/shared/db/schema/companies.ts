@@ -15,6 +15,7 @@ import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { addressColumns } from "./address-columns";
+import { actorCompanyScope } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -56,6 +57,12 @@ export const companies = pgTable(
       to: appRuntimeRole,
       using: tenantScope,
       withCheck: tenantScope,
+    }),
+    pgPolicy("companies_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorCompanyScope(table.id),
     }),
   ],
 ).enableRLS();

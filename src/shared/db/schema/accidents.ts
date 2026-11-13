@@ -18,6 +18,7 @@ import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { companies } from "./companies";
 import { employees } from "./employees";
+import { actorCompanyScope } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -96,6 +97,12 @@ export const accidents = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("accidents_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorCompanyScope(table.companyId),
+    }),
     index("idx_accidents_org_id").on(table.orgId),
     index("idx_accidents_org_status").on(table.orgId, table.status),
     index("idx_accidents_company").on(table.orgId, table.companyId),

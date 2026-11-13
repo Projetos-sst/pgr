@@ -15,6 +15,7 @@ import { appRuntimeRole } from "../roles";
 import { orgs } from "./orgs";
 import { companies } from "./companies";
 import { ges } from "./ges";
+import { actorCompanyScope, officeWideOr } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -67,6 +68,12 @@ export const formControls = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("form_controls_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: officeWideOr(table.companyId, actorCompanyScope(table.companyId)),
+    }),
     index("idx_form_controls_org_id").on(table.orgId),
     index("idx_form_controls_company_id").on(table.companyId),
     index("idx_form_controls_ges_id").on(table.gesId),

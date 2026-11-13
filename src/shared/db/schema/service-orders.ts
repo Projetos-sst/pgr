@@ -21,6 +21,7 @@ import { workUnits } from "./work-units";
 // de "Tipo de OS" (Admissional/Periódico/Mudança de Função/Retorno/Demissional) são
 // exatamente os tipos de ASO — evita um enum duplicado.
 import { examType } from "./health-exams";
+import { visibleWorkUnit } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -59,6 +60,12 @@ export const serviceOrders = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("service_orders_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: visibleWorkUnit(table.workUnitId),
+    }),
     index("idx_service_orders_org_id").on(table.orgId),
     index("idx_service_orders_org_status").on(table.orgId, table.status),
     index("idx_service_orders_assigned").on(table.orgId, table.assignedEmployeeId),

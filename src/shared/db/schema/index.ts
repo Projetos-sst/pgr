@@ -14,6 +14,7 @@ export {
 } from "./org-memberships";
 export { companies, type Company, type NewCompany } from "./companies";
 export { companyModules, companyModuleEvents } from "./company-modules";
+export { memberAccessScopes, type MemberAccessScope } from "./member-access-scopes";
 export {
   companyRiskAuthorizers,
   professionalRiskAuthorizations,

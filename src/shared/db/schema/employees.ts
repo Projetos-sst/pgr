@@ -17,6 +17,7 @@ import { companies } from "./companies";
 import { ges } from "./ges";
 import { jobRoles } from "./job-roles";
 import { addressColumns } from "./address-columns";
+import { actorCompanyScope } from "./access-scope-policy";
 
 export const employeeSex = pgEnum("employee_sex", ["male", "female", "not_informed"]);
 export const maritalStatus = pgEnum("marital_status", [
@@ -69,6 +70,12 @@ export const employees = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("employees_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorCompanyScope(table.companyId),
+    }),
     index("idx_employees_org_id").on(table.orgId),
     index("idx_employees_company_id").on(table.companyId),
     index("idx_employees_ges_id").on(table.gesId),

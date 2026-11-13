@@ -17,6 +17,7 @@ import { companies } from "./companies";
 import { orgMemberships } from "./org-memberships";
 import { medicalRiskEntries } from "./medical-risk-sources";
 import type { ProfessionalIdentity } from "@/shared/domains/medicine/risk-authorization";
+import { actorCompanyScope } from "./access-scope-policy";
 
 const tenant = sql`org_id = current_setting('app.current_org', true)`;
 const owner = sql`exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = current_setting('app.current_actor', true) and m.role in ('owner','org:admin'))`;
@@ -37,6 +38,12 @@ export const companyRiskAuthorizers = pgTable(
     recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    pgPolicy("company_risk_authorizers_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorCompanyScope(t.companyId),
+    }),
     unique("uq_company_risk_authorizer").on(t.orgId, t.companyId),
     foreignKey({
       columns: [t.companyId, t.orgId],
@@ -97,6 +104,12 @@ export const professionalRiskAuthorizations = pgTable(
         "professional_risk_identity_object",
         sql`jsonb_typeof(${t.identity}) = 'object'`,
       ),
+      pgPolicy("professional_risk_authorizations_actor_scope", {
+        as: "restrictive",
+        for: "all",
+        to: appRuntimeRole,
+        using: actorCompanyScope(t.companyId),
+      }),
       pgPolicy("professional_risk_authorizations_tenant", {
         for: "all",
         to: appRuntimeRole,
@@ -131,6 +144,12 @@ export const riskAuthorizationEvents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    pgPolicy("risk_authorization_events_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorCompanyScope(t.companyId),
+    }),
     foreignKey({
       columns: [t.companyId, t.orgId],
       foreignColumns: [companies.id, companies.orgId],
@@ -165,6 +184,12 @@ export const medicalRiskDecisions = pgTable(
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull(),
   },
   (t) => [
+    pgPolicy("medical_risk_decisions_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorCompanyScope(t.companyId),
+    }),
     foreignKey({
       columns: [t.entryId, t.orgId, t.companyId],
       foreignColumns: [

@@ -582,6 +582,13 @@
       "when": 1794192543288,
       "tag": "0082_signed_documents_current_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1794591744832,
+      "tag": "0083_member_access_scopes",
+      "breakpoints": true
     }
   ]
 }
