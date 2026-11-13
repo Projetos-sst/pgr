@@ -35,6 +35,7 @@ import {
 } from "@/shared/integrations/docx/template-engine";
 
 import { buildTemplates, TEMPLATE_DIR } from "./build-template";
+import { renderHomologationSamples } from "./render-homologation";
 import { LOGO_PLACEHOLDER_NAME } from "./template-document";
 
 const LOCAL_REFS = path.join(process.cwd(), "docs/_local-refs/pgr-2026");
@@ -92,6 +93,17 @@ async function main() {
     path.join(TEMPLATE_DIR, "exemplo/pgr-exemplo"),
     { expectNoMarkers: true },
   );
+
+  const manifest = await renderHomologationSamples({
+    template,
+    directory: path.join(TEMPLATE_DIR, "amostras"),
+    convert: process.env.GOTENBERG_URL ? docxToPdf : undefined,
+  });
+  console.log(`  templates/pgr/amostras: ${manifest.cases.length} casos + manifest.json`);
+  if (manifest.problems.length > 0) {
+    console.error(manifest.problems.join("\n"));
+    process.exitCode = 1;
+  }
 
   const realContent = path.join(LOCAL_REFS, "pgr-2026.content.json");
   if (existsSync(realContent)) {

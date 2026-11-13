@@ -1,0 +1,44 @@
+{
+  "synthetic": true,
+  "templateSha256": "c205ee5ce7f3249a0a4718c9c06342717f660a4d17625bb079ec4d468cbe6227",
+  "textsSha256": "b3e859f269c0747666018faad8cfb2f1ad47d390b7bfc004a7e33715a4b1a1fc",
+  "cases": [
+    {
+      "id": "empresa-pequena",
+      "title": "Empresa pequena com um GES",
+      "checks": "Documento mínimo completo: capa, identificação, um GES e um risco.",
+      "docxSha256": "a7da193486041edf1c667130a386ecc6c30cb2c4c4e0e033fa379ff264415bcc",
+      "pdfSha256": "4a82b99d5330341df62609bf29f0f0fac7a10dee487e06f43c0de06b11407e1c",
+      "tables": 20,
+      "tablesWithRepeatedHeader": 6
+    },
+    {
+      "id": "inventario-extenso",
+      "title": "Inventário extenso com quebra de página",
+      "checks": "Tabelas que atravessam páginas: quadro de funções, medidas, EPIs, plano de ação e Anexo I.",
+      "docxSha256": "7a6846417e4909df9961e25762ea4b75af73d9228e6ab5602189a88cc8485ebf",
+      "pdfSha256": "cc9ed9cb8053a70327b3c9f0c5c7ab98a0037bfee3ce6e1689302f1421c40590",
+      "tables": 97,
+      "tablesWithRepeatedHeader": 16
+    },
+    {
+      "id": "campos-vazios",
+      "title": "Campos opcionais vazios",
+      "checks": "Opcionais somem ou mostram 'Não informado'; listas vazias mostram a mensagem própria.",
+      "docxSha256": "6723f98bfec6ec045719e967c011d85cf410de2b8f2f7ec237062fc8df326dba",
+      "pdfSha256": "eec68825c2ecc5ccd080f222c290a4288e141fc1c99cada08dbc8534c047a458",
+      "tables": 25,
+      "tablesWithRepeatedHeader": 7
+    },
+    {
+      "id": "com-anexos",
+      "title": "Documento com anexos",
+      "checks": "Anexo I, matriz de treinamento, cronograma de campanhas e apêndice de máquinas.",
+      "docxSha256": "ba266ff5e192294e894b181bf0786364b74168dc2cc0c4f5442e8f68202290d4",
+      "pdfSha256": "c63cf37e676840cc405842d923bae098f063cbc5d69a8d95067682196a1ebf1e",
+      "tables": 28,
+      "tablesWithRepeatedHeader": 8
+    }
+  ],
+  "problems": []
+}
