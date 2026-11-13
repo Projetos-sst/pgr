@@ -2,9 +2,12 @@ import { DownloadDocumentButton } from "../../../documents/_components/download-
 import Link from "next/link";
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
 import { listReviewSamplesAction } from "@/shared/server/actions/pgr/document-reviews";
+import { getDocumentApprovalAction } from "@/shared/server/actions/pgr/document-approval";
+import { listTeamMembers } from "@/shared/server/actions/platform/team";
 import { resolvePageParams } from "@/shared/pagination";
 import { PageHeader } from "../../../_ui/list";
 import { NewSampleForm } from "./forms";
+import { DocumentApprovalPanel } from "./document-approval-panel";
 export const dynamic = "force-dynamic";
 export default async function ReviewSamplesPage({
   params,
@@ -17,6 +20,11 @@ export default async function ReviewSamplesPage({
   const { id } = await params;
   const { page } = resolvePageParams({ page: Number((await searchParams).page) });
   const result = await listReviewSamplesAction(id, { page });
+  const approval = await getDocumentApprovalAction(id);
+  const team = await listTeamMembers({ pageSize: 100 });
+  const members = (team.ok ? team.data.rows : [])
+    .filter((member) => member.role !== "client")
+    .map((member) => ({ value: member.userId, label: member.name }));
   if (!result.ok)
     return (
       <p role="alert" className="p-6">
@@ -30,6 +38,11 @@ export default async function ReviewSamplesPage({
         backHref={`/pgr/${id}`}
         description="Preserve a versão analisada, registre pareceres recebidos e acompanhe correções e revalidações."
       />
+      {approval.ok ? (
+        <DocumentApprovalPanel pgrId={id} view={approval.data} members={members} />
+      ) : (
+        <p role="alert">{approval.error.message}</p>
+      )}
       <NewSampleForm pgrId={id} />
       {result.data.rows.length === 0 && <p>Nenhuma amostra registrada.</p>}
       {result.data.rows.map((s) => (

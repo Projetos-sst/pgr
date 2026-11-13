@@ -9,10 +9,8 @@ import {
 } from "@/shared/domains/pgr/pgr-docx/request";
 import { toActionError } from "@/shared/server/action-error";
 import { logTenantEvent } from "@/shared/tenant/audit-log";
-import {
-  generatePgrDocx,
-  type GeneratePgrDocxOptions,
-} from "@/shared/server/platform/pgr-docx-core";
+import { issuePgrDocument } from "@/shared/server/pgr/document-approval-core";
+import type { GeneratePgrDocxOptions } from "@/shared/server/platform/pgr-docx-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,10 +37,8 @@ async function respond(
     ctx = resolved;
     const { id } = await params;
     const options = await read();
-    const { fileName, contentType, file, missingTags, provenance } = await runAsActor(
-      resolved.userId,
-      () => generatePgrDocx(resolved.tenantId, id, options),
-    );
+    const { fileName, contentType, file, missingTags, provenance, issue } =
+      await runAsActor(resolved.userId, () => issuePgrDocument(resolved, id, options));
     return new NextResponse(new Uint8Array(file), {
       status: 200,
       headers: {
@@ -58,6 +54,9 @@ async function respond(
           ? { "X-Pgr-Snapshot-Sha256": provenance.snapshotSha256 }
           : {}),
         "X-Pgr-File-Sha256": provenance.fileSha256,
+        ...(issue?.documentId
+          ? { "X-Pgr-Issue-Id": issue.id, "X-Pgr-Document-Id": issue.documentId }
+          : {}),
       },
     });
   } catch (error) {

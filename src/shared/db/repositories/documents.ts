@@ -1,4 +1,5 @@
 import "server-only";
+import { pgrDocumentApprovals } from "../schema/pgr-document-approvals";
 import { pgrReviewSamples } from "../schema/pgr-document-reviews";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 
@@ -456,6 +457,27 @@ export async function deleteDocument(
         if (reviewSample)
           throw new EntityInUseError(
             "Arquivo preservado como amostra de revisão técnica. O histórico não pode ser excluído.",
+          );
+        const [finalIssue] = await tx
+          .select({ id: pgrDocumentApprovals.id })
+          .from(pgrDocumentApprovals)
+          .innerJoin(
+            documents,
+            and(
+              eq(documents.id, pgrDocumentApprovals.documentId),
+              eq(documents.orgId, orgId),
+            ),
+          )
+          .where(
+            and(
+              eq(pgrDocumentApprovals.orgId, orgId),
+              eq(documents.documentGroupId, target.groupId),
+            ),
+          )
+          .limit(1);
+        if (finalIssue)
+          throw new EntityInUseError(
+            "Arquivo preservado como emissão final revisada do PGR. O histórico não pode ser excluído.",
           );
         const deleted = await tx
           .delete(documents)

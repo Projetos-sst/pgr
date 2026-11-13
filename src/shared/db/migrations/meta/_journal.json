@@ -596,6 +596,13 @@
       "when": 1794596993625,
       "tag": "0084_representative_appoints_risk_authorizer",
       "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1794598721202,
+      "tag": "0085_pgr_document_approvals",
+      "breakpoints": true
     }
   ]
 }

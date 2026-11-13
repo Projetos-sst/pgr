@@ -35,6 +35,9 @@ jest.mock("@/shared/db/repositories/pgr-generation-snapshot", () => ({
     return consolidated && extras ? { consolidated, extras, methodology } : null;
   },
 }));
+jest.mock("@/shared/db/repositories/pgr-document-approvals", () => ({
+  listApprovalEvents: jest.fn().mockResolvedValue([]),
+}));
 jest.mock("@/shared/integrations/storage/company-logo-storage", () => ({
   downloadCompanyLogo: (...a: unknown[]) => downloadCompanyLogo(...a),
 }));
