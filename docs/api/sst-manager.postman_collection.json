@@ -373,6 +373,22 @@
     {
       "key": "accessScopeId",
       "value": "<id retornado no POST de escopo>"
+    },
+    {
+      "key": "pgrReviewerUserId",
+      "value": ""
+    },
+    {
+      "key": "pgrApprovalAssignmentId",
+      "value": ""
+    },
+    {
+      "key": "pgrApprovalSnapshotSha256",
+      "value": ""
+    },
+    {
+      "key": "pgrFinalIssueId",
+      "value": ""
     }
   ],
   "item": [
@@ -13226,6 +13242,186 @@
               }
             ],
             "url": "{{baseUrl}}/api/v1/team/{{memberUserId}}/access-scopes/{{accessScopeId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Revisão por documento e emissão final do PGR (NOB-179)",
+      "item": [
+        {
+          "name": "Consultar estado da revisão, histórico e emissões",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval",
+            "description": "Devolve status (not_required, awaiting_reviewer, awaiting_review, rejected, approved, stale), versão atual (hash dos dados e do modelo), histórico e emissões finais."
+          }
+        },
+        {
+          "name": "Ativar revisão obrigatória (só administrador, sem volta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Substituir pelo motivo da adoção\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Designar ou trocar o revisor (só administrador)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval/reviewer",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewerUserId\": \"{{pgrReviewerUserId}}\",\n  \"reviewer\": {\n    \"fullName\": \"Revisor fictício\",\n    \"profession\": \"Profissão declarada\",\n    \"registration\": {\n      \"kind\": \"registered\",\n      \"council\": \"Órgão declarado\",\n      \"number\": \"Número declarado\",\n      \"region\": \"UF\"\n    }\n  },\n  \"reason\": \"Substituir pelo motivo da designação\"\n}"
+            },
+            "description": "O revisor é membro do escritório com acesso ao PGR e diferente do elaborador. Envie authorUserId só quando o PGR não tem elaborador registrado."
+          }
+        },
+        {
+          "name": "Revogar o revisor (só administrador)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval/reviewer/revocation",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Substituir pelo motivo da revogação\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Registrar parecer (só o revisor designado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{pgrReviewerUserId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval/decisions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignmentId\": \"{{pgrApprovalAssignmentId}}\",\n  \"snapshotSha256\": \"{{pgrApprovalSnapshotSha256}}\",\n  \"verdict\": \"approved\",\n  \"reason\": \"Obrigatório quando verdict = rejected\"\n}"
+            },
+            "description": "assignmentId e version.snapshotSha256 vêm do GET /approval. Parecer de quem não é o revisor designado → 403."
+          }
+        },
+        {
+          "name": "Emissão final (arquiva no GED quando a revisão está ativa)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"pdf\",\n  \"purpose\": \"issue\",\n  \"expectedSourceSha256\": \"{{pgrApprovalSnapshotSha256}}\"\n}"
+            },
+            "description": "Com a revisão ativa exige parecer favorável vigente (422 caso contrário) e devolve X-Pgr-Issue-Id e X-Pgr-Document-Id. Sem purpose é prévia, livre como antes."
+          }
+        },
+        {
+          "name": "Cancelar uma emissão final (só administrador)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval/issues/{{pgrFinalIssueId}}/cancellation",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Substituir pelo motivo do cancelamento\"\n}"
+            }
           }
         }
       ]
