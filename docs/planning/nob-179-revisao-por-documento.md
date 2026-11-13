@@ -50,6 +50,7 @@ Regras de transição:
 - Nova designação ou revogação descarta o parecer anterior. O evento antigo fica no histórico.
 - Parecer que cita uma designação substituída é ignorado.
 - `approved` vira `stale` só pela comparação de hash. Nada é apagado.
+- Desde a NOB-177 o hash dos dados inclui o hash dos textos padrão do PGR (`textsSha256`): salvar um texto em `/pgr/{id}/texts` ou regenerar o modelo também leva `approved` a `stale`. Ver `nob-177-layout-e-amostras.md`.
 - `issue_cancelled` é aceito em qualquer estado com revisão ativa.
 
 ## Quem pode o quê
