@@ -1,6 +1,7 @@
 "use server";
 
 import { officeAction } from "@/shared/server/office-action";
+import { startContractCheckout } from "@/shared/server/commercial/checkout-core";
 import * as core from "@/shared/server/commercial/commercial-core";
 
 export async function listCommercialOffersAction() {
@@ -47,6 +48,14 @@ export async function registerCommercialContractAction(input: unknown) {
   return officeAction(
     "commercial.contract.create",
     (ctx) => core.registerContract(ctx, input),
+    { audit: true },
+  );
+}
+
+export async function startCommercialCheckoutAction(contractId: string, input: unknown) {
+  return officeAction(
+    "commercial.checkout.create",
+    (ctx) => startContractCheckout(ctx, contractId, input),
     { audit: true },
   );
 }

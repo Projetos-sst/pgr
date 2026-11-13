@@ -52,7 +52,7 @@ function requireCommercialSurface(): CommercialEnvironment {
   return env;
 }
 
-function requireFinancialOwner(ctx: TenantContext): CommercialEnvironment {
+export function requireFinancialOwner(ctx: TenantContext): CommercialEnvironment {
   const env = requireCommercialSurface();
   if (ctx.role !== "owner")
     throw new ForbiddenError(

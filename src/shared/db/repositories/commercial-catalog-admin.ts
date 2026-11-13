@@ -6,9 +6,11 @@ import {
   CommercialCatalogError,
   catalogOperatorSchema,
   deactivationReasonSchema,
+  providerPriceIdSchema,
   type CatalogCommand,
   type CatalogErrorReason,
 } from "@/shared/domains/commercial/catalog-admin";
+import { BILLING_PROVIDER } from "@/shared/domains/commercial/billing-model";
 import { FICTITIOUS_CATALOG } from "@/shared/domains/commercial/fictitious-catalog";
 import {
   isFictitiousCatalogAllowedFor,
@@ -18,6 +20,7 @@ import {
   type OfferVersionInput,
 } from "@/shared/domains/commercial/offer";
 
+import { billingProviderPrices } from "../schema/billing";
 import { commercialOfferItems, commercialOfferVersions } from "../schema/commercial";
 
 const items = commercialOfferItems;
@@ -182,6 +185,40 @@ export async function seedFictitiousCatalog(
   return { created, skipped };
 }
 
+export async function mapProviderPrice(
+  db: CatalogDb,
+  target: { offerVersionId: string; position: number; providerPriceId: string },
+  operator: string,
+) {
+  const [item] = await db
+    .select({ id: items.id })
+    .from(items)
+    .where(
+      and(
+        eq(items.offerVersionId, target.offerVersionId),
+        eq(items.position, target.position),
+      ),
+    );
+  if (!item) throw new CommercialCatalogError("item_not_found");
+  const mapping = {
+    providerPriceId: providerPriceIdSchema.parse(target.providerPriceId),
+    mappedBy: catalogOperatorSchema.parse(operator),
+    mappedAt: sql`now()`,
+  };
+  const [mapped] = await db
+    .insert(billingProviderPrices)
+    .values({ ...mapping, provider: BILLING_PROVIDER, offerItemId: item.id })
+    .onConflictDoUpdate({
+      target: [billingProviderPrices.provider, billingProviderPrices.offerItemId],
+      set: mapping,
+    })
+    .returning({
+      offerItemId: billingProviderPrices.offerItemId,
+      providerPriceId: billingProviderPrices.providerPriceId,
+    });
+  return mapped;
+}
+
 export type CatalogCommandContext = {
   env: CommercialEnvironment;
   operator: string;
@@ -218,5 +255,15 @@ export async function runCatalogCommand(
     case "deactivate":
       await deactivateOfferVersion(db, command.id, context.operator, command.reason);
       return { deactivated: command.id };
+    case "map-price":
+      return mapProviderPrice(
+        db,
+        {
+          offerVersionId: command.id,
+          position: command.position,
+          providerPriceId: command.providerPriceId,
+        },
+        context.operator,
+      );
   }
 }

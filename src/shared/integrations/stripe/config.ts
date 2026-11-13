@@ -21,6 +21,10 @@ export function getStripeConfig(): StripeConfig | null {
   };
 }
 
+export function isStripeTestMode(config: StripeConfig): boolean {
+  return /^(sk|rk)_test_/.test(config.secretKey);
+}
+
 export function isBillingEnabled(): boolean {
   return getStripeConfig() !== null;
 }

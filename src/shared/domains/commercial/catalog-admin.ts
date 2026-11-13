@@ -7,7 +7,8 @@ export type CatalogErrorReason =
   | "already_published"
   | "not_published"
   | "already_deactivated"
-  | "fictitious_not_allowed";
+  | "fictitious_not_allowed"
+  | "item_not_found";
 
 const CATALOG_ERROR_MESSAGES: Record<CatalogErrorReason, string> = {
   not_found: "Versão de oferta não encontrada.",
@@ -16,6 +17,7 @@ const CATALOG_ERROR_MESSAGES: Record<CatalogErrorReason, string> = {
   already_deactivated: "Esta versão já foi desativada.",
   fictitious_not_allowed:
     "O catálogo fictício só pode ser semeado com APP_ENV definido e diferente de production.",
+  item_not_found: "Item não encontrado nesta versão de oferta.",
 };
 
 export class CommercialCatalogError extends Error {
@@ -27,13 +29,19 @@ export class CommercialCatalogError extends Error {
 
 export const deactivationReasonSchema = z.string().trim().min(3).max(1000);
 export const catalogOperatorSchema = z.string().trim().min(2).max(200);
+export const providerPriceIdSchema = z
+  .string()
+  .trim()
+  .regex(/^price_[A-Za-z0-9]{6,200}$/, "Informe o id do preço no provedor (price_...).");
+const itemPositionSchema = z.coerce.number().int().positive().max(20);
 
 export type CatalogCommand =
   | { kind: "seed-fictitious" }
   | { kind: "list" }
   | { kind: "create"; file: string }
   | { kind: "publish"; id: string }
-  | { kind: "deactivate"; id: string; reason: string };
+  | { kind: "deactivate"; id: string; reason: string }
+  | { kind: "map-price"; id: string; position: number; providerPriceId: string };
 
 const versionIdSchema = requiredUuid("Informe o id da versão.");
 const isVersionId = (value: string) => versionIdSchema.safeParse(value).success;
@@ -53,6 +61,13 @@ const COMMAND_PARSERS: Record<
       ? { kind: "deactivate", id, reason: reason.data }
       : null;
   },
+  "map-price": ([id = "", position, priceId, ...rest]) => {
+    const item = itemPositionSchema.safeParse(position);
+    const price = providerPriceIdSchema.safeParse(priceId);
+    return rest.length === 0 && isVersionId(id) && item.success && price.success
+      ? { kind: "map-price", id, position: item.data, providerPriceId: price.data }
+      : null;
+  },
 };
 
 export function parseCatalogCommand(argv: readonly string[]): CatalogCommand | null {
@@ -67,4 +82,5 @@ export const CATALOG_COMMAND_USAGE = [
   "create <arquivo.json>",
   "publish <id-da-versao>",
   "deactivate <id-da-versao> <motivo>",
+  "map-price <id-da-versao> <posicao-do-item> <id-do-preco-no-provedor>",
 ];

@@ -4,7 +4,9 @@ import Stripe from "stripe";
 
 import { BillingUnavailableError } from "@/shared/errors/billing-unavailable-error";
 
-import { getStripeConfig } from "./config";
+import { CHECKOUT_REFERENCE_KEY } from "@/shared/domains/commercial/checkout";
+
+import { getStripeConfig, isStripeTestMode } from "./config";
 
 /**
  * Ponto ÚNICO de rede do Stripe. Cliente construído a partir do segredo server-only.
@@ -42,6 +44,47 @@ export async function createProCheckoutSession(args: {
   });
 
   return { url: session.url };
+}
+
+export type CommercialCheckoutRequest = {
+  checkoutId: string;
+  lines: readonly { providerPriceId: string; quantity: number }[];
+  providerCustomerId: string | null;
+  customerEmail: string;
+  successUrl: string;
+  cancelUrl: string;
+};
+
+export async function createCommercialCheckoutSession(
+  request: CommercialCheckoutRequest,
+): Promise<{ id: string; url: string; expiresAt: Date }> {
+  const config = getStripeConfig();
+  if (!config || !isStripeTestMode(config)) throw new BillingUnavailableError();
+  const reference = { [CHECKOUT_REFERENCE_KEY]: request.checkoutId };
+  const session = await stripeClient().checkout.sessions.create(
+    {
+      mode: "subscription",
+      line_items: request.lines.map((line) => ({
+        price: line.providerPriceId,
+        quantity: line.quantity,
+      })),
+      subscription_data: { metadata: reference },
+      metadata: reference,
+      client_reference_id: request.checkoutId,
+      ...(request.providerCustomerId
+        ? { customer: request.providerCustomerId }
+        : { customer_email: request.customerEmail }),
+      success_url: request.successUrl,
+      cancel_url: request.cancelUrl,
+    },
+    { idempotencyKey: `commercial-checkout:${request.checkoutId}` },
+  );
+  if (!session.url) throw new BillingUnavailableError();
+  return {
+    id: session.id,
+    url: session.url,
+    expiresAt: new Date(session.expires_at * 1000),
+  };
 }
 
 /**

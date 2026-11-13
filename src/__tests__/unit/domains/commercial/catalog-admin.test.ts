@@ -19,6 +19,20 @@ describe("comandos de administração do catálogo", () => {
     ).toEqual({ kind: "deactivate", id: ID, reason: "Preço publicado errado" });
   });
 
+  it("interpreta o mapeamento de preço do provedor e recusa posição ou preço inválidos", () => {
+    expect(parseCatalogCommand(["map-price", ID, "2", "price_1AbCdEf"])).toEqual({
+      kind: "map-price",
+      id: ID,
+      position: 2,
+      providerPriceId: "price_1AbCdEf",
+    });
+    expect(parseCatalogCommand(["map-price", ID, "0", "price_1AbCdEf"])).toBeNull();
+    expect(parseCatalogCommand(["map-price", ID, "2", "prod_1AbCdEf"])).toBeNull();
+    expect(parseCatalogCommand(["map-price", ID, "2"])).toBeNull();
+    expect(parseCatalogCommand(["map-price", "abc", "2", "price_1AbCdEf"])).toBeNull();
+    expect(parseCatalogCommand(["map-price", ID, "2", "price_1AbCdEf", "x"])).toBeNull();
+  });
+
   it("recusa comando desconhecido, id inválido, argumento sobrando e desativação sem motivo", () => {
     expect(parseCatalogCommand([])).toBeNull();
     expect(parseCatalogCommand(["drop"])).toBeNull();
