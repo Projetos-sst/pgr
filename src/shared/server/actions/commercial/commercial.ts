@@ -1,6 +1,7 @@
 "use server";
 
 import { officeAction } from "@/shared/server/office-action";
+import { getContractBilling } from "@/shared/server/commercial/billing-events-core";
 import { startContractCheckout } from "@/shared/server/commercial/checkout-core";
 import * as core from "@/shared/server/commercial/commercial-core";
 
@@ -57,5 +58,11 @@ export async function startCommercialCheckoutAction(contractId: string, input: u
     "commercial.checkout.create",
     (ctx) => startContractCheckout(ctx, contractId, input),
     { audit: true },
+  );
+}
+
+export async function getCommercialBillingAction(contractId: string) {
+  return officeAction("commercial.billing.get", (ctx) =>
+    getContractBilling(ctx, contractId),
   );
 }

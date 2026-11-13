@@ -189,3 +189,71 @@ export const enabledModules = async (admin: Sql, orgId = "org_a") => {
     where org_id = ${orgId} and enabled order by company_id, module`;
   return rows.map((row) => `${row.company_id}:${row.module}`);
 };
+
+let eventSequence = 0;
+export const T0 = 1_800_000_000;
+
+export function providerEvent(
+  type: string,
+  object: Record<string, unknown>,
+  overrides: { id?: string; created?: number; livemode?: boolean } = {},
+) {
+  eventSequence += 1;
+  return {
+    id: overrides.id ?? `evt_test_${eventSequence}`,
+    type,
+    created: overrides.created ?? T0 + eventSequence,
+    livemode: overrides.livemode ?? false,
+    data: { object },
+  };
+}
+
+export type CheckoutRef = { id: string; providerSessionId: string };
+
+export const providerIds = (checkout: CheckoutRef) => ({
+  subscription: `sub_${checkout.id.slice(0, 8)}`,
+  customer: `cus_${checkout.id.slice(0, 8)}`,
+});
+
+export const checkoutCompletedEvent = (
+  checkout: CheckoutRef,
+  overrides: Parameters<typeof providerEvent>[2] = {},
+) =>
+  providerEvent(
+    "checkout.session.completed",
+    {
+      id: checkout.providerSessionId,
+      metadata: { commercialCheckoutId: checkout.id },
+      client_reference_id: checkout.id,
+      customer: providerIds(checkout).customer,
+      subscription: providerIds(checkout).subscription,
+    },
+    overrides,
+  );
+
+export const subscriptionEvent = (
+  checkout: CheckoutRef,
+  status: string,
+  overrides: Parameters<typeof providerEvent>[2] & {
+    type?: string;
+    object?: Record<string, unknown>;
+  } = {},
+) =>
+  providerEvent(
+    overrides.type ??
+      (status === "canceled"
+        ? "customer.subscription.deleted"
+        : "customer.subscription.updated"),
+    {
+      id: providerIds(checkout).subscription,
+      customer: providerIds(checkout).customer,
+      status,
+      metadata: { commercialCheckoutId: checkout.id },
+      cancel_at_period_end: false,
+      canceled_at: null,
+      trial_end: null,
+      items: { data: [{ current_period_start: T0, current_period_end: T0 + 2_592_000 }] },
+      ...overrides.object,
+    },
+    overrides,
+  );

@@ -15,6 +15,7 @@ import {
   createProCheckoutSession,
 } from "@/shared/integrations/stripe/client";
 import { getAppBaseUrl } from "@/shared/integrations/stripe/config";
+import { handleCommercialStripeEvent } from "@/shared/server/commercial/commercial-webhook";
 
 /** Inicia o Checkout do plano Pro. Só o `owner` gerencia a assinatura. */
 export async function startProCheckout(ctx: TenantContext): Promise<{ url: string }> {
@@ -61,6 +62,8 @@ function orgIdFromMetadata(metadata: Stripe.Metadata | null | undefined): string
  * verificada). O Stripe é a fonte da verdade; `orgs.plan` é o espelho.
  */
 export async function handleStripeEvent(event: Stripe.Event): Promise<void> {
+  if (await handleCommercialStripeEvent(event)) return;
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const orgId = orgIdFromMetadata(session.metadata) ?? session.client_reference_id;
