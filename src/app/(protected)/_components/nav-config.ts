@@ -168,6 +168,11 @@ export const NAV: NavEntry[] = [
         label: "GED — Gestão Eletrônica de Documentos",
         iconName: "folder-archive",
       },
+      {
+        href: "/retention",
+        label: "Guarda e descarte de documentos",
+        iconName: "shield",
+      },
     ],
   },
 ];

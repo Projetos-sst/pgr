@@ -32,6 +32,8 @@ const HTTP_BY_CODE: Record<string, number> = {
   AI_UNAVAILABLE: 502,
   REPORT_UNAVAILABLE: 503,
   BILLING_UNAVAILABLE: 503,
+  EXPORT_UNAVAILABLE: 503,
+  DISCARD_BLOCKED: 409,
 };
 
 const BLOCKED_CODES = new Set(["FORBIDDEN", "NO_TENANT_CONTEXT", "UNAUTHORIZED"]);
@@ -116,6 +118,7 @@ export async function restHandler<T>(
     ctx = resolved;
     const data = await runAsActor(resolved.userId, () => fn(resolved));
     auditWrite(req, "ok", ctx);
+    if (data instanceof NextResponse) return data;
     const status = opts.status ?? 200;
     if (status === 204) return new NextResponse(null, { status: 204 });
     return NextResponse.json(data ?? null, { status });

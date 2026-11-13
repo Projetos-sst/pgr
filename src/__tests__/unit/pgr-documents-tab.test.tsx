@@ -35,6 +35,14 @@ describe("PgrDocumentsTab × Arquivar no GED", () => {
     jest.clearAllMocks();
   });
 
+  it("leva ao pacote de guarda do PGR", () => {
+    renderTab();
+    expect(screen.getByRole("link", { name: /Pacote de guarda/ })).toHaveAttribute(
+      "href",
+      `/pgr/${PGR_ID}/retention-export`,
+    );
+  });
+
   it("libera o botão assim que a action responde, sem esperar o refresh da página", async () => {
     let respond: (value: unknown) => void = () => {};
     mockEnqueue.mockImplementation(

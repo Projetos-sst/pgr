@@ -624,6 +624,13 @@
       "when": 1794603740060,
       "tag": "0088_machine_attachment_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1794607030530,
+      "tag": "0089_retention_policy_and_exports",
+      "breakpoints": true
     }
   ]
 }

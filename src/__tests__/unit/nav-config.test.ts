@@ -83,6 +83,10 @@ describe("mapa de menus (NOB-172, SEG-06)", () => {
     expect(groupHrefs("Módulos")).toContain("/reports");
   });
 
+  it("dá entrada à política de guarda e descarte junto do GED", () => {
+    expect(groupHrefs("Qualidade")).toEqual(["/documents", "/retention"]);
+  });
+
   it("mostra o menu inteiro para quem tem as duas áreas (NOB-175)", () => {
     expect(visibleNav(["safety", "health"])).toEqual(NAV);
   });

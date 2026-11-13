@@ -4,6 +4,7 @@ export { machineInstallations, machineInstallationEvents } from "./machine-insta
 export { pgrReviewSamples, pgrReviewDecisions } from "./pgr-document-reviews";
 export { pgrDocumentApprovals } from "./pgr-document-approvals";
 export { pgrDocxTextVersions } from "./pgr-docx-text-versions";
+export { retentionPolicyVersions, retentionExports } from "./retention";
 export {
   pgrBasicOfferVersions,
   pgrBasicOfferPublication,
