@@ -638,6 +638,50 @@ const req = (
     expect(constraint.convalidated).toBe(false);
   });
 
+  it("verificação anterior à 0083 com validade original longa: situação, renovação e fila usam a validade efetiva de 12 meses", async () => {
+    await linkDoctor();
+    const { id: requestId } = await requestVerification(doctor, { medicoId: M1 });
+    const { id: verificationId } = await approveVerification(
+      VERIFIER,
+      approval(requestId, "doctor"),
+    );
+    // Linha legada (24 ou 36 meses, permitida pela 0071): a 0083 usa NOT VALID e o CHECK novo
+    // recusaria gravá-la; datas preservadas.
+    const legacy = (verifiedAgo: string, original: string) =>
+      admin.begin(async (tx) => {
+        await tx`alter table professional_identity_verifications drop constraint ck_identity_verifications_validity`;
+        await tx`update professional_identity_verifications
+          set verified_at = now() - ${verifiedAgo}::interval,
+              expires_at = now() - ${verifiedAgo}::interval + ${original}::interval
+          where id = ${verificationId}`;
+        await tx.unsafe(`alter table professional_identity_verifications add constraint ck_identity_verifications_validity
+          check (expires_at > verified_at and expires_at <= verified_at + interval '12 months') not valid`);
+      });
+    // D: conferida há 6 meses, validade original de 36 → verificada, vencendo em verified_at + 12 meses.
+    await legacy("6 months", "36 months");
+    const [mid] = await myProfessionalIdentity(doctor);
+    expect(mid).toMatchObject({ status: "verified", clinicalAccess: true });
+    const [{ effective }] =
+      await admin`select (verified_at + interval '12 months') as effective from professional_identity_verifications where id = ${verificationId}`;
+    expect(new Date(mid.expiresAt!).getTime()).toBe(new Date(effective).getTime());
+    // C: conferida há 13 meses, validade original de 24 (expires_at no futuro) → vencida.
+    await legacy("13 months", "24 months");
+    const [old] = await myProfessionalIdentity(doctor);
+    expect(old).toMatchObject({ status: "expired", clinicalAccess: false });
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    // A fila do operador não a lista como vigente.
+    const queue = await verificationQueue(VERIFIER);
+    expect(queue.active.find((v) => v.verificationId === verificationId)).toBeUndefined();
+    // Renovação: com a efetiva vencida, a própria conta pede nova verificação, e a nova devolve o acesso.
+    const { id: renewal } = await requestVerification(doctor, { medicoId: M1 });
+    await approveVerification(VERIFIER, approval(renewal, "doctor"));
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+    // Histórico preservado: a verificação antiga continua gravada com as datas originais.
+    const [kept] =
+      await admin`select expires_at > now() as still_future from professional_identity_verifications where id = ${verificationId}`;
+    expect(kept.still_future).toBe(true);
+  });
+
   it("REST: área do profissional e fila do operador com códigos HTTP", async () => {
     await linkDoctor();
     const created = await REQUEST(

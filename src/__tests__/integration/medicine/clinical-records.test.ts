@@ -26,6 +26,7 @@ import {
   listHealthExams,
 } from "@/shared/db/repositories/health-exams";
 import { deleteEmployee } from "@/shared/db/repositories/employees";
+import { isActorCompanyCoordinator } from "@/shared/db/repositories/medico-user-links";
 import { linkByInvitation as link } from "../_helpers/professional-link";
 import {
   addClinicalNote,
@@ -299,6 +300,52 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
       ).then((rows) => (rows as unknown as { n: number }[])[0].n);
     expect(await visible("examiner")).toBe(0);
     expect(await visible("coord")).toBe(0);
+  });
+
+  it("verificação anterior à 0083 com validade original longa vale no máximo 12 meses desde a conferência (app e SQL)", async () => {
+    const exam = await newExam();
+    await addClinicalNote(examiner, exam.id, { content: NOTE });
+    // Simula a linha legada (validade de 24 ou 36 meses, permitida pela 0071): a 0083 usa NOT VALID,
+    // e o CHECK novo recusaria criar ou alterar uma linha assim. Datas preservadas; nada apagado.
+    const legacy = (account: string, verifiedAgo: string, original: string) =>
+      admin.begin(async (tx) => {
+        await tx`alter table professional_identity_verifications drop constraint ck_identity_verifications_validity`;
+        await tx`update professional_identity_verifications
+          set verified_at = now() - ${verifiedAgo}::interval,
+              expires_at = now() - ${verifiedAgo}::interval + ${original}::interval
+          where user_id = ${account}`;
+        await tx.unsafe(`alter table professional_identity_verifications add constraint ck_identity_verifications_validity
+          check (expires_at > verified_at and expires_at <= verified_at + interval '12 months') not valid`);
+      });
+    const visible = (actor: string) =>
+      asRuntime(
+        actor,
+        (tx) =>
+          tx`select count(*)::int as n from health_exam_clinical_notes where health_exam_id=${exam.id}`,
+      ).then((rows) => (rows as unknown as { n: number }[])[0].n);
+    // D: conferida há 6 meses com validade original de 36 → ainda dentro dos 12 meses: acesso mantido.
+    await legacy("examiner", "6 months", "36 months");
+    expect((await readClinicalRecord(examiner, exam.id)).notes).toHaveLength(1);
+    expect(await visible("examiner")).toBe(1);
+    // C: conferida há 13 meses com validade original de 24 (expires_at ainda no futuro) → sem acesso.
+    await legacy("examiner", "13 months", "24 months");
+    await expect(readClinicalRecord(examiner, exam.id)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(
+      addClinicalNote(examiner, exam.id, { content: "Tentativa fictícia." }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(await visible("examiner")).toBe(0);
+    // Coordenador (ato de coordenador) pelo mesmo predicado: 13 meses com validade original de 36.
+    expect(await isActorCompanyCoordinator(coordinator, I.companyA)).toBe(true);
+    await legacy("coord", "13 months", "36 months");
+    expect(await isActorCompanyCoordinator(coordinator, I.companyA)).toBe(false);
+    expect(await visible("coord")).toBe(0);
+    // Histórico preservado: as datas originais continuam gravadas.
+    const rows =
+      await admin`select count(*)::int as n from professional_identity_verifications
+      where expires_at > verified_at + interval '12 months'`;
+    expect(rows[0].n).toBe(2);
   });
 
   it("acesso direto via SQL com o papel do app: só o médico autorizado lê e grava; campo antigo vazio e travado", async () => {
