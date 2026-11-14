@@ -14289,6 +14289,50 @@
             "url": "{{baseUrl}}/api/v1/commercial-invoices/{{commercialInvoiceId}}",
             "description": "Cabeçalho, totalsByService e items[]. 404 para fatura de outro escritório."
           }
+        },
+        {
+          "name": "Consultar ficha da assinatura (NOB-135)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-subscription-sheet",
+            "description": "Por contratação: oferta e itens do snapshot, empresas, financial (situação no provedor), access (direitos de uso) e availableActions. Só owner; 403 com a flag desligada."
+          }
+        },
+        {
+          "name": "Abrir portal do provedor (NOB-136)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-contracts/{{commercialContractId}}/portal-session",
+            "description": "200 com {url} temporária. 503 sem chave de teste do provedor; 404 contratação de outro escritório; 422 pagador sem cliente no provedor."
+          }
         }
       ]
     },

@@ -163,6 +163,26 @@ O escritório vem do vínculo do checkout gravado no banco, nunca do `org_id` do
 5. Migration da tabela `commercial_one_off_orders` com GRANT por coluna (`SELECT`, `INSERT`, `UPDATE` só de `status`, `provider_payment_ref` e `paid_at`) é gerada pelo drizzle-kit à parte.
 6. Adicionar `checkout.session.async_payment_succeeded` ao endpoint do webhook de teste do provedor.
 
+## Telas de assinatura e faturas (NOB-135, NOB-136)
+
+Entregue, atrás da mesma flag e só para o owner:
+
+- `/plans/subscription`: ficha por contratação com oferta, itens e valores do snapshot, empresas atendidas e teste da empresa. **Pagamento** (situação espelhada do provedor, período, renovação, cancelamento agendado) e **Acesso** (direitos de uso) aparecem em blocos separados.
+- Acesso tem quatro estados: liberado (direito ativo aplicado), legado ou cortesia (direito ativo com `applied=false`), suspenso e sem direito registrado. Direito inativo com `applied=false` conta como suspenso, porque toda contratação ainda não paga nasce assim.
+- Cancelamento agendado não remove acesso antes do fim do período: a ficha mostra "mantido até" a data de fim.
+- As ações vêm do servidor: `manage_in_portal` (há cliente no provedor) e `resume_checkout` (há checkout aberto). Sem pagamento disponível no ambiente, nenhuma ação.
+- `/plans/invoices`: faturas espelhadas, paginadas, com valor em reais, competência, vencimento, situação e valor por serviço. Texto fixo: fatura de cobrança não é nota fiscal.
+- Portal do provedor: `POST /api/v1/commercial-contracts/{id}/portal-session` devolve só a URL temporária. O cliente do provedor é resolvido no servidor pelo pagador da contratação; só funciona com chave de teste.
+- Método de pagamento: nada de cartão é guardado nem exibido. A tela diz "Gerenciado no portal do provedor".
+
+Pendências:
+
+- Mudança de plano com cotação própria (`quoteId`, proporcionalidade, efeito imediato ou no fim do ciclo): não implementada, a política não foi aprovada. Hoje a troca é feita no portal.
+- Cancelamento e reativação próprios: idem, ficam no portal.
+- Método de pagamento mascarado: depende de leitura na API do provedor.
+- O que o cliente altera no portal chega pelos eventos já tratados (assinatura e fatura); não há sincronização extra.
+- Nenhuma das telas foi aberta em navegador nem contra o provedor: falta conta de teste.
+
 ## O que falta para ligar o modo de teste do provedor
 
 1. **Conta de teste do Stripe** e as chaves no ambiente: `STRIPE_SECRET_KEY` com chave `sk_test_` (ou restrita `rk_test_`) e `STRIPE_WEBHOOK_SECRET` do endpoint de teste.

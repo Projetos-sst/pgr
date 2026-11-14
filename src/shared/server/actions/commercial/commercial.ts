@@ -7,6 +7,8 @@ import * as core from "@/shared/server/commercial/commercial-core";
 import { getInvoice, listInvoices } from "@/shared/server/commercial/invoices-core";
 import * as oneOff from "@/shared/server/commercial/one-off-order-core";
 import { getPlansOverview } from "@/shared/server/commercial/plans-overview-core";
+import { createCommercialPortalSession } from "@/shared/server/commercial/portal-session-core";
+import { getSubscriptionSheet } from "@/shared/server/commercial/subscription-sheet-core";
 
 export async function listCommercialOffersAction() {
   return officeAction("commercial.offer.list", (ctx) => core.listSellableOffers(ctx));
@@ -142,6 +144,20 @@ export async function getCommercialOneOffAuthorizationAction(
 export async function getCommercialBillingAction(contractId: string) {
   return officeAction("commercial.billing.get", (ctx) =>
     getContractBilling(ctx, contractId),
+  );
+}
+
+export async function getCommercialSubscriptionSheetAction() {
+  return officeAction("commercial.subscription_sheet.get", (ctx) =>
+    getSubscriptionSheet(ctx),
+  );
+}
+
+export async function createCommercialPortalSessionAction(contractId: string) {
+  return officeAction(
+    "commercial.portal_session.create",
+    (ctx) => createCommercialPortalSession(ctx, contractId),
+    { audit: true },
   );
 }
 

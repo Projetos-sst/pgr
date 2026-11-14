@@ -104,6 +104,19 @@ export async function createBillingPortalSession(args: {
   return { url: session.url };
 }
 
+export async function createCommercialPortalSession(
+  customerId: string,
+  returnUrl: string,
+): Promise<{ url: string }> {
+  const config = getStripeConfig();
+  if (!config || !isStripeTestMode(config)) throw new BillingUnavailableError();
+  const session = await stripeClient().billingPortal.sessions.create({
+    customer: customerId,
+    return_url: returnUrl,
+  });
+  return { url: session.url };
+}
+
 /** Verifica a assinatura do webhook e devolve o evento tipado. */
 export function constructWebhookEvent(payload: string, signature: string): Stripe.Event {
   const config = getStripeConfig();

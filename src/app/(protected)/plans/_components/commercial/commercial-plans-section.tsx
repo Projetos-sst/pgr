@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import type { PlansOverview } from "@/shared/server/commercial/plans-overview-core";
@@ -80,6 +81,19 @@ function Contracting({
   );
 }
 
+function OwnerLinks({ canContract }: { canContract: boolean }) {
+  if (!canContract) return null;
+  return (
+    <nav
+      aria-label="Assinatura e faturas"
+      className="flex flex-wrap gap-4 text-sm font-bold"
+    >
+      <Link href="/plans/subscription">Minha assinatura</Link>
+      <Link href="/plans/invoices">Faturas</Link>
+    </nav>
+  );
+}
+
 export function CommercialPlansSection({
   overview,
   checkoutReturn,
@@ -94,6 +108,7 @@ export function CommercialPlansSection({
       <h2 id="commercial-plans-title" className="text-text text-2xl font-black">
         Contratação por empresa
       </h2>
+      <OwnerLinks canContract={overview.canContract} />
       <CheckoutReturnNotice kind={checkoutReturn} contracts={overview.contracts} />
       {overview.readOnlyMessage ? (
         <p role="status" className="glass-card rounded-[16px] p-4 text-sm font-semibold">
