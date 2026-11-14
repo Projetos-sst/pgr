@@ -5,7 +5,11 @@ import { createHash } from "node:crypto";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { todayInSaoPaulo } from "@/shared/dates";
 import * as checkoutRepo from "@/shared/db/repositories/billing-checkout";
-import { checkoutInputSchema, checkoutLines } from "@/shared/domains/commercial/checkout";
+import {
+  checkoutInputSchema,
+  checkoutLines,
+  checkoutMode,
+} from "@/shared/domains/commercial/checkout";
 import { contractTargets } from "@/shared/domains/commercial/entitlement";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 import { ValidationError } from "@/shared/errors/validation-error";
@@ -45,6 +49,7 @@ export async function startContractCheckout(
     env,
   });
   if ("problem" in charge) throw new ValidationError(charge.problem);
+  const mode = checkoutMode(prepared.contract);
   const checkoutId = checkoutIdFor(ctx.tenantId, idempotencyKey);
   const base = getAppBaseUrl();
   const session = await createCommercialCheckoutSession({
@@ -54,6 +59,7 @@ export async function startContractCheckout(
     customerEmail: prepared.payer.billingEmail,
     successUrl: `${base}/plans?commercial_checkout=success`,
     cancelUrl: `${base}/plans?commercial_checkout=cancelled`,
+    ...(mode === "payment" ? { mode } : {}),
   });
   return checkoutRepo.recordCheckout(ctx, {
     id: checkoutId,

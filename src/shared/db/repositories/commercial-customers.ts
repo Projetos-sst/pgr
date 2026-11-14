@@ -70,6 +70,16 @@ export async function findCustomer(
   return row ?? null;
 }
 
+export async function findOfficeCustomer(
+  tx: TenantTransaction,
+  orgId: string,
+): Promise<CommercialCustomer | null> {
+  const [row] = await selectCustomers(tx).where(
+    and(eq(customers.orgId, orgId), eq(customers.kind, "office")),
+  );
+  return row ?? null;
+}
+
 async function requireCustomer(tx: TenantTransaction, orgId: string, id: string) {
   const customer = await findCustomer(tx, orgId, id);
   if (!customer) throw new NotFoundError();

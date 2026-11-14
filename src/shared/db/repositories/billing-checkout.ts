@@ -23,6 +23,7 @@ import {
   commercialContracts,
   commercialCustomers,
   commercialOfferItems,
+  commercialOneOffOrders,
 } from "../schema/commercial";
 import { withOrg, type TenantTransaction } from "../with-org";
 import { auditedTenantWrite } from "./audited-write";
@@ -82,6 +83,27 @@ async function assertNoOtherCheckout(
     );
 }
 
+async function assertOneOffOrderPayable(
+  tx: TenantTransaction,
+  orgId: string,
+  contractId: string,
+): Promise<boolean> {
+  const [order] = await tx
+    .select({ status: commercialOneOffOrders.status })
+    .from(commercialOneOffOrders)
+    .where(
+      and(
+        eq(commercialOneOffOrders.orgId, orgId),
+        eq(commercialOneOffOrders.contractId, contractId),
+      ),
+    );
+  if (order?.status === "paid")
+    throw new DuplicateError("Este pedido avulso já foi pago.");
+  if (order?.status === "cancelled")
+    throw new ValidationError("Este pedido avulso foi cancelado.");
+  return Boolean(order);
+}
+
 async function loadChargeable(tx: TenantTransaction, orgId: string, contractId: string) {
   const [contract] = await tx
     .select({
@@ -137,6 +159,7 @@ async function loadChargeable(tx: TenantTransaction, orgId: string, contractId: 
         eq(commercialOfferItems.offerVersionId, contract.offerVersionId),
       ),
     );
+  const hasOneOffOrder = await assertOneOffOrderPayable(tx, orgId, contractId);
   const [payer] = await tx
     .select({
       billingEmail: commercialCustomers.billingEmail,
@@ -159,7 +182,13 @@ async function loadChargeable(tx: TenantTransaction, orgId: string, contractId: 
     );
   if (!payer) throw new NotFoundError();
   return {
-    contract: { ...contract, companyCount: companyIds.length, companyIds, items },
+    contract: {
+      ...contract,
+      companyCount: companyIds.length,
+      companyIds,
+      items,
+      hasOneOffOrder,
+    },
     prices,
     payer,
   };

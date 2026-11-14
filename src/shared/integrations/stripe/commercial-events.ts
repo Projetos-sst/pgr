@@ -43,6 +43,9 @@ const sessionSchema = z.object({
   metadata: checkoutReference,
   customer: expandable,
   subscription: expandable,
+  mode: z.string().nullish(),
+  payment_status: z.string().nullish(),
+  payment_intent: expandable,
 });
 const periodSchema = z.object({
   current_period_start: optionalInstant,
@@ -110,7 +113,18 @@ function checkoutSession(object: unknown) {
   return { session: session.data, reference };
 }
 
-const checkoutCompleted: Normalizer = (object) => {
+const oneOffPaid: Normalizer = (object) => {
+  const parsed = checkoutSession(object);
+  if (!parsed || parsed.session.payment_status !== "paid") return null;
+  return {
+    kind: "one_off_paid",
+    reference: parsed.reference,
+    providerSessionId: parsed.session.id,
+    providerPaymentRef: parsed.session.payment_intent,
+  };
+};
+
+const subscriptionCheckoutCompleted: Normalizer = (object) => {
   const parsed = checkoutSession(object);
   return (
     parsed && {
@@ -122,6 +136,14 @@ const checkoutCompleted: Normalizer = (object) => {
     }
   );
 };
+
+const checkoutCompleted: Normalizer = (object) =>
+  checkoutSession(object)?.session.mode === "payment"
+    ? oneOffPaid(object)
+    : subscriptionCheckoutCompleted(object);
+
+const paymentCheckoutSucceeded: Normalizer = (object) =>
+  checkoutSession(object)?.session.mode === "payment" ? oneOffPaid(object) : null;
 
 const checkoutExpired: Normalizer = (object) => {
   const parsed = checkoutSession(object);
@@ -192,6 +214,7 @@ const invoiceChanged: Normalizer = (object) => {
 
 export const STRIPE_EVENT_NORMALIZERS: Record<string, Normalizer> = {
   "checkout.session.completed": checkoutCompleted,
+  "checkout.session.async_payment_succeeded": paymentCheckoutSucceeded,
   "checkout.session.expired": checkoutExpired,
   "customer.subscription.created": subscriptionChanged,
   "customer.subscription.updated": subscriptionChanged,

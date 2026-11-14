@@ -23,6 +23,7 @@ import {
   INTEREST_MESSAGE_MAX_LENGTH,
   type InterestService,
 } from "@/shared/domains/commercial/interest";
+import type { OneOffOrderStatus } from "@/shared/domains/commercial/one-off-order";
 import type {
   BillingPeriod,
   CommercialService,
@@ -404,6 +405,72 @@ export const commercialInterests = pgTable(
       for: "insert",
       to: appRuntimeRole,
       withCheck: sql`${t.createdBy}=${actor} and ${actorCompanyScope(t.companyId)}`,
+    }),
+  ],
+).enableRLS();
+
+const providerEvent = sql`nullif(current_setting('app.current_actor',true),'') is null`;
+
+export const commercialOneOffOrders = pgTable(
+  "commercial_one_off_orders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    contractId: uuid("contract_id").notNull(),
+    companyId: uuid("company_id").notNull(),
+    status: text("status").$type<OneOffOrderStatus>().notNull().default("pending"),
+    providerPaymentRef: text("provider_payment_ref"),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("uq_commercial_one_off_orders_contract").on(t.orgId, t.contractId),
+    index("idx_commercial_one_off_orders_company").on(t.orgId, t.companyId, t.status),
+    foreignKey({
+      name: "commercial_one_off_orders_contract_fk",
+      columns: [t.contractId, t.orgId],
+      foreignColumns: [commercialContracts.id, commercialContracts.orgId],
+    }),
+    foreignKey({
+      name: "commercial_one_off_orders_company_fk",
+      columns: [t.companyId, t.orgId],
+      foreignColumns: [companies.id, companies.orgId],
+    }),
+    check(
+      "commercial_one_off_orders_status",
+      sql`${t.status} in ('pending','paid','cancelled')`,
+    ),
+    check(
+      "commercial_one_off_orders_paid",
+      sql`(${t.status} = 'paid') = (${t.paidAt} is not null)`,
+    ),
+    pgPolicy("commercial_one_off_orders_tenant", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenant,
+      withCheck: tenant,
+    }),
+    pgPolicy("commercial_one_off_orders_actor_scope", {
+      as: "restrictive",
+      for: "select",
+      to: appRuntimeRole,
+      using: actorCompanyScope(t.companyId),
+    }),
+    pgPolicy("commercial_one_off_orders_actor", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${t.createdBy}=${actor} and ${administrator} and ${actorCompanyScope(t.companyId)}`,
+    }),
+    pgPolicy("commercial_one_off_orders_provider_event", {
+      as: "restrictive",
+      for: "update",
+      to: appRuntimeRole,
+      using: providerEvent,
+      withCheck: providerEvent,
     }),
   ],
 ).enableRLS();

@@ -93,7 +93,11 @@ async function activePayer(tx: TenantTransaction, orgId: string, customerId: str
   return { ...customer, taxId: customer.taxId };
 }
 
-async function offerOnSale(tx: TenantTransaction, id: string, clock: ContractClock) {
+export async function offerOnSale(
+  tx: TenantTransaction,
+  id: string,
+  clock: ContractClock,
+) {
   const onSale = sellableOffers(await listPublishedOffers(tx), clock.today, clock.env);
   const offer = onSale.find((candidate) => candidate.id === id);
   if (!offer)
@@ -131,46 +135,53 @@ function assertParties(
   if (problem) throw new ValidationError(problem);
 }
 
+export async function createContractIn(
+  tx: TenantTransaction,
+  ctx: TenantContext,
+  input: ContractInput,
+  clock: ContractClock,
+): Promise<CommercialContract> {
+  const customer = await activePayer(tx, ctx.tenantId, input.customerId);
+  const offer = await offerOnSale(tx, input.offerVersionId, clock);
+  assertParties(customer, offer.scope, input.companyIds);
+  await assertCompaniesInOrg(tx, ctx.tenantId, input.companyIds);
+  const snapshot = contractSnapshot({
+    customer: {
+      kind: customer.kind,
+      legalName: customer.legalName,
+      taxId: customer.taxId,
+    },
+    offer,
+  });
+  const [created] = await tx
+    .insert(contracts)
+    .values({
+      ...snapshot.header,
+      orgId: ctx.tenantId,
+      customerId: customer.id,
+      termStart: input.termStart,
+      termEnd: input.termEnd,
+      contractedBy: ctx.userId,
+    })
+    .returning({ id: contracts.id });
+  const scoped = { orgId: ctx.tenantId, contractId: created.id };
+  await tx
+    .insert(contractItems)
+    .values(snapshot.items.map((item) => ({ ...item, ...scoped })));
+  if (input.companyIds.length > 0)
+    await tx
+      .insert(contractCompanies)
+      .values(input.companyIds.map((companyId) => ({ ...scoped, companyId })));
+  return loadContract(tx, ctx.tenantId, created.id);
+}
+
 export function createContract(
   ctx: TenantContext,
   input: ContractInput,
   clock: ContractClock,
 ): Promise<CommercialContract> {
   return auditedTenantWrite(ctx.tenantId, "commercial.contract.create", () =>
-    withOrg(ctx.tenantId, async (tx) => {
-      const customer = await activePayer(tx, ctx.tenantId, input.customerId);
-      const offer = await offerOnSale(tx, input.offerVersionId, clock);
-      assertParties(customer, offer.scope, input.companyIds);
-      await assertCompaniesInOrg(tx, ctx.tenantId, input.companyIds);
-      const snapshot = contractSnapshot({
-        customer: {
-          kind: customer.kind,
-          legalName: customer.legalName,
-          taxId: customer.taxId,
-        },
-        offer,
-      });
-      const [created] = await tx
-        .insert(contracts)
-        .values({
-          ...snapshot.header,
-          orgId: ctx.tenantId,
-          customerId: customer.id,
-          termStart: input.termStart,
-          termEnd: input.termEnd,
-          contractedBy: ctx.userId,
-        })
-        .returning({ id: contracts.id });
-      const scoped = { orgId: ctx.tenantId, contractId: created.id };
-      await tx
-        .insert(contractItems)
-        .values(snapshot.items.map((item) => ({ ...item, ...scoped })));
-      if (input.companyIds.length > 0)
-        await tx
-          .insert(contractCompanies)
-          .values(input.companyIds.map((companyId) => ({ ...scoped, companyId })));
-      return loadContract(tx, ctx.tenantId, created.id);
-    }),
+    withOrg(ctx.tenantId, (tx) => createContractIn(tx, ctx, input, clock)),
   );
 }
 

@@ -125,6 +125,44 @@ Migration `0091_commercial_billing`, aditiva: oito tabelas novas e uma função.
 
 RLS com `USING` e `WITH CHECK` em todas. `commercial_entitlements` tem `company_id` e leva a policy de escopo por empresa da NOB-175. Sem `DELETE` em nenhuma.
 
+## Pedido avulso (NOB-117)
+
+**Regra.** Pedido avulso é a contratação de uma oferta `one_time` com itens `one_off` para uma única empresa. Não exige Pro nem assinatura prévia e vale também para empresa que já assina. O pagamento confirmado libera somente aquele pedido, para aquela empresa: nunca o módulo inteiro nem outro serviço.
+
+**Criação.** `POST /commercial-one-off-orders` com `{offerId, companyId}` (só owner). A oferta precisa estar à venda, ser `one_time`, ter todos os itens `one_off` e escopo por empresa. O pagador é o cliente do escritório, que precisa estar cadastrado. Contrato (com cópia imutável de preço) e pedido nascem na mesma transação; `UNIQUE(org_id, contract_id)` garante um pedido por contratação.
+
+**Checkout.** Mesma rota do contrato. A contratação `one_time` só abre checkout se tiver pedido e se todos os itens forem `one_off`; `employee` e `document` seguem recusados. A quantidade é sempre 1 (o pedido cobre uma empresa). A sessão é criada no modo de pagamento único, sem dados de assinatura, com o mesmo vínculo no `metadata` e a mesma chave de idempotência. Preço vem de `billing_provider_prices`. Só chave de teste; sem chave ou com chave de produção, `BILLING_UNAVAILABLE`. Pedido já pago recusa novo checkout (`409`) e pedido cancelado, `422`.
+
+**Estados.**
+
+| Estado      | Transições permitidas | Observação                                      |
+| ----------- | --------------------- | ----------------------------------------------- |
+| `pending`   | `paid`, `cancelled`   | nasce assim                                     |
+| `paid`      | nenhuma               | gravado só pelo webhook (transação sem usuário) |
+| `cancelled` | nenhuma               | sem operação para cancelar nesta etapa          |
+
+**Evento → efeito.**
+
+| Evento do provedor                                                         | Efeito                                                                                                                           |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `checkout.session.completed` em modo `payment` com `payment_status = paid` | Fecha a sessão de checkout e marca o pedido como `paid` se ainda estiver `pending`. Repetição ou evento posterior não muda nada. |
+| `checkout.session.async_payment_succeeded` em modo `payment`               | Mesmo efeito (pagamento assíncrono confirmado depois).                                                                           |
+| `checkout.session.completed` em modo `payment` sem pagamento confirmado    | Ignorado; a sessão continua aberta até a confirmação.                                                                            |
+| Qualquer evento com `livemode: true`                                       | Ignorado, como no fluxo recorrente.                                                                                              |
+
+O escritório vem do vínculo do checkout gravado no banco, nunca do `org_id` do evento. O pedido pago não chama `commercial_reconcile_grant`, não grava `company_modules`, não altera `orgs.plan` e não cria espelho de assinatura nem direito de uso. Com a flag desligada o webhook segue o caminho antigo e o evento de pagamento único é ignorado.
+
+**Autorização para os consumidores.** `requirePurchasedOneOff(ctx, orderId, companyId)` devolve o pedido pago daquela empresa ou lança `PaymentRequiredError` (`PAYMENT_REQUIRED`, `402`). Pedido de uma empresa não autoriza outra; pedido de outro escritório dá `404`. `isOneOffPurchased` é a versão booleana. `owner` gerencia o financeiro; `collaborator` só consulta a autorização (`GET /commercial-one-off-orders/{id}/authorization`); `client` recebe `403`.
+
+**Pendências.**
+
+1. Quais serviços avulsos existem e seus preços dependem de aprovação comercial. O catálogo usado nos testes é fictício (`ficticio-avulso-laudo`); nenhum preço real foi definido.
+2. `checkout.session.async_payment_failed` ainda não é tratado: o pedido fica `pending`.
+3. Cancelamento de pedido e estorno/reembolso não têm operação; o estado `cancelled` existe só no modelo.
+4. Os consumidores (emissão de laudo, ASO etc.) ainda não chamam `requirePurchasedOneOff`; cada módulo decide onde aplicar.
+5. Migration da tabela `commercial_one_off_orders` com GRANT por coluna (`SELECT`, `INSERT`, `UPDATE` só de `status`, `provider_payment_ref` e `paid_at`) é gerada pelo drizzle-kit à parte.
+6. Adicionar `checkout.session.async_payment_succeeded` ao endpoint do webhook de teste do provedor.
+
 ## O que falta para ligar o modo de teste do provedor
 
 1. **Conta de teste do Stripe** e as chaves no ambiente: `STRIPE_SECRET_KEY` com chave `sk_test_` (ou restrita `rk_test_`) e `STRIPE_WEBHOOK_SECRET` do endpoint de teste.

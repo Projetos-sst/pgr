@@ -29,7 +29,15 @@ export type CheckoutContract = {
   termEnd: string | null;
   companyCount: number;
   items: readonly CommercialItem[];
+  hasOneOffOrder?: boolean;
 };
+export type CheckoutMode = "payment" | "subscription";
+
+export function checkoutMode(
+  contract: Pick<CheckoutContract, "billingPeriod">,
+): CheckoutMode {
+  return contract.billingPeriod === "one_time" ? "payment" : "subscription";
+}
 export type ProviderPrice = { position: number; providerPriceId: string };
 export type CheckoutLine = {
   position: number;
@@ -43,7 +51,8 @@ const QUANTITY_BY_UNIT: Record<
   (contract: CheckoutContract) => number | null
 > = {
   organization: () => 1,
-  company: (contract) => contract.companyCount,
+  company: (contract) =>
+    contract.billingPeriod === "one_time" ? 1 : contract.companyCount,
   employee: () => null,
   document: () => null,
 };
@@ -67,8 +76,15 @@ const CHECKOUT_RULES: {
   message: (lines: DraftLine[]) => string;
 }[] = [
   {
-    broken: (contract) => contract.billingPeriod === "one_time",
-    message: () => "Contratação avulsa ainda não tem checkout (NOB-117).",
+    broken: (contract) =>
+      contract.billingPeriod === "one_time" &&
+      contract.items.some((item) => item.service !== "one_off"),
+    message: () => "Contratação avulsa só tem checkout para serviços avulsos (NOB-117).",
+  },
+  {
+    broken: (contract) =>
+      contract.billingPeriod === "one_time" && contract.hasOneOffOrder !== true,
+    message: () => "Contratação avulsa só é cobrada a partir de um pedido avulso.",
   },
   {
     broken: (contract, _lines, clock) =>

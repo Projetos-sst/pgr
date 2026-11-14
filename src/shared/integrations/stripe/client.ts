@@ -53,6 +53,7 @@ export type CommercialCheckoutRequest = {
   customerEmail: string;
   successUrl: string;
   cancelUrl: string;
+  mode?: "payment";
 };
 
 export async function createCommercialCheckoutSession(
@@ -61,24 +62,24 @@ export async function createCommercialCheckoutSession(
   const config = getStripeConfig();
   if (!config || !isStripeTestMode(config)) throw new BillingUnavailableError();
   const reference = { [CHECKOUT_REFERENCE_KEY]: request.checkoutId };
-  const session = await stripeClient().checkout.sessions.create(
-    {
-      mode: "subscription",
-      line_items: request.lines.map((line) => ({
-        price: line.providerPriceId,
-        quantity: line.quantity,
-      })),
-      subscription_data: { metadata: reference },
-      metadata: reference,
-      client_reference_id: request.checkoutId,
-      ...(request.providerCustomerId
-        ? { customer: request.providerCustomerId }
-        : { customer_email: request.customerEmail }),
-      success_url: request.successUrl,
-      cancel_url: request.cancelUrl,
-    },
-    { idempotencyKey: `commercial-checkout:${request.checkoutId}` },
-  );
+  const params: Stripe.Checkout.SessionCreateParams = {
+    mode: request.mode ?? "subscription",
+    line_items: request.lines.map((line) => ({
+      price: line.providerPriceId,
+      quantity: line.quantity,
+    })),
+    ...(request.mode === "payment" ? {} : { subscription_data: { metadata: reference } }),
+    metadata: reference,
+    client_reference_id: request.checkoutId,
+    ...(request.providerCustomerId
+      ? { customer: request.providerCustomerId }
+      : { customer_email: request.customerEmail }),
+    success_url: request.successUrl,
+    cancel_url: request.cancelUrl,
+  };
+  const session = await stripeClient().checkout.sessions.create(params, {
+    idempotencyKey: `commercial-checkout:${request.checkoutId}`,
+  });
   if (!session.url) throw new BillingUnavailableError();
   return {
     id: session.id,

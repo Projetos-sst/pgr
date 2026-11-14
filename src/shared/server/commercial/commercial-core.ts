@@ -130,7 +130,7 @@ export async function markInterestSeen(ctx: TenantContext, id: string) {
   return interestsRepo.markInterestSeen(ctx, interestIdSchema.parse(id));
 }
 
-function requireOfficeStaffRole(ctx: TenantContext, message: string): void {
+export function requireOfficeStaffRole(ctx: TenantContext, message: string): void {
   requireCommercialSurface();
   if (ctx.role !== "owner" && ctx.role !== "collaborator")
     throw new ForbiddenError(message);

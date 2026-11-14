@@ -5,6 +5,7 @@ import { getContractBilling } from "@/shared/server/commercial/billing-events-co
 import { startContractCheckout } from "@/shared/server/commercial/checkout-core";
 import * as core from "@/shared/server/commercial/commercial-core";
 import { getInvoice, listInvoices } from "@/shared/server/commercial/invoices-core";
+import * as oneOff from "@/shared/server/commercial/one-off-order-core";
 
 export async function listCommercialOffersAction() {
   return officeAction("commercial.offer.list", (ctx) => core.listSellableOffers(ctx));
@@ -101,6 +102,35 @@ export async function startCommercialCheckoutAction(contractId: string, input: u
     "commercial.checkout.create",
     (ctx) => startContractCheckout(ctx, contractId, input),
     { audit: true },
+  );
+}
+
+export async function createCommercialOneOffOrderAction(input: unknown) {
+  return officeAction(
+    "commercial.one_off_order.create",
+    (ctx) => oneOff.createOneOffOrder(ctx, input),
+    { audit: true },
+  );
+}
+
+export async function listCommercialOneOffOrdersAction(filters: unknown = {}) {
+  return officeAction("commercial.one_off_order.list", (ctx) =>
+    oneOff.listOneOffOrders(ctx, filters),
+  );
+}
+
+export async function getCommercialOneOffOrderAction(id: string) {
+  return officeAction("commercial.one_off_order.get", (ctx) =>
+    oneOff.getOneOffOrder(ctx, id),
+  );
+}
+
+export async function getCommercialOneOffAuthorizationAction(
+  id: string,
+  companyId?: string,
+) {
+  return officeAction("commercial.one_off_order.authorization", (ctx) =>
+    oneOff.getOneOffAuthorization(ctx, id, companyId),
   );
 }
 

@@ -21,6 +21,7 @@ import type {
   CheckoutExpiredEvent,
   InvoiceEvent,
   InvoiceSnapshot,
+  OneOffPaidEvent,
   ProviderEvent,
   ProviderEventReference,
   SubscriptionEvent,
@@ -44,13 +45,18 @@ import {
   billingSubscriptions,
   commercialEntitlements,
 } from "../schema/billing";
-import { commercialContracts, commercialOfferItems } from "../schema/commercial";
+import {
+  commercialContracts,
+  commercialOfferItems,
+  commercialOneOffOrders,
+} from "../schema/commercial";
 import { withOrg, type TenantTransaction } from "../with-org";
 
 const sessions = billingCheckoutSessions;
 const subscriptions = billingSubscriptions;
 const entitlements = commercialEntitlements;
 const invoices = billingInvoices;
+const oneOffOrders = commercialOneOffOrders;
 const prices = billingProviderPrices;
 
 const NOT_YET_PAID: EntitlementState = {
@@ -250,6 +256,44 @@ async function completeCheckout(
   return { outcome: "applied", detail: "checkout_completed" };
 }
 
+async function settleOneOffOrder(
+  { tx, link }: EventContext,
+  event: OneOffPaidEvent,
+): Promise<EventResult> {
+  const completed = await tx
+    .update(sessions)
+    .set({ status: "completed", completedAt: event.occurredAt })
+    .where(
+      and(
+        eq(sessions.orgId, link.orgId),
+        eq(sessions.contractId, link.contractId),
+        eq(sessions.providerSessionId, event.providerSessionId),
+        eq(sessions.status, "open"),
+      ),
+    )
+    .returning({ id: sessions.id });
+  if (completed.length === 0)
+    return { outcome: "ignored", detail: "checkout_session_not_open" };
+  const paid = await tx
+    .update(oneOffOrders)
+    .set({
+      status: "paid",
+      paidAt: event.occurredAt,
+      providerPaymentRef: event.providerPaymentRef,
+    })
+    .where(
+      and(
+        eq(oneOffOrders.orgId, link.orgId),
+        eq(oneOffOrders.contractId, link.contractId),
+        eq(oneOffOrders.status, "pending"),
+      ),
+    )
+    .returning({ id: oneOffOrders.id });
+  return paid.length > 0
+    ? { outcome: "applied", detail: "one_off_paid" }
+    : { outcome: "ignored", detail: "one_off_order_not_pending" };
+}
+
 async function expireCheckout(
   { tx, link }: EventContext,
   event: CheckoutExpiredEvent,
@@ -359,6 +403,8 @@ function applyEvent(context: EventContext, event: ProviderEvent): Promise<EventR
   switch (event.kind) {
     case "checkout_completed":
       return completeCheckout(context, event);
+    case "one_off_paid":
+      return settleOneOffOrder(context, event);
     case "checkout_expired":
       return expireCheckout(context, event);
     case "subscription":

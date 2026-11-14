@@ -20,6 +20,11 @@ export type CheckoutCompletedEvent = ProviderEventBase & {
   providerCustomerId: string | null;
   providerSubscriptionId: string | null;
 };
+export type OneOffPaidEvent = ProviderEventBase & {
+  kind: "one_off_paid";
+  providerSessionId: string;
+  providerPaymentRef: string | null;
+};
 export type CheckoutExpiredEvent = ProviderEventBase & {
   kind: "checkout_expired";
   providerSessionId: string;
@@ -46,6 +51,7 @@ export type InvoiceEvent = ProviderEventBase & {
 
 export type ProviderEvent =
   | CheckoutCompletedEvent
+  | OneOffPaidEvent
   | CheckoutExpiredEvent
   | SubscriptionEvent
   | InvoiceEvent;

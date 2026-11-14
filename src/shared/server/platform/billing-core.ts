@@ -66,6 +66,7 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<void> {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+    if (session.mode === "payment") return;
     const orgId = orgIdFromMetadata(session.metadata) ?? session.client_reference_id;
     if (!orgId) return;
     await orgsRepo.updateOrgBilling(orgId, {

@@ -62,13 +62,14 @@ const offer = (
   code: string,
   scope: OfferVersionInput["scope"],
   items: OfferVersionInput["items"],
+  period: OfferVersionInput["billingPeriod"] = "monthly",
 ): OfferVersionInput => ({
   code: `ficticio-${code}`,
   name: `${code} (catálogo fictício de teste)`,
   description: "Oferta fictícia.",
   scope,
   currency: "BRL",
-  billingPeriod: "monthly",
+  billingPeriod: period,
   items,
   quotas: [],
   validFrom: "2026-01-01",
@@ -92,6 +93,19 @@ export const OFFERS = {
   pgr: offer("pgr", "company", [pgrItem]),
   medicine: offer("medicina", "company", [medicineItem]),
   both: offer("pgr-medicina", "company", [pgrItem, medicineItem]),
+  oneOff: offer(
+    "avulso-laudo",
+    "company",
+    [
+      {
+        service: "one_off",
+        label: "Laudo avulso por pedido",
+        unit: "company",
+        unitAmountCents: 44400,
+      },
+    ],
+    "one_time",
+  ),
   pro: offer("pro", "organization", [
     {
       service: "pro",

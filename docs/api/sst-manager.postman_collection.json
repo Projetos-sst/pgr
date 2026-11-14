@@ -414,6 +414,11 @@
       "key": "commercialInvoiceId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "commercialOneOffOrderId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -14261,6 +14266,108 @@
             ],
             "url": "{{baseUrl}}/api/v1/commercial-invoices/{{commercialInvoiceId}}",
             "description": "Cabeçalho, totalsByService e items[]. 404 para fatura de outro escritório."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial — pedido avulso (NOB-117)",
+      "description": "Exige COMMERCIAL_CATALOG_ENABLED=true. Owner cria, lista e lê; collaborator só consulta a autorização. Oferta one_time com itens one_off (catálogo fictício; preços reais dependem de aprovação comercial). O checkout usa POST /commercial-contracts/{{contractId}}/checkout com o contractId do pedido, em modo de pagamento único e só com chave de teste. Pedido pago libera somente aquele pedido: não liga módulo nem altera plano.",
+      "item": [
+        {
+          "name": "Criar pedido avulso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offerId\": \"{{commercialOfferVersionId}}\",\n  \"companyId\": \"{{companyId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-one-off-orders",
+            "description": "201 com o pedido (status pending e contractId). Não exige Pro nem assinatura. 422 oferta que não é avulsa ou cliente do escritório ausente; 403 flag desligada ou não-owner. Copie o `id` para {{commercialOneOffOrderId}}."
+          }
+        },
+        {
+          "name": "Listar pedidos avulsos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-one-off-orders?companyId={{companyId}}&status=pending&page=1&pageSize=20",
+            "description": "{rows,total}, do mais novo para o mais antigo. Filtros opcionais: companyId e status (pending|paid|cancelled)."
+          }
+        },
+        {
+          "name": "Consultar pedido avulso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-one-off-orders/{{commercialOneOffOrderId}}",
+            "description": "Pedido com oferta, empresa, estado e pagamento. 404 para pedido de outro escritório."
+          }
+        },
+        {
+          "name": "Consultar autorização do pedido avulso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-one-off-orders/{{commercialOneOffOrderId}}/authorization?companyId={{companyId}}",
+            "description": "{orderId, companyId, status, purchased}. purchased só é true com o pedido pago e da empresa informada. owner e collaborator; client recebe 403."
           }
         }
       ]
