@@ -47,7 +47,10 @@ describe("DeleteHealthExam", () => {
     );
     expect(deleteHealthExamAction).toHaveBeenCalledWith(EXAM);
     expect(mockRefresh).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Remover exame" })).toBeEnabled();
+    // O alerta pode aparecer antes de a transição terminar: espera o botão ser liberado.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Remover exame" })).toBeEnabled(),
+    );
   });
 
   it("FORBIDDEN e NOT_FOUND: mensagem legível, nunca o código cru", async () => {
