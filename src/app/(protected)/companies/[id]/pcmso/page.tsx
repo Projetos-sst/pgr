@@ -20,6 +20,7 @@ import {
 } from "@/shared/server/actions/medicine/pcmso-documents";
 
 import { PageHeader } from "../../../_ui/list";
+import { SectionLoadError } from "../../../_ui/section-load-error";
 import { GeneratePcmsoForm } from "./generate-form";
 import { DownloadSignedPcmsoButton, SignedPcmsoForm } from "./signed-pcmso-controls";
 
@@ -206,6 +207,8 @@ export default async function PcmsoPage({ params }: { params: Promise<{ id: stri
   const blocking = readiness.ok
     ? readiness.data.items.filter((item) => item.severity === "blocking")
     : [];
+  // Falha de leitura ≠ vazio: sem a conferência não há geração; sem a lista não há registro às cegas.
+  const retryHref = `/companies/${id}/pcmso`;
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
@@ -215,7 +218,9 @@ export default async function PcmsoPage({ params }: { params: Promise<{ id: stri
         description="Composição do PCMSO a partir dos riscos validados e do plano de exames aprovado pelo médico coordenador. Cada geração é uma prévia arquivada, sem assinatura."
       />
       <section className="glass-card flex flex-col gap-3 rounded-xl p-5">
-        {blocking.length ? (
+        {!readiness.ok ? (
+          <SectionLoadError what="a conferência do PCMSO" retryHref={retryHref} />
+        ) : blocking.length ? (
           <p role="status" className="text-sm text-amber-900">
             A prévia não pode ser gerada: {blocking.length} pendência(s) na{" "}
             <Link href={`/companies/${id}/pcmso-readiness`} className="underline">
@@ -258,7 +263,9 @@ export default async function PcmsoPage({ params }: { params: Promise<{ id: stri
             ))}
           </ul>
         ) : null}
-        {signed?.items.length ? (
+        {!signedDocs.ok ? (
+          <SectionLoadError what="os PCMSOs assinados" retryHref={retryHref} />
+        ) : signed?.items.length ? (
           <ul className="flex flex-col gap-2">
             {signed.items.map((doc) => (
               <li key={doc.id} className="text-text-subtle flex flex-col gap-1">
@@ -294,23 +301,28 @@ export default async function PcmsoPage({ params }: { params: Promise<{ id: stri
             programa no sistema.
           </p>
         )}
-        <SignedPcmsoForm
-          companyId={id}
-          latestPreview={
-            docs.data[0] ? { id: docs.data[0].id, version: docs.data[0].version } : null
-          }
-          coordinator={
-            latestContent
-              ? {
-                  name: latestContent.coordinator.name,
-                  crm: latestContent.coordinator.crm,
-                  uf: latestContent.coordinator.registrationUf,
-                }
-              : null
-          }
-          currentId={signed?.currentId ?? null}
-        />
+        {signedDocs.ok && !(latest && !latest.ok) ? (
+          <SignedPcmsoForm
+            companyId={id}
+            latestPreview={
+              docs.data[0] ? { id: docs.data[0].id, version: docs.data[0].version } : null
+            }
+            coordinator={
+              latestContent
+                ? {
+                    name: latestContent.coordinator.name,
+                    crm: latestContent.coordinator.crm,
+                    uf: latestContent.coordinator.registrationUf,
+                  }
+                : null
+            }
+            currentId={signed?.currentId ?? null}
+          />
+        ) : null}
       </section>
+      {latest && !latest.ok ? (
+        <SectionLoadError what="a última prévia" retryHref={retryHref} />
+      ) : null}
       {latest?.ok ? (
         <Preview
           content={latest.data.content as PcmsoContent}

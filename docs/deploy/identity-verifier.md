@@ -53,7 +53,7 @@ UPDATE public.identity_verifiers
  WHERE user_id = '<id>' AND revoked_at IS NULL;
 ```
 
-Além da designação, a tela `/admin-global/identity-verifications` exige que o operador seja master.
+Além da designação, a tela `/admin-global/identity-verifications`, as Server Actions e as rotas REST `/api/v1/admin/identity-verifications(…)` exigem que o operador seja master pela sessão Clerk real. O bypass dev da REST não substitui essa sessão, e a conta do operador nunca vem do header `x-dev-user`.
 
 ## 4. Regras que o banco garante
 

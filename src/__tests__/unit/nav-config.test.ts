@@ -125,4 +125,8 @@ describe("mapa de menus (NOB-172, SEG-06)", () => {
     ]);
     expect(allNavHrefs(visibleNav([]))).not.toContain("/pgr");
   });
+
+  it("mantém a identidade profissional na Medicina do Trabalho", () => {
+    expect(groupHrefs("Medicina do Trabalho")).toContain("/professional-identity");
+  });
 });

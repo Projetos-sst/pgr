@@ -23,6 +23,7 @@ import {
 } from "@/shared/server/actions/medicine/clinical-record";
 
 import { PageHeader, PrimaryLink } from "../../../_ui/list";
+import { SectionLoadError } from "../../../_ui/section-load-error";
 import { HealthExamForm } from "../../_components/health-exam-form";
 import { HealthExamIcon } from "../../_components/health-exam-icon";
 
@@ -118,7 +119,12 @@ export default async function EditHealthExamPage({
         <h2 className="text-text text-base font-semibold">
           Restrição necessária ao trabalho
         </h2>
-        {currentRestriction?.kind === "restriction" ? (
+        {!restrictions.ok ? (
+          <SectionLoadError
+            what="as restrições comunicadas"
+            retryHref={`/health-exams/${exam.id}/edit`}
+          />
+        ) : currentRestriction?.kind === "restriction" ? (
           <p role="status">
             {currentRestriction.restriction} · comunicada em{" "}
             {formatInstantDate(currentRestriction.recordedAt)}
@@ -145,7 +151,12 @@ export default async function EditHealthExamPage({
       {role === "owner" ? (
         <section className="glass-card flex flex-col gap-2 rounded-xl p-5 text-sm">
           <h2 className="text-text text-base font-semibold">Acessos ao prontuário</h2>
-          {eventRows.length ? (
+          {accessEvents && !accessEvents.ok ? (
+            <SectionLoadError
+              what="os acessos ao prontuário"
+              retryHref={`/health-exams/${exam.id}/edit`}
+            />
+          ) : eventRows.length ? (
             <ul className="text-text-subtle list-disc pl-5">
               {eventRows.map((event) => (
                 <li key={event.id}>

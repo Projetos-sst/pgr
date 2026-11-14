@@ -147,6 +147,11 @@ export const NAV: NavEntry[] = [
       { href: "/health-exams", label: "Exames e ASO", iconName: "activity" },
       { href: "/medicos", label: "Médicos", iconName: "stethoscope" },
       {
+        href: "/professional-identity",
+        label: "Minha identidade profissional",
+        iconName: "briefcase-user",
+      },
+      {
         href: "/incidents",
         label: "Incidentes, acidentes e CAT",
         iconName: "alert-circle",

@@ -235,4 +235,30 @@ describe("PcmsoPage", () => {
       screen.getByRole("button", { name: "Registrar nova versão assinada" }),
     ).toBeInTheDocument();
   });
+
+  it("falha na conferência ou no PCMSO assinado: avisa a falha, não oferece geração nem registro às cegas", async () => {
+    const fail = { ok: false, error: { code: "UNKNOWN", message: "Erro inesperado." } };
+    (listPcmsoDocumentsAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+    (getPcmsoReadinessAction as jest.Mock).mockResolvedValue(fail);
+    (listSignedPcmsosAction as jest.Mock).mockResolvedValue(fail);
+    await renderPage();
+    const alerts = screen.getAllByRole("alert").map((a) => a.textContent);
+    expect(alerts).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/Não foi possível carregar a conferência do PCMSO/),
+        expect.stringMatching(/Não foi possível carregar os PCMSOs assinados/),
+      ]),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Gerar prévia do PCMSO" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Nenhum PCMSO assinado registrado/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: /Registrar (nova versão assinada|PCMSO assinado)/,
+      }),
+    ).not.toBeInTheDocument();
+  });
 });
