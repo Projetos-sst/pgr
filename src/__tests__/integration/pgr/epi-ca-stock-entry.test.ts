@@ -128,6 +128,8 @@ function restEntry(tenant: string, stockId: string) {
 
   it("CA válido até amanhã: a entrada soma ao saldo e grava o lote", async () => {
     await setCa(admin, "123", TOMORROW);
+    await admin`update public.stock_movements set movement_date = ${YESTERDAY}
+      where stock_id = ${I.epiStockA}`;
     expect(await entry()).toMatchObject({ ok: true, data: { newBalance: 13 } });
     const history = await listStockMovementsAction(I.epiStockA, {});
     expect(history).toMatchObject({
