@@ -45,7 +45,10 @@ describe("DeleteMedico", () => {
     );
     expect(remove).toHaveBeenCalledWith(MEDICO);
     expect(mockRefresh).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Remover médico" })).toBeEnabled();
+    // O alerta pode aparecer antes de a transição terminar: espera o botão ser liberado.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Remover médico" })).toBeEnabled(),
+    );
   });
 
   it("sucesso atualiza a lista, sem mensagem de erro", async () => {
