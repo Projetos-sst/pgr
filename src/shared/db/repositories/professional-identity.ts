@@ -24,6 +24,7 @@ import {
   medicos,
   medicoUserLinks as links,
 } from "../schema/medicos";
+import { identityEffectiveExpiry } from "../schema/clinical-actor";
 import { orgs } from "../schema/orgs";
 import {
   identityChallengeAttempts as attempts,
@@ -44,6 +45,16 @@ async function actorTx<T>(ctx: TenantContext, fn: (tx: TenantTransaction) => Pro
 }
 
 type Tx = TenantTransaction | VerifierTransaction;
+
+/**
+ * Validade efetiva lida pelo app (situação, renovação e fila do operador): o menor entre
+ * `expires_at` e `verified_at + 12 meses`, a mesma regra de `actor_clinical_medico_ids` (NOB-158).
+ * As datas gravadas não mudam.
+ */
+const effectiveExpiry = identityEffectiveExpiry(
+  verifications.verifiedAt,
+  verifications.expiresAt,
+).mapWith(verifications.expiresAt);
 
 /** Último pedido e última verificação de cada profissional para a conta (no escritório). */
 type IdentityState = {
@@ -81,7 +92,7 @@ async function identityStateTx(
       medicoId: verifications.medicoId,
       crm: verifications.crm,
       uf: verifications.registrationUf,
-      expiresAt: verifications.expiresAt,
+      expiresAt: effectiveExpiry,
       verifiedAt: verifications.verifiedAt,
       currentCrm: medicos.crm,
       currentUf: medicos.registrationUf,
@@ -437,7 +448,7 @@ export async function listVerificationQueue(verifierUserId: string): Promise<{
         userId: verifications.userId,
         verifiedBy: verifications.verifiedBy,
         verifiedAt: verifications.verifiedAt,
-        expiresAt: verifications.expiresAt,
+        expiresAt: effectiveExpiry,
         orgName: orgs.name,
         medicoName: medicos.name,
       })
@@ -610,7 +621,7 @@ function rlsDenied(error: unknown): boolean {
 export async function approveIdentityVerification(
   verifierUserId: string,
   input: IdentityApprovalValues,
-  expiresAt: Date,
+  validityMonths: number,
 ): Promise<{ id: string }> {
   try {
     return await withVerifier(verifierUserId, async (tx) => {
@@ -640,7 +651,10 @@ export async function approveIdentityVerification(
           registrySource: input.registrySource,
           evidenceRef: input.evidenceRef || null,
           verifiedBy: verifierUserId,
-          expiresAt,
+          // Mesmo `now()` de `verified_at` (padrão da coluna): a validade é exatamente
+          // `verified_at + N meses` pela aritmética do Postgres, a mesma do CHECK (sem a virada
+          // de mês do JS, ex.: 29/02 + 12 meses).
+          expiresAt: sql`now() + make_interval(months => ${validityMonths})`,
         })
         .returning({ id: verifications.id });
       return row;

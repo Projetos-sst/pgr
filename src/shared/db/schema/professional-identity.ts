@@ -177,7 +177,7 @@ export const professionalIdentityVerifications = pgTable(
     ),
     check(
       "ck_identity_verifications_validity",
-      sql`${t.expiresAt} > ${t.verifiedAt} and ${t.expiresAt} <= ${t.verifiedAt} + interval '36 months'`,
+      sql`${t.expiresAt} > ${t.verifiedAt} and ${t.expiresAt} <= ${t.verifiedAt} + interval '12 months'`,
     ),
     check("ck_identity_verifications_independent", sql`${t.verifiedBy} <> ${t.userId}`),
     check("ck_identity_verifications_source", sql`btrim(${t.registrySource}) <> ''`),
