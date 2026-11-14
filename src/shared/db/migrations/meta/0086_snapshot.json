@@ -1,6 +1,6 @@
 {
-  "id": "a2237c74-0ea4-4bdb-a033-7891140e7305",
-  "prevId": "9070621a-d9a7-4687-864c-ead2c5b5f32b",
+  "id": "9070621a-d9a7-4687-864c-ead2c5b5f32b",
+  "prevId": "d95d6f5a-191b-401c-9d67-69e850ee206d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -12454,7 +12454,7 @@
           "to": [
             "app_runtime"
           ],
-          "withCheck": "\"medico_user_links\".\"linked_by\" = current_setting('app.current_actor', true) and \"medico_user_links\".\"revoked_at\" is null and exists (select 1 from public.medico_link_invitations i\n        where i.id = \"medico_user_links\".\"invitation_id\" and i.org_id = \"medico_user_links\".\"org_id\" and i.medico_id = \"medico_user_links\".\"medico_id\" and i.user_id = \"medico_user_links\".\"user_id\"\n          and not exists (select 1 from public.medico_link_invitation_events c where c.org_id = i.org_id and c.invitation_id = i.id and c.kind in ('declined','cancelled')) and i.expires_at > now()\n          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)\n          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)\n            or exists (select 1 from public.professional_identity_verifications v\n        join public.medicos vm on vm.id = v.medico_id and vm.org_id = v.org_id\n        where v.org_id = i.org_id and v.medico_id = i.medico_id and v.user_id = i.user_id\n          and v.crm = vm.crm and v.registration_uf = vm.registration_uf and v.expires_at > now()\n          and not exists (select 1 from public.professional_identity_review_events r\n            where r.org_id = v.org_id and r.verification_id = v.id and r.kind = 'revoked'))))"
+          "withCheck": "\"medico_user_links\".\"linked_by\" = current_setting('app.current_actor', true) and \"medico_user_links\".\"revoked_at\" is null and exists (select 1 from public.medico_link_invitations i\n        where i.id = \"medico_user_links\".\"invitation_id\" and i.org_id = \"medico_user_links\".\"org_id\" and i.medico_id = \"medico_user_links\".\"medico_id\" and i.user_id = \"medico_user_links\".\"user_id\"\n          and not exists (select 1 from public.medico_link_invitation_events c where c.org_id = i.org_id and c.invitation_id = i.id and c.kind in ('declined','cancelled')) and i.expires_at > now()\n          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)\n          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)\n            or exists (select 1 from public.professional_identity_verifications v\n        join public.medicos vm on vm.id = v.medico_id and vm.org_id = v.org_id\n        where v.org_id = i.org_id and v.medico_id = i.medico_id and v.user_id = i.user_id\n          and v.crm = vm.crm and v.registration_uf = vm.registration_uf and v.expires_at > now()\n          and v.verified_at + interval '12 months' > now()\n          and not exists (select 1 from public.professional_identity_review_events r\n            where r.org_id = v.org_id and r.verification_id = v.id and r.kind = 'revoked'))))"
         },
         "medico_user_links_owner_revoke": {
           "name": "medico_user_links_owner_revoke",
@@ -15711,180 +15711,6 @@
       },
       "isRLSEnabled": true
     },
-    "public.pgr_docx_text_versions": {
-      "name": "pgr_docx_text_versions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "seq": {
-          "name": "seq",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true,
-          "identity": {
-            "type": "always",
-            "name": "pgr_docx_text_versions_seq_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "9223372036854775807",
-            "cache": "1",
-            "cycle": false
-          }
-        },
-        "org_id": {
-          "name": "org_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "pgr_id": {
-          "name": "pgr_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "overrides": {
-          "name": "overrides",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "texts_sha256": {
-          "name": "texts_sha256",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reason": {
-          "name": "reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_pgr_docx_text_versions": {
-          "name": "idx_pgr_docx_text_versions",
-          "columns": [
-            {
-              "expression": "org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "pgr_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "seq",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "pgr_docx_text_versions_org_id_orgs_id_fk": {
-          "name": "pgr_docx_text_versions_org_id_orgs_id_fk",
-          "tableFrom": "pgr_docx_text_versions",
-          "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "pgr_docx_text_versions_pgr_id_pgr_id_fk": {
-          "name": "pgr_docx_text_versions_pgr_id_pgr_id_fk",
-          "tableFrom": "pgr_docx_text_versions",
-          "tableTo": "pgr",
-          "columnsFrom": [
-            "pgr_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {
-        "pgr_docx_text_versions_tenant": {
-          "name": "pgr_docx_text_versions_tenant",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "org_id=current_setting('app.current_org',true)",
-          "withCheck": "org_id=current_setting('app.current_org',true)"
-        },
-        "pgr_docx_text_versions_context": {
-          "name": "pgr_docx_text_versions_context",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "exists(select 1 from public.pgr p where p.id=\"pgr_docx_text_versions\".\"pgr_id\" and p.org_id=\"pgr_docx_text_versions\".\"org_id\")",
-          "withCheck": "exists(select 1 from public.pgr p where p.id=\"pgr_docx_text_versions\".\"pgr_id\" and p.org_id=\"pgr_docx_text_versions\".\"org_id\")"
-        },
-        "pgr_docx_text_versions_actor": {
-          "name": "pgr_docx_text_versions_actor",
-          "as": "RESTRICTIVE",
-          "for": "INSERT",
-          "to": [
-            "app_runtime"
-          ],
-          "withCheck": "\"pgr_docx_text_versions\".\"created_by\"=current_setting('app.current_actor',true)"
-        }
-      },
-      "checkConstraints": {
-        "pgr_docx_text_versions_sha256": {
-          "name": "pgr_docx_text_versions_sha256",
-          "value": "\"pgr_docx_text_versions\".\"texts_sha256\" ~ '^[a-f0-9]{64}$'"
-        },
-        "pgr_docx_text_versions_reason": {
-          "name": "pgr_docx_text_versions_reason",
-          "value": "btrim(\"pgr_docx_text_versions\".\"reason\") <> ''"
-        }
-      },
-      "isRLSEnabled": true
-    },
     "public.pgr_ges": {
       "name": "pgr_ges",
       "schema": "",
@@ -17259,7 +17085,7 @@
         },
         "ck_identity_verifications_validity": {
           "name": "ck_identity_verifications_validity",
-          "value": "\"professional_identity_verifications\".\"expires_at\" > \"professional_identity_verifications\".\"verified_at\" and \"professional_identity_verifications\".\"expires_at\" <= \"professional_identity_verifications\".\"verified_at\" + interval '36 months'"
+          "value": "\"professional_identity_verifications\".\"expires_at\" > \"professional_identity_verifications\".\"verified_at\" and \"professional_identity_verifications\".\"expires_at\" <= \"professional_identity_verifications\".\"verified_at\" + interval '12 months'"
         },
         "ck_identity_verifications_independent": {
           "name": "ck_identity_verifications_independent",

@@ -1,5 +1,5 @@
 {
-  "id": "a76dc3c8-a53f-4a13-85f1-87d86868d06f",
+  "id": "9e5ba59c-1afe-4ff1-a176-ecf5059707db",
   "prevId": "651453c3-e038-4b50-bce8-e330bf0c05a8",
   "version": "7",
   "dialect": "postgresql",
@@ -378,15 +378,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "accidents_actor_scope": {
-          "name": "accidents_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"accidents\".\"company_id\"))"
-        },
         "accidents_isolation": {
           "name": "accidents_isolation",
           "as": "PERMISSIVE",
@@ -2890,15 +2881,6 @@
           ],
           "using": "org_id = current_setting('app.current_org', true)",
           "withCheck": "org_id = current_setting('app.current_org', true)"
-        },
-        "companies_actor_scope": {
-          "name": "companies_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"companies\".\"id\"))"
         }
       },
       "checkConstraints": {
@@ -3013,15 +2995,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "company_module_events_actor_scope": {
-          "name": "company_module_events_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"company_module_events\".\"company_id\"))"
-        },
         "company_module_events_isolation": {
           "name": "company_module_events_isolation",
           "as": "PERMISSIVE",
@@ -3134,15 +3107,6 @@
           ],
           "using": "org_id = current_setting('app.current_org', true)",
           "withCheck": "org_id = current_setting('app.current_org', true)"
-        },
-        "company_modules_actor_scope": {
-          "name": "company_modules_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "SELECT",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"company_modules\".\"company_id\" and s.area = case \"company_modules\".\"module\" when 'pgr' then 'safety' when 'medicine' then 'health' end))"
         },
         "company_modules_owner_insert": {
           "name": "company_modules_owner_insert",
@@ -3655,15 +3619,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "absence_clinical_access_events_actor_scope": {
-          "name": "absence_clinical_access_events_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"absence_clinical_access_events\".\"company_id\"))"
-        },
         "absence_clinical_access_isolation": {
           "name": "absence_clinical_access_isolation",
           "as": "PERMISSIVE",
@@ -4609,15 +4564,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "employees_actor_scope": {
-          "name": "employees_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"employees\".\"company_id\"))"
-        },
         "employees_isolation": {
           "name": "employees_isolation",
           "as": "PERMISSIVE",
@@ -4854,15 +4800,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "epi_catalog_actor_scope": {
-          "name": "epi_catalog_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(\"epi_catalog\".\"company_id\" is null or (nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"epi_catalog\".\"company_id\")))"
-        },
         "epi_catalog_isolation": {
           "name": "epi_catalog_isolation",
           "as": "PERMISSIVE",
@@ -6791,15 +6728,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "form_controls_actor_scope": {
-          "name": "form_controls_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(\"form_controls\".\"company_id\" is null or (nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"form_controls\".\"company_id\")))"
-        },
         "form_controls_isolation": {
           "name": "form_controls_isolation",
           "as": "PERMISSIVE",
@@ -7196,15 +7124,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "ges_actor_scope": {
-          "name": "ges_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"ges\".\"company_id\" and (s.work_unit_id is null or \"ges\".\"work_unit_id\" is null or s.work_unit_id = \"ges\".\"work_unit_id\")))"
-        },
         "ges_isolation": {
           "name": "ges_isolation",
           "as": "PERMISSIVE",
@@ -7773,15 +7692,6 @@
         }
       },
       "policies": {
-        "company_risk_authorizers_actor_scope": {
-          "name": "company_risk_authorizers_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"company_risk_authorizers\".\"company_id\"))"
-        },
         "risk_authorizers_tenant": {
           "name": "risk_authorizers_tenant",
           "as": "PERMISSIVE",
@@ -9111,15 +9021,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "inspections_actor_scope": {
-          "name": "inspections_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(\"inspections\".\"company_id\" is null or (nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"inspections\".\"company_id\")))"
-        },
         "inspections_isolation": {
           "name": "inspections_isolation",
           "as": "PERMISSIVE",
@@ -9485,15 +9386,6 @@
         }
       },
       "policies": {
-        "job_roles_actor_scope": {
-          "name": "job_roles_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"job_roles\".\"company_id\"))"
-        },
         "job_roles_isolation": {
           "name": "job_roles_isolation",
           "as": "PERMISSIVE",
@@ -10022,15 +9914,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "machine_installations_actor_scope": {
-          "name": "machine_installations_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"machine_installations\".\"company_id\" and (s.work_unit_id is null or \"machine_installations\".\"work_unit_id\" is null or s.work_unit_id = \"machine_installations\".\"work_unit_id\")))"
-        },
         "machine_installations_tenant": {
           "name": "machine_installations_tenant",
           "as": "PERMISSIVE",
@@ -11179,15 +11062,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "medical_risk_decisions_actor_scope": {
-          "name": "medical_risk_decisions_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"medical_risk_decisions\".\"company_id\"))"
-        },
         "medical_risk_decisions_tenant": {
           "name": "medical_risk_decisions_tenant",
           "as": "PERMISSIVE",
@@ -12454,7 +12328,7 @@
           "to": [
             "app_runtime"
           ],
-          "withCheck": "\"medico_user_links\".\"linked_by\" = current_setting('app.current_actor', true) and \"medico_user_links\".\"revoked_at\" is null and exists (select 1 from public.medico_link_invitations i\n        where i.id = \"medico_user_links\".\"invitation_id\" and i.org_id = \"medico_user_links\".\"org_id\" and i.medico_id = \"medico_user_links\".\"medico_id\" and i.user_id = \"medico_user_links\".\"user_id\"\n          and not exists (select 1 from public.medico_link_invitation_events c where c.org_id = i.org_id and c.invitation_id = i.id and c.kind in ('declined','cancelled')) and i.expires_at > now()\n          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)\n          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)\n            or exists (select 1 from public.professional_identity_verifications v\n        join public.medicos vm on vm.id = v.medico_id and vm.org_id = v.org_id\n        where v.org_id = i.org_id and v.medico_id = i.medico_id and v.user_id = i.user_id\n          and v.crm = vm.crm and v.registration_uf = vm.registration_uf and v.expires_at > now()\n          and not exists (select 1 from public.professional_identity_review_events r\n            where r.org_id = v.org_id and r.verification_id = v.id and r.kind = 'revoked'))))"
+          "withCheck": "\"medico_user_links\".\"linked_by\" = current_setting('app.current_actor', true) and \"medico_user_links\".\"revoked_at\" is null and exists (select 1 from public.medico_link_invitations i\n        where i.id = \"medico_user_links\".\"invitation_id\" and i.org_id = \"medico_user_links\".\"org_id\" and i.medico_id = \"medico_user_links\".\"medico_id\" and i.user_id = \"medico_user_links\".\"user_id\"\n          and not exists (select 1 from public.medico_link_invitation_events c where c.org_id = i.org_id and c.invitation_id = i.id and c.kind in ('declined','cancelled')) and i.expires_at > now()\n          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)\n          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)\n            or exists (select 1 from public.professional_identity_verifications v\n        join public.medicos vm on vm.id = v.medico_id and vm.org_id = v.org_id\n        where v.org_id = i.org_id and v.medico_id = i.medico_id and v.user_id = i.user_id\n          and v.crm = vm.crm and v.registration_uf = vm.registration_uf and v.expires_at > now()\n          and v.verified_at + interval '12 months' > now()\n          and not exists (select 1 from public.professional_identity_review_events r\n            where r.org_id = v.org_id and r.verification_id = v.id and r.kind = 'revoked'))))"
         },
         "medico_user_links_owner_revoke": {
           "name": "medico_user_links_owner_revoke",
@@ -12678,192 +12552,6 @@
         "ck_medicos_rqe_physician": {
           "name": "ck_medicos_rqe_physician",
           "value": "\"medicos\".\"rqe\" is null or \"medicos\".\"profession\" = 'physician'"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.member_access_scopes": {
-      "name": "member_access_scopes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "org_id": {
-          "name": "org_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "company_id": {
-          "name": "company_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "work_unit_id": {
-          "name": "work_unit_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "area": {
-          "name": "area",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "granted_by": {
-          "name": "granted_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "granted_at": {
-          "name": "granted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_member_access_scopes_company": {
-          "name": "idx_member_access_scopes_company",
-          "columns": [
-            {
-              "expression": "org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "company_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "member_access_scopes_member_fk": {
-          "name": "member_access_scopes_member_fk",
-          "tableFrom": "member_access_scopes",
-          "tableTo": "org_memberships",
-          "columnsFrom": [
-            "org_id",
-            "user_id"
-          ],
-          "columnsTo": [
-            "org_id",
-            "user_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "member_access_scopes_company_fk": {
-          "name": "member_access_scopes_company_fk",
-          "tableFrom": "member_access_scopes",
-          "tableTo": "companies",
-          "columnsFrom": [
-            "company_id",
-            "org_id"
-          ],
-          "columnsTo": [
-            "id",
-            "org_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "member_access_scopes_work_unit_fk": {
-          "name": "member_access_scopes_work_unit_fk",
-          "tableFrom": "member_access_scopes",
-          "tableTo": "work_units",
-          "columnsFrom": [
-            "work_unit_id",
-            "company_id"
-          ],
-          "columnsTo": [
-            "id",
-            "company_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "uq_member_access_scopes": {
-          "name": "uq_member_access_scopes",
-          "nullsNotDistinct": true,
-          "columns": [
-            "org_id",
-            "user_id",
-            "company_id",
-            "work_unit_id",
-            "area"
-          ]
-        }
-      },
-      "policies": {
-        "member_access_scopes_isolation": {
-          "name": "member_access_scopes_isolation",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "org_id = current_setting('app.current_org', true)",
-          "withCheck": "org_id = current_setting('app.current_org', true)"
-        },
-        "member_access_scopes_own_or_owner_read": {
-          "name": "member_access_scopes_own_or_owner_read",
-          "as": "RESTRICTIVE",
-          "for": "SELECT",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "\"member_access_scopes\".\"user_id\" = current_setting('app.current_actor', true) or exists (select 1 from public.org_memberships om where om.org_id = current_setting('app.current_org', true) and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','org:admin'))"
-        },
-        "member_access_scopes_owner_insert": {
-          "name": "member_access_scopes_owner_insert",
-          "as": "RESTRICTIVE",
-          "for": "INSERT",
-          "to": [
-            "app_runtime"
-          ],
-          "withCheck": "\"member_access_scopes\".\"granted_by\" = current_setting('app.current_actor', true) and exists (select 1 from public.org_memberships om where om.org_id = current_setting('app.current_org', true) and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','org:admin'))"
-        },
-        "member_access_scopes_owner_delete": {
-          "name": "member_access_scopes_owner_delete",
-          "as": "RESTRICTIVE",
-          "for": "DELETE",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "exists (select 1 from public.org_memberships om where om.org_id = current_setting('app.current_org', true) and om.user_id = current_setting('app.current_actor', true) and om.role in ('owner','org:admin'))"
-        }
-      },
-      "checkConstraints": {
-        "member_access_scopes_area_check": {
-          "name": "member_access_scopes_area_check",
-          "value": "\"member_access_scopes\".\"area\" in ('safety', 'health')"
         }
       },
       "isRLSEnabled": true
@@ -14991,15 +14679,6 @@
           "using": "exists (select 1 from public.company_modules cm where cm.org_id = \"pgr\".\"org_id\" and cm.company_id = \"pgr\".\"company_id\" and cm.module = 'pgr' and cm.enabled = true)",
           "withCheck": "exists (select 1 from public.company_modules cm where cm.org_id = \"pgr\".\"org_id\" and cm.company_id = \"pgr\".\"company_id\" and cm.module = 'pgr' and cm.enabled = true)"
         },
-        "pgr_actor_scope": {
-          "name": "pgr_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"pgr\".\"company_id\" and (s.work_unit_id is null or \"pgr\".\"work_unit_id\" is null or s.work_unit_id = \"pgr\".\"work_unit_id\")))"
-        },
         "pgr_isolation": {
           "name": "pgr_isolation",
           "as": "PERMISSIVE",
@@ -16703,7 +16382,7 @@
         },
         "ck_identity_verifications_validity": {
           "name": "ck_identity_verifications_validity",
-          "value": "\"professional_identity_verifications\".\"expires_at\" > \"professional_identity_verifications\".\"verified_at\" and \"professional_identity_verifications\".\"expires_at\" <= \"professional_identity_verifications\".\"verified_at\" + interval '36 months'"
+          "value": "\"professional_identity_verifications\".\"expires_at\" > \"professional_identity_verifications\".\"verified_at\" and \"professional_identity_verifications\".\"expires_at\" <= \"professional_identity_verifications\".\"verified_at\" + interval '12 months'"
         },
         "ck_identity_verifications_independent": {
           "name": "ck_identity_verifications_independent",
@@ -16823,15 +16502,6 @@
         }
       },
       "policies": {
-        "professional_risk_authorizations_actor_scope": {
-          "name": "professional_risk_authorizations_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"professional_risk_authorizations\".\"company_id\"))"
-        },
         "professional_risk_authorizations_tenant": {
           "name": "professional_risk_authorizations_tenant",
           "as": "PERMISSIVE",
@@ -17215,15 +16885,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "psychosocial_campaigns_actor_scope": {
-          "name": "psychosocial_campaigns_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"psychosocial_campaigns\".\"company_id\" and (s.work_unit_id is null or \"psychosocial_campaigns\".\"work_unit_id\" is null or s.work_unit_id = \"psychosocial_campaigns\".\"work_unit_id\")))"
-        },
         "psychosocial_campaigns_isolation": {
           "name": "psychosocial_campaigns_isolation",
           "as": "PERMISSIVE",
@@ -18427,15 +18088,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "risk_authorization_events_actor_scope": {
-          "name": "risk_authorization_events_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"risk_authorization_events\".\"company_id\"))"
-        },
         "risk_authorization_events_tenant": {
           "name": "risk_authorization_events_tenant",
           "as": "PERMISSIVE",
@@ -19271,15 +18923,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "service_orders_actor_scope": {
-          "name": "service_orders_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(\"service_orders\".\"work_unit_id\" is null or exists (select 1 from public.work_units w where w.id = \"service_orders\".\"work_unit_id\"))"
-        },
         "service_orders_isolation": {
           "name": "service_orders_isolation",
           "as": "PERMISSIVE",
@@ -20364,15 +20007,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "vehicles_actor_scope": {
-          "name": "vehicles_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(\"vehicles\".\"company_id\" is null or (nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"vehicles\".\"company_id\" and (s.work_unit_id is null or \"vehicles\".\"work_unit_id\" is null or s.work_unit_id = \"vehicles\".\"work_unit_id\"))))"
-        },
         "vehicles_isolation": {
           "name": "vehicles_isolation",
           "as": "PERMISSIVE",
@@ -20593,15 +20227,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "work_permits_actor_scope": {
-          "name": "work_permits_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(\"work_permits\".\"company_id\" is null or (nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"work_permits\".\"company_id\")))"
-        },
         "work_permits_isolation": {
           "name": "work_permits_isolation",
           "as": "PERMISSIVE",
@@ -20800,27 +20425,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "uq_work_units_id_company": {
-          "name": "uq_work_units_id_company",
-          "columns": [
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "company_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -20863,15 +20467,6 @@
           ],
           "using": "org_id = current_setting('app.current_org', true)",
           "withCheck": "org_id = current_setting('app.current_org', true)"
-        },
-        "work_units_actor_scope": {
-          "name": "work_units_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"work_units\".\"company_id\" and (s.work_unit_id is null or \"work_units\".\"id\" is null or s.work_unit_id = \"work_units\".\"id\")))"
         }
       },
       "checkConstraints": {},

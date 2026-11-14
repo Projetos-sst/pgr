@@ -55,7 +55,7 @@ a leitura dos membros do próprio escritório quando há usuário na sessão, e 
 
 Nada muda ao publicar: nenhuma linha é criada pela migration, então todos seguem com o acesso atual.
 
-1. Aplicar a migration `0083_member_access_scopes` (aditiva, sem backfill).
+1. Aplicar a migration `0084_member_access_scopes` (aditiva, sem backfill).
 2. Conferir, em `/companies/{id}/services`, quais serviços cada empresa tem habilitados.
 3. Em `/team`, o administrador abre "Configurar" no membro e concede os escopos:
    - **Só PGR:** uma linha por empresa (e obra, se quiser) com a área Segurança do Trabalho.

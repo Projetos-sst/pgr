@@ -1,6 +1,6 @@
 {
-  "id": "be177a6d-c60c-4d17-a06b-88baf2374414",
-  "prevId": "e96fb60d-7eaf-42dc-a508-79c57cc2e05a",
+  "id": "e96fb60d-7eaf-42dc-a508-79c57cc2e05a",
+  "prevId": "6f91b7bb-1c06-4ad6-87ec-ef3c66eee40a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -4779,205 +4779,6 @@
         "commercial_customers_identity": {
           "name": "commercial_customers_identity",
           "value": "case \"commercial_customers\".\"kind\"\n        when 'company' then \"commercial_customers\".\"company_id\" is not null and \"commercial_customers\".\"legal_name\" is null and \"commercial_customers\".\"tax_id\" is null\n        else \"commercial_customers\".\"company_id\" is null and btrim(coalesce(\"commercial_customers\".\"legal_name\",'')) <> '' and coalesce(\"commercial_customers\".\"tax_id\",'') ~ '^([0-9]{11}|[0-9]{14})$'\n      end"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.commercial_interests": {
-      "name": "commercial_interests",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "org_id": {
-          "name": "org_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "company_id": {
-          "name": "company_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "service": {
-          "name": "service",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "message": {
-          "name": "message",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "seen_at": {
-          "name": "seen_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "seen_by": {
-          "name": "seen_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "uq_commercial_interests_open": {
-          "name": "uq_commercial_interests_open",
-          "columns": [
-            {
-              "expression": "org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "company_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "service",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"commercial_interests\".\"seen_at\" is null",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_commercial_interests_org_created": {
-          "name": "idx_commercial_interests_org_created",
-          "columns": [
-            {
-              "expression": "org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "commercial_interests_org_id_orgs_id_fk": {
-          "name": "commercial_interests_org_id_orgs_id_fk",
-          "tableFrom": "commercial_interests",
-          "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "commercial_interests_company_fk": {
-          "name": "commercial_interests_company_fk",
-          "tableFrom": "commercial_interests",
-          "tableTo": "companies",
-          "columnsFrom": [
-            "company_id",
-            "org_id"
-          ],
-          "columnsTo": [
-            "id",
-            "org_id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "uq_commercial_interests_id_org": {
-          "name": "uq_commercial_interests_id_org",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "org_id"
-          ]
-        }
-      },
-      "policies": {
-        "commercial_interests_tenant": {
-          "name": "commercial_interests_tenant",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "org_id=current_setting('app.current_org',true)",
-          "withCheck": "org_id=current_setting('app.current_org',true)"
-        },
-        "commercial_interests_actor_scope": {
-          "name": "commercial_interests_actor_scope",
-          "as": "RESTRICTIVE",
-          "for": "SELECT",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"commercial_interests\".\"company_id\"))"
-        },
-        "commercial_interests_actor": {
-          "name": "commercial_interests_actor",
-          "as": "RESTRICTIVE",
-          "for": "INSERT",
-          "to": [
-            "app_runtime"
-          ],
-          "withCheck": "\"commercial_interests\".\"created_by\"=current_setting('app.current_actor',true) and (nullif(current_setting('app.current_actor', true), '') is null or exists (select 1 from public.org_memberships m where m.org_id = current_setting('app.current_org', true) and m.user_id = nullif(current_setting('app.current_actor', true), '') and m.role in ('owner','org:admin')) or not exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '')) or exists (select 1 from public.member_access_scopes s where s.org_id = current_setting('app.current_org', true) and s.user_id = nullif(current_setting('app.current_actor', true), '') and s.company_id = \"commercial_interests\".\"company_id\"))"
-        }
-      },
-      "checkConstraints": {
-        "commercial_interests_service": {
-          "name": "commercial_interests_service",
-          "value": "\"commercial_interests\".\"service\" in ('pgr','medicine','pro','one_off')"
-        },
-        "commercial_interests_message": {
-          "name": "commercial_interests_message",
-          "value": "\"commercial_interests\".\"message\" is null or (btrim(\"commercial_interests\".\"message\") <> '' and char_length(\"commercial_interests\".\"message\") <= 500)"
-        },
-        "commercial_interests_seen": {
-          "name": "commercial_interests_seen",
-          "value": "(\"commercial_interests\".\"seen_at\" is null) = (\"commercial_interests\".\"seen_by\" is null)"
         }
       },
       "isRLSEnabled": true
@@ -15095,7 +14896,7 @@
           "to": [
             "app_runtime"
           ],
-          "withCheck": "\"medico_user_links\".\"linked_by\" = current_setting('app.current_actor', true) and \"medico_user_links\".\"revoked_at\" is null and exists (select 1 from public.medico_link_invitations i\n        where i.id = \"medico_user_links\".\"invitation_id\" and i.org_id = \"medico_user_links\".\"org_id\" and i.medico_id = \"medico_user_links\".\"medico_id\" and i.user_id = \"medico_user_links\".\"user_id\"\n          and not exists (select 1 from public.medico_link_invitation_events c where c.org_id = i.org_id and c.invitation_id = i.id and c.kind in ('declined','cancelled')) and i.expires_at > now()\n          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)\n          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)\n            or exists (select 1 from public.professional_identity_verifications v\n        join public.medicos vm on vm.id = v.medico_id and vm.org_id = v.org_id\n        where v.org_id = i.org_id and v.medico_id = i.medico_id and v.user_id = i.user_id\n          and v.crm = vm.crm and v.registration_uf = vm.registration_uf and v.expires_at > now()\n          and not exists (select 1 from public.professional_identity_review_events r\n            where r.org_id = v.org_id and r.verification_id = v.id and r.kind = 'revoked'))))"
+          "withCheck": "\"medico_user_links\".\"linked_by\" = current_setting('app.current_actor', true) and \"medico_user_links\".\"revoked_at\" is null and exists (select 1 from public.medico_link_invitations i\n        where i.id = \"medico_user_links\".\"invitation_id\" and i.org_id = \"medico_user_links\".\"org_id\" and i.medico_id = \"medico_user_links\".\"medico_id\" and i.user_id = \"medico_user_links\".\"user_id\"\n          and not exists (select 1 from public.medico_link_invitation_events c where c.org_id = i.org_id and c.invitation_id = i.id and c.kind in ('declined','cancelled')) and i.expires_at > now()\n          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)\n          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)\n            or exists (select 1 from public.professional_identity_verifications v\n        join public.medicos vm on vm.id = v.medico_id and vm.org_id = v.org_id\n        where v.org_id = i.org_id and v.medico_id = i.medico_id and v.user_id = i.user_id\n          and v.crm = vm.crm and v.registration_uf = vm.registration_uf and v.expires_at > now()\n          and v.verified_at + interval '12 months' > now()\n          and not exists (select 1 from public.professional_identity_review_events r\n            where r.org_id = v.org_id and r.verification_id = v.id and r.kind = 'revoked'))))"
         },
         "medico_user_links_owner_revoke": {
           "name": "medico_user_links_owner_revoke",
@@ -19900,7 +19701,7 @@
         },
         "ck_identity_verifications_validity": {
           "name": "ck_identity_verifications_validity",
-          "value": "\"professional_identity_verifications\".\"expires_at\" > \"professional_identity_verifications\".\"verified_at\" and \"professional_identity_verifications\".\"expires_at\" <= \"professional_identity_verifications\".\"verified_at\" + interval '36 months'"
+          "value": "\"professional_identity_verifications\".\"expires_at\" > \"professional_identity_verifications\".\"verified_at\" and \"professional_identity_verifications\".\"expires_at\" <= \"professional_identity_verifications\".\"verified_at\" + interval '12 months'"
         },
         "ck_identity_verifications_independent": {
           "name": "ck_identity_verifications_independent",

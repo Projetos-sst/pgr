@@ -1,6 +1,6 @@
 {
-  "id": "fbea0978-4a7b-4a0f-9904-a59759d1bb2c",
-  "prevId": "fb9b0036-3e2c-4106-98b7-70142ba64f25",
+  "id": "fb9b0036-3e2c-4106-98b7-70142ba64f25",
+  "prevId": "91565290-4d88-4b24-a87b-6ff91a867ca7",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2355,15 +2355,6 @@
           ],
           "using": "(nullif(current_setting('app.current_actor',true),'') is null or exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=nullif(current_setting('app.current_actor',true),'') and m.role in ('owner','org:admin')))",
           "withCheck": "nullif(current_setting('app.current_actor',true),'') is null"
-        },
-        "billing_events_platform_operator": {
-          "name": "billing_events_platform_operator",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "exists(select 1 from public.users u where u.id = nullif(current_setting('app.platform_operator', true), '') and u.is_master)"
         }
       },
       "checkConstraints": {
@@ -3105,15 +3096,6 @@
           "using": "(nullif(current_setting('app.current_actor',true),'') is null or exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=nullif(current_setting('app.current_actor',true),'') and m.role in ('owner','org:admin')))",
           "withCheck": "nullif(current_setting('app.current_actor',true),'') is null"
         },
-        "billing_subscriptions_platform_operator": {
-          "name": "billing_subscriptions_platform_operator",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "exists(select 1 from public.users u where u.id = nullif(current_setting('app.platform_operator', true), '') and u.is_master)"
-        },
         "billing_subscriptions_reference": {
           "name": "billing_subscriptions_reference",
           "as": "PERMISSIVE",
@@ -3312,15 +3294,6 @@
           "using": "(nullif(current_setting('app.current_actor',true),'') is null or exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=nullif(current_setting('app.current_actor',true),'') and m.role in ('owner','org:admin')))",
           "withCheck": "nullif(current_setting('app.current_actor',true),'') is null"
         },
-        "commercial_entitlements_platform_operator": {
-          "name": "commercial_entitlements_platform_operator",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "exists(select 1 from public.users u where u.id = nullif(current_setting('app.platform_operator', true), '') and u.is_master)"
-        },
         "commercial_entitlements_actor_scope": {
           "name": "commercial_entitlements_actor_scope",
           "as": "RESTRICTIVE",
@@ -3343,175 +3316,6 @@
         "commercial_entitlements_target": {
           "name": "commercial_entitlements_target",
           "value": "(\"commercial_entitlements\".\"service\" = 'pro') = (\"commercial_entitlements\".\"company_id\" is null)"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.commercial_reconciliations": {
-      "name": "commercial_reconciliations",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "org_id": {
-          "name": "org_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "contract_id": {
-          "name": "contract_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "operator_id": {
-          "name": "operator_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reason": {
-          "name": "reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "result": {
-          "name": "result",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "detail": {
-          "name": "detail",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "source": {
-          "name": "source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_commercial_reconciliations_contract": {
-          "name": "idx_commercial_reconciliations_contract",
-          "columns": [
-            {
-              "expression": "org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "contract_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "commercial_reconciliations_org_id_orgs_id_fk": {
-          "name": "commercial_reconciliations_org_id_orgs_id_fk",
-          "tableFrom": "commercial_reconciliations",
-          "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "commercial_reconciliations_contract_fk": {
-          "name": "commercial_reconciliations_contract_fk",
-          "tableFrom": "commercial_reconciliations",
-          "tableTo": "commercial_contracts",
-          "columnsFrom": [
-            "contract_id",
-            "org_id"
-          ],
-          "columnsTo": [
-            "id",
-            "org_id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {
-        "commercial_reconciliations_tenant": {
-          "name": "commercial_reconciliations_tenant",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "org_id=current_setting('app.current_org',true)",
-          "withCheck": "org_id=current_setting('app.current_org',true)"
-        },
-        "commercial_reconciliations_provider_event": {
-          "name": "commercial_reconciliations_provider_event",
-          "as": "RESTRICTIVE",
-          "for": "ALL",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "(nullif(current_setting('app.current_actor',true),'') is null or exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=nullif(current_setting('app.current_actor',true),'') and m.role in ('owner','org:admin')))",
-          "withCheck": "nullif(current_setting('app.current_actor',true),'') is null"
-        },
-        "commercial_reconciliations_platform_operator": {
-          "name": "commercial_reconciliations_platform_operator",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "exists(select 1 from public.users u where u.id = nullif(current_setting('app.platform_operator', true), '') and u.is_master)"
-        }
-      },
-      "checkConstraints": {
-        "commercial_reconciliations_reason": {
-          "name": "commercial_reconciliations_reason",
-          "value": "char_length(btrim(\"commercial_reconciliations\".\"reason\")) >= 10"
-        },
-        "commercial_reconciliations_result": {
-          "name": "commercial_reconciliations_result",
-          "value": "\"commercial_reconciliations\".\"result\" in ('no_change','corrected','source_unavailable')"
-        },
-        "commercial_reconciliations_source": {
-          "name": "commercial_reconciliations_source",
-          "value": "\"commercial_reconciliations\".\"source\" in ('provider','mirror')"
         }
       },
       "isRLSEnabled": true
@@ -4466,17 +4270,8 @@
           "to": [
             "app_runtime"
           ],
-          "using": "(exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=current_setting('app.current_actor',true) and m.role in ('owner','org:admin')) or exists(select 1 from public.users u where u.id = nullif(current_setting('app.platform_operator', true), '') and u.is_master))",
+          "using": "exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=current_setting('app.current_actor',true) and m.role in ('owner','org:admin'))",
           "withCheck": "exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=current_setting('app.current_actor',true) and m.role in ('owner','org:admin'))"
-        },
-        "commercial_contract_items_platform_operator": {
-          "name": "commercial_contract_items_platform_operator",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "exists(select 1 from public.users u where u.id = nullif(current_setting('app.platform_operator', true), '') and u.is_master)"
         }
       },
       "checkConstraints": {
@@ -4753,17 +4548,8 @@
           "to": [
             "app_runtime"
           ],
-          "using": "(exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=current_setting('app.current_actor',true) and m.role in ('owner','org:admin')) or exists(select 1 from public.users u where u.id = nullif(current_setting('app.platform_operator', true), '') and u.is_master))",
+          "using": "exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=current_setting('app.current_actor',true) and m.role in ('owner','org:admin'))",
           "withCheck": "exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=current_setting('app.current_actor',true) and m.role in ('owner','org:admin'))"
-        },
-        "commercial_contracts_platform_operator": {
-          "name": "commercial_contracts_platform_operator",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "exists(select 1 from public.users u where u.id = nullif(current_setting('app.platform_operator', true), '') and u.is_master)"
         },
         "commercial_contracts_actor": {
           "name": "commercial_contracts_actor",
@@ -15668,7 +15454,7 @@
           "to": [
             "app_runtime"
           ],
-          "withCheck": "\"medico_user_links\".\"linked_by\" = current_setting('app.current_actor', true) and \"medico_user_links\".\"revoked_at\" is null and exists (select 1 from public.medico_link_invitations i\n        where i.id = \"medico_user_links\".\"invitation_id\" and i.org_id = \"medico_user_links\".\"org_id\" and i.medico_id = \"medico_user_links\".\"medico_id\" and i.user_id = \"medico_user_links\".\"user_id\"\n          and not exists (select 1 from public.medico_link_invitation_events c where c.org_id = i.org_id and c.invitation_id = i.id and c.kind in ('declined','cancelled')) and i.expires_at > now()\n          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)\n          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)\n            or exists (select 1 from public.professional_identity_verifications v\n        join public.medicos vm on vm.id = v.medico_id and vm.org_id = v.org_id\n        where v.org_id = i.org_id and v.medico_id = i.medico_id and v.user_id = i.user_id\n          and v.crm = vm.crm and v.registration_uf = vm.registration_uf and v.expires_at > now()\n          and not exists (select 1 from public.professional_identity_review_events r\n            where r.org_id = v.org_id and r.verification_id = v.id and r.kind = 'revoked'))))"
+          "withCheck": "\"medico_user_links\".\"linked_by\" = current_setting('app.current_actor', true) and \"medico_user_links\".\"revoked_at\" is null and exists (select 1 from public.medico_link_invitations i\n        where i.id = \"medico_user_links\".\"invitation_id\" and i.org_id = \"medico_user_links\".\"org_id\" and i.medico_id = \"medico_user_links\".\"medico_id\" and i.user_id = \"medico_user_links\".\"user_id\"\n          and not exists (select 1 from public.medico_link_invitation_events c where c.org_id = i.org_id and c.invitation_id = i.id and c.kind in ('declined','cancelled')) and i.expires_at > now()\n          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)\n          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)\n            or exists (select 1 from public.professional_identity_verifications v\n        join public.medicos vm on vm.id = v.medico_id and vm.org_id = v.org_id\n        where v.org_id = i.org_id and v.medico_id = i.medico_id and v.user_id = i.user_id\n          and v.crm = vm.crm and v.registration_uf = vm.registration_uf and v.expires_at > now()\n          and v.verified_at + interval '12 months' > now()\n          and not exists (select 1 from public.professional_identity_review_events r\n            where r.org_id = v.org_id and r.verification_id = v.id and r.kind = 'revoked'))))"
         },
         "medico_user_links_owner_revoke": {
           "name": "medico_user_links_owner_revoke",
@@ -20473,7 +20259,7 @@
         },
         "ck_identity_verifications_validity": {
           "name": "ck_identity_verifications_validity",
-          "value": "\"professional_identity_verifications\".\"expires_at\" > \"professional_identity_verifications\".\"verified_at\" and \"professional_identity_verifications\".\"expires_at\" <= \"professional_identity_verifications\".\"verified_at\" + interval '36 months'"
+          "value": "\"professional_identity_verifications\".\"expires_at\" > \"professional_identity_verifications\".\"verified_at\" and \"professional_identity_verifications\".\"expires_at\" <= \"professional_identity_verifications\".\"verified_at\" + interval '12 months'"
         },
         "ck_identity_verifications_independent": {
           "name": "ck_identity_verifications_independent",
@@ -24251,15 +24037,6 @@
             "authenticated"
           ],
           "using": "\"users\".\"id\" = (auth.jwt() ->> 'sub')"
-        },
-        "users_platform_operator_self": {
-          "name": "users_platform_operator_self",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "app_runtime"
-          ],
-          "using": "\"users\".\"id\" = nullif(current_setting('app.platform_operator', true), '')"
         }
       },
       "checkConstraints": {},

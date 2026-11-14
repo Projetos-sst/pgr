@@ -78,7 +78,7 @@ registra a versão, informando quem aprovou, o cargo, a data e a referência (at
 
 ## 5. Registro da política e da aprovação
 
-- Tabela `retention_policy_versions` (migration `0089_retention_policy_and_exports`), uma linha por versão,
+- Tabela `retention_policy_versions` (migration `0090_retention_policy_and_exports`), uma linha por versão,
   por escritório. Só inserção: `app_runtime` não tem `UPDATE` nem `DELETE`.
 - `status`: `proposed` ou `approved`. Versão aprovada exige nome, cargo, data (não futura) e referência
   (zod no servidor e `CHECK` no banco).

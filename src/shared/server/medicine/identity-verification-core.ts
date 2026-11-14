@@ -92,9 +92,7 @@ export async function approveVerification(verifierUserId: string, input: unknown
   const months = identityValidityMonths(
     process.env.IDENTITY_VERIFICATION_VALIDITY_MONTHS,
   );
-  const expiresAt = new Date();
-  expiresAt.setMonth(expiresAt.getMonth() + months);
-  return repo.approveIdentityVerification(verifierUserId, values, expiresAt);
+  return repo.approveIdentityVerification(verifierUserId, values, months);
 }
 
 export async function rejectRequest(

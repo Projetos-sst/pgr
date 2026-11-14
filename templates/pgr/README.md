@@ -209,7 +209,7 @@ Cores e tamanhos vêm de `src/shared/domains/pgr/pgr-docx/theme.ts`, os mesmos t
 3. Reconstruir a imagem de `Dockerfile.gotenberg` (em homolog, a imagem referida por `docker-compose.homolog.yml`) para incluir Manrope/JetBrains Mono. Não trocar o endereço/token do serviço existente.
 4. Aplicação e worker precisam de `GOTENBERG_URL` acessível e, quando exigido pelo proxy, `GOTENBERG_TOKEN`. `PGR_DOCX_PDF_PROVIDER=gotenberg` é o padrão e não exige credenciais Google.
 5. O worker usa `DATABASE_URL` (app_runtime), `DATABASE_URL_UNPOOLED` (owner), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `SUPABASE_SECRET_KEY`. O bucket privado `documents` já é o usado pelo GED.
-6. Migration `0086_pgr_docx_text_versions` (NOB-177, aditiva): aplicar antes de publicar a aplicação e o worker. Jobs antigos sem formato continuam em PDF; jobs com formato DOCX explícito continuam sendo respeitados. Documentos já existentes são preservados.
+6. Migration `0087_pgr_docx_text_versions` (NOB-177, aditiva): aplicar antes de publicar a aplicação e o worker. Jobs antigos sem formato continuam em PDF; jobs com formato DOCX explícito continuam sendo respeitados. Documentos já existentes são preservados.
 
 O cartão de cada risco segue os campos do PGR 2026, sem bloco extra de avaliação NR-09/NR-17. Listas vazias (funções, GES, riscos, medidas, ações do Anexo I) saem com mensagem explícita. Falta de avaliação, propagação ou medida não vira conformidade nem "não aplicável". Revisões não cadastradas não são criadas na exportação; validade e responsável históricos ficam vazios porque o histórico não os armazena.
 

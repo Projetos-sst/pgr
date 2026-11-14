@@ -110,7 +110,7 @@ Todas exigem owner e a flag. Detalhe em `docs/api/api-design.md`; requisições 
 
 ## Banco
 
-Migration `0091_commercial_billing`, aditiva: oito tabelas novas e uma função. Nenhuma tabela, coluna ou policy existente foi alterada.
+Migration `0092_commercial_billing`, aditiva: oito tabelas novas e uma função. Nenhuma tabela, coluna ou policy existente foi alterada.
 
 | Tabela                       | Escopo     | Escrita pelo `app_runtime`                                               |
 | ---------------------------- | ---------- | ------------------------------------------------------------------------ |

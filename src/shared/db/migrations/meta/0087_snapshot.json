@@ -1,6 +1,6 @@
 {
-  "id": "ee7a4af7-a88a-4a60-a2b0-c83b2cc2781f",
-  "prevId": "a2237c74-0ea4-4bdb-a033-7891140e7305",
+  "id": "a2237c74-0ea4-4bdb-a033-7891140e7305",
+  "prevId": "9070621a-d9a7-4687-864c-ead2c5b5f32b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -12454,7 +12454,7 @@
           "to": [
             "app_runtime"
           ],
-          "withCheck": "\"medico_user_links\".\"linked_by\" = current_setting('app.current_actor', true) and \"medico_user_links\".\"revoked_at\" is null and exists (select 1 from public.medico_link_invitations i\n        where i.id = \"medico_user_links\".\"invitation_id\" and i.org_id = \"medico_user_links\".\"org_id\" and i.medico_id = \"medico_user_links\".\"medico_id\" and i.user_id = \"medico_user_links\".\"user_id\"\n          and not exists (select 1 from public.medico_link_invitation_events c where c.org_id = i.org_id and c.invitation_id = i.id and c.kind in ('declined','cancelled')) and i.expires_at > now()\n          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)\n          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)\n            or exists (select 1 from public.professional_identity_verifications v\n        join public.medicos vm on vm.id = v.medico_id and vm.org_id = v.org_id\n        where v.org_id = i.org_id and v.medico_id = i.medico_id and v.user_id = i.user_id\n          and v.crm = vm.crm and v.registration_uf = vm.registration_uf and v.expires_at > now()\n          and not exists (select 1 from public.professional_identity_review_events r\n            where r.org_id = v.org_id and r.verification_id = v.id and r.kind = 'revoked'))))"
+          "withCheck": "\"medico_user_links\".\"linked_by\" = current_setting('app.current_actor', true) and \"medico_user_links\".\"revoked_at\" is null and exists (select 1 from public.medico_link_invitations i\n        where i.id = \"medico_user_links\".\"invitation_id\" and i.org_id = \"medico_user_links\".\"org_id\" and i.medico_id = \"medico_user_links\".\"medico_id\" and i.user_id = \"medico_user_links\".\"user_id\"\n          and not exists (select 1 from public.medico_link_invitation_events c where c.org_id = i.org_id and c.invitation_id = i.id and c.kind in ('declined','cancelled')) and i.expires_at > now()\n          and exists (select 1 from public.medico_link_invitation_events a where a.org_id = i.org_id and a.invitation_id = i.id and a.kind = 'accepted' and a.actor_user_id = i.user_id)\n          and (i.invited_by <> i.user_id or exists (select 1 from public.medico_link_invitation_events p where p.org_id = i.org_id and p.invitation_id = i.id and p.kind = 'approved' and p.actor_user_id <> i.user_id)\n            or exists (select 1 from public.professional_identity_verifications v\n        join public.medicos vm on vm.id = v.medico_id and vm.org_id = v.org_id\n        where v.org_id = i.org_id and v.medico_id = i.medico_id and v.user_id = i.user_id\n          and v.crm = vm.crm and v.registration_uf = vm.registration_uf and v.expires_at > now()\n          and v.verified_at + interval '12 months' > now()\n          and not exists (select 1 from public.professional_identity_review_events r\n            where r.org_id = v.org_id and r.verification_id = v.id and r.kind = 'revoked'))))"
         },
         "medico_user_links_owner_revoke": {
           "name": "medico_user_links_owner_revoke",
@@ -17259,7 +17259,7 @@
         },
         "ck_identity_verifications_validity": {
           "name": "ck_identity_verifications_validity",
-          "value": "\"professional_identity_verifications\".\"expires_at\" > \"professional_identity_verifications\".\"verified_at\" and \"professional_identity_verifications\".\"expires_at\" <= \"professional_identity_verifications\".\"verified_at\" + interval '36 months'"
+          "value": "\"professional_identity_verifications\".\"expires_at\" > \"professional_identity_verifications\".\"verified_at\" and \"professional_identity_verifications\".\"expires_at\" <= \"professional_identity_verifications\".\"verified_at\" + interval '12 months'"
         },
         "ck_identity_verifications_independent": {
           "name": "ck_identity_verifications_independent",
@@ -21689,7 +21689,6 @@
       "schema": "public",
       "values": [
         "elimination",
-        "substitution",
         "collective_protection",
         "administrative",
         "ppe"

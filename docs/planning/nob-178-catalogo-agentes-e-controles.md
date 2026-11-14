@@ -164,7 +164,7 @@ grupo e que o registro continua válido.
 | IV    | `administrative`        | IV — Medidas Administrativas/Organização          | IV. Minimização e controle dos fatores de risco, com a adoção de medidas administrativas ou de organização do trabalho?   |
 | V     | `ppe`                   | V — EPI                                           | V. Adoção de medidas de proteção individual?                                                                              |
 
-- Migration `0087_control_level_substitution`: `ALTER TYPE control_level ADD VALUE 'substitution'
+- Migration `0088_control_level_substitution`: `ALTER TYPE control_level ADD VALUE 'substitution'
 BEFORE 'collective_protection'`. É aditiva. Nenhuma linha de `control_measures` é alterada.
 - A regra de uma medida por nível e por risco continua. O máximo por risco passou de 4 para 5.
 - A listagem, o formulário, o painel, o PDF consolidado, a sugestão por IA e o DOCX usam a mesma
@@ -233,7 +233,7 @@ normalizada para o singular e para hífen.
 
 ### 5.3 Acesso
 
-- Migration `0088_machine_attachment_scope`: policy restritiva `documents_machine_attachment_scope`
+- Migration `0089_machine_attachment_scope`: policy restritiva `documents_machine_attachment_scope`
   na tabela `documents`. Um documento ligado a uma máquina só é lido ou gravado por quem enxerga a
   máquina. A visibilidade da máquina já considera escritório, serviço PGR habilitado na empresa e o
   escopo do membro por empresa e obra (NOB-175).

@@ -28,7 +28,7 @@ Escrito em 13/11/2026 sobre a branch `NOB-172-feat/menus-cadastro-seguranca` (mi
 
 ## Modelo de dados alvo
 
-Entregue nesta etapa (migration `0090_commercial_catalog_and_contracts`):
+Entregue nesta etapa (migration `0091_commercial_catalog_and_contracts`):
 
 | Tabela                          | Escopo                | Chave e vínculos                                                                                  | Regras                                                                                                                                                                      |
 | ------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -49,7 +49,7 @@ Entregue nesta etapa (migration `0090_commercial_catalog_and_contracts`):
 
 **Fonte da cobrança (alvo).** O provedor. O banco guarda o espelho, nunca decide se algo foi pago.
 
-**Etapa 2 entregue** (migration `0091_commercial_billing`; detalhe em `nob-132-133-116-checkout-eventos-licencas.md`). As tabelas das NOB-132, 133 e 116 abaixo foram criadas com os nomes previstos. O que saiu diferente do previsto, e por quê:
+**Etapa 2 entregue** (migration `0092_commercial_billing`; detalhe em `nob-132-133-116-checkout-eventos-licencas.md`). As tabelas das NOB-132, 133 e 116 abaixo foram criadas com os nomes previstos. O que saiu diferente do previsto, e por quê:
 
 - **`billing_checkout_sessions` guarda o pagador e os direitos de uso do contrato** (`customer_id`, `targets`). As tabelas de contrato da etapa 1 só são lidas por administrador com sessão, e o webhook não tem sessão. Copiar no checkout evitou afrouxar a policy da etapa 1.
 - **Espelhos só aceitam escrita sem usuário na sessão.** Nem o owner grava pagamento, assinatura, direito de uso ou fatura. O plano previa RLS por escritório; a restrição a mais impede forjar estado de pagamento.

@@ -139,6 +139,7 @@ export function AuthFrame({
         </div>
 
         <div
+          className="side-body"
           style={{
             position: "relative",
             display: "flex",
@@ -146,7 +147,10 @@ export function AuthFrame({
             gap: "20px",
           }}
         >
-          <span className="mono" style={{ color: "rgba(255, 255, 255, 0.82)" }}>
+          <span
+            className="mono side-eyebrow"
+            style={{ color: "rgba(255, 255, 255, 0.82)" }}
+          >
             {eyebrow}
           </span>
           {/*
@@ -278,9 +282,10 @@ export function AuthFrame({
         }}
       >
         <div
+          className="auth-stack"
           style={{
             width: "100%",
-            maxWidth: "420px",
+            maxWidth: "460px",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
@@ -298,8 +303,9 @@ export function AuthFrame({
             }}
           >
             <div
+              className="auth-card-body"
               style={{
-                padding: "clamp(24px, 5vw, 36px)",
+                padding: "clamp(24px, 4vw, 40px)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "22px",
@@ -331,6 +337,7 @@ export function AuthFrame({
           </div>
 
           <p
+            className="auth-lock"
             style={{
               display: "flex",
               alignItems: "center",

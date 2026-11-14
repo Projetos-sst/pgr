@@ -588,6 +588,100 @@ const req = (
       ).rejects.toMatchObject({ code: "42501" });
   });
 
+  it("validade de 12 meses (NOB-158): app grava verified_at + 12 meses mesmo com configuração maior; banco recusa mais que isso, inclusive pelo papel do operador", async () => {
+    await linkDoctor();
+    const { id: requestId } = await requestVerification(doctor, { medicoId: M1 });
+    // Papel do operador por SQL direto, com pedido em aberto e CRM/UF conferidos: 13 meses → CHECK.
+    const verifierDb = (await import("postgres")).default(
+      process.env.IDENTITY_VERIFIER_DATABASE_URL!,
+      { max: 1, prepare: false },
+    );
+    try {
+      const insertAsVerifier = (validity: string) =>
+        verifierDb.begin(async (tx) => {
+          await tx`select set_config('app.current_actor', ${VERIFIER}, true)`;
+          await tx`insert into professional_identity_verifications (org_id, request_id, medico_id, user_id, crm, registration_uf, method, checklist, registry_source, verified_by, expires_at)
+            values ('org_a', ${requestId}, ${M1}, 'doctor', '90001', 'MA', 'in_person', ${tx.json(CHECKLIST)}, 'Consulta fictícia', ${VERIFIER}, now() + ${validity}::interval)`;
+        });
+      await expect(insertAsVerifier("13 months")).rejects.toMatchObject({
+        code: "23514",
+        constraint_name: "ck_identity_verifications_validity",
+      });
+      await expect(insertAsVerifier("36 months")).rejects.toMatchObject({
+        code: "23514",
+      });
+    } finally {
+      await verifierDb.end({ timeout: 5 });
+    }
+    // Configuração acima do teto é limitada a 12: a validade gravada é exatamente verified_at + 12 meses.
+    const previous = process.env.IDENTITY_VERIFICATION_VALIDITY_MONTHS;
+    process.env.IDENTITY_VERIFICATION_VALIDITY_MONTHS = "36";
+    try {
+      await approveVerification(VERIFIER, approval(requestId, "doctor"));
+    } finally {
+      if (previous === undefined)
+        delete process.env.IDENTITY_VERIFICATION_VALIDITY_MONTHS;
+      else process.env.IDENTITY_VERIFICATION_VALIDITY_MONTHS = previous;
+    }
+    const [row] =
+      await admin`select expires_at = verified_at + interval '12 months' as exact from professional_identity_verifications where request_id = ${requestId}`;
+    expect(row.exact).toBe(true);
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+    // Aritmética de mês do Postgres (a mesma do CHECK): 29/02 + 12 meses = 28/02; um dia além é recusado.
+    const [check] = await admin`select
+      ('2029-02-28 10:00+00'::timestamptz <= '2028-02-29 10:00+00'::timestamptz + interval '12 months') as feb28,
+      ('2029-03-01 10:00+00'::timestamptz <= '2028-02-29 10:00+00'::timestamptz + interval '12 months') as mar01`;
+    expect(check).toMatchObject({ feb28: true, mar01: false });
+    // A constraint vale para linhas novas e não revalida as antigas (NOT VALID na 0083).
+    const [constraint] =
+      await admin`select convalidated from pg_constraint where conname = 'ck_identity_verifications_validity'`;
+    expect(constraint.convalidated).toBe(false);
+  });
+
+  it("verificação anterior à 0083 com validade original longa: situação, renovação e fila usam a validade efetiva de 12 meses", async () => {
+    await linkDoctor();
+    const { id: requestId } = await requestVerification(doctor, { medicoId: M1 });
+    const { id: verificationId } = await approveVerification(
+      VERIFIER,
+      approval(requestId, "doctor"),
+    );
+    // Linha legada (24 ou 36 meses, permitida pela 0071): a 0083 usa NOT VALID e o CHECK novo
+    // recusaria gravá-la; datas preservadas.
+    const legacy = (verifiedAgo: string, original: string) =>
+      admin.begin(async (tx) => {
+        await tx`alter table professional_identity_verifications drop constraint ck_identity_verifications_validity`;
+        await tx`update professional_identity_verifications
+          set verified_at = now() - ${verifiedAgo}::interval,
+              expires_at = now() - ${verifiedAgo}::interval + ${original}::interval
+          where id = ${verificationId}`;
+        await tx.unsafe(`alter table professional_identity_verifications add constraint ck_identity_verifications_validity
+          check (expires_at > verified_at and expires_at <= verified_at + interval '12 months') not valid`);
+      });
+    // D: conferida há 6 meses, validade original de 36 → verificada, vencendo em verified_at + 12 meses.
+    await legacy("6 months", "36 months");
+    const [mid] = await myProfessionalIdentity(doctor);
+    expect(mid).toMatchObject({ status: "verified", clinicalAccess: true });
+    const [{ effective }] =
+      await admin`select (verified_at + interval '12 months') as effective from professional_identity_verifications where id = ${verificationId}`;
+    expect(new Date(mid.expiresAt!).getTime()).toBe(new Date(effective).getTime());
+    // C: conferida há 13 meses, validade original de 24 (expires_at no futuro) → vencida.
+    await legacy("13 months", "24 months");
+    const [old] = await myProfessionalIdentity(doctor);
+    expect(old).toMatchObject({ status: "expired", clinicalAccess: false });
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    // A fila do operador não a lista como vigente.
+    const queue = await verificationQueue(VERIFIER);
+    expect(queue.active.find((v) => v.verificationId === verificationId)).toBeUndefined();
+    // Renovação: com a efetiva vencida, a própria conta pede nova verificação, e a nova devolve o acesso.
+    const { id: renewal } = await requestVerification(doctor, { medicoId: M1 });
+    await approveVerification(VERIFIER, approval(renewal, "doctor"));
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+    // Histórico preservado: a verificação antiga continua gravada com as datas originais.
+    const [kept] =
+      await admin`select expires_at > now() as still_future from professional_identity_verifications where id = ${verificationId}`;
+    expect(kept.still_future).toBe(true);
+  });
+
   it("REST: área do profissional e fila do operador com códigos HTTP", async () => {
     await linkDoctor();
     const created = await REQUEST(

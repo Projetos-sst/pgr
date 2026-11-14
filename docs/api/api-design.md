@@ -901,7 +901,7 @@ Todas as policies clínicas e as checagens do servidor (`repositories/clinical-a
    - Cada código conferido fica em `identity_challenge_attempts` (migration `0072`), só inclusão, sem o código. Só o operador grava e lê; o `app_runtime` não tem acesso.
    - Limites de códigos errados: 5 por pedido, no total (depois só resta recusar o pedido, e o profissional abre outro); 10 por conta do profissional em 24 h, somando pedidos e operadores; 10 por operador em 1 h. Esgotado, nem o código certo é conferido (`VALIDATION`).
    - Pedido já aprovado ou recusado não aceita conferência.
-4. O operador registra método, fonte e referência (sem documento bruto). A validade é configurável (padrão 12 meses, teto 36).
+4. O operador registra método, fonte e referência (sem documento bruto). A validade é de 12 meses (decisão NOB-158): a configuração só pode encurtar, e o banco recusa mais que `verified_at + 12 meses` (`ck_identity_verifications_validity`, migration `0083`, `NOT VALID`: não revalida linhas antigas). A data de vencimento é calculada no banco (`now() + make_interval(months => n)`), com a mesma aritmética de mês do CHECK. **Validade efetiva:** na autorização (`actor_clinical_medico_ids`, usada pelo app e pelas policies clínicas, e na policy do autovínculo da NOB-160), na situação mostrada ao profissional, na renovação e na fila do operador, a verificação vale até o menor entre `expires_at` e `verified_at + 12 meses`. Assim, uma verificação anterior à 0083 com validade original de 24 ou 36 meses deixa de dar acesso 12 meses depois da conferência, sem que as datas gravadas sejam alteradas.
    - Na tela do operador, **CRM conferido** e **UF conferida** começam vazios: o cadastro aparece só como contexto ("Cadastro informa: …") e o operador digita o que encontrou na fonte oficial. Campo vazio → `VALIDATION` pelo schema da aprovação; divergente do cadastro → o banco recusa.
 5. Recusa e revogação ficam em `professional_identity_review_events`, só inclusão. A revogação corta o acesso na hora.
 
@@ -2442,7 +2442,7 @@ Com a revisão ativa, `POST /pgr/{id}/signature` responde 422 sem parecer favor�
 
 Erros: `403` papel sem permissão ou parecer de quem não é o revisor; `404` PGR de outro escritório ou fora do escopo do membro; `422` transição inválida, revisor igual ao elaborador ou fora do escopo, versão desatualizada.
 
-Migration `0085_pgr_document_approvals` aditiva: tabela de eventos só de inserção, RLS por escritório e por escopo do PGR, `CHECK` elaborador ≠ revisor, policy que exige ator = revisor e ator ≠ criador do PGR no parecer, e trigger que valida a sequência dos eventos.
+Migration `0086_pgr_document_approvals` aditiva: tabela de eventos só de inserção, RLS por escritório e por escopo do PGR, `CHECK` elaborador ≠ revisor, policy que exige ator = revisor e ator ≠ criador do PGR no parecer, e trigger que valida a sequência dos eventos.
 
 ## Escopos de acesso por empresa, obra e área — NOB-175
 
@@ -2467,7 +2467,7 @@ Regras:
 - O filtro é aplicado no banco. `withOrg` grava o usuário da sessão em `app.current_actor` (via `officeAction`, `restHandler`, páginas com `requireTenantContext` e as rotas binárias de PDF/DOCX/relatório), e as policies restritivas `<tabela>_actor_scope` cortam empresa e obra. Registro fora do escopo responde como inexistente (NOT_FOUND / 404), inclusive por URL direta.
 - A mudança vale na requisição seguinte; o menu mostra só os grupos das áreas concedidas (`getOwnAccessAreasAction`).
 
-Migration `0083_member_access_scopes`, aditiva e sem backfill. RLS: isolamento por tenant, leitura das próprias linhas ou pelo owner, INSERT e DELETE só pelo owner (com `granted_by` igual ao ator); o runtime não tem UPDATE. FKs compostas garantem membro, empresa e obra do mesmo escritório, com CASCADE.
+Migration `0084_member_access_scopes`, aditiva e sem backfill. RLS: isolamento por tenant, leitura das próprias linhas ou pelo owner, INSERT e DELETE só pelo owner (com `granted_by` igual ao ator); o runtime não tem UPDATE. FKs compostas garantem membro, empresa e obra do mesmo escritório, com CASCADE.
 
 No bypass de desenvolvimento, envie `x-dev-user` com um usuário que seja owner em `org_memberships`: a regra de owner é conferida no banco, não só pelo header `x-dev-role`.
 
@@ -2487,7 +2487,7 @@ Toda geração (`GET`/`POST /pgr/{id}/docx`) usa a versão salva mais recente e 
 
 Erros: `403` papel `client`; `404` PGR de outro escritório ou fora do escopo do membro; `409` PGR publicado ou assinado (`ALREADY_SIGNED`); `422` chave desconhecida ou motivo vazio.
 
-Migration `0086_pgr_docx_text_versions` aditiva: tabela só de inserção (`app_runtime` sem `UPDATE`/`DELETE`), RLS por escritório e por escopo do PGR, policy que exige autor = ator da sessão.
+Migration `0087_pgr_docx_text_versions` aditiva: tabela só de inserção (`app_runtime` sem `UPDATE`/`DELETE`), RLS por escritório e por escopo do PGR, policy que exige autor = ator da sessão.
 
 ## Guarda, exportação e descarte — NOB-182
 
@@ -2515,7 +2515,7 @@ Erros: `403` papel `client`, ou não-owner em `POST /retention-policy`; `404` PG
 
 No bypass de desenvolvimento, envie `x-dev-user` com um usuário que seja owner em `org_memberships`: o registro da política e o autor da exportação são conferidos no banco.
 
-Migration `0089_retention_policy_and_exports` aditiva: `retention_policy_versions` e `retention_exports`, as duas só de inserção (`app_runtime` sem `UPDATE`/`DELETE`), RLS por escritório; versão da política só por owner com autor = ator da sessão; exportação restrita ao PGR visível para o ator.
+Migration `0090_retention_policy_and_exports` aditiva: `retention_policy_versions` e `retention_exports`, as duas só de inserção (`app_runtime` sem `UPDATE`/`DELETE`), RLS por escritório; versão da política só por owner com autor = ator da sessão; exportação restrita ao PGR visível para o ator.
 
 ## Comercial — clientes, catálogo versionado e contratação — NOB-114
 
@@ -2548,7 +2548,7 @@ Erros: `403` flag desligada, papel `client`, ou não-owner em clientes e contrat
 
 No bypass de desenvolvimento, envie `x-dev-user` com um usuário que seja owner em `org_memberships`: as policies conferem o ator no banco.
 
-Migration `0090_commercial_catalog_and_contracts` aditiva, seis tabelas novas e nenhuma alteração em tabela existente. Catálogo: RLS de leitura só de versão publicada, `SELECT` para o `app_runtime`, gatilhos de imutabilidade. Clientes, contratos, itens e empresas do contrato: RLS por escritório com `USING` e `WITH CHECK`, mais policy restritiva de administrador (`owner`/`org:admin`) e autor = ator da sessão na inclusão. As duas tabelas com `company_id` (`commercial_customers` e `commercial_contract_companies`) também levam a policy restritiva de escopo de acesso por empresa (NOB-175).
+Migration `0091_commercial_catalog_and_contracts` aditiva, seis tabelas novas e nenhuma alteração em tabela existente. Catálogo: RLS de leitura só de versão publicada, `SELECT` para o `app_runtime`, gatilhos de imutabilidade. Clientes, contratos, itens e empresas do contrato: RLS por escritório com `USING` e `WITH CHECK`, mais policy restritiva de administrador (`owner`/`org:admin`) e autor = ator da sessão na inclusão. As duas tabelas com `company_id` (`commercial_customers` e `commercial_contract_companies`) também levam a policy restritiva de escopo de acesso por empresa (NOB-175).
 
 ## Comercial — interesse comercial por empresa e caixa interna — NOB-119
 
@@ -2639,4 +2639,4 @@ Actions `createCommercialOneOffOrderAction`, `listCommercialOneOffOrdersAction`,
 
 Papéis: `owner` cria, lista e lê; `collaborator` só consulta a autorização; `client` recebe `403`. Erros: `403` flag desligada ou papel sem permissão; `404` pedido de outro escritório; `422` oferta que não é avulsa, cliente do escritório ausente ou entrada inválida; `409` pedido já pago no checkout. Tabela `commercial_one_off_orders` (RLS por escritório com `USING` e `WITH CHECK`, escopo restritivo por empresa, autor = ator da sessão no insert de `owner`, `UPDATE` só em transação sem usuário — webhook —, `UNIQUE(org_id, contract_id)`).
 
-Migration `0091_commercial_billing` aditiva: oito tabelas novas (`billing_provider_prices`, `billing_provider_customers`, `billing_checkout_sessions`, `billing_subscriptions`, `billing_events`, `commercial_entitlements`, `billing_invoices`, `billing_invoice_items`) e a função `commercial_reconcile_grant`. Nenhuma tabela ou policy existente alterada. Espelhos só aceitam escrita em transação sem usuário (webhook); owner e `org:admin` leem. `commercial_entitlements` leva a policy de escopo por empresa (NOB-175).
+Migration `0092_commercial_billing` aditiva: oito tabelas novas (`billing_provider_prices`, `billing_provider_customers`, `billing_checkout_sessions`, `billing_subscriptions`, `billing_events`, `commercial_entitlements`, `billing_invoices`, `billing_invoice_items`) e a função `commercial_reconcile_grant`. Nenhuma tabela ou policy existente alterada. Espelhos só aceitam escrita em transação sem usuário (webhook); owner e `org:admin` leem. `commercial_entitlements` leva a policy de escopo por empresa (NOB-175).

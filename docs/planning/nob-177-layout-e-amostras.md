@@ -132,7 +132,7 @@ no corpo do `POST /api/v1/pgr/{id}/docx`, sem ficar guardados. Agora:
   versões salvas. API: `GET` e `POST /api/v1/pgr/{id}/docx-texts`; Server Actions em
   `src/shared/server/actions/pgr/pgr-docx-texts.ts`.
 - **Onde fica guardado.** Tabela `pgr_docx_text_versions` (migration
-  `0086_pgr_docx_text_versions`): uma linha por versão, com as alterações em relação ao
+  `0087_pgr_docx_text_versions`): uma linha por versão, com as alterações em relação ao
   padrão, o hash dos textos efetivos, o motivo, quem salvou e quando. O `app_runtime` só
   insere e lê; não altera nem apaga. Voltar ao padrão é salvar uma versão nova sem
   alterações.
