@@ -1508,6 +1508,7 @@
   display: grid;
   grid-template-columns: minmax(0px, 1fr) minmax(0px, 1fr);
   min-height: 100vh;
+  min-height: 100dvh;
 }
 @media (max-width: 960px) {
   .pg.auth {
@@ -1527,6 +1528,100 @@
   .pg.auth .auth-main {
     padding: 28px 16px 40px !important;
     align-items: flex-start !important;
+  }
+}
+/*
+ * Altura curta (notebook, navegador com zoom, celular): a tela de login cabe
+ * sem rolagem. Compacta respiros, campos e botões; no celular esconde o
+ * slogan do painel de marca, mantendo logo e "Voltar ao site".
+ */
+@media (min-width: 961px) and (max-height: 820px) {
+  .pg.auth .auth-side {
+    padding: 28px clamp(32px, 5vw, 72px) !important;
+    gap: 24px !important;
+  }
+  .pg.auth .auth-side .side-title {
+    font-size: clamp(26px, 2.6vw, 34px) !important;
+  }
+  .pg.auth .auth-side .feat {
+    gap: 12px !important;
+  }
+}
+@media (max-width: 960px) and (max-height: 900px) {
+  .pg.auth .auth-side .side-body {
+    display: none !important;
+  }
+  .pg.auth .auth-side {
+    padding: 14px 16px !important;
+  }
+  .pg.auth .auth-main {
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+}
+@media (max-height: 820px) {
+  .pg.auth .auth-main {
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+  .pg.auth .auth-stack {
+    gap: 10px !important;
+  }
+  .pg.auth .auth-card-body {
+    padding: 22px clamp(20px, 4vw, 30px) !important;
+    gap: 14px !important;
+  }
+  .pg.auth .auth-lock {
+    display: none !important;
+  }
+  .pg.auth .cl-card,
+  .pg.auth .cl-main,
+  .pg.auth .cl-form {
+    gap: 14px !important;
+  }
+  .pg.auth .cl-headerTitle {
+    font-size: 22px !important;
+  }
+  .pg.auth .cl-headerSubtitle {
+    font-size: 14px !important;
+  }
+  .pg.auth .cl-socialButtonsBlockButton,
+  .pg.auth .cl-formFieldInput,
+  .pg.auth .cl-formButtonPrimary {
+    min-height: 44px !important;
+  }
+  .pg.auth .cl-footerItem {
+    padding-top: 8px !important;
+    padding-bottom: 0 !important;
+  }
+}
+@media (max-height: 600px) {
+  .pg.auth .auth-side {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+  .pg.auth .auth-main {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+  .pg.auth .auth-stack {
+    gap: 6px !important;
+  }
+  .pg.auth .auth-card-body {
+    padding: 16px 18px !important;
+  }
+  .pg.auth .cl-card,
+  .pg.auth .cl-main,
+  .pg.auth .cl-form {
+    gap: 10px !important;
+  }
+  .pg.auth .cl-headerTitle {
+    font-size: 20px !important;
+  }
+  .pg.auth .cl-socialButtonsBlockButton,
+  .pg.auth .cl-formFieldInput,
+  .pg.auth .cl-formButtonPrimary {
+    min-height: 40px !important;
   }
 }
 @keyframes spin {
@@ -1751,17 +1846,28 @@
  * tematização por CSS, não manipulação de DOM, e não toca em nada de
  * autenticação.
  */
+/*
+ * `overflow: visible` no cardBox: o Clerk o deixa `hidden`, e as bordas dos
+ * campos e botões (desenhadas com box-shadow) e o anel de foco saíam cortados
+ * nas bordas direita e de baixo. `rootBox` a 100% faz o formulário ocupar a
+ * largura toda do cartão, centralizado, em vez de encostar à esquerda.
+ */
+.pg.auth .cl-rootBox {
+  width: 100% !important;
+}
 .pg.auth .cl-cardBox {
   box-shadow: none !important;
   border: 0 !important;
   width: 100% !important;
   max-width: 100% !important;
+  overflow: visible !important;
 }
 .pg.auth .cl-card {
   background: transparent !important;
   box-shadow: none !important;
   border: 0 !important;
   padding: 0 !important;
+  margin: 0 !important;
   width: 100% !important;
 }
 .pg.auth .cl-footer {
