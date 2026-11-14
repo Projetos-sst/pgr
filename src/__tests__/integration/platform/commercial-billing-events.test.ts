@@ -767,12 +767,12 @@ const medicine = (company: string) => `${company}:medicine`;
       expect(await enabledModules(admin)).toEqual([]);
     });
 
-    it("com a flag desligada, até evento com referência comercial segue o caminho antigo", async () => {
+    it("com a flag desligada, evento com referência comercial é ignorado e o Pro antigo segue igual", async () => {
       const { contract, checkout } = await subscribe("pgr");
       delete process.env.COMMERCIAL_CATALOG_ENABLED;
       legacyLookup.mockResolvedValue(null);
       expect(await deliver(subscriptionEvent(checkout, "active"))).toBe(200);
-      expect(legacyLookup).toHaveBeenCalledWith(providerIds(checkout).customer);
+      expect(legacyLookup).not.toHaveBeenCalled();
       expect(await deliver(legacyCheckout)).toBe(200);
       expect(await deliver(legacySubscription)).toBe(200);
       expect(legacyPlan.mock.calls).toEqual(legacyCalls);
@@ -784,8 +784,11 @@ const medicine = (company: string) => `${company}:medicine`;
     it("evento de produção (livemode) nunca entra no fluxo comercial", async () => {
       const { contract, checkout } = await subscribe("pgr");
       legacyLookup.mockResolvedValue(null);
-      await deliver(subscriptionEvent(checkout, "active", { livemode: true }));
-      expect(legacyLookup).toHaveBeenCalledTimes(1);
+      expect(
+        await deliver(subscriptionEvent(checkout, "active", { livemode: true })),
+      ).toBe(200);
+      expect(legacyLookup).not.toHaveBeenCalled();
+      expect(legacyPlan).not.toHaveBeenCalled();
       expect(await mirror(contract.id)).toBeUndefined();
       expect(await enabledModules(admin)).toEqual([]);
     });

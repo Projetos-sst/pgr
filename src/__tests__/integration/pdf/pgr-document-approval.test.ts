@@ -25,6 +25,10 @@ jest.mock("@/shared/integrations/storage/documents-storage", () => ({
   ),
   removeDocumentObject: (path: string) => mockRemove(path),
 }));
+jest.mock("@/shared/integrations/pdf/gotenberg", () => ({
+  ...jest.requireActual("@/shared/integrations/pdf/gotenberg"),
+  htmlToPdf: jest.fn().mockResolvedValue(Buffer.from("%PDF-1.4")),
+}));
 jest.mock("@/shared/integrations/storage/company-logo-storage", () => ({
   downloadCompanyLogo: jest.fn().mockResolvedValue(null),
 }));
@@ -58,6 +62,7 @@ import { POST as REVOKE } from "@/app/api/v1/pgr/[id]/approval/reviewer/revocati
 import { POST as DECIDE } from "@/app/api/v1/pgr/[id]/approval/decisions/route";
 import { POST as CANCEL } from "@/app/api/v1/pgr/[id]/approval/issues/[issueId]/cancellation/route";
 import { POST as DOCX } from "@/app/api/v1/pgr/[id]/docx/route";
+import { GET as LEGACY_PDF } from "@/app/api/v1/pgr/[id]/pdf/route";
 import { POST as SIGNATURE } from "@/app/api/v1/pgr/[id]/signature/route";
 
 const enabled =
@@ -211,6 +216,18 @@ const sha256 = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex
     });
     const preview = await generatePgrDocx("org_a", I.pgrA);
     expect(extractDocxText(preview.file)).toContain("PRÉVIA PARA CONFERÊNCIA");
+  });
+
+  it("holds the legacy PDF route behind the pending review", async () => {
+    const legacyPdf = () => LEGACY_PDF(request(asOwner, undefined, "GET"), params);
+    expect((await legacyPdf()).status).toBe(200);
+    await requireDocumentReview(owner, I.pgrA, activation);
+    const blocked = await legacyPdf();
+    expect(blocked.status).toBe(422);
+    expect((await blocked.json()).error.code).toBe("VALIDATION");
+    await assignDocumentReviewer(owner, I.pgrA, assignment());
+    await approve();
+    expect((await legacyPdf()).status).toBe(200);
   });
 
   it("designates only an office member, in scope and different from the author", async () => {

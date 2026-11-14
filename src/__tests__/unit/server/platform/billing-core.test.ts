@@ -91,6 +91,35 @@ describe("handleStripeEvent", () => {
     });
   });
 
+  it("checkout e assinatura do comercial não entram no fluxo antigo do Pro", async () => {
+    const commercial = { commercialCheckoutId: "8d0f2f0e-58f6-4a53-9b62-0d6a3c1b7a11" };
+    await handleStripeEvent({
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          mode: "subscription",
+          metadata: commercial,
+          client_reference_id: commercial.commercialCheckoutId,
+          customer: "cus_1",
+          subscription: "sub_1",
+        },
+      },
+    } as never);
+    await handleStripeEvent({
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_1",
+          status: "active",
+          customer: "cus_1",
+          metadata: commercial,
+        },
+      },
+    } as never);
+    expect(orgs.getOrgByStripeCustomerId).not.toHaveBeenCalled();
+    expect(orgs.updateOrgBilling).not.toHaveBeenCalled();
+  });
+
   it("subscription.deleted → plano free", async () => {
     await handleStripeEvent({
       type: "customer.subscription.deleted",

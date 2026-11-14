@@ -9,6 +9,7 @@ import {
   TRIAL_DAYS,
   planFromSubscriptionStatus,
 } from "@/shared/domains/platform/billing";
+import { CHECKOUT_REFERENCE_KEY } from "@/shared/domains/commercial/checkout";
 import { BillingUnavailableError } from "@/shared/errors/billing-unavailable-error";
 import {
   createBillingPortalSession,
@@ -53,6 +54,10 @@ export async function openBillingPortal(ctx: TenantContext): Promise<{ url: stri
   });
 }
 
+function isCommercialReference(metadata: Stripe.Metadata | null | undefined): boolean {
+  return Boolean(metadata?.[CHECKOUT_REFERENCE_KEY]);
+}
+
 function orgIdFromMetadata(metadata: Stripe.Metadata | null | undefined): string | null {
   return metadata?.orgId ?? null;
 }
@@ -66,7 +71,7 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<void> {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    if (session.mode === "payment") return;
+    if (session.mode === "payment" || isCommercialReference(session.metadata)) return;
     const orgId = orgIdFromMetadata(session.metadata) ?? session.client_reference_id;
     if (!orgId) return;
     await orgsRepo.updateOrgBilling(orgId, {
@@ -85,6 +90,7 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<void> {
     event.type === "customer.subscription.deleted"
   ) {
     const sub = event.data.object as Stripe.Subscription;
+    if (isCommercialReference(sub.metadata)) return;
     const customerId = typeof sub.customer === "string" ? sub.customer : null;
     let orgId = orgIdFromMetadata(sub.metadata);
     if (!orgId && customerId) {

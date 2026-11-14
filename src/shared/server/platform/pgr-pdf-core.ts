@@ -6,6 +6,8 @@ import { NotFoundError } from "@/shared/errors/not-found-error";
 import { htmlToPdf } from "@/shared/integrations/pdf/gotenberg";
 import { slugifyFileName } from "@/shared/integrations/storage/documents-storage";
 import { todayInSaoPaulo } from "@/shared/dates";
+import { assertPgrEmissionAllowed } from "@/shared/server/commercial/emission-gate";
+import { assertPgrApprovalCurrent } from "@/shared/server/pgr/document-approval-core";
 
 export type GeneratedReport = { fileName: string; pdf: Buffer };
 
@@ -38,6 +40,8 @@ export async function generatePgrPdf(
 ): Promise<GeneratedReport> {
   const data = await getPgrConsolidated(orgId, pgrId);
   if (!data) throw new NotFoundError();
+  await assertPgrApprovalCurrent(orgId, pgrId);
+  await assertPgrEmissionAllowed({ orgId, pgrId });
 
   const generatedAt = todayInSaoPaulo();
   const html = buildPgrHtml(data, { ...options, generatedAt });
