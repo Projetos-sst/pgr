@@ -4108,7 +4108,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "admin", "identity-verifications"]
             },
-            "description": "Fila do operador designado (designação conferida no banco); demais → 403. Sem dado clínico."
+            "description": "Fila do operador designado (designação conferida no banco); demais → 403. Sem dado clínico. Exige master pela sessão Clerk real e designação no banco; os headers x-dev-* não substituem a sessão (sem master → 403)."
           }
         },
         {
@@ -4142,7 +4142,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "admin", "identity-verifications"]
             },
-            "description": "Operador designado e independente do escritório. Código de controle informado ao vivo pela própria conta. 201."
+            "description": "Operador designado e independente do escritório. Código de controle informado ao vivo pela própria conta. 201. Exige master pela sessão Clerk real e designação no banco; os headers x-dev-* não substituem a sessão (sem master → 403)."
           }
         },
         {
@@ -4184,7 +4184,7 @@
                 "reject"
               ]
             },
-            "description": "Recusa do pedido com motivo. 201."
+            "description": "Recusa do pedido com motivo. 201. Exige master pela sessão Clerk real e designação no banco; os headers x-dev-* não substituem a sessão (sem master → 403)."
           }
         },
         {
@@ -4225,7 +4225,7 @@
                 "revoke"
               ]
             },
-            "description": "Revogação imediata; corta o acesso clínico. 201."
+            "description": "Revogação imediata; corta o acesso clínico. 201. Exige master pela sessão Clerk real e designação no banco; os headers x-dev-* não substituem a sessão (sem master → 403)."
           }
         }
       ]
