@@ -33,17 +33,19 @@ A `develop` combinada (`944529f`, com as PRs #173, #174 e #175) passou em toda a
 
 ## 4. O que falta
 
-| Falta                                                                                                              | Depende de                                                      |
-| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| Merge das PRs #176 (validade de 12 meses) e #177 (testes)                                                          | Carlos                                                          |
-| CI oficial e CD                                                                                                    | Regularizar a cobrança do GitHub (administrador da organização) |
-| Leitura do banco de homologação (journal e inventários)                                                            | Credencial de leitura autorizada                                |
-| Provisionamento do operador de identidade (papel, segredos, designação)                                            | Dono do banco, com aprovação do Carlos                          |
-| Confirmar que `DEV_API_AUTH_BYPASS` não está `true` no projeto de homologação (`develop-pgr-e`, `APP_ENV=sandbox`) | Quem administra as variáveis da Vercel                          |
-| Teste em navegador                                                                                                 | Ambiente isolado com login de teste (seção 5)                   |
-| Modelos reais de ASO e PCMSO (NOB-93) e regras clínicas pendentes                                                  | Dr. Alcides                                                     |
-| Assinatura digital pelo sistema                                                                                    | Provedor (sem contrato)                                         |
-| Portal de clínicas (NOB-122) e teleconsulta (NOB-120)                                                              | Decisões de produto e jurídicas; NOB-117                        |
+| Falta                                                                                                                                             | Depende de                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Merge das PRs #176 (validade de 12 meses, **migration 0083 ainda não integrada**) e #177 (testes)                                                 | Carlos                                                          |
+| Inventário e regularização dos vínculos médicos legados (NOB-159)                                                                                 | Credencial de leitura autorizada; decisão do Carlos             |
+| Confirmar a NOB-121 (cadastro de profissionais): três critérios comprovados em teste (#177); falta decidir o índice de registro (seção 7, item 4) | Carlos                                                          |
+| CI oficial e CD                                                                                                                                   | Regularizar a cobrança do GitHub (administrador da organização) |
+| Leitura do banco de homologação (journal e inventários)                                                                                           | Credencial de leitura autorizada                                |
+| Provisionamento do operador de identidade (papel, segredos, designação)                                                                           | Dono do banco, com aprovação do Carlos                          |
+| Confirmar que `DEV_API_AUTH_BYPASS` não está `true` no projeto de homologação (`develop-pgr-e`, `APP_ENV=sandbox`)                                | Quem administra as variáveis da Vercel                          |
+| Teste em navegador                                                                                                                                | Ambiente isolado com login de teste (seção 5)                   |
+| Modelos reais de ASO e PCMSO (NOB-93) e regras clínicas pendentes                                                                                 | Dr. Alcides                                                     |
+| Assinatura digital pelo sistema                                                                                                                   | Provedor (sem contrato)                                         |
+| Portal de clínicas (NOB-122) e teleconsulta (NOB-120)                                                                                             | Decisões de produto e jurídicas; NOB-117                        |
 
 ## 5. Navegador
 
@@ -80,7 +82,18 @@ Nenhum passo do roteiro foi executado em navegador nesta rodada. O roteiro de 12
    - hoje o índice `uq_medicos_org_crm`, sobre o texto cru, recusa o segundo cadastro;
    - a regra canônica do próprio sistema (gatilho 0081) e a documentação dizem que UF ou categoria diferente não é duplicata;
    - trocar o índice por (escritório, categoria, UF, número) não perde dados, mas muda uma regra testada;
-   - reproduzido em banco local.
+   - reproduzido em banco local;
+   - **proposta, a decidir (não implementada):**
+     - **Identidade do registro:** escritório + categoria (CRM ou CRP) + UF do conselho + número canônico, que tira ponto, hífen, barra e espaços e mantém os zeros à esquerda (`medico_registration_canonical`, já usado pelo gatilho 0081).
+     - **No banco:**
+       - trocar `uq_medicos_org_crm` por um índice único parcial em `(org_id, profession, registration_uf, medico_registration_canonical(crm))` onde o número canônico não é nulo;
+       - para registro não canônico (com letras), um índice único sobre o texto cru `(org_id, profession, registration_uf, crm)`;
+       - cadastro antigo sem UF continua barrado pelo gatilho (`missing_uf`).
+     - **Antes de criar os índices:**
+       - rodar o inventário de "CRMs equivalentes" na homologação, porque duplicatas antigas fariam a migration falhar no CD;
+       - decidir a regularização;
+       - ajustar o teste `medicos-registration-duplicates` ("mesmo texto de registro → DUPLICATE") e a seção do api-design.
+     - **Efeito:** nenhum dado é perdido. Cadastros hoje recusados sem motivo (CRM 12345/SP e 12345/MA, ou CRM 12345 e CRP 12345) passam a ser aceitos.
 5. **Profissional externo:** precisa ser membro do escritório para ter vínculo. Um perfil restrito depende da NOB-122.
 
 ## 8. Consulta agregada adicional para a homologação
@@ -94,7 +107,20 @@ from public.professional_identity_verifications
 where expires_at > verified_at + interval '12 months';
 ```
 
-Se a contagem for zero, a constraint pode ser validada com `ALTER TABLE public.professional_identity_verifications VALIDATE CONSTRAINT ck_identity_verifications_validity;`, com decisão do Carlos.
+Depois da #176, essas verificações **não dão mais acesso clínico** além de 12 meses desde a conferência. A autorização usa o menor entre `expires_at` e `verified_at + 12 meses`, testado no prontuário, no ato de coordenador e pelo SQL direto, e as datas gravadas não mudam. A contagem serve só para regularizar o histórico. Se for zero, a constraint pode ser validada com `ALTER TABLE public.professional_identity_verifications VALIDATE CONSTRAINT ck_identity_verifications_validity;`, com decisão do Carlos.
+
+## 8.1 Bypass dev na homologação: instruções para o operador autorizado
+
+O agente não tem acesso às variáveis da Vercel. O passo a passo abaixo é para quem administra o projeto `develop-pgr-e`. Não cole valores de variáveis em chat, issue ou PR.
+
+1. **Conferir a variável.** Na Vercel, projeto `develop-pgr-e` → Settings → Environment Variables (target Production, o único usado pelo CD), veja se existe `DEV_API_AUTH_BYPASS`. Pela CLI, `vercel env ls production` lista só os nomes, não os valores.
+2. **Se existir com `true`:** remova a variável (ou troque o valor para `false`) e faça um redeploy do deployment atual, para a mudança valer. O CD continua bloqueado pela cobrança do GitHub, e o redeploy pelo painel usa as variáveis novas.
+3. **Conferir sem dado real.** Faça uma requisição de leitura sem sessão, com um tenant inexistente: `curl -s -o /dev/null -w "%{http_code}" -H "x-dev-tenant: org_inexistente_teste" -H "x-dev-role: owner" https://<domínio da homologação>/api/v1/companies`.
+   - Com o bypass **desligado**, o proxy do Clerk redireciona (`307`) ou recusa (`401`/`404`).
+   - Com o bypass **ligado**, a API responde JSON (`200` com lista vazia). Nesse caso, volte ao passo 2.
+4. **Registrar na NOB-162** quem conferiu, quando e o resultado (só o código HTTP), sem valores de variáveis.
+
+Até essa confirmação, o banco de homologação deve ser tratado como exposto à REST com identidade forjável, se o bypass estiver ligado.
 
 ## 9. Modelo de acompanhamento diário
 
@@ -116,7 +142,7 @@ Exemplo preenchido com o estado de hoje:
 ```
 DATA: 14/11/2026
 CONCLUÍDO: #173, #174 e #175 integradas; develop 944529f validada localmente (2395 unitários, 1655 de integração, build).
-EM ANDAMENTO: PRs #176 (validade de 12 meses) e #177 (testes), aguardando revisão.
+EM ANDAMENTO: PRs #176 (validade de 12 meses, inclusive a efetiva dos legados), #177 (testes) e #178 (este documento), aguardando revisão.
 PRÓXIMO PASSO: merge das PRs pelo Carlos; regularizar o GitHub Actions.
 BLOQUEIO: GitHub Actions bloqueado por cobrança; sem credencial de leitura da homologação; navegador não validado.
 RESPONSÁVEL CONFIRMADO: Carlos (merges e frente da Medicina).
