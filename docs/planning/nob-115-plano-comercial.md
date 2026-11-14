@@ -97,9 +97,21 @@ Nenhuma PR do simulador entra por cherry-pick: as migrations 0060 a 0068 delas c
 
 1. **NOB-131 e NOB-114.** Feito nesta etapa: contratos de domínio, catálogo versionado, clientes e contratação com cópia imutável.
 2. **NOB-132, NOB-133, NOB-116.** Feito, sem validação contra o provedor (não há credencial de teste). Checkout por contrato, caixa de eventos, assinatura espelhada, direito de uso e cobrança separada por serviço. Só em modo de teste do provedor.
-3. **NOB-117, NOB-118, NOB-119.** Avulsos, teste e interesse. Pode avançar com catálogo fictício.
-4. **NOB-134 a NOB-137.** Telas de contratação, assinatura, faturas e administração.
-5. **NOB-138 e NOB-115.** Homologação no ambiente de teste e aceite integrado.
+3. **NOB-117, NOB-118, NOB-119.** Feito com catálogo fictício: pedido avulso, teste por empresa com bloqueio da emissão final e interesse comercial.
+4. **NOB-134 a NOB-137.** Feito: tela de planos e contratação, ficha da assinatura, faturas e portal, painel do superadmin com reconciliação auditada. Mudança de plano com cotação, cancelamento e reativação próprios ficaram de fora (política não aprovada; hoje é o portal do provedor).
+5. **NOB-138 e NOB-115.** Matriz e roteiro em `nob-138-matriz-homologacao.md`, com a prova automatizada por cenário. **A execução no provedor não aconteceu** (sem conta de teste). A NOB-115 só fecha depois dela e das decisões comerciais.
+
+## Estado da entrega
+
+Tudo está atrás de `COMMERCIAL_CATALOG_ENABLED`, desligada por padrão, e só aceita chave de teste do provedor. Nenhuma cobrança real foi ligada.
+
+| Critério da NOB-115                               | Situação                                                                                               |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Assinatura ativa habilita os serviços contratados | Provado em integração (PGR, Medicina, ambos e Pro). Falta provar no provedor.                          |
+| Mudança de estado reflete nas permissões          | Provado em integração (falha, atraso, recuperação, renovação, cancelamento). Falta provar no provedor. |
+| Evento repetido não duplica ativação nem cobrança | Provado em integração, inclusive em paralelo e fora de ordem.                                          |
+| Legado e cortesia preservados                     | Provado: o banco recusa revogar o que a contratação não concedeu.                                      |
+| Aceite integrado e homologação                    | **Pendente**: conta de teste do provedor, decisões comerciais e revisão de segurança.                  |
 
 ## Decisões pendentes
 
@@ -107,7 +119,7 @@ Do comercial (detalhe em `nob-131-oferta-e-provedor.md`): catálogo e valores, p
 
 Técnicas, para as próximas etapas:
 
-1. Quem é o operador da plataforma que publica preço e vê assinaturas de todos os escritórios (NOB-137). Hoje é quem tem a conexão owner.
+1. Operador da plataforma: a leitura de assinaturas e a reconciliação ficaram com o superadmin (`users.is_master`), provisoriamente (NOB-137). Publicar preço continua com quem tem a conexão owner. Falta decidir se haverá um perfil financeiro próprio.
 2. Resolvido na NOB-133: Pro legado e serviço ligado à mão nunca são revogados (direito de uso com `applied = false`). Segue aberto como o Pro novo convive com a assinatura antiga do Pro no provedor.
 3. Como calcular o valor cobrado por funcionário, por documento e por faixa. A NOB-132 cobra 1 por escritório e 1 por empresa do contrato; as outras unidades são recusadas no checkout.
 4. Se o cadastro da empresa deve listar clientes e contratos comerciais em `/companies/{id}/dependents`. Hoje a exclusão de uma empresa com cliente ou contrato comercial é recusada pela chave estrangeira.
