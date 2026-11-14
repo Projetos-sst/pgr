@@ -24,6 +24,11 @@ import type {
   InvoiceStatus,
   SubscriptionStatus,
 } from "@/shared/domains/commercial/billing-model";
+import {
+  RECONCILIATION_REASON_MIN_LENGTH,
+  type ReconciliationResult,
+  type ReconciliationSource,
+} from "@/shared/domains/commercial/admin-subscriptions";
 
 import { appRuntimeRole } from "../roles";
 import { actorCompanyScope, officeWideOr } from "./access-scope-policy";
@@ -34,6 +39,7 @@ import {
 } from "./commercial";
 import { companies } from "./companies";
 import { orgs } from "./orgs";
+import { platformOperatorRead } from "./platform-operator-policy";
 
 const tenant = sql`org_id=current_setting('app.current_org',true)`;
 const actor = sql`nullif(current_setting('app.current_actor',true),'')`;
@@ -222,6 +228,7 @@ export const billingSubscriptions = pgTable(
       sql`${t.status} in ('incomplete','incomplete_expired','trialing','active','past_due','unpaid','canceled','paused')`,
     ),
     ...mirrorPolicies("billing_subscriptions"),
+    platformOperatorRead("billing_subscriptions"),
     pgPolicy("billing_subscriptions_reference", {
       for: "select",
       to: appRuntimeRole,
@@ -255,6 +262,45 @@ export const billingEvents = pgTable(
     check("billing_events_provider", sql`${t.provider} = 'stripe'`),
     check("billing_events_outcome", sql`${t.outcome} in ('applied','stale','ignored')`),
     ...mirrorPolicies("billing_events"),
+    platformOperatorRead("billing_events"),
+  ],
+).enableRLS();
+
+export const commercialReconciliations = pgTable(
+  "commercial_reconciliations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: orgId(),
+    contractId: uuid("contract_id").notNull(),
+    operatorId: text("operator_id").notNull(),
+    reason: text("reason").notNull(),
+    result: text("result").$type<ReconciliationResult>().notNull(),
+    detail: text("detail").notNull(),
+    source: text("source").$type<ReconciliationSource>().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("idx_commercial_reconciliations_contract").on(
+      t.orgId,
+      t.contractId,
+      t.createdAt,
+    ),
+    foreignKey({
+      name: "commercial_reconciliations_contract_fk",
+      columns: [t.contractId, t.orgId],
+      foreignColumns: [commercialContracts.id, commercialContracts.orgId],
+    }),
+    check(
+      "commercial_reconciliations_reason",
+      sql`char_length(btrim(${t.reason})) >= ${sql.raw(String(RECONCILIATION_REASON_MIN_LENGTH))}`,
+    ),
+    check(
+      "commercial_reconciliations_result",
+      sql`${t.result} in ('no_change','corrected','source_unavailable')`,
+    ),
+    check("commercial_reconciliations_source", sql`${t.source} in ('provider','mirror')`),
+    ...mirrorPolicies("commercial_reconciliations"),
+    platformOperatorRead("commercial_reconciliations"),
   ],
 ).enableRLS();
 
@@ -297,6 +343,7 @@ export const commercialEntitlements = pgTable(
       sql`(${t.service} = 'pro') = (${t.companyId} is null)`,
     ),
     ...mirrorPolicies("commercial_entitlements"),
+    platformOperatorRead("commercial_entitlements"),
     pgPolicy("commercial_entitlements_actor_scope", {
       as: "restrictive",
       for: "select",

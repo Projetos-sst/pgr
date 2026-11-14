@@ -1,4 +1,8 @@
+import Link from "next/link";
+
 import { requireMasterPage } from "@/shared/auth/require-master";
+import { isCommercialCatalogEnabledFor } from "@/shared/domains/commercial/offer";
+import { commercialEnvironment } from "@/shared/server/commercial/environment";
 import {
   aiUsageByOrgAction,
   listMastersAction,
@@ -29,6 +33,15 @@ export default async function AdminGlobalPage() {
       >
         Verificação de identidade profissional (operadores designados)
       </a>
+
+      {isCommercialCatalogEnabledFor(commercialEnvironment()) ? (
+        <Link
+          href="/admin-global/subscriptions"
+          className="text-primary text-sm font-semibold underline"
+        >
+          Assinaturas e reconciliação (entre escritórios)
+        </Link>
+      ) : null}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-text text-sm font-semibold tracking-tight">

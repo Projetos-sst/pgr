@@ -14337,6 +14337,86 @@
       ]
     },
     {
+      "name": "Comercial — painel administrativo de assinaturas (NOB-137)",
+      "description": "Exige COMMERCIAL_CATALOG_ENABLED=true e sessão real (Clerk) de superadmin (users.is_master); o bypass de desenvolvimento não vira superadmin (sem sessão 401; owner ou outro usuário 403). Leitura entre escritórios; nenhuma cobrança, checkout ou fatura é criada. Reutiliza devTenant e commercialContractId.",
+      "item": [
+        {
+          "name": "Listar assinaturas entre escritórios",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/billing/subscriptions?orgId={{devTenant}}&service=pgr&status=active&from=2026-01-01&to=2026-12-31&search=sub_&page=1&pageSize=20",
+            "description": "{rows,total}. Filtros opcionais: orgId, companyId, service (pgr|medicine|pro), status, from/to (AAAA-MM-DD, período atual), search (identificador do provedor). Cada linha traz divergence. 403 sem is_master ou com a flag desligada; 422 filtro inválido."
+          }
+        },
+        {
+          "name": "Consultar ficha da assinatura",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/billing/subscriptions/{{commercialContractId}}?orgId={{devTenant}}",
+            "description": "Preço contratado, identificadores do provedor, direitos de uso, últimos eventos e histórico de reconciliações. 404 contratação inexistente ou de outro orgId."
+          }
+        },
+        {
+          "name": "Reconciliar assinatura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orgId\": \"{{devTenant}}\",\n  \"reason\": \"Conferência da divergência apontada pelo suporte\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/billing/subscriptions/{{commercialContractId}}/reconcile",
+            "description": "200 com {id, result: no_change|corrected|source_unavailable, source: provider|mirror, detail}. Grava uma linha de auditoria por execução. 422 motivo com menos de 10 caracteres; 404 contratação inexistente ou de outro orgId; nunca cria cobrança."
+          }
+        }
+      ]
+    },
+    {
       "name": "Comercial — pedido avulso (NOB-117)",
       "description": "Exige COMMERCIAL_CATALOG_ENABLED=true. Owner cria, lista e lê; collaborator só consulta a autorização. Oferta one_time com itens one_off (catálogo fictício; preços reais dependem de aprovação comercial). O checkout usa POST /commercial-contracts/{{contractId}}/checkout com o contractId do pedido, em modo de pagamento único e só com chave de teste. Pedido pago libera somente aquele pedido: não liga módulo nem altera plano.",
       "item": [

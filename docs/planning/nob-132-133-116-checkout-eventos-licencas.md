@@ -183,6 +183,77 @@ Pendências:
 - O que o cliente altera no portal chega pelos eventos já tratados (assinatura e fatura); não há sincronização extra.
 - Nenhuma das telas foi aberta em navegador nem contra o provedor: falta conta de teste.
 
+## Painel administrativo e reconciliação (NOB-137)
+
+Telas `/admin-global/subscriptions` (lista com filtros) e `/admin-global/subscriptions/{contractId}?orgId=` (ficha e reconciliação), Server Actions em `actions/commercial/admin-subscriptions.ts` e REST em `/api/v1/admin/billing/subscriptions/**`. Tudo atrás de `COMMERCIAL_CATALOG_ENABLED`: desligada, rotas `403` e páginas `notFound()`.
+
+### Perfil autorizado (provisório, pendente de aprovação)
+
+Consulta e reconcilia **somente** o superadmin da plataforma (`users.is_master`, a mesma área `/admin-global`). `owner`, `collaborator` e `client` de qualquer escritório recebem `FORBIDDEN`. Decisão provisória: um perfil financeiro próprio (menos poderoso que o superadmin) fica como pendência.
+
+O gate tem duas camadas. Action e rota chamam `requireMaster()` (sessão real do Clerk; o dev bypass de REST nunca vira superadmin: sem sessão `401`, sem `is_master` `403`) e entregam só o `userId` ao núcleo. O núcleo (`admin-subscriptions-core.ts`) confere `is_master` de novo no banco, por leitura da própria linha em `users` sob `withPlatformOperator`.
+
+### O que a leitura entre escritórios expõe e por que a policy confere `is_master` no banco
+
+`withPlatformOperator(userId, fn)` (`db/with-platform-operator.ts`) abre uma transação e define só `app.platform_operator`; não define `app.current_org` nem `app.current_actor`. Policies novas, todas `FOR SELECT` e `PERMISSIVE` para `app_runtime`, chamadas `<tabela>_platform_operator`, com `USING exists(select 1 from public.users u where u.id = nullif(current_setting('app.platform_operator', true), '') and u.is_master)`:
+
+| Tabela                       | Para que o painel lê                                                |
+| ---------------------------- | ------------------------------------------------------------------- |
+| `billing_subscriptions`      | Status espelhado, período, identificadores do provedor              |
+| `billing_events`             | Último evento e os últimos eventos da ficha                         |
+| `commercial_entitlements`    | Direitos de uso, divergência e filtro por empresa (só `company_id`) |
+| `commercial_contracts`       | Escritório, oferta e vigência do snapshot                           |
+| `commercial_contract_items`  | Valores do snapshot (o contrato em si não tem preço)                |
+| `commercial_reconciliations` | Histórico de reconciliações                                         |
+
+O que sai: identificadores de escritório e de empresa, nome da oferta e valores do snapshot da contratação, identificadores do provedor, estado dos direitos. **Não** saem nomes de empresa, do pagador, e-mail, CNPJ nem dado operacional. Nenhuma policy foi acrescentada em `companies`, `orgs`, `employees` nem em tabela operacional. Nenhuma policy de escrita nova para o operador: sob `withPlatformOperator` não há `app.current_org`, então a policy `_tenant` (`FOR ALL`) não casa e `INSERT` falha e `UPDATE` não afeta linha.
+
+Por que a conferência é no banco e não só na aplicação: o isolamento entre escritórios é a invariante central do produto, e uma leitura que atravessa escritórios não pode depender de a aplicação lembrar de checar. Se um dia o código chamar `withPlatformOperator` com um usuário que não é superadmin, o banco devolve zero linha.
+
+Mudanças em policies existentes, necessárias para o operador enxergar as linhas:
+
+- `commercial_contracts_administrator` e `commercial_contract_items_administrator` (restritivas, `FOR ALL`): o `USING` passa a ser `(administrador do escritório OU operador da plataforma)`; o `WITH CHECK` continua só administrador. Sem isso a restritiva (que exige um ator administrador do `app.current_org`) escondia tudo do operador.
+- `users_platform_operator_self`: `FOR SELECT` para `app_runtime`, `USING id = nullif(current_setting('app.platform_operator', true), '')`. É a **única policy acrescentada em `users`**. `users` tem RLS e a policy anterior era só para `authenticated`; sem esta o `exists` das policies acima nunca enxergaria a linha do superadmin. Ela só expõe a linha do próprio operador.
+
+**Pede revisão de segurança humana** antes de produção: as policies `_platform_operator`, a alteração das duas restritivas e a policy em `users`.
+
+### Regra da reconciliação
+
+1. Valida o motivo (10 a 500 caracteres depois do `trim`).
+2. Confere, pela leitura de operador, que a contratação existe **naquele** escritório (filtra por `orgId` e `contractId`); senão `NOT_FOUND`.
+3. Se há assinatura espelhada e o provedor está em modo de teste (`isStripeTestMode`), busca o estado atual por `retrieveCommercialSubscription` (só leitura; usa o mesmo normalizador dos eventos). Sem chave, com chave de produção ou com erro do provedor (`Stripe.errors.StripeError`) devolve "fonte indisponível" sem falhar. Se a assinatura devolvida tem outro identificador, é tratada como fonte indisponível: nunca grava em outra contratação.
+4. Em uma transação `withOrg(orgId)` sem ator (a primeira instrução zera `app.current_actor`, porque a REST roda com o ator da sessão), com o mesmo `pg_advisory_xact_lock` por contratação dos eventos: lê o estado anterior (espelho e direitos), reaplica pelo mesmo caminho dos eventos (`mirrorSubscription` e `syncEntitlements` de `billing-ledger.ts`, só exportados) e lê o estado posterior.
+5. Grava **uma** linha em `commercial_reconciliations` (escritório, contratação, operador, motivo, resultado, detalhe, fonte), na mesma transação.
+
+Nunca cria cobrança, checkout nem fatura e nunca chama endpoint de escrita do provedor. Licença legada (`applied = false` com módulo já ligado) nunca é revogada: a garantia é da função `commercial_reconcile_grant`, que só é chamada quando a situação do direito muda.
+
+### Resultado → efeito
+
+| Situação                                                                                                       | `result`                   | `source`   | Efeito                                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------- | -------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Fonte conferida, nada mudou no espelho nem nos direitos                                                        | `no_change`                | `provider` | Só a auditoria. Direitos, `company_modules`, `company_module_events` e `orgs.plan` intactos                                     |
+| Fonte conferida, espelho ou direitos mudaram                                                                   | `corrected`                | `provider` | Espelho igual à fonte, direitos reavaliados, licença reconciliada pela regra do legado                                          |
+| Fonte conferida, mas o snapshot foi recusado (outra assinatura, mais antigo, transição proibida)               | `no_change` ou `corrected` | `provider` | Direitos reavaliados a partir do espelho local; o motivo da recusa fica no `detail`                                             |
+| Fonte indisponível (sem chave, produção, erro do provedor, identificador divergente, sem assinatura espelhada) | `source_unavailable`       | `mirror`   | Direitos re-derivados do espelho local, mesmo que isso tenha corrigido algo; o `detail` diz o motivo e quantos direitos mudaram |
+
+O `detail` tem o formato `<nota>;mirror_changed=<bool>;entitlement_changes=<n>`. A comparação do espelho ignora `last_event_at`, que muda a cada execução. A reconciliação é repetível: a segunda execução sem divergência grava `no_change`.
+
+### GRANTs e migration (pendente: a migration será gerada depois pelo drizzle-kit)
+
+- `GRANT SELECT, INSERT ON commercial_reconciliations TO app_runtime;` sem `UPDATE` nem `DELETE` (só inclusão).
+- `GRANT SELECT (id, is_master) ON users TO app_runtime;` para a policy `_platform_operator` e para o núcleo.
+- Os `SELECT` que `app_runtime` já tem nas demais tabelas bastam; nada de escrita novo.
+
+### Pendências
+
+- Perfil financeiro próprio, com permissão só de leitura de cobrança, em vez do superadmin.
+- A conferência na fonte depende de conta de teste do provedor: o formato da assinatura devolvida pela API nunca foi comparado com o provedor real; hoje só há dublê.
+- Nomes de empresa e do pagador não são exibidos (a leitura entre escritórios não alcança `companies` nem `orgs`); a tela mostra identificadores.
+- Revisão de segurança humana das policies e da policy em `users`.
+- Aprovação do perfil provisório pelo comercial.
+
+- Limite conhecido: módulo desligado à mão por um administrador, com o direito ainda marcado como aplicado, **não é religado** pela reconciliação. Religar contra uma ação manual depende de decisão de produto.
+
 ## O que falta para ligar o modo de teste do provedor
 
 1. **Conta de teste do Stripe** e as chaves no ambiente: `STRIPE_SECRET_KEY` com chave `sk_test_` (ou restrita `rk_test_`) e `STRIPE_WEBHOOK_SECRET` do endpoint de teste.
@@ -209,5 +280,5 @@ Técnicas:
 2. O webhook do provedor traz no máximo 10 linhas por fatura. Fatura maior fica com a diferença como "não discriminado" até existir a busca das linhas restantes na API do provedor.
 3. Job agendado para o corte ao fim da carência, se a carência for aprovada.
 4. Imposto destacado por serviço: hoje entra como diferença não classificada.
-5. Quem é o operador da plataforma (NOB-137): segue sendo quem tem a conexão owner.
+5. Operador da plataforma (NOB-137): resolvido provisoriamente pelo superadmin `users.is_master` (seção abaixo).
 6. Revisão de segurança da função `SECURITY DEFINER` antes de produção.

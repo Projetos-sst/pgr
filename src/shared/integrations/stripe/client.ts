@@ -6,6 +6,9 @@ import { BillingUnavailableError } from "@/shared/errors/billing-unavailable-err
 
 import { CHECKOUT_REFERENCE_KEY } from "@/shared/domains/commercial/checkout";
 
+import type { SubscriptionLookup } from "@/shared/domains/commercial/admin-subscriptions";
+
+import { STRIPE_EVENT_NORMALIZERS } from "./commercial-events";
 import { getStripeConfig, isStripeTestMode } from "./config";
 
 /**
@@ -115,6 +118,33 @@ export async function createCommercialPortalSession(
     return_url: returnUrl,
   });
   return { url: session.url };
+}
+
+const SUBSCRIPTION_NORMALIZER = STRIPE_EVENT_NORMALIZERS["customer.subscription.updated"];
+
+function lookupFromSubscription(subscription: unknown): SubscriptionLookup {
+  const normalized = SUBSCRIPTION_NORMALIZER(subscription);
+  return normalized?.kind === "subscription"
+    ? { ok: true, snapshot: normalized.snapshot }
+    : { ok: false, reason: "provider_snapshot_unreadable" };
+}
+
+function lookupFromError(error: unknown): SubscriptionLookup {
+  if (error instanceof Stripe.errors.StripeError)
+    return { ok: false, reason: `provider_error:${error.type}` };
+  throw error;
+}
+
+export function retrieveCommercialSubscription(
+  providerSubscriptionId: string,
+): Promise<SubscriptionLookup> {
+  const config = getStripeConfig();
+  if (!config) return Promise.resolve({ ok: false, reason: "provider_not_configured" });
+  if (!isStripeTestMode(config))
+    return Promise.resolve({ ok: false, reason: "provider_not_in_test_mode" });
+  return stripeClient()
+    .subscriptions.retrieve(providerSubscriptionId)
+    .then(lookupFromSubscription, lookupFromError);
 }
 
 /** Verifica a assinatura do webhook e devolve o evento tipado. */

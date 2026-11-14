@@ -36,12 +36,13 @@ import { appRuntimeRole } from "../roles";
 import { actorCompanyScope, officeWideOr } from "./access-scope-policy";
 import { companies } from "./companies";
 import { orgs } from "./orgs";
+import { platformOperator, platformOperatorRead } from "./platform-operator-policy";
 
 const tenant = sql`org_id=current_setting('app.current_org',true)`;
 const actor = sql`current_setting('app.current_actor',true)`;
 const administrator = sql`exists(select 1 from public.org_memberships m where m.org_id=current_setting('app.current_org',true) and m.user_id=${actor} and m.role in ('owner','org:admin'))`;
 
-const tenantPolicies = (table: string) => [
+const tenantPolicies = (table: string, operatorRead = false) => [
   pgPolicy(`${table}_tenant`, {
     for: "all",
     to: appRuntimeRole,
@@ -52,9 +53,10 @@ const tenantPolicies = (table: string) => [
     as: "restrictive",
     for: "all",
     to: appRuntimeRole,
-    using: administrator,
+    using: operatorRead ? sql`(${administrator} or ${platformOperator})` : administrator,
     withCheck: administrator,
   }),
+  ...(operatorRead ? [platformOperatorRead(table)] : []),
 ];
 
 export const commercialOfferVersions = pgTable(
@@ -267,7 +269,7 @@ export const commercialContracts = pgTable(
       "commercial_contracts_term",
       sql`${t.termEnd} is null or ${t.termEnd} >= ${t.termStart}`,
     ),
-    ...tenantPolicies("commercial_contracts"),
+    ...tenantPolicies("commercial_contracts", true),
     pgPolicy("commercial_contracts_actor", {
       as: "restrictive",
       for: "insert",
@@ -311,7 +313,7 @@ export const commercialContractItems = pgTable(
       "commercial_contract_items_amount",
       sql`${t.unitAmountCents} between 0 and 100000000`,
     ),
-    ...tenantPolicies("commercial_contract_items"),
+    ...tenantPolicies("commercial_contract_items", true),
   ],
 ).enableRLS();
 

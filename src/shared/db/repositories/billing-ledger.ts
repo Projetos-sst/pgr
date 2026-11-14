@@ -119,12 +119,12 @@ export function resolveBillingLink(
   });
 }
 
-const contractScope = (
+export const contractScope = (
   table: typeof subscriptions | typeof entitlements,
   link: BillingLink,
 ) => and(eq(table.orgId, link.orgId), eq(table.contractId, link.contractId));
 
-async function loadMirror({
+export async function loadMirror({
   tx,
   link,
 }: EventContext): Promise<SubscriptionMirror | null> {
@@ -170,7 +170,7 @@ async function createMirror(context: EventContext, mirror: SubscriptionMirror) {
   );
 }
 
-async function syncEntitlements(
+export async function syncEntitlements(
   { tx, link }: EventContext,
   mirror: SubscriptionMirror,
   asOf: Date,
@@ -314,7 +314,7 @@ async function expireCheckout(
     : { outcome: "ignored", detail: "checkout_session_not_open" };
 }
 
-async function mirrorSubscription(
+export async function mirrorSubscription(
   context: EventContext,
   event: SubscriptionEvent,
 ): Promise<EventResult> {
