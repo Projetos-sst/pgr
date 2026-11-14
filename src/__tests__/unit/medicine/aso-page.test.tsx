@@ -113,6 +113,26 @@ beforeEach(() => {
   });
 });
 
+const SIGNED_FOR_LOAD_ERROR = {
+  id: "s1",
+  origin: "external_clinic",
+  previewDocumentId: null,
+  signatureMethod: "handwritten",
+  signerName: "Dra. Clínica Fictícia",
+  signerRegistration: "88001",
+  signerUf: "PI",
+  conclusion: "fit",
+  signedOn: "2026-10-21",
+  fileSha256: "c".repeat(64),
+  sizeBytes: 10,
+  registeredBy: "staff",
+  registeredAt: "2026-10-22T10:00:00.000Z",
+  verificationReference: "Original na pasta 1",
+  replacesId: null,
+  replaceReason: null,
+  replacedById: null,
+};
+
 async function renderPage() {
   render(await AsoPage({ params: Promise.resolve({ id: EXAM }) }));
 }
@@ -469,5 +489,58 @@ describe("AsoPage", () => {
       1,
     );
     expect(screen.getAllByText("Comprovante aguardando conferência.")).toHaveLength(1);
+  });
+
+  it("falha de leitura não vira lista vazia: avisa a falha e não afirma que o exame não tem ASO oficial", async () => {
+    const fail = { ok: false, error: { code: "UNKNOWN", message: "Erro inesperado." } };
+    (getAsoReadinessAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { items: [], checklist: asoChecklist([]) },
+    });
+    (listAsoDocumentsAction as jest.Mock).mockResolvedValue(fail);
+    (listExamProceduresAction as jest.Mock).mockResolvedValue(fail);
+    (listSignedAsosAction as jest.Mock).mockResolvedValue(fail);
+    (listAsoDeliveriesAction as jest.Mock).mockResolvedValue(fail);
+    await renderPage();
+    const alerts = screen.getAllByRole("alert").map((a) => a.textContent);
+    expect(alerts).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/Não foi possível carregar os exames complementares/),
+        expect.stringMatching(/Não foi possível carregar as prévias/),
+        expect.stringMatching(/Não foi possível carregar os ASOs assinados/),
+        expect.stringMatching(/Não foi possível carregar as entregas/),
+      ]),
+    );
+    expect(screen.queryByText(/Nenhum ASO assinado registrado/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Registre o ASO assinado antes/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Registrar ASO assinado" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Tentar novamente" })[0]).toHaveAttribute(
+      "href",
+      `/health-exams/${EXAM}/aso`,
+    );
+  });
+
+  it("falha só nas entregas, com ASO vigente: avisa a falha sem oferecer novo registro às cegas", async () => {
+    (getAsoReadinessAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { items: [], checklist: asoChecklist([]) },
+    });
+    (listAsoDocumentsAction as jest.Mock).mockResolvedValue({ ok: true, data: [] });
+    (listSignedAsosAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: [SIGNED_FOR_LOAD_ERROR],
+    });
+    (listAsoDeliveriesAction as jest.Mock).mockResolvedValue({
+      ok: false,
+      error: { code: "UNKNOWN", message: "Erro inesperado." },
+    });
+    await renderPage();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /Não foi possível carregar as entregas/,
+    );
+    expect(screen.queryByText(/Registre o ASO assinado antes/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Registrar" })).not.toBeInTheDocument();
   });
 });

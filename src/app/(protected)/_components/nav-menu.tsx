@@ -114,6 +114,11 @@ const NAV: NavEntry[] = [
       { href: "/medical-risks", label: "Riscos para PCMSO", iconName: "alert-triangle" },
       { href: "/health-exams", label: "Exames e ASO", iconName: "activity" },
       { href: "/medicos", label: "Médicos", iconName: "stethoscope" },
+      {
+        href: "/professional-identity",
+        label: "Minha identidade profissional",
+        iconName: "briefcase-user",
+      },
     ],
   },
   {
