@@ -15,6 +15,10 @@ jest.mock("@/shared/db/env", () => ({
   getDatabaseUrl: () => process.env.INTEGRATION_APP_RUNTIME_URL,
 }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
+// Gate de master da fila do operador (sessão Clerk real; o bypass dev não o substitui).
+jest.mock("@/shared/auth/require-master", () => ({ requireMaster: jest.fn() }));
+import { ForbiddenError } from "@/shared/auth/errors";
+import { requireMaster } from "@/shared/auth/require-master";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { closeVerifierConnection } from "@/shared/db/identity-verifier-db";
 import { isActorCompanyCoordinator } from "@/shared/db/repositories/medico-user-links";
@@ -41,6 +45,8 @@ import {
   GET as QUEUE,
   POST as APPROVE,
 } from "@/app/api/v1/admin/identity-verifications/route";
+import { POST as REJECT } from "@/app/api/v1/admin/identity-verifications/requests/[id]/reject/route";
+import { POST as REVOKE } from "@/app/api/v1/admin/identity-verifications/[id]/revoke/route";
 import { adminClient, applyMigrations } from "../_helpers/db";
 import { seedPgrBase, PGR_IDS as I } from "../_helpers/pgr-seed";
 import { linkByInvitation } from "../_helpers/professional-link";
@@ -139,6 +145,10 @@ const req = (
       values ('org_a', ${I.companyA}, ${M1}, '2026-01-01', 'owner')`;
     process.env.APP_ENV = "local";
     process.env.DEV_API_AUTH_BYPASS = "true";
+    (requireMaster as jest.Mock).mockReset();
+    (requireMaster as jest.Mock).mockRejectedValue(
+      new ForbiddenError("Acesso restrito a administradores da plataforma."),
+    );
   });
 
   const asRuntime = <T>(
@@ -592,6 +602,8 @@ const req = (
       403,
     );
     expect((await QUEUE(req("owner", "owner"))).status).toBe(403);
+    // Sessão real de master do operador designado: fila e aprovação liberadas.
+    (requireMaster as jest.Mock).mockResolvedValue({ userId: VERIFIER });
     const queue = await QUEUE(req(VERIFIER, "owner", "GET", undefined, "org_b"));
     expect(queue.status).toBe(200);
     expect((await queue.json()).pending).toHaveLength(1);
@@ -600,5 +612,47 @@ const req = (
     );
     expect(approved.status).toBe(201);
     expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+  });
+
+  it("REST do operador exige master pela sessão real: designado sem master e headers do bypass dev são barrados", async () => {
+    await linkDoctor();
+    const created = await REQUEST(
+      req("doctor", "collaborator", "POST", { medicoId: M1 }),
+    );
+    const { id: requestId } = await created.json();
+    // Bypass dev ligado: o código de controle da conta não sai pela REST (headers forjáveis).
+    const mine = await (await MY_IDENTITY(req("doctor", "collaborator"))).json();
+    expect(mine[0].challengeCode).toBeNull();
+    // Designado no banco, mas sem master na sessão: 403, sem verificação gravada.
+    const queue = await QUEUE(req(VERIFIER, "owner", "GET", undefined, "org_b"));
+    expect(queue.status).toBe(403);
+    const approved = await APPROVE(
+      req(VERIFIER, "owner", "POST", approval(requestId, "doctor"), "org_b"),
+    );
+    expect(approved.status).toBe(403);
+    const rejected = await REJECT(
+      req(VERIFIER, "owner", "POST", { reason: REASON }, "org_b"),
+      { params: Promise.resolve({ id: requestId }) },
+    );
+    expect(rejected.status).toBe(403);
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
+    const [{ n }] =
+      await admin`select count(*)::int as n from professional_identity_verifications`;
+    expect(n).toBe(0);
+    // A identidade do operador vem da sessão de master, nunca do header x-dev-user.
+    (requireMaster as jest.Mock).mockResolvedValue({ userId: VERIFIER });
+    const forged = await APPROVE(
+      req("doctor", "owner", "POST", approval(requestId, "doctor"), "org_b"),
+    );
+    expect(forged.status).toBe(201);
+    const [row] =
+      await admin`select verified_by from professional_identity_verifications`;
+    expect(row.verified_by).toBe(VERIFIER);
+    const revoked = await REVOKE(
+      req("doctor", "owner", "POST", { reason: REASON }, "org_b"),
+      { params: Promise.resolve({ id: (await forged.json()).id }) },
+    );
+    expect(revoked.status).toBe(201);
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(false);
   });
 });
