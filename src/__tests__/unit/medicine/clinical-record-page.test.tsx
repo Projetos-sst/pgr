@@ -106,4 +106,21 @@ describe("ClinicalRecordPage", () => {
       screen.getByRole("button", { name: /restrições deixaram de valer/ }),
     ).toBeInTheDocument();
   });
+
+  it("falha ao ler as restrições: avisa a falha, sem 'nenhuma restrição' nem formulário às cegas", async () => {
+    (readClinicalRecordAction as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { basis: "examiner", notes: [] },
+    });
+    (listWorkRestrictionsAction as jest.Mock).mockResolvedValue({
+      ok: false,
+      error: { code: "UNKNOWN", message: "Erro inesperado." },
+    });
+    await renderPage();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /Não foi possível carregar as restrições comunicadas/,
+    );
+    expect(screen.queryByText("Nenhuma restrição comunicada.")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Restrição comunicada ao RH/)).not.toBeInTheDocument();
+  });
 });

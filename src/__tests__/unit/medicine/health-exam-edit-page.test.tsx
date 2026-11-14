@@ -14,6 +14,7 @@ import {
 } from "@/shared/server/actions/pgr/medicos";
 import {
   getClinicalAccessAction,
+  listClinicalAccessEventsAction,
   listWorkRestrictionsAction,
 } from "@/shared/server/actions/medicine/clinical-record";
 
@@ -129,5 +130,28 @@ describe("EditHealthExamPage — médico responsável inativo", () => {
     expect(getMedicoAction).not.toHaveBeenCalled();
     expect(doctorSelect().value).toBe(ACTIVE);
     expect(screen.queryByRole("option", { name: /inativo/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("EditHealthExamPage — falha de leitura", () => {
+  it("restrições e trilha de acessos: avisa a falha em vez de 'nenhum registro'", async () => {
+    mockExam(ACTIVE);
+    const { requireOfficeStaffPage } = jest.requireMock("@/shared/auth/page-guards");
+    (requireOfficeStaffPage as jest.Mock).mockResolvedValueOnce({ role: "owner" });
+    const fail = { ok: false, error: { code: "UNKNOWN", message: "Erro inesperado." } };
+    (listWorkRestrictionsAction as jest.Mock).mockResolvedValue(fail);
+    (listClinicalAccessEventsAction as jest.Mock).mockResolvedValue(fail);
+    await renderPage();
+    const alerts = screen.getAllByRole("alert").map((a) => a.textContent);
+    expect(alerts).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/Não foi possível carregar as restrições comunicadas/),
+        expect.stringMatching(/Não foi possível carregar os acessos ao prontuário/),
+      ]),
+    );
+    expect(
+      screen.queryByText("Nenhuma restrição vigente comunicada pelo médico."),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Nenhum acesso registrado.")).not.toBeInTheDocument();
   });
 });

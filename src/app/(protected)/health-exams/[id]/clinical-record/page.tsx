@@ -14,6 +14,7 @@ import {
 } from "@/shared/server/actions/medicine/clinical-record";
 
 import { PageHeader } from "../../../_ui/list";
+import { SectionLoadError } from "../../../_ui/section-load-error";
 import { ClinicalNoteForm, WorkRestrictionForm } from "./clinical-record-controls";
 
 export const dynamic = "force-dynamic";
@@ -92,7 +93,12 @@ export default async function ClinicalRecordPage({
         <p className="text-text-subtle">
           É o único texto do médico que o RH lê. Fica fora do ASO e não leva diagnóstico.
         </p>
-        {current ? (
+        {!restrictions.ok ? (
+          <SectionLoadError
+            what="as restrições comunicadas"
+            retryHref={`/health-exams/${id}/clinical-record`}
+          />
+        ) : current ? (
           <p role="status">
             Vigente:{" "}
             {current.kind === "restriction"
@@ -103,7 +109,9 @@ export default async function ClinicalRecordPage({
         ) : (
           <p className="text-text-subtle">Nenhuma restrição comunicada.</p>
         )}
-        <WorkRestrictionForm examId={id} hasCurrent={current?.kind === "restriction"} />
+        {restrictions.ok ? (
+          <WorkRestrictionForm examId={id} hasCurrent={current?.kind === "restriction"} />
+        ) : null}
       </section>
     </div>
   );

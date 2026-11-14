@@ -30,6 +30,7 @@ import {
 } from "@/shared/server/actions/medicine/aso";
 
 import { PageHeader } from "../../../_ui/list";
+import { SectionLoadError } from "../../../_ui/section-load-error";
 import {
   CompanyOriginForm,
   ExaminerConclusionForm,
@@ -190,6 +191,8 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
   const signedRows = signedDocs.ok ? signedDocs.data : [];
   const currentSigned = currentSignedAso(signedRows);
   const deliveryData = deliveries.ok ? deliveries.data : null;
+  // Falha de leitura ≠ vazio: cada seção avisa a falha e não oferece registro às cegas.
+  const retryHref = `/health-exams/${id}/aso`;
   const voidedIds = new Set(
     (deliveryData?.deliveries ?? []).filter((d) => d.voidsId).map((d) => d.voidsId),
   );
@@ -250,6 +253,12 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
             exame, pela conta vinculada a ele, confirma. O registro original é preservado,
             e a descrição da restrição fica fora do ASO.
           </p>
+          {!conclusions.ok ? (
+            <SectionLoadError
+              what="as confirmações do examinador"
+              retryHref={retryHref}
+            />
+          ) : null}
           {conclusionRows.length ? (
             <ul className="text-text-subtle list-disc pl-5">
               {conclusionRows.map((row) => (
@@ -269,6 +278,11 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
         <h2 className="text-text text-base font-semibold">Exames realizados</h2>
         <ul className="text-text-subtle flex flex-col gap-1">
           <li>Exame clínico — {exam.data.performedAt}</li>
+          {!procedures.ok ? (
+            <li>
+              <SectionLoadError what="os exames complementares" retryHref={retryHref} />
+            </li>
+          ) : null}
           {procedureRows.map((p) => (
             <li key={p.id} className="flex items-center gap-3">
               <span>
@@ -289,6 +303,7 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
         ) : (
           <GenerateAsoButton examId={id} />
         )}
+        {!docs.ok ? <SectionLoadError what="as prévias" retryHref={retryHref} /> : null}
         <p className="text-text-subtle text-xs">
           A prévia não é o ASO oficial. O sistema não assina: o ASO oficial é o documento
           assinado pelo médico examinador, registrado abaixo.
@@ -310,7 +325,9 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
             {ASO_SIGNED_OUTDATED_MESSAGE}
           </p>
         ) : null}
-        {signedRows.length ? (
+        {!signedDocs.ok ? (
+          <SectionLoadError what="os ASOs assinados" retryHref={retryHref} />
+        ) : signedRows.length ? (
           <ul className="flex flex-col gap-2">
             {signedRows.map((doc) => (
               <li key={doc.id} className="text-text-subtle flex flex-col gap-1">
@@ -339,13 +356,15 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
             Nenhum ASO assinado registrado. Até lá, o exame não tem ASO oficial.
           </p>
         )}
-        <SignedAsoForm
-          examId={id}
-          previews={docRows
-            .slice(0, 1)
-            .map((doc) => ({ id: doc.id, version: doc.version }))}
-          currentId={currentSigned?.id ?? null}
-        />
+        {signedDocs.ok && docs.ok ? (
+          <SignedAsoForm
+            examId={id}
+            previews={docRows
+              .slice(0, 1)
+              .map((doc) => ({ id: doc.id, version: doc.version }))}
+            currentId={currentSigned?.id ?? null}
+          />
+        ) : null}
       </section>
       <section className="glass-card flex flex-col gap-3 rounded-xl p-5 text-sm">
         <h2 className="text-text text-base font-semibold">
@@ -359,7 +378,12 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
           confirma o recebimento. A entrega vale para o documento entregue: se o ASO for
           substituído, a nova versão precisa de nova entrega.
         </p>
-        {currentSigned && deliveryData ? (
+        {!signedDocs.ok || !deliveries.ok ? (
+          <SectionLoadError
+            what={!deliveries.ok ? "as entregas" : "os ASOs assinados"}
+            retryHref={retryHref}
+          />
+        ) : currentSigned && deliveryData ? (
           <>
             <p className="text-text font-semibold">
               {ASO_DELIVERY_STATE_LABELS[deliveryData.summary.state]}
@@ -444,8 +468,11 @@ export default async function AsoPage({ params }: { params: Promise<{ id: string
             ))}
           </ul>
         ) : null}
-        {currentSigned ? <AsoDeliveryForm examId={id} /> : null}
+        {currentSigned && deliveryData ? <AsoDeliveryForm examId={id} /> : null}
       </section>
+      {latest && !latest.ok ? (
+        <SectionLoadError what="a última prévia" retryHref={retryHref} />
+      ) : null}
       {latest?.ok ? (
         <Preview
           content={latest.data.content as AsoContent}
