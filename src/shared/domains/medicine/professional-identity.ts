@@ -9,9 +9,13 @@ import { z } from "zod";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
 
 export const IDENTITY_VALIDITY_DEFAULT_MONTHS = 12;
-export const IDENTITY_VALIDITY_MAX_MONTHS = 36;
+/**
+ * Teto da validade (decisão NOB-158/NOB-162: 12 meses). O banco impõe o mesmo teto
+ * (`ck_identity_verifications_validity`, migration 0083); a configuração só pode encurtar.
+ */
+export const IDENTITY_VALIDITY_MAX_MONTHS = 12;
 
-/** Validade configurada (`IDENTITY_VERIFICATION_VALIDITY_MONTHS`), entre 1 e 36; padrão 12. */
+/** Validade configurada (`IDENTITY_VERIFICATION_VALIDITY_MONTHS`), entre 1 e 12; padrão 12. */
 export function identityValidityMonths(raw: string | undefined): number {
   const n = Number(raw);
   if (!Number.isInteger(n) || n < 1) return IDENTITY_VALIDITY_DEFAULT_MONTHS;

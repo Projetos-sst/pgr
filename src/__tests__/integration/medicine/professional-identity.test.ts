@@ -588,6 +588,56 @@ const req = (
       ).rejects.toMatchObject({ code: "42501" });
   });
 
+  it("validade de 12 meses (NOB-158): app grava verified_at + 12 meses mesmo com configuração maior; banco recusa mais que isso, inclusive pelo papel do operador", async () => {
+    await linkDoctor();
+    const { id: requestId } = await requestVerification(doctor, { medicoId: M1 });
+    // Papel do operador por SQL direto, com pedido em aberto e CRM/UF conferidos: 13 meses → CHECK.
+    const verifierDb = (await import("postgres")).default(
+      process.env.IDENTITY_VERIFIER_DATABASE_URL!,
+      { max: 1, prepare: false },
+    );
+    try {
+      const insertAsVerifier = (validity: string) =>
+        verifierDb.begin(async (tx) => {
+          await tx`select set_config('app.current_actor', ${VERIFIER}, true)`;
+          await tx`insert into professional_identity_verifications (org_id, request_id, medico_id, user_id, crm, registration_uf, method, checklist, registry_source, verified_by, expires_at)
+            values ('org_a', ${requestId}, ${M1}, 'doctor', '90001', 'MA', 'in_person', ${tx.json(CHECKLIST)}, 'Consulta fictícia', ${VERIFIER}, now() + ${validity}::interval)`;
+        });
+      await expect(insertAsVerifier("13 months")).rejects.toMatchObject({
+        code: "23514",
+        constraint_name: "ck_identity_verifications_validity",
+      });
+      await expect(insertAsVerifier("36 months")).rejects.toMatchObject({
+        code: "23514",
+      });
+    } finally {
+      await verifierDb.end({ timeout: 5 });
+    }
+    // Configuração acima do teto é limitada a 12: a validade gravada é exatamente verified_at + 12 meses.
+    const previous = process.env.IDENTITY_VERIFICATION_VALIDITY_MONTHS;
+    process.env.IDENTITY_VERIFICATION_VALIDITY_MONTHS = "36";
+    try {
+      await approveVerification(VERIFIER, approval(requestId, "doctor"));
+    } finally {
+      if (previous === undefined)
+        delete process.env.IDENTITY_VERIFICATION_VALIDITY_MONTHS;
+      else process.env.IDENTITY_VERIFICATION_VALIDITY_MONTHS = previous;
+    }
+    const [row] =
+      await admin`select expires_at = verified_at + interval '12 months' as exact from professional_identity_verifications where request_id = ${requestId}`;
+    expect(row.exact).toBe(true);
+    expect(await isActorCompanyCoordinator(doctor, I.companyA)).toBe(true);
+    // Aritmética de mês do Postgres (a mesma do CHECK): 29/02 + 12 meses = 28/02; um dia além é recusado.
+    const [check] = await admin`select
+      ('2029-02-28 10:00+00'::timestamptz <= '2028-02-29 10:00+00'::timestamptz + interval '12 months') as feb28,
+      ('2029-03-01 10:00+00'::timestamptz <= '2028-02-29 10:00+00'::timestamptz + interval '12 months') as mar01`;
+    expect(check).toMatchObject({ feb28: true, mar01: false });
+    // A constraint vale para linhas novas e não revalida as antigas (NOT VALID na 0083).
+    const [constraint] =
+      await admin`select convalidated from pg_constraint where conname = 'ck_identity_verifications_validity'`;
+    expect(constraint.convalidated).toBe(false);
+  });
+
   it("REST: área do profissional e fila do operador com códigos HTTP", async () => {
     await linkDoctor();
     const created = await REQUEST(

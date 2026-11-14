@@ -610,7 +610,7 @@ function rlsDenied(error: unknown): boolean {
 export async function approveIdentityVerification(
   verifierUserId: string,
   input: IdentityApprovalValues,
-  expiresAt: Date,
+  validityMonths: number,
 ): Promise<{ id: string }> {
   try {
     return await withVerifier(verifierUserId, async (tx) => {
@@ -640,7 +640,10 @@ export async function approveIdentityVerification(
           registrySource: input.registrySource,
           evidenceRef: input.evidenceRef || null,
           verifiedBy: verifierUserId,
-          expiresAt,
+          // Mesmo `now()` de `verified_at` (padrão da coluna): a validade é exatamente
+          // `verified_at + N meses` pela aritmética do Postgres, a mesma do CHECK (sem a virada
+          // de mês do JS, ex.: 29/02 + 12 meses).
+          expiresAt: sql`now() + make_interval(months => ${validityMonths})`,
         })
         .returning({ id: verifications.id });
       return row;

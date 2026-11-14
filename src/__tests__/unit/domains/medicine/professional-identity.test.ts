@@ -88,10 +88,13 @@ describe("identityStatus", () => {
 });
 
 describe("identityValidityMonths", () => {
-  it("padrão 12, teto 36, valores inválidos voltam ao padrão", () => {
+  it("padrão 12, teto 12 (decisão NOB-158), valores inválidos voltam ao padrão", () => {
     expect(identityValidityMonths(undefined)).toBe(12);
     expect(identityValidityMonths("6")).toBe(6);
-    expect(identityValidityMonths("120")).toBe(36);
+    expect(identityValidityMonths("12")).toBe(12);
+    expect(identityValidityMonths("13")).toBe(12);
+    expect(identityValidityMonths("36")).toBe(12);
+    expect(identityValidityMonths("120")).toBe(12);
     expect(identityValidityMonths("0")).toBe(12);
     expect(identityValidityMonths("abc")).toBe(12);
   });

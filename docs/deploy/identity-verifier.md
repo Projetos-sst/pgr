@@ -34,7 +34,7 @@ projeto da Vercel, só no servidor:
 
 - `IDENTITY_VERIFIER_DATABASE_URL`: URL dessa conta (nunca a de migrations nem a do `app_runtime`);
 - `IDENTITY_CHALLENGE_SECRET`: segredo aleatório longo do desafio de controle da conta;
-- `IDENTITY_VERIFICATION_VALIDITY_MONTHS`: validade em meses (1 a 36; padrão 12, até a decisão final).
+- `IDENTITY_VERIFICATION_VALIDITY_MONTHS`: validade em meses (1 a 12; padrão 12, decisão NOB-158). Valor maior é limitado a 12 pelo app, e o banco recusa mais de 12 meses (migration `0083`).
 
 Nenhuma dessas variáveis é exposta ao navegador.
 
