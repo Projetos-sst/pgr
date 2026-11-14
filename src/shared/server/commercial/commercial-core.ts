@@ -10,6 +10,7 @@ import { listPublishedOffers } from "@/shared/db/repositories/commercial-catalog
 import * as contractsRepo from "@/shared/db/repositories/commercial-contracts";
 import * as customersRepo from "@/shared/db/repositories/commercial-customers";
 import * as interestsRepo from "@/shared/db/repositories/commercial-interests";
+import * as trialsRepo from "@/shared/db/repositories/commercial-trials";
 import {
   contractInputSchema,
   customerInputSchema,
@@ -27,7 +28,16 @@ import {
   sellableOffers,
   type CommercialEnvironment,
 } from "@/shared/domains/commercial/offer";
+import {
+  trialCompanyIdSchema,
+  trialFiltersSchema,
+  trialInputSchema,
+} from "@/shared/domains/commercial/trial";
 import { requiredUuid } from "@/shared/domains/pgr/form-fields";
+
+import { commercialEnvironment } from "./environment";
+
+export { assertPgrEmissionAllowed } from "./emission-gate";
 
 const pageNumber = z.number().int().positive().optional();
 const customerFiltersSchema = z.object({
@@ -43,13 +53,6 @@ const contractFiltersSchema = z.object({
 });
 const customerId = requiredUuid("Cliente inválido.");
 const contractId = requiredUuid("Contratação inválida.");
-
-function commercialEnvironment(): CommercialEnvironment {
-  return {
-    APP_ENV: process.env.APP_ENV,
-    COMMERCIAL_CATALOG_ENABLED: process.env.COMMERCIAL_CATALOG_ENABLED,
-  };
-}
 
 function requireCommercialSurface(): CommercialEnvironment {
   const env = commercialEnvironment();
@@ -125,6 +128,46 @@ export async function listInterests(ctx: TenantContext, filters: unknown) {
 export async function markInterestSeen(ctx: TenantContext, id: string) {
   requireFinancialOwner(ctx);
   return interestsRepo.markInterestSeen(ctx, interestIdSchema.parse(id));
+}
+
+function requireOfficeStaffRole(ctx: TenantContext, message: string): void {
+  requireCommercialSurface();
+  if (ctx.role !== "owner" && ctx.role !== "collaborator")
+    throw new ForbiddenError(message);
+}
+
+export async function startCompanyTrial(
+  ctx: TenantContext,
+  input: unknown,
+  now: Date = new Date(),
+) {
+  requireFinancialOwner(ctx);
+  const { companyId } = trialInputSchema.parse(input);
+  return trialsRepo.startTrial(ctx, companyId, now);
+}
+
+export async function getCompanyTrial(
+  ctx: TenantContext,
+  companyId: string,
+  now: Date = new Date(),
+) {
+  requireOfficeStaffRole(
+    ctx,
+    "Apenas a equipe do escritório consulta o período de teste.",
+  );
+  return trialsRepo.getTrial(ctx, trialCompanyIdSchema.parse(companyId), now);
+}
+
+export async function listCompanyTrials(
+  ctx: TenantContext,
+  filters: unknown,
+  now: Date = new Date(),
+) {
+  requireOfficeStaffRole(
+    ctx,
+    "Apenas a equipe do escritório consulta o período de teste.",
+  );
+  return trialsRepo.listTrials(ctx, trialFiltersSchema.parse(filters), now);
 }
 
 export async function registerContract(ctx: TenantContext, input: unknown) {

@@ -58,6 +58,26 @@ export async function markCommercialInterestSeenAction(id: string) {
   );
 }
 
+export async function startCommercialTrialAction(input: unknown) {
+  return officeAction(
+    "commercial.trial.create",
+    (ctx) => core.startCompanyTrial(ctx, input),
+    { audit: true },
+  );
+}
+
+export async function listCommercialTrialsAction(filters: unknown = {}) {
+  return officeAction("commercial.trial.list", (ctx) =>
+    core.listCompanyTrials(ctx, filters),
+  );
+}
+
+export async function getCommercialTrialAction(companyId: string) {
+  return officeAction("commercial.trial.get", (ctx) =>
+    core.getCompanyTrial(ctx, companyId),
+  );
+}
+
 export async function listCommercialContractsAction(filters: unknown = {}) {
   return officeAction("commercial.contract.list", (ctx) =>
     core.listContracts(ctx, filters),

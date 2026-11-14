@@ -407,3 +407,48 @@ export const commercialInterests = pgTable(
     }),
   ],
 ).enableRLS();
+
+export const commercialTrials = pgTable(
+  "commercial_trials",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    days: integer("days").notNull(),
+    startedBy: text("started_by").notNull(),
+    convertedAt: timestamp("converted_at", { withTimezone: true }),
+  },
+  (t) => [
+    unique("uq_commercial_trials_company").on(t.orgId, t.companyId),
+    index("idx_commercial_trials_org_started").on(t.orgId, t.startedAt),
+    foreignKey({
+      name: "commercial_trials_company_fk",
+      columns: [t.companyId, t.orgId],
+      foreignColumns: [companies.id, companies.orgId],
+    }),
+    check("commercial_trials_window", sql`${t.endsAt} > ${t.startedAt}`),
+    check("commercial_trials_days", sql`${t.days} > 0`),
+    pgPolicy("commercial_trials_tenant", {
+      for: "all",
+      to: appRuntimeRole,
+      using: tenant,
+      withCheck: tenant,
+    }),
+    pgPolicy("commercial_trials_actor_scope", {
+      as: "restrictive",
+      for: "select",
+      to: appRuntimeRole,
+      using: actorCompanyScope(t.companyId),
+    }),
+    pgPolicy("commercial_trials_actor", {
+      as: "restrictive",
+      for: "insert",
+      to: appRuntimeRole,
+      withCheck: sql`${t.startedBy}=${actor} and ${actorCompanyScope(t.companyId)}`,
+    }),
+  ],
+).enableRLS();

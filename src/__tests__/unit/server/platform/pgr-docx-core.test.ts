@@ -17,6 +17,11 @@ const downloadCompanyLogo = jest.fn();
 const docxToPdf = jest.fn();
 const convertDocxWithGoogle = jest.fn();
 const getGoogleDocsConfig = jest.fn();
+const readEmissionFacts = jest.fn();
+
+jest.mock("@/shared/db/repositories/commercial-trials", () => ({
+  readEmissionFacts: (...a: unknown[]) => readEmissionFacts(...a),
+}));
 
 jest.mock("@/shared/db/repositories/pgr-consolidated", () => ({
   getPgrConsolidated: (...a: unknown[]) => getPgrConsolidated(...a),
@@ -60,7 +65,9 @@ jest.mock("@/shared/integrations/google/drive-docs", () => ({
 }));
 
 import { defaultRiskMethodology } from "@/shared/domains/pgr/methodology-presets";
+import { EmissionBlockedError } from "@/shared/errors/emission-blocked-error";
 import { NotFoundError } from "@/shared/errors/not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 import { ReportUnavailableError } from "@/shared/errors/report-unavailable-error";
 import { extractDocxText } from "@/shared/integrations/docx/template-engine";
 import {
@@ -93,7 +100,7 @@ const extras: PgrDocxExtras = {
 const env = process.env;
 
 beforeEach(() => {
-  process.env = { ...env, PGR_DOCX_PDF_PROVIDER: "" };
+  process.env = { ...env, PGR_DOCX_PDF_PROVIDER: "", COMMERCIAL_CATALOG_ENABLED: "" };
   for (const fn of [
     getPgrConsolidated,
     getPgrDocxExtras,
@@ -102,6 +109,7 @@ beforeEach(() => {
     docxToPdf,
     convertDocxWithGoogle,
     getGoogleDocsConfig,
+    readEmissionFacts,
   ]) {
     fn.mockReset();
   }
@@ -210,6 +218,45 @@ describe("generatePgrDocx", () => {
   it("PGR inexistente/de outro tenant → NOT_FOUND", async () => {
     getPgrDocxExtras.mockResolvedValue(null);
     await expect(generatePgrDocx("org_b", "pgr-1")).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  describe("gate comercial da emissão final", () => {
+    const blockedFacts = {
+      trial: {
+        id: "t1",
+        companyId: "c1",
+        startedAt: new Date("2026-01-01T00:00:00Z"),
+        endsAt: new Date("2026-01-16T00:00:00Z"),
+        days: 15,
+        startedBy: "owner",
+        convertedAt: null,
+      },
+      hasPaidPgr: false,
+    };
+
+    it("flag desligada: emissão final segue a validação de hoje e não consulta o banco", async () => {
+      process.env.COMMERCIAL_CATALOG_ENABLED = "false";
+      await expect(
+        generatePgrDocx("org_a", "pgr-1", { purpose: "issue" }),
+      ).rejects.toBeInstanceOf(ValidationError);
+      expect(readEmissionFacts).not.toHaveBeenCalled();
+    });
+
+    it("flag ligada com teste sem PGR pago: emissão final → EMISSION_BLOCKED", async () => {
+      process.env.COMMERCIAL_CATALOG_ENABLED = "true";
+      readEmissionFacts.mockResolvedValue(blockedFacts);
+      await expect(
+        generatePgrDocx("org_a", "pgr-1", { purpose: "issue" }),
+      ).rejects.toBeInstanceOf(EmissionBlockedError);
+    });
+
+    it("flag ligada: a prévia (sem purpose) segue livre e não consulta o banco", async () => {
+      process.env.COMMERCIAL_CATALOG_ENABLED = "true";
+      readEmissionFacts.mockResolvedValue(blockedFacts);
+      const out = await generatePgrDocx("org_a", "pgr-1");
+      expect(out.contentType).toContain("wordprocessingml");
+      expect(readEmissionFacts).not.toHaveBeenCalled();
+    });
   });
 
   it("PDF pelo Gotenberg (padrão)", async () => {

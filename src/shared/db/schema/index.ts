@@ -398,6 +398,7 @@ export {
   commercialContractItems,
   commercialContractCompanies,
   commercialInterests,
+  commercialTrials,
 } from "./commercial";
 export {
   billingProviderPrices,

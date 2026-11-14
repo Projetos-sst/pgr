@@ -28,6 +28,7 @@ import {
 } from "@/shared/domains/pgr/pgr-docx/template-file";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ReportUnavailableError } from "@/shared/errors/report-unavailable-error";
+import { assertPgrEmissionAllowed } from "@/shared/server/commercial/emission-gate";
 import { renderDocxTemplate } from "@/shared/integrations/docx/template-engine";
 import { getGoogleDocsConfig } from "@/shared/integrations/google/config";
 import {
@@ -213,6 +214,7 @@ export async function generatePgrDocx(
     methodology.classificationBands,
   );
   if (options.purpose === "issue") {
+    await assertPgrEmissionAllowed({ orgId, pgrId });
     if (
       !options.expectedSourceSha256 ||
       options.expectedSourceSha256 !== pgrSnapshotHash(snapshot)
