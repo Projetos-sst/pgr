@@ -13799,6 +13799,28 @@
           }
         },
         {
+          "name": "Visão da tela de planos (NOB-134)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-plans-overview",
+            "description": "Leitura única da tela /plans: ofertas à venda, testes por empresa, `termStart` calculado no servidor e, só para owner, clientes ativos, empresas e contratações com situação de pagamento. `collaborator` recebe `canContract:false` com a mensagem de somente leitura."
+          }
+        },
+        {
           "name": "Cadastrar consultoria como pagadora",
           "request": {
             "method": "POST",

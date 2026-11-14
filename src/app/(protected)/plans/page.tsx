@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { requireOfficeStaffPage } from "@/shared/auth/page-guards";
+import { isCommercialCatalogEnabledFor } from "@/shared/domains/commercial/offer";
 import {
   PLAN_FEATURES,
   PLAN_LABEL,
@@ -9,16 +11,31 @@ import {
 } from "@/shared/domains/platform/billing";
 import { isBillingEnabled } from "@/shared/integrations/stripe/config";
 
+import { commercialEnvironment } from "@/shared/server/commercial/environment";
+
+import { CommercialPlansLoader } from "./_components/commercial/commercial-plans-loader";
+import { CommercialPlansSkeleton } from "./_components/commercial/commercial-plans-skeleton";
+import { checkoutReturnOf } from "./_components/commercial/format";
 import { ManageBillingButton } from "./_components/manage-billing-button";
 import { UpgradeButton } from "./_components/upgrade-button";
 
 export const dynamic = "force-dynamic";
 
-export default async function PlanosPage() {
+export default async function PlanosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ commercial_checkout?: string | string[] }>;
+}) {
   const ctx = await requireOfficeStaffPage();
   const currentPlan = ctx.plan as PlanKey;
   const billingOn = isBillingEnabled();
   const canUpgrade = ctx.role === "owner" && currentPlan === "free";
+  const showCommercial =
+    isCommercialCatalogEnabledFor(commercialEnvironment()) &&
+    (ctx.role === "owner" || ctx.role === "collaborator");
+  const checkoutReturn = showCommercial
+    ? checkoutReturnOf((await searchParams).commercial_checkout)
+    : null;
 
   return (
     <div className="flex flex-col gap-8 px-6 py-8">
@@ -272,6 +289,15 @@ export default async function PlanosPage() {
           </table>
         </div>
       </div>
+
+      {showCommercial ? (
+        <Suspense fallback={<CommercialPlansSkeleton />}>
+          <CommercialPlansLoader
+            tenantId={ctx.tenantId}
+            checkoutReturn={checkoutReturn}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

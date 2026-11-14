@@ -6,9 +6,14 @@ import { startContractCheckout } from "@/shared/server/commercial/checkout-core"
 import * as core from "@/shared/server/commercial/commercial-core";
 import { getInvoice, listInvoices } from "@/shared/server/commercial/invoices-core";
 import * as oneOff from "@/shared/server/commercial/one-off-order-core";
+import { getPlansOverview } from "@/shared/server/commercial/plans-overview-core";
 
 export async function listCommercialOffersAction() {
   return officeAction("commercial.offer.list", (ctx) => core.listSellableOffers(ctx));
+}
+
+export async function getCommercialPlansOverviewAction() {
+  return officeAction("commercial.plans_overview.get", (ctx) => getPlansOverview(ctx));
 }
 
 export async function listCommercialCustomersAction(filters: unknown = {}) {
