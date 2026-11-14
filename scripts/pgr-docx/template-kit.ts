@@ -26,7 +26,11 @@ import {
   PGR_DOCX_CONTENT_WIDTH,
   PGR_DOCX_STYLE_IDS,
 } from "@/shared/domains/pgr/pgr-docx/ooxml";
-import { PGR_DOCX_COLORS, PGR_DOCX_SIZES } from "@/shared/domains/pgr/pgr-docx/theme";
+import {
+  PGR_DOCX_COLORS,
+  PGR_DOCX_SIZES,
+  PGR_DOCX_TABLE_HEAD,
+} from "@/shared/domains/pgr/pgr-docx/theme";
 
 /**
  * Peças do gerador do template. Cada trecho de texto nasce com a sua CATEGORIA, como no
@@ -118,16 +122,27 @@ export function control(kit: Kit, tag: string) {
 /** Barra de título de seção: fundo indigo suave + filete indigo embaixo. */
 export function heading(
   children: ParagraphChild[],
-  options: { pageBreakBefore?: boolean } = {},
+  options: { pageBreakBefore?: boolean; fill?: string } = {},
 ) {
   return new Paragraph({
     style: "PgrHeading1",
     pageBreakBefore: options.pageBreakBefore,
     keepNext: true,
     keepLines: true,
-    shading: shading(C.primarySoft),
+    shading: shading(options.fill ?? C.primarySoft),
     border: {
-      bottom: { style: BorderStyle.SINGLE, size: 12, color: C.primary, space: 4 },
+      bottom: {
+        style: BorderStyle.SINGLE,
+        size: 12,
+        color: options.fill ? C.primaryStrong : C.primary,
+        space: 4,
+      },
+      ...(options.fill
+        ? {
+            left: { style: BorderStyle.SINGLE, size: 6, color: options.fill, space: 6 },
+            right: { style: BorderStyle.SINGLE, size: 6, color: options.fill, space: 6 },
+          }
+        : {}),
     },
     children,
   });
@@ -246,6 +261,8 @@ export type CellOptions = {
   openTop?: boolean;
   openBottom?: boolean;
   bottomBorder?: boolean;
+  bottomRule?: string;
+  accentLeft?: string;
 };
 
 export function tc(children: (Paragraph | Table)[], options: CellOptions) {
@@ -271,13 +288,17 @@ export function tc(children: (Paragraph | Table)[], options: CellOptions) {
       options.openRight ||
       options.openTop ||
       options.openBottom ||
-      options.bottomBorder
+      options.bottomBorder ||
+      options.bottomRule ||
+      options.accentLeft
         ? {
             ...(options.openLeft ? { left: NIL_BORDER } : {}),
             ...(options.openRight ? { right: NIL_BORDER } : {}),
             ...(options.openTop ? { top: NIL_BORDER } : {}),
             ...(options.bottomBorder ? { bottom: line(C.border) } : {}),
             ...(options.openBottom ? { bottom: NIL_BORDER } : {}),
+            ...(options.bottomRule ? { bottom: line(options.bottomRule, 12) } : {}),
+            ...(options.accentLeft ? { left: line(options.accentLeft, 48) } : {}),
           }
         : undefined,
     margins: {
@@ -315,7 +336,6 @@ export function grid(
   });
 }
 
-/** Linha de cabeçalho indigo com texto branco. */
 export function headerRow(
   cells: { children: ParagraphChild[]; width: number; span?: number }[],
 ) {
@@ -324,14 +344,18 @@ export function headerRow(
       tc([tp(cell.children, { align: "left", keepNext: true })], {
         width: cell.width,
         span: cell.span,
-        fill: C.primary,
+        fill: PGR_DOCX_TABLE_HEAD.fill,
+        bottomRule: PGR_DOCX_TABLE_HEAD.rule,
       }),
     ),
     { header: true },
   );
 }
 
-/** Opções de run para texto branco em negrito (cabeçalho de tabela). */
-export const HEAD: RunOptions = { bold: true, color: C.white, size: S.tableSmall };
+export const HEAD: RunOptions = {
+  bold: true,
+  color: PGR_DOCX_TABLE_HEAD.text,
+  size: S.tableSmall,
+};
 export const MUTED: RunOptions = { color: C.muted };
 export const SMALL_LABEL: RunOptions = { bold: true, size: S.label, color: C.muted };

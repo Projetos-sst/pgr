@@ -16,6 +16,7 @@ import { getPgrSignatureSource } from "@/shared/db/repositories/pgr-signature";
 import { getLatestRevisionNumber } from "@/shared/db/repositories/pgr-revisions";
 import { getLatestRequestByTarget } from "@/shared/db/repositories/signature-requests";
 import { getPgrById } from "@/shared/db/repositories/pgr";
+import { assertPgrApprovalCurrent } from "./document-approval-core";
 
 const TARGET_TYPE = "pgr" as const;
 
@@ -37,6 +38,7 @@ export async function createPgrSignature(
 ): Promise<CreatePgrSignatureResult> {
   const src = await getPgrSignatureSource(ctx.tenantId, pgrId);
   if (!src) throw new NotFoundError(); // inexistente/cross-tenant → 404, antes de cota/escrita
+  await assertPgrApprovalCurrent(ctx.tenantId, pgrId);
 
   const revisionNumber = await getLatestRevisionNumber(ctx.tenantId, pgrId);
 

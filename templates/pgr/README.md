@@ -10,7 +10,8 @@ Template do PGR (Programa de Gerenciamento de Riscos) na identidade visual do PG
 | `pgr-template-limpo.docx` / `.pdf`   | O template como documento, **sem marcação**: texto fixo, semi-fixo já com o valor padrão e dinâmico como `{{tag}}`.                                               |
 | `pgr-template-anotado.docx` / `.pdf` | O mesmo, com a marcação do PGR 2026.1: **fixo em amarelo**, **semi-fixo em laranja** (já com o valor padrão), **dinâmico sem marcação** (aparece como `{{tag}}`). |
 | `exemplo/pgr-exemplo.docx` / `.pdf`  | Template preenchido com dados **fictícios** (`example-content.ts`): é o resultado final esperado.                                                                 |
-| `assets/`                            | Fundo da capa e logo PGR-e (o logo da empresa entra no lugar do placeholder do cabeçalho).                                                                        |
+| `assets/`                            | Logo PGR-e (o logo da empresa entra no lugar do placeholder do cabeçalho). A capa é desenhada pelo gerador, sem imagem de fundo.                                  |
+| `amostras/`                          | Quatro casos **fictícios** de homologação do modelo (DOCX + PDF) e o `manifest.json` com os hashes. Roteiro: `docs/planning/nob-177-layout-e-amostras.md`.        |
 | `fonts/`                             | Manrope e JetBrains Mono (SIL OFL 1.1, licenças junto). Incluídas na imagem `Dockerfile.gotenberg` e montadas pelo compose local.                                 |
 | `build/`                             | Intermediário do gerador (gitignored).                                                                                                                            |
 
@@ -18,11 +19,11 @@ A réplica do PGR 2026 com os dados reais do cliente fica fora do repositório, 
 
 ## As três categorias
 
-| Categoria                            | No PGR 2026.1 | No template                                                            | De onde vem o valor                                                                                              |
-| ------------------------------------ | ------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **Fixo**                             | amarelo       | texto literal                                                          | O próprio template. Muda só no gerador (`scripts/pgr-docx/template-document.ts`).                                |
-| **Semi-fixo** (placeholder editável) | laranja       | `{{labels.*}}`, `{{titles.*}}`, `{{@texts.*}}`, metodologia, campanhas | Padrão em `src/shared/domains/pgr/pgr-docx/defaults.ts`. Cada PGR pode trocar via `overrides` (`POST .../docx`). |
-| **Dinâmico**                         | sem marcação  | `{{company.razaoSocial}}`, loops `{{#ges}}…{{/ges}}`                   | Banco: `getPgrConsolidated` + `getPgrDocxExtras` → `buildPgrDocxContent`.                                        |
+| Categoria                            | No PGR 2026.1 | No template                                                            | De onde vem o valor                                                                                                                                                                       |
+| ------------------------------------ | ------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fixo**                             | amarelo       | texto literal                                                          | O próprio template. Muda só no gerador (`scripts/pgr-docx/template-document.ts`).                                                                                                         |
+| **Semi-fixo** (placeholder editável) | laranja       | `{{labels.*}}`, `{{titles.*}}`, `{{@texts.*}}`, metodologia, campanhas | Padrão em `src/shared/domains/pgr/pgr-docx/defaults.ts`. Cada PGR guarda a sua versão em `/pgr/{id}/texts` (`POST .../docx-texts`); a prévia aceita `overrides` soltos (`POST .../docx`). |
+| **Dinâmico**                         | sem marcação  | `{{company.razaoSocial}}`, loops `{{#ges}}…{{/ges}}`                   | Banco: `getPgrConsolidated` + `getPgrDocxExtras` → `buildPgrDocxContent`.                                                                                                                 |
 
 Os textos semi-fixos aceitam **tokens com chave simples**, trocados antes do preenchimento: `{empresa}`, `{grauRisco}`, `{numeroEmpregados}`, `{cipaTitulares}`, `{cipaSuplentes}`, `{cipaHorasTreinamento}` (mínimo da NR-05 pelo grau de risco: 8/12/16/20h), `{anosVigencia}`, as faixas `{faixaTrivial}`, `{faixaToleravel}`, `{faixaModerado}`, `{faixaSubstancial}`, `{faixaIntoleravel}` e `{classeExemplo}` (classe do exemplo 2 × 3). Assim um texto editado pelo cliente continua recebendo o dado do PGR.
 
@@ -35,7 +36,7 @@ A classificação usa as faixas da metodologia da organização (`getRiskMethodo
 O resultado de `generatePgrDocx` inclui `provenance`: ID do PGR, instante UTC,
 SHA-256 do template, dos dados de entrada serializados (incluindo overrides,
 faixas e conteúdo do logo) e dos bytes do arquivo entregue. A rota DOCX/PDF
-retorna `X-Pgr-Generated-At`, `X-Pgr-Template-Sha256`, `X-Pgr-Source-Sha256` e
+retorna `X-Pgr-Generated-At`, `X-Pgr-Template-Sha256`, `X-Pgr-Source-Sha256`, `X-Pgr-Texts-Sha256` e
 `X-Pgr-File-Sha256`. No Postman, salve esses valores junto da amostra para revisão.
 
 São identificadores técnicos; não constituem assinatura ou aprovação. O hash dos
@@ -166,16 +167,25 @@ O template é **gerado por código**: não edite o `.docx` à mão, altere `scri
 # só o template (+ o insumo anotado em build/)
 npm run pgr-docx:template
 
-# template + limpo + anotado + exemplo (+ réplica local, se existir), com PDF
+# template + limpo + anotado + exemplo + amostras de homologação (+ réplica local, se existir), com PDF
 docker compose up -d gotenberg        # já monta templates/pgr/fonts
 GOTENBERG_URL=http://localhost:3001 npm run pgr-docx:samples
 ```
 
-O `render-samples.ts` falha se algum documento final sair com `{{marcador}}` sobrando.
+O `render-samples.ts` falha se algum documento final sair com `{{marcador}}` sobrando, e sai com código 1 se uma amostra de homologação tiver marcador, "undefined", "null" ou "NaN", ou se o conversor não devolver PDF.
+
+Regenerar o template muda o hash do modelo, mesmo sem mudança de código. Por isso:
+
+- gere template e amostras no mesmo commit: `render-homologation.test.ts` falha se `amostras/manifest.json` não bater com o template versionado;
+- todo PGR com parecer favorável volta para conferência (`stale`, NOB-179) e as amostras de revisão (NOB-107) aparecem como alteradas. Nada é apagado.
+
+## Identidade visual
+
+Cores e tamanhos vêm de `src/shared/domains/pgr/pgr-docx/theme.ts`, os mesmos tokens do produto (indigo `#5B63F5`, Manrope). Capa nativa com faixa indigo; cabeçalho de tabela em indigo suave com filete, repetido a cada quebra de página; título do GES em barra indigo cheia; cartão de risco com barra lateral e etiqueta na cor do agente. Nada no layout vem de documento de terceiros. A matriz de cobertura de conteúdo fica em `src/shared/domains/pgr/pgr-docx/coverage.ts` e é travada por teste.
 
 ## Pontos de atenção
 
-- **Persistência dos semi-fixos.** Hoje os overrides chegam no corpo do `POST .../docx`. Para o cliente editar no site falta guardá-los por PGR (sugestão: coluna `jsonb` `pgr.docx_overrides`, validada pelo mesmo `pgrDocxOverridesSchema`) e a tela de edição.
+- **Persistência dos semi-fixos.** Cada PGR guarda versões dos seus textos em `pgr_docx_text_versions` (só inserção), editadas em `/pgr/{id}/texts` ou por `POST /api/v1/pgr/{id}/docx-texts`, com motivo e autor. Toda geração usa a versão mais recente e registra o hash dos textos efetivos (`X-Pgr-Texts-Sha256`), que entra na versão do documento. A emissão final (`purpose:"issue"`) recusa `overrides` soltos. A tela edita títulos, textos e rótulos; campanhas só pela API; metodologia não é editável por PGR.
 - **Campos ainda sem coluna no banco.** Saem vazios, nunca inventados:
   - inscrição estadual;
   - contratante, CNPJ da contratante, gestor, fiscal, objeto e e-mail do contrato;
@@ -190,7 +200,7 @@ O `render-samples.ts` falha se algum documento final sair com `{{marcador}}` sob
   - Nas células dinâmicas, as duas últimas palavras são unidas por espaço não separável (U+00A0) quando o par mede até 70% da largura útil da coluna, ou, quando o texto ocupa mais de uma linha, sempre que o par com a folga do LibreOffice (par × 1,03) cabe na largura útil e a penúltima linha continua com duas palavras ou mais em toda a faixa de folga (da largura útil até 3% acima dela). Se a penúltima ficaria com uma palavra só, a palavra anterior também é unida à seguinte. Antes dessa medição, a barra precedida de espaço (" / " ou " /fornecedores") e o traço colado à palavra seguinte (como em "GES 07 -Pintor") ficam presos à palavra anterior por U+00A0, para que nenhuma linha da célula comece por barra ou traço. Nomes em coluna estreita (risco da tabela de medidas, GES/Risco/Responsável do Anexo I, nome da função) são equilibrados em linhas. Dentro das palavras unidas, o hífen entre letras vira hífen não separável (U+2011). Na carga horária do quadro de funções, "-feira" também usa U+2011, e o travessão entre dois horários fica preso aos dois lados por U+00A0. Quem buscar ou copiar texto do DOCX (por exemplo "porta-a-porta" ou "Segunda-feira") deve considerar esses caracteres.
   - A grade de campanhas põe `keepNext` na linha de título e, nas linhas de ações, em todos os blocos menos o último, para não se partir entre páginas.
 - **Fontes.** O DOCX do template embute a Manrope Regular e a Bold (`scripts/pgr-docx/embed-fonts.ts`, aplicado por `build-template.ts`), então o Word usa a fonte do próprio arquivo, mesmo sem a Manrope instalada. Os DOCX preenchidos herdam as fontes, porque o preenchimento não remove arquivos do pacote. A JetBrains Mono não aparece no documento e não é embutida. O LibreOffice do Gotenberg continua usando a fonte instalada a partir de `templates/pgr/fonts`.
-- **Google Docs como conversor.** Não foi validado contra uma conta real, porque não há credenciais neste ambiente. A importação do Docs pode tratar diferente a imagem flutuante da capa e os campos de página. Valide a primeira geração antes de trocar o provedor padrão.
+- **Google Docs como conversor.** Não foi validado contra uma conta real, porque não há credenciais neste ambiente. A importação do Docs pode tratar diferente a faixa da capa (tabela com fundo) e os campos de página. Valide a primeira geração antes de trocar o provedor padrão.
 
 ## Publicação da integração
 
@@ -199,7 +209,7 @@ O `render-samples.ts` falha se algum documento final sair com `{{marcador}}` sob
 3. Reconstruir a imagem de `Dockerfile.gotenberg` (em homolog, a imagem referida por `docker-compose.homolog.yml`) para incluir Manrope/JetBrains Mono. Não trocar o endereço/token do serviço existente.
 4. Aplicação e worker precisam de `GOTENBERG_URL` acessível e, quando exigido pelo proxy, `GOTENBERG_TOKEN`. `PGR_DOCX_PDF_PROVIDER=gotenberg` é o padrão e não exige credenciais Google.
 5. O worker usa `DATABASE_URL` (app_runtime), `DATABASE_URL_UNPOOLED` (owner), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `SUPABASE_SECRET_KEY`. O bucket privado `documents` já é o usado pelo GED.
-6. Não há migration nova. Jobs antigos sem formato continuam em PDF; jobs com formato DOCX explícito continuam sendo respeitados. Documentos já existentes são preservados.
+6. Migration `0087_pgr_docx_text_versions` (NOB-177, aditiva): aplicar antes de publicar a aplicação e o worker. Jobs antigos sem formato continuam em PDF; jobs com formato DOCX explícito continuam sendo respeitados. Documentos já existentes são preservados.
 
 O cartão de cada risco segue os campos do PGR 2026, sem bloco extra de avaliação NR-09/NR-17. Listas vazias (funções, GES, riscos, medidas, ações do Anexo I) saem com mensagem explícita. Falta de avaliação, propagação ou medida não vira conformidade nem "não aplicável". Revisões não cadastradas não são criadas na exportação; validade e responsável históricos ficam vazios porque o histórico não os armazena.
 

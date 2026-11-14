@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { requireOfficeStaff } from "@/shared/auth/require-office-staff";
+import { runAsActor } from "@/shared/db/session-actor";
 import { getTenantSwitcher } from "@/shared/tenant/switcher";
 import { toActionError } from "@/shared/server/action-error";
 import { generateReport } from "@/shared/server/platform/reports-core";
@@ -22,7 +23,9 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     const switcher = await getTenantSwitcher();
     const orgName =
       switcher?.options.find((o) => o.isActive)?.name ?? "Minha organização";
-    const { fileName, pdf } = await generateReport(ctx.tenantId, orgName, type);
+    const { fileName, pdf } = await runAsActor(ctx.userId, () =>
+      generateReport(ctx.tenantId, orgName, type),
+    );
     return new NextResponse(new Uint8Array(pdf), {
       status: 200,
       headers: {

@@ -2,6 +2,25 @@ import type { PgrConsolidated } from "./pgr-consolidated";
 import type { PgrDocxExtras } from "./pgr-docx/from-consolidated";
 import { classify, type ClassificationBand } from "./methodology";
 import { isValidCnpj } from "./cnpj";
+import { isNr09EligibleAgent } from "./nr09";
+import { unitCatalogNotice } from "./risk-agent-catalog";
+
+function unitNotices(data: PgrConsolidated) {
+  return data.ges.flatMap((group) =>
+    group.risks.flatMap((risk) =>
+      [...new Set([risk.measurementUnit, risk.assessment?.measuredUnit ?? null])]
+        .map((unit) =>
+          unitCatalogNotice({ agentType: risk.agentType, hazard: risk.hazard, unit }),
+        )
+        .filter((notice) => notice !== null)
+        .map((notice) => ({
+          notice,
+          context: `${group.name} — ${risk.description}`,
+          href: `/risks/${risk.id}/edit`,
+        })),
+    ),
+  );
+}
 export type PgrReadinessIssue = {
   code: string;
   severity: "blocking" | "warning";
@@ -110,6 +129,7 @@ export function checkPgrReadiness(
         );
       if (
         assessment.criterion === "quantitative" &&
+        isNr09EligibleAgent(risk.agentType) &&
         (assessment.measuredValue == null ||
           !assessment.measuredUnit ||
           !assessment.evaluationMethod?.trim())
@@ -138,6 +158,8 @@ export function checkPgrReadiness(
         main,
         "warning",
       );
+  for (const { notice, context, href } of unitNotices(data))
+    add("unit_outside_catalog", notice, context, href, "warning");
   return {
     ready: !issues.some((i) => i.severity === "blocking"),
     issues,

@@ -18,6 +18,7 @@ import { companies } from "./companies";
 import { workUnits } from "./work-units";
 import { ges } from "./ges";
 import { risks } from "./risks";
+import { actorWorkUnitScope } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -86,6 +87,12 @@ export const psychosocialCampaigns = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("psychosocial_campaigns_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorWorkUnitScope(table.companyId, table.workUnitId),
+    }),
     index("idx_psychosocial_campaigns_org_id").on(table.orgId),
     index("idx_psychosocial_campaigns_work_unit").on(table.workUnitId),
     uniqueIndex("uq_psychosocial_campaigns_public_token").on(table.publicToken),

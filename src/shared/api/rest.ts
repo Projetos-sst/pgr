@@ -9,6 +9,7 @@ import {
 } from "@/shared/auth/require-office-staff";
 import { ForbiddenError, NoTenantContextError } from "@/shared/auth/errors";
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
+import { runAsActor } from "@/shared/db/session-actor";
 import { toActionError } from "@/shared/server/action-error";
 import { logTenantEvent, safeErrorMessage } from "@/shared/tenant/audit-log";
 
@@ -31,6 +32,10 @@ const HTTP_BY_CODE: Record<string, number> = {
   AI_UNAVAILABLE: 502,
   REPORT_UNAVAILABLE: 503,
   BILLING_UNAVAILABLE: 503,
+  EXPORT_UNAVAILABLE: 503,
+  DISCARD_BLOCKED: 409,
+  EMISSION_BLOCKED: 402,
+  PAYMENT_REQUIRED: 402,
 };
 
 const BLOCKED_CODES = new Set(["FORBIDDEN", "NO_TENANT_CONTEXT", "UNAUTHORIZED"]);
@@ -109,9 +114,13 @@ export async function restHandler<T>(
 ): Promise<NextResponse> {
   let ctx: TenantContext | null = null;
   try {
-    ctx = opts.tenantAccess ? await resolveTenantContext(req) : await resolveContext(req);
-    const data = await fn(ctx);
+    const resolved = opts.tenantAccess
+      ? await resolveTenantContext(req)
+      : await resolveContext(req);
+    ctx = resolved;
+    const data = await runAsActor(resolved.userId, () => fn(resolved));
     auditWrite(req, "ok", ctx);
+    if (data instanceof NextResponse) return data;
     const status = opts.status ?? 200;
     if (status === 204) return new NextResponse(null, { status: 204 });
     return NextResponse.json(data ?? null, { status });

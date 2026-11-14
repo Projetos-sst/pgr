@@ -84,7 +84,7 @@ Criar o documento do PGR passa a usar o template:
 
 ## Fora de escopo / próximos passos
 
-- Persistir os semi-fixos por PGR (sugestão: `pgr.docx_overrides jsonb`) e a tela de edição.
+- ~~Persistir os semi-fixos por PGR e a tela de edição.~~ Entregue na NOB-177: tabela `pgr_docx_text_versions` (migration `0086`), tela `/pgr/{id}/texts`, `GET`/`POST /api/v1/pgr/{id}/docx-texts` e hash dos textos em cada geração. A NOB-177 também trocou a apresentação (capa nativa, cabeçalhos de tabela, cartão de risco) e criou as amostras de homologação em `templates/pgr/amostras/`. Ver `docs/planning/nob-177-layout-e-amostras.md`.
 - Colunas para os campos ainda vazios (inscrição estadual, contrato com a contratante, coautor, CIPA).
 - Validar o provedor Google com uma conta real antes de torná-lo o padrão.
 

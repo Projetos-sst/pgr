@@ -1,0 +1,1 @@
+ALTER TYPE "public"."control_level" ADD VALUE 'substitution' BEFORE 'collective_protection';

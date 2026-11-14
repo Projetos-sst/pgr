@@ -161,6 +161,7 @@ export const PGR_DOCX_EXAMPLE_CONTENT: PgrDocxContent = {
           riskLabel: "RISCO 1",
           riskName: "Postura inadequada prolongada",
           elimination: no("Parcialmente", "Avaliação ergonômica periódica"),
+          substitution: no("Não aplicável", "Avaliação ergonômica periódica"),
           collective: yes(
             "Mobiliário ergonômico ajustável",
             "Avaliação ergonômica periódica",
@@ -263,6 +264,10 @@ export const PGR_DOCX_EXAMPLE_CONTENT: PgrDocxContent = {
             "Atividade inerente à execução da estrutura",
             "Inspeções diárias",
           ),
+          substitution: no(
+            "Sem método construtivo alternativo disponível",
+            "Inspeções diárias",
+          ),
           collective: yes(
             "Guarda-corpo, rodapé e bandejas de proteção",
             "Inspeções diárias",
@@ -277,6 +282,10 @@ export const PGR_DOCX_EXAMPLE_CONTENT: PgrDocxContent = {
           riskLabel: "RISCO 2",
           riskName: "Exposição ao ruído",
           elimination: no("Equipamentos necessários à atividade", "Dosimetria semestral"),
+          substitution: yes(
+            "Disco de serra de menor emissão sonora",
+            "Dosimetria semestral",
+          ),
           collective: yes(
             "Manutenção preventiva e enclausuramento da serra",
             "Dosimetria semestral",

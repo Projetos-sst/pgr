@@ -50,6 +50,16 @@ export const medicalRiskDecisionSchema = z
     expectedReviewedAt: z.iso.datetime({ offset: true, error: STALE }).nullable(),
   })
   .strict();
+export type AppointmentOrigin = "office_owner" | "company_representative";
+const APPOINTMENT_ORIGIN_LABELS: Record<AppointmentOrigin, string> = {
+  office_owner: "Registro feito pelo escritório",
+  company_representative: "Indicação feita pelo representante da empresa",
+};
+export function appointmentOriginLabel(origin: unknown): string | null {
+  if (origin === "office_owner" || origin === "company_representative")
+    return APPOINTMENT_ORIGIN_LABELS[origin];
+  return null;
+}
 export type CompanyAuthorizerInput = z.infer<typeof companyAuthorizerSchema>;
 export type ProfessionalAuthorizationInput = z.infer<
   typeof professionalAuthorizationSchema

@@ -145,6 +145,7 @@ export function buildPgrDocxPreviewContent(): PgrDocxContent {
             riskLabel: tag("riskLabel"),
             riskName: tag("riskName"),
             elimination: level("elimination"),
+            substitution: level("substitution"),
             collective: level("collective"),
             administrative: level("administrative"),
             individual: level("individual"),

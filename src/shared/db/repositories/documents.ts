@@ -1,4 +1,5 @@
 import "server-only";
+import { pgrDocumentApprovals } from "../schema/pgr-document-approvals";
 import { pgrReviewSamples } from "../schema/pgr-document-reviews";
 import { EntityInUseError } from "@/shared/errors/entity-in-use-error";
 
@@ -17,6 +18,7 @@ import {
 } from "drizzle-orm";
 
 import {
+  isMachineAttachmentType,
   toDocumentDetail,
   toDocumentListItem,
   type DocumentDetail,
@@ -41,12 +43,15 @@ import {
 } from "@/shared/integrations/storage/documents-storage";
 import { DocumentVersionReadOnlyError } from "@/shared/errors/document-version-read-only-error";
 import { DuplicateError } from "@/shared/errors/duplicate-error";
+import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 import { todayInSaoPaulo } from "@/shared/dates";
 import { logTenantEvent } from "@/shared/tenant/audit-log";
 import { resolvePageParams, type PageParams, type Paginated } from "@/shared/pagination";
 
 import { withOrg, type TenantTransaction } from "../with-org";
 import { documents, folders } from "../schema/documents";
+import { machineInstallations } from "../schema/machine-installations";
 import { auditedTenantWrite } from "./audited-write";
 import { currentVersionPredicate, getCurrentVersionTx } from "./document-versions";
 import { assertFolderInTenant } from "./folders";
@@ -224,6 +229,35 @@ export async function getDocumentById(
   });
 }
 
+type AttachmentLink = {
+  relatedEntityType?: string | null;
+  relatedEntityId?: string | null;
+  docType: string;
+};
+
+async function assertMachineAttachment(
+  tx: TenantTransaction,
+  orgId: string,
+  link: AttachmentLink,
+): Promise<void> {
+  if (link.relatedEntityType !== "machine_installation" || !link.relatedEntityId) return;
+  if (!isMachineAttachmentType(link.docType))
+    throw new ValidationError(
+      "Tipo de anexo inválido para máquina. Escolha um dos tipos confirmados.",
+    );
+  const [machine] = await tx
+    .select({ id: machineInstallations.id })
+    .from(machineInstallations)
+    .where(
+      and(
+        eq(machineInstallations.orgId, orgId),
+        eq(machineInstallations.id, link.relatedEntityId),
+      ),
+    )
+    .limit(1);
+  if (!machine) throw new ReferenceNotFoundError("Máquina não encontrada.");
+}
+
 export type CreateDocumentInput = { metadata: DocumentMetadataValues; file: File };
 
 /**
@@ -237,7 +271,10 @@ export async function createDocument(
 ): Promise<DocumentDetail> {
   const { metadata, file } = input;
 
-  await withOrg(orgId, (tx) => assertFolderInTenant(tx, orgId, metadata.folderId));
+  await withOrg(orgId, async (tx) => {
+    await assertFolderInTenant(tx, orgId, metadata.folderId);
+    await assertMachineAttachment(tx, orgId, metadata);
+  });
 
   const groupId = crypto.randomUUID();
   const stored = await putDocumentObject(orgId, groupId, 1, file);
@@ -284,7 +321,13 @@ export async function updateDocument(
   return auditedTenantWrite(orgId, "documents.documents.write_rejected", () =>
     withOrg(orgId, async (tx) => {
       const [target] = await tx
-        .select({ version: documents.version, groupId: documents.documentGroupId })
+        .select({
+          version: documents.version,
+          groupId: documents.documentGroupId,
+          docType: documents.docType,
+          relatedEntityType: documents.relatedEntityType,
+          relatedEntityId: documents.relatedEntityId,
+        })
         .from(documents)
         .where(and(eq(documents.orgId, orgId), eq(documents.id, id)))
         .limit(1);
@@ -293,6 +336,17 @@ export async function updateDocument(
       if (!current || current.version !== target.version) {
         throw new DocumentVersionReadOnlyError();
       }
+      await assertMachineAttachment(tx, orgId, {
+        docType: patch.docType ?? target.docType,
+        relatedEntityType:
+          patch.relatedEntityType === undefined
+            ? target.relatedEntityType
+            : patch.relatedEntityType,
+        relatedEntityId:
+          patch.relatedEntityId === undefined
+            ? target.relatedEntityId
+            : patch.relatedEntityId,
+      });
 
       const set: Partial<typeof documents.$inferInsert> = { updatedAt: new Date() };
       if (patch.name !== undefined) set.name = patch.name;
@@ -456,6 +510,27 @@ export async function deleteDocument(
         if (reviewSample)
           throw new EntityInUseError(
             "Arquivo preservado como amostra de revisão técnica. O histórico não pode ser excluído.",
+          );
+        const [finalIssue] = await tx
+          .select({ id: pgrDocumentApprovals.id })
+          .from(pgrDocumentApprovals)
+          .innerJoin(
+            documents,
+            and(
+              eq(documents.id, pgrDocumentApprovals.documentId),
+              eq(documents.orgId, orgId),
+            ),
+          )
+          .where(
+            and(
+              eq(pgrDocumentApprovals.orgId, orgId),
+              eq(documents.documentGroupId, target.groupId),
+            ),
+          )
+          .limit(1);
+        if (finalIssue)
+          throw new EntityInUseError(
+            "Arquivo preservado como emissão final revisada do PGR. O histórico não pode ser excluído.",
           );
         const deleted = await tx
           .delete(documents)

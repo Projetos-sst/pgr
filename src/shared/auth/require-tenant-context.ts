@@ -3,6 +3,7 @@ import "server-only";
 import { auth } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 
+import { rememberActor } from "@/shared/db/session-actor";
 import { ACTIVE_ORG_COOKIE } from "@/shared/tenant/org-switch";
 import { logTenantEvent } from "@/shared/tenant/audit-log";
 import { resolveActiveTenant, type Plan } from "@/shared/tenant/active-tenant";
@@ -49,6 +50,7 @@ export async function requireTenantContext(): Promise<TenantContext> {
     throw new NoTenantContextError();
   }
 
+  rememberActor(userId);
   return {
     userId,
     tenantId: active.tenantId,

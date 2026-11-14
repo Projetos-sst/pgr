@@ -14,6 +14,7 @@ import {
 
 import { appRuntimeRole } from "../roles";
 import { companies } from "./companies";
+import { actorCompanyScope, actorModuleScope } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 const actor = sql`current_setting('app.current_actor', true)`;
@@ -49,6 +50,12 @@ export const companyModules = pgTable(
       using: tenantScope,
       withCheck: tenantScope,
     }),
+    pgPolicy("company_modules_actor_scope", {
+      as: "restrictive",
+      for: "select",
+      to: appRuntimeRole,
+      using: actorModuleScope(table.companyId, table.module),
+    }),
     pgPolicy("company_modules_owner_insert", {
       as: "restrictive",
       for: "insert",
@@ -80,6 +87,12 @@ export const companyModuleEvents = pgTable(
     changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("company_module_events_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorCompanyScope(table.companyId),
+    }),
     index("idx_company_module_events_company").on(table.orgId, table.companyId),
     check(
       "company_module_events_module_check",

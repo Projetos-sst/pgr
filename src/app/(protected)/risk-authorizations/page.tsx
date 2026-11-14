@@ -16,7 +16,7 @@ export default async function RiskAuthorizationsPage({
     <div className="flex flex-col gap-5 px-6 py-8">
       <PageHeader
         title="Autorizações e revisão de riscos"
-        description="A empresa-cliente indica quem autoriza os profissionais. Cada acesso vale somente para a empresa indicada."
+        description="A empresa-cliente indica quem autoriza os profissionais: o representante da empresa faz a indicação aqui, ou o escritório registra a indicação recebida. Cada acesso vale somente para a empresa indicada."
       />
       {!result.ok ? (
         <p role="alert">{result.error.message}</p>

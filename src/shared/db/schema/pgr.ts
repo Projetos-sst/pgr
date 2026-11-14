@@ -18,6 +18,7 @@ import { companies } from "./companies";
 import { workUnits } from "./work-units";
 import { ges } from "./ges";
 import { companyModuleScope } from "./module-policy";
+import { actorWorkUnitScope } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -71,6 +72,12 @@ export const pgr = pgTable(
       to: appRuntimeRole,
       using: companyModuleScope(table.orgId, table.companyId, "pgr"),
       withCheck: companyModuleScope(table.orgId, table.companyId, "pgr"),
+    }),
+    pgPolicy("pgr_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorWorkUnitScope(table.companyId, table.workUnitId),
     }),
     index("idx_pgr_company_id").on(table.companyId),
     pgPolicy("pgr_isolation", {

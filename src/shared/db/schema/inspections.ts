@@ -19,6 +19,11 @@ import { orgs } from "./orgs";
 import { companies } from "./companies";
 import { workUnits } from "./work-units";
 import { epiCatalog } from "./epis";
+import {
+  actorCompanyScope,
+  actorWorkUnitScope,
+  officeWideOr,
+} from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -168,6 +173,15 @@ export const vehicles = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("vehicles_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: officeWideOr(
+        table.companyId,
+        actorWorkUnitScope(table.companyId, table.workUnitId),
+      ),
+    }),
     index("idx_vehicles_org_id").on(table.orgId),
     index("idx_vehicles_company_id").on(table.orgId, table.companyId),
     uniqueIndex("uq_vehicles_org_id_plate").on(table.orgId, table.plate),
@@ -216,6 +230,12 @@ export const inspections = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("inspections_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: officeWideOr(table.companyId, actorCompanyScope(table.companyId)),
+    }),
     index("idx_inspections_org_id").on(table.orgId),
     index("idx_inspections_org_type").on(table.orgId, table.type),
     index("idx_inspections_vehicle_id").on(table.vehicleId),

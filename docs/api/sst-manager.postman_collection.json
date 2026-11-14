@@ -232,6 +232,11 @@
       "type": "string"
     },
     {
+      "key": "representativeUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "professionalUserId",
       "value": "",
       "type": "string"
@@ -364,6 +369,56 @@
     {
       "key": "analyticalReportEventId",
       "value": ""
+    },
+    {
+      "key": "accessScopeId",
+      "value": "<id retornado no POST de escopo>"
+    },
+    {
+      "key": "pgrReviewerUserId",
+      "value": ""
+    },
+    {
+      "key": "pgrApprovalAssignmentId",
+      "value": ""
+    },
+    {
+      "key": "pgrApprovalSnapshotSha256",
+      "value": ""
+    },
+    {
+      "key": "pgrFinalIssueId",
+      "value": ""
+    },
+    {
+      "key": "commercialOfferVersionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "commercialCustomerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "commercialInterestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "commercialContractId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "commercialInvoiceId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "commercialOneOffOrderId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -2819,6 +2874,35 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"controlLevel\": \"collective_protection\",\n  \"applicable\": true,\n  \"actionWhat\": \"Enclausuramento acústico da prensa\",\n  \"actionHow\": \"Projeto acústico + execução por fornecedor homologado\",\n  \"actionTracking\": \"Checklist mensal de manutenção\",\n  \"actionMeasurement\": \"Nova dosimetria (< 85 dB(A))\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-09-30\",\n  \"actionWhy\": \"Exposição acima do limite medido na avaliação NR-09\",\n  \"actionCost\": \"15000.00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /risks/:riskId/control-measures (nível substituição, 201 — NOB-178)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/control-measures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "control-measures"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"controlLevel\": \"substitution\",\n  \"applicable\": true,\n  \"actionWhat\": \"Trocar o disco da serra por modelo de menor emissão sonora\",\n  \"actionHow\": \"Compra e instalação pela manutenção\",\n  \"actionResponsible\": \"Maria Souza (Eng. Segurança)\",\n  \"actionDeadline\": \"2026-12-15\"\n}"
             }
           }
         },
@@ -6830,6 +6914,37 @@
           }
         },
         {
+          "name": "GET /documents?relatedEntity (anexos de uma máquina — NOB-178)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents?relatedEntityType=machine_installation&relatedEntityId={{machineInstallationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"],
+              "query": [
+                {
+                  "key": "relatedEntityType",
+                  "value": "machine_installation"
+                },
+                {
+                  "key": "relatedEntityId",
+                  "value": "{{machineInstallationId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "POST /documents (create, multipart)",
           "request": {
             "method": "POST",
@@ -6875,6 +6990,59 @@
                   "key": "folderId",
                   "value": "",
                   "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /documents (anexo de máquina, multipart — NOB-178)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "name",
+                  "value": "Manual da betoneira",
+                  "type": "text"
+                },
+                {
+                  "key": "docType",
+                  "value": "Manual",
+                  "type": "text",
+                  "description": "Um de: Manual, Laudo, ART, Inspeção Inicial de Mobilização, Plano de Manutenção, Ordem de Serviço de Manutenção, Laudo NR 12 - Apreciação de Riscos, Inspeção Periódica, Inspeção Eventual. Outro valor → 422 VALIDATION."
+                },
+                {
+                  "key": "relatedEntityType",
+                  "value": "machine_installation",
+                  "type": "text"
+                },
+                {
+                  "key": "relatedEntityId",
+                  "value": "{{machineInstallationId}}",
+                  "type": "text",
+                  "description": "Máquina de outro escritório, de empresa fora do escopo ou inexistente → 422 FK_NOT_FOUND."
                 }
               ]
             }
@@ -7970,6 +8138,92 @@
               "raw": "{{baseUrl}}/api/v1/epi-catalog/{{epiCatalogId}}/dependents",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "epi-catalog", "{{epiCatalogId}}", "dependents"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Estoque de EPI — movimentos (NOB-180)",
+      "item": [
+        {
+          "name": "POST /epi-stock/:id/movements (entrada por compra; CA vencido -> 422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-stock/{{stockId}}/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-stock", "{{stockId}}", "movements"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"entry\",\n  \"quantity\": 10,\n  \"movementDate\": \"2026-11-13\",\n  \"invoiceNumber\": \"NF-100\",\n  \"invoiceDate\": \"2026-11-10\",\n  \"batch\": \"LOTE-01\"\n}"
+            },
+            "description": "Entrada por compra só é aceita quando o EPI do catálogo tem CA e validade do CA informados e a validade é hoje ou posterior (America/Sao_Paulo). CA vencido ou não informado -> 422 VALIDATION com o motivo. Máquina e insumo não exigem CA. Regra provisória, aguarda confirmação do responsável de SST (NOB-180)."
+          }
+        },
+        {
+          "name": "POST /epi-stock/:id/movements (saída: ajuste ou descarte)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-stock/{{stockId}}/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-stock", "{{stockId}}", "movements"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"exit\",\n  \"type\": \"discard\",\n  \"quantity\": 1,\n  \"movementDate\": \"2026-11-13\"\n}"
+            },
+            "description": "Saída não verifica o CA. Saldo insuficiente -> 422 INSUFFICIENT_STOCK."
+          }
+        },
+        {
+          "name": "GET /epi-stock/:id/movements (histórico por item, com lote)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/epi-stock/{{stockId}}/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "epi-stock", "{{stockId}}", "movements"]
             }
           }
         }
@@ -12011,6 +12265,86 @@
           "response": []
         },
         {
+          "name": "Indicar autorizador (representante da empresa, NOB-176)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{representativeUserId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{authorizerUserId}}\",\n  \"evidence\": \"Ata fictícia de indicação da empresa\",\n  \"reason\": \"Indicação feita pela própria empresa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
+            },
+            "description": "Conta `client` vinculada à empresa (scoped_company_id ou escopo de acesso). 403 em outra empresa, ao indicar a própria conta, ou se a conta já é o autorizador ou profissional ativo. O histórico grava origin=company_representative. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
+          "name": "Revogar indicação (representante da empresa, NOB-176)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "client"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{representativeUserId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": null,\n  \"evidence\": \"Comunicado fictício de revogação\",\n  \"reason\": \"Empresa retirou a indicação\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/risk-authorizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "{{companyId}}", "risk-authorizations"]
+            },
+            "description": "Mesmas regras da indicação pelo representante. O autorizador anterior perde o poder na hora; autorizações profissionais vigentes exigem revogação explícita. Exemplos fictícios."
+          },
+          "response": []
+        },
+        {
           "name": "Autorizar profissional (autorizador atual)",
           "request": {
             "method": "PUT",
@@ -12967,6 +13301,1219 @@
               "query": []
             },
             "description": "Classe do CNAE cadastrado da empresa (Medicina habilitada). status: ok | missing_cnae | invalid_cnae."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Escopos de acesso (NOB-175)",
+      "item": [
+        {
+          "name": "Listar escopos do membro",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/team/{{memberUserId}}/access-scopes"
+          }
+        },
+        {
+          "name": "Conceder escopo (owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/team/{{memberUserId}}/access-scopes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"workUnitId\": \"{{workUnitId}}\",\n  \"area\": \"safety\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Revogar escopo (owner)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/team/{{memberUserId}}/access-scopes/{{accessScopeId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Revisão por documento e emissão final do PGR (NOB-179)",
+      "item": [
+        {
+          "name": "Consultar estado da revisão, histórico e emissões",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval",
+            "description": "Devolve status (not_required, awaiting_reviewer, awaiting_review, rejected, approved, stale), versão atual (hash dos dados e do modelo), histórico e emissões finais."
+          }
+        },
+        {
+          "name": "Ativar revisão obrigatória (só administrador, sem volta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Substituir pelo motivo da adoção\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Designar ou trocar o revisor (só administrador)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval/reviewer",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewerUserId\": \"{{pgrReviewerUserId}}\",\n  \"reviewer\": {\n    \"fullName\": \"Revisor fictício\",\n    \"profession\": \"Profissão declarada\",\n    \"registration\": {\n      \"kind\": \"registered\",\n      \"council\": \"Órgão declarado\",\n      \"number\": \"Número declarado\",\n      \"region\": \"UF\"\n    }\n  },\n  \"reason\": \"Substituir pelo motivo da designação\"\n}"
+            },
+            "description": "O revisor é membro do escritório com acesso ao PGR e diferente do elaborador. Envie authorUserId só quando o PGR não tem elaborador registrado."
+          }
+        },
+        {
+          "name": "Revogar o revisor (só administrador)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval/reviewer/revocation",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Substituir pelo motivo da revogação\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Registrar parecer (só o revisor designado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{pgrReviewerUserId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval/decisions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignmentId\": \"{{pgrApprovalAssignmentId}}\",\n  \"snapshotSha256\": \"{{pgrApprovalSnapshotSha256}}\",\n  \"verdict\": \"approved\",\n  \"reason\": \"Obrigatório quando verdict = rejected\"\n}"
+            },
+            "description": "assignmentId e version.snapshotSha256 vêm do GET /approval. Parecer de quem não é o revisor designado → 403."
+          }
+        },
+        {
+          "name": "Emissão final (arquiva no GED quando a revisão está ativa)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"pdf\",\n  \"purpose\": \"issue\",\n  \"expectedSourceSha256\": \"{{pgrApprovalSnapshotSha256}}\"\n}"
+            },
+            "description": "Com a revisão ativa exige parecer favorável vigente (422 caso contrário) e devolve X-Pgr-Issue-Id e X-Pgr-Document-Id. Sem purpose é prévia, livre como antes."
+          }
+        },
+        {
+          "name": "Cancelar uma emissão final (só administrador)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/approval/issues/{{pgrFinalIssueId}}/cancellation",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Substituir pelo motivo do cancelamento\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Textos padrão do PGR (NOB-177)",
+      "item": [
+        {
+          "name": "Listar versões dos textos e textos vigentes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx-texts",
+            "description": "Devolve as versões salvas, os textos vigentes (currentOverrides) e o hash dos textos efetivos (currentTextsSha256)."
+          }
+        },
+        {
+          "name": "Salvar nova versão dos textos (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/docx-texts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Substituir pelo motivo da alteração\",\n  \"overrides\": {\n    \"titles\": { \"introduction\": \"1 - APRESENTAÇÃO\" }\n  }\n}"
+            },
+            "description": "Grava uma versão nova; overrides vazio volta ao padrão. A geração seguinte devolve o header X-Pgr-Texts-Sha256 com o hash desta versão."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Guarda, exportação e descarte (NOB-182)",
+      "description": "Política de guarda (provisória até aprovação), simulação de prazos e pacote de guarda por PGR. Nenhuma requisição exclui dado.",
+      "item": [
+        {
+          "name": "Consultar política de guarda",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/retention-policy",
+            "description": "Estado (aprovada ou não aprovada), versão vigente, histórico e proposta."
+          }
+        },
+        {
+          "name": "Registrar versão proposta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"proposed\",\n  \"terms\": {\n    \"categories\": [\n      {\n        \"category\": \"pgr_documents\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"pgr_review_records\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"signature_evidence\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"sst_records\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"health_records\",\n        \"retentionMonths\": 240,\n        \"startingPoint\": \"employee_termination\"\n      }\n    ],\n    \"noticeDaysBefore\": [\n      90,\n      60,\n      30\n    ],\n    \"postClosureAccess\": \"Proposta: o escritório mantém consulta e exportação durante o prazo de guarda.\",\n    \"discardAuthorization\": \"Proposta: descarte só com autorização escrita do responsável pela política.\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/retention-policy",
+            "description": "Só owner. 201 com {id, version, status, termsSha256}. O estado continua não aprovada."
+          }
+        },
+        {
+          "name": "Registrar versão aprovada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"terms\": {\n    \"categories\": [\n      {\n        \"category\": \"pgr_documents\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"pgr_review_records\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"signature_evidence\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"sst_records\",\n        \"retentionMonths\": 12,\n        \"startingPoint\": \"contract_end\"\n      },\n      {\n        \"category\": \"health_records\",\n        \"retentionMonths\": 240,\n        \"startingPoint\": \"employee_termination\"\n      }\n    ],\n    \"noticeDaysBefore\": [\n      90,\n      60,\n      30\n    ],\n    \"postClosureAccess\": \"Proposta: o escritório mantém consulta e exportação durante o prazo de guarda.\",\n    \"discardAuthorization\": \"Proposta: descarte só com autorização escrita do responsável pela política.\"\n  },\n  \"approval\": {\n    \"approverName\": \"Nome de quem aprovou\",\n    \"approverRole\": \"Cargo\",\n    \"approvedOn\": \"2026-11-10\",\n    \"reference\": \"Ata ou cláusula onde a aprovação está registrada\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/retention-policy",
+            "description": "Só owner. Exige quem aprovou, cargo, data não futura e referência."
+          }
+        },
+        {
+          "name": "Simular prazos e avisos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/retention-policy/simulation?contract_end=2027-01-31",
+            "description": "Só cálculo. Aceita contract_end, company_closure, document_issue e employee_termination (AAAA-MM-DD)."
+          }
+        },
+        {
+          "name": "Exportar pacote de guarda do PGR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/retention-exports",
+            "description": "Devolve o .zip com manifest.json, records/ e files/. Use Send and Download. Headers X-Retention-Export-Status e X-Retention-Export-Sha256."
+          }
+        },
+        {
+          "name": "Listar exportações do PGR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/pgr/{{pgrId}}/retention-exports",
+            "description": "Histórico só de inserção, incluindo tentativas com falha."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial — clientes, catálogo e contratação (NOB-114)",
+      "description": "Desligado por padrão: exige COMMERCIAL_CATALOG_ENABLED=true no servidor. Catálogo fictício (código ficticio-*) só fora de produção, semeado por `npx tsx scripts/commercial-catalog.ts seed-fictitious`. Nenhuma requisição cobra, chama o Stripe ou altera licença.",
+      "item": [
+        {
+          "name": "Listar catálogo à venda",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-offers",
+            "description": "Versão vigente por código, com itens e preço em centavos. Copie um `id` para {{commercialOfferVersionId}}."
+          }
+        },
+        {
+          "name": "Visão da tela de planos (NOB-134)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-plans-overview",
+            "description": "Leitura única da tela /plans: ofertas à venda, testes por empresa, `termStart` calculado no servidor e, só para owner, clientes ativos, empresas e contratações com situação de pagamento. `collaborator` recebe `canContract:false` com a mensagem de somente leitura."
+          }
+        },
+        {
+          "name": "Cadastrar consultoria como pagadora",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"office\",\n  \"legalName\": \"Consultoria de Teste Ltda\",\n  \"taxId\": \"11444777000161\",\n  \"billingEmail\": \"financeiro@consultoria.test\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-customers",
+            "description": "201. Uma consultoria por escritório; repetir → 409."
+          }
+        },
+        {
+          "name": "Cadastrar cliente direto (empresa pagadora)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"company\",\n  \"companyId\": \"{{companyId}}\",\n  \"billingEmail\": \"financeiro@empresa.test\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-customers",
+            "description": "201. Razão social e CNPJ vêm do cadastro da empresa. Copie o `id` para {{commercialCustomerId}}."
+          }
+        },
+        {
+          "name": "Listar clientes comerciais",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-customers?kind=company&status=active&page=1&pageSize=20",
+            "description": "{rows,total}. Filtros opcionais kind e status."
+          }
+        },
+        {
+          "name": "Consultar cliente comercial",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-customers/{{commercialCustomerId}}",
+            "description": "404 para cliente de outro escritório."
+          }
+        },
+        {
+          "name": "Alterar e-mail de cobrança e situação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"billingEmail\": \"cobranca@empresa.test\",\n  \"status\": \"active\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-customers/{{commercialCustomerId}}",
+            "description": "Sem DELETE: use status inactive."
+          }
+        },
+        {
+          "name": "Registrar contratação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{commercialCustomerId}}\",\n  \"offerVersionId\": \"{{commercialOfferVersionId}}\",\n  \"companyIds\": [\n    \"{{companyId}}\"\n  ],\n  \"termStart\": \"2026-11-13\",\n  \"termEnd\": null\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-contracts",
+            "description": "201. O preço é copiado da versão vigente; versão fora de venda → 422. Copie o `id` para {{commercialContractId}}."
+          }
+        },
+        {
+          "name": "Listar contratações",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-contracts?customerId={{commercialCustomerId}}",
+            "description": "{rows,total}, da mais nova para a mais antiga."
+          }
+        },
+        {
+          "name": "Consultar contratação",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-contracts/{{commercialContractId}}",
+            "description": "Cabeçalho, items[] e companyIds[] do momento da contratação."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial — interesse por empresa (NOB-119)",
+      "description": "Exige COMMERCIAL_CATALOG_ENABLED=true. Registrar: owner e collaborator. Listar e marcar como visto: só owner. Caixa interna: nada é enviado por WhatsApp, e-mail ou SMS e o payload não aceita canal externo.",
+      "item": [
+        {
+          "name": "Registrar interesse comercial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"service\": \"pgr\",\n  \"message\": \"Quero contratar o PGR para a unidade nova.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-interests",
+            "description": "201 ao criar; 200 se já existe interesse aberto da empresa para o serviço (devolve o existente, mensagem original preservada). service: pgr|medicine|pro|one_off. Copie interest.id para {{commercialInterestId}}."
+          }
+        },
+        {
+          "name": "Listar interesses comerciais",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-interests?companyId={{companyId}}&status=open&page=1&pageSize=20",
+            "description": "{rows,total}. Filtros opcionais companyId e status (open|seen). Só owner."
+          }
+        },
+        {
+          "name": "Marcar interesse como visto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-interests/{{commercialInterestId}}/seen",
+            "description": "200, idempotente: seenAt e seenBy não mudam na segunda chamada. Só owner; interesse de outro escritório → 404."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial — período de teste por empresa (NOB-118)",
+      "description": "Exige COMMERCIAL_CATALOG_ENABLED=true. Com a flag ligada, teste ativo ou expirado sem direito pago de PGR bloqueia a emissão final do PGR com 402 EMISSION_BLOCKED; a prévia segue livre.",
+      "item": [
+        {
+          "name": "Abrir período de teste da empresa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-trials",
+            "description": "201 ao abrir; 200 se a empresa já tem janela (devolve a original, sem reiniciar). Só owner. Duração definida no servidor."
+          }
+        },
+        {
+          "name": "Listar períodos de teste",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-trials?page=1&pageSize=20",
+            "description": "{rows,total}. owner e collaborator."
+          }
+        },
+        {
+          "name": "Consultar período de teste da empresa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-trials/{{companyId}}",
+            "description": "Janela com status active|expired|converted. 404 se a empresa não tem teste ou é de outro escritório."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial — checkout, assinatura e faturas (NOB-132/133/116)",
+      "description": "Exige COMMERCIAL_CATALOG_ENABLED=true e owner. O checkout só chama o provedor com chave de teste (sk_test_); nenhuma cobrança real. Sem preço do provedor cadastrado para o item (comando map-price), o checkout responde 422.",
+      "item": [
+        {
+          "name": "Abrir checkout hospedado da contratação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotencyKey\": \"checkout-postman-0001\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-contracts/{{commercialContractId}}/checkout",
+            "description": "201 com {id, url, status, expiresAt}. Repetir a mesma chave devolve a mesma sessão. 422 item sem preço no provedor; 409 checkout aberto ou assinatura já registrada; 503 sem chave de teste do provedor."
+          }
+        },
+        {
+          "name": "Consultar assinatura e direitos de uso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-contracts/{{commercialContractId}}/billing",
+            "description": "Checkout, assinatura espelhada, entitlements[] com motivo e política de atraso."
+          }
+        },
+        {
+          "name": "Listar faturas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-invoices?contractId={{commercialContractId}}&page=1&pageSize=20",
+            "description": "{rows,total}; cada fatura traz totalsByService (pgr, medicine, pro, one_off, unclassified). Copie um `id` para {{commercialInvoiceId}}."
+          }
+        },
+        {
+          "name": "Consultar fatura com itens por serviço",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-invoices/{{commercialInvoiceId}}",
+            "description": "Cabeçalho, totalsByService e items[]. 404 para fatura de outro escritório."
+          }
+        },
+        {
+          "name": "Consultar ficha da assinatura (NOB-135)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-subscription-sheet",
+            "description": "Por contratação: oferta e itens do snapshot, empresas, financial (situação no provedor), access (direitos de uso) e availableActions. Só owner; 403 com a flag desligada."
+          }
+        },
+        {
+          "name": "Abrir portal do provedor (NOB-136)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-contracts/{{commercialContractId}}/portal-session",
+            "description": "200 com {url} temporária. 503 sem chave de teste do provedor; 404 contratação de outro escritório; 422 pagador sem cliente no provedor."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial — painel administrativo de assinaturas (NOB-137)",
+      "description": "Exige COMMERCIAL_CATALOG_ENABLED=true e sessão real (Clerk) de superadmin (users.is_master); o bypass de desenvolvimento não vira superadmin (sem sessão 401; owner ou outro usuário 403). Leitura entre escritórios; nenhuma cobrança, checkout ou fatura é criada. Reutiliza devTenant e commercialContractId.",
+      "item": [
+        {
+          "name": "Listar assinaturas entre escritórios",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/billing/subscriptions?orgId={{devTenant}}&service=pgr&status=active&from=2026-01-01&to=2026-12-31&search=sub_&page=1&pageSize=20",
+            "description": "{rows,total}. Filtros opcionais: orgId, companyId, service (pgr|medicine|pro), status, from/to (AAAA-MM-DD, período atual), search (identificador do provedor). Cada linha traz divergence. 403 sem is_master ou com a flag desligada; 422 filtro inválido."
+          }
+        },
+        {
+          "name": "Consultar ficha da assinatura",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/billing/subscriptions/{{commercialContractId}}?orgId={{devTenant}}",
+            "description": "Preço contratado, identificadores do provedor, direitos de uso, últimos eventos e histórico de reconciliações. 404 contratação inexistente ou de outro orgId."
+          }
+        },
+        {
+          "name": "Reconciliar assinatura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orgId\": \"{{devTenant}}\",\n  \"reason\": \"Conferência da divergência apontada pelo suporte\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/billing/subscriptions/{{commercialContractId}}/reconcile",
+            "description": "200 com {id, result: no_change|corrected|source_unavailable, source: provider|mirror, detail}. Grava uma linha de auditoria por execução. 422 motivo com menos de 10 caracteres; 404 contratação inexistente ou de outro orgId; nunca cria cobrança."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comercial — pedido avulso (NOB-117)",
+      "description": "Exige COMMERCIAL_CATALOG_ENABLED=true. Owner cria, lista e lê; collaborator só consulta a autorização. Oferta one_time com itens one_off (catálogo fictício; preços reais dependem de aprovação comercial). O checkout usa POST /commercial-contracts/{{contractId}}/checkout com o contractId do pedido, em modo de pagamento único e só com chave de teste. Pedido pago libera somente aquele pedido: não liga módulo nem altera plano.",
+      "item": [
+        {
+          "name": "Criar pedido avulso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offerId\": \"{{commercialOfferVersionId}}\",\n  \"companyId\": \"{{companyId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/commercial-one-off-orders",
+            "description": "201 com o pedido (status pending e contractId). Não exige Pro nem assinatura. 422 oferta que não é avulsa ou cliente do escritório ausente; 403 flag desligada ou não-owner. Copie o `id` para {{commercialOneOffOrderId}}."
+          }
+        },
+        {
+          "name": "Listar pedidos avulsos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-one-off-orders?companyId={{companyId}}&status=pending&page=1&pageSize=20",
+            "description": "{rows,total}, do mais novo para o mais antigo. Filtros opcionais: companyId e status (pending|paid|cancelled)."
+          }
+        },
+        {
+          "name": "Consultar pedido avulso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-one-off-orders/{{commercialOneOffOrderId}}",
+            "description": "Pedido com oferta, empresa, estado e pagamento. 404 para pedido de outro escritório."
+          }
+        },
+        {
+          "name": "Consultar autorização do pedido avulso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "x-dev-user",
+                "value": "{{devUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/commercial-one-off-orders/{{commercialOneOffOrderId}}/authorization?companyId={{companyId}}",
+            "description": "{orderId, companyId, status, purchased}. purchased só é true com o pedido pago e da empresa informada. owner e collaborator; client recebe 403."
           }
         }
       ]

@@ -89,6 +89,12 @@ function PgrPdfPanel({ pgrId }: { pgrId: string }) {
       <Link href={`/pgr/${pgrId}/reviews`} className="text-primary underline">
         Amostras, pareceres recebidos e revalidação técnica
       </Link>
+      <Link href={`/pgr/${pgrId}/texts`} className="text-primary underline">
+        Textos padrão deste PGR
+      </Link>
+      <Link href={`/pgr/${pgrId}/retention-export`} className="text-primary underline">
+        Pacote de guarda: exportação com manifesto e hash
+      </Link>
       <div className="flex items-start gap-4">
         <div className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
           <svg
@@ -107,8 +113,9 @@ function PgrPdfPanel({ pgrId }: { pgrId: string }) {
         <SectionHeading title="Geração do documento do PGR">
           Gere o documento com os dados cadastrados neste PGR (empresa, GES, riscos, plano
           de ação, EPIs e treinamentos). <strong>Baixar DOCX</strong> e{" "}
-          <strong>Baixar PDF</strong> geram na hora e não guardam cópia;{" "}
-          <strong>Arquivar no GED</strong> salva o PDF no acervo deste PGR.
+          <strong>Baixar PDF</strong> geram uma prévia na hora, sem guardar cópia e sem
+          valor de emissão; <strong>Arquivar no GED</strong> salva o PDF como versão no
+          acervo deste PGR. A emissão assinada é feita na etapa 5 (Assinatura).
         </SectionHeading>
       </div>
 

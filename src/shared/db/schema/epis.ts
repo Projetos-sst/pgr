@@ -20,6 +20,7 @@ import { companies } from "./companies";
 import { categories, categoryType } from "./categories";
 import { employees } from "./employees";
 import { risks } from "./risks";
+import { actorCompanyScope, officeWideOr } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 
@@ -88,6 +89,12 @@ export const epiCatalog = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    pgPolicy("epi_catalog_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: officeWideOr(table.companyId, actorCompanyScope(table.companyId)),
+    }),
     index("idx_epi_catalog_org_id").on(table.orgId),
     index("idx_epi_catalog_category_id").on(table.categoryId),
     index("idx_epi_catalog_company_id").on(table.companyId),

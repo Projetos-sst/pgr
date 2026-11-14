@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { NoTenantContextError, UnauthorizedError } from "@/shared/auth/errors";
 import { requireTenantContext } from "@/shared/auth/require-tenant-context";
+import { getOwnAccessAreasAction } from "@/shared/server/actions/platform/access-scopes";
 import { getOnboardingProgressAction } from "@/shared/server/actions/platform/onboarding";
 
 import { TenantSwitcher } from "../_components/tenant-switcher";
@@ -39,6 +40,8 @@ export default async function ProtectedLayout({
   // concluídos (sem flag persistida — `client` role recebe `ok:false`, sem badge).
   const onboarding = await getOnboardingProgressAction();
   const showOnboardingBadge = onboarding.ok && !onboarding.data.allDone;
+  const accessAreas = await getOwnAccessAreasAction();
+  const areas = accessAreas.ok ? accessAreas.data : [];
 
   return (
     <div className="flex flex-1 flex-col">
@@ -55,7 +58,7 @@ export default async function ProtectedLayout({
               PGR-e
             </span>
           </Link>
-          <NavMenu showOnboardingBadge={showOnboardingBadge} />
+          <NavMenu showOnboardingBadge={showOnboardingBadge} areas={areas} />
         </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           <div className="flex items-center gap-1">

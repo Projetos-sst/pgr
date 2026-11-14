@@ -2,6 +2,9 @@ export { users, type User, type NewUser } from "./users";
 export { orgs, type Org, type NewOrg } from "./orgs";
 export { machineInstallations, machineInstallationEvents } from "./machine-installations";
 export { pgrReviewSamples, pgrReviewDecisions } from "./pgr-document-reviews";
+export { pgrDocumentApprovals } from "./pgr-document-approvals";
+export { pgrDocxTextVersions } from "./pgr-docx-text-versions";
+export { retentionPolicyVersions, retentionExports } from "./retention";
 export {
   pgrBasicOfferVersions,
   pgrBasicOfferPublication,
@@ -14,6 +17,7 @@ export {
 } from "./org-memberships";
 export { companies, type Company, type NewCompany } from "./companies";
 export { companyModules, companyModuleEvents } from "./company-modules";
+export { memberAccessScopes, type MemberAccessScope } from "./member-access-scopes";
 export {
   companyRiskAuthorizers,
   professionalRiskAuthorizations,
@@ -386,3 +390,25 @@ export {
   type MedicoLinkReconfirmation,
   type IdentityChallengeAttempt,
 } from "./professional-identity";
+export {
+  commercialOfferVersions,
+  commercialOfferItems,
+  commercialCustomers,
+  commercialContracts,
+  commercialContractItems,
+  commercialContractCompanies,
+  commercialInterests,
+  commercialTrials,
+  commercialOneOffOrders,
+} from "./commercial";
+export {
+  billingProviderPrices,
+  billingProviderCustomers,
+  billingCheckoutSessions,
+  billingSubscriptions,
+  billingEvents,
+  commercialEntitlements,
+  billingInvoices,
+  billingInvoiceItems,
+  commercialReconciliations,
+} from "./billing";

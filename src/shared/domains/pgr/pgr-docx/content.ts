@@ -167,11 +167,11 @@ export type PgrDocxMeasureLevel = {
   monitoring: string;
 };
 
-/** Hierarquia de controle da NR-01 (1.4.1 g) para um risco — sempre os 4 níveis. */
 export type PgrDocxRiskMeasures = {
   riskLabel: string;
   riskName: string;
   elimination: PgrDocxMeasureLevel;
+  substitution: PgrDocxMeasureLevel;
   collective: PgrDocxMeasureLevel;
   administrative: PgrDocxMeasureLevel;
   individual: PgrDocxMeasureLevel;

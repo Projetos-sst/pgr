@@ -139,6 +139,38 @@ describe("DocumentUploadForm — pré-vínculo genérico por entidade (issue #45
     expect(screen.getByText("Setor de Pintura")).toBeInTheDocument();
   });
 
+  it("pré-vinculado a uma máquina: o tipo é escolhido só entre os anexos confirmados", () => {
+    const { container } = render(
+      <DocumentUploadForm
+        folders={[]}
+        defaultFolderId={null}
+        defaultRelatedEntityType="machine_installation"
+        defaultRelatedEntityId="machine-789"
+        returnLabel="Betoneira"
+      />,
+    );
+
+    const typeOptions = [
+      ...container.querySelectorAll('select[name="docType"] option'),
+    ].map((option) => option.textContent);
+    expect(typeOptions).toEqual([
+      "— selecione —",
+      "Manual",
+      "Laudo",
+      "ART",
+      "Inspeção Inicial de Mobilização",
+      "Plano de Manutenção",
+      "Ordem de Serviço de Manutenção",
+      "Laudo NR 12 - Apreciação de Riscos",
+      "Inspeção Periódica",
+      "Inspeção Eventual",
+    ]);
+    expect(
+      container.querySelector<HTMLInputElement>('input[name="relatedEntityType"]')?.value,
+    ).toBe("machine_installation");
+    expect(screen.getByText("Vincular a esta máquina")).toBeInTheDocument();
+  });
+
   it('pré-vinculado a relatedEntityType="risk" → hidden input carrega "risk"', () => {
     const { container } = render(
       <DocumentUploadForm

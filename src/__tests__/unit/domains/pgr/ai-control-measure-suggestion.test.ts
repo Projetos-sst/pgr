@@ -16,6 +16,9 @@ const medida = (controlLevel: string) => ({
 describe("normalizeControlLevel", () => {
   it.each([
     ["eliminação", "elimination"],
+    ["substituição", "substitution"],
+    ["redução ou substituição", "substitution"],
+    ["controle de engenharia", "collective_protection"],
     ["Proteção Coletiva", "collective_protection"],
     ["EPC", "collective_protection"],
     ["controle administrativo", "administrative"],

@@ -99,6 +99,8 @@ async function freshCatalogWith(
 
   it("create com initialQuantity lança um movimento `purchase` e o balance reflete o saldo inicial (#22)", async () => {
     const catalogId = await freshCatalog(admin);
+    await admin`update public.epi_catalog set ca = '456', ca_valid_until = '2099-12-31'
+      where id = ${catalogId}`;
     const created = await createEpiStockAction({
       catalogId,
       minimumQuantity: "0",

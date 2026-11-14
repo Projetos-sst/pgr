@@ -13,6 +13,7 @@ import {
   authorizeCompanyProfessionalAction,
   decideCompanyRiskAction,
 } from "@/shared/server/actions/medicine/risk-authorizations";
+import type { AppointmentOrigin } from "@/shared/domains/medicine/risk-authorization";
 import {
   FormError,
   FormSection,
@@ -28,6 +29,23 @@ type Result =
       error: { code: string; message: string; fields?: Record<string, string> };
     };
 const text = (fd: FormData, name: string) => String(fd.get(name) ?? "");
+const APPOINTMENT_COPY: Record<
+  AppointmentOrigin,
+  { title: string; guidance: string; evidenceLabel: string }
+> = {
+  office_owner: {
+    title: "Registrar indicação da empresa-cliente",
+    guidance:
+      "Registre a pessoa indicada pela empresa. Isso não concede autorização para validar riscos. As contas precisam estar previamente vinculadas ao escritório.",
+    evidenceLabel: "Evidência da indicação da empresa (documento ou referência)",
+  },
+  company_representative: {
+    title: "Indicar o autorizador da empresa",
+    guidance:
+      "Como representante desta empresa, indique a pessoa que autoriza os profissionais. Você não pode indicar a própria conta, e a indicação não concede autorização para validar riscos. A conta indicada precisa estar previamente vinculada ao escritório.",
+    evidenceLabel: "Evidência da indicação (documento ou referência interna da empresa)",
+  },
+};
 
 const describeAuthorizationPath = pathDescriber({
   fields: {
@@ -81,13 +99,13 @@ function useFeedbackSubmit() {
 
 export function AuthorizationForms({
   companyId,
-  canAppoint,
+  appointmentOrigin,
   canAuthorize,
   candidates,
   currentAuthorizer,
 }: {
   companyId: string;
-  canAppoint: boolean;
+  appointmentOrigin: AppointmentOrigin | null;
   canAuthorize: boolean;
   candidates: Candidate[];
   currentAuthorizer: string | null;
@@ -177,18 +195,14 @@ export function AuthorizationForms({
   }
   return (
     <div className="flex flex-col gap-6">
-      {canAppoint && (
+      {appointmentOrigin && (
         <form onSubmit={appoint} className="flex flex-col gap-4">
           <FormError
             message={appointSubmit.feedback.formError}
             details={appointSubmit.feedback.details}
           />
-          <FormSection title="Registrar indicação da empresa-cliente">
-            <p className="text-sm">
-              Registre a pessoa indicada pela empresa. Isso não concede autorização para
-              validar riscos. As contas precisam estar previamente vinculadas ao
-              escritório.
-            </p>
+          <FormSection title={APPOINTMENT_COPY[appointmentOrigin].title}>
+            <p className="text-sm">{APPOINTMENT_COPY[appointmentOrigin].guidance}</p>
             <SelectField
               name="authorizer"
               label="Autorizador indicado"
@@ -200,7 +214,7 @@ export function AuthorizationForms({
             />
             <TextField
               name="evidence"
-              label="Evidência da indicação da empresa (documento ou referência)"
+              label={APPOINTMENT_COPY[appointmentOrigin].evidenceLabel}
               required
               error={appointFields.evidence}
             />

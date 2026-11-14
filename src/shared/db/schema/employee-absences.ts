@@ -18,6 +18,7 @@ import { coordinatorAssignmentInForceToday } from "./coordinator-in-force";
 import { employees } from "./employees";
 import { companyModuleScope } from "./module-policy";
 import { orgs } from "./orgs";
+import { actorCompanyScope } from "./access-scope-policy";
 
 const tenantScope = sql`org_id = current_setting('app.current_org', true)`;
 const actor = sql`current_setting('app.current_actor', true)`;
@@ -278,6 +279,12 @@ export const absenceClinicalAccessEvents = pgTable(
     occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    pgPolicy("absence_clinical_access_events_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorCompanyScope(t.companyId),
+    }),
     index("idx_absence_clinical_access_absence").on(t.orgId, t.absenceId, t.occurredAt),
     check("ck_absence_clinical_access_action", sql`${t.action} in ('read','note_added')`),
     pgPolicy("absence_clinical_access_isolation", {

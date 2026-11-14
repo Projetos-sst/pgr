@@ -79,6 +79,24 @@ export const SUGGESTED_DOC_TYPES = [
  * Metadados de documento (criação e base da edição). O vínculo polimórfico é
  * completo-ou-vazio (espelha o CHECK `documents_related_entity_check` da 023).
  */
+export const machineAttachmentTypeSchema = z.enum([
+  "Manual",
+  "Laudo",
+  "ART",
+  "Inspeção Inicial de Mobilização",
+  "Plano de Manutenção",
+  "Ordem de Serviço de Manutenção",
+  "Laudo NR 12 - Apreciação de Riscos",
+  "Inspeção Periódica",
+  "Inspeção Eventual",
+]);
+
+export const MACHINE_ATTACHMENT_TYPES = machineAttachmentTypeSchema.options;
+
+export function isMachineAttachmentType(docType: string): boolean {
+  return machineAttachmentTypeSchema.safeParse(docType).success;
+}
+
 export const documentMetadataSchema = z
   .object({
     name: requiredString("Nome é obrigatório").max(255, "Nome muito longo"),

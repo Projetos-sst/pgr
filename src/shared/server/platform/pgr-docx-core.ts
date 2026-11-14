@@ -4,14 +4,22 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 
+import { listApprovalEvents } from "@/shared/db/repositories/pgr-document-approvals";
 import { getPgrGenerationSnapshot } from "@/shared/db/repositories/pgr-generation-snapshot";
+import {
+  deriveApprovalState,
+  finalIssueBlock,
+  type ApprovalEvent,
+} from "@/shared/domains/pgr/document-approval";
 import { checkPgrReadiness } from "@/shared/domains/pgr/pgr-readiness";
 import { pgrSnapshotHash } from "@/shared/server/pgr/pgr-readiness-core";
-import { ValidationError } from "@/shared/errors/validation-error";
+import { pgrDocxTextsSha256 } from "@/shared/domains/pgr/pgr-docx/texts-hash";
 import {
-  buildPgrDocxData,
-  type PgrDocxOverrides,
-} from "@/shared/domains/pgr/pgr-docx/build-data";
+  mergeOverrides,
+  type PgrDocxStoredOverrides,
+} from "@/shared/domains/pgr/pgr-docx/text-overrides";
+import { ValidationError } from "@/shared/errors/validation-error";
+import { buildPgrDocxData } from "@/shared/domains/pgr/pgr-docx/build-data";
 import { buildPgrDocxContent } from "@/shared/domains/pgr/pgr-docx/from-consolidated";
 import type { PgrDocxFormat } from "@/shared/domains/pgr/pgr-docx/request";
 import {
@@ -20,6 +28,7 @@ import {
 } from "@/shared/domains/pgr/pgr-docx/template-file";
 import { NotFoundError } from "@/shared/errors/not-found-error";
 import { ReportUnavailableError } from "@/shared/errors/report-unavailable-error";
+import { assertPgrEmissionAllowed } from "@/shared/server/commercial/emission-gate";
 import { renderDocxTemplate } from "@/shared/integrations/docx/template-engine";
 import { getGoogleDocsConfig } from "@/shared/integrations/google/config";
 import {
@@ -52,6 +61,7 @@ export type GeneratedPgrDocx = {
   title: string;
   contentType: string;
   file: Buffer;
+  review?: FinalIssueReview;
   /** Tags do template sem valor no dado (saíram vazias) — diagnóstico, não erro. */
   missingTags: string[];
   /** Technical identifiers for this export, not a signature or technical approval. */
@@ -59,17 +69,20 @@ export type GeneratedPgrDocx = {
     pgrId: string;
     generatedAt: string;
     templateSha256: string;
+    textsSha256: string;
     sourceSha256: string;
     snapshotSha256?: string;
     fileSha256: string;
   };
 };
 
+export type FinalIssueReview = { assignment: ApprovalEvent; decision: ApprovalEvent };
+
 export type GeneratePgrDocxOptions = {
   purpose?: "preview" | "issue";
   expectedSourceSha256?: string;
   format?: PgrDocxFormat;
-  overrides?: PgrDocxOverrides;
+  overrides?: PgrDocxStoredOverrides;
 };
 
 export function getPgrDocxPdfProvider(): PgrDocxPdfProvider {
@@ -137,6 +150,39 @@ function loadTemplate(): Promise<Buffer> {
   return templateCache;
 }
 
+export async function pgrDocxTemplateSha256(): Promise<string> {
+  const template = await loadTemplate().catch(() => {
+    throw new ReportUnavailableError();
+  });
+  return createHash("sha256").update(template).digest("hex");
+}
+
+async function finalIssueReview(
+  orgId: string,
+  pgrId: string,
+  snapshotSha256: string,
+): Promise<FinalIssueReview | undefined> {
+  const events = await listApprovalEvents(orgId, pgrId);
+  if (events.length === 0) return undefined;
+  const state = deriveApprovalState(events, {
+    snapshotSha256,
+    templateSha256: await pgrDocxTemplateSha256(),
+  });
+  const block = finalIssueBlock(state);
+  if (block) throw new ValidationError(block);
+  return state.status === "approved" ? state : undefined;
+}
+
+function issueNotice(review: FinalIssueReview | undefined): string {
+  if (!review)
+    return "Documento gerado após conferência de preenchimento. A geração não substitui revisão técnica ou assinatura.";
+  const { assignment, decision } = review;
+  const reviewer = assignment.reviewerIdentity
+    ? `${assignment.reviewerIdentity.fullName} (${assignment.reviewerIdentity.profession})`
+    : assignment.reviewerUserId;
+  return `Documento emitido após conferência de preenchimento e revisão de ${reviewer}, com parecer favorável em ${emittedAtInSaoPaulo(decision.createdAt)}. A emissão não substitui a assinatura.`;
+}
+
 async function toPdf(docx: Buffer, fileName: string): Promise<Buffer> {
   if (getPgrDocxPdfProvider() === "gotenberg") return docxToPdf(docx, fileName);
   const config = getGoogleDocsConfig();
@@ -155,13 +201,20 @@ export async function generatePgrDocx(
 ): Promise<GeneratedPgrDocx> {
   const snapshot = await getPgrGenerationSnapshot(orgId, pgrId);
   if (!snapshot) throw new NotFoundError();
-  const { consolidated, extras, methodology } = snapshot;
+  const { consolidated, extras, methodology, textVersion } = snapshot;
+  const adHoc = mergeOverrides(null, options.overrides);
+  if (options.purpose === "issue" && Object.keys(adHoc).length > 0)
+    throw new ValidationError(
+      "A emissão final usa os textos salvos no PGR. Salve a alteração de texto antes de emitir.",
+    );
+  const overrides = mergeOverrides(textVersion?.overrides, adHoc);
   const readiness = checkPgrReadiness(
     consolidated,
     extras,
     methodology.classificationBands,
   );
   if (options.purpose === "issue") {
+    await assertPgrEmissionAllowed({ orgId, pgrId });
     if (
       !options.expectedSourceSha256 ||
       options.expectedSourceSha256 !== pgrSnapshotHash(snapshot)
@@ -174,6 +227,10 @@ export async function generatePgrDocx(
         `Há ${readiness.blockingCount} pendência(s) de preenchimento. Confira o diagnóstico antes de emitir.`,
       );
   }
+  const review =
+    options.purpose === "issue"
+      ? await finalIssueReview(orgId, pgrId, pgrSnapshotHash(snapshot))
+      : undefined;
 
   const generatedAt = new Date();
   const emittedAt = emittedAtInSaoPaulo(generatedAt);
@@ -183,9 +240,9 @@ export async function generatePgrDocx(
   });
   content.emissionNotice =
     options.purpose === "issue"
-      ? "Documento gerado após conferência de preenchimento. A geração não substitui revisão técnica ou assinatura."
+      ? issueNotice(review)
       : "PRÉVIA PARA CONFERÊNCIA — não representa documento revisado ou assinado.";
-  const data = buildPgrDocxData(content, { overrides: options.overrides });
+  const data = buildPgrDocxData(content, { overrides });
 
   let template: Buffer;
   try {
@@ -213,6 +270,7 @@ export async function generatePgrDocx(
     createHash("sha256").update(value).digest("hex");
   return {
     reviewSnapshot: snapshot,
+    review,
     fileName: `${baseName}.${pdf ? "pdf" : "docx"}`,
     title,
     contentType: pdf ? "application/pdf" : DOCX_MIME,
@@ -222,6 +280,7 @@ export async function generatePgrDocx(
       pgrId,
       generatedAt: generatedAt.toISOString(),
       templateSha256: sha256(template),
+      textsSha256: pgrDocxTextsSha256(overrides),
       snapshotSha256: pgrSnapshotHash(snapshot),
       // Hash exactly the input snapshot used by this generation, without emitting it.
       // Database readers share a repeatable-read snapshot; logo bytes/overrides are also identified.
@@ -232,6 +291,7 @@ export async function generatePgrDocx(
           extras,
           classificationBands: methodology.classificationBands,
           overrides: options.overrides ?? null,
+          textVersionId: textVersion?.id,
           logoSha256: logo ? sha256(logo) : null,
         }),
       ),

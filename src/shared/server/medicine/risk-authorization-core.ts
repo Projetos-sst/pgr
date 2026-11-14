@@ -26,6 +26,10 @@ export async function riskAuthorizationWorkspace(
       : { rows: [], total: 0 };
   const candidates = members.rows
     .filter((m) => !m.scopedCompanyId || m.scopedCompanyId === company)
+    .filter(
+      (m) =>
+        access.appointmentOrigin !== "company_representative" || m.userId !== ctx.userId,
+    )
     .map((m) => ({
       userId: m.userId,
       label:

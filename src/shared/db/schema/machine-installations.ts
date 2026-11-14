@@ -17,6 +17,7 @@ import { workUnits } from "./work-units";
 import { ges } from "./ges";
 import { epiCatalog } from "./epis";
 import { companyModuleScope } from "./module-policy";
+import { actorWorkUnitScope } from "./access-scope-policy";
 const tenant = sql`org_id=current_setting('app.current_org',true)`;
 export const machineInstallations = pgTable(
   "machine_installations",
@@ -51,6 +52,12 @@ export const machineInstallations = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    pgPolicy("machine_installations_actor_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: actorWorkUnitScope(t.companyId, t.workUnitId),
+    }),
     index("idx_machine_installations_context").on(
       t.orgId,
       t.companyId,

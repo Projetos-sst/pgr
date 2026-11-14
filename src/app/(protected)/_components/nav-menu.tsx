@@ -5,135 +5,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
-type SubMenuItem = {
-  href: string;
-  label: string;
-  iconName?: string;
-};
+import { ACCESS_AREAS, type AccessArea } from "@/shared/domains/platform/access-scopes";
 
-type MenuItem = {
-  href?: string;
-  label: string;
-  iconName?: string;
-  children?: SubMenuItem[];
-};
-
-type NavEntry =
-  | { kind: "link"; href: string; label: string; iconName?: string }
-  | { kind: "group"; label: string; iconName?: string; items: MenuItem[] };
-
-const NAV: NavEntry[] = [
-  { kind: "link", href: "/dashboard", label: "Dashboard" },
-  {
-    kind: "group",
-    label: "Módulos",
-    iconName: "folder",
-    items: [
-      { href: "/pgr", label: "PGR", iconName: "alert-triangle" },
-      { href: "/pgr-basic-offer", label: "Oferta de PGR básico", iconName: "file-text" },
-      { href: "/epi-stock", label: "Estoque de EPI", iconName: "briefcase" },
-      { href: "/epi-returns", label: "Devoluções de EPI", iconName: "rotate-ccw" },
-      { href: "/esocial", label: "eSocial (SST)", iconName: "file-text" },
-      {
-        label: "Inspeções",
-        iconName: "search",
-        children: [
-          { href: "/vehicular-inspections", label: "Veiculares", iconName: "car" },
-          { href: "/safety-inspections", label: "Segurança", iconName: "shield" },
-          { href: "/equipment-inspections", label: "Equipamentos", iconName: "wrench" },
-        ],
-      },
-      {
-        href: "/work-permits",
-        label: "Permissões de trabalho",
-        iconName: "check-circle",
-      },
-    ],
-  },
-  {
-    kind: "group",
-    label: "Cadastro",
-    iconName: "user-plus",
-    items: [
-      { href: "/companies", label: "Empresas", iconName: "building" },
-      { href: "/work-units", label: "Unidades de Obra", iconName: "map-pin" },
-      { href: "/job-roles", label: "Funções", iconName: "briefcase-user" },
-      { href: "/ges", label: "GES", iconName: "layers" },
-      { href: "/employees", label: "Funcionários", iconName: "users" },
-      { href: "/categories", label: "Categorias", iconName: "tag" },
-      { href: "/training-catalog", label: "Treinamentos", iconName: "book-open" },
-      {
-        href: "/form-controls",
-        label: "Controle de Formulários",
-        iconName: "file-check",
-      },
-      { href: "/epi-catalog", label: "EPI", iconName: "hardhat" },
-      { href: "/incidents", label: "Incidentes", iconName: "alert-circle" },
-      { href: "/vehicles", label: "Veículos", iconName: "car" },
-      {
-        href: "/inspection-plans",
-        label: "Planos de Inspeção",
-        iconName: "clipboard-list",
-      },
-    ],
-  },
-  {
-    kind: "group",
-    label: "Gestão de Segurança",
-    iconName: "shield",
-    items: [
-      {
-        href: "/psychosocial/campaigns",
-        label: "Gestão de Riscos Psicossociais",
-        iconName: "heart",
-      },
-      {
-        href: "/psychosocial/risk-factors",
-        label: "Fatores de Risco Psicossocial",
-        iconName: "heart",
-      },
-      { href: "/incidents", label: "Gestão de Incidentes", iconName: "alert-circle" },
-      { href: "/action-plans", label: "Gestão de Planos de Ação", iconName: "calendar" },
-      { href: "/service-orders", label: "Gestão de OS", iconName: "file-edit" },
-      { href: "/risk-methodology", label: "Metodologia de Risco", iconName: "sliders" },
-      { href: "/risks", label: "Riscos", iconName: "alert-triangle" },
-      { href: "/risk-audits", label: "Auditorias de Risco", iconName: "clipboard-check" },
-    ],
-  },
-  {
-    kind: "group",
-    label: "Medicina do Trabalho",
-    iconName: "activity",
-    items: [
-      { href: "/medicine", label: "Painel", iconName: "clipboard-list" },
-      {
-        href: "/risk-authorizations",
-        label: "Autorizações de riscos",
-        iconName: "shield",
-      },
-      { href: "/medical-risks", label: "Riscos para PCMSO", iconName: "alert-triangle" },
-      { href: "/health-exams", label: "Exames e ASO", iconName: "activity" },
-      { href: "/medicos", label: "Médicos", iconName: "stethoscope" },
-      {
-        href: "/professional-identity",
-        label: "Minha identidade profissional",
-        iconName: "briefcase-user",
-      },
-    ],
-  },
-  {
-    kind: "group",
-    label: "Qualidade",
-    iconName: "quality",
-    items: [
-      {
-        href: "/documents",
-        label: "GED — Gestão Eletrônica de Documentos",
-        iconName: "folder-archive",
-      },
-    ],
-  },
-];
+import { NAV, visibleNav, type MenuItem, type NavEntry } from "./nav-config";
 
 function NavIcon({ name, className = "w-4 h-4" }: { name?: string; className?: string }) {
   if (!name) return null;
@@ -451,10 +325,13 @@ function isGroupExpanded(
 
 export function NavMenu({
   showOnboardingBadge = false,
+  areas = ACCESS_AREAS,
 }: {
   showOnboardingBadge?: boolean;
+  areas?: readonly AccessArea[];
 }) {
   const pathname = usePathname();
+  const nav = visibleNav(areas);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -503,7 +380,7 @@ export function NavMenu({
   return (
     <div ref={containerRef} className="flex items-center">
       <nav className="hidden items-center gap-1 xl:flex">
-        {NAV.map((entry) => {
+        {nav.map((entry) => {
           if (entry.kind === "link") {
             const active = isActive(pathname, entry.href);
             return (
@@ -784,7 +661,7 @@ export function NavMenu({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      {NAV.map((entry) => {
+                      {nav.map((entry) => {
                         if (entry.kind === "link") {
                           const active = isActive(pathname, entry.href);
                           return (

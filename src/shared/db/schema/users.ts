@@ -2,6 +2,8 @@ import { pgTable, text, timestamp, boolean, pgPolicy } from "drizzle-orm/pg-core
 import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 import { authenticatedRole } from "drizzle-orm/supabase";
 
+import { appRuntimeRole } from "../roles";
+
 export const users = pgTable(
   "users",
   {
@@ -24,6 +26,11 @@ export const users = pgTable(
       for: "select",
       to: authenticatedRole,
       using: sql`${table.id} = (auth.jwt() ->> 'sub')`,
+    }),
+    pgPolicy("users_platform_operator_self", {
+      for: "select",
+      to: appRuntimeRole,
+      using: sql`${table.id} = nullif(current_setting('app.platform_operator', true), '')`,
     }),
   ],
 ).enableRLS();

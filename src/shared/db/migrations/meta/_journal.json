@@ -589,6 +589,97 @@
       "when": 1794670968409,
       "tag": "0083_identity_validity_12_months",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1794671028409,
+      "tag": "0084_member_access_scopes",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1794671088409,
+      "tag": "0085_representative_appoints_risk_authorizer",
+      "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1794671148409,
+      "tag": "0086_pgr_document_approvals",
+      "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1794671208409,
+      "tag": "0087_pgr_docx_text_versions",
+      "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1794671268409,
+      "tag": "0088_control_level_substitution",
+      "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1794671328409,
+      "tag": "0089_machine_attachment_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1794671388409,
+      "tag": "0090_retention_policy_and_exports",
+      "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1794671448409,
+      "tag": "0091_commercial_catalog_and_contracts",
+      "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1794671508409,
+      "tag": "0092_commercial_billing",
+      "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1794671568409,
+      "tag": "0093_commercial_interests",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1794671628409,
+      "tag": "0094_commercial_trials",
+      "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1794671688409,
+      "tag": "0095_commercial_one_off_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1794671748409,
+      "tag": "0096_commercial_admin_reconciliations",
+      "breakpoints": true
     }
   ]
 }

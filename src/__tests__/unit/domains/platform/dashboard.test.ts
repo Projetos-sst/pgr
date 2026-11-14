@@ -40,9 +40,10 @@ describe("fillRisksByAgentType", () => {
 });
 
 describe("CONTROL_LEVELS", () => {
-  it("expõe os 4 níveis de controle NR-01", () => {
+  it("expõe os 5 níveis da hierarquia de controle", () => {
     expect(CONTROL_LEVELS).toEqual([
       "elimination",
+      "substitution",
       "collective_protection",
       "administrative",
       "ppe",

@@ -36,7 +36,13 @@ const ENUMS: Record<string, string[]> = {
     "habitual",
   ],
   assessment_criterion: ["qualitative", "quantitative"],
-  control_level: ["elimination", "collective_protection", "administrative", "ppe"],
+  control_level: [
+    "elimination",
+    "substitution",
+    "collective_protection",
+    "administrative",
+    "ppe",
+  ],
   pgr_registration_type: ["crm", "crea", "mte", "not_applicable"],
 };
 

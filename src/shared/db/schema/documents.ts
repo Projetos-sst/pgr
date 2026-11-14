@@ -90,6 +90,13 @@ export const documents = pgTable(
       "documents_related_entity_check",
       sql`(related_entity_type is null) = (related_entity_id is null)`,
     ),
+    pgPolicy("documents_machine_attachment_scope", {
+      as: "restrictive",
+      for: "all",
+      to: appRuntimeRole,
+      using: sql`(${table.relatedEntityType} is distinct from 'machine_installation' or exists (select 1 from public.machine_installations m where m.id = ${table.relatedEntityId} and m.org_id = ${table.orgId}))`,
+      withCheck: sql`(${table.relatedEntityType} is distinct from 'machine_installation' or exists (select 1 from public.machine_installations m where m.id = ${table.relatedEntityId} and m.org_id = ${table.orgId}))`,
+    }),
     pgPolicy("documents_isolation", {
       for: "all",
       to: appRuntimeRole,

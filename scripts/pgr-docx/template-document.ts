@@ -7,7 +7,7 @@ import {
   Document,
   Footer,
   Header,
-  HorizontalPositionRelativeFrom,
+  HeightRule,
   ImageRun,
   LineRuleType,
   PageNumber,
@@ -15,8 +15,7 @@ import {
   ShadingType,
   TabStopType,
   TextRun,
-  TextWrappingType,
-  VerticalPositionRelativeFrom,
+  TableRow,
   type ParagraphChild,
   type Table,
 } from "docx";
@@ -30,6 +29,7 @@ import {
   PGR_DOCX_FONT,
   PGR_DOCX_RISK_CLASS_COLORS,
   PGR_DOCX_RISK_CLASSES,
+  PGR_DOCX_TABLE_HEAD,
 } from "@/shared/domains/pgr/pgr-docx/theme";
 import type { PgrDocxTextKey } from "@/shared/domains/pgr/pgr-docx/defaults";
 
@@ -156,40 +156,61 @@ function pageFooter(kit: Kit) {
 // ---------------------------------------------------------------- capa
 
 function cover(kit: Kit) {
-  const background = new ImageRun({
+  const brand = new ImageRun({
     type: "png",
-    data: readFileSync(path.join(ASSETS, "cover-background.png")),
-    transformation: { width: 794, height: 1123 },
-    floating: {
-      horizontalPosition: { relative: HorizontalPositionRelativeFrom.PAGE, offset: 0 },
-      verticalPosition: { relative: VerticalPositionRelativeFrom.PAGE, offset: 0 },
-      behindDocument: true,
-      allowOverlap: true,
-      lockAnchor: true,
-      wrap: { type: TextWrappingType.NONE },
-    },
+    data: readFileSync(path.join(ASSETS, "pgr-e-logo.png")),
+    transformation: { width: 150, height: 50 },
     altText: {
-      name: "pgr-cover-background",
-      title: "Capa",
-      description: "Fundo da capa",
+      name: "pgr-cover-brand",
+      title: "PGR-e",
+      description: "Marca PGR-e na capa",
     },
   });
-  const right = (children: ParagraphChild[], after = 40, before = 0) =>
+  const right = (children: ParagraphChild[], after = 0) =>
     new Paragraph({
       alignment: AlignmentType.RIGHT,
-      spacing: { before, after },
+      spacing: { before: 0, after },
       children,
     });
+  const band = grid(
+    [
+      tr([
+        tc(
+          [
+            right(
+              [
+                kit.fx("PGR-e · SISTEMA DE GESTÃO DE RISCOS", {
+                  size: S.small,
+                  bold: true,
+                  color: C.white,
+                  characterSpacing: 30,
+                }),
+              ],
+              240,
+            ),
+            right([
+              kit.label("documentTitle", { size: 120, bold: true, color: C.white }),
+            ]),
+            right([kit.label("documentSubtitle", { size: 40, color: C.white })]),
+          ],
+          { width: WIDTH, fill: C.primary, margins: 520 },
+        ),
+      ]),
+      new TableRow({
+        height: { value: 140, rule: HeightRule.EXACT },
+        cantSplit: true,
+        children: [
+          tc([spacer(20)], { width: WIDTH, fill: C.primaryStrong, margins: 20 }),
+        ],
+      }),
+    ],
+    [WIDTH],
+    BORDERS.none,
+  );
   return [
-    // No anotado o fundo sai: o LibreOffice pinta a imagem "atrás do texto" por cima do
-    // fundo dos trechos, escondendo a marcação de categoria da capa.
-    new Paragraph({ children: kit.annotate ? [] : [background], spacing: { after: 0 } }),
-    right(
-      [kit.label("documentTitle", { size: 120, bold: true, color: C.primary })],
-      0,
-      1500,
-    ),
-    right([kit.label("documentSubtitle", { size: 46, color: C.text })], 120),
+    new Paragraph({ spacing: { before: 0, after: 2600 }, children: [brand] }),
+    band,
+    spacer(560),
     raw(kit, "cover.validityXml"),
     raw(kit, "cover.razaoSocialXml"),
     raw(kit, "cover.nomeFantasiaXml"),
@@ -622,7 +643,8 @@ function methodologyTable(
           {
             width: total,
             span: options.columns.length,
-            fill: C.primary,
+            fill: PGR_DOCX_TABLE_HEAD.fill,
+            bottomRule: PGR_DOCX_TABLE_HEAD.rule,
           },
         ),
       ]),
@@ -708,7 +730,8 @@ function controlNeedTable(kit: Kit) {
           {
             width: WIDTH - first,
             span: 3,
-            fill: C.primary,
+            fill: PGR_DOCX_TABLE_HEAD.fill,
+            bottomRule: PGR_DOCX_TABLE_HEAD.rule,
           },
         ),
       ]),
@@ -1062,29 +1085,36 @@ function riskCard(kit: Kit) {
           tp(
             [
               kit.ctl(`#agent.${agent}`),
-              kit.fx("RISCO ", { bold: true, size: 26, color: colors.text }),
-              kit.dy("number", { bold: true, size: 26, color: colors.text }),
+              kit.fx("RISCO ", { bold: true, size: 26, color: C.text }),
+              kit.dy("number", { bold: true, size: 26, color: C.primaryStrong }),
             ],
             { keepNext: true },
           ),
         ],
-        { width: HALF, fill: colors.fill, margins: 120 },
+        { width: HALF, fill: C.surfaceAlt, margins: 120, accentLeft: colors.fill },
       ),
       tc(
         [
-          tp([kit.fx("AGENTE/TIPO:", { size: S.tableSmall, color: colors.text })], {
+          tp([kit.fx("AGENTE/TIPO", { ...SMALL_LABEL, size: S.tableSmall })], {
             align: "right",
+            after: 20,
             keepNext: true,
           }),
           tp(
             [
-              kit.dy("agentType", { bold: true, size: 21, color: colors.text }),
+              new TextRun({
+                text: " {{agentType}} ",
+                bold: true,
+                size: 19,
+                color: colors.text,
+                shading: { type: ShadingType.CLEAR, color: "auto", fill: colors.fill },
+              }),
               kit.ctl(`/agent.${agent}`),
             ],
             { align: "right", keepNext: true },
           ),
         ],
-        { width: WIDTH - HALF, fill: colors.fill, margins: 120 },
+        { width: WIDTH - HALF, fill: C.surfaceAlt, margins: 120 },
       ),
     ]);
   });
@@ -1231,14 +1261,18 @@ function riskCard(kit: Kit) {
 const HIERARCHY = [
   ["elimination", "I. É possível eliminação dos fatores de\u00A0risco?"],
   [
+    "substitution",
+    "II. É possível substituição por processo, material ou equipamento de menor\u00A0risco?",
+  ],
+  [
     "collective",
-    "II. Minimização e controle dos fatores de risco, com a adoção de medidas de proteção\u00A0coletiva?",
+    "III. Minimização e controle dos fatores de risco, com a adoção de controles de engenharia e medidas de proteção\u00A0coletiva?",
   ],
   [
     "administrative",
-    "III. Minimização e controle dos fatores de risco, com a adoção de medidas administrativas ou de organização do\u00A0trabalho?",
+    "IV. Minimização e controle dos fatores de risco, com a adoção de medidas administrativas ou de organização do\u00A0trabalho?",
   ],
-  ["individual", "IV. Adoção de medidas de proteção\u00A0individual?"],
+  ["individual", "V. Adoção de medidas de proteção\u00A0individual?"],
 ] as const;
 
 function measuresTable(kit: Kit) {
@@ -1539,7 +1573,7 @@ function inventory(kit: Kit) {
     }),
     control(kit, "/ges"),
     control(kit, "#ges"),
-    heading([kit.dy("title")]),
+    heading([kit.dy("title", { color: C.white })], { fill: C.primary }),
     subheading([kit.fx(INVENTORY_BLOCKS[0])]),
     body([kit.fx("Descrição: ", { bold: true }), kit.dy("processDescription")], {
       keepNext: true,

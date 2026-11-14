@@ -9,12 +9,14 @@ import {
   TRIAL_DAYS,
   planFromSubscriptionStatus,
 } from "@/shared/domains/platform/billing";
+import { CHECKOUT_REFERENCE_KEY } from "@/shared/domains/commercial/checkout";
 import { BillingUnavailableError } from "@/shared/errors/billing-unavailable-error";
 import {
   createBillingPortalSession,
   createProCheckoutSession,
 } from "@/shared/integrations/stripe/client";
 import { getAppBaseUrl } from "@/shared/integrations/stripe/config";
+import { handleCommercialStripeEvent } from "@/shared/server/commercial/commercial-webhook";
 
 /** Inicia o Checkout do plano Pro. Só o `owner` gerencia a assinatura. */
 export async function startProCheckout(ctx: TenantContext): Promise<{ url: string }> {
@@ -52,6 +54,10 @@ export async function openBillingPortal(ctx: TenantContext): Promise<{ url: stri
   });
 }
 
+function isCommercialReference(metadata: Stripe.Metadata | null | undefined): boolean {
+  return Boolean(metadata?.[CHECKOUT_REFERENCE_KEY]);
+}
+
 function orgIdFromMetadata(metadata: Stripe.Metadata | null | undefined): string | null {
   return metadata?.orgId ?? null;
 }
@@ -61,8 +67,11 @@ function orgIdFromMetadata(metadata: Stripe.Metadata | null | undefined): string
  * verificada). O Stripe é a fonte da verdade; `orgs.plan` é o espelho.
  */
 export async function handleStripeEvent(event: Stripe.Event): Promise<void> {
+  if (await handleCommercialStripeEvent(event)) return;
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+    if (session.mode === "payment" || isCommercialReference(session.metadata)) return;
     const orgId = orgIdFromMetadata(session.metadata) ?? session.client_reference_id;
     if (!orgId) return;
     await orgsRepo.updateOrgBilling(orgId, {
@@ -81,6 +90,7 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<void> {
     event.type === "customer.subscription.deleted"
   ) {
     const sub = event.data.object as Stripe.Subscription;
+    if (isCommercialReference(sub.metadata)) return;
     const customerId = typeof sub.customer === "string" ? sub.customer : null;
     let orgId = orgIdFromMetadata(sub.metadata);
     if (!orgId && customerId) {

@@ -135,6 +135,35 @@ export async function removeDocumentObject(storagePath: string): Promise<void> {
   if (error) throw new Error(`documents storage remove failed: ${error.message}`);
 }
 
+export type DownloadedObject =
+  | { status: "found"; bytes: Buffer }
+  | { status: "missing" }
+  | { status: "unavailable" };
+
+export function isStorageObjectMissingError(error: {
+  message?: string;
+  status?: number;
+  statusCode?: string;
+}): boolean {
+  return (
+    error.status === 404 ||
+    error.statusCode === "404" ||
+    /not[ _]found/i.test(error.message ?? "")
+  );
+}
+
+export async function downloadDocumentObject(
+  storagePath: string,
+): Promise<DownloadedObject> {
+  const supabase = getRlsBypassingSupabaseClient();
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .download(storagePath);
+  if (error && isStorageObjectMissingError(error)) return { status: "missing" };
+  if (error || !data) return { status: "unavailable" };
+  return { status: "found", bytes: Buffer.from(await data.arrayBuffer()) };
+}
+
 /**
  * Gera URL assinada de curta duração para download (issue #35). O CHAMADOR é
  * responsável por já ter verificado que `storagePath` pertence ao tenant ativo
