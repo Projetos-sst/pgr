@@ -54,8 +54,8 @@ const config: Config = {
       displayName: "unit",
       testEnvironment: "jsdom",
       testMatch: [
-        "<rootDir>/src/**/__tests__/**/*.test.ts?(x)",
-        "<rootDir>/src/__tests__/unit/**/*.test.ts?(x)",
+        "**/src/**/__tests__/**/*.test.ts?(x)",
+        "**/src/__tests__/unit/**/*.test.ts?(x)",
       ],
       testPathIgnorePatterns: ["/node_modules/", "/.next/", "/__tests__/integration/"],
       moduleNameMapper: {
@@ -74,7 +74,7 @@ const config: Config = {
       // de 5s, o hook estoura no meio do seed e o teste SEGUINTE quebra com `orgs_pkey`
       // duplicado — falha que se manifesta só no run completo e some quando a suíte roda
       // isolada. O limite maior não mascara bug: só reconhece o custo real de I/O.
-      testMatch: ["<rootDir>/src/__tests__/integration/**/*.test.ts?(x)"],
+      testMatch: ["**/src/__tests__/integration/**/*.test.ts?(x)"],
       testPathIgnorePatterns: [
         "/node_modules/",
         "/.next/",
