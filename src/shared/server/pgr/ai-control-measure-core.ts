@@ -2,6 +2,7 @@ import "server-only";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 import { QuotaExceededError } from "@/shared/errors/quota-exceeded-error";
 import {
   FREE_AI_SUGGESTION_MONTHLY_QUOTA,
@@ -10,6 +11,7 @@ import {
 import {
   AI_CONTROL_MEASURE_KIND,
   acceptSuggestedMeasuresInputSchema,
+  acceptedMeasuresConflict,
   dropExistingLevels,
   toControlMeasureValuesFromSuggestion,
   type AcceptSuggestedMeasuresInput,
@@ -20,6 +22,7 @@ import * as aiRepo from "@/shared/db/repositories/ai-risk-suggestion";
 import { fetchRiskControlContext } from "@/shared/db/repositories/ai-control-measures";
 import { createControlMeasure } from "@/shared/db/repositories/control-measures";
 import { isModeratePlusClassification } from "@/shared/domains/pgr/control-measure";
+import type { ControlLevel } from "@/shared/domains/pgr/risks";
 
 /**
  * Núcleo de orquestração da **sugestão de medidas de controle por IA**, compartilhado
@@ -36,6 +39,7 @@ export type SuggestControlMeasuresResult = {
    * em vez de deixar o usuário perder o lote num `VALIDATION` do servidor.
    */
   requiresResponsibleAndDeadline: boolean;
+  existingLevels: ControlLevel[];
 };
 export type AcceptSuggestedMeasuresResult = { created: number };
 
@@ -69,6 +73,7 @@ export async function runSuggestControlMeasures(
   return {
     suggestions,
     requiresResponsibleAndDeadline: isModeratePlusClassification(context.classification),
+    existingLevels: context.existingLevels,
   };
 }
 
@@ -83,7 +88,11 @@ export async function runAcceptSuggestedMeasures(
   input: AcceptSuggestedMeasuresInput,
 ): Promise<AcceptSuggestedMeasuresResult> {
   const data = acceptSuggestedMeasuresInputSchema.parse(input);
-  // Valida/mapeia todas antes de inserir (falha cedo; cross-tenant recusa no 1º insert).
+  const risk = await fetchRiskControlContext(ctx.tenantId, riskId);
+  if (!risk) throw new ReferenceNotFoundError("Risco não encontrado.");
+  const conflict = acceptedMeasuresConflict(data.suggestions, risk);
+  if (conflict) throw new ValidationError(conflict);
+  // Valida/mapeia todas antes de inserir (falha cedo; cross-tenant já recusado acima).
   const values = data.suggestions.map(toControlMeasureValuesFromSuggestion);
 
   let created = 0;

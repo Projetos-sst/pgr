@@ -248,23 +248,29 @@ entre local/homolog/prod. (Mantemos só **um** arquivo Postman de propósito.)
 QUOTA_EXCEEDED`; falha do LLM → `502 AI_UNAVAILABLE`; grupo de agente inválido no foco → `422 VALIDATION`.
 - **`/risks/{id}/control-measure-suggestions`** (medidas de controle por IA): `POST` monta o contexto
   **não-PII** do risco (o risco, o ambiente do GES, títulos de função, classificação vigente e os
-  níveis já cadastrados) e devolve `{ suggestions: [{ controlLevel, actionWhat, actionHow, monitoring?,
-justification? }] }`, ordenadas pela hierarquia da NR-01 — **nada é persistido**. No máximo **uma
-  medida por nível** (`uq_control_measures_org_risk_level`), e os níveis que o risco já tem são
-  descartados antes de responder. A resposta traz `requiresResponsibleAndDeadline`: risco
+  níveis já cadastrados) e devolve `{ suggestions: [{ controlLevel, actionWhat, actionWhy?, actionHow,
+monitoring?, justification? }], existingLevels, requiresResponsibleAndDeadline }`, ordenadas pela
+  hierarquia da NR-01 — **nada é persistido**. A tela mostra cada medida num card editável, e o usuário
+  confirma antes de gravar. No máximo **uma medida por nível** (`uq_control_measures_org_risk_level`):
+  os níveis que o risco já tem (`existingLevels`) são descartados antes de responder. A resposta traz `requiresResponsibleAndDeadline`: risco
   **moderado ou superior** exige `actionResponsible` + `actionDeadline` em cada medida
   aplicável (regra da issue #42) — a IA não os preenche (são compromisso de pessoa), então
   o aceite tem de trazê-los ou o servidor recusa com `422 VALIDATION`.
-  `POST /accept` grava as aceitas reusando `createControlMeasure`
+  `POST /accept` grava as aceitas (já editadas) reusando `createControlMeasure`
   (que aplica a regra de status pela classificação e espelha no Plano de Ação), `201` com `{ created }`.
+  O lote é conferido antes de gravar: nível repetido no lote, nível já cadastrado no risco ou falta de
+  responsável/prazo em risco moderado+ → `422 VALIDATION`, sem gravar parte do lote.
   Risco de outra org → `422 FK_NOT_FOUND`; cota → `402`; falha do LLM → `502 AI_UNAVAILABLE`.
 - **`/job-roles/{id}/training-suggestions`** (treinamentos obrigatórios por IA): `POST` envia cargo,
   GES, riscos da exposição e o **catálogo da organização**, e devolve `{ suggestions: [{ name,
 referenceNorm?, periodicity, workloadHours, rationale?, trainingId, alreadyRequired }] }`. O catálogo
   entra no prompt para reconciliar nomes: `trainingId` vem preenchido quando o curso já existe
   (comparação por tokens, então "Trabalho em Altura" casa com "NR-35 — Trabalho em Altura") e `null`
-  quando o aceite terá de criá-lo. `POST /accept` **cria no catálogo o que faltar** e vincula,
-  `201` com `{ linked, createdInCatalog }`; o vínculo é idempotente.
+  quando o aceite terá de criá-lo. A tela mostra cada treinamento num card editável (o que já é
+  obrigatório aparece só como informação) e pede confirmação antes de vincular. `POST /accept`
+  **cria no catálogo o que faltar** e vincula, `201` com `{ linked, createdInCatalog }`. O aceite é
+  idempotente: curso de mesmo nome (sem diferenciar maiúsculas) é reaproveitado e `linked` conta só os
+  vínculos novos. Função de outra org → `422 FK_NOT_FOUND`, sem criar nada no catálogo.
 - **`/service-orders/{id}/instruction-suggestions`** (instruções de segurança da OS, NR-01 1.4.1):
   `POST` envia função, GES, unidade, riscos e EPIs da atividade e devolve `{ suggestions: [{
 description }] }` na voz imperativa, sem repetir os itens que a OS já tem. **Não há `/accept` de

@@ -10,8 +10,11 @@ import {
 import {
   AI_TRAINING_SUGGESTION_KIND,
   acceptSuggestedTrainingsInputSchema,
+  findCatalogEntry,
   matchAgainstCatalog,
   type AcceptSuggestedTrainingsInput,
+  type AcceptedTraining,
+  type CatalogEntry,
   type MatchedTrainingSuggestion,
 } from "@/shared/domains/pgr/ai-training-suggestion";
 import { requestRequiredTrainingSuggestions } from "@/shared/integrations/agents";
@@ -76,8 +79,8 @@ export async function runSuggestRequiredTrainings(
  * torna a sugestão utilizável, já que `job_role_required_trainings` referencia
  * `training_catalog` por FK e não aceita nome solto.
  *
- * `addRequiredTraining` é idempotente (`onConflictDoNothing` + devolve o existente), então
- * aceitar duas vezes não duplica vínculo.
+ * Aceitar duas vezes não duplica nada: curso de mesmo nome é reaproveitado e
+ * `addRequiredTraining` é idempotente. `linked` conta só os vínculos novos.
  */
 export async function runAcceptSuggestedTrainings(
   ctx: Pick<TenantContext, "tenantId">,
@@ -85,25 +88,39 @@ export async function runAcceptSuggestedTrainings(
   input: AcceptSuggestedTrainingsInput,
 ): Promise<AcceptSuggestedTrainingsResult> {
   const data = acceptSuggestedTrainingsInputSchema.parse(input);
+  const context = await fetchJobRoleTrainingContext(ctx.tenantId, jobRoleId);
+  if (!context) throw new ReferenceNotFoundError("Função não encontrada.");
 
-  let linked = 0;
+  const catalog: CatalogEntry[] = [...context.catalog];
+  const required = new Set(context.requiredTrainingIds);
   let createdInCatalog = 0;
   for (const s of data.suggestions) {
-    let trainingId = s.trainingId ?? null;
-    if (!trainingId) {
-      const created = await createTrainingCatalog(ctx.tenantId, {
-        name: s.name,
-        referenceNorm: s.referenceNorm,
-        workloadHours: s.workloadHours,
-        periodicity: s.periodicity,
-        isActive: true,
-        description: s.rationale,
-      });
-      trainingId = created.id;
-      createdInCatalog += 1;
-    }
+    const existingId = s.trainingId ?? findCatalogEntry(s.name, catalog)?.id;
+    const trainingId = existingId ?? (await createCatalogEntry(ctx.tenantId, s, catalog));
+    if (!existingId) createdInCatalog += 1;
+    if (required.has(trainingId)) continue;
     await addRequiredTraining(ctx.tenantId, { jobRoleId, trainingId });
-    linked += 1;
+    required.add(trainingId);
   }
-  return { linked, createdInCatalog };
+  return {
+    linked: required.size - context.requiredTrainingIds.length,
+    createdInCatalog,
+  };
+}
+
+async function createCatalogEntry(
+  tenantId: string,
+  s: AcceptedTraining,
+  catalog: CatalogEntry[],
+): Promise<string> {
+  const created = await createTrainingCatalog(tenantId, {
+    name: s.name,
+    referenceNorm: s.referenceNorm,
+    workloadHours: s.workloadHours,
+    periodicity: s.periodicity,
+    isActive: true,
+    description: s.rationale,
+  });
+  catalog.push({ id: created.id, name: s.name, periodicity: s.periodicity });
+  return created.id;
 }
