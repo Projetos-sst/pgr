@@ -7909,6 +7909,92 @@
       ]
     },
     {
+      "name": "Preenchimento de EPIs do risco (IA)",
+      "item": [
+        {
+          "name": "POST /risks/{id}/epi-fill (preenche por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epi-fill",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epi-fill"]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/{id}/epi-fill/accept (vincula, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"links\": [\n    {\n      \"catalogId\": \"{{epiCatalogId}}\",\n      \"neutralization\": \"neutralizes\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epi-fill/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epi-fill", "accept"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Preenchimento da avaliação de risco (IA)",
+      "item": [
+        {
+          "name": "POST /risks/{id}/assessment-fill (preenche por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessment-fill",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessment-fill"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Sugestao de treinamentos obrigatorios (IA)",
       "item": [
         {

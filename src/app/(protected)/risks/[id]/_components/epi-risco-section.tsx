@@ -3,30 +3,63 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 import {
+  AiFillButton,
+  AiSaveConfirm,
+  useAiGenerateWarning,
+} from "@/app/(protected)/_ui/ai-review";
+import { SelectField } from "@/app/(protected)/_ui/form";
+import {
+  acceptRiskEpiFillAction,
   addRiskEpiAction,
+  fillRiskEpisAction,
   listAvailableEpisForRiskAction,
   listRiskEpisAction,
   removeRiskEpiAction,
   updateRiskEpiAction,
 } from "@/shared/server/actions/pgr/epi-risk";
+import type { FilledEpiLink } from "@/shared/domains/pgr/ai-epi-risk-fill";
 import {
-  EPI_NEUTRALIZATION_ORDER,
-  epiNeutralizationLabel,
+  epiNeutralizationSchema,
   type EpiNeutralization,
   type EpiOption,
   type EpiRiskLinkItem,
 } from "@/shared/domains/pgr/epi-risk";
+import { aiFillErrorMessage } from "@/shared/domains/platform/ai-review";
 
-const selectClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
+import { EpiFillReview, NEUTRALIZATION_OPTIONS } from "./epi-fill-review";
+
+function toNeutralization(value: string): EpiNeutralization | null {
+  const parsed = epiNeutralizationSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+function emptyCatalogMessage(linkedCount: number): string {
+  if (linkedCount === 0) {
+    return "Cadastre EPIs no catálogo para usar a IA pgr-e neste risco.";
+  }
+  return "Todos os EPIs do catálogo já estão vinculados a este risco.";
+}
+
+function savedNotice(created: number, skipped: number): string {
+  const base = `${created} EPI(s) vinculado(s) ao risco.`;
+  return skipped > 0 ? `${base} ${skipped} já estava(m) vinculado(s).` : base;
+}
 
 export function EpiRiscoSection({ riskId }: { riskId: string }) {
   const [linked, setLinked] = useState<EpiRiskLinkItem[]>([]);
   const [available, setAvailable] = useState<EpiOption[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [newCatalogId, setNewCatalogId] = useState("");
   const [newNeutralization, setNewNeutralization] =
     useState<EpiNeutralization>("neutralizes");
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [filled, setFilled] = useState<FilledEpiLink[]>([]);
+  const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [generating, startGenerate] = useTransition();
+  const [accepting, startAccept] = useTransition();
 
   const reload = useCallback(() => {
     startTransition(async () => {
@@ -36,12 +69,65 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
       ]);
       if (linkedResult.ok) setLinked(linkedResult.data);
       if (availableResult.ok) setAvailable(availableResult.data);
+      setLoaded(true);
     });
   }, [riskId]);
 
   useEffect(() => {
     reload();
   }, [reload]);
+
+  function generate() {
+    setError(null);
+    setNotice(null);
+    setFilled([]);
+    setReviewOpen(true);
+    startGenerate(async () => {
+      const result = await fillRiskEpisAction(riskId);
+      if (!result.ok) {
+        setReviewOpen(false);
+        setError(aiFillErrorMessage(result.error));
+        return;
+      }
+      setFilled(result.data.links);
+    });
+  }
+
+  const warning = useAiGenerateWarning(generate);
+
+  function editFilled(catalogId: string, value: string) {
+    const neutralization = toNeutralization(value);
+    if (!neutralization) return;
+    setFilled((prev) =>
+      prev.map((link) =>
+        link.catalogId === catalogId ? { ...link, neutralization } : link,
+      ),
+    );
+  }
+
+  function removeFilled(catalogId: string) {
+    setFilled((prev) => prev.filter((link) => link.catalogId !== catalogId));
+  }
+
+  function saveFilled() {
+    startAccept(async () => {
+      const result = await acceptRiskEpiFillAction(riskId, {
+        links: filled.map((link) => ({
+          catalogId: link.catalogId,
+          neutralization: link.neutralization,
+        })),
+      });
+      setConfirming(false);
+      if (!result.ok) {
+        setError(result.error.message);
+        return;
+      }
+      setReviewOpen(false);
+      setFilled([]);
+      setNotice(savedNotice(result.data.created, result.data.skipped));
+      reload();
+    });
+  }
 
   function addLink() {
     if (!newCatalogId) return;
@@ -62,7 +148,9 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
     });
   }
 
-  function saveNeutralization(id: string, neutralization: EpiNeutralization) {
+  function saveNeutralization(id: string, value: string) {
+    const neutralization = toNeutralization(value);
+    if (!neutralization) return;
     setError(null);
     startTransition(async () => {
       const result = await updateRiskEpiAction(id, riskId, { neutralization });
@@ -86,17 +174,32 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
     });
   }
 
+  const catalogEmpty = loaded && available.length === 0;
+
   return (
     <section className="glass-card flex flex-col gap-4 p-4">
-      <header>
-        <h2 className="text-text text-lg font-semibold">EPIs vinculados ao risco</h2>
-        <p className="text-text-muted text-sm">
-          Indique, por EPI, se neutraliza o risco. Riscos sem EPI (controlados por medidas
-          coletivas/administrativas) podem ficar sem nenhum vínculo.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-text text-lg font-semibold">EPIs vinculados ao risco</h2>
+          <p className="text-text-muted text-sm">
+            Indique, por EPI, se neutraliza o risco. Riscos sem EPI (controlados por
+            medidas coletivas/administrativas) podem ficar sem nenhum vínculo.
+          </p>
+          {catalogEmpty ? (
+            <p className="text-text-subtle text-sm">
+              {emptyCatalogMessage(linked.length)}
+            </p>
+          ) : null}
+        </div>
+        <AiFillButton
+          onClick={warning.request}
+          pending={generating}
+          disabled={!loaded || catalogEmpty || accepting}
+        />
       </header>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error && !reviewOpen ? <p className="text-sm text-red-600">{error}</p> : null}
+      {notice ? <p className="text-sm text-green-700">{notice}</p> : null}
 
       {linked.length === 0 ? (
         <p className="text-text-subtle text-sm">Nenhum EPI vinculado a este risco.</p>
@@ -126,39 +229,25 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-end gap-3 border-t border-white/50 pt-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">Adicionar EPI</span>
-          <select
-            value={newCatalogId}
-            onChange={(e) => setNewCatalogId(e.target.value)}
-            className={selectClass}
-          >
-            <option value="">— selecione (busca por nome/CA) —</option>
-            {available.map((opt) => (
-              <option key={opt.catalogId} value={opt.catalogId}>
-                {opt.name}
-                {opt.ca ? ` — CA ${opt.ca}` : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-medium">
-            Neutraliza os Riscos?
-          </span>
-          <select
-            value={newNeutralization}
-            onChange={(e) => setNewNeutralization(e.target.value as EpiNeutralization)}
-            className={selectClass}
-          >
-            {EPI_NEUTRALIZATION_ORDER.map((value) => (
-              <option key={value} value={value}>
-                {epiNeutralizationLabel(value)}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="grid items-end gap-3 border-t border-white/50 pt-4 sm:grid-cols-[2fr_1fr_auto]">
+        <SelectField
+          label="Adicionar EPI"
+          name="new-epi-catalog"
+          value={newCatalogId}
+          onChange={setNewCatalogId}
+          emptyLabel="— selecione (busca por nome/CA) —"
+          options={available.map((opt) => ({
+            value: opt.catalogId,
+            label: opt.ca ? `${opt.name} — CA ${opt.ca}` : opt.name,
+          }))}
+        />
+        <SelectField
+          label="Neutraliza os Riscos?"
+          name="new-epi-neutralization"
+          value={newNeutralization}
+          onChange={(v) => setNewNeutralization(toNeutralization(v) ?? "neutralizes")}
+          options={NEUTRALIZATION_OPTIONS}
+        />
         <button
           type="button"
           onClick={addLink}
@@ -168,6 +257,27 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
           Adicionar
         </button>
       </div>
+
+      {reviewOpen ? (
+        <EpiFillReview
+          links={filled}
+          generating={generating}
+          pending={accepting}
+          error={error}
+          onEdit={editFilled}
+          onRemove={removeFilled}
+          onSave={() => setConfirming(true)}
+          onClose={() => setReviewOpen(false)}
+        />
+      ) : null}
+
+      {warning.modal}
+      <AiSaveConfirm
+        open={confirming}
+        pending={accepting}
+        onConfirm={saveFilled}
+        onCancel={() => setConfirming(false)}
+      />
     </section>
   );
 }
@@ -180,7 +290,7 @@ function LinkedRow({
 }: {
   item: EpiRiskLinkItem;
   pending: boolean;
-  onSave: (id: string, neutralization: EpiNeutralization) => void;
+  onSave: (id: string, value: string) => void;
   onRemove: (id: string) => void;
 }) {
   return (
@@ -188,18 +298,14 @@ function LinkedRow({
       <td className="py-2 pr-3 font-medium">{item.name}</td>
       <td className="text-text-muted py-2 pr-3">{item.ca ?? "—"}</td>
       <td className="py-2 pr-3">
-        <select
+        <SelectField
+          label={`Neutraliza: ${item.name}`}
+          name={`epi-link-${item.id}`}
           value={item.neutralization}
           disabled={pending}
-          onChange={(e) => onSave(item.id, e.target.value as EpiNeutralization)}
-          className={`${selectClass} disabled:opacity-60`}
-        >
-          {EPI_NEUTRALIZATION_ORDER.map((value) => (
-            <option key={value} value={value}>
-              {epiNeutralizationLabel(value)}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => onSave(item.id, v)}
+          options={NEUTRALIZATION_OPTIONS}
+        />
       </td>
       <td className="py-2">
         <button

@@ -10,6 +10,14 @@ import type {
   SuggestedControlMeasure,
 } from "@/shared/domains/pgr/ai-control-measure-suggestion";
 import type {
+  EpiRiskFillContext,
+  SuggestedEpiLink,
+} from "@/shared/domains/pgr/ai-epi-risk-fill";
+import type {
+  FilledRiskAssessment,
+  RiskAssessmentFillContext,
+} from "@/shared/domains/pgr/ai-risk-assessment-fill";
+import type {
   JobRoleTrainingContext,
   SuggestedTraining,
 } from "@/shared/domains/pgr/ai-training-suggestion";
@@ -21,8 +29,10 @@ import type {
 
 import { actionPlanAgent } from "./action-plan/agent";
 import { controlMeasureAgent } from "./control-measure/agent";
+import { epiRiskAgent } from "./epi-risk/agent";
 import { mastraAiService } from "./core/mastra-ai-service";
 import { requiredTrainingAgent } from "./required-training/agent";
+import { riskAssessmentAgent } from "./risk-assessment/agent";
 import { riskSuggestionAgent } from "./risk-suggestion/agent";
 import { serviceOrderInstructionAgent } from "./service-order-instructions/agent";
 
@@ -41,6 +51,8 @@ export {
   riskSuggestionAgent,
   actionPlanAgent,
   controlMeasureAgent,
+  epiRiskAgent,
+  riskAssessmentAgent,
   requiredTrainingAgent,
   serviceOrderInstructionAgent,
 };
@@ -71,6 +83,18 @@ export async function requestControlMeasureSuggestions(
   ctx: RiskControlContext,
 ): Promise<SuggestedControlMeasure[]> {
   return mastraAiService.run(controlMeasureAgent, ctx);
+}
+
+export async function requestEpiRiskFill(
+  ctx: EpiRiskFillContext,
+): Promise<SuggestedEpiLink[]> {
+  return mastraAiService.run(epiRiskAgent, ctx);
+}
+
+export async function requestRiskAssessmentFill(
+  ctx: RiskAssessmentFillContext,
+): Promise<FilledRiskAssessment | null> {
+  return mastraAiService.run(riskAssessmentAgent, ctx);
 }
 
 /** Treinamentos exigidos por norma para uma função, ancorados nas NRs do MTE. */
