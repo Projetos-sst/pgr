@@ -17,7 +17,7 @@ import {
   AI_RISK_ASSESSMENT_FILL_KIND,
   type FilledRiskAssessment,
 } from "@/shared/domains/pgr/ai-risk-assessment-fill";
-import { fillRiskAssessmentAction } from "@/shared/server/actions/pgr/risk-assessments";
+import { fillRiskAssessmentAction } from "@/shared/server/actions/pgr/ai-risk-assessment-fill";
 import { FREE_AI_SUGGESTION_MONTHLY_QUOTA } from "@/shared/tenant/plan";
 
 import { adminClient, applyMigrations } from "../_helpers/db";

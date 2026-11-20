@@ -15,10 +15,6 @@ import {
 import * as repo from "@/shared/db/repositories/risk-assessments";
 import { getRiskMethodologyView } from "@/shared/db/repositories/risk-methodology";
 import type { RiskAssessment } from "@/shared/db/schema/risks";
-import {
-  runRiskAssessmentFill,
-  type RiskAssessmentFillResult,
-} from "@/shared/server/pgr/ai-risk-assessment-fill-core";
 
 const basePath = (riskId: string) => `/risks/${riskId}/assessments`;
 
@@ -112,16 +108,6 @@ export async function deleteRiskAssessmentAction(
       revalidateAssessment(riskId);
       return { id };
     },
-    { audit: true },
-  );
-}
-
-export async function fillRiskAssessmentAction(
-  riskId: string,
-): Promise<ActionResult<RiskAssessmentFillResult>> {
-  return officeAction(
-    "pgr.risk_assessments.ai_fill",
-    (ctx) => runRiskAssessmentFill(ctx, riskId),
     { audit: true },
   );
 }

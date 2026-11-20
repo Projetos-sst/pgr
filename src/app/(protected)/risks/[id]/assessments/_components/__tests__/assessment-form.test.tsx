@@ -4,16 +4,16 @@ jest.mock("next/navigation", () => ({
 jest.mock("@/shared/server/actions/pgr/risk-assessments", () => ({
   createRiskAssessmentAction: jest.fn(),
   updateRiskAssessmentAction: jest.fn(),
+}));
+jest.mock("@/shared/server/actions/pgr/ai-risk-assessment-fill", () => ({
   fillRiskAssessmentAction: jest.fn(),
 }));
 
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import {
-  createRiskAssessmentAction,
-  fillRiskAssessmentAction,
-} from "@/shared/server/actions/pgr/risk-assessments";
+import { createRiskAssessmentAction } from "@/shared/server/actions/pgr/risk-assessments";
+import { fillRiskAssessmentAction } from "@/shared/server/actions/pgr/ai-risk-assessment-fill";
 import { AI_REVIEW_DISMISSED_KEY } from "@/shared/domains/platform/ai-review";
 import type { FilledRiskAssessment } from "@/shared/domains/pgr/ai-risk-assessment-fill";
 

@@ -9,9 +9,9 @@ import {
   AiSaveConfirm,
   useAiGenerateWarning,
 } from "@/app/(protected)/_ui/ai-review";
+import { fillRiskAssessmentAction } from "@/shared/server/actions/pgr/ai-risk-assessment-fill";
 import {
   createRiskAssessmentAction,
-  fillRiskAssessmentAction,
   updateRiskAssessmentAction,
 } from "@/shared/server/actions/pgr/risk-assessments";
 import {

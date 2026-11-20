@@ -17,7 +17,7 @@ import { AI_EPI_RISK_FILL_KIND } from "@/shared/domains/pgr/ai-epi-risk-fill";
 import {
   acceptRiskEpiFillAction,
   fillRiskEpisAction,
-} from "@/shared/server/actions/pgr/epi-risk";
+} from "@/shared/server/actions/pgr/ai-epi-risk-fill";
 import { FREE_AI_SUGGESTION_MONTHLY_QUOTA } from "@/shared/tenant/plan";
 
 import { adminClient, applyMigrations } from "../_helpers/db";

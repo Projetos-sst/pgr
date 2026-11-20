@@ -10,8 +10,10 @@ import {
 import { SelectField } from "@/app/(protected)/_ui/form";
 import {
   acceptRiskEpiFillAction,
-  addRiskEpiAction,
   fillRiskEpisAction,
+} from "@/shared/server/actions/pgr/ai-epi-risk-fill";
+import {
+  addRiskEpiAction,
   listAvailableEpisForRiskAction,
   listRiskEpisAction,
   removeRiskEpiAction,

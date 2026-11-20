@@ -4,6 +4,8 @@ jest.mock("@/shared/server/actions/pgr/epi-risk", () => ({
   addRiskEpiAction: jest.fn(),
   updateRiskEpiAction: jest.fn(),
   removeRiskEpiAction: jest.fn(),
+}));
+jest.mock("@/shared/server/actions/pgr/ai-epi-risk-fill", () => ({
   fillRiskEpisAction: jest.fn(),
   acceptRiskEpiFillAction: jest.fn(),
 }));
@@ -12,11 +14,13 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import {
-  acceptRiskEpiFillAction,
-  fillRiskEpisAction,
   listAvailableEpisForRiskAction,
   listRiskEpisAction,
 } from "@/shared/server/actions/pgr/epi-risk";
+import {
+  acceptRiskEpiFillAction,
+  fillRiskEpisAction,
+} from "@/shared/server/actions/pgr/ai-epi-risk-fill";
 import { AI_REVIEW_DISMISSED_KEY } from "@/shared/domains/platform/ai-review";
 
 import { EpiRiscoSection } from "../epi-risco-section";
