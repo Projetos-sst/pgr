@@ -92,7 +92,6 @@ export async function runAcceptSuggestedMeasures(
   if (!risk) throw new ReferenceNotFoundError("Risco não encontrado.");
   const conflict = acceptedMeasuresConflict(data.suggestions, risk);
   if (conflict) throw new ValidationError(conflict);
-  // Valida/mapeia todas antes de inserir (falha cedo; cross-tenant já recusado acima).
   const values = data.suggestions.map(toControlMeasureValuesFromSuggestion);
 
   let created = 0;

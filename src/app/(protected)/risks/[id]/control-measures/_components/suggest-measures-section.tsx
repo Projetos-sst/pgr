@@ -155,7 +155,7 @@ export function SuggestMeasuresSection({ riskId }: { riskId: string }) {
             Preenchimento de medidas com a IA pgr-e
           </h2>
           <p className="text-text-subtle text-sm">
-            A IA preenche as medidas na hierarquia da NR-01 (eliminação → substituição →
+            A IA preenche cada medida na hierarquia da NR-01 (eliminação → substituição →
             engenharia → administrativo → EPI) a partir deste risco. Você revisa, edita e
             confirma antes de salvar.
           </p>
