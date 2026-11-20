@@ -11,6 +11,7 @@ import { TenantSwitcher } from "../_components/tenant-switcher";
 import { UserProfilePill } from "./_components/user-profile-pill";
 import { NavMenu } from "./_components/nav-menu";
 import { NotificationsBell } from "./_ui/notifications-bell";
+import { AppFooter } from "./_ui/app-footer";
 import { HeaderActions } from "./_components/header-actions";
 
 export default async function ProtectedLayout({
@@ -100,9 +101,7 @@ export default async function ProtectedLayout({
         mockup fica de fora enquanto a rota não existir — link morto seria pior
         que a ausência.
       */}
-      <footer className="flex min-h-[54px] items-center justify-center gap-[18px] border-t border-white/50 bg-white/30 px-5 py-3 text-center text-[12px] text-[#9095ad] saturate-[175%] backdrop-blur-[26px]">
-        <span>© {new Date().getFullYear()} — PGR-e · Todos os direitos reservados</span>
-      </footer>
+      <AppFooter />
     </div>
   );
 }

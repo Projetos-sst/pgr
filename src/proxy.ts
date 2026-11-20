@@ -70,6 +70,7 @@ const isPublicRoute = createRouteMatcher([
   "/seguranca-do-trabalho",
   "/medicina-do-trabalho",
   "/orcamento",
+  "/termos",
   "/sign-in(.*)",
   "/sign-up(.*)",
   // Assinatura publica de entrega de EPI: a credencial e o proprio token HMAC
