@@ -11,13 +11,15 @@ jest.mock("@/shared/auth/require-office-staff", () => ({
 // são exercidos contra o Postgres efêmero sem chamar a API externa.
 jest.mock("@/shared/integrations/agents", () => ({
   requestRiskSuggestions: jest.fn(),
+  requestRiskFill: jest.fn(),
 }));
 
 import { requireOfficeStaff } from "@/shared/auth/require-office-staff";
 import { ForbiddenError } from "@/shared/auth/errors";
-import { requestRiskSuggestions } from "@/shared/integrations/agents";
+import { requestRiskFill, requestRiskSuggestions } from "@/shared/integrations/agents";
 import {
   acceptSuggestedRisks,
+  fillRisk,
   suggestRisks,
 } from "@/shared/server/actions/pgr/ai-risk-suggestion";
 import {
@@ -37,6 +39,8 @@ const mockedGate = requireOfficeStaff as jest.MockedFunction<typeof requireOffic
 const mockedModel = requestRiskSuggestions as jest.MockedFunction<
   typeof requestRiskSuggestions
 >;
+
+const mockedFill = jest.mocked(requestRiskFill);
 
 const asOwner = (tenantId: string, plan: "free" | "pro" = "free") =>
   mockedGate.mockResolvedValue({ userId: "u", tenantId, plan, role: "owner" });
@@ -84,6 +88,7 @@ async function countRisksLike(
       await seedPgrBase(admin);
       mockedGate.mockReset();
       mockedModel.mockReset();
+      mockedFill.mockReset();
       asOwner("org_a");
     });
 
@@ -154,6 +159,97 @@ async function countRisksLike(
       const res = await acceptSuggestedRisks(PGR_IDS.gesA, { suggestions: [] });
       expect(res.ok).toBe(false);
       if (!res.ok) expect(res.error.code).toBe("VALIDATION");
+    });
+    it("accept: grava os campos novos editados pelo usuário", async () => {
+      const res = await acceptSuggestedRisks(PGR_IDS.gesA, {
+        suggestions: [
+          {
+            agentType: "physical",
+            description: "IA Ruído editado",
+            propagation: "Via aérea",
+            possibleInjuries: "PAIR",
+            exposureTime: "habitual",
+          },
+        ],
+      });
+      expect(res.ok).toBe(true);
+      const [row] = await admin<
+        { propagation: string; possible_injuries: string; exposure_time: string }[]
+      >`select propagation, possible_injuries, exposure_time from public.risks
+        where ges_id = ${PGR_IDS.gesA} and description = 'IA Ruído editado'`;
+      expect(row).toEqual({
+        propagation: "Via aérea",
+        possible_injuries: "PAIR",
+        exposure_time: "habitual",
+      });
+    });
+
+    it("fill: devolve 1 risco completo, manda o foco ao agente e registra 1 uso", async () => {
+      mockedFill.mockResolvedValue([
+        {
+          agentType: "physical",
+          description: "Ruído da serra",
+          propagation: "Via aérea",
+          possibleInjuries: "PAIR",
+          exposureTime: "habitual",
+        },
+        { agentType: "chemical", description: "Ignorado" },
+      ]);
+      const res = await fillRisk(PGR_IDS.gesA, { description: "Ruído da serra" });
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.data.risk).toEqual(
+          expect.objectContaining({
+            description: "Ruído da serra",
+            exposureTime: "habitual",
+          }),
+        );
+      }
+      expect(mockedFill).toHaveBeenCalledWith(expect.any(Object), {
+        description: "Ruído da serra",
+      });
+      expect(await countUsage(admin, "org_a")).toBe(1);
+    });
+
+    it("fill: mantém o grupo do agente escolhido pelo usuário", async () => {
+      mockedFill.mockResolvedValue([{ agentType: "chemical", description: "Ruído" }]);
+      const res = await fillRisk(PGR_IDS.gesA, { agentType: "physical" });
+      expect(res.ok).toBe(true);
+      if (res.ok) expect(res.data.risk?.agentType).toBe("physical");
+    });
+
+    it("fill: IA sem resposta útil → risk null e sem consumir cota", async () => {
+      mockedFill.mockResolvedValue([]);
+      const res = await fillRisk(PGR_IDS.gesA, {});
+      expect(res.ok).toBe(true);
+      if (res.ok) expect(res.data.risk).toBeNull();
+      expect(await countUsage(admin, "org_a")).toBe(0);
+    });
+
+    it("fill: GES de outra org → FK_NOT_FOUND, sem chamar o LLM", async () => {
+      const res = await fillRisk(PGR_IDS.gesB, {});
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.error.code).toBe("FK_NOT_FOUND");
+      expect(mockedFill).not.toHaveBeenCalled();
+    });
+
+    it("fill: cota do plano free estourada → QUOTA_EXCEEDED, sem chamar o LLM", async () => {
+      await admin.unsafe(
+        `insert into public.ai_usage_events (org_id, kind)
+         select 'org_a', '${AI_RISK_SUGGESTION_KIND}'
+         from generate_series(1, ${FREE_AI_SUGGESTION_MONTHLY_QUOTA})`,
+      );
+      const res = await fillRisk(PGR_IDS.gesA, {});
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.error.code).toBe("QUOTA_EXCEEDED");
+      expect(mockedFill).not.toHaveBeenCalled();
+    });
+
+    it("fill: foco com grupo inválido → VALIDATION", async () => {
+      const res = await fillRisk(PGR_IDS.gesA, { agentType: "cosmic" });
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.error.code).toBe("VALIDATION");
+      expect(mockedFill).not.toHaveBeenCalled();
     });
   },
 );

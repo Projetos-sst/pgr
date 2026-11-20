@@ -10,11 +10,14 @@ import {
 import {
   AI_RISK_SUGGESTION_KIND,
   acceptSuggestedRisksInputSchema,
+  riskFillFocusSchema,
   toRiskValuesFromSuggestion,
   type AcceptSuggestedRisksInput,
+  type GesRiskContext,
+  type RiskFillFocusInput,
   type SuggestedRisk,
 } from "@/shared/domains/pgr/ai-risk-suggestion";
-import { requestRiskSuggestions } from "@/shared/integrations/agents";
+import { requestRiskFill, requestRiskSuggestions } from "@/shared/integrations/agents";
 import * as aiRepo from "@/shared/db/repositories/ai-risk-suggestion";
 import { createRisk } from "@/shared/db/repositories/risks";
 
@@ -28,10 +31,12 @@ import { createRisk } from "@/shared/db/repositories/risks";
 export type SuggestRisksResult = { suggestions: SuggestedRisk[] };
 export type AcceptSuggestedRisksResult = { created: number };
 
-export async function runSuggestRisks(
+export type FillRiskResult = { risk: SuggestedRisk | null };
+
+async function loadGesContextWithinQuota(
   ctx: Pick<TenantContext, "tenantId" | "plan">,
   gesId: string,
-): Promise<SuggestRisksResult> {
+): Promise<GesRiskContext> {
   // Isolamento: GES de outra org é invisível pela RLS → FK_NOT_FOUND antes do LLM.
   const context = await aiRepo.fetchGesRiskContext(ctx.tenantId, gesId);
   if (!context) throw new ReferenceNotFoundError("GES não encontrado.");
@@ -46,7 +51,14 @@ export async function runSuggestRisks(
       `Limite de ${FREE_AI_SUGGESTION_MONTHLY_QUOTA} sugestões de IA/mês do plano free atingido.`,
     );
   }
+  return context;
+}
 
+export async function runSuggestRisks(
+  ctx: Pick<TenantContext, "tenantId" | "plan">,
+  gesId: string,
+): Promise<SuggestRisksResult> {
+  const context = await loadGesContextWithinQuota(ctx, gesId);
   const suggestions = await requestRiskSuggestions(context);
   // Lista vazia não entrega valor nenhum ao usuário — cobrar uma das 20 sugestões/mês do
   // plano free por isso seria punir quem tem o GES pouco descrito. Só consome cota quando
@@ -55,6 +67,19 @@ export async function runSuggestRisks(
     await aiRepo.recordAiUsage(ctx.tenantId, AI_RISK_SUGGESTION_KIND);
   }
   return { suggestions };
+}
+
+export async function runFillRisk(
+  ctx: Pick<TenantContext, "tenantId" | "plan">,
+  gesId: string,
+  focusInput: RiskFillFocusInput,
+): Promise<FillRiskResult> {
+  const focus = riskFillFocusSchema.parse(focusInput);
+  const context = await loadGesContextWithinQuota(ctx, gesId);
+  const [first] = await requestRiskFill(context, focus);
+  if (!first) return { risk: null };
+  await aiRepo.recordAiUsage(ctx.tenantId, AI_RISK_SUGGESTION_KIND);
+  return { risk: { ...first, agentType: focus.agentType ?? first.agentType } };
 }
 
 export async function runAcceptSuggestedRisks(

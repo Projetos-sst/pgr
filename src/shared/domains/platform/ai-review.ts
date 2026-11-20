@@ -15,3 +15,14 @@ export const AI_SAVE_TITLE = "Confirmar conteúdo preenchido pela IA pgr-e";
 export const TERMS_PATH = "/termos";
 
 export const TERMS_LINK_LABEL = "Termos de uso";
+
+const AI_FILL_ERROR_MESSAGES: Partial<Record<string, string>> = {
+  AI_UNAVAILABLE:
+    "A IA pgr-e está indisponível no momento. Preencha os campos manualmente e salve normalmente.",
+  QUOTA_EXCEEDED:
+    "Sua organização atingiu o limite mensal de preenchimentos com a IA pgr-e do plano. Preencha os campos manualmente ou faça upgrade do plano.",
+};
+
+export function aiFillErrorMessage(error: { code: string; message: string }): string {
+  return AI_FILL_ERROR_MESSAGES[error.code] ?? error.message;
+}

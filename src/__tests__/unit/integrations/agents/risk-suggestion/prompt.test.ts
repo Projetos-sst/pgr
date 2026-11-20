@@ -108,3 +108,97 @@ describe("RiskSuggestionAgent.parseOutput", () => {
     expect(agent.parseOutput({ risks: [] })).toEqual([]);
   });
 });
+
+describe("buildRiskSuggestionPrompt com foco (preenchimento de 1 risco)", () => {
+  it("sem foco não pede risco único nem detalha risco", () => {
+    const prompt = buildRiskSuggestionPrompt(CTX);
+    expect(prompt).not.toMatch(/exatamente 1 risco/);
+    expect(prompt).not.toMatch(/Detalhe somente este risco/);
+  });
+
+  it("com foco vazio pede exatamente 1 risco, sem bloco de detalhe", () => {
+    const prompt = buildRiskSuggestionPrompt(CTX, {});
+    expect(prompt).toMatch(/exatamente 1 risco/);
+    expect(prompt).not.toMatch(/Detalhe somente este risco/);
+  });
+
+  it("com foco inclui o que o usuário digitou", () => {
+    const prompt = buildRiskSuggestionPrompt(CTX, {
+      agentType: "physical",
+      hazard: "Ruído contínuo",
+      description: "Ruído da serra circular",
+    });
+    expect(prompt).toMatch(/Detalhe somente este risco/);
+    expect(prompt).toContain("Físico");
+    expect(prompt).toContain("Ruído contínuo");
+    expect(prompt).toContain("Ruído da serra circular");
+    expect(prompt).toMatch(/exatamente 1 risco/);
+  });
+
+  it("com foco continua sem dados de funcionários", () => {
+    expect(buildRiskSuggestionPrompt(CTX, { description: "Ruído" })).not.toMatch(
+      /CPF|funcion[aá]rio/i,
+    );
+  });
+});
+
+describe("RISK_SUGGESTION_INSTRUCTIONS — preenchimento completo", () => {
+  it("pede propagação, possíveis lesões e tempo de exposição do enum", () => {
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/propaga/i);
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/lesões/i);
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toContain("intermittent");
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toContain("gt_7h");
+  });
+
+  it("proíbe preencher medição, unidade e código eSocial", () => {
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/concentração/i);
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/unidade de medida/i);
+    expect(RISK_SUGGESTION_INSTRUCTIONS).toMatch(/eSocial/);
+  });
+});
+
+describe("riskSuggestionOutputSchema — campos novos", () => {
+  it("aceita propagação, lesões e tempo de exposição opcionais", () => {
+    const parsed = riskSuggestionOutputSchema.safeParse({
+      risks: [
+        {
+          agentType: "physical",
+          description: "Ruído",
+          propagation: "Via aérea",
+          possibleInjuries: "PAIR",
+          exposureTime: "habitual",
+        },
+      ],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("agente devolve os campos novos no domínio", () => {
+    const [risk] = new RiskSuggestionAgent().parseOutput({
+      risks: [
+        {
+          agentType: "physical",
+          description: "Ruído",
+          propagation: "Via aérea",
+          possibleInjuries: "PAIR",
+          exposureTime: "intermitente",
+        },
+      ],
+    });
+    expect(risk).toEqual({
+      agentType: "physical",
+      description: "Ruído",
+      propagation: "Via aérea",
+      possibleInjuries: "PAIR",
+      exposureTime: "intermittent",
+    });
+  });
+
+  it("buildPrompt do agente usa o foco quando presente", () => {
+    const agent = new RiskSuggestionAgent();
+    expect(agent.buildPrompt(CTX)).not.toMatch(/exatamente 1 risco/);
+    expect(agent.buildPrompt({ ...CTX, focus: { description: "Ruído" } })).toMatch(
+      /exatamente 1 risco/,
+    );
+  });
+});

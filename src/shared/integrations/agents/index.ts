@@ -2,6 +2,7 @@ import "server-only";
 
 import type {
   GesRiskContext,
+  RiskFillFocus,
   SuggestedRisk,
 } from "@/shared/domains/pgr/ai-risk-suggestion";
 import type {
@@ -49,6 +50,13 @@ export async function requestRiskSuggestions(
   ctx: GesRiskContext,
 ): Promise<SuggestedRisk[]> {
   return mastraAiService.run(riskSuggestionAgent, ctx);
+}
+
+export async function requestRiskFill(
+  ctx: GesRiskContext,
+  focus: RiskFillFocus,
+): Promise<SuggestedRisk[]> {
+  return mastraAiService.run(riskSuggestionAgent, { ...ctx, focus });
 }
 
 /** Plano 5W2H sugerido para um risco/incidente já sanitizado. Saída validada no core. */
