@@ -143,6 +143,16 @@ async function countRows(admin: ReturnType<typeof postgres>, orgId: string) {
     expect(await countRows(admin, "org_a")).toEqual({ catalog: 2, links: 2 });
   });
 
+  it("accept: curso inativo de mesmo nome não é reaproveitado e nada é gravado", async () => {
+    await admin`update public.training_catalog set is_active = false where id = ${CATALOG_ID}`;
+    const res = await acceptSuggestedTrainings(PGR_IDS.jobRoleA, {
+      suggestions: [edited, { ...edited, name: "trabalho em altura" }],
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.code).toBe("VALIDATION");
+    expect(await countRows(admin, "org_a")).toEqual({ catalog: 1, links: 0 });
+  });
+
   it("accept: função de outra org → FK_NOT_FOUND e nenhum curso criado", async () => {
     const res = await acceptSuggestedTrainings(PGR_IDS.jobRoleB, {
       suggestions: [edited],

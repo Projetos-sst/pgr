@@ -13,7 +13,10 @@ jest.mock("@/shared/integrations/agents", () => ({
 
 import { requireOfficeStaff } from "@/shared/auth/require-office-staff";
 import { requestEpiRiskFill } from "@/shared/integrations/agents";
-import { AI_EPI_RISK_FILL_KIND } from "@/shared/domains/pgr/ai-epi-risk-fill";
+import {
+  AI_EPI_RISK_FILL_KIND,
+  MAX_EPI_CATALOG_OPTIONS,
+} from "@/shared/domains/pgr/ai-epi-risk-fill";
 import {
   acceptRiskEpiFillAction,
   fillRiskEpisAction,
@@ -30,6 +33,8 @@ const mockedGate = jest.mocked(requireOfficeStaff);
 const mockedModel = jest.mocked(requestEpiRiskFill);
 
 const PLUG_ID = "11111111-1111-4111-8111-1111111111e1";
+const MACHINE_ID = "11111111-1111-4111-8111-1111111111e2";
+const MACHINE_CATEGORY_ID = "11111111-1111-4111-8111-1111111111e3";
 
 const asOwner = (tenantId: string) =>
   mockedGate.mockResolvedValue({ userId: "u", tenantId, plan: "free", role: "owner" });
@@ -64,8 +69,11 @@ async function linksOfRiskA(admin: ReturnType<typeof postgres>) {
     beforeEach(async () => {
       await seedPgrBase(admin);
       await admin.unsafe(`
+      insert into public.categories (id, org_id, type, name)
+      values ('${MACHINE_CATEGORY_ID}','org_a','machine','Esmerilhadeiras');
       insert into public.epi_catalog (id, org_id, type, category_id, name, ca, ca_valid_until)
-      values ('${PLUG_ID}','org_a','epi','${PGR_IDS.categoryA}','Protetor auricular plug','456','2099-12-31')`);
+      values ('${PLUG_ID}','org_a','epi','${PGR_IDS.categoryA}','Protetor auricular plug','456','2099-12-31'),
+             ('${MACHINE_ID}','org_a','machine','${MACHINE_CATEGORY_ID}','Esmerilhadeira',null,null)`);
       mockedGate.mockReset();
       mockedModel.mockReset();
       asOwner("org_a");
@@ -93,11 +101,26 @@ async function linksOfRiskA(admin: ReturnType<typeof postgres>) {
             ca: "456",
           },
         ]);
+        expect(res.data.truncated).toBe(false);
       }
       const sent = mockedModel.mock.calls[0]?.[0];
       expect(sent?.catalog.map((c) => c.catalogId)).toEqual([PLUG_ID]);
       expect(sent?.description).toBe("Ruído contínuo");
       expect(await countUsage(admin)).toBe(1);
+    });
+
+    it("fill: catálogo acima do limite manda só os primeiros e avisa que cortou", async () => {
+      await admin.unsafe(`
+      insert into public.epi_catalog (org_id, type, category_id, name, ca, ca_valid_until)
+      select 'org_a','epi','${PGR_IDS.categoryA}', 'Luva ' || lpad(n::text, 3, '0'), null, null
+      from generate_series(1, ${MAX_EPI_CATALOG_OPTIONS}) as n`);
+      mockedModel.mockResolvedValue([]);
+      const res = await fillRiskEpisAction(PGR_IDS.riskA);
+      expect(res.ok).toBe(true);
+      if (res.ok) expect(res.data.truncated).toBe(true);
+      const sent = mockedModel.mock.calls[0]?.[0];
+      expect(sent?.catalog).toHaveLength(MAX_EPI_CATALOG_OPTIONS);
+      expect(sent?.catalog.map((c) => c.catalogId)).not.toContain(PGR_IDS.epiCatalogA);
     });
 
     it("fill: risco de outra org → FK_NOT_FOUND, sem chamar a IA nem gastar cota", async () => {
@@ -141,6 +164,32 @@ async function linksOfRiskA(admin: ReturnType<typeof postgres>) {
         { catalog_id: PGR_IDS.epiCatalogA, neutralization: "neutralizes" },
         { catalog_id: PLUG_ID, neutralization: "does_not_neutralize" },
       ]);
+    });
+
+    it("accept: lote com EPI de outra org → VALIDATION e nenhum vínculo gravado, nem o válido", async () => {
+      await admin`delete from public.epi_risk where risk_id = ${PGR_IDS.riskA}`;
+      const res = await acceptRiskEpiFillAction(PGR_IDS.riskA, {
+        links: [
+          { catalogId: PLUG_ID, neutralization: "neutralizes" },
+          { catalogId: PGR_IDS.epiCatalogB, neutralization: "neutralizes" },
+        ],
+      });
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.error.code).toBe("VALIDATION");
+      expect(await linksOfRiskA(admin)).toHaveLength(0);
+    });
+
+    it("accept: item do catálogo que não é EPI (máquina) → VALIDATION e nada gravado", async () => {
+      await admin`delete from public.epi_risk where risk_id = ${PGR_IDS.riskA}`;
+      const res = await acceptRiskEpiFillAction(PGR_IDS.riskA, {
+        links: [
+          { catalogId: PLUG_ID, neutralization: "neutralizes" },
+          { catalogId: MACHINE_ID, neutralization: "neutralizes" },
+        ],
+      });
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.error.code).toBe("VALIDATION");
+      expect(await linksOfRiskA(admin)).toHaveLength(0);
     });
 
     it("accept: risco de outra org → FK_NOT_FOUND e nada gravado", async () => {

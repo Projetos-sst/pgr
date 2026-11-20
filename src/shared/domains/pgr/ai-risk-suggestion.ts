@@ -23,10 +23,21 @@ export const AI_RISK_SUGGESTION_KIND = "risk_suggestion";
 export const MAX_SUGGESTIONS = 12;
 
 /** `null`/`""`/espaços → `undefined`; senão string não-vazia. Robusto à saída do LLM. */
-const optionalText = z.preprocess(
-  (v) => (v == null || (typeof v === "string" && v.trim() === "") ? undefined : v),
+const blankToUndefined = (v: unknown) =>
+  v == null || (typeof v === "string" && v.trim() === "") ? undefined : v;
+
+export const optionalText = z.preprocess(
+  blankToUndefined,
   z.string().trim().min(1).optional(),
 );
+
+export const MAX_RISK_FILL_FOCUS_LENGTH = 2000;
+
+const focusText = (message: string) =>
+  z.preprocess(
+    blankToUndefined,
+    z.string().trim().min(1).max(MAX_RISK_FILL_FOCUS_LENGTH, message).optional(),
+  );
 
 /**
  * Sinônimos aceitos para o grupo do agente. O prompt pede o valor em inglês (o enum do
@@ -115,8 +126,12 @@ export const riskFillFocusSchema = z.object({
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     riskAgentTypeSchema.optional(),
   ),
-  hazard: optionalText,
-  description: optionalText,
+  hazard: focusText(
+    `O perigo deve ter no máximo ${MAX_RISK_FILL_FOCUS_LENGTH} caracteres.`,
+  ),
+  description: focusText(
+    `A descrição deve ter no máximo ${MAX_RISK_FILL_FOCUS_LENGTH} caracteres.`,
+  ),
 });
 
 export type RiskFillFocus = z.output<typeof riskFillFocusSchema>;
@@ -161,11 +176,15 @@ export function filledRiskFields(s: SuggestedRisk): RiskDraftField[] {
   return RISK_DRAFT_FIELDS.filter((field) => draft[field] !== "");
 }
 
-export function applyRiskFill(current: RiskDraft, s: SuggestedRisk): RiskDraft {
-  const filled = toRiskDraft(s);
-  const merged = { ...current };
-  for (const field of filledRiskFields(s)) merged[field] = filled[field];
-  return merged;
+export function applyRiskFill(
+  current: RiskDraft,
+  s: SuggestedRisk,
+): { draft: RiskDraft; filled: RiskDraftField[] } {
+  const suggested = toRiskDraft(s);
+  const filled = filledRiskFields(s).filter((field) => current[field].trim() === "");
+  const draft = { ...current };
+  for (const field of filled) draft[field] = suggested[field];
+  return { draft, filled };
 }
 
 /**

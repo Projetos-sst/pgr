@@ -17,6 +17,20 @@ describe("/termos", () => {
     expect(section).toHaveTextContent("profissional habilitado");
   });
 
+  it("diz que o contexto da tarefa vai a um fornecedor de IA e que dado de trabalhador não vai", () => {
+    render(<TermosPage />);
+
+    const section = screen.getByRole("region", { name: "Dados" });
+    expect(section).toHaveTextContent(
+      "fornecedor de serviço de inteligência artificial contratado pela plataforma",
+    );
+    expect(section).toHaveTextContent("apenas para gerar a resposta");
+    expect(section).toHaveTextContent(
+      "Nenhum dado pessoal ou clínico dos trabalhadores é enviado à IA.",
+    );
+    expect(section).not.toHaveTextContent("não são publicados nem compartilhados");
+  });
+
   it("tem todas as seções e a data da última atualização", () => {
     render(<TermosPage />);
 

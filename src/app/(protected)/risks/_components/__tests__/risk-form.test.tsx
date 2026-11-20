@@ -100,7 +100,7 @@ describe("RiskForm — preencher com a IA pgr-e", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("preenche os campos, usa o que o usuário digitou como foco e marca o que a IA preencheu", async () => {
+  it("preenche só os campos vazios, usa o que o usuário digitou como foco e marca o que a IA preencheu", async () => {
     aiFilled();
     const user = userEvent.setup();
     renderWithGes();
@@ -117,12 +117,42 @@ describe("RiskForm — preencher com a IA pgr-e", () => {
       hazard: "",
       description: "Ruído",
     });
-    expect(screen.getByLabelText(/^Descrição/)).toHaveValue("Ruído da serra circular");
+    expect(screen.getByLabelText(/^Descrição/)).toHaveValue("Ruído");
     expect(screen.getByLabelText(/Possíveis lesões/)).toHaveValue("PAIR");
     expect(screen.getByLabelText(/Tempo de exposição/)).toHaveValue("habitual");
     expect(screen.getByLabelText(/Grupo do agente/)).toHaveValue("physical");
     expect(screen.getByLabelText(/Fontes geradoras/)).toHaveValue("Serra circular");
-    expect(screen.getAllByText("Preenchido pela IA pgr-e")).toHaveLength(6);
+    expect(screen.getAllByText("Preenchido pela IA pgr-e")).toHaveLength(5);
+  });
+
+  it("mantém o texto digitado enquanto a IA respondia e não o marca como da IA", async () => {
+    let resolveFill: (value: Awaited<ReturnType<typeof fillRisk>>) => void = () => {};
+    mockedFill.mockReturnValue(
+      new Promise((resolve) => {
+        resolveFill = resolve;
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithGes();
+
+    await user.click(screen.getByRole("button", { name: "Preencher com IA pgr-e" }));
+    await user.type(screen.getByLabelText(/Meios de propagação/), "Contato direto");
+    resolveFill({
+      ok: true,
+      data: {
+        risk: {
+          agentType: "physical",
+          description: "Ruído da serra circular",
+          propagation: "Via aérea",
+        },
+      },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^Descrição/)).toHaveValue("Ruído da serra circular"),
+    );
+    expect(screen.getByLabelText(/Meios de propagação/)).toHaveValue("Contato direto");
+    expect(screen.getAllByText("Preenchido pela IA pgr-e")).toHaveLength(2);
   });
 
   it("tira a marca da IA do campo que o usuário editou", async () => {

@@ -45,7 +45,7 @@ describe("useAiGenerateWarning", () => {
       "href",
       "/termos",
     );
-    expect(screen.getByRole("button", { name: "Entendi, preencher" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Cancelar" })).toHaveFocus();
     expect(onGenerate).not.toHaveBeenCalled();
   });
 
@@ -124,7 +124,7 @@ describe("AiSaveConfirm", () => {
 
     expect(screen.getByRole("dialog")).toHaveTextContent(AI_REVIEW_WARNING);
     expect(screen.queryByRole("checkbox")).toBeNull();
-    expect(screen.getByRole("button", { name: "Confirmar e salvar" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Voltar e revisar" })).toHaveFocus();
   });
 
   it("só confirma no clique em 'Confirmar e salvar'", () => {

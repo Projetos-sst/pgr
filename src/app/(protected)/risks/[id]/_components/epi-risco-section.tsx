@@ -58,6 +58,7 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
     useState<EpiNeutralization>("neutralizes");
   const [reviewOpen, setReviewOpen] = useState(false);
   const [filled, setFilled] = useState<FilledEpiLink[]>([]);
+  const [truncated, setTruncated] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
   const [generating, startGenerate] = useTransition();
@@ -83,6 +84,7 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
     setError(null);
     setNotice(null);
     setFilled([]);
+    setTruncated(false);
     setReviewOpen(true);
     startGenerate(async () => {
       const result = await fillRiskEpisAction(riskId);
@@ -92,6 +94,7 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
         return;
       }
       setFilled(result.data.links);
+      setTruncated(result.data.truncated);
     });
   }
 
@@ -263,6 +266,7 @@ export function EpiRiscoSection({ riskId }: { riskId: string }) {
       {reviewOpen ? (
         <EpiFillReview
           links={filled}
+          truncated={truncated}
           generating={generating}
           pending={accepting}
           error={error}

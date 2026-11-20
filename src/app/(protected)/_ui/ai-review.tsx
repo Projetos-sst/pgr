@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 
 import {
   AI_FILL_LABEL,
@@ -14,34 +14,6 @@ import {
 } from "@/shared/domains/platform/ai-review";
 
 import { ConfirmModal } from "./confirm-modal";
-
-const CHANGE_EVENT = "pgr-e:ai-review-warning-changed";
-
-function subscribe(callback: () => void): () => void {
-  window.addEventListener(CHANGE_EVENT, callback);
-  window.addEventListener("storage", callback);
-  return () => {
-    window.removeEventListener(CHANGE_EVENT, callback);
-    window.removeEventListener("storage", callback);
-  };
-}
-
-function getSnapshot(): boolean {
-  return localStorage.getItem(AI_REVIEW_DISMISSED_KEY) === "true";
-}
-
-function getServerSnapshot(): boolean {
-  return false;
-}
-
-export function useAiWarningDismissed(): [boolean, () => void] {
-  const dismissed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const dismiss = useCallback(() => {
-    localStorage.setItem(AI_REVIEW_DISMISSED_KEY, "true");
-    window.dispatchEvent(new Event(CHANGE_EVENT));
-  }, []);
-  return [dismissed, dismiss];
-}
 
 function SparklesIcon({ size = 20 }: { size?: number }) {
   return (
@@ -78,26 +50,25 @@ export function useAiGenerateWarning(onGenerate: () => void): {
   request: () => void;
   modal: ReactNode;
 } {
-  const [dismissed, dismiss] = useAiWarningDismissed();
   const [open, setOpen] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const request = useCallback(() => {
-    if (dismissed) {
+    if (localStorage.getItem(AI_REVIEW_DISMISSED_KEY) === "true") {
       onGenerate();
       return;
     }
     setDontShowAgain(false);
     setOpen(true);
-  }, [dismissed, onGenerate]);
+  }, [onGenerate]);
 
   const cancel = useCallback(() => setOpen(false), []);
 
   const confirm = useCallback(() => {
-    if (dontShowAgain) dismiss();
+    if (dontShowAgain) localStorage.setItem(AI_REVIEW_DISMISSED_KEY, "true");
     setOpen(false);
     onGenerate();
-  }, [dontShowAgain, dismiss, onGenerate]);
+  }, [dontShowAgain, onGenerate]);
 
   const modal = (
     <ConfirmModal

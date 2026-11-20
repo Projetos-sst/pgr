@@ -1,8 +1,6 @@
 import {
-  MAX_EPI_CATALOG_OPTIONS,
   MAX_EPI_FILL_LINKS,
   acceptEpiRiskFillInputSchema,
-  capEpiCatalog,
   keepCatalogLinks,
   parseModelEpiLinks,
   type SuggestedEpiLink,
@@ -93,17 +91,6 @@ describe("keepCatalogLinks", () => {
       neutralization: "neutralizes",
     }));
     expect(keepCatalogLinks(links, many)).toHaveLength(MAX_EPI_FILL_LINKS);
-  });
-});
-
-describe("capEpiCatalog", () => {
-  it(`limita o catálogo enviado à IA a ${MAX_EPI_CATALOG_OPTIONS} itens`, () => {
-    const big = Array.from({ length: 120 }, (_, i) => ({
-      catalogId: `id-${i}`,
-      name: `EPI ${i}`,
-      ca: null,
-    }));
-    expect(capEpiCatalog(big)).toHaveLength(MAX_EPI_CATALOG_OPTIONS);
   });
 });
 

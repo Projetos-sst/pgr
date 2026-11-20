@@ -30,11 +30,11 @@ export function ConfirmModal({
 }) {
   const titleId = useId();
   const descriptionId = useId();
-  const confirmRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    confirmRef.current?.focus();
+    cancelRef.current?.focus();
   }, [open]);
 
   useEffect(() => {
@@ -117,6 +117,7 @@ export function ConfirmModal({
 
         <div className="flex items-center justify-end gap-3 border-t border-black/5 pt-3">
           <button
+            ref={cancelRef}
             type="button"
             onClick={onCancel}
             disabled={pending}
@@ -125,7 +126,6 @@ export function ConfirmModal({
             {cancelLabel}
           </button>
           <button
-            ref={confirmRef}
             type="button"
             onClick={onConfirm}
             disabled={pending}

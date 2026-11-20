@@ -262,20 +262,46 @@ describe("rascunho editável do risco preenchido", () => {
     expect(filledRiskFields(FULL)).toHaveLength(7);
   });
 
-  it("applyRiskFill troca só o que a IA devolveu e mantém o que o usuário digitou", () => {
+  it("applyRiskFill preenche só os campos vazios e nunca sobrescreve o que o usuário digitou", () => {
     const current = {
       ...toRiskDraft({ agentType: "physical", description: "Minha descrição" }),
       sources: "Fonte do usuário",
     };
-    const merged = applyRiskFill(current, {
-      agentType: "physical",
+    const { draft, filled } = applyRiskFill(current, {
+      agentType: "chemical",
       description: "Ruído",
+      sources: "Compressor",
       propagation: "Via aérea",
     });
-    expect(merged.sources).toBe("Fonte do usuário");
-    expect(merged.description).toBe("Ruído");
-    expect(merged.propagation).toBe("Via aérea");
+    expect(draft.agentType).toBe("physical");
+    expect(draft.description).toBe("Minha descrição");
+    expect(draft.sources).toBe("Fonte do usuário");
+    expect(draft.propagation).toBe("Via aérea");
     expect(current.propagation).toBe("");
+    expect(filled).toEqual(["propagation"]);
+  });
+
+  it("applyRiskFill trata campo só com espaços como vazio", () => {
+    const current = {
+      agentType: "",
+      exposureTime: "",
+      hazard: "  ",
+      description: "",
+      sources: "",
+      propagation: "",
+      possibleInjuries: "",
+    };
+    const { draft, filled } = applyRiskFill(current, FULL);
+    expect(draft.hazard).toBe("Ruído contínuo");
+    expect(filled).toEqual([
+      "agentType",
+      "exposureTime",
+      "hazard",
+      "description",
+      "sources",
+      "propagation",
+      "possibleInjuries",
+    ]);
   });
 
   it("o rascunho editado é aceito pelo schema de aceite", () => {
@@ -300,6 +326,27 @@ describe("riskFillFocusSchema", () => {
         description: "Ruído do compressor",
       }),
     ).toEqual({ agentType: "physical", description: "Ruído do compressor" });
+  });
+
+  it("rejeita perigo e descrição acima de 2000 caracteres", () => {
+    const long = "a".repeat(2001);
+    const hazard = riskFillFocusSchema.safeParse({ hazard: long });
+    const description = riskFillFocusSchema.safeParse({ description: long });
+    expect(hazard.success).toBe(false);
+    expect(description.success).toBe(false);
+    if (!hazard.success) {
+      expect(hazard.error.issues[0]?.message).toBe(
+        "O perigo deve ter no máximo 2000 caracteres.",
+      );
+    }
+    if (!description.success) {
+      expect(description.error.issues[0]?.message).toBe(
+        "A descrição deve ter no máximo 2000 caracteres.",
+      );
+    }
+    expect(riskFillFocusSchema.safeParse({ hazard: "a".repeat(2000) }).success).toBe(
+      true,
+    );
   });
 
   it("rejeita grupo de agente fora do enum", () => {

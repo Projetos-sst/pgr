@@ -10,6 +10,7 @@ import { riskClassificationGuidance } from "@/shared/domains/pgr/methodology";
 import type { ControlLevel } from "@/shared/domains/pgr/risks";
 
 import { flexibleOptionalText, flexibleText } from "../core/flexible-text";
+import { line } from "../core/prompt-line";
 
 /**
  * Instruções, schema de saída e montagem da mensagem do agente de **medidas de controle** —
@@ -79,10 +80,6 @@ export const CONTROL_MEASURE_INSTRUCTIONS = [
   "10. Escreva em português do Brasil, em linguagem técnica de SST, objetiva e sem rodeios.",
   "11. Em 'actionWhy', diga por que a ação é necessária, ligando-a ao perigo e às fontes deste risco. Sem base no contexto, deixe vazio.",
 ].join("\n");
-
-function line(label: string, value: string | null | undefined): string | null {
-  return value && value.trim() !== "" ? `- ${label}: ${value.trim()}` : null;
-}
 
 /**
  * Monta a mensagem **exclusivamente** a partir do contexto não-PII do risco: o risco, o

@@ -52,7 +52,7 @@ const SECTIONS = [
     title: "Dados",
     paragraphs: [
       "Os dados de cada organização ficam separados dos dados das outras organizações e só são acessados por quem tem permissão.",
-      "Para preencher campos, a IA pgr-e recebe apenas as informações necessárias para aquela tarefa. Dados usados pela IA não são publicados nem compartilhados com outras organizações.",
+      "Para preencher campos, a IA pgr-e envia as informações necessárias para aquela tarefa a um fornecedor de serviço de inteligência artificial contratado pela plataforma, que as processa apenas para gerar a resposta. Nenhum dado pessoal ou clínico dos trabalhadores é enviado à IA.",
     ],
   },
   {

@@ -7,6 +7,7 @@ import {
 } from "@/shared/domains/pgr/risk-assessment";
 
 import { flexibleOptionalText, flexibleText } from "../core/flexible-text";
+import { line } from "../core/prompt-line";
 
 export const riskAssessmentOutputSchema = z.object({
   criterion: flexibleText(
@@ -44,10 +45,6 @@ export const RISK_ASSESSMENT_INSTRUCTIONS = [
   "7. Baseie-se APENAS no contexto fornecido. Nunca cite nome de pessoa, CPF ou dado médico.",
   "8. Escreva em português do Brasil, em linguagem técnica de SST, objetiva.",
 ].join("\n");
-
-function line(label: string, value: string | null): string | null {
-  return value && value.trim() !== "" ? `- ${label}: ${value.trim()}` : null;
-}
 
 export function buildRiskAssessmentPrompt(ctx: RiskAssessmentFillContext): string {
   return [

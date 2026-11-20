@@ -1,5 +1,3 @@
-export const AI_BRAND = "IA pgr-e";
-
 export const AI_REVIEW_TITLE = "Revise o que a IA pgr-e preencher";
 
 export const AI_REVIEW_WARNING = "A IA pode errar. Revise campo a campo antes de salvar.";

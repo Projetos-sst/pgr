@@ -13,13 +13,13 @@ import {
   type RiskSuggestionOutput,
 } from "./prompt";
 
+export type RiskSuggestionRequest = GesRiskContext & { focus?: RiskFillFocus };
+
 /**
  * **Agente "sugestão de riscos" (NR-01/GRO).** Recebe o contexto **não-PII** de um GES
  * (processo, ambiente, títulos de função) e devolve riscos ocupacionais candidatos, que o
  * usuário revisa e aceita antes de virarem rascunho em `risks`.
  */
-export type RiskSuggestionRequest = GesRiskContext & { focus?: RiskFillFocus };
-
 export class RiskSuggestionAgent extends SstAgent<
   RiskSuggestionRequest,
   RiskSuggestionOutput,

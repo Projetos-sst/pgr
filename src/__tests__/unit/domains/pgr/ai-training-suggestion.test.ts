@@ -87,7 +87,7 @@ describe("sameTrainingName", () => {
 
 describe("matchAgainstCatalog", () => {
   const catalog: CatalogEntry[] = [
-    { id: "cat-1", name: "Trabalho em Altura", periodicity: "annual" },
+    { id: "cat-1", name: "Trabalho em Altura", periodicity: "annual", isActive: true },
   ];
 
   it("liga ao catálogo e adota o nome de lá", () => {
@@ -158,8 +158,9 @@ describe("rascunho editável de treinamento", () => {
 
 describe("findCatalogEntry — reaproveita o curso no aceite", () => {
   const catalog: CatalogEntry[] = [
-    { id: "t1", name: "Trabalho em Altura", periodicity: "biennial" },
-    { id: "t2", name: "Brigada", periodicity: "annual" },
+    { id: "t1", name: "Trabalho em Altura", periodicity: "biennial", isActive: true },
+    { id: "t2", name: "Brigada", periodicity: "annual", isActive: true },
+    { id: "t3", name: "Espaço Confinado", periodicity: "annual", isActive: false },
   ];
 
   it("acha o curso de mesmo nome, sem diferenciar maiúsculas nem espaços", () => {
@@ -168,6 +169,10 @@ describe("findCatalogEntry — reaproveita o curso no aceite", () => {
 
   it("respeita o nome editado na revisão: nome só parecido vira curso novo", () => {
     expect(findCatalogEntry("Trabalho em Altura revisado", catalog)).toBeUndefined();
+    expect(findCatalogEntry("Primeiros Socorros", catalog)).toBeUndefined();
+  });
+
+  it("não reaproveita curso inativo de mesmo nome", () => {
     expect(findCatalogEntry("Espaço Confinado", catalog)).toBeUndefined();
   });
 });

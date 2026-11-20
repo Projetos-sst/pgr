@@ -45,10 +45,11 @@ function withCatalog() {
   });
 }
 
-function okFill() {
+function okFill(truncated = false) {
   mockedFill.mockResolvedValue({
     ok: true,
     data: {
+      truncated,
       links: [
         {
           catalogId: PLUG,
@@ -163,6 +164,45 @@ describe("EpiRiscoSection — preenchimento de EPIs pela IA", () => {
     await user.click(screen.getByRole("button", { name: "Voltar e revisar" }));
     expect(mockedAccept).not.toHaveBeenCalled();
     expect(screen.getByRole("group", { name: "EPI 1" })).toBeInTheDocument();
+  });
+
+  it("avisa quando a IA só considerou parte do catálogo", async () => {
+    withCatalog();
+    okFill(true);
+    const user = userEvent.setup();
+    render(<EpiRiscoSection riskId={RISK_ID} />);
+
+    await generate(user);
+    expect(
+      screen.getByText("A IA considerou os primeiros 80 EPIs do catálogo."),
+    ).toBeInTheDocument();
+  });
+
+  it("não mostra o aviso de corte quando o catálogo coube inteiro", async () => {
+    withCatalog();
+    okFill();
+    const user = userEvent.setup();
+    render(<EpiRiscoSection riskId={RISK_ID} />);
+
+    await generate(user);
+    expect(screen.queryByText(/considerou os primeiros/)).not.toBeInTheDocument();
+  });
+
+  it("Fechar fica desabilitado enquanto os EPIs estão sendo salvos", async () => {
+    withCatalog();
+    okFill();
+    mockedAccept.mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    render(<EpiRiscoSection riskId={RISK_ID} />);
+
+    await generate(user);
+    expect(screen.getByRole("button", { name: "Fechar" })).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "Salvar EPIs" }));
+    await user.click(screen.getByRole("button", { name: "Confirmar e salvar" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Fechar" })).toBeDisabled(),
+    );
   });
 
   it("explica quando a cota acabou", async () => {

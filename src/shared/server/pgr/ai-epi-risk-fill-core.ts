@@ -11,7 +11,6 @@ import {
 import {
   AI_EPI_RISK_FILL_KIND,
   acceptEpiRiskFillInputSchema,
-  capEpiCatalog,
   keepCatalogLinks,
   type AcceptEpiRiskFillInput,
   type FilledEpiLink,
@@ -19,9 +18,9 @@ import {
 import { requestEpiRiskFill } from "@/shared/integrations/agents";
 import * as aiRepo from "@/shared/db/repositories/ai-risk-suggestion";
 import { fetchEpiRiskFillContext } from "@/shared/db/repositories/ai-epi-risk-fill";
-import { createRiskEpi } from "@/shared/db/repositories/epi-risk";
+import { createRiskEpis } from "@/shared/db/repositories/epi-risk";
 
-export type EpiRiskFillResult = { links: FilledEpiLink[] };
+export type EpiRiskFillResult = { links: FilledEpiLink[]; truncated: boolean };
 export type AcceptEpiRiskFillResult = { created: number; skipped: number };
 
 async function loadContext(tenantId: string, riskId: string) {
@@ -51,13 +50,12 @@ export async function runEpiRiskFill(
     );
   }
 
-  const catalog = capEpiCatalog(context.catalog);
-  const proposed = await requestEpiRiskFill({ ...context, catalog });
-  const links = keepCatalogLinks(proposed, catalog);
+  const proposed = await requestEpiRiskFill(context);
+  const links = keepCatalogLinks(proposed, context.catalog);
   if (links.length > 0) {
     await aiRepo.recordAiUsage(ctx.tenantId, AI_EPI_RISK_FILL_KIND);
   }
-  return { links };
+  return { links, truncated: context.truncated };
 }
 
 export async function runAcceptEpiRiskFill(
@@ -68,9 +66,12 @@ export async function runAcceptEpiRiskFill(
   const data = acceptEpiRiskFillInputSchema.parse(input);
   const context = await loadContext(ctx.tenantId, riskId);
   const linked = new Set(context.linkedCatalogIds);
+  const eligible = new Set(context.catalog.map((item) => item.catalogId));
   const fresh = data.links.filter((link) => !linked.has(link.catalogId));
-  for (const link of fresh) {
-    await createRiskEpi(ctx.tenantId, { riskId, ...link });
+  if (fresh.some((link) => !eligible.has(link.catalogId))) {
+    throw new ValidationError("Selecione apenas EPIs do catálogo desta organização.");
   }
-  return { created: fresh.length, skipped: data.links.length - fresh.length };
+  const created =
+    fresh.length > 0 ? await createRiskEpis(ctx.tenantId, riskId, fresh) : 0;
+  return { created, skipped: data.links.length - created };
 }

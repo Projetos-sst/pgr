@@ -96,6 +96,7 @@ export type CatalogEntry = {
   id: string;
   name: string;
   periodicity: string;
+  isActive: boolean;
 };
 
 /**
@@ -266,10 +267,20 @@ export function trainingDraftErrors(
   return errors;
 }
 
+function sameCatalogName(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 export function findCatalogEntry(
   name: string,
   catalog: readonly CatalogEntry[],
 ): CatalogEntry | undefined {
-  const plain = name.trim().toLowerCase();
-  return catalog.find((c) => c.name.trim().toLowerCase() === plain);
+  return catalog.find((c) => c.isActive && sameCatalogName(c.name, name));
+}
+
+export function findInactiveCatalogEntry(
+  name: string,
+  catalog: readonly CatalogEntry[],
+): CatalogEntry | undefined {
+  return catalog.find((c) => !c.isActive && sameCatalogName(c.name, name));
 }

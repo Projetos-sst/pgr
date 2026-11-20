@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { optionalText } from "./ai-risk-suggestion";
 import { aliasPreprocessor } from "./enum-aliases";
 import {
   epiNeutralizationSchema,
@@ -31,11 +32,6 @@ export const normalizeEpiNeutralization = aliasPreprocessor(
   /^neutralizacao\s*:?\s*/,
 );
 
-const optionalText = z.preprocess(
-  (v) => (v == null || (typeof v === "string" && v.trim() === "") ? undefined : v),
-  z.string().trim().min(1).optional(),
-);
-
 export const suggestedEpiLinkSchema = z.object({
   catalogId: z.string().trim().min(1),
   neutralization: z.preprocess(normalizeEpiNeutralization, epiNeutralizationSchema),
@@ -54,6 +50,7 @@ export type EpiRiskFillContext = {
   propagation: string | null;
   exposureTime: string | null;
   catalog: EpiOption[];
+  truncated: boolean;
   linkedCatalogIds: string[];
 };
 
@@ -74,10 +71,6 @@ export function parseModelEpiLinks(raw: unknown): SuggestedEpiLink[] {
     out.push(parsed.data);
   }
   return out;
-}
-
-export function capEpiCatalog(catalog: readonly EpiOption[]): EpiOption[] {
-  return catalog.slice(0, MAX_EPI_CATALOG_OPTIONS);
 }
 
 export function keepCatalogLinks(

@@ -1,8 +1,11 @@
 import "server-only";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, notInArray } from "drizzle-orm";
 
-import type { EpiRiskFillContext } from "@/shared/domains/pgr/ai-epi-risk-fill";
+import {
+  MAX_EPI_CATALOG_OPTIONS,
+  type EpiRiskFillContext,
+} from "@/shared/domains/pgr/ai-epi-risk-fill";
 
 import { withOrg } from "../with-org";
 import { epiCatalog, epiRisk } from "../schema/epis";
@@ -32,17 +35,24 @@ export async function fetchEpiRiskFillContext(
       .from(epiRisk)
       .where(and(eq(epiRisk.orgId, orgId), eq(epiRisk.riskId, riskId)));
     const linkedCatalogIds = linked.map((l) => l.catalogId);
-    const linkedSet = new Set(linkedCatalogIds);
 
-    const catalog = await tx
+    const eligible = await tx
       .select({ catalogId: epiCatalog.id, name: epiCatalog.name, ca: epiCatalog.ca })
       .from(epiCatalog)
-      .where(and(eq(epiCatalog.orgId, orgId), eq(epiCatalog.type, "epi")))
-      .orderBy(asc(epiCatalog.name));
+      .where(
+        and(
+          eq(epiCatalog.orgId, orgId),
+          eq(epiCatalog.type, "epi"),
+          notInArray(epiCatalog.id, linkedCatalogIds),
+        ),
+      )
+      .orderBy(asc(epiCatalog.name), asc(epiCatalog.id))
+      .limit(MAX_EPI_CATALOG_OPTIONS + 1);
 
     return {
       ...risk,
-      catalog: catalog.filter((c) => !linkedSet.has(c.catalogId)),
+      catalog: eligible.slice(0, MAX_EPI_CATALOG_OPTIONS),
+      truncated: eligible.length > MAX_EPI_CATALOG_OPTIONS,
       linkedCatalogIds,
     };
   });

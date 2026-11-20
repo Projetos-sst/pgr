@@ -2,6 +2,7 @@ import "server-only";
 
 import type { TenantContext } from "@/shared/auth/require-tenant-context";
 import { ReferenceNotFoundError } from "@/shared/errors/reference-not-found-error";
+import { ValidationError } from "@/shared/errors/validation-error";
 import { QuotaExceededError } from "@/shared/errors/quota-exceeded-error";
 import {
   FREE_AI_SUGGESTION_MONTHLY_QUOTA,
@@ -11,6 +12,7 @@ import {
   AI_TRAINING_SUGGESTION_KIND,
   acceptSuggestedTrainingsInputSchema,
   findCatalogEntry,
+  findInactiveCatalogEntry,
   matchAgainstCatalog,
   type AcceptSuggestedTrainingsInput,
   type AcceptedTraining,
@@ -92,6 +94,17 @@ export async function runAcceptSuggestedTrainings(
   if (!context) throw new ReferenceNotFoundError("Função não encontrada.");
 
   const catalog: CatalogEntry[] = [...context.catalog];
+  const inactive = data.suggestions.find(
+    (s) =>
+      !s.trainingId &&
+      !findCatalogEntry(s.name, catalog) &&
+      findInactiveCatalogEntry(s.name, catalog),
+  );
+  if (inactive) {
+    throw new ValidationError(
+      `O treinamento "${inactive.name}" está inativo no catálogo. Reative-o ou use outro nome.`,
+    );
+  }
   const required = new Set(context.requiredTrainingIds);
   let createdInCatalog = 0;
   for (const s of data.suggestions) {
@@ -121,6 +134,11 @@ async function createCatalogEntry(
     isActive: true,
     description: s.rationale,
   });
-  catalog.push({ id: created.id, name: s.name, periodicity: s.periodicity });
+  catalog.push({
+    id: created.id,
+    name: s.name,
+    periodicity: s.periodicity,
+    isActive: true,
+  });
   return created.id;
 }

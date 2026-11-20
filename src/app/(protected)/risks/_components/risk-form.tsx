@@ -22,7 +22,6 @@ import type { CompanyOption } from "@/shared/domains/pgr/companies";
 import type { ActionError } from "@/shared/server/result";
 import {
   applyRiskFill,
-  filledRiskFields,
   type RiskDraft,
   type RiskDraftField,
 } from "@/shared/domains/pgr/ai-risk-suggestion";
@@ -88,16 +87,21 @@ export function RiskForm({
   const [companyId, setCompanyId] = useState(initial?.companyId ?? "");
   const [workUnitId, setWorkUnitId] = useState(initial?.workUnitId ?? "");
   const [gesId, setGesId] = useState(initial?.gesId ?? "");
-  const [draft, setDraft] = useState<RiskDraft>({
-    agentType: initial?.agentType ?? "",
-    exposureTime: initial?.exposureTime ?? "",
-    hazard: initial?.hazard ?? "",
-    description: initial?.description ?? "",
-    sources: initial?.sources ?? "",
-    propagation: initial?.propagation ?? "",
-    possibleInjuries: initial?.possibleInjuries ?? "",
+  const [{ draft, aiFilled }, setFields] = useState<{
+    draft: RiskDraft;
+    aiFilled: ReadonlySet<RiskDraftField>;
+  }>({
+    draft: {
+      agentType: initial?.agentType ?? "",
+      exposureTime: initial?.exposureTime ?? "",
+      hazard: initial?.hazard ?? "",
+      description: initial?.description ?? "",
+      sources: initial?.sources ?? "",
+      propagation: initial?.propagation ?? "",
+      possibleInjuries: initial?.possibleInjuries ?? "",
+    },
+    aiFilled: new Set(),
   });
-  const [aiFilled, setAiFilled] = useState<ReadonlySet<RiskDraftField>>(new Set());
   const [pendingInput, setPendingInput] = useState<RiskInput | null>(null);
   const [filling, startFill] = useTransition();
   const agentType = draft.agentType;
@@ -149,8 +153,10 @@ export function RiskForm({
   }
 
   function editField(field: RiskDraftField, value: string) {
-    setDraft((prev) => ({ ...prev, [field]: value }));
-    setAiFilled((prev) => new Set([...prev].filter((f) => f !== field)));
+    setFields((prev) => ({
+      draft: { ...prev.draft, [field]: value },
+      aiFilled: new Set([...prev.aiFilled].filter((f) => f !== field)),
+    }));
   }
 
   function fill() {
@@ -172,8 +178,13 @@ export function RiskForm({
         );
         return;
       }
-      setDraft((prev) => applyRiskFill(prev, risk));
-      setAiFilled(new Set(filledRiskFields(risk)));
+      setFields((prev) => {
+        const applied = applyRiskFill(prev.draft, risk);
+        return {
+          draft: applied.draft,
+          aiFilled: new Set([...prev.aiFilled, ...applied.filled]),
+        };
+      });
     });
   }
 

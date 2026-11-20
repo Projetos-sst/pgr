@@ -7,6 +7,7 @@ import {
 import { EPI_NEUTRALIZATION_ORDER } from "@/shared/domains/pgr/epi-risk";
 
 import { flexibleOptionalText, flexibleText } from "../core/flexible-text";
+import { line } from "../core/prompt-line";
 
 export const epiRiskOutputSchema = z.object({
   links: z
@@ -40,10 +41,6 @@ export const EPI_RISK_INSTRUCTIONS = [
   "7. Nunca cite nome de pessoa, CPF ou dado médico.",
   "8. Escreva em português do Brasil, em linguagem técnica de SST, objetiva.",
 ].join("\n");
-
-function line(label: string, value: string | null): string | null {
-  return value && value.trim() !== "" ? `- ${label}: ${value.trim()}` : null;
-}
 
 export function buildEpiRiskPrompt(ctx: EpiRiskFillContext): string {
   const catalog = ctx.catalog.map(

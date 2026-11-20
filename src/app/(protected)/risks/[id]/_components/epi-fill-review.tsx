@@ -3,7 +3,10 @@
 import { AgentProgress } from "@/app/(protected)/_ui/agent-progress";
 import { AiFilledBadge } from "@/app/(protected)/_ui/ai-review";
 import { SelectField } from "@/app/(protected)/_ui/form";
-import type { FilledEpiLink } from "@/shared/domains/pgr/ai-epi-risk-fill";
+import {
+  MAX_EPI_CATALOG_OPTIONS,
+  type FilledEpiLink,
+} from "@/shared/domains/pgr/ai-epi-risk-fill";
 import {
   EPI_NEUTRALIZATION_ORDER,
   epiNeutralizationLabel,
@@ -23,6 +26,7 @@ export const NEUTRALIZATION_OPTIONS = EPI_NEUTRALIZATION_ORDER.map((value) => ({
 
 export function EpiFillReview({
   links,
+  truncated,
   generating,
   pending,
   error,
@@ -32,6 +36,7 @@ export function EpiFillReview({
   onClose,
 }: {
   links: FilledEpiLink[];
+  truncated: boolean;
   generating: boolean;
   pending: boolean;
   error: string | null;
@@ -55,13 +60,19 @@ export function EpiFillReview({
           <button
             type="button"
             onClick={onClose}
-            className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors"
+            disabled={pending}
+            className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-50"
           >
             Fechar
           </button>
         </header>
 
         {generating ? <AgentProgress stages={EPI_AGENT_STAGES} /> : null}
+        {!generating && truncated ? (
+          <p className="text-text-subtle text-sm">
+            {`A IA considerou os primeiros ${MAX_EPI_CATALOG_OPTIONS} EPIs do catálogo.`}
+          </p>
+        ) : null}
         {!generating && links.length === 0 ? (
           <p className="text-text-subtle text-sm">
             A IA pgr-e não encontrou EPI do catálogo adequado a este risco.
