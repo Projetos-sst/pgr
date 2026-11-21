@@ -46,14 +46,6 @@ describe("buildPrecautionsContext", () => {
 });
 
 describe("parseModelPrecautions", () => {
-  it("aceita texto solto ou objeto com description", () => {
-    expect(
-      parseModelPrecautions({
-        precautions: ["Isolar a área", { description: "Bloquear a energia" }],
-      }),
-    ).toEqual(["Isolar a área", "Bloquear a energia"]);
-  });
-
   it("descarta vazio, longo demais, repetido e o que a PT já contém", () => {
     const out = parseModelPrecautions(
       [
@@ -72,11 +64,6 @@ describe("parseModelPrecautions", () => {
     const many = Array.from({ length: MAX_PRECAUTIONS + 5 }, (_, i) => `Medida ${i}`);
     expect(parseModelPrecautions(many)).toHaveLength(MAX_PRECAUTIONS);
   });
-
-  it("formato desconhecido vira lista vazia", () => {
-    expect(parseModelPrecautions("texto")).toEqual([]);
-    expect(parseModelPrecautions(null)).toEqual([]);
-  });
 });
 
 describe("splitPrecautions e mergePrecautions", () => {
@@ -84,9 +71,16 @@ describe("splitPrecautions e mergePrecautions", () => {
     expect(splitPrecautions("• Um\n* Dois\n\n3. Três")).toEqual(["Um", "Dois", "Três"]);
   });
 
-  it("mantém o que a pessoa escreveu e acrescenta o que veio da IA, um por linha", () => {
-    expect(mergePrecautions("Medir oxigênio", ["Isolar a área"])).toBe(
-      "- Medir oxigênio\n- Isolar a área",
+  it("acrescenta o que veio da IA, um por linha, sem mexer no texto da pessoa", () => {
+    const typed = "1) Medir oxigênio\n\nObs.: detector calibrado hoje\n";
+    expect(mergePrecautions(typed, ["Isolar a área"])).toBe(
+      "1) Medir oxigênio\n\nObs.: detector calibrado hoje\n- Isolar a área",
+    );
+  });
+
+  it("com o campo vazio, fica só o que veio da IA", () => {
+    expect(mergePrecautions("  ", ["Isolar a área", "Bloquear a energia"])).toBe(
+      "- Isolar a área\n- Bloquear a energia",
     );
   });
 });

@@ -61,25 +61,14 @@ export function buildPrecautionsContext(
 
 const precautionSchema = z.string().trim().min(1).max(MAX_PRECAUTION_LENGTH);
 
-function precautionTexts(raw: unknown): unknown[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw === null || typeof raw !== "object" || !("precautions" in raw)) return [];
-  return Array.isArray(raw.precautions) ? raw.precautions : [];
-}
-
-function textOf(item: unknown): unknown {
-  if (item === null || typeof item !== "object" || !("description" in item)) return item;
-  return item.description;
-}
-
 export function parseModelPrecautions(
-  raw: unknown,
+  raw: readonly string[],
   existing: readonly string[] = [],
 ): string[] {
   const seen = new Set(existing.map(precautionKey));
   const out: string[] = [];
-  for (const item of precautionTexts(raw)) {
-    const parsed = precautionSchema.safeParse(textOf(item));
+  for (const item of raw) {
+    const parsed = precautionSchema.safeParse(item);
     if (!parsed.success) continue;
     const key = precautionKey(parsed.data);
     if (key === "" || seen.has(key)) continue;
@@ -91,6 +80,7 @@ export function parseModelPrecautions(
 }
 
 export function mergePrecautions(current: string, filled: readonly string[]): string {
-  const lines = [...splitPrecautions(current), ...filled];
-  return lines.map((line) => `- ${line}`).join("\n");
+  return [current.trimEnd(), ...filled.map((line) => `- ${line}`)]
+    .filter((line) => line !== "")
+    .join("\n");
 }

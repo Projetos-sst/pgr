@@ -1,7 +1,4 @@
-import {
-  parseModelPrecautions,
-  type WorkPermitPrecautionsContext,
-} from "@/shared/domains/work-permits/ai-precautions-fill";
+import type { WorkPermitPrecautionsContext } from "@/shared/domains/work-permits/ai-precautions-fill";
 
 import { SstAgent } from "../core/sst-agent";
 import {
@@ -28,7 +25,7 @@ export class WorkPermitPrecautionsAgent extends SstAgent<
   }
 
   parseOutput(raw: WorkPermitPrecautionsOutput): string[] {
-    return parseModelPrecautions(raw);
+    return raw.precautions.map((precaution) => precaution.description);
   }
 }
 

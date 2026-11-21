@@ -1,4 +1,5 @@
 import type postgres from "postgres";
+import { NextRequest } from "next/server";
 
 jest.mock("@/shared/db/env", () => ({
   getDatabaseUrl: () => process.env.INTEGRATION_APP_RUNTIME_URL,
@@ -6,6 +7,7 @@ jest.mock("@/shared/db/env", () => ({
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
 jest.mock("@/shared/auth/require-office-staff", () => ({
   requireOfficeStaff: jest.fn(),
+  OFFICE_STAFF_ROLES: new Set(["owner", "collaborator"]),
 }));
 jest.mock("@/shared/integrations/agents", () => ({
   requestWorkPermitPrecautionsFill: jest.fn(),
@@ -18,6 +20,7 @@ import {
   AI_WORK_PERMIT_PRECAUTIONS_KIND,
   type WorkPermitPrecautionsFillInput,
 } from "@/shared/domains/work-permits/ai-precautions-fill";
+import { POST } from "@/app/api/v1/work-permits/precautions-fill/route";
 import { fillWorkPermitPrecautionsAction } from "@/shared/server/actions/work-permits/ai-precautions";
 import { FREE_AI_SUGGESTION_MONTHLY_QUOTA } from "@/shared/tenant/plan";
 
@@ -83,12 +86,12 @@ async function countUsage(admin: ReturnType<typeof postgres>, orgId: string) {
     expect(await countUsage(admin, "org_b")).toBe(0);
   });
 
-  it("IA sem precaução nova: lista vazia e não gasta cota", async () => {
-    mockedModel.mockResolvedValue([]);
+  it("IA sem precaução nova: lista vazia, mas gasta 1 uso porque a IA foi chamada", async () => {
+    mockedModel.mockResolvedValue(["Usar cinto paraquedista"]);
     const res = await fillWorkPermitPrecautionsAction(INPUT);
     expect(res.ok).toBe(true);
     if (res.ok) expect(res.data.precautions).toEqual([]);
-    expect(await countUsage(admin, "org_a")).toBe(0);
+    expect(await countUsage(admin, "org_a")).toBe(1);
   });
 
   it("sem descrição → VALIDATION, sem chamar a IA", async () => {
@@ -128,3 +131,59 @@ async function countUsage(admin: ReturnType<typeof postgres>, orgId: string) {
     expect(after.c).toBe(before.c);
   });
 });
+
+function restRequest(body: unknown, role = "owner") {
+  return new NextRequest("http://localhost/api/v1/work-permits/precautions-fill", {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: {
+      "content-type": "application/json",
+      "x-dev-tenant": "org_a",
+      "x-dev-role": role,
+    },
+  });
+}
+
+(shouldRun ? describe : describe.skip)(
+  "REST — POST /work-permits/precautions-fill",
+  () => {
+    let admin: ReturnType<typeof postgres>;
+
+    beforeAll(async () => {
+      admin = adminClient();
+      await applyMigrations(admin);
+      process.env.APP_ENV = "local";
+      process.env.DEV_API_AUTH_BYPASS = "true";
+    });
+
+    afterAll(async () => {
+      delete process.env.DEV_API_AUTH_BYPASS;
+      await admin.end();
+    });
+
+    beforeEach(async () => {
+      await seedPgrBase(admin);
+      mockedModel.mockReset();
+    });
+
+    it("200 com as precauções novas e 1 uso gravado", async () => {
+      mockedModel.mockResolvedValue(["Isolar a área abaixo"]);
+      const res = await POST(restRequest(INPUT));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ precautions: ["Isolar a área abaixo"] });
+      expect(await countUsage(admin, "org_a")).toBe(1);
+    });
+
+    it("422 sem descrição, sem chamar a IA", async () => {
+      const res = await POST(restRequest({ ...INPUT, description: "" }));
+      expect(res.status).toBe(422);
+      expect(mockedModel).not.toHaveBeenCalled();
+    });
+
+    it("403 para papel client, sem chamar a IA", async () => {
+      const res = await POST(restRequest(INPUT, "client"));
+      expect(res.status).toBe(403);
+      expect(mockedModel).not.toHaveBeenCalled();
+    });
+  },
+);

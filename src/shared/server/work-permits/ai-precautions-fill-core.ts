@@ -36,8 +36,6 @@ export async function runWorkPermitPrecautionsFill(
   }
 
   const proposed = await requestWorkPermitPrecautionsFill(context);
-  const precautions = parseModelPrecautions(proposed, context.existingPrecautions);
-  if (precautions.length === 0) return { precautions };
   await aiRepo.recordAiUsage(ctx.tenantId, AI_WORK_PERMIT_PRECAUTIONS_KIND);
-  return { precautions };
+  return { precautions: parseModelPrecautions(proposed, context.existingPrecautions) };
 }

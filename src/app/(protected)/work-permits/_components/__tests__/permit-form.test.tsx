@@ -71,7 +71,7 @@ describe("PermitForm — precauções preenchidas pela IA pgr-e", () => {
 
     await waitFor(() =>
       expect(precautionsField()).toHaveValue(
-        "- Usar cinto paraquedista\n- Isolar a área abaixo do telhado",
+        "Usar cinto paraquedista\n- Isolar a área abaixo do telhado",
       ),
     );
     expect(mockedFill).toHaveBeenCalledWith({
@@ -107,7 +107,7 @@ describe("PermitForm — precauções preenchidas pela IA pgr-e", () => {
     await waitFor(() => expect(mockedUpdate).toHaveBeenCalledTimes(1));
     expect(mockedUpdate.mock.calls[0][1]).toMatchObject({
       type: "height",
-      precautions: "- Usar cinto paraquedista\n- Isolar a área abaixo do telhado",
+      precautions: "Usar cinto paraquedista\n- Isolar a área abaixo do telhado",
     });
   });
 
@@ -150,6 +150,28 @@ describe("PermitForm — precauções preenchidas pela IA pgr-e", () => {
     expect(
       await screen.findByText(/limite mensal de preenchimentos/),
     ).toBeInTheDocument();
+  });
+
+  it("editar sem IA envia o que veio do banco, inclusive tipo, status e precauções", async () => {
+    const user = userEvent.setup();
+    renderForm({
+      ...INITIAL,
+      type: "confined_space",
+      status: "active",
+      precautions: "1) Medir oxigênio",
+    });
+
+    await user.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(mockedUpdate).toHaveBeenCalledTimes(1));
+    expect(mockedUpdate.mock.calls[0][0]).toBe(PERMIT_ID);
+    expect(mockedUpdate.mock.calls[0][1]).toMatchObject({
+      number: "PT-001",
+      type: "confined_space",
+      status: "active",
+      area: "Telhado do galpão 2",
+      description: "Troca de telhas",
+      precautions: "1) Medir oxigênio",
+    });
   });
 
   it("todo select vem do SelectField do design system", () => {
