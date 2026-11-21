@@ -2,12 +2,21 @@ import "server-only";
 
 import type {
   GesRiskContext,
+  RiskFillFocus,
   SuggestedRisk,
 } from "@/shared/domains/pgr/ai-risk-suggestion";
 import type {
   RiskControlContext,
   SuggestedControlMeasure,
 } from "@/shared/domains/pgr/ai-control-measure-suggestion";
+import type {
+  EpiRiskFillContext,
+  SuggestedEpiLink,
+} from "@/shared/domains/pgr/ai-epi-risk-fill";
+import type {
+  FilledRiskAssessment,
+  RiskAssessmentFillContext,
+} from "@/shared/domains/pgr/ai-risk-assessment-fill";
 import type {
   JobRoleTrainingContext,
   SuggestedTraining,
@@ -17,13 +26,17 @@ import type {
   ServiceOrderInstructionContext,
   SuggestedInstruction,
 } from "@/shared/domains/safety/ai-service-order-instructions";
+import type { WorkPermitPrecautionsContext } from "@/shared/domains/work-permits/ai-precautions-fill";
 
 import { actionPlanAgent } from "./action-plan/agent";
 import { controlMeasureAgent } from "./control-measure/agent";
+import { epiRiskAgent } from "./epi-risk/agent";
 import { mastraAiService } from "./core/mastra-ai-service";
 import { requiredTrainingAgent } from "./required-training/agent";
+import { riskAssessmentAgent } from "./risk-assessment/agent";
 import { riskSuggestionAgent } from "./risk-suggestion/agent";
 import { serviceOrderInstructionAgent } from "./service-order-instructions/agent";
+import { workPermitPrecautionsAgent } from "./work-permit-precautions/agent";
 
 /**
  * Ponto de entrada da camada de agentes: é aqui que a **definição** de cada agente
@@ -40,8 +53,11 @@ export {
   riskSuggestionAgent,
   actionPlanAgent,
   controlMeasureAgent,
+  epiRiskAgent,
+  riskAssessmentAgent,
   requiredTrainingAgent,
   serviceOrderInstructionAgent,
+  workPermitPrecautionsAgent,
 };
 
 /** Riscos ocupacionais candidatos para um GES, a partir do contexto não-PII. */
@@ -49,6 +65,13 @@ export async function requestRiskSuggestions(
   ctx: GesRiskContext,
 ): Promise<SuggestedRisk[]> {
   return mastraAiService.run(riskSuggestionAgent, ctx);
+}
+
+export async function requestRiskFill(
+  ctx: GesRiskContext,
+  focus: RiskFillFocus,
+): Promise<SuggestedRisk[]> {
+  return mastraAiService.run(riskSuggestionAgent, { ...ctx, focus });
 }
 
 /** Plano 5W2H sugerido para um risco/incidente já sanitizado. Saída validada no core. */
@@ -63,6 +86,24 @@ export async function requestControlMeasureSuggestions(
   ctx: RiskControlContext,
 ): Promise<SuggestedControlMeasure[]> {
   return mastraAiService.run(controlMeasureAgent, ctx);
+}
+
+export async function requestEpiRiskFill(
+  ctx: EpiRiskFillContext,
+): Promise<SuggestedEpiLink[]> {
+  return mastraAiService.run(epiRiskAgent, ctx);
+}
+
+export async function requestRiskAssessmentFill(
+  ctx: RiskAssessmentFillContext,
+): Promise<FilledRiskAssessment | null> {
+  return mastraAiService.run(riskAssessmentAgent, ctx);
+}
+
+export async function requestWorkPermitPrecautionsFill(
+  ctx: WorkPermitPrecautionsContext,
+): Promise<string[]> {
+  return mastraAiService.run(workPermitPrecautionsAgent, ctx);
 }
 
 /** Treinamentos exigidos por norma para uma função, ancorados nas NRs do MTE. */

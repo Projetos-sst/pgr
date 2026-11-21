@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition, type FormEvent } from "react";
 
 import { createRiskAction, updateRiskAction } from "@/shared/server/actions/pgr/risks";
+import { fillRisk } from "@/shared/server/actions/pgr/ai-risk-suggestion";
 import { listWorkUnitsAction } from "@/shared/server/actions/pgr/work-units";
 import { listGesAction } from "@/shared/server/actions/pgr/ges";
 import {
@@ -19,8 +20,12 @@ import {
 import type { RiskInput } from "@/shared/domains/pgr/risk";
 import type { CompanyOption } from "@/shared/domains/pgr/companies";
 import type { ActionError } from "@/shared/server/result";
-
-import { RISK_FIELD_HINTS } from "@/shared/domains/pgr/field-hints";
+import {
+  applyRiskFill,
+  type RiskDraft,
+  type RiskDraftField,
+} from "@/shared/domains/pgr/ai-risk-suggestion";
+import { aiFillErrorMessage } from "@/shared/domains/platform/ai-review";
 
 import {
   FieldError,
@@ -31,7 +36,12 @@ import {
   SubmitButton,
   TextField,
 } from "../../_ui/form";
-import { FieldHint } from "../../_ui/field-hint";
+import {
+  AiFillButton,
+  AiFilledBadge,
+  AiSaveConfirm,
+  useAiGenerateWarning,
+} from "../../_ui/ai-review";
 
 const AGENT_TYPE_OPTIONS = riskAgentTypeSchema.options.map((v) => ({
   value: v,
@@ -77,7 +87,24 @@ export function RiskForm({
   const [companyId, setCompanyId] = useState(initial?.companyId ?? "");
   const [workUnitId, setWorkUnitId] = useState(initial?.workUnitId ?? "");
   const [gesId, setGesId] = useState(initial?.gesId ?? "");
-  const [agentType, setAgentType] = useState(initial?.agentType ?? "");
+  const [{ draft, aiFilled }, setFields] = useState<{
+    draft: RiskDraft;
+    aiFilled: ReadonlySet<RiskDraftField>;
+  }>({
+    draft: {
+      agentType: initial?.agentType ?? "",
+      exposureTime: initial?.exposureTime ?? "",
+      hazard: initial?.hazard ?? "",
+      description: initial?.description ?? "",
+      sources: initial?.sources ?? "",
+      propagation: initial?.propagation ?? "",
+      possibleInjuries: initial?.possibleInjuries ?? "",
+    },
+    aiFilled: new Set(),
+  });
+  const [pendingInput, setPendingInput] = useState<RiskInput | null>(null);
+  const [filling, startFill] = useTransition();
+  const agentType = draft.agentType;
   const [workUnitOptions, setWorkUnitOptions] = useState<Option[]>([]);
   const [gesOptions, setGesOptions] = useState<Option[]>([]);
 
@@ -125,6 +152,48 @@ export function RiskForm({
     setGesOptions([]);
   }
 
+  function editField(field: RiskDraftField, value: string) {
+    setFields((prev) => ({
+      draft: { ...prev.draft, [field]: value },
+      aiFilled: new Set([...prev.aiFilled].filter((f) => f !== field)),
+    }));
+  }
+
+  function fill() {
+    setFormError(null);
+    startFill(async () => {
+      const result = await fillRisk(gesId, {
+        agentType: draft.agentType,
+        hazard: draft.hazard,
+        description: draft.description,
+      });
+      if (!result.ok) {
+        setFormError(aiFillErrorMessage(result.error));
+        return;
+      }
+      const risk = result.data.risk;
+      if (!risk) {
+        setFormError(
+          "A IA pgr-e não conseguiu preencher este risco. Descreva melhor o GES ou preencha manualmente.",
+        );
+        return;
+      }
+      setFields((prev) => {
+        const applied = applyRiskFill(prev.draft, risk);
+        return {
+          draft: applied.draft,
+          aiFilled: new Set([...prev.aiFilled, ...applied.filled]),
+        };
+      });
+    });
+  }
+
+  const warning = useAiGenerateWarning(fill);
+
+  function aiBadge(field: RiskDraftField) {
+    return aiFilled.has(field) ? <AiFilledBadge className="mt-1.5" /> : null;
+  }
+
   function buildInput(formEl: HTMLFormElement): RiskInput {
     const fd = new FormData(formEl);
     const value = (key: string) => String(fd.get(key) ?? "");
@@ -150,9 +219,7 @@ export function RiskForm({
     setFormError(error.fields ? null : error.message);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const input = buildInput(event.currentTarget);
+  function save(input: RiskInput) {
     startTransition(async () => {
       const result = riskId
         ? await updateRiskAction(riskId, input)
@@ -162,8 +229,19 @@ export function RiskForm({
         router.refresh();
         return;
       }
+      setPendingInput(null);
       applyError(result.error);
     });
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const input = buildInput(event.currentTarget);
+    if (aiFilled.size > 0) {
+      setPendingInput(input);
+      return;
+    }
+    save(input);
   }
 
   return (
@@ -205,38 +283,63 @@ export function RiskForm({
         />
       </FormSection>
 
+      {gesId ? (
+        <div className="glass-panel rounded-card flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="text-text-muted text-sm">
+            A IA pgr-e preenche este risco a partir do GES e do que você já digitou.
+            Revise antes de salvar.
+          </p>
+          <AiFillButton onClick={warning.request} pending={filling} disabled={pending} />
+        </div>
+      ) : null}
+
       <FormSection title="Caracterização do agente">
-        <SelectField
-          label="Grupo do agente"
-          name="agentType"
-          required
-          value={agentType}
-          onChange={setAgentType}
-          options={AGENT_TYPE_OPTIONS}
-          error={errors.agentType}
-        />
-        <SelectField
-          label="Tempo de exposição"
-          name="exposureTime"
-          defaultValue={initial?.exposureTime ?? ""}
-          options={EXPOSURE_TIME_OPTIONS}
-          emptyLabel="— não informado —"
-          error={errors.exposureTime}
-        />
-        <TextField
-          label="Perigo"
-          name="hazard"
-          defaultValue={initial?.hazard ?? ""}
-          suggestions={catalogAgentNames(agentType)}
-          error={errors.hazard}
-        />
-        <TextField
-          label="Descrição"
-          name="description"
-          required
-          defaultValue={initial?.description ?? ""}
-          error={errors.description}
-        />
+        <div>
+          <SelectField
+            label="Grupo do agente"
+            name="agentType"
+            required
+            value={draft.agentType}
+            onChange={(v) => editField("agentType", v)}
+            options={AGENT_TYPE_OPTIONS}
+            error={errors.agentType}
+          />
+          {aiBadge("agentType")}
+        </div>
+        <div>
+          <SelectField
+            label="Tempo de exposição"
+            name="exposureTime"
+            value={draft.exposureTime}
+            onChange={(v) => editField("exposureTime", v)}
+            options={EXPOSURE_TIME_OPTIONS}
+            emptyLabel="— não informado —"
+            error={errors.exposureTime}
+          />
+          {aiBadge("exposureTime")}
+        </div>
+        <div>
+          <TextField
+            label="Perigo"
+            name="hazard"
+            value={draft.hazard}
+            onChange={(v) => editField("hazard", v)}
+            suggestions={catalogAgentNames(agentType)}
+            error={errors.hazard}
+          />
+          {aiBadge("hazard")}
+        </div>
+        <div>
+          <TextField
+            label="Descrição"
+            name="description"
+            required
+            value={draft.description}
+            onChange={(v) => editField("description", v)}
+            error={errors.description}
+          />
+          {aiBadge("description")}
+        </div>
       </FormSection>
 
       <FormSection title="Fontes, propagação e lesões">
@@ -244,28 +347,31 @@ export function RiskForm({
           <TextField
             label="Fontes geradoras"
             name="sources"
-            defaultValue={initial?.sources ?? ""}
+            value={draft.sources}
+            onChange={(v) => editField("sources", v)}
             error={errors.sources}
           />
-          <FieldHint>{RISK_FIELD_HINTS.sources}</FieldHint>
+          {aiBadge("sources")}
         </div>
         <div>
           <TextField
             label="Meios de propagação"
             name="propagation"
-            defaultValue={initial?.propagation ?? ""}
+            value={draft.propagation}
+            onChange={(v) => editField("propagation", v)}
             error={errors.propagation}
           />
-          <FieldHint>{RISK_FIELD_HINTS.propagation}</FieldHint>
+          {aiBadge("propagation")}
         </div>
         <div>
           <TextField
             label="Possíveis lesões"
             name="possibleInjuries"
-            defaultValue={initial?.possibleInjuries ?? ""}
+            value={draft.possibleInjuries}
+            onChange={(v) => editField("possibleInjuries", v)}
             error={errors.possibleInjuries}
           />
-          <FieldHint>{RISK_FIELD_HINTS.possibleInjuries}</FieldHint>
+          {aiBadge("possibleInjuries")}
         </div>
       </FormSection>
 
@@ -299,6 +405,14 @@ export function RiskForm({
           label={riskId ? "Salvar alterações" : "Criar risco"}
         />
       </FormActions>
+
+      {warning.modal}
+      <AiSaveConfirm
+        open={pendingInput !== null}
+        pending={pending}
+        onConfirm={() => pendingInput && save(pendingInput)}
+        onCancel={() => setPendingInput(null)}
+      />
     </form>
   );
 }

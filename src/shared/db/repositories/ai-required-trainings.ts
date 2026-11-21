@@ -54,6 +54,7 @@ export async function fetchJobRoleTrainingContext(
         id: trainingCatalog.id,
         name: trainingCatalog.name,
         periodicity: trainingCatalog.periodicity,
+        isActive: trainingCatalog.isActive,
       })
       .from(trainingCatalog)
       .where(eq(trainingCatalog.orgId, orgId));

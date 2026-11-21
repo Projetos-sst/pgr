@@ -125,6 +125,31 @@ export async function createRiskEpi(
   );
 }
 
+export async function createRiskEpis(
+  orgId: string,
+  riskId: string,
+  links: readonly Omit<EpiRiskLinkValues, "riskId">[],
+): Promise<number> {
+  return auditedTenantWrite(orgId, AUDIT_OP, () =>
+    withOrg(orgId, async (tx) => {
+      await assertRiskInTenant(tx, orgId, riskId);
+      const rows = await tx
+        .insert(epiRisk)
+        .values(
+          links.map((link) => ({
+            orgId,
+            riskId,
+            catalogId: link.catalogId,
+            neutralization: link.neutralization,
+          })),
+        )
+        .onConflictDoNothing()
+        .returning({ id: epiRisk.id });
+      return rows.length;
+    }),
+  );
+}
+
 /** Atualiza só a indicação de neutralização de um vínculo. `null` ⇒ NOT_FOUND. */
 export async function updateRiskEpiNeutralization(
   orgId: string,

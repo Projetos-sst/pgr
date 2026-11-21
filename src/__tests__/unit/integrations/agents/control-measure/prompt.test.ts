@@ -1,6 +1,7 @@
 import {
   CONTROL_MEASURE_INSTRUCTIONS,
   buildControlMeasurePrompt,
+  controlMeasureOutputSchema,
 } from "@/shared/integrations/agents/control-measure/prompt";
 import type { RiskControlContext } from "@/shared/domains/pgr/ai-control-measure-suggestion";
 
@@ -63,7 +64,26 @@ describe("CONTROL_MEASURE_INSTRUCTIONS", () => {
     expect(CONTROL_MEASURE_INSTRUCTIONS).toMatch(/EPI é o último recurso/);
   });
 
+  it("pede o porquê da ação ligado ao risco", () => {
+    expect(CONTROL_MEASURE_INSTRUCTIONS).toMatch(/'actionWhy'/);
+  });
+
   it("proíbe definir responsável e prazo", () => {
     expect(CONTROL_MEASURE_INSTRUCTIONS).toMatch(/Não defina responsável nem prazo/);
+  });
+});
+
+describe("controlMeasureOutputSchema", () => {
+  it("aceita o porquê da ação na resposta do modelo", () => {
+    const parsed = controlMeasureOutputSchema.parse({
+      measures: [
+        { controlLevel: "ppe", actionWhat: "a", actionHow: "b", actionWhy: "c" },
+      ],
+    });
+    expect(parsed.measures[0]?.actionWhy).toBe("c");
+  });
+
+  it("não leva dado pessoal ao prompt", () => {
+    expect(buildControlMeasurePrompt(CTX)).not.toMatch(/CPF|nome do trabalhador/i);
   });
 });

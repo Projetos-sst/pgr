@@ -48,6 +48,9 @@ export function PortalFooter({
           }}
         >
           <span>© {new Date().getFullYear()} PGR-e. Todos os direitos reservados.</span>
+          <Link className="foot-link" href={PORTAL_ROUTES.termos}>
+            Termos de uso
+          </Link>
         </div>
       </footer>
     );
@@ -182,6 +185,9 @@ export function PortalFooter({
           }}
         >
           <span>© {new Date().getFullYear()} PGR-e. Todos os direitos reservados.</span>
+          <Link className="foot-link" href={PORTAL_ROUTES.termos}>
+            Termos de uso
+          </Link>
         </div>
       </div>
     </footer>

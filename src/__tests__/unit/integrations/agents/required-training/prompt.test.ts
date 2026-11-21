@@ -10,7 +10,9 @@ const CTX: JobRoleTrainingContext = {
   risks: [
     { agentType: "accident", hazard: "Choque elétrico", description: "Contato direto" },
   ],
-  catalog: [{ id: "c1", name: "Trabalho em Altura", periodicity: "annual" }],
+  catalog: [
+    { id: "c1", name: "Trabalho em Altura", periodicity: "annual", isActive: true },
+  ],
   requiredTrainingIds: [],
 };
 

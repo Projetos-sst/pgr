@@ -4,11 +4,16 @@ import { revalidatePath } from "next/cache";
 
 import { officeAction } from "@/shared/server/office-action";
 import type { ActionResult } from "@/shared/server/result";
-import type { AcceptSuggestedRisksInput } from "@/shared/domains/pgr/ai-risk-suggestion";
+import type {
+  AcceptSuggestedRisksInput,
+  RiskFillFocusInput,
+} from "@/shared/domains/pgr/ai-risk-suggestion";
 import {
   runAcceptSuggestedRisks,
+  runFillRisk,
   runSuggestRisks,
   type AcceptSuggestedRisksResult,
+  type FillRiskResult,
   type SuggestRisksResult,
 } from "@/shared/server/pgr/ai-risk-suggestion-core";
 
@@ -25,6 +30,19 @@ export async function suggestRisks(
     "pgr.ai_risk_suggestion.suggest",
     (ctx) => runSuggestRisks(ctx, gesId),
     { audit: true },
+  );
+}
+
+export async function fillRisk(
+  gesId: string,
+  focus: RiskFillFocusInput,
+): Promise<ActionResult<FillRiskResult>> {
+  return officeAction(
+    "pgr.ai_risk_suggestion.fill",
+    (ctx) => runFillRisk(ctx, gesId, focus),
+    {
+      audit: true,
+    },
   );
 }
 

@@ -7791,7 +7791,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"suggestions\": [\n    {\n      \"agentType\": \"physical\",\n      \"description\": \"Ruido continuo\",\n      \"hazard\": \"Nivel acima de 85 dB(A)\",\n      \"sources\": \"Esmerilhadeira\"\n    }\n  ]\n}",
+              "raw": "{\n  \"suggestions\": [\n    {\n      \"agentType\": \"physical\",\n      \"description\": \"Ruido continuo\",\n      \"hazard\": \"Nivel acima de 85 dB(A)\",\n      \"sources\": \"Esmerilhadeira\",\n      \"propagation\": \"Via aerea\",\n      \"possibleInjuries\": \"Perda auditiva induzida por ruido\",\n      \"exposureTime\": \"habitual\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7802,6 +7802,40 @@
               "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-suggestions/accept",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "ges", "{{gesId}}", "risk-suggestions", "accept"]
+            }
+          }
+        },
+        {
+          "name": "POST /ges/{id}/risk-fill (preenche 1 risco por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agentType\": \"physical\",\n  \"description\": \"Ruido da serra circular\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ges/{{gesId}}/risk-fill",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ges", "{{gesId}}", "risk-fill"]
             }
           }
         }
@@ -7851,7 +7885,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"suggestions\": [\n    {\n      \"controlLevel\": \"engineering\",\n      \"actionWhat\": \"Enclausurar a fonte de ruido\",\n      \"actionHow\": \"Instalar cabine acustica na esmerilhadeira e verificar a atenuacao com dosimetria\",\n      \"monitoring\": \"Dosimetria semestral\",\n      \"justification\": \"Controle de engenharia precede o EPI na hierarquia da NR-01\",\n      \"actionResponsible\": \"SESMT\",\n      \"actionDeadline\": \"2026-12-31\"\n    }\n  ]\n}",
+              "raw": "{\n  \"suggestions\": [\n    {\n      \"controlLevel\": \"engineering\",\n      \"actionWhat\": \"Enclausurar a fonte de ruido\",\n      \"actionWhy\": \"Reduzir o ruido na fonte, antes de depender do EPI\",\n      \"actionHow\": \"Instalar cabine acustica na esmerilhadeira e verificar a atenuacao com dosimetria\",\n      \"monitoring\": \"Dosimetria semestral\",\n      \"justification\": \"Controle de engenharia precede o EPI na hierarquia da NR-01\",\n      \"actionResponsible\": \"SESMT\",\n      \"actionDeadline\": \"2026-12-31\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7869,6 +7903,92 @@
                 "control-measure-suggestions",
                 "accept"
               ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Preenchimento de EPIs do risco (IA)",
+      "item": [
+        {
+          "name": "POST /risks/{id}/epi-fill (preenche por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epi-fill",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epi-fill"]
+            }
+          }
+        },
+        {
+          "name": "POST /risks/{id}/epi-fill/accept (vincula, 201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"links\": [\n    {\n      \"catalogId\": \"{{epiCatalogId}}\",\n      \"neutralization\": \"neutralizes\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/epi-fill/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "epi-fill", "accept"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Preenchimento da avaliação de risco (IA)",
+      "item": [
+        {
+          "name": "POST /risks/{id}/assessment-fill (preenche por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/risks/{{riskId}}/assessment-fill",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "risks", "{{riskId}}", "assessment-fill"]
             }
           }
         }
@@ -9727,6 +9847,35 @@
               "raw": "{{baseUrl}}/api/v1/work-permits/{{workPermitId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /work-permits/precautions-fill (preenche por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/precautions-fill",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "precautions-fill"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"height\",\n  \"area\": \"Telhado do galpão 2\",\n  \"description\": \"Troca de telhas\",\n  \"precautions\": \"- Usar cinto paraquedista\"\n}"
             }
           }
         }
