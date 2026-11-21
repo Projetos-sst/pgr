@@ -26,6 +26,7 @@ import type {
   ServiceOrderInstructionContext,
   SuggestedInstruction,
 } from "@/shared/domains/safety/ai-service-order-instructions";
+import type { WorkPermitPrecautionsContext } from "@/shared/domains/work-permits/ai-precautions-fill";
 
 import { actionPlanAgent } from "./action-plan/agent";
 import { controlMeasureAgent } from "./control-measure/agent";
@@ -35,6 +36,7 @@ import { requiredTrainingAgent } from "./required-training/agent";
 import { riskAssessmentAgent } from "./risk-assessment/agent";
 import { riskSuggestionAgent } from "./risk-suggestion/agent";
 import { serviceOrderInstructionAgent } from "./service-order-instructions/agent";
+import { workPermitPrecautionsAgent } from "./work-permit-precautions/agent";
 
 /**
  * Ponto de entrada da camada de agentes: é aqui que a **definição** de cada agente
@@ -55,6 +57,7 @@ export {
   riskAssessmentAgent,
   requiredTrainingAgent,
   serviceOrderInstructionAgent,
+  workPermitPrecautionsAgent,
 };
 
 /** Riscos ocupacionais candidatos para um GES, a partir do contexto não-PII. */
@@ -95,6 +98,12 @@ export async function requestRiskAssessmentFill(
   ctx: RiskAssessmentFillContext,
 ): Promise<FilledRiskAssessment | null> {
   return mastraAiService.run(riskAssessmentAgent, ctx);
+}
+
+export async function requestWorkPermitPrecautionsFill(
+  ctx: WorkPermitPrecautionsContext,
+): Promise<string[]> {
+  return mastraAiService.run(workPermitPrecautionsAgent, ctx);
 }
 
 /** Treinamentos exigidos por norma para uma função, ancorados nas NRs do MTE. */

@@ -24,6 +24,11 @@ export const WORK_PERMIT_TYPE_LABELS: Record<WorkPermitTypeKey, string> = {
   other: "Outros",
 };
 
+export function toWorkPermitType(value: string): WorkPermitTypeKey {
+  const parsed = workPermitTypeSchema.safeParse(value);
+  return parsed.success ? parsed.data : "hot_work";
+}
+
 export function workPermitTypeLabel(value: string): string {
   return WORK_PERMIT_TYPE_LABELS[value as WorkPermitTypeKey] ?? value;
 }

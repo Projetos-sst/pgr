@@ -9849,6 +9849,35 @@
               "path": ["api", "v1", "work-permits", "{{workPermitId}}"]
             }
           }
+        },
+        {
+          "name": "POST /work-permits/precautions-fill (preenche por IA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-tenant",
+                "value": "{{devTenant}}"
+              },
+              {
+                "key": "x-dev-role",
+                "value": "{{devRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/work-permits/precautions-fill",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "work-permits", "precautions-fill"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"height\",\n  \"area\": \"Telhado do galpão 2\",\n  \"description\": \"Troca de telhas\",\n  \"precautions\": \"- Usar cinto paraquedista\"\n}"
+            }
+          }
         }
       ]
     },
