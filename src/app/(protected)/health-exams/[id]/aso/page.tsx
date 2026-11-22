@@ -124,7 +124,11 @@ function Preview({
           </dd>
         </div>
         <div>
-          <dt className="text-text font-semibold">e) Conclusão</dt>
+          <dt className="text-text font-semibold">
+            {content.conclusion.source === "examiner_account"
+              ? "e) Conclusão do médico examinador"
+              : "e) Aptidão informada no cadastro do exame (sem conclusão médica no sistema)"}
+          </dt>
           <dd>
             {content.conclusion.label}. {content.conclusion.basis}
           </dd>

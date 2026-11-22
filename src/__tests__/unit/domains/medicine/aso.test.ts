@@ -3,6 +3,7 @@
  * composição só com dados cadastrados, sem observações clínicas, e hash estável. Fictício.
  */
 import {
+  ASO_EXAM_RECORD_CONCLUSION_BASIS,
   asoChecklist,
   asoContentHash,
   asoReadiness,
@@ -170,16 +171,19 @@ describe("employeeRisks", () => {
 });
 
 describe("asoReadiness", () => {
-  it("dados completos: sem bloqueio; assinatura indisponível sempre avisa", () => {
+  it("dados completos: sem bloqueio; avisa que a aptidão vem do cadastro e que não há assinatura", () => {
     const items = asoReadiness(facts());
     expect(items.filter((i) => i.severity === "blocking")).toEqual([]);
-    expect(items.map((i) => i.code)).toEqual(["signature_unavailable"]);
+    expect(items.map((i) => i.code)).toEqual([
+      "examiner_conclusion_not_recorded",
+      "signature_unavailable",
+    ]);
     expect(asoChecklist(items).map((c) => c.status)).toEqual([
       "ok",
       "ok",
       "ok",
       "ok",
-      "ok",
+      "warning",
       "ok",
       "warning",
     ]);
@@ -388,14 +392,41 @@ describe("composeAso", () => {
     expect(night.conclusion.basis).toMatch(/em 2026-10-21 \(MED-01\)/);
   });
 
-  it("apto e inapto registrados valem como estão; o sistema não conclui", () => {
+  it("apto e inapto do cadastro aparecem como informação do cadastro, nunca como conclusão do examinador (D2)", () => {
     const fit = composeAso(facts());
-    expect(fit.conclusion).toMatchObject({ result: "fit", label: "Apto para a função" });
+    expect(fit.conclusion).toMatchObject({
+      result: "fit",
+      label: "Apto para a função (informado no cadastro do exame)",
+      source: "exam_record",
+    });
+    expect(fit.conclusion.basis).toBe(ASO_EXAM_RECORD_CONCLUSION_BASIS);
+    expect(fit.conclusion.basis).toMatch(/não registrada pelo médico examinador/);
     expect(fit.conclusion.basis).toMatch(/não conclui/);
-    expect(
-      composeAso(facts({ exam: { ...facts().exam, aptitude: "unfit" } })).conclusion
-        .label,
-    ).toBe("Inapto para a função");
+    expect(fit.conclusion.basis).not.toMatch(/Conclusão registrada do médico examinador/);
+    expect(fit.warnings.map((w) => w.code)).toContain("examiner_conclusion_not_recorded");
+    const unfit = composeAso(facts({ exam: { ...facts().exam, aptitude: "unfit" } }));
+    expect(unfit.conclusion).toMatchObject({
+      result: "unfit",
+      label: "Inapto para a função (informado no cadastro do exame)",
+      source: "exam_record",
+    });
+  });
+
+  it("só a confirmação pela conta do examinador vira conclusão do examinador (D2)", () => {
+    const confirmed = composeAso(
+      facts({
+        exam: { ...facts().exam, aptitude: "fit_with_restrictions" },
+        examinerConclusion: {
+          conclusion: "fit",
+          confirmedAt: "2026-10-21T10:00:00.000Z",
+        },
+      }),
+    );
+    expect(confirmed.conclusion.source).toBe("examiner_account");
+    expect(confirmed.conclusion.label).toBe("Apto para a função");
+    expect(confirmed.warnings.map((w) => w.code)).not.toContain(
+      "examiner_conclusion_not_recorded",
+    );
   });
 
   it("prévia com aviso, assinatura pendente, exames ordenados por data e 9999 com descrição", () => {

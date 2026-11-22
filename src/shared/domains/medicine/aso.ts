@@ -35,7 +35,7 @@ import {
  * - sem assinatura verificável (MED-12) o documento é prévia, nunca ASO emitido.
  */
 // v2 (NOB-156): `risksAbsence` com a declaração de inexistência vigente.
-export const ASO_CONTENT_SCHEMA_VERSION = 2;
+export const ASO_CONTENT_SCHEMA_VERSION = 3;
 export const ASO_PREVIEW_NOTICE =
   "PRÉVIA — sem assinatura do médico examinador; não é ASO emitido e não tem validade legal (MED-12).";
 
@@ -356,6 +356,14 @@ export function asoReadiness(facts: AsoFacts): AsoReadinessItem[] {
       "NR-7 7.5.19.1 e; MED-01; MED-10; DT-21",
     );
 
+  if (facts.exam.aptitude !== "fit_with_restrictions")
+    warn(
+      "examiner_conclusion_not_recorded",
+      "e",
+      "O apto ou inapto da prévia vem do cadastro do exame. Não há conclusão registrada pelo médico examinador no sistema: a prévia não é conclusão médica, e o ASO só vale com a conclusão e a assinatura do examinador.",
+      "MED-01; NR-7 7.5.19.1 e",
+    );
+
   if (facts.coordinatorOverlap)
     block(
       "coordinator_overlap",
@@ -398,9 +406,19 @@ export function asoChecklist(items: AsoReadinessItem[]) {
 const CONCLUSION_LABELS = { fit: "Apto para a função", unfit: "Inapto para a função" };
 
 /**
- * Apto ou inapto do ASO. "Apto" e "inapto" registrados valem como estão; "apto com restrição" só
- * com a confirmação do examinador. Nunca converte: sem confirmação, lança (a conferência bloqueia
- * antes).
+ * De onde vem o apto/inapto da prévia. Só `examiner_account` é ato do médico examinador registrado
+ * no sistema; `exam_record` é a aptidão digitada no cadastro do exame (por exemplo, copiada do ASO
+ * da clínica) e nunca é apresentada como conclusão do médico.
+ */
+export type AsoConclusionSource = "examiner_account" | "exam_record";
+
+export const ASO_EXAM_RECORD_CONCLUSION_BASIS =
+  "Aptidão informada no cadastro do exame, não registrada pelo médico examinador no sistema. Não é conclusão médica: no ASO definitivo vale a conclusão do examinador no documento assinado por ele (MED-01). O sistema não conclui aptidão.";
+
+/**
+ * Apto ou inapto do ASO, com a origem. "Apto com restrição" só com a confirmação do examinador pela
+ * conta vinculada (nunca converte: sem confirmação, lança; a conferência bloqueia antes). Apto e
+ * inapto do cadastro do exame aparecem como informação do cadastro, nunca como ato do examinador.
  */
 function asoConclusion(facts: AsoFacts) {
   if (facts.exam.aptitude === "fit_with_restrictions") {
@@ -410,15 +428,16 @@ function asoConclusion(facts: AsoFacts) {
     return {
       result: confirmed.conclusion,
       label: CONCLUSION_LABELS[confirmed.conclusion],
+      source: "examiner_account" as AsoConclusionSource,
       basis: `Confirmada pelo médico examinador, pela conta vinculada, em ${dateInSaoPaulo(confirmed.confirmedAt) ?? confirmed.confirmedAt.slice(0, 10)} (MED-01). O registro original do exame é preservado e os detalhes clínicos ficam fora do ASO.`,
     };
   }
   const result = facts.exam.aptitude;
   return {
     result,
-    label: CONCLUSION_LABELS[result],
-    basis:
-      "Conclusão registrada do médico examinador (MED-01). O sistema não conclui aptidão.",
+    label: `${CONCLUSION_LABELS[result]} (informado no cadastro do exame)`,
+    source: "exam_record" as AsoConclusionSource,
+    basis: ASO_EXAM_RECORD_CONCLUSION_BASIS,
   };
 }
 

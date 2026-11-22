@@ -27,6 +27,9 @@ import { hasAsoDocumentsTx } from "./aso";
 import { isClinicalHistoryFkViolation } from "./clinical-records";
 import { assertCompanyModuleTx } from "./company-modules";
 
+export const EXAM_DOCTOR_NOT_PHYSICIAN_MESSAGE =
+  "O médico responsável pelo exame precisa ser médico (CRM). Psicólogos e outros profissionais não podem ser o responsável pelo exame ocupacional.";
+
 // A FK (employee/medico) é por PK global e o check de FK do Postgres ignora RLS —
 // então validamos na aplicação que o funcionário e o médico pertencem AO TENANT.
 // Referência inexistente/cross-tenant → FK_NOT_FOUND (espelho de action-plans).
@@ -46,11 +49,14 @@ async function assertRefsInTenant(
 
   if (input.doctorId) {
     const [doc] = await tx
-      .select({ id: medicos.id })
+      .select({ id: medicos.id, profession: medicos.profession })
       .from(medicos)
       .where(and(eq(medicos.orgId, orgId), eq(medicos.id, input.doctorId)))
       .limit(1);
     if (!doc) throw new ReferenceNotFoundError("Médico não encontrado neste escritório.");
+    // O responsável pelo exame ocupacional é médico (CRM): psicólogo não entra aqui (MED-01).
+    if (doc.profession !== "physician")
+      throw new ValidationError(EXAM_DOCTOR_NOT_PHYSICIAN_MESSAGE);
   }
   return { companyId: emp.companyId };
 }
