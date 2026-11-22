@@ -19,6 +19,12 @@ import {
 import { suggestServiceOrderInstructions } from "@/shared/server/actions/safety/ai-service-order-instructions";
 
 import { AgentProgress } from "../../_ui/agent-progress";
+import {
+  AiFillButton,
+  AiFilledBadge,
+  AiSaveConfirm,
+  useAiGenerateWarning,
+} from "../../_ui/ai-review";
 
 import { FormActions, FormError, SubmitButton, TextField } from "../../_ui/form";
 
@@ -29,6 +35,8 @@ type ChecklistItem = {
   sourceType: ServiceOrderItemSource;
   sourceId: string | null;
 };
+
+type DraftItem = ChecklistItem & { aiFilled?: boolean };
 
 export type ServiceOrderFormInitial = {
   title: string;
@@ -80,7 +88,8 @@ export function ServiceOrderForm({
   const [pending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
   const [employeeId, setEmployeeId] = useState(initial?.assignedEmployeeId ?? "");
-  const [items, setItems] = useState<ChecklistItem[]>(initial?.items ?? []);
+  const [items, setItems] = useState<DraftItem[]>(initial?.items ?? []);
+  const [pendingForm, setPendingForm] = useState<FormData | null>(null);
   const [newItem, setNewItem] = useState("");
   const [loadingSuggested, startSuggested] = useTransition();
   const [loadingAi, startAi] = useTransition();
@@ -143,18 +152,31 @@ export function ServiceOrderForm({
       const existing = new Set(items.map((i) => i.description.trim().toLowerCase()));
       const fresh = result.data.suggestions
         .filter((s) => !existing.has(s.description.trim().toLowerCase()))
-        .map((s) => ({
-          description: s.description,
-          sourceType: "manual" as const,
-          sourceId: null,
-        }));
+        .map(
+          (s): DraftItem => ({
+            description: s.description,
+            sourceType: "manual",
+            sourceId: null,
+            aiFilled: true,
+          }),
+        );
       setItems((prev) => [...prev, ...fresh].slice(0, MAX_ITEMS_PER_ORDER));
     });
   }
 
+  const warning = useAiGenerateWarning(suggestWithAi);
+
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
+    if (items.some((item) => item.aiFilled)) {
+      setPendingForm(fd);
+      return;
+    }
+    submit(fd);
+  }
+
+  function submit(fd: FormData) {
     const title = (fd.get("title") as string) ?? "";
     const openedAt = (fd.get("openedAt") as string) ?? "";
     const dueDate = (fd.get("dueDate") as string)?.trim() || undefined;
@@ -190,6 +212,7 @@ export function ServiceOrderForm({
             dueDate,
             items: payloadItems,
           });
+      setPendingForm(null);
       if (result.ok) {
         setFormError(null);
         router.push(id ? `/service-orders/${id}` : "/service-orders");
@@ -308,14 +331,11 @@ export function ServiceOrderForm({
               {loadingSuggested ? "Sugerindo…" : "Sugerir do GES"}
             </button>
             {id ? (
-              <button
-                type="button"
-                onClick={suggestWithAi}
-                disabled={loadingAi}
-                className="btn-primary rounded-pill px-3 py-1 text-sm font-semibold disabled:opacity-50"
-              >
-                {loadingAi ? "Redigindo…" : "Redigir com a IA pgr-e"}
-              </button>
+              <AiFillButton
+                onClick={warning.request}
+                pending={loadingAi}
+                disabled={pending}
+              />
             ) : null}
           </div>
         </div>
@@ -336,6 +356,7 @@ export function ServiceOrderForm({
                     {SOURCE_LABELS[item.sourceType]}
                   </span>{" "}
                   {item.description}
+                  {item.aiFilled ? <AiFilledBadge className="ml-2 align-middle" /> : null}
                 </span>
                 <button
                   type="button"
@@ -376,6 +397,16 @@ export function ServiceOrderForm({
       <FormActions>
         <SubmitButton pending={pending} label={id ? "Salvar" : "Criar OS"} />
       </FormActions>
+
+      {warning.modal}
+      <AiSaveConfirm
+        open={pendingForm !== null}
+        pending={pending}
+        onConfirm={() => {
+          if (pendingForm) submit(pendingForm);
+        }}
+        onCancel={() => setPendingForm(null)}
+      />
     </form>
   );
 }

@@ -1,8 +1,11 @@
 import {
   acceptSuggestedMeasuresInputSchema,
+  acceptedMeasuresConflict,
+  controlMeasureDraftErrors,
   dropExistingLevels,
   normalizeControlLevel,
   parseModelMeasures,
+  toControlMeasureDraft,
   toControlMeasureValuesFromSuggestion,
   type SuggestedControlMeasure,
 } from "@/shared/domains/pgr/ai-control-measure-suggestion";
@@ -147,5 +150,113 @@ describe("aceite de medida sugerida — responsável e prazo", () => {
     const values = toControlMeasureValuesFromSuggestion({ ...base });
     expect(values.applicable).toBe(true);
     expect(values.status).toBeUndefined();
+  });
+});
+
+describe("por quê (actionWhy) preenchido pela IA", () => {
+  it("lê o motivo da resposta do modelo", () => {
+    const [m] = parseModelMeasures({
+      measures: [
+        { ...medida("administrative"), actionWhy: "Reduzir o tempo de exposição" },
+      ],
+    });
+    expect(m?.actionWhy).toBe("Reduzir o tempo de exposição");
+  });
+
+  it("leva o motivo revisado até os valores gravados", () => {
+    const values = toControlMeasureValuesFromSuggestion({
+      controlLevel: "administrative",
+      actionWhat: "Revezar a equipe",
+      actionWhy: "Limitar a dose diária",
+      actionHow: "Escala de 2h",
+    });
+    expect(values.actionWhy).toBe("Limitar a dose diária");
+  });
+
+  it("vira rascunho editável com responsável e prazo vazios", () => {
+    const draft = toControlMeasureDraft({
+      controlLevel: "ppe",
+      actionWhat: "Fornecer protetor auricular",
+      actionHow: "Entregar com ficha",
+    });
+    expect(draft).toEqual({
+      controlLevel: "ppe",
+      actionWhat: "Fornecer protetor auricular",
+      actionWhy: "",
+      actionHow: "Entregar com ficha",
+      monitoring: "",
+      justification: "",
+      actionResponsible: "",
+      actionDeadline: "",
+    });
+  });
+});
+
+describe("controlMeasureDraftErrors", () => {
+  const draft = toControlMeasureDraft({
+    controlLevel: "ppe",
+    actionWhat: "Fornecer protetor",
+    actionHow: "Entregar",
+  });
+
+  it("cobra responsável e prazo só quando o risco é moderado ou superior", () => {
+    expect(controlMeasureDraftErrors(draft, false)).toEqual({});
+    expect(Object.keys(controlMeasureDraftErrors(draft, true)).sort()).toEqual([
+      "actionDeadline",
+      "actionResponsible",
+    ]);
+  });
+
+  it("cobra o quê e o como apagados na revisão", () => {
+    const errors = controlMeasureDraftErrors(
+      { ...draft, actionWhat: " ", actionHow: "" },
+      false,
+    );
+    expect(Object.keys(errors).sort()).toEqual(["actionHow", "actionWhat"]);
+  });
+});
+
+describe("aceite — níveis repetidos e conflitos com o risco", () => {
+  const base = { actionWhat: "Fazer", actionHow: "Assim" };
+
+  it("recusa duas medidas no mesmo nível no mesmo lote", () => {
+    expect(
+      acceptSuggestedMeasuresInputSchema.safeParse({
+        suggestions: [
+          { ...base, controlLevel: "ppe" },
+          { ...base, controlLevel: "ppe" },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("aponta nível já cadastrado no risco", () => {
+    const conflict = acceptedMeasuresConflict([{ ...base, controlLevel: "ppe" }], {
+      classification: null,
+      existingLevels: ["ppe"],
+    });
+    expect(conflict).toMatch(/já tem medida/);
+  });
+
+  it("aponta falta de responsável e prazo em risco moderado+", () => {
+    expect(
+      acceptedMeasuresConflict([{ ...base, controlLevel: "ppe" }], {
+        classification: "moderate",
+        existingLevels: [],
+      }),
+    ).toMatch(/responsável e prazo/);
+    expect(
+      acceptedMeasuresConflict(
+        [
+          {
+            ...base,
+            controlLevel: "ppe",
+            actionResponsible: "SESMT",
+            actionDeadline: "2026-12-31",
+          },
+        ],
+        { classification: "moderate", existingLevels: [] },
+      ),
+    ).toBeNull();
   });
 });

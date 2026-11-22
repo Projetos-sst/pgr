@@ -12,6 +12,7 @@ export const PORTAL_ROUTES = {
   medicina: "/medicina-do-trabalho",
   orcamento: "/orcamento",
   login: "/sign-in",
+  termos: "/termos",
 } as const;
 
 export type PortalRouteKey = keyof typeof PORTAL_ROUTES;

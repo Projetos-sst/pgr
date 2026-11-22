@@ -87,11 +87,16 @@ export type AcceptSuggestedTrainingsInput = z.input<
   typeof acceptSuggestedTrainingsInputSchema
 >;
 
+export type AcceptedTraining = z.output<
+  typeof acceptSuggestedTrainingsInputSchema
+>["suggestions"][number];
+
 /** Item do catálogo da organização, como entra no prompt e na conciliação. */
 export type CatalogEntry = {
   id: string;
   name: string;
   periodicity: string;
+  isActive: boolean;
 };
 
 /**
@@ -226,4 +231,56 @@ export function matchAgainstCatalog(
       alreadyRequired: hit != null && required.has(hit.id),
     };
   });
+}
+
+export type TrainingDraft = {
+  name: string;
+  referenceNorm: string;
+  periodicity: string;
+  workloadHours: string;
+};
+
+export type TrainingDraftField = keyof TrainingDraft;
+
+export function toTrainingDraft(s: SuggestedTraining): TrainingDraft {
+  return {
+    name: s.name,
+    referenceNorm: s.referenceNorm ?? "",
+    periodicity: s.periodicity,
+    workloadHours: String(s.workloadHours),
+  };
+}
+
+export function trainingDraftErrors(
+  draft: TrainingDraft,
+): Partial<Record<TrainingDraftField, string>> {
+  const errors: Partial<Record<TrainingDraftField, string>> = {};
+  if (draft.name.trim() === "") errors.name = "Informe o nome do treinamento.";
+  if (!trainingPeriodicitySchema.safeParse(draft.periodicity).success) {
+    errors.periodicity = "Informe a periodicidade.";
+  }
+  if (
+    !suggestedTrainingSchema.shape.workloadHours.safeParse(draft.workloadHours).success
+  ) {
+    errors.workloadHours = "Informe uma carga horária inteira entre 1 e 200 horas.";
+  }
+  return errors;
+}
+
+function sameCatalogName(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+export function findCatalogEntry(
+  name: string,
+  catalog: readonly CatalogEntry[],
+): CatalogEntry | undefined {
+  return catalog.find((c) => c.isActive && sameCatalogName(c.name, name));
+}
+
+export function findInactiveCatalogEntry(
+  name: string,
+  catalog: readonly CatalogEntry[],
+): CatalogEntry | undefined {
+  return catalog.find((c) => !c.isActive && sameCatalogName(c.name, name));
 }

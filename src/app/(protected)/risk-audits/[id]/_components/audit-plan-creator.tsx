@@ -4,13 +4,22 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { AgentProgress } from "@/app/(protected)/_ui/agent-progress";
+import {
+  AiFillButton,
+  AiFilledBadge,
+  AiSaveConfirm,
+  useAiGenerateWarning,
+} from "@/app/(protected)/_ui/ai-review";
+import { SelectField, TextAreaField, TextField } from "@/app/(protected)/_ui/form";
 import { Skeleton } from "@/app/(protected)/_ui/skeleton";
 import { ACTION_PLAN_PRIORITY_LABELS } from "@/shared/domains/safety/action-plan";
 import type { ActionPlanOriginType } from "@/shared/domains/safety/action-plan-origin";
 import { createActionPlanAction } from "@/shared/server/actions/safety/action-plans";
 import { suggestActionPlanAction } from "@/shared/server/actions/safety/risk-audits";
 
-const inputClass = "glass-input text-text rounded-card px-3 py-2 text-sm outline-none";
+const PRIORITY_OPTIONS = Object.entries(ACTION_PLAN_PRIORITY_LABELS).map(
+  ([value, label]) => ({ value, label }),
+);
 
 type Fields = {
   what: string;
@@ -22,6 +31,19 @@ type Fields = {
   howMuch: string;
   priority: string;
 };
+
+type FieldKey = keyof Fields;
+
+const FIELD_KEYS: FieldKey[] = [
+  "what",
+  "why",
+  "who",
+  "where",
+  "when",
+  "how",
+  "howMuch",
+  "priority",
+];
 
 const EMPTY: Fields = {
   what: "",
@@ -61,13 +83,21 @@ export function AuditPlanCreator({
   originId: string;
 }) {
   const router = useRouter();
-  const [fields, setFields] = useState<Fields>(EMPTY);
+  const [{ fields, aiFilled }, setState] = useState<{
+    fields: Fields;
+    aiFilled: ReadonlySet<FieldKey>;
+  }>({ fields: EMPTY, aiFilled: new Set() });
+  const [confirming, setConfirming] = useState(false);
   const [suggesting, startSuggest] = useTransition();
   const [creating, startCreate] = useTransition();
   const [info, setInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const set = (k: keyof Fields, v: string) => setFields((f) => ({ ...f, [k]: v }));
+  const set = (k: FieldKey, v: string) =>
+    setState((prev) => ({
+      fields: { ...prev.fields, [k]: v },
+      aiFilled: new Set([...prev.aiFilled].filter((f) => f !== k)),
+    }));
 
   function suggest() {
     setError(null);
@@ -76,7 +106,7 @@ export function AuditPlanCreator({
       const result = await suggestActionPlanAction(originType, originId);
       if (result.ok) {
         const s = result.data.suggestion;
-        setFields({
+        const filled: Fields = {
           what: s.what,
           why: s.why,
           who: s.who,
@@ -85,6 +115,10 @@ export function AuditPlanCreator({
           how: s.how,
           howMuch: s.howMuch != null ? String(s.howMuch) : "",
           priority: s.priority != null ? String(s.priority) : "",
+        };
+        setState({
+          fields: filled,
+          aiFilled: new Set(FIELD_KEYS.filter((k) => filled[k] !== "")),
         });
         setInfo("Sugestão preenchida. Revise e edite antes de criar o plano.");
       } else {
@@ -96,6 +130,8 @@ export function AuditPlanCreator({
       }
     });
   }
+
+  const warning = useAiGenerateWarning(suggest);
 
   function create() {
     setError(null);
@@ -112,23 +148,32 @@ export function AuditPlanCreator({
         howMuch: fields.howMuch ? Number(fields.howMuch) : undefined,
         priority: fields.priority ? Number(fields.priority) : undefined,
       });
+      setConfirming(false);
       if (result.ok) router.push(`/action-plans/${result.data.id}`);
       else setError(result.error.message);
     });
   }
 
+  function requestCreate() {
+    if (aiFilled.size > 0) {
+      setConfirming(true);
+      return;
+    }
+    create();
+  }
+
+  const badge = (k: FieldKey) =>
+    aiFilled.has(k) ? <AiFilledBadge className="mt-1.5" /> : null;
+
   return (
     <div className="glass-card flex flex-col gap-4 p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-text text-sm font-semibold">Criar plano de ação 5W2H</h2>
-        <button
-          type="button"
-          disabled={suggesting}
-          onClick={suggest}
-          className="glass-panel text-text-muted rounded-card hover:text-text px-3 py-1 text-sm font-semibold transition-colors disabled:opacity-50"
-        >
-          {suggesting ? "Sugerindo…" : "Sugerir 5W2H com a IA pgr-e"}
-        </button>
+        <AiFillButton
+          onClick={warning.request}
+          pending={suggesting}
+          disabled={creating}
+        />
       </div>
       {info ? <p className="text-xs text-emerald-700">{info}</p> : null}
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
@@ -143,95 +188,105 @@ export function AuditPlanCreator({
       <div
         className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${suggesting ? "hidden" : ""}`}
       >
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-text-muted text-sm font-semibold">O quê</span>
-          <textarea
+        <div className="sm:col-span-2">
+          <TextAreaField
+            label="O quê"
+            name="what"
             rows={2}
             value={fields.what}
-            onChange={(e) => set("what", e.target.value)}
-            className={inputClass}
+            onChange={(v) => set("what", v)}
           />
-        </label>
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-text-muted text-sm font-semibold">Por quê</span>
-          <textarea
+          {badge("what")}
+        </div>
+        <div className="sm:col-span-2">
+          <TextAreaField
+            label="Por quê"
+            name="why"
             rows={2}
             value={fields.why}
-            onChange={(e) => set("why", e.target.value)}
-            className={inputClass}
+            onChange={(v) => set("why", v)}
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-semibold">Quem</span>
-          <input
+          {badge("why")}
+        </div>
+        <div>
+          <TextField
+            label="Quem"
+            name="who"
             value={fields.who}
-            onChange={(e) => set("who", e.target.value)}
-            className={inputClass}
+            onChange={(v) => set("who", v)}
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-semibold">Onde</span>
-          <input
+          {badge("who")}
+        </div>
+        <div>
+          <TextField
+            label="Onde"
+            name="where"
             value={fields.where}
-            onChange={(e) => set("where", e.target.value)}
-            className={inputClass}
+            onChange={(v) => set("where", v)}
           />
-        </label>
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-text-muted text-sm font-semibold">Como</span>
-          <textarea
+          {badge("where")}
+        </div>
+        <div className="sm:col-span-2">
+          <TextAreaField
+            label="Como"
+            name="how"
             rows={2}
             value={fields.how}
-            onChange={(e) => set("how", e.target.value)}
-            className={inputClass}
+            onChange={(v) => set("how", v)}
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-semibold">Quando (prazo)</span>
-          <input
+          {badge("how")}
+        </div>
+        <div>
+          <TextField
+            label="Quando (prazo)"
+            name="when"
             type="date"
             value={fields.when}
-            onChange={(e) => set("when", e.target.value)}
-            className={inputClass}
+            onChange={(v) => set("when", v)}
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-semibold">Quanto custa (R$)</span>
-          <input
+          {badge("when")}
+        </div>
+        <div>
+          <TextField
+            label="Quanto custa (R$)"
+            name="howMuch"
             type="number"
-            step="0.01"
             value={fields.howMuch}
-            onChange={(e) => set("howMuch", e.target.value)}
-            className={inputClass}
+            onChange={(v) => set("howMuch", v)}
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-text-muted text-sm font-semibold">Prioridade</span>
-          <select
+          {badge("howMuch")}
+        </div>
+        <div>
+          <SelectField
+            label="Prioridade"
+            name="priority"
             value={fields.priority}
-            onChange={(e) => set("priority", e.target.value)}
-            className={inputClass}
-          >
-            <option value="">— sem prioridade —</option>
-            {Object.entries(ACTION_PLAN_PRIORITY_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={(v) => set("priority", v)}
+            options={PRIORITY_OPTIONS}
+            emptyLabel="— sem prioridade —"
+          />
+          {badge("priority")}
+        </div>
       </div>
 
       <div className="flex justify-end">
         <button
           type="button"
           disabled={creating || suggesting}
-          onClick={create}
+          onClick={requestCreate}
           className="btn-primary rounded-pill px-4 py-2 text-sm font-semibold disabled:opacity-50"
         >
           {creating ? "Criando…" : "Criar plano"}
         </button>
       </div>
+
+      {warning.modal}
+      <AiSaveConfirm
+        open={confirming}
+        pending={creating}
+        onConfirm={create}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
   );
 }

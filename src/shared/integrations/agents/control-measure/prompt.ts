@@ -10,6 +10,7 @@ import { riskClassificationGuidance } from "@/shared/domains/pgr/methodology";
 import type { ControlLevel } from "@/shared/domains/pgr/risks";
 
 import { flexibleOptionalText, flexibleText } from "../core/flexible-text";
+import { line } from "../core/prompt-line";
 
 /**
  * Instruções, schema de saída e montagem da mensagem do agente de **medidas de controle** —
@@ -39,6 +40,9 @@ export const controlMeasureOutputSchema = z.object({
           `Nível da hierarquia de controle (NR-01). Um de: ${LEVELS.join(", ")}.`,
         ),
         actionWhat: flexibleText("O que será feito — a medida, no infinitivo."),
+        actionWhy: flexibleOptionalText(
+          "Por que a ação é necessária — o motivo técnico ligado a este risco.",
+        ),
         actionHow: flexibleText("Como implementar — passos concretos e verificáveis."),
         monitoring: flexibleOptionalText(
           "Como verificar se a medida segue eficaz ao longo do tempo.",
@@ -74,11 +78,8 @@ export const CONTROL_MEASURE_INSTRUCTIONS = [
   "8. Baseie-se APENAS no contexto fornecido. Não invente equipamento, norma, medição ou valor que não esteja no texto.",
   "9. Nunca cite nome de pessoa, CPF ou dado médico.",
   "10. Escreva em português do Brasil, em linguagem técnica de SST, objetiva e sem rodeios.",
+  "11. Em 'actionWhy', diga por que a ação é necessária, ligando-a ao perigo e às fontes deste risco. Sem base no contexto, deixe vazio.",
 ].join("\n");
-
-function line(label: string, value: string | null | undefined): string | null {
-  return value && value.trim() !== "" ? `- ${label}: ${value.trim()}` : null;
-}
 
 /**
  * Monta a mensagem **exclusivamente** a partir do contexto não-PII do risco: o risco, o

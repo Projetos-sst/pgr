@@ -1,5 +1,8 @@
 import {
+  findCatalogEntry,
   matchAgainstCatalog,
+  toTrainingDraft,
+  trainingDraftErrors,
   parseModelTrainings,
   sameTrainingName,
   type CatalogEntry,
@@ -84,7 +87,7 @@ describe("sameTrainingName", () => {
 
 describe("matchAgainstCatalog", () => {
   const catalog: CatalogEntry[] = [
-    { id: "cat-1", name: "Trabalho em Altura", periodicity: "annual" },
+    { id: "cat-1", name: "Trabalho em Altura", periodicity: "annual", isActive: true },
   ];
 
   it("liga ao catálogo e adota o nome de lá", () => {
@@ -105,5 +108,71 @@ describe("matchAgainstCatalog", () => {
   it("sinaliza o que já é obrigatório para a função", () => {
     const [m] = matchAgainstCatalog(parseModelTrainings([treino()]), catalog, ["cat-1"]);
     expect(m.alreadyRequired).toBe(true);
+  });
+});
+
+describe("rascunho editável de treinamento", () => {
+  it("vira campos de texto, com norma vazia quando a IA não informou", () => {
+    expect(
+      toTrainingDraft({
+        name: "Brigada de Incêndio",
+        periodicity: "annual",
+        workloadHours: 8,
+      }),
+    ).toEqual({
+      name: "Brigada de Incêndio",
+      referenceNorm: "",
+      periodicity: "annual",
+      workloadHours: "8",
+    });
+  });
+
+  it("cobra nome, periodicidade e carga horária plausível", () => {
+    const errors = trainingDraftErrors({
+      name: " ",
+      referenceNorm: "",
+      periodicity: "",
+      workloadHours: "0",
+    });
+    expect(Object.keys(errors).sort()).toEqual(["name", "periodicity", "workloadHours"]);
+    expect(
+      trainingDraftErrors({
+        name: "NR-35",
+        referenceNorm: "",
+        periodicity: "biennial",
+        workloadHours: "8",
+      }),
+    ).toEqual({});
+  });
+
+  it("recusa carga horária quebrada ou acima de 200h", () => {
+    const base = { name: "NR-35", referenceNorm: "", periodicity: "annual" };
+    expect(
+      trainingDraftErrors({ ...base, workloadHours: "7.5" }).workloadHours,
+    ).toBeDefined();
+    expect(
+      trainingDraftErrors({ ...base, workloadHours: "201" }).workloadHours,
+    ).toBeDefined();
+  });
+});
+
+describe("findCatalogEntry — reaproveita o curso no aceite", () => {
+  const catalog: CatalogEntry[] = [
+    { id: "t1", name: "Trabalho em Altura", periodicity: "biennial", isActive: true },
+    { id: "t2", name: "Brigada", periodicity: "annual", isActive: true },
+    { id: "t3", name: "Espaço Confinado", periodicity: "annual", isActive: false },
+  ];
+
+  it("acha o curso de mesmo nome, sem diferenciar maiúsculas nem espaços", () => {
+    expect(findCatalogEntry(" brigada ", catalog)?.id).toBe("t2");
+  });
+
+  it("respeita o nome editado na revisão: nome só parecido vira curso novo", () => {
+    expect(findCatalogEntry("Trabalho em Altura revisado", catalog)).toBeUndefined();
+    expect(findCatalogEntry("Primeiros Socorros", catalog)).toBeUndefined();
+  });
+
+  it("não reaproveita curso inativo de mesmo nome", () => {
+    expect(findCatalogEntry("Espaço Confinado", catalog)).toBeUndefined();
   });
 });

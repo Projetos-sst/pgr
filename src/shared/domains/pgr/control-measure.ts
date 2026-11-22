@@ -129,8 +129,6 @@ export const controlMeasureInputSchema = z
     justification: optionalString,
     monitoring: optionalString,
     actionWhat: optionalString,
-    // "Por quê" do 5W2H (#47): motivo REAL informado pelo usuário. Nunca é gerado — a
-    // ponte #51 fabricava "Medida de controle nível X", e isso não entra no PGR.
     actionWhy: optionalString,
     actionHow: optionalString,
     actionTracking: optionalString,

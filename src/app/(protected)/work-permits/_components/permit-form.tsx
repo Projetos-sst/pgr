@@ -6,6 +6,8 @@ import { useState, useTransition, type FormEvent } from "react";
 import {
   WORK_PERMIT_STATUS_LABELS,
   WORK_PERMIT_TYPE_LABELS,
+  toWorkPermitType,
+  type WorkPermitInput,
   type WorkPermitStatusKey,
   type WorkPermitTypeKey,
 } from "@/shared/domains/work-permits/work-permits";
@@ -13,14 +15,24 @@ import {
   createWorkPermitAction,
   updateWorkPermitAction,
 } from "@/shared/server/actions/work-permits/work-permits";
+import { fillWorkPermitPrecautionsAction } from "@/shared/server/actions/work-permits/ai-precautions";
+import { mergePrecautions } from "@/shared/domains/work-permits/ai-precautions-fill";
+import { aiFillErrorMessage } from "@/shared/domains/platform/ai-review";
 
 import {
   FormActions,
   FormError,
   SelectField,
   SubmitButton,
+  TextAreaField,
   TextField,
 } from "../../_ui/form";
+import {
+  AiFillButton,
+  AiFilledBadge,
+  AiSaveConfirm,
+  useAiGenerateWarning,
+} from "../../_ui/ai-review";
 
 type Option = { value: string; label: string };
 
@@ -61,13 +73,62 @@ export function PermitForm({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [filling, startFill] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
+  const [type, setType] = useState(toWorkPermitType(initial?.type ?? ""));
+  const [area, setArea] = useState(initial?.area ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [precautions, setPrecautions] = useState(initial?.precautions ?? "");
+  const [aiFilled, setAiFilled] = useState(false);
+  const [pendingInput, setPendingInput] = useState<WorkPermitInput | null>(null);
+
+  function fill() {
+    setFormError(null);
+    startFill(async () => {
+      const result = await fillWorkPermitPrecautionsAction({
+        type,
+        area,
+        description,
+        precautions,
+      });
+      if (!result.ok) {
+        setFormError(aiFillErrorMessage(result.error));
+        return;
+      }
+      if (result.data.precautions.length === 0) {
+        setFormError(
+          "A IA pgr-e não encontrou precauções novas para este trabalho. Descreva melhor a atividade ou preencha manualmente.",
+        );
+        return;
+      }
+      setPrecautions((current) => mergePrecautions(current, result.data.precautions));
+      setAiFilled(true);
+    });
+  }
+
+  const warning = useAiGenerateWarning(fill);
+
+  function save(input: WorkPermitInput) {
+    startTransition(async () => {
+      const result = id
+        ? await updateWorkPermitAction(id, input)
+        : await createWorkPermitAction(input);
+      if (result.ok) {
+        setFormError(null);
+        router.push("/work-permits");
+        router.refresh();
+        return;
+      }
+      setPendingInput(null);
+      setFormError(result.error.message);
+    });
+  }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
     const companyId = (fd.get("companyId") as string)?.trim();
-    const input = {
+    const input: WorkPermitInput = {
       number: (fd.get("number") as string) ?? "",
       type: (fd.get("type") as WorkPermitTypeKey) ?? "hot_work",
       status: (fd.get("status") as WorkPermitStatusKey) ?? "draft",
@@ -81,18 +142,11 @@ export function PermitForm({
       precautions: (fd.get("precautions") as string) ?? "",
       notes: (fd.get("notes") as string) ?? "",
     };
-    startTransition(async () => {
-      const result = id
-        ? await updateWorkPermitAction(id, input)
-        : await createWorkPermitAction(input);
-      if (result.ok) {
-        setFormError(null);
-        router.push("/work-permits");
-        router.refresh();
-      } else {
-        setFormError(result.error.message);
-      }
-    });
+    if (aiFilled) {
+      setPendingInput(input);
+      return;
+    }
+    save(input);
   }
 
   return (
@@ -104,34 +158,21 @@ export function PermitForm({
         required
         defaultValue={initial?.number}
       />
-      <label className="flex flex-col gap-1">
-        <span className="text-text-muted text-sm font-semibold">Tipo de trabalho *</span>
-        <select
-          name="type"
-          defaultValue={initial?.type ?? "hot_work"}
-          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
-        >
-          {TYPE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-text-muted text-sm font-semibold">Status *</span>
-        <select
-          name="status"
-          defaultValue={initial?.status ?? "draft"}
-          className="glass-input text-text rounded-card px-3 py-2 text-sm outline-none"
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectField
+        label="Tipo de trabalho"
+        name="type"
+        required
+        value={type}
+        onChange={(value) => setType(toWorkPermitType(value))}
+        options={TYPE_OPTIONS}
+      />
+      <SelectField
+        label="Status"
+        name="status"
+        required
+        defaultValue={initial?.status ?? "draft"}
+        options={STATUS_OPTIONS}
+      />
       <SelectField
         label="Empresa (opcional)"
         name="companyId"
@@ -139,12 +180,13 @@ export function PermitForm({
         defaultValue={initial?.companyId}
         emptyLabel="— sem empresa —"
       />
-      <TextField label="Área / local" name="area" defaultValue={initial?.area} />
+      <TextField label="Área / local" name="area" value={area} onChange={setArea} />
       <TextField
         label="Descrição do trabalho"
         name="description"
         required
-        defaultValue={initial?.description}
+        value={description}
+        onChange={setDescription}
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TextField
@@ -168,16 +210,43 @@ export function PermitForm({
         defaultValue={initial?.requestedBy}
       />
       <TextField label="Aprovador" name="approvedBy" defaultValue={initial?.approvedBy} />
-      <TextField
-        label="Precauções / medidas de controle"
-        name="precautions"
-        defaultValue={initial?.precautions}
-      />
+      <div className="glass-panel rounded-card flex flex-wrap items-center justify-between gap-3 p-4">
+        <p className="text-text-muted text-sm">
+          A IA pgr-e preenche precauções e medidas de controle com base no tipo, na área e
+          na descrição do trabalho. Revise antes de salvar.
+        </p>
+        <AiFillButton
+          onClick={warning.request}
+          pending={filling}
+          disabled={pending || description.trim() === ""}
+        />
+      </div>
+      <div>
+        <TextAreaField
+          label="Precauções / medidas de controle"
+          name="precautions"
+          rows={6}
+          value={precautions}
+          onChange={(value) => {
+            setPrecautions(value);
+            setAiFilled(false);
+          }}
+        />
+        {aiFilled ? <AiFilledBadge className="mt-1.5" /> : null}
+      </div>
       <TextField label="Observações" name="notes" defaultValue={initial?.notes} />
 
       <FormActions>
         <SubmitButton pending={pending} label={id ? "Salvar" : "Criar PT"} />
       </FormActions>
+
+      {warning.modal}
+      <AiSaveConfirm
+        open={pendingInput !== null}
+        pending={pending}
+        onConfirm={() => pendingInput && save(pendingInput)}
+        onCancel={() => setPendingInput(null)}
+      />
     </form>
   );
 }

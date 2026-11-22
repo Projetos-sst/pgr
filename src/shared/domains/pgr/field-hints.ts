@@ -1,6 +1,6 @@
 /**
  * Dicas de preenchimento (estáticas) para os campos críticos dos formulários de
- * GES e de risco — orientam o usuário a escrever conteúdo de qualidade e aderente
+ * GES — orientam o usuário a escrever conteúdo de qualidade e aderente
  * à NR-01. Constantes puras (sem `server-only`): consumidas por componentes de UI.
  * Boas dicas aqui também melhoram o contexto que alimenta a sugestão por IA.
  */
@@ -17,17 +17,4 @@ export const GES_FIELD_HINTS = {
     "cada função guiam a identificação dos riscos (físicos, químicos, ergonômicos etc.).",
 } as const;
 
-export const RISK_FIELD_HINTS = {
-  sources:
-    "Fontes geradoras: equipamentos, substâncias, tarefas ou condições que originam o " +
-    "agente de risco (ex.: 'esmerilhadeira', 'solda MIG', 'movimentação manual de cargas').",
-  propagation:
-    "Trajetória/propagação: como o agente atinge o trabalhador — contato direto, inalação, " +
-    "via cutânea, ingestão ou projeção de partículas.",
-  possibleInjuries:
-    "Possíveis lesões e danos à saúde decorrentes da exposição (ex.: 'perda auditiva induzida " +
-    "por ruído', 'dermatose de contato', 'lombalgia').",
-} as const;
-
 export type GesFieldHintKey = keyof typeof GES_FIELD_HINTS;
-export type RiskFieldHintKey = keyof typeof RISK_FIELD_HINTS;

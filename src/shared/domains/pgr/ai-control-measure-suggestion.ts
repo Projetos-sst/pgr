@@ -5,7 +5,10 @@ import { aliasPreprocessor } from "./enum-aliases";
 import { riskClassificationLabel, type RiskClassification } from "./methodology";
 import { controlLevelSchema, controlLevelLabel, type ControlLevel } from "./risks";
 import { optionalIsoDate } from "./form-fields";
-import type { ControlMeasureValues } from "./control-measure";
+import {
+  isModeratePlusClassification,
+  type ControlMeasureValues,
+} from "./control-measure";
 
 /**
  * Domínio puro da **sugestão de medidas de controle por IA**. Espelha o subconjunto de
@@ -68,6 +71,7 @@ export const normalizeControlLevel = aliasPreprocessor(
 export const suggestedControlMeasureSchema = z.object({
   controlLevel: z.preprocess(normalizeControlLevel, controlLevelSchema),
   actionWhat: z.string().trim().min(1, "Ação (o quê) é obrigatória"),
+  actionWhy: optionalText,
   actionHow: z.string().trim().min(1, "Ação (como) é obrigatória"),
   monitoring: optionalText,
   justification: optionalText,
@@ -90,7 +94,14 @@ export type AcceptedControlMeasure = z.infer<typeof acceptedControlMeasureSchema
 
 /** Entrada da ação de aceite: as medidas selecionadas/revisadas pelo usuário. */
 export const acceptSuggestedMeasuresInputSchema = z.object({
-  suggestions: z.array(acceptedControlMeasureSchema).min(1).max(MAX_MEASURE_SUGGESTIONS),
+  suggestions: z
+    .array(acceptedControlMeasureSchema)
+    .min(1)
+    .max(MAX_MEASURE_SUGGESTIONS)
+    .refine(
+      (measures) => new Set(measures.map((m) => m.controlLevel)).size === measures.length,
+      { message: "Cada nível de controle pode aparecer em uma única medida." },
+    ),
 });
 
 export type AcceptSuggestedMeasuresInput = z.input<
@@ -173,6 +184,7 @@ export function toControlMeasureValuesFromSuggestion(
     justification: s.justification,
     monitoring: s.monitoring,
     actionWhat: s.actionWhat,
+    actionWhy: s.actionWhy,
     actionHow: s.actionHow,
     actionTracking: undefined,
     actionMeasurement: undefined,
@@ -194,4 +206,66 @@ export function dropExistingLevels(
 ): SuggestedControlMeasure[] {
   const taken = new Set<string>(existingLevels);
   return measures.filter((m) => !taken.has(m.controlLevel));
+}
+
+export type ControlMeasureDraft = {
+  controlLevel: string;
+  actionWhat: string;
+  actionWhy: string;
+  actionHow: string;
+  monitoring: string;
+  justification: string;
+  actionResponsible: string;
+  actionDeadline: string;
+};
+
+export type ControlMeasureDraftField = keyof ControlMeasureDraft;
+
+export function toControlMeasureDraft(s: SuggestedControlMeasure): ControlMeasureDraft {
+  return {
+    controlLevel: s.controlLevel,
+    actionWhat: s.actionWhat,
+    actionWhy: s.actionWhy ?? "",
+    actionHow: s.actionHow,
+    monitoring: s.monitoring ?? "",
+    justification: s.justification ?? "",
+    actionResponsible: "",
+    actionDeadline: "",
+  };
+}
+
+export const REQUIRED_PLAN_MESSAGE =
+  "Risco moderado ou superior: informe responsável e prazo nesta medida.";
+
+export function controlMeasureDraftErrors(
+  draft: ControlMeasureDraft,
+  requiresResponsibleAndDeadline: boolean,
+): Partial<Record<ControlMeasureDraftField, string>> {
+  const errors: Partial<Record<ControlMeasureDraftField, string>> = {};
+  if (draft.actionWhat.trim() === "") errors.actionWhat = "Informe o que será feito.";
+  if (draft.actionHow.trim() === "") errors.actionHow = "Informe como será feito.";
+  if (!requiresResponsibleAndDeadline) return errors;
+  if (draft.actionResponsible.trim() === "")
+    errors.actionResponsible = REQUIRED_PLAN_MESSAGE;
+  if (draft.actionDeadline === "") errors.actionDeadline = REQUIRED_PLAN_MESSAGE;
+  return errors;
+}
+
+export function acceptedMeasuresConflict(
+  measures: readonly AcceptedControlMeasure[],
+  risk: {
+    classification: RiskClassification | null;
+    existingLevels: readonly ControlLevel[];
+  },
+): string | null {
+  const taken = new Set<string>(risk.existingLevels);
+  const repeated = measures.find((m) => taken.has(m.controlLevel));
+  if (repeated) {
+    return `O risco já tem medida no nível ${controlLevelLabel(repeated.controlLevel)}.`;
+  }
+  const requiresPlan = isModeratePlusClassification(risk.classification);
+  const missingPlan = measures.some((m) => !m.actionResponsible || !m.actionDeadline);
+  return requiresPlan && missingPlan
+    ? "Risco moderado ou superior exige responsável e prazo definidos em cada medida."
+    : null;
 }

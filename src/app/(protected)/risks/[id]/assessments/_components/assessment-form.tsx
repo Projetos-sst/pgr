@@ -4,9 +4,22 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition, type FormEvent } from "react";
 
 import {
+  AiFillButton,
+  AiFilledBadge,
+  AiSaveConfirm,
+  useAiGenerateWarning,
+} from "@/app/(protected)/_ui/ai-review";
+import { fillRiskAssessmentAction } from "@/shared/server/actions/pgr/ai-risk-assessment-fill";
+import {
   createRiskAssessmentAction,
   updateRiskAssessmentAction,
 } from "@/shared/server/actions/pgr/risk-assessments";
+import {
+  filledAssessmentFields,
+  type FilledAssessmentField,
+  type FilledRiskAssessment,
+} from "@/shared/domains/pgr/ai-risk-assessment-fill";
+import { aiFillErrorMessage } from "@/shared/domains/platform/ai-review";
 import {
   assessmentCriterionSchema,
   measurementUnitSchema,
@@ -105,6 +118,10 @@ export function AssessmentForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [filling, startFill] = useTransition();
+  const [aiFilled, setAiFilled] = useState<ReadonlySet<FilledAssessmentField>>(new Set());
+  const [aiJustification, setAiJustification] = useState<string | null>(null);
+  const [pendingInput, setPendingInput] = useState<RiskAssessmentInput | null>(null);
 
   const [criterion, setCriterion] = useState(initial.criterion ?? "qualitative");
   const [probability, setProbability] = useState(String(initial.probability ?? 1));
@@ -152,6 +169,46 @@ export function AssessmentForm({
     return { riskLevel, result: classify(riskLevel, bands) };
   }, [probability, severity, bands]);
 
+  function editField(field: FilledAssessmentField, setter: (value: string) => void) {
+    return (value: string) => {
+      setter(value);
+      setAiFilled((prev) => new Set([...prev].filter((f) => f !== field)));
+    };
+  }
+
+  function applyFill(assessment: FilledRiskAssessment) {
+    setCriterion(assessment.criterion);
+    setProbability(String(assessment.probability));
+    setSeverity(String(assessment.severity));
+    if (assessment.evaluationMethod) setEvaluationMethod(assessment.evaluationMethod);
+    setAiJustification(assessment.justification);
+    setAiFilled(new Set(filledAssessmentFields(assessment)));
+  }
+
+  function fill() {
+    setFormError(null);
+    startFill(async () => {
+      const result = await fillRiskAssessmentAction(riskId);
+      if (!result.ok) {
+        setFormError(aiFillErrorMessage(result.error));
+        return;
+      }
+      if (!result.data.assessment) {
+        setFormError(
+          "A IA pgr-e não conseguiu preencher esta avaliação. Detalhe melhor o risco ou preencha manualmente.",
+        );
+        return;
+      }
+      applyFill(result.data.assessment);
+    });
+  }
+
+  const warning = useAiGenerateWarning(fill);
+
+  function aiBadge(field: FilledAssessmentField) {
+    return aiFilled.has(field) ? <AiFilledBadge className="mt-1.5" /> : null;
+  }
+
   function applyError(error: ActionError) {
     setErrors(error.fields ?? {});
     setFormError(error.fields ? null : error.message);
@@ -174,6 +231,14 @@ export function AssessmentForm({
       nr09Conclusion: showNr09 ? nr09Conclusion : "",
       assessedAt: String(fd.get("assessedAt") ?? ""),
     };
+    if (aiFilled.size > 0) {
+      setPendingInput(input);
+      return;
+    }
+    save(input);
+  }
+
+  function save(input: RiskAssessmentInput) {
     startTransition(async () => {
       const result = assessmentId
         ? await updateRiskAssessmentAction(riskId, assessmentId, input)
@@ -183,6 +248,7 @@ export function AssessmentForm({
         router.refresh();
         return;
       }
+      setPendingInput(null);
       applyError(result.error);
     });
   }
@@ -198,16 +264,37 @@ export function AssessmentForm({
         </p>
       ) : null}
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-text-muted text-sm">
+          A IA pgr-e preenche critério, probabilidade e severidade. Medição, limite de
+          tolerância e conclusão da NR-09 ficam com você.
+        </p>
+        <AiFillButton onClick={warning.request} pending={filling} disabled={pending} />
+      </div>
+
+      {aiJustification ? (
+        <p
+          role="note"
+          className="rounded-field border-primary/30 bg-primary/5 text-text-muted border px-3.5 py-2.5 text-[13px]"
+        >
+          <strong className="text-text">Justificativa da IA pgr-e:</strong>{" "}
+          {aiJustification}
+        </p>
+      ) : null}
+
       <FormSection title="Avaliação do risco (matriz 5×5)">
-        <SelectField
-          label="Critério"
-          name="criterion"
-          required
-          value={criterion}
-          onChange={setCriterion}
-          options={CRITERION_OPTIONS}
-          error={errors.criterion}
-        />
+        <div>
+          <SelectField
+            label="Critério"
+            name="criterion"
+            required
+            value={criterion}
+            onChange={editField("criterion", setCriterion)}
+            options={CRITERION_OPTIONS}
+            error={errors.criterion}
+          />
+          {aiBadge("criterion")}
+        </div>
         <TextField
           label="Data da avaliação"
           name="assessedAt"
@@ -216,24 +303,30 @@ export function AssessmentForm({
           defaultValue={initial.assessedAt}
           error={errors.assessedAt}
         />
-        <SelectField
-          label="Probabilidade"
-          name="probability"
-          required
-          value={probability}
-          onChange={setProbability}
-          options={PROBABILITY_OPTIONS}
-          error={errors.probability}
-        />
-        <SelectField
-          label="Severidade"
-          name="severity"
-          required
-          value={severity}
-          onChange={setSeverity}
-          options={SEVERITY_OPTIONS}
-          error={errors.severity}
-        />
+        <div>
+          <SelectField
+            label="Probabilidade"
+            name="probability"
+            required
+            value={probability}
+            onChange={editField("probability", setProbability)}
+            options={PROBABILITY_OPTIONS}
+            error={errors.probability}
+          />
+          {aiBadge("probability")}
+        </div>
+        <div>
+          <SelectField
+            label="Severidade"
+            name="severity"
+            required
+            value={severity}
+            onChange={editField("severity", setSeverity)}
+            options={SEVERITY_OPTIONS}
+            error={errors.severity}
+          />
+          {aiBadge("severity")}
+        </div>
         <SelectField
           label="Grau de incerteza"
           name="uncertaintyDegree"
@@ -259,16 +352,19 @@ export function AssessmentForm({
             Item 9.4.3 da NR-09 — registre o método, a medição e o limite. A conclusão é
             sua: o sistema apenas sugere quando há valor e limite comparáveis.
           </p>
-          <TextField
-            label="Método de avaliação"
-            name="evaluationMethod"
-            value={evaluationMethod}
-            onChange={setEvaluationMethod}
-            suggestions={NR09_METHOD_SUGGESTIONS}
-            placeholder="Ex.: NHO-01 (ruído)"
-            error={errors.evaluationMethod}
-            isFullWidth
-          />
+          <div className="sm:col-span-full">
+            <TextField
+              label="Método de avaliação"
+              name="evaluationMethod"
+              value={evaluationMethod}
+              onChange={editField("evaluationMethod", setEvaluationMethod)}
+              suggestions={NR09_METHOD_SUGGESTIONS}
+              placeholder="Ex.: NHO-01 (ruído)"
+              error={errors.evaluationMethod}
+              isFullWidth
+            />
+            {aiBadge("evaluationMethod")}
+          </div>
           <TextField
             label="Valor medido"
             name="measuredValue"
@@ -361,6 +457,14 @@ export function AssessmentForm({
           label={assessmentId ? "Salvar alterações" : "Criar avaliação"}
         />
       </FormActions>
+
+      {warning.modal}
+      <AiSaveConfirm
+        open={pendingInput !== null}
+        pending={pending}
+        onConfirm={() => pendingInput && save(pendingInput)}
+        onCancel={() => setPendingInput(null)}
+      />
     </form>
   );
 }
