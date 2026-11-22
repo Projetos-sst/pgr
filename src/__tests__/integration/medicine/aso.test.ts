@@ -487,7 +487,7 @@ const req = (ctx: TenantContext, method = "GET", body?: unknown) =>
     expect((await listDocuments(staff, exam.id)).map((d) => d.version)).toEqual([2, 1]);
     expect(
       ((await getDocument(staff, v1.id)).content as AsoContent).conclusion.label,
-    ).toBe("Inapto para a função");
+    ).toBe("Inapto para a função (informado no cadastro do exame)");
     const asStaff = (fn: (tx: postgres.TransactionSql) => Promise<unknown>) =>
       runtime.begin(async (tx) => {
         await tx`select set_config('app.current_org', 'org_a', true), set_config('app.current_actor', 'staff', true)`;

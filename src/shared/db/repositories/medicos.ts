@@ -77,13 +77,22 @@ export async function listMedicos(
   });
 }
 
-/** Opções (id + nome + crm) — para selects de médico responsável (exames/ASO). */
+/**
+ * Opções (id + nome + crm) para o select de médico responsável do exame/ASO: só médicos ativos.
+ * Psicólogos ficam de fora; o repositório de exames também recusa (MED-01).
+ */
 export async function listMedicoOptions(orgId: string): Promise<MedicoOption[]> {
   return withOrg(orgId, async (tx) =>
     tx
       .select({ id: medicos.id, name: medicos.name, crm: medicos.crm })
       .from(medicos)
-      .where(and(eq(medicos.orgId, orgId), eq(medicos.status, "active")))
+      .where(
+        and(
+          eq(medicos.orgId, orgId),
+          eq(medicos.status, "active"),
+          eq(medicos.profession, "physician"),
+        ),
+      )
       .orderBy(asc(medicos.name)),
   );
 }
